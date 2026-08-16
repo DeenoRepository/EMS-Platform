@@ -205,29 +205,27 @@ export default function Sidebar({
     },
   ];
 
-  // 1. Access & Identity Management
-  const accessItems: NavItemDef[] = [
+  // Administration Section with Sub-groups
+  const adminItems: NavItemDef[] = [
     {
-      id: 'users',
-      label: 'Пользователи',
-      path: '/admin/users',
-      icon: <GroupOutlinedIcon sx={{ fontSize: 18 }} />,
-    },
-    {
-      id: 'roles',
-      label: 'Роли и права',
-      path: '/admin/roles',
+      id: 'access',
+      label: 'Управление доступом',
       icon: <AdminPanelSettingsOutlinedIcon sx={{ fontSize: 18 }} />,
+      children: [
+        { label: 'Пользователи', path: '/admin/users', icon: <GroupOutlinedIcon sx={{ fontSize: 15 }} /> },
+        { label: 'Роли и права', path: '/admin/roles', icon: <AdminPanelSettingsOutlinedIcon sx={{ fontSize: 15 }} /> },
+      ],
     },
-  ];
-
-  // 2. System Configuration & Audit
-  const systemItems: NavItemDef[] = [
     {
       id: 'module-settings',
       label: 'Настройки модулей',
-      path: '/admin/module-settings',
       icon: <TuneOutlinedIcon sx={{ fontSize: 18 }} />,
+      children: [
+        { label: 'Паспортизация (EPS)', path: '/admin/module-settings?tab=eps', icon: <BadgeOutlinedIcon sx={{ fontSize: 15 }} /> },
+        { label: 'Складской учёт (WMS)', path: '/admin/module-settings?tab=wms', icon: <WarehouseOutlinedIcon sx={{ fontSize: 15 }} /> },
+        { label: 'Интеграция Jira (SRM)', path: '/admin/module-settings?tab=srm', icon: <AnalyticsOutlinedIcon sx={{ fontSize: 15 }} /> },
+        { label: 'ТО и Ремонт (MRO)', path: '/admin/module-settings?tab=mro', icon: <BuildOutlinedIcon sx={{ fontSize: 15 }} /> },
+      ],
     },
     {
       id: 'audit-log',
@@ -652,9 +650,9 @@ export default function Sidebar({
         )}
         {operationalItems.map(renderNavBlock)}
 
-        {/* Access Management Section */}
+        {/* Administration Section with Sub-groups */}
         {canAccessAdmin && (
-          <Box sx={{ mt: 2 }}>
+          <Box sx={{ mt: 2.5 }}>
             {!collapsed && (
               <Typography
                 variant="caption"
@@ -668,33 +666,10 @@ export default function Sidebar({
                   letterSpacing: '0.04em',
                 }}
               >
-                УПРАВЛЕНИЕ ДОСТУПОМ
+                АДМИНИСТРИРОВАНИЕ
               </Typography>
             )}
-            {accessItems.map(renderNavBlock)}
-          </Box>
-        )}
-
-        {/* System & Configuration Section */}
-        {canAccessAdmin && (
-          <Box sx={{ mt: 2 }}>
-            {!collapsed && (
-              <Typography
-                variant="caption"
-                sx={{
-                  display: 'block',
-                  px: 1.25,
-                  mb: 0.5,
-                  fontSize: '0.6875rem',
-                  fontWeight: 700,
-                  color: '#94a3b8',
-                  letterSpacing: '0.04em',
-                }}
-              >
-                СИСТЕМА И СПРАВОЧНИКИ
-              </Typography>
-            )}
-            {systemItems.map(renderNavBlock)}
+            {adminItems.map(renderNavBlock)}
           </Box>
         )}
       </Box>

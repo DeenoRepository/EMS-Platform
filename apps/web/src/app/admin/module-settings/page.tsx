@@ -97,11 +97,37 @@ const SECTION_ICONS: Record<string, React.ReactNode> = {
   Speed: <SpeedIcon color="error" />,
 };
 
+import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
+
 const PRESET_COLORS = ['#0284c7', '#0f766e', '#16a34a', '#d97706', '#dc2626', '#7c3aed', '#db2777', '#475569'];
 
-export default function ModuleSettingsPage() {
+function ModuleSettingsContent() {
   const { enqueueSnackbar } = useSnackbar();
-  const [activeTab, setActiveTab] = useState(0);
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
+
+  const getInitialTab = () => {
+    switch (tabParam) {
+      case 'wms':
+        return 1;
+      case 'srm':
+        return 2;
+      case 'mro':
+        return 3;
+      default:
+        return 0;
+    }
+  };
+
+  const [activeTab, setActiveTab] = useState(getInitialTab);
+
+  useEffect(() => {
+    if (tabParam === 'wms') setActiveTab(1);
+    else if (tabParam === 'srm') setActiveTab(2);
+    else if (tabParam === 'mro') setActiveTab(3);
+    else if (tabParam === 'eps') setActiveTab(0);
+  }, [tabParam]);
 
   // EPS Metadata State
   const [sections, setSections] = useState<CustomSectionItem[]>([]);
@@ -957,5 +983,19 @@ export default function ModuleSettingsPage() {
         </DialogActions>
       </Dialog>
     </Box>
+  );
+}
+
+export default function ModuleSettingsPage() {
+  return (
+    <Suspense
+      fallback={
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 8 }}>
+          <CircularProgress />
+        </Box>
+      }
+    >
+      <ModuleSettingsContent />
+    </Suspense>
   );
 }
