@@ -6,22 +6,12 @@ import {
   Toolbar,
   IconButton,
   Box,
-  Button,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-  Divider,
   Typography,
   Chip,
   Tooltip,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
-import AddIcon from '@mui/icons-material/Add';
-import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
-import Inventory2Icon from '@mui/icons-material/Inventory2';
-import BuildCircleIcon from '@mui/icons-material/BuildCircle';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import NotificationCenter from './NotificationCenter';
 import CommandPalette from './CommandPalette';
@@ -40,9 +30,6 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
   // Command Palette State
   const [paletteOpen, setPaletteOpen] = useState(false);
 
-  // Quick Action Dropdown State
-  const [createMenuAnchor, setCreateMenuAnchor] = useState<null | HTMLElement>(null);
-
   // Global keyboard shortcut for Ctrl+K / Cmd+K
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -55,15 +42,6 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleOpenCreateMenu = (event: React.MouseEvent<HTMLElement>) => {
-    setCreateMenuAnchor(event.currentTarget);
-  };
-
-  const handleCloseCreateMenu = () => {
-    setCreateMenuAnchor(null);
-  };
-
-  const canCreateEquipment = hasPermission(PERMISSIONS.EPS_EQUIPMENT_CREATE);
   const canAccessSettings = user?.roles.includes('admin') || hasPermission(PERMISSIONS.ADMIN_USERS_MANAGE);
 
   return (
@@ -99,7 +77,7 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              width: { xs: '100%', sm: 440, md: 540, lg: 620 },
+              width: { xs: '100%', sm: 460, md: 580, lg: 680 },
               maxWidth: '100%',
               mx: 2,
               px: 2,
@@ -142,87 +120,8 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
             </Box>
           </Box>
 
-          {/* Right: Quick Action, Notifications, Settings */}
+          {/* Right: Notifications & Settings */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            {/* Quick Action Button: + Создать */}
-            {canCreateEquipment && (
-              <>
-                <Button
-                  variant="contained"
-                  size="small"
-                  startIcon={<AddIcon />}
-                  onClick={handleOpenCreateMenu}
-                  sx={{
-                    px: 2,
-                    py: 0.85,
-                    borderRadius: '10px',
-                    fontWeight: 700,
-                    textTransform: 'none',
-                    boxShadow: '0 2px 8px rgba(2, 132, 199, 0.25)',
-                  }}
-                >
-                  Создать
-                </Button>
-
-                <Menu
-                  anchorEl={createMenuAnchor}
-                  open={Boolean(createMenuAnchor)}
-                  onClose={handleCloseCreateMenu}
-                  transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-                  anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-                  PaperProps={{
-                    sx: {
-                      minWidth: 240,
-                      mt: 1,
-                      borderRadius: '14px',
-                      boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)',
-                      border: '1px solid #e2e8f0',
-                      p: 0.5,
-                    },
-                  }}
-                >
-                  <MenuItem
-                    onClick={() => {
-                      handleCloseCreateMenu();
-                      router.push('/eps/new');
-                    }}
-                    sx={{ borderRadius: '8px', py: 1 }}
-                  >
-                    <ListItemIcon sx={{ color: '#0284c7' }}>
-                      <PrecisionManufacturingIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText primary="Новое оборудование (EPS)" primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: 600 }} />
-                  </MenuItem>
-
-                  <MenuItem
-                    onClick={() => {
-                      handleCloseCreateMenu();
-                      router.push('/wms');
-                    }}
-                    sx={{ borderRadius: '8px', py: 1 }}
-                  >
-                    <ListItemIcon sx={{ color: '#16a34a' }}>
-                      <Inventory2Icon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText primary="Приход ТМЦ на склад (WMS)" primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: 600 }} />
-                  </MenuItem>
-
-                  <MenuItem
-                    onClick={() => {
-                      handleCloseCreateMenu();
-                      router.push('/mro');
-                    }}
-                    sx={{ borderRadius: '8px', py: 1 }}
-                  >
-                    <ListItemIcon sx={{ color: '#d97706' }}>
-                      <BuildCircleIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText primary="Запланировать ТО (MRO)" primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: 600 }} />
-                  </MenuItem>
-                </Menu>
-              </>
-            )}
-
             {/* Notification Center */}
             <NotificationCenter />
 
