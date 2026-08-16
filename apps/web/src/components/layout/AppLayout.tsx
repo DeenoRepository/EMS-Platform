@@ -36,8 +36,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     localStorage.setItem('ems_sidebar_collapsed', String(next));
   };
 
-  // If on login page, don't show Shell sidebar/header
-  if (pathname === '/login') {
+  // If on login or setup page, don't show Shell sidebar/header
+  if (pathname === '/login' || pathname === '/setup') {
     return <Box component="main">{children}</Box>;
   }
 
