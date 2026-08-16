@@ -3,6 +3,8 @@ import { prisma } from '@ems/database';
 import { authenticateLdap, signSessionToken, verifyPassword, getUserRolesAndPermissions, logAuditEvent } from '@ems/auth';
 import { JwtUserPayload } from '@ems/shared';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -120,7 +122,7 @@ export async function POST(req: NextRequest) {
 
     const response = NextResponse.json({
       success: true,
-      data: { user: payload },
+      data: { user: payload, token },
     });
 
     // Устанавливаем cookie со сроком 8 часов
