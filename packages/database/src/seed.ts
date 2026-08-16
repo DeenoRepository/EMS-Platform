@@ -191,35 +191,129 @@ async function main() {
     createdTags.push(tag);
   }
 
-  // 5. Кастомные поля для оборудования
+  // 5. Кастомные разделы и поля оборудования (EPS)
+  const sectionElectrical = await prisma.customSection.upsert({
+    where: { code: 'electrical' },
+    update: {
+      name: 'Электротехнические параметры',
+      description: 'Характеристики электропитания, мощности и фазности оборудования',
+      icon: 'Bolt',
+      sortOrder: 1,
+    },
+    create: {
+      code: 'electrical',
+      name: 'Электротехнические параметры',
+      description: 'Характеристики электропитания, мощности и фазности оборудования',
+      icon: 'Bolt',
+      sortOrder: 1,
+    },
+  });
+
+  const sectionMechanics = await prisma.customSection.upsert({
+    where: { code: 'mechanics' },
+    update: {
+      name: 'Механика и гидравлика',
+      description: 'Рабочие среды, давление, обороты и смазочные материалы',
+      icon: 'WaterDrop',
+      sortOrder: 2,
+    },
+    create: {
+      code: 'mechanics',
+      name: 'Механика и гидравлика',
+      description: 'Рабочие среды, давление, обороты и смазочные материалы',
+      icon: 'WaterDrop',
+      sortOrder: 2,
+    },
+  });
+
+  const sectionOperational = await prisma.customSection.upsert({
+    where: { code: 'operational' },
+    update: {
+      name: 'Эксплуатационные требования и метрология',
+      description: 'Критичность, поверки и регламентные условия',
+      icon: 'Shield',
+      sortOrder: 3,
+    },
+    create: {
+      code: 'operational',
+      name: 'Эксплуатационные требования и метрология',
+      description: 'Критичность, поверки и регламентные условия',
+      icon: 'Shield',
+      sortOrder: 3,
+    },
+  });
+
   const customFieldsData = [
     {
+      sectionId: sectionElectrical.id,
       key: 'power_kw',
-      name: 'Номинальная мощность (кВт)',
+      name: 'Номинальная мощность',
       fieldType: FieldType.NUMBER,
+      unit: 'кВт',
       defaultValue: '0',
       sortOrder: 1,
     },
     {
+      sectionId: sectionElectrical.id,
       key: 'operating_voltage',
-      name: 'Рабочее напряжение (В)',
+      name: 'Рабочее напряжение',
       fieldType: FieldType.SELECT,
+      unit: 'В',
       options: ['220 В', '380 В', '6 кВ', '10 кВ'],
+      defaultValue: '380 В',
       sortOrder: 2,
     },
     {
+      sectionId: sectionElectrical.id,
+      key: 'nominal_current',
+      name: 'Номинальный ток',
+      fieldType: FieldType.NUMBER,
+      unit: 'А',
+      defaultValue: '25',
+      sortOrder: 3,
+    },
+    {
+      sectionId: sectionMechanics.id,
+      key: 'operating_pressure',
+      name: 'Рабочее давление',
+      fieldType: FieldType.NUMBER,
+      unit: 'бар',
+      defaultValue: '16',
+      sortOrder: 1,
+    },
+    {
+      sectionId: sectionMechanics.id,
+      key: 'rotation_speed',
+      name: 'Частота вращения вала',
+      fieldType: FieldType.NUMBER,
+      unit: 'об/мин',
+      defaultValue: '1500',
+      sortOrder: 2,
+    },
+    {
+      sectionId: sectionMechanics.id,
       key: 'coolant_type',
-      name: 'Тип хладагента / масла',
+      name: 'Тип смазки / хладагента',
       fieldType: FieldType.TEXT,
       defaultValue: 'ISO VG 46',
       sortOrder: 3,
     },
     {
+      sectionId: sectionOperational.id,
       key: 'is_critical_path',
       name: 'Влияет на непрерывность процесса',
       fieldType: FieldType.BOOLEAN,
       defaultValue: 'true',
-      sortOrder: 4,
+      sortOrder: 1,
+    },
+    {
+      sectionId: sectionOperational.id,
+      key: 'calibration_interval',
+      name: 'Периодичность поверки датчиков',
+      fieldType: FieldType.NUMBER,
+      unit: 'мес',
+      defaultValue: '12',
+      sortOrder: 2,
     },
   ];
 

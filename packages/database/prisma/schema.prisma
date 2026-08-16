@@ -197,21 +197,42 @@ model EquipmentTag {
   @@id([equipmentId, tagId])
 }
 
+model CustomSection {
+  id          String                  @id @default(uuid())
+  code        String                  @unique // slug, e.g. "electrical", "hydraulic"
+  name        String                  // UI display name, e.g. "Электротехнические параметры"
+  description String?
+  icon        String?                 // Icon identifier
+  sortOrder   Int                     @default(0)
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  fields      CustomFieldDefinition[]
+
+  @@index([sortOrder])
+}
+
 model CustomFieldDefinition {
-  id           String    @id @default(uuid())
-  key          String    @unique // slug for JSON key, e.g. "operating_temperature"
-  name         String    // UI Display label
+  id           String         @id @default(uuid())
+  sectionId    String?
+  section      CustomSection? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  key          String         @unique // slug for JSON key, e.g. "operating_temperature"
+  name         String         // UI Display label
   fieldType    FieldType
-  isRequired   Boolean   @default(false)
+  unit         String?        // Unit of measurement, e.g. "кВт", "бар", "В", "кг", "мм"
+  isRequired   Boolean        @default(false)
   defaultValue String?
-  options      Json?     // string[] for SELECT type
-  sortOrder    Int       @default(0)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  options      Json?          // string[] for SELECT type
+  sortOrder    Int            @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([sectionId])
+  @@index([sortOrder])
 }
 
 enum FieldType {
   TEXT
+  TEXTAREA
   NUMBER
   DATE
   SELECT
