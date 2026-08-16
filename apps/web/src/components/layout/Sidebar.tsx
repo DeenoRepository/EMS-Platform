@@ -205,7 +205,7 @@ export default function Sidebar({
     },
   ];
 
-  // Administration & Settings Section
+  // Administration & System Configuration Section
   const adminItems: NavItemDef[] = [
     {
       id: 'users',
@@ -224,12 +224,6 @@ export default function Sidebar({
       label: 'Справочники модулей',
       path: '/admin/module-settings',
       icon: <TuneIcon sx={{ fontSize: 18 }} />,
-    },
-    {
-      id: 'tags',
-      label: 'Теги и классификаторы',
-      path: '/eps/tags',
-      icon: <LabelOutlinedIcon sx={{ fontSize: 18 }} />,
     },
     {
       id: 'audit-log',
