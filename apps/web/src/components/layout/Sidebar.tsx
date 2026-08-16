@@ -32,8 +32,8 @@ import MoveToInboxIcon from '@mui/icons-material/MoveToInbox';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS } from '@ems/shared';
 
-export const SIDEBAR_WIDTH_EXPANDED = 248;
-export const SIDEBAR_WIDTH_COLLAPSED = 68;
+export const SIDEBAR_WIDTH_EXPANDED = 284;
+export const SIDEBAR_WIDTH_COLLAPSED = 72;
 
 interface NavChild {
   label: string;
