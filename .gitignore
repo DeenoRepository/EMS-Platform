@@ -1,0 +1,38 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Next.js build output
+.next
+out
+
+# Turbo
+.turbo
+
+# Environment variables
+.env
+.env*.local
+!.env.example
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# IDE Files
+.idea
+.vscode
+*.sublime-project
+*.sublime-workspace
+
+# Build artifacts
+dist
+build
+
+# Uploaded Files
+uploads/

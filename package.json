@@ -1,0 +1,20 @@
+{
+  "name": "ems-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@11.16.0",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "db:generate": "pnpm --filter @ems/database generate",
+    "db:push": "pnpm --filter @ems/database push",
+    "db:migrate": "pnpm --filter @ems/database migrate",
+    "db:seed": "pnpm --filter @ems/database seed",
+    "db:studio": "pnpm --filter @ems/database studio"
+  },
+  "devDependencies": {
+    "turbo": "^2.4.4",
+    "typescript": "^5.7.3"
+  }
+}
