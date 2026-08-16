@@ -1,0 +1,548 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// 1. ПОЛЬЗОВАТЕЛИ, РОЛИ И ПРАВА (RBAC)
+// ==========================================
+
+model User {
+  id           String    @id @default(uuid())
+  ldapLogin    String    @unique
+  displayName  String
+  email        String?
+  passwordHash String?   // Для локальных/резервных аккаунтов (admin)
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  roles             UserRole[]
+  auditLogs         AuditLog[]
+  notifications     Notification[]
+  createdEquipment  Equipment[]           @relation("CreatedBy")
+  uploadedDocs      Document[]            @relation("UploadedDocs")
+  uploadedPhotos    Photo[]               @relation("UploadedPhotos")
+  stockOperations   StockOperation[]
+  inventories       Inventory[]
+  completedSchedules MaintenanceSchedule[] @relation("CompletedBy")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique // admin, guest, engineer, warehouse_manager, etc.
+  displayName String
+  description String?
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  permissions RolePermission[]
+  users       UserRole[]
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  code        String   @unique // eps.equipment.view, wms.stock.manage, etc.
+  displayName String
+  module      String   // eps, wms, srm, mro, admin, system
+  description String?
+
+  roles RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model UserRole {
+  userId String
+  roleId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+// ==========================================
+// 2. АУДИТ, УВЕДОМЛЕНИЯ И НАСТРОЙКИ
+// ==========================================
+
+model AuditLog {
+  id         String      @id @default(uuid())
+  userId     String?
+  action     AuditAction
+  entityType String      // Equipment, Document, StockOperation, Role, etc.
+  entityId   String
+  changes    Json?       // { field: { old: "...", new: "..." } }
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime    @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      NotificationType
+  link      String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  MAINTENANCE_UPCOMING
+  MAINTENANCE_MISSED
+  LOW_STOCK
+  SLA_BREACH
+  EQUIPMENT_CHANGED
+  SYSTEM
+}
+
+model SystemSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String   @db.Text
+  description String?
+  updatedAt   DateTime @updatedAt
+}
+
+// ==========================================
+// 3. EPS — ПАСПОРТИЗАЦИЯ ОБОРУДОВАНИЯ
+// ==========================================
+
+model Equipment {
+  id              String          @id @default(uuid())
+  name            String
+  inventoryNumber String?         @unique
+  serialNumber    String?
+  manufacturer    String?
+  model           String?
+  location        String?
+  status          EquipmentStatus @default(ACTIVE)
+  commissionDate  DateTime?
+  customFields    Json?           // { [fieldKey: string]: any }
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  createdById     String
+
+  createdBy        User                  @relation("CreatedBy", fields: [createdById], references: [id])
+  tags             EquipmentTag[]
+  documents        Document[]
+  photos           Photo[]
+  spareParts       EquipmentSparePart[]
+  maintenancePlans MaintenancePlan[]
+  stockUsage       StockOperationItem[]
+  schedules        MaintenanceSchedule[]
+
+  @@index([status])
+  @@index([name])
+  @@index([manufacturer])
+}
+
+enum EquipmentStatus {
+  ACTIVE
+  UNDER_REPAIR
+  DECOMMISSIONED
+  IN_STORAGE
+}
+
+model Tag {
+  id        String         @id @default(uuid())
+  name      String         @unique
+  color     String?        // HEX color or MUI color code
+  createdAt DateTime       @default(now())
+  equipment EquipmentTag[]
+}
+
+model EquipmentTag {
+  equipmentId String
+  tagId       String
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  tag       Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([equipmentId, tagId])
+}
+
+model CustomFieldDefinition {
+  id           String    @id @default(uuid())
+  key          String    @unique // slug for JSON key, e.g. "operating_temperature"
+  name         String    // UI Display label
+  fieldType    FieldType
+  isRequired   Boolean   @default(false)
+  defaultValue String?
+  options      Json?     // string[] for SELECT type
+  sortOrder    Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+enum FieldType {
+  TEXT
+  NUMBER
+  DATE
+  SELECT
+  BOOLEAN
+}
+
+model Document {
+  id           String       @id @default(uuid())
+  equipmentId  String
+  fileName     String       // stored filename on disk
+  originalName String       // original upload filename
+  filePath     String       // relative path from upload root
+  fileType     String       // mime-type
+  fileSize     Int          // in bytes
+  docType      DocumentType @default(OTHER)
+  version      Int          @default(1)
+  description  String?
+  uploadedById String
+  createdAt    DateTime     @default(now())
+
+  equipment  Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  uploadedBy User      @relation("UploadedDocs", fields: [uploadedById], references: [id])
+
+  @@index([equipmentId])
+}
+
+enum DocumentType {
+  SCHEMA
+  MANUAL
+  CERTIFICATE
+  PASSPORT
+  ACT
+  OTHER
+}
+
+model Photo {
+  id            String   @id @default(uuid())
+  equipmentId   String
+  fileName      String
+  originalName  String
+  filePath      String
+  thumbnailPath String?
+  sortOrder     Int      @default(0)
+  isPrimary     Boolean  @default(false)
+  uploadedById  String
+  createdAt     DateTime @default(now())
+
+  equipment  Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  uploadedBy User      @relation("UploadedPhotos", fields: [uploadedById], references: [id])
+
+  @@index([equipmentId])
+}
+
+// ==========================================
+// 4. WMS — СКЛАДСКОЙ УЧЕТ
+// ==========================================
+
+model Warehouse {
+  id        String   @id @default(uuid())
+  name      String
+  code      String   @unique
+  location  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stockItems  StockItem[]
+  operations  StockOperation[]
+  inventories Inventory[]
+}
+
+model NomenclatureCategory {
+  id        String                 @id @default(uuid())
+  name      String
+  parentId  String?
+  createdAt DateTime               @default(now())
+
+  parent   NomenclatureCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children NomenclatureCategory[] @relation("CategoryHierarchy")
+  items    Nomenclature[]
+}
+
+model Nomenclature {
+  id          String   @id @default(uuid())
+  name        String
+  article     String?  @unique
+  unit        String   @default("шт") // шт, кг, м, л
+  categoryId  String?
+  description String?
+  minStock    Decimal? @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  category       NomenclatureCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  stockItems     StockItem[]
+  operationItems StockOperationItem[]
+  equipmentLinks EquipmentSparePart[]
+  inventoryItems InventoryItem[]
+
+  @@index([name])
+  @@index([article])
+}
+
+model StockItem {
+  id             String   @id @default(uuid())
+  warehouseId    String
+  nomenclatureId String
+  quantity       Decimal  @default(0)
+  updatedAt      DateTime @updatedAt
+
+  warehouse    Warehouse    @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  nomenclature Nomenclature @relation(fields: [nomenclatureId], references: [id], onDelete: Cascade)
+
+  @@unique([warehouseId, nomenclatureId])
+}
+
+model StockOperation {
+  id           String        @id @default(uuid())
+  warehouseId  String
+  type         OperationType
+  date         DateTime      @default(now())
+  counterparty String?       // Поставщик или получатель
+  document     String?       // Документ-основание (накладная, акт)
+  comment      String?
+  createdById  String
+  createdAt    DateTime      @default(now())
+
+  warehouse Warehouse            @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  createdBy User                 @relation(fields: [createdById], references: [id])
+  items     StockOperationItem[]
+
+  @@index([warehouseId])
+  @@index([date])
+}
+
+enum OperationType {
+  RECEIPT
+  ISSUE
+  TRANSFER
+  ADJUSTMENT
+}
+
+model StockOperationItem {
+  id             String   @id @default(uuid())
+  operationId    String
+  nomenclatureId String
+  quantity       Decimal
+  equipmentId    String?  // Списание на конкретное оборудование
+
+  operation    StockOperation @relation(fields: [operationId], references: [id], onDelete: Cascade)
+  nomenclature Nomenclature   @relation(fields: [nomenclatureId], references: [id], onDelete: Cascade)
+  equipment    Equipment?     @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+}
+
+model EquipmentSparePart {
+  equipmentId    String
+  nomenclatureId String
+
+  equipment    Equipment    @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  nomenclature Nomenclature @relation(fields: [nomenclatureId], references: [id], onDelete: Cascade)
+
+  @@id([equipmentId, nomenclatureId])
+}
+
+model Inventory {
+  id          String          @id @default(uuid())
+  warehouseId String
+  status      InventoryStatus @default(DRAFT)
+  date        DateTime        @default(now())
+  comment     String?
+  createdById String
+  closedAt    DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  warehouse Warehouse       @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  createdBy User            @relation(fields: [createdById], references: [id])
+  items     InventoryItem[]
+}
+
+enum InventoryStatus {
+  DRAFT
+  IN_PROGRESS
+  COMPLETED
+}
+
+model InventoryItem {
+  id             String   @id @default(uuid())
+  inventoryId    String
+  nomenclatureId String
+  expectedQty    Decimal
+  actualQty      Decimal?
+  diffQty        Decimal?
+  comment        String?
+
+  inventory    Inventory    @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  nomenclature Nomenclature @relation(fields: [nomenclatureId], references: [id], onDelete: Cascade)
+
+  @@unique([inventoryId, nomenclatureId])
+}
+
+// ==========================================
+// 5. SRM — ДАШБОРД JIRA
+// ==========================================
+
+model JiraIssueCache {
+  id           String    @id @default(uuid())
+  issueKey     String    @unique // e.g. EMS-104
+  summary      String
+  status       String
+  priority     String
+  issueType    String
+  assignee     String?
+  reporter     String?
+  createdDate  DateTime
+  resolvedDate DateTime?
+  equipmentId  String?   // Сопоставленное оборудование
+  rawData      Json      // Полный JSON из Jira
+  syncedAt     DateTime  @default(now())
+
+  @@index([status])
+  @@index([equipmentId])
+  @@index([createdDate])
+}
+
+// ==========================================
+// 6. MRO — ТЕХНИЧЕСКОЕ ОБСЛУЖИВАНИЕ И РЕМОНТ
+// ==========================================
+
+model MaintenancePlan {
+  id           String               @id @default(uuid())
+  equipmentId  String
+  name         String
+  description  String?
+  frequency    MaintenanceFrequency
+  intervalDays Int?
+  checklistId  String?
+  isActive     Boolean              @default(true)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  equipment Equipment           @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  checklist ChecklistTemplate?  @relation(fields: [checklistId], references: [id], onDelete: SetNull)
+  schedules MaintenanceSchedule[]
+}
+
+enum MaintenanceFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  CUSTOM
+}
+
+model MaintenanceSchedule {
+  id            String            @id @default(uuid())
+  planId        String?
+  equipmentId   String
+  title         String
+  scheduledDate DateTime
+  status        MaintenanceStatus @default(PLANNED)
+  completedDate DateTime?
+  completedById String?
+  notes         String?
+  jiraIssueKey  String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  plan            MaintenancePlan?      @relation(fields: [planId], references: [id], onDelete: SetNull)
+  equipment       Equipment             @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  completedBy     User?                 @relation("CompletedBy", fields: [completedById], references: [id], onDelete: SetNull)
+  checklistResult ChecklistResult?
+  usedParts       MaintenanceUsedPart[]
+
+  @@index([scheduledDate])
+  @@index([status])
+  @@index([equipmentId])
+}
+
+enum MaintenanceStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  MISSED
+  CANCELLED
+}
+
+model ChecklistTemplate {
+  id          String                  @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  items       ChecklistTemplateItem[]
+  plans       MaintenancePlan[]
+}
+
+model ChecklistTemplateItem {
+  id          String            @id @default(uuid())
+  templateId  String
+  description String
+  itemType    ChecklistItemType
+  sortOrder   Int               @default(0)
+  isRequired  Boolean           @default(true)
+
+  template ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+}
+
+enum ChecklistItemType {
+  BOOLEAN
+  NUMERIC
+  TEXT
+}
+
+model ChecklistResult {
+  id            String   @id @default(uuid())
+  scheduleId    String   @unique
+  items         Json     // [{itemId, description, itemType, value, note}]
+  completedById String
+  completedAt   DateTime @default(now())
+
+  schedule MaintenanceSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+}
+
+model MaintenanceUsedPart {
+  id             String   @id @default(uuid())
+  scheduleId     String
+  nomenclatureId String
+  warehouseId    String
+  quantity       Decimal
+
+  schedule MaintenanceSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+}
