@@ -125,17 +125,18 @@ export async function POST(req: NextRequest) {
           const val = rawData[header];
           if (val === undefined || val === null || String(val).trim() === '') return;
 
-          if (targetField === 'name') nameVal = String(val).trim();
-          else if (targetField === 'inventoryNumber') invVal = String(val).trim();
-          else if (targetField === 'serialNumber') snVal = String(val).trim();
-          else if (targetField === 'manufacturer') mfgVal = String(val).trim();
-          else if (targetField === 'model') modelVal = String(val).trim();
-          else if (targetField === 'location') locVal = String(val).trim();
-          else if (targetField === 'status') statusVal = parseEquipmentStatus(val);
-          else if (targetField === 'commissionDate') commDateVal = parseCommissionDate(val);
-          else if (targetField === 'tags') tagsRaw = String(val).trim();
-          else if (targetField.startsWith('custom_')) {
-            const customKey = targetField.replace('custom_', '');
+          const fieldStr = String(targetField);
+          if (fieldStr === 'name') nameVal = String(val).trim();
+          else if (fieldStr === 'inventoryNumber') invVal = String(val).trim();
+          else if (fieldStr === 'serialNumber') snVal = String(val).trim();
+          else if (fieldStr === 'manufacturer') mfgVal = String(val).trim();
+          else if (fieldStr === 'model') modelVal = String(val).trim();
+          else if (fieldStr === 'location') locVal = String(val).trim();
+          else if (fieldStr === 'status') statusVal = parseEquipmentStatus(val);
+          else if (fieldStr === 'commissionDate') commDateVal = parseCommissionDate(val);
+          else if (fieldStr === 'tags') tagsRaw = String(val).trim();
+          else if (fieldStr.startsWith('custom_')) {
+            const customKey = fieldStr.replace('custom_', '');
             customFieldsObj[customKey] = val;
           }
         });
