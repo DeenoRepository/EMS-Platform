@@ -675,7 +675,30 @@ export default function Sidebar({
       </Box>
 
       {/* Scrollable Navigation Body */}
-      <Box sx={{ flexGrow: 1, overflowY: 'auto', pr: 0.25, pt: 0.5 }}>
+      <Box
+        sx={{
+          flexGrow: 1,
+          overflowY: 'auto',
+          pr: 0.5,
+          pt: 0.5,
+          /* Custom Dark Scrollbar */
+          '&::-webkit-scrollbar': {
+            width: '5px',
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: 'transparent',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: 'rgba(255, 255, 255, 0.14)',
+            borderRadius: '4px',
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.28)',
+            },
+          },
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(255, 255, 255, 0.14) transparent',
+        }}
+      >
         {/* Main Menu Section */}
         {!collapsed && (
           <Typography
