@@ -554,8 +554,10 @@ export default function Sidebar({
           display: 'flex',
           alignItems: 'center',
           justifyContent: collapsed ? 'center' : 'space-between',
-          mb: 2,
-          minHeight: 38,
+          mb: 2.5,
+          pb: 1.5,
+          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          minHeight: 42,
         }}
       >
         {collapsed ? (
@@ -673,7 +675,7 @@ export default function Sidebar({
       </Box>
 
       {/* Scrollable Navigation Body */}
-      <Box sx={{ flexGrow: 1, overflowY: 'auto', pr: 0.25 }}>
+      <Box sx={{ flexGrow: 1, overflowY: 'auto', pr: 0.25, pt: 0.5 }}>
         {/* Main Menu Section */}
         {!collapsed && (
           <Typography
@@ -681,7 +683,7 @@ export default function Sidebar({
             sx={{
               display: 'block',
               px: 1.25,
-              mb: 0.5,
+              mb: 1,
               fontSize: '0.6875rem',
               fontWeight: 700,
               color: '#64748b',
