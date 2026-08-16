@@ -205,11 +205,11 @@ export default function Sidebar({
       permission: PERMISSIONS.EPS_EQUIPMENT_VIEW,
       children: [
         { label: 'Реестр оборудования', path: '/eps', icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} /> },
-        { label: 'Конструктор отчетов', path: '/eps/reports', icon: <AssessmentOutlinedIcon sx={{ fontSize: 15 }} /> },
-        { label: 'Импорт оборудования', path: '/eps/import', icon: <FileUploadOutlinedIcon sx={{ fontSize: 15 }} /> },
         { label: 'Документы', path: '/eps/documents', icon: <ArticleOutlinedIcon sx={{ fontSize: 15 }} /> },
         { label: 'Согласования', path: '/eps/approvals', icon: <FactCheckOutlinedIcon sx={{ fontSize: 15 }} /> },
         { label: 'История изменений', path: '/eps/history', icon: <HistoryOutlinedIcon sx={{ fontSize: 15 }} /> },
+        { label: 'Конструктор отчетов', path: '/eps/reports', icon: <AssessmentOutlinedIcon sx={{ fontSize: 15 }} /> },
+        { label: 'Импорт оборудования', path: '/eps/import', icon: <FileUploadOutlinedIcon sx={{ fontSize: 15 }} /> },
       ],
     },
     {
