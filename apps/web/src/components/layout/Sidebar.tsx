@@ -37,6 +37,9 @@ import SpeedIcon from '@mui/icons-material/Speed';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import ChecklistIcon from '@mui/icons-material/Checklist';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
+import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
+import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
+import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS } from '@ems/shared';
@@ -82,6 +85,7 @@ export default function Sidebar({
 
   // Operational alert stats
   const [repairCount, setRepairCount] = useState<number | null>(null);
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number | null>(null);
 
   // Expanded items in expanded sidebar mode
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
@@ -109,9 +113,10 @@ export default function Sidebar({
   useEffect(() => {
     async function loadData() {
       try {
-        const [eqRes, modRes] = await Promise.all([
+        const [eqRes, modRes, appRes] = await Promise.all([
           fetch('/api/eps/equipment?pageSize=1'),
           fetch('/api/modules/status'),
+          fetch('/api/eps/approvals?pageSize=1'),
         ]);
         if (eqRes.ok) {
           const json = await eqRes.json();
@@ -123,6 +128,12 @@ export default function Sidebar({
           const modJson = await modRes.json();
           if (modJson.success && modJson.data) {
             setModuleStatus(modJson.data);
+          }
+        }
+        if (appRes.ok) {
+          const appJson = await appRes.json();
+          if (appJson.success && appJson.data?.stats?.pending) {
+            setPendingApprovalsCount(appJson.data.stats.pending || null);
           }
         }
       } catch {
@@ -182,11 +193,19 @@ export default function Sidebar({
       id: 'eps',
       label: 'Паспортизация (EPS)',
       icon: <BadgeOutlinedIcon sx={{ fontSize: 18 }} />,
-      badge: repairCount && repairCount > 0 ? repairCount : null,
-      badgeColor: 'warning',
+      badge:
+        pendingApprovalsCount && pendingApprovalsCount > 0
+          ? pendingApprovalsCount
+          : repairCount && repairCount > 0
+          ? repairCount
+          : null,
+      badgeColor: pendingApprovalsCount && pendingApprovalsCount > 0 ? 'warning' : 'default',
       permission: PERMISSIONS.EPS_EQUIPMENT_VIEW,
       children: [
         { label: 'Реестр оборудования', path: '/eps', icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} /> },
+        { label: 'Документы', path: '/eps/documents', icon: <ArticleOutlinedIcon sx={{ fontSize: 15 }} /> },
+        { label: 'Согласования', path: '/eps/approvals', icon: <FactCheckOutlinedIcon sx={{ fontSize: 15 }} /> },
+        { label: 'История изменений', path: '/eps/history', icon: <HistoryOutlinedIcon sx={{ fontSize: 15 }} /> },
       ],
     },
     {
