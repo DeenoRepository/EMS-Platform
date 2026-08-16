@@ -63,8 +63,8 @@ export async function authenticateLdap(
 
         let userEntry: any = null;
 
-        res.on('searchEntry', (entry) => {
-          userEntry = entry.object;
+        res.on('searchEntry', (entry: any) => {
+          userEntry = entry.object || entry.pojo || entry;
         });
 
         res.on('error', () => {

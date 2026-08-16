@@ -4,6 +4,8 @@ import { prisma } from '@ems/database';
 import { getUserRolesAndPermissions } from '@ems/auth';
 import { JwtUserPayload } from '@ems/shared';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getCurrentUser(req);
