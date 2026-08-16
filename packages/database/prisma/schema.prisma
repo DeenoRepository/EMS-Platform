@@ -33,6 +33,7 @@ model User {
   completedSchedules MaintenanceSchedule[] @relation("CompletedBy")
   requestedApprovals EquipmentApproval[]   @relation("ApprovalRequester")
   reviewedApprovals  EquipmentApproval[]   @relation("ApprovalReviewer")
+  createdReportTemplates ReportTemplate[]  @relation("CreatedReportTemplates")
 }
 
 model Role {
@@ -139,6 +140,24 @@ model SystemSetting {
   value       String   @db.Text
   description String?
   updatedAt   DateTime @updatedAt
+}
+
+model ReportTemplate {
+  id          String   @id @default(uuid())
+  module      String   @default("eps") // eps, wms, srm, mro
+  name        String
+  description String?
+  config      Json     // { selectedColumns: string[], filters: any, sort: any, title: string }
+  isPublic    Boolean  @default(true)
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy User @relation("CreatedReportTemplates", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([module])
+  @@index([createdById])
+  @@index([createdAt])
 }
 
 // ==========================================

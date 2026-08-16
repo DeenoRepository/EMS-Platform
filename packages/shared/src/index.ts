@@ -15,6 +15,9 @@ export const PERMISSIONS = {
   EPS_APPROVALS_CREATE: 'eps.approvals.create',
   EPS_APPROVALS_MANAGE: 'eps.approvals.manage',
   EPS_HISTORY_VIEW: 'eps.history.view',
+  EPS_REPORTS_VIEW: 'eps.reports.view',
+  EPS_REPORTS_MANAGE: 'eps.reports.manage',
+  EPS_IMPORT_EXECUTE: 'eps.import.execute',
 
   // WMS
   WMS_STOCK_VIEW: 'wms.stock.view',
