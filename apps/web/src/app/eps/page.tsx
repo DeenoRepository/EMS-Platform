@@ -37,7 +37,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CloseIcon from '@mui/icons-material/Close';
 import LaunchIcon from '@mui/icons-material/Launch';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import BuildCircleOutlineIcon from '@mui/icons-material/BuildCircleOutline';
+import BuildCircleOutlinedIcon from '@mui/icons-material/BuildCircleOutlined';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
@@ -312,7 +312,7 @@ function EquipmentListContent() {
               <Typography variant="caption" color="warning.main" fontWeight={700}>
                 НА РЕМОНТЕ
               </Typography>
-              <BuildCircleOutlineIcon sx={{ color: 'warning.main', fontSize: 22 }} />
+              <BuildCircleOutlinedIcon sx={{ color: 'warning.main', fontSize: 22 }} />
             </Box>
             <Typography variant="h4" fontWeight={800} sx={{ mt: 1, color: 'warning.main' }}>
               {statusCounts.underRepair}
