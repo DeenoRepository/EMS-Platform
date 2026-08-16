@@ -161,19 +161,16 @@ export default function Sidebar({
 
   const canAccessAdmin = user?.roles.includes('admin') || hasPermission(PERMISSIONS.ADMIN_USERS_MANAGE);
 
-  // Purely Operational Modules & Sub-sections
+  // Purely Operational Modules
   const operationalItems: NavItemDef[] = [
     {
       id: 'eps',
       label: 'Оборудование (EPS)',
+      path: '/eps',
       icon: <PrecisionManufacturingIcon sx={{ fontSize: 18 }} />,
       badge: repairCount && repairCount > 0 ? repairCount : null,
       badgeColor: 'warning',
       permission: PERMISSIONS.EPS_EQUIPMENT_VIEW,
-      children: [
-        { label: 'Реестр оборудования', path: '/eps', icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} /> },
-        { label: 'Теги и классификаторы', path: '/eps/tags', icon: <LabelOutlinedIcon sx={{ fontSize: 15 }} /> },
-      ],
     },
     {
       id: 'wms',
@@ -227,6 +224,12 @@ export default function Sidebar({
       label: 'Справочники модулей',
       path: '/admin/module-settings',
       icon: <TuneIcon sx={{ fontSize: 18 }} />,
+    },
+    {
+      id: 'tags',
+      label: 'Теги и классификаторы',
+      path: '/eps/tags',
+      icon: <LabelOutlinedIcon sx={{ fontSize: 18 }} />,
     },
     {
       id: 'audit-log',
