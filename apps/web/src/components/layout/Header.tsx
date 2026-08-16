@@ -73,6 +73,7 @@ export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProp
             {sidebarCollapsed && (
               <Box
                 onClick={() => router.push('/eps')}
+                title="Перейти на главную"
                 sx={{
                   display: { xs: 'none', sm: 'flex' },
                   alignItems: 'center',
@@ -90,36 +91,58 @@ export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProp
                   src="/logo.png"
                   alt="EMS Platform"
                   sx={{
-                    width: 30,
-                    height: 30,
+                    width: 32,
+                    height: 32,
                     objectFit: 'contain',
-                    filter: 'drop-shadow(0 2px 6px rgba(124, 58, 237, 0.25))',
+                    filter: 'drop-shadow(0 2px 8px rgba(124, 58, 237, 0.25))',
+                    flexShrink: 0,
+                    transition: 'transform 0.15s ease',
+                    '&:hover': {
+                      transform: 'scale(1.06)',
+                    },
                   }}
                 />
-                <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+                <Box sx={{ minWidth: 0 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+                    <Typography
+                      component="span"
+                      sx={{
+                        fontWeight: 800,
+                        fontSize: '0.9375rem',
+                        lineHeight: 1.1,
+                        letterSpacing: '-0.02em',
+                        color: '#0f172a',
+                      }}
+                    >
+                      EMS
+                    </Typography>
+                    <Typography
+                      component="span"
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: '0.8125rem',
+                        lineHeight: 1.1,
+                        color: '#0284c7',
+                        letterSpacing: '-0.01em',
+                      }}
+                    >
+                      Platform
+                    </Typography>
+                  </Box>
                   <Typography
-                    component="span"
+                    variant="caption"
                     sx={{
-                      fontWeight: 800,
-                      fontSize: '0.9375rem',
+                      color: '#64748b',
+                      fontWeight: 500,
+                      fontSize: '0.625rem',
+                      display: 'block',
                       lineHeight: 1.1,
-                      letterSpacing: '-0.02em',
-                      color: '#0f172a',
+                      mt: 0.3,
+                      letterSpacing: '0.01em',
+                      whiteSpace: 'nowrap',
                     }}
                   >
-                    EMS
-                  </Typography>
-                  <Typography
-                    component="span"
-                    sx={{
-                      fontWeight: 600,
-                      fontSize: '0.8125rem',
-                      lineHeight: 1.1,
-                      color: '#0284c7',
-                      letterSpacing: '-0.01em',
-                    }}
-                  >
-                    Platform
+                    Управление оборудованием
                   </Typography>
                 </Box>
               </Box>
