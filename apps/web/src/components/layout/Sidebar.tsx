@@ -98,21 +98,38 @@ export default function Sidebar({
   const [flyoutAnchor, setFlyoutAnchor] = useState<HTMLElement | null>(null);
   const [activeFlyoutItem, setActiveFlyoutItem] = useState<NavItemDef | null>(null);
 
+  // Module activation status state
+  const [moduleStatus, setModuleStatus] = useState<Record<string, boolean>>({
+    eps: true,
+    wms: true,
+    srm: true,
+    mro: true,
+  });
+
   useEffect(() => {
-    async function loadStats() {
+    async function loadData() {
       try {
-        const res = await fetch('/api/eps/equipment?pageSize=1');
-        if (res.ok) {
-          const json = await res.json();
+        const [eqRes, modRes] = await Promise.all([
+          fetch('/api/eps/equipment?pageSize=1'),
+          fetch('/api/modules/status'),
+        ]);
+        if (eqRes.ok) {
+          const json = await eqRes.json();
           if (json.success && json.data?.statusCounts) {
             setRepairCount(json.data.statusCounts.underRepair || null);
+          }
+        }
+        if (modRes.ok) {
+          const modJson = await modRes.json();
+          if (modJson.success && modJson.data) {
+            setModuleStatus(modJson.data);
           }
         }
       } catch {
         // ignore
       }
     }
-    loadStats();
+    loadData();
   }, [pathname]);
 
   const toggleExpand = (id: string) => {
@@ -254,6 +271,11 @@ export default function Sidebar({
 
   const renderNavBlock = (item: NavItemDef) => {
     if (item.permission && !hasPermission(item.permission)) return null;
+
+    // If an operational module is disabled in system settings, hide it from operational menu
+    if (operationalItems.some((op) => op.id === item.id) && moduleStatus[item.id] === false) {
+      return null;
+    }
 
     const active = isItemActive(item);
     const hasChildren = item.children && item.children.length > 0;

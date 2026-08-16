@@ -25,6 +25,7 @@ import {
   MenuItem,
   FormControlLabel,
   Checkbox,
+  Switch,
   CircularProgress,
   Grid,
   Divider,
@@ -450,7 +451,60 @@ function ModuleSettingsContent() {
     },
   ];
 
-  const currentMeta = MODULE_METADATA[activeTab] || MODULE_METADATA[0];
+  // Module Status State
+  const MODULE_KEYS = ['eps', 'wms', 'srm', 'mro'] as const;
+  const [moduleStatus, setModuleStatus] = useState<Record<string, boolean>>({
+    eps: true,
+    wms: true,
+    srm: true,
+    mro: true,
+  });
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  const fetchModuleStatus = useCallback(async () => {
+    try {
+      const res = await fetch('/api/modules/status');
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          setModuleStatus(json.data);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchModuleStatus();
+  }, [fetchModuleStatus]);
+
+  const handleToggleModule = async (moduleId: string, newEnabled: boolean) => {
+    setUpdatingStatus(true);
+    try {
+      const res = await fetch('/api/modules/status', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ moduleId, enabled: newEnabled }),
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        setModuleStatus(json.data);
+        enqueueSnackbar(`Модуль успешно ${newEnabled ? 'включен' : 'отключен'}`, {
+          variant: newEnabled ? 'success' : 'info',
+        });
+      } else {
+        enqueueSnackbar(json.error || 'Ошибка изменения статуса модуля', { variant: 'error' });
+      }
+    } catch {
+      enqueueSnackbar('Сетевая ошибка при изменении статуса модуля', { variant: 'error' });
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
+  const currentModuleKey = MODULE_KEYS[activeTab] || 'eps';
+  const currentModuleEnabled = moduleStatus[currentModuleKey] !== false;
 
   return (
     <Box sx={{ maxWidth: 1920, mx: 'auto' }}>
@@ -464,6 +518,52 @@ function ModuleSettingsContent() {
           { label: currentMeta.breadcrumb },
         ]}
       />
+
+      {/* Module Enable / Disable Control Banner */}
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 2,
+          mb: 3,
+          borderRadius: '10px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 2,
+          backgroundColor: currentModuleEnabled ? '#f8fafc' : '#fffbeb',
+          borderColor: currentModuleEnabled ? '#e2e8f0' : '#fde68a',
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Chip
+            label={currentModuleEnabled ? 'Модуль активен' : 'Модуль отключен'}
+            color={currentModuleEnabled ? 'success' : 'default'}
+            size="small"
+            sx={{ fontWeight: 700, fontSize: '0.75rem' }}
+          />
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem' }}>
+            {currentModuleEnabled
+              ? 'Модуль включен и доступен в главном меню для операционной деятельности пользователей.'
+              : 'Модуль отключен и скрыт из главного меню. Операционная функциональность заблокирована.'}
+          </Typography>
+        </Box>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={currentModuleEnabled}
+              onChange={(e) => handleToggleModule(currentModuleKey, e.target.checked)}
+              disabled={updatingStatus}
+              color="primary"
+            />
+          }
+          label={
+            <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.8125rem' }}>
+              {currentModuleEnabled ? 'Включен' : 'Отключен'}
+            </Typography>
+          }
+        />
+      </Paper>
 
       {/* TAB 0: EPS — Разделы, Поля и Теги */}
       {activeTab === 0 && (
