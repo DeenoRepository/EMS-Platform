@@ -567,15 +567,12 @@ export default function Sidebar({
                 width: 38,
                 height: 38,
                 borderRadius: '8px',
-                color: '#38bdf8',
-                backgroundColor: 'rgba(56, 189, 248, 0.12)',
-                border: '1px solid rgba(56, 189, 248, 0.25)',
+                color: '#94a3b8',
+                backgroundColor: 'transparent',
                 transition: 'all 0.15s ease',
                 '&:hover': {
-                  backgroundColor: 'rgba(56, 189, 248, 0.22)',
-                  borderColor: 'rgba(56, 189, 248, 0.4)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
                   color: '#ffffff',
-                  transform: 'scale(1.05)',
                 },
               }}
             >
