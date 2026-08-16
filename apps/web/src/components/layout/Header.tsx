@@ -5,7 +5,6 @@ import {
   AppBar,
   Toolbar,
   IconButton,
-  Typography,
   Box,
   Avatar,
   Menu,
@@ -14,57 +13,14 @@ import {
   ListItemText,
   Divider,
   Chip,
-  InputBase,
-  alpha,
-  styled,
+  Typography,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import SearchIcon from '@mui/icons-material/Search';
 import LogoutIcon from '@mui/icons-material/Logout';
-import PersonIcon from '@mui/icons-material/Person';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import NotificationCenter from './NotificationCenter';
 import { useAuth } from '@/lib/auth-client';
 import { useRouter } from 'next/navigation';
-
-const Search = styled('div')(({ theme }) => ({
-  position: 'relative',
-  borderRadius: theme.shape.borderRadius,
-  backgroundColor: alpha(theme.palette.common.black, 0.04),
-  '&:hover': {
-    backgroundColor: alpha(theme.palette.common.black, 0.07),
-  },
-  marginRight: theme.spacing(2),
-  marginLeft: 0,
-  width: '100%',
-  [theme.breakpoints.up('sm')]: {
-    marginLeft: theme.spacing(3),
-    width: 'auto',
-    minWidth: 280,
-  },
-}));
-
-const SearchIconWrapper = styled('div')(({ theme }) => ({
-  padding: theme.spacing(0, 2),
-  height: '100%',
-  position: 'absolute',
-  pointerEvents: 'none',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  color: theme.palette.text.secondary,
-}));
-
-const StyledInputBase = styled(InputBase)(({ theme }) => ({
-  color: 'inherit',
-  width: '100%',
-  '& .MuiInputBase-input': {
-    padding: theme.spacing(1, 1, 1, 0),
-    paddingLeft: `calc(1em + ${theme.spacing(4)})`,
-    transition: theme.transitions.create('width'),
-    fontSize: '0.875rem',
-  },
-}));
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -74,7 +30,6 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [searchQuery, setSearchQuery] = useState('');
 
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -84,57 +39,35 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
     setAnchorEl(null);
   };
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/eps?search=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
-
   const handleLogout = async () => {
     handleMenuClose();
     await logout();
   };
 
   return (
-    <AppBar position="sticky" elevation={0}>
+    <AppBar
+      position="sticky"
+      elevation={0}
+      sx={{
+        backgroundColor: '#f8fafc',
+        borderBottom: '1px solid #e2e8f0',
+        color: '#0f172a',
+      }}
+    >
       <Toolbar sx={{ minHeight: 64, px: { xs: 2, sm: 3 } }}>
         <IconButton
           edge="start"
           color="inherit"
           aria-label="open drawer"
           onClick={onToggleSidebar}
-          sx={{ mr: 2 }}
+          sx={{ mr: 2, display: { sm: 'none' } }}
         >
           <MenuIcon />
         </IconButton>
 
-        <Typography
-          variant="h6"
-          noWrap
-          component="div"
-          sx={{ display: { xs: 'none', sm: 'block' }, fontWeight: 700, letterSpacing: 0.5 }}
-        >
-          EMS
-        </Typography>
-
-        <form onSubmit={handleSearchSubmit}>
-          <Search>
-            <SearchIconWrapper>
-              <SearchIcon fontSize="small" />
-            </SearchIconWrapper>
-            <StyledInputBase
-              placeholder="Поиск оборудования по номеру или названию..."
-              inputProps={{ 'aria-label': 'search' }}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </Search>
-        </form>
-
         <Box sx={{ flexGrow: 1 }} />
 
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <NotificationCenter />
 
           {user && (
@@ -152,23 +85,15 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
               >
                 <Avatar
                   sx={{
-                    width: 36,
-                    height: 36,
-                    bgcolor: 'primary.main',
+                    width: 34,
+                    height: 34,
+                    bgcolor: '#0284c7',
                     fontSize: '0.875rem',
-                    fontWeight: 600,
+                    fontWeight: 700,
                   }}
                 >
                   {user.displayName ? user.displayName[0].toUpperCase() : 'U'}
                 </Avatar>
-                <Box sx={{ ml: 1.5, display: { xs: 'none', md: 'block' }, textAlign: 'left' }}>
-                  <Typography variant="subtitle2" fontWeight={600} lineHeight={1.2}>
-                    {user.displayName}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {user.roles.includes('admin') ? 'Администратор' : user.ldapLogin}
-                  </Typography>
-                </Box>
               </Box>
 
               <Menu
@@ -177,10 +102,18 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                 onClose={handleMenuClose}
                 transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                 anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-                PaperProps={{ sx: { minWidth: 220, mt: 1 } }}
+                PaperProps={{
+                  sx: {
+                    minWidth: 220,
+                    mt: 1,
+                    borderRadius: '16px',
+                    boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)',
+                    border: '1px solid #e2e8f0',
+                  },
+                }}
               >
                 <Box sx={{ px: 2, py: 1.5 }}>
-                  <Typography variant="subtitle2" fontWeight={600}>
+                  <Typography variant="subtitle2" fontWeight={700}>
                     {user.displayName}
                   </Typography>
                   <Typography variant="caption" color="text.secondary" display="block">
@@ -194,7 +127,12 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                 </Box>
                 <Divider />
                 {user.roles.includes('admin') && (
-                  <MenuItem onClick={() => { handleMenuClose(); router.push('/admin/users'); }}>
+                  <MenuItem
+                    onClick={() => {
+                      handleMenuClose();
+                      router.push('/admin/users');
+                    }}
+                  >
                     <ListItemIcon>
                       <AdminPanelSettingsIcon fontSize="small" />
                     </ListItemIcon>
