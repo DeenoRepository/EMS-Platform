@@ -14,8 +14,8 @@ export async function GET(req: NextRequest) {
     const action = searchParams.get('action') as AuditAction | null;
     const entityType = searchParams.get('entityType');
     const search = searchParams.get('search');
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const pageSize = parseInt(searchParams.get('pageSize') || '25', 10);
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+    const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '25', 10)));
 
     const where: any = {};
     if (action) where.action = action;

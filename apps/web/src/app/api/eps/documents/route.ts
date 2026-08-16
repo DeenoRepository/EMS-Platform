@@ -204,6 +204,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, data: document });
   } catch (error: any) {
     console.error('Ошибка создания документа:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка сохранения документа' }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message || 'Ошибка сохранения документа' }, { status: error.message?.includes('Недопустимый') || error.message?.includes('превышает') ? 400 : 500 });
   }
 }

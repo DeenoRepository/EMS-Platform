@@ -61,7 +61,10 @@ export async function POST(
     return NextResponse.json({ success: true, data: photo });
   } catch (error: any) {
     console.error('Ошибка загрузки фото:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка загрузки фото' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error.message || 'Ошибка загрузки фото' },
+      { status: error.message?.includes('Недопустимый') || error.message?.includes('превышает') ? 400 : 500 }
+    );
   }
 }
 

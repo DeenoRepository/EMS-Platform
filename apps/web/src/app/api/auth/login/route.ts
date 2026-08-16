@@ -27,10 +27,9 @@ export async function POST(req: NextRequest) {
       });
 
       if (!user) {
-        // Создаем пользователя и присваиваем базовую роль guest (или admin если первый)
-        const userCount = await prisma.user.count();
+        // Создаем пользователя и присваиваем базовую роль guest
         const defaultRole = await prisma.role.findUnique({
-          where: { name: userCount === 0 ? 'admin' : 'guest' },
+          where: { name: 'guest' },
         });
 
         user = await prisma.user.create({

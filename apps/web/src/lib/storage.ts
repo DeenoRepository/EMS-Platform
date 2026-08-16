@@ -18,17 +18,57 @@ export function ensureUploadDirs() {
   }
 }
 
+export const ALLOWED_EXTENSIONS = {
+  photos: new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif']),
+  documents: new Set([
+    '.pdf',
+    '.doc',
+    '.docx',
+    '.xls',
+    '.xlsx',
+    '.csv',
+    '.txt',
+    '.rtf',
+    '.odt',
+    '.ods',
+    '.jpg',
+    '.jpeg',
+    '.png',
+    '.webp',
+    '.dwg',
+    '.dxf',
+  ]),
+};
+
+const MAX_FILE_SIZES = {
+  photos: 20 * 1024 * 1024, // 20 MB
+  documents: 50 * 1024 * 1024, // 50 MB
+};
+
 export async function saveFile(
   file: File,
   subFolder: 'documents' | 'photos'
 ): Promise<{ fileName: string; originalName: string; filePath: string; fileSize: number; fileType: string }> {
   ensureUploadDirs();
 
+  const originalName = file.name || 'unnamed';
+  const ext = path.extname(originalName).toLowerCase();
+
+  // 1. Проверка белого списка расширений
+  const allowed = ALLOWED_EXTENSIONS[subFolder];
+  if (!allowed || !allowed.has(ext)) {
+    throw new Error(`Недопустимый формат файла "${ext}". Разрешены только: ${Array.from(allowed || []).join(', ')}`);
+  }
+
+  // 2. Проверка размера файла
+  const maxSize = MAX_FILE_SIZES[subFolder];
+  if (file.size > maxSize) {
+    throw new Error(`Размер файла превышает допустимый лимит (${Math.round(maxSize / (1024 * 1024))} МБ)`);
+  }
+
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
 
-  const originalName = file.name;
-  const ext = path.extname(originalName).toLowerCase();
   const randomSuffix = crypto.randomBytes(8).toString('hex');
   const sanitizedBase = path.basename(originalName, ext).replace(/[^a-zA-Z0-9_\u0400-\u04FF-]/g, '_');
   const fileName = `${Date.now()}_${sanitizedBase}_${randomSuffix}${ext}`;

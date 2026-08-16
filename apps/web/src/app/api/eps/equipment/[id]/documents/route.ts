@@ -57,7 +57,10 @@ export async function POST(
     return NextResponse.json({ success: true, data: document });
   } catch (error: any) {
     console.error('Ошибка загрузки документа:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка загрузки документа' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error.message || 'Ошибка загрузки документа' },
+      { status: error.message?.includes('Недопустимый') || error.message?.includes('превышает') ? 400 : 500 }
+    );
   }
 }
 

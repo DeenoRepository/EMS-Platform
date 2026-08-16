@@ -3,43 +3,60 @@ import fs from 'fs';
 import path from 'path';
 import { getAbsoluteFilePath } from '@/lib/storage';
 
+import { getCurrentUser, unauthorizedResponse } from '@/lib/auth-guard';
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { path: string[] } }
 ) {
   try {
+    // 1. Проверка аутентификации
+    const user = await getCurrentUser(req);
+    if (!user) {
+      return unauthorizedResponse();
+    }
+
     const relativePath = params.path.join('/');
     const fullPath = getAbsoluteFilePath(relativePath);
 
-    // Предотвращение Directory Traversal
+    // 2. Предотвращение Directory Traversal
     const uploadRoot = path.resolve(process.cwd(), process.env.UPLOAD_DIR || './uploads');
-    if (!fullPath.startsWith(uploadRoot)) {
+    const resolvedFullPath = path.resolve(fullPath);
+    if (!resolvedFullPath.startsWith(uploadRoot)) {
       return NextResponse.json({ success: false, error: 'Доступ запрещен' }, { status: 403 });
     }
 
-    if (!fs.existsSync(fullPath)) {
+    if (!fs.existsSync(resolvedFullPath)) {
       return NextResponse.json({ success: false, error: 'Файл не найден' }, { status: 404 });
     }
 
-    const fileBuffer = fs.readFileSync(fullPath);
-    const ext = path.extname(fullPath).toLowerCase();
+    const fileBuffer = fs.readFileSync(resolvedFullPath);
+    const ext = path.extname(resolvedFullPath).toLowerCase();
 
     let contentType = 'application/octet-stream';
     if (ext === '.jpg' || ext === '.jpeg') contentType = 'image/jpeg';
     else if (ext === '.png') contentType = 'image/png';
     else if (ext === '.gif') contentType = 'image/gif';
     else if (ext === '.webp') contentType = 'image/webp';
-    else if (ext === '.svg') contentType = 'image/svg+xml';
     else if (ext === '.pdf') contentType = 'application/pdf';
     else if (ext === '.doc') contentType = 'application/msword';
     else if (ext === '.docx') contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
     else if (ext === '.xls') contentType = 'application/vnd.ms-excel';
     else if (ext === '.xlsx') contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    else if (ext === '.csv') contentType = 'text/csv; charset=utf-8';
+    else if (ext === '.txt') contentType = 'text/plain; charset=utf-8';
+
+    const fileName = path.basename(resolvedFullPath);
 
     return new NextResponse(fileBuffer, {
       headers: {
         'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=86400',
+        'Cache-Control': 'private, no-cache, no-store, must-revalidate',
+        'X-Content-Type-Options': 'nosniff',
+        'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'",
+        'Content-Disposition': ext === '.pdf' || ext.match(/^\.(jpg|jpeg|png|webp|gif)$/) 
+          ? `inline; filename="${encodeURIComponent(fileName)}"`
+          : `attachment; filename="${encodeURIComponent(fileName)}"`,
       },
     });
   } catch (error: any) {

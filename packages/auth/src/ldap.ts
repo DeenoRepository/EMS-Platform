@@ -6,6 +6,27 @@ export interface LdapUserResult {
   email?: string;
 }
 
+export function escapeLdapFilter(input: string): string {
+  return input.replace(/[\*\\()\x00\/]/g, (char) => {
+    switch (char) {
+      case '*':
+        return '\\2a';
+      case '(':
+        return '\\28';
+      case ')':
+        return '\\29';
+      case '\\':
+        return '\\5c';
+      case '\x00':
+        return '\\00';
+      case '/':
+        return '\\2f';
+      default:
+        return char;
+    }
+  });
+}
+
 export async function authenticateLdap(
   username: string,
   password: string
@@ -48,7 +69,8 @@ export async function authenticateLdap(
     };
 
     const searchUser = () => {
-      const filter = filterTemplate.replace('{{username}}', username);
+      const sanitizedUsername = escapeLdapFilter(username);
+      const filter = filterTemplate.replace('{{username}}', sanitizedUsername);
       const searchOptions: ldap.SearchOptions = {
         filter,
         scope: 'sub',

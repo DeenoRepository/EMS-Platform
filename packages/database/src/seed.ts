@@ -3,10 +3,10 @@ import * as crypto from 'crypto';
 
 const prisma = new PrismaClient();
 
-function hashPassword(password: string): string {
+function hashPassword(password: string, iterations = 210_000): string {
   const salt = crypto.randomBytes(16).toString('hex');
-  const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
-  return `${salt}:${hash}`;
+  const hash = crypto.pbkdf2Sync(password, salt, iterations, 64, 'sha512').toString('hex');
+  return `pbkdf2$${iterations}$${salt}$${hash}`;
 }
 
 async function main() {
