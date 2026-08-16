@@ -29,25 +29,25 @@ export const theme = createTheme(
     palette: {
       mode: 'light',
       primary: {
-        main: '#0284c7', // Sky-600 / Enterprise Blue
+        main: '#0284c7', // Sky-600
         light: '#38bdf8',
         dark: '#0369a1',
         contrastText: '#ffffff',
       },
       secondary: {
-        main: '#0f766e', // Teal-700
+        main: '#0f766e',
         light: '#14b8a6',
         dark: '#115e59',
         contrastText: '#ffffff',
       },
       background: {
-        default: '#f8fafc', // Slate-50
+        default: '#f8fafc',
         paper: '#ffffff',
       },
       text: {
-        primary: '#0f172a', // Slate-900 (High contrast WCAG AAA)
-        secondary: '#475569', // Slate-600 (WCAG AA > 7:1 ratio)
-        disabled: '#94a3b8', // Slate-400
+        primary: '#0f172a', // Slate-900
+        secondary: '#475569', // Slate-600
+        disabled: '#94a3b8',
       },
       success: {
         main: '#16a34a',
@@ -73,94 +73,92 @@ export const theme = createTheme(
     },
     typography: {
       fontFamily: SANS_FONT_FAMILY,
-      // Enterprise Typography Scale (Modular Ratio ~1.25 / 1.333, High Density)
+      // Compact Enterprise Typography Scale
       h1: {
-        fontSize: '1.5rem', // 24px
-        lineHeight: 1.25,
-        fontWeight: 700,
-        letterSpacing: '-0.025em',
-        color: '#0f172a',
-      },
-      h2: {
         fontSize: '1.25rem', // 20px
         lineHeight: 1.25,
         fontWeight: 700,
         letterSpacing: '-0.02em',
         color: '#0f172a',
       },
-      h3: {
+      h2: {
         fontSize: '1.125rem', // 18px
-        lineHeight: 1.3,
-        fontWeight: 600,
+        lineHeight: 1.25,
+        fontWeight: 700,
         letterSpacing: '-0.015em',
         color: '#0f172a',
       },
-      h4: {
+      h3: {
         fontSize: '1rem', // 16px
-        lineHeight: 1.35,
+        lineHeight: 1.3,
         fontWeight: 600,
-        letterSpacing: '-0.01em',
         color: '#0f172a',
       },
-      h5: {
+      h4: {
         fontSize: '0.9375rem', // 15px
         lineHeight: 1.35,
         fontWeight: 600,
         color: '#0f172a',
       },
-      h6: {
+      h5: {
         fontSize: '0.875rem', // 14px
-        lineHeight: 1.4,
+        lineHeight: 1.35,
+        fontWeight: 600,
+        color: '#0f172a',
+      },
+      h6: {
+        fontSize: '0.8125rem', // 13px
+        lineHeight: 1.35,
         fontWeight: 600,
         color: '#0f172a',
       },
       subtitle1: {
-        fontSize: '0.875rem', // 14px
-        lineHeight: 1.4,
+        fontSize: '0.8125rem', // 13px
+        lineHeight: 1.35,
         fontWeight: 600,
         color: '#0f172a',
       },
       subtitle2: {
-        fontSize: '0.8125rem', // 13px
-        lineHeight: 1.35,
+        fontSize: '0.75rem', // 12px
+        lineHeight: 1.3,
         fontWeight: 600,
         color: '#1e293b',
       },
       body1: {
-        fontSize: '0.875rem', // 14px (Standard reading & forms)
-        lineHeight: 1.45,
+        fontSize: '0.8125rem', // 13px
+        lineHeight: 1.4,
         fontWeight: 400,
         color: '#334155',
       },
       body2: {
-        fontSize: '0.8125rem', // 13px (Dense tables, lists, cards)
-        lineHeight: 1.4,
+        fontSize: '0.75rem', // 12px
+        lineHeight: 1.35,
         fontWeight: 400,
         color: '#475569',
       },
       caption: {
-        fontSize: '0.71875rem', // 11.5px (Metadata, hints, badge text)
-        lineHeight: 1.3,
+        fontSize: '0.6875rem', // 11px
+        lineHeight: 1.25,
         fontWeight: 500,
         color: '#64748b',
       },
       overline: {
-        fontSize: '0.6875rem', // 11px
-        lineHeight: 1.25,
+        fontSize: '0.625rem', // 10px
+        lineHeight: 1.2,
         fontWeight: 700,
-        letterSpacing: '0.05em',
+        letterSpacing: '0.04em',
         textTransform: 'uppercase',
         color: '#64748b',
       },
       button: {
-        fontSize: '0.8125rem', // 13px
-        lineHeight: 1.35,
+        fontSize: '0.75rem', // 12px
+        lineHeight: 1.3,
         fontWeight: 600,
         textTransform: 'none',
       },
     },
     shape: {
-      borderRadius: 10,
+      borderRadius: 8,
     },
     components: {
       MuiCssBaseline: {
@@ -181,30 +179,33 @@ export const theme = createTheme(
         styleOverrides: {
           root: {
             boxShadow: 'none',
-            borderRadius: 8,
+            borderRadius: 6,
             fontWeight: 600,
-            fontSize: '0.8125rem',
-            padding: '6px 14px',
+            fontSize: '0.75rem',
+            padding: '4px 12px',
+            minHeight: 32,
             '&:hover': {
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.08)',
+              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
             },
           },
           sizeSmall: {
-            fontSize: '0.75rem',
-            padding: '4px 10px',
+            fontSize: '0.6875rem',
+            padding: '2px 8px',
+            minHeight: 26,
           },
           sizeLarge: {
-            fontSize: '0.875rem',
-            padding: '8px 18px',
+            fontSize: '0.8125rem',
+            padding: '6px 16px',
+            minHeight: 36,
           },
         },
       },
       MuiCard: {
         styleOverrides: {
           root: {
-            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px 0 rgba(0, 0, 0, 0.02)',
+            boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.03)',
             border: '1px solid #e2e8f0',
-            borderRadius: 12,
+            borderRadius: 10,
             backgroundImage: 'none',
           },
         },
@@ -221,13 +222,13 @@ export const theme = createTheme(
           root: {
             backgroundColor: '#f8fafc',
             '& .MuiTableCell-head': {
-              fontSize: '0.75rem', // 12px
+              fontSize: '0.6875rem', // 11px
               fontWeight: 700,
-              lineHeight: 1.3,
+              lineHeight: 1.25,
               letterSpacing: '0.03em',
               textTransform: 'uppercase',
               color: '#475569',
-              padding: '10px 14px',
+              padding: '7px 10px',
               borderBottom: '1px solid #e2e8f0',
             },
           },
@@ -236,9 +237,9 @@ export const theme = createTheme(
       MuiTableCell: {
         styleOverrides: {
           root: {
-            fontSize: '0.8125rem', // 13px (Information Density standard)
-            lineHeight: 1.4,
-            padding: '8px 14px',
+            fontSize: '0.75rem', // 12px
+            lineHeight: 1.35,
+            padding: '6px 10px',
             borderBottom: '1px solid #f1f5f9',
             color: '#334155',
           },
@@ -247,43 +248,43 @@ export const theme = createTheme(
       MuiChip: {
         styleOverrides: {
           root: {
-            height: 22,
-            fontSize: '0.71875rem',
+            height: 20,
+            fontSize: '0.6875rem', // 11px
             fontWeight: 600,
-            borderRadius: 6,
+            borderRadius: 4,
             fontFeatureSettings: '"tnum"',
           },
           sizeSmall: {
-            height: 20,
-            fontSize: '0.6875rem',
+            height: 18,
+            fontSize: '0.625rem', // 10px
           },
         },
       },
       MuiTab: {
         styleOverrides: {
           root: {
-            fontSize: '0.8125rem',
+            fontSize: '0.75rem', // 12px
             fontWeight: 600,
             textTransform: 'none',
-            minHeight: 44,
-            padding: '8px 16px',
+            minHeight: 36,
+            padding: '6px 12px',
           },
         },
       },
       MuiInputBase: {
         styleOverrides: {
           root: {
-            fontSize: '0.84375rem', // 13.5px
+            fontSize: '0.78125rem', // 12.5px
           },
           input: {
-            padding: '8.5px 12px',
+            padding: '6px 10px',
           },
         },
       },
       MuiInputLabel: {
         styleOverrides: {
           root: {
-            fontSize: '0.84375rem',
+            fontSize: '0.75rem',
           },
         },
       },

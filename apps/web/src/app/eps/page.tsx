@@ -246,27 +246,27 @@ function EquipmentListContent() {
         }
       />
 
-      {/* Top KPI Metric Cards Bar (Optimized for FHD 1920x1080) */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
+      {/* Top KPI Metric Cards Bar (Compact Enterprise Grid) */}
+      <Grid container spacing={1.5} sx={{ mb: 2 }}>
         <Grid item xs={12} sm={6} md={2.4}>
           <Card
             onClick={() => handleKpiFilter('')}
             sx={{
-              p: 2,
+              p: 1.25,
               cursor: 'pointer',
               border: statusFilter === '' ? '2px solid #0284c7' : '1px solid #e2e8f0',
               backgroundColor: statusFilter === '' ? 'rgba(2, 132, 199, 0.04)' : '#ffffff',
-              transition: 'all 0.15s ease',
-              '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' },
+              transition: 'all 0.12s ease',
+              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
             }}
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+              <Typography variant="caption" color="primary.main" fontWeight={700} fontSize="0.6875rem">
                 ВСЕГО ЕДИНИЦ
               </Typography>
-              <PrecisionManufacturingIcon sx={{ color: 'primary.main', fontSize: 22 }} />
+              <PrecisionManufacturingIcon color="primary" sx={{ fontSize: 18 }} />
             </Box>
-            <Typography variant="h4" fontWeight={800} sx={{ mt: 1, color: 'text.primary' }}>
+            <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5, color: '#0f172a', fontSize: '1.25rem' }}>
               {statusCounts.total}
             </Typography>
           </Card>
@@ -276,21 +276,21 @@ function EquipmentListContent() {
           <Card
             onClick={() => handleKpiFilter('ACTIVE')}
             sx={{
-              p: 2,
+              p: 1.25,
               cursor: 'pointer',
               border: statusFilter === 'ACTIVE' ? '2px solid #16a34a' : '1px solid #e2e8f0',
-              backgroundColor: statusFilter === 'ACTIVE' ? 'rgba(22, 163, 74, 0.05)' : '#ffffff',
-              transition: 'all 0.15s ease',
-              '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' },
+              backgroundColor: statusFilter === 'ACTIVE' ? 'rgba(22, 163, 74, 0.04)' : '#ffffff',
+              transition: 'all 0.12s ease',
+              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
             }}
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" color="success.main" fontWeight={700}>
+              <Typography variant="caption" color="success.main" fontWeight={700} fontSize="0.6875rem">
                 В РАБОТЕ
               </Typography>
-              <CheckCircleOutlineIcon sx={{ color: 'success.main', fontSize: 22 }} />
+              <CheckCircleOutlineIcon color="success" sx={{ fontSize: 18 }} />
             </Box>
-            <Typography variant="h4" fontWeight={800} sx={{ mt: 1, color: 'success.main' }}>
+            <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5, color: 'success.main', fontSize: '1.25rem' }}>
               {statusCounts.active}
             </Typography>
           </Card>
@@ -300,21 +300,21 @@ function EquipmentListContent() {
           <Card
             onClick={() => handleKpiFilter('UNDER_REPAIR')}
             sx={{
-              p: 2,
+              p: 1.25,
               cursor: 'pointer',
               border: statusFilter === 'UNDER_REPAIR' ? '2px solid #d97706' : '1px solid #e2e8f0',
-              backgroundColor: statusFilter === 'UNDER_REPAIR' ? 'rgba(217, 119, 6, 0.05)' : '#ffffff',
-              transition: 'all 0.15s ease',
-              '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' },
+              backgroundColor: statusFilter === 'UNDER_REPAIR' ? 'rgba(217, 119, 6, 0.04)' : '#ffffff',
+              transition: 'all 0.12s ease',
+              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
             }}
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" color="warning.main" fontWeight={700}>
+              <Typography variant="caption" color="warning.main" fontWeight={700} fontSize="0.6875rem">
                 НА РЕМОНТЕ
               </Typography>
-              <BuildCircleOutlinedIcon sx={{ color: 'warning.main', fontSize: 22 }} />
+              <BuildCircleOutlinedIcon color="warning" sx={{ fontSize: 18 }} />
             </Box>
-            <Typography variant="h4" fontWeight={800} sx={{ mt: 1, color: 'warning.main' }}>
+            <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5, color: 'warning.main', fontSize: '1.25rem' }}>
               {statusCounts.underRepair}
             </Typography>
           </Card>
@@ -324,21 +324,21 @@ function EquipmentListContent() {
           <Card
             onClick={() => handleKpiFilter('IN_STORAGE')}
             sx={{
-              p: 2,
+              p: 1.25,
               cursor: 'pointer',
-              border: statusFilter === 'IN_STORAGE' ? '2px solid #475569' : '1px solid #e2e8f0',
-              backgroundColor: statusFilter === 'IN_STORAGE' ? 'rgba(71, 85, 105, 0.05)' : '#ffffff',
-              transition: 'all 0.15s ease',
-              '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' },
+              border: statusFilter === 'IN_STORAGE' ? '2px solid #64748b' : '1px solid #e2e8f0',
+              backgroundColor: statusFilter === 'IN_STORAGE' ? 'rgba(100, 116, 139, 0.04)' : '#ffffff',
+              transition: 'all 0.12s ease',
+              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
             }}
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={700}>
+              <Typography variant="caption" color="text.secondary" fontWeight={700} fontSize="0.6875rem">
                 НА СКЛАДЕ
               </Typography>
-              <InventoryIcon sx={{ color: 'text.secondary', fontSize: 22 }} />
+              <InventoryIcon sx={{ color: 'text.secondary', fontSize: 18 }} />
             </Box>
-            <Typography variant="h4" fontWeight={800} sx={{ mt: 1, color: 'text.primary' }}>
+            <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5, color: 'text.primary', fontSize: '1.25rem' }}>
               {statusCounts.inStorage}
             </Typography>
           </Card>
@@ -348,21 +348,21 @@ function EquipmentListContent() {
           <Card
             onClick={() => handleKpiFilter('DECOMMISSIONED')}
             sx={{
-              p: 2,
+              p: 1.25,
               cursor: 'pointer',
               border: statusFilter === 'DECOMMISSIONED' ? '2px solid #dc2626' : '1px solid #e2e8f0',
-              backgroundColor: statusFilter === 'DECOMMISSIONED' ? 'rgba(220, 38, 38, 0.05)' : '#ffffff',
-              transition: 'all 0.15s ease',
-              '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' },
+              backgroundColor: statusFilter === 'DECOMMISSIONED' ? 'rgba(220, 38, 38, 0.04)' : '#ffffff',
+              transition: 'all 0.12s ease',
+              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
             }}
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" color="error.main" fontWeight={700}>
+              <Typography variant="caption" color="error.main" fontWeight={700} fontSize="0.6875rem">
                 СПИСАНО
               </Typography>
-              <CancelOutlinedIcon sx={{ color: 'error.main', fontSize: 22 }} />
+              <CancelOutlinedIcon sx={{ color: 'error.main', fontSize: 18 }} />
             </Box>
-            <Typography variant="h4" fontWeight={800} sx={{ mt: 1, color: 'error.main' }}>
+            <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5, color: 'error.main', fontSize: '1.25rem' }}>
               {statusCounts.decommissioned}
             </Typography>
           </Card>
@@ -370,32 +370,32 @@ function EquipmentListContent() {
       </Grid>
 
       {/* Filter and Search Toolbar */}
-      <Card sx={{ p: 2, mb: 3 }}>
+      <Card sx={{ p: 1.25, mb: 2 }}>
         <Box
           component="form"
           onSubmit={handleSearchSubmit}
           sx={{
             display: 'flex',
-            gap: 2,
+            gap: 1.5,
             flexWrap: 'wrap',
             alignItems: 'center',
             justifyContent: 'space-between',
           }}
         >
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center', flexGrow: 1 }}>
+          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center', flexGrow: 1 }}>
             <TextField
               size="small"
-              placeholder="Поиск по названию, инвентарному или серийному номеру..."
+              placeholder="Поиск по названию, инвентарному..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon fontSize="small" />
+                    <SearchIcon sx={{ fontSize: 18 }} />
                   </InputAdornment>
                 ),
               }}
-              sx={{ minWidth: 320, flexGrow: { xs: 1, md: 0 } }}
+              sx={{ minWidth: 280, flexGrow: { xs: 1, md: 0 } }}
             />
 
             <TextField
@@ -407,7 +407,7 @@ function EquipmentListContent() {
                 setStatusFilter(e.target.value);
                 setPage(1);
               }}
-              sx={{ minWidth: 170 }}
+              sx={{ minWidth: 150 }}
             >
               <MenuItem value="">Все статусы</MenuItem>
               {Object.entries(EQUIPMENT_STATUS_MAP).map(([key, info]) => (
@@ -426,7 +426,7 @@ function EquipmentListContent() {
                 setTagFilter(e.target.value);
                 setPage(1);
               }}
-              sx={{ minWidth: 200 }}
+              sx={{ minWidth: 180 }}
             >
               <MenuItem value="">Все теги</MenuItem>
               {tags.map((t) => (
@@ -436,7 +436,7 @@ function EquipmentListContent() {
               ))}
             </TextField>
 
-            <Button type="submit" variant="outlined" size="medium" sx={{ px: 2.5 }}>
+            <Button type="submit" variant="outlined" size="small" sx={{ px: 2 }}>
               Применить
             </Button>
             {(search || statusFilter || tagFilter) && (
@@ -451,24 +451,24 @@ function EquipmentListContent() {
                 }}
                 color="inherit"
               >
-                Сбросить фильтры
+                Сбросить
               </Button>
             )}
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <ToggleButtonGroup
               value={viewMode}
               exclusive
               onChange={(_, mode) => mode && setViewMode(mode)}
               size="small"
             >
-              <ToggleButton value="table" aria-label="table view">
+              <ToggleButton value="table" aria-label="table view" sx={{ p: 0.5 }}>
                 <Tooltip title="Табличный вид">
                   <ViewListIcon fontSize="small" />
                 </Tooltip>
               </ToggleButton>
-              <ToggleButton value="grid" aria-label="grid view">
+              <ToggleButton value="grid" aria-label="grid view" sx={{ p: 0.5 }}>
                 <Tooltip title="Сетка карточек">
                   <ViewModuleIcon fontSize="small" />
                 </Tooltip>
