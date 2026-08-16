@@ -284,11 +284,11 @@ export default function Sidebar({
   const getBadgeColors = (type?: string) => {
     switch (type) {
       case 'warning':
-        return { bg: '#fef3c7', text: '#b45309', border: '#fde68a' };
+        return { bg: 'rgba(245, 158, 11, 0.2)', text: '#fbbf24', border: 'rgba(245, 158, 11, 0.35)' };
       case 'error':
-        return { bg: '#fee2e2', text: '#b91c1c', border: '#fecaca' };
+        return { bg: 'rgba(239, 68, 68, 0.2)', text: '#f87171', border: 'rgba(239, 68, 68, 0.35)' };
       default:
-        return { bg: '#eff6ff', text: '#0284c7', border: '#bfdbfe' };
+        return { bg: 'rgba(56, 189, 248, 0.18)', text: '#38bdf8', border: 'rgba(56, 189, 248, 0.35)' };
     }
   };
 
@@ -322,12 +322,12 @@ export default function Sidebar({
               my: 0.25,
               borderRadius: '8px',
               cursor: 'pointer',
-              color: active ? '#0284c7' : '#64748b',
-              backgroundColor: active ? '#eff6ff' : 'transparent',
+              color: active ? '#38bdf8' : '#94a3b8',
+              backgroundColor: active ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
               transition: 'all 0.15s ease',
               '&:hover': {
-                backgroundColor: active ? '#eff6ff' : '#f8fafc',
-                color: '#0284c7',
+                backgroundColor: active ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255, 255, 255, 0.06)',
+                color: '#38bdf8',
               },
             }}
           >
@@ -341,7 +341,7 @@ export default function Sidebar({
                   bottom: 8,
                   width: 3,
                   borderRadius: '0 3px 3px 0',
-                  backgroundColor: '#0284c7',
+                  backgroundColor: '#38bdf8',
                 }}
               />
             )}
@@ -358,9 +358,9 @@ export default function Sidebar({
                   height: 15,
                   borderRadius: '8px',
                   backgroundColor: badgeColors.text,
-                  color: '#ffffff',
+                  color: '#0f172a',
                   fontSize: '0.625rem',
-                  fontWeight: 700,
+                  fontWeight: 800,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -396,12 +396,12 @@ export default function Sidebar({
             py: 0.75,
             borderRadius: '6px',
             cursor: 'pointer',
-            color: active ? '#0284c7' : '#334155',
-            backgroundColor: active && !hasChildren ? '#eff6ff' : 'transparent',
+            color: active ? '#38bdf8' : '#cbd5e1',
+            backgroundColor: active && !hasChildren ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
             transition: 'all 0.12s ease',
             '&:hover': {
-              backgroundColor: active && !hasChildren ? '#eff6ff' : '#f8fafc',
-              color: '#0284c7',
+              backgroundColor: active && !hasChildren ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255, 255, 255, 0.06)',
+              color: '#ffffff',
             },
           }}
         >
@@ -415,14 +415,14 @@ export default function Sidebar({
                 bottom: 5,
                 width: 3,
                 borderRadius: '0 3px 3px 0',
-                backgroundColor: '#0284c7',
+                backgroundColor: '#38bdf8',
               }}
             />
           )}
 
           {/* Left: Icon & Label */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, overflow: 'hidden', minWidth: 0, flexGrow: 1 }}>
-            <Box sx={{ color: active ? '#0284c7' : '#64748b', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+            <Box sx={{ color: active ? '#38bdf8' : '#94a3b8', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
               {item.icon}
             </Box>
             <Typography
@@ -431,7 +431,7 @@ export default function Sidebar({
               sx={{
                 fontSize: '0.78125rem', // 12.5px
                 fontWeight: active ? 600 : 500,
-                color: active ? '#0284c7' : 'inherit',
+                color: active ? '#ffffff' : 'inherit',
               }}
             >
               {item.label}
@@ -463,7 +463,7 @@ export default function Sidebar({
             )}
 
             {hasChildren && (
-              <Box sx={{ color: '#94a3b8', display: 'flex', alignItems: 'center' }}>
+              <Box sx={{ color: '#64748b', display: 'flex', alignItems: 'center' }}>
                 {isExpanded ? (
                   <KeyboardArrowDownIcon sx={{ fontSize: 16 }} />
                 ) : (
@@ -481,7 +481,7 @@ export default function Sidebar({
               sx={{
                 ml: '21px',
                 pl: '14px',
-                borderLeft: '1.5px solid #e2e8f0',
+                borderLeft: '1.5px solid rgba(255, 255, 255, 0.1)',
                 my: 0.25,
                 display: 'flex',
                 flexDirection: 'column',
@@ -500,16 +500,16 @@ export default function Sidebar({
                       borderRadius: '5px',
                       cursor: 'pointer',
                       fontSize: '0.75rem', // 12px
-                      color: isChildActive ? '#0284c7' : '#64748b',
+                      color: isChildActive ? '#38bdf8' : '#94a3b8',
                       fontWeight: isChildActive ? 600 : 500,
-                      backgroundColor: isChildActive ? '#eff6ff' : 'transparent',
+                      backgroundColor: isChildActive ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
                       display: 'flex',
                       alignItems: 'center',
                       gap: 1,
                       transition: 'all 0.12s ease',
                       '&:hover': {
-                        backgroundColor: isChildActive ? '#eff6ff' : '#f8fafc',
-                        color: '#0284c7',
+                        backgroundColor: isChildActive ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                        color: '#ffffff',
                       },
                     }}
                   >
@@ -538,8 +538,9 @@ export default function Sidebar({
         top: 0,
         boxSizing: 'border-box',
         transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-        backgroundColor: '#ffffff',
-        borderRight: '1px solid #e2e8f0',
+        backgroundColor: '#0f172a',
+        backgroundImage: 'linear-gradient(180deg, #0f172a 0%, #0b1120 100%)',
+        borderRight: '1px solid #1e293b',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -566,14 +567,14 @@ export default function Sidebar({
                 width: 38,
                 height: 38,
                 borderRadius: '8px',
-                color: '#0284c7',
-                backgroundColor: '#f0f9ff',
-                border: '1px solid #bae6fd',
+                color: '#38bdf8',
+                backgroundColor: 'rgba(56, 189, 248, 0.12)',
+                border: '1px solid rgba(56, 189, 248, 0.25)',
                 transition: 'all 0.15s ease',
                 '&:hover': {
-                  backgroundColor: '#e0f2fe',
-                  borderColor: '#7dd3fc',
-                  color: '#0369a1',
+                  backgroundColor: 'rgba(56, 189, 248, 0.22)',
+                  borderColor: 'rgba(56, 189, 248, 0.4)',
+                  color: '#ffffff',
                   transform: 'scale(1.05)',
                 },
               }}
@@ -603,7 +604,7 @@ export default function Sidebar({
                   width: 32,
                   height: 32,
                   objectFit: 'contain',
-                  filter: 'drop-shadow(0 2px 8px rgba(124, 58, 237, 0.25))',
+                  filter: 'drop-shadow(0 2px 8px rgba(56, 189, 248, 0.35))',
                   flexShrink: 0,
                   transition: 'transform 0.15s ease',
                   '&:hover': {
@@ -620,7 +621,7 @@ export default function Sidebar({
                       fontSize: '0.9375rem',
                       lineHeight: 1.1,
                       letterSpacing: '-0.02em',
-                      color: '#0f172a',
+                      color: '#ffffff',
                     }}
                   >
                     EMS
@@ -631,7 +632,7 @@ export default function Sidebar({
                       fontWeight: 600,
                       fontSize: '0.8125rem',
                       lineHeight: 1.1,
-                      color: '#0284c7',
+                      color: '#38bdf8',
                       letterSpacing: '-0.01em',
                     }}
                   >
@@ -641,7 +642,7 @@ export default function Sidebar({
                 <Typography
                   variant="caption"
                   sx={{
-                    color: '#64748b',
+                    color: '#94a3b8',
                     fontWeight: 500,
                     fontSize: '0.625rem',
                     display: 'block',
@@ -662,10 +663,10 @@ export default function Sidebar({
               onClick={onToggleCollapse}
               title="Свернуть меню"
               sx={{
-                color: '#64748b',
+                color: '#94a3b8',
                 p: 0.5,
                 borderRadius: '6px',
-                '&:hover': { backgroundColor: '#f1f5f9', color: '#0f172a' },
+                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.08)', color: '#ffffff' },
               }}
             >
               <MenuOpenIcon sx={{ fontSize: 20 }} />
@@ -686,8 +687,8 @@ export default function Sidebar({
               mb: 0.5,
               fontSize: '0.6875rem',
               fontWeight: 700,
-              color: '#94a3b8',
-              letterSpacing: '0.04em',
+              color: '#64748b',
+              letterSpacing: '0.06em',
             }}
           >
             ГЛАВНОЕ МЕНЮ
@@ -707,8 +708,8 @@ export default function Sidebar({
                   mb: 0.5,
                   fontSize: '0.6875rem',
                   fontWeight: 700,
-                  color: '#94a3b8',
-                  letterSpacing: '0.04em',
+                  color: '#64748b',
+                  letterSpacing: '0.06em',
                 }}
               >
                 АДМИНИСТРИРОВАНИЕ
@@ -725,7 +726,7 @@ export default function Sidebar({
         sx={{
           pt: 1.25,
           mt: 'auto',
-          borderTop: '1px solid #f1f5f9',
+          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: collapsed ? 'center' : 'flex-start',
@@ -735,7 +736,7 @@ export default function Sidebar({
           borderRadius: '8px',
           transition: 'background-color 0.15s ease',
           '&:hover': {
-            backgroundColor: '#f8fafc',
+            backgroundColor: 'rgba(255, 255, 255, 0.06)',
           },
         }}
       >
@@ -746,7 +747,7 @@ export default function Sidebar({
           sx={{
             '& .MuiBadge-badge': {
               backgroundColor: '#22c55e',
-              boxShadow: '0 0 0 2px #ffffff',
+              boxShadow: '0 0 0 2px #0f172a',
               width: 8,
               height: 8,
               borderRadius: '4px',
@@ -760,6 +761,7 @@ export default function Sidebar({
               backgroundColor: '#0284c7',
               fontSize: '0.8125rem',
               fontWeight: 700,
+              color: '#ffffff',
             }}
           >
             {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'A'}
@@ -768,10 +770,10 @@ export default function Sidebar({
 
         {!collapsed && (
           <Box sx={{ overflow: 'hidden', flexGrow: 1, minWidth: 0 }}>
-            <Typography variant="subtitle2" fontWeight={700} noWrap fontSize="0.78125rem" color="#0f172a" lineHeight={1.2}>
+            <Typography variant="subtitle2" fontWeight={700} noWrap fontSize="0.78125rem" color="#f8fafc" lineHeight={1.2}>
               {user?.displayName || 'Администратор'}
             </Typography>
-            <Typography variant="caption" color="text.secondary" noWrap display="block" fontSize="0.6875rem">
+            <Typography variant="caption" color="#94a3b8" noWrap display="block" fontSize="0.6875rem">
               {user?.roles?.[0] || 'Инженер'}
             </Typography>
           </Box>
@@ -800,16 +802,18 @@ export default function Sidebar({
             p: 1.25,
             minWidth: 200,
             borderRadius: '8px',
-            boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)',
-            border: '1px solid #e2e8f0',
+            boxShadow: '0 10px 25px -5px rgba(0,0,0,0.5)',
+            backgroundColor: '#0f172a',
+            border: '1px solid #334155',
+            color: '#cbd5e1',
           },
         }}
       >
         {activeFlyoutItem && (
           <Box>
             {/* Flyout Header */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 0.75, mb: 0.75, borderBottom: '1px solid #f1f5f9' }}>
-              <Typography variant="subtitle2" fontWeight={700} color="#0284c7" fontSize="0.78125rem">
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 0.75, mb: 0.75, borderBottom: '1px solid #1e293b' }}>
+              <Typography variant="subtitle2" fontWeight={700} color="#38bdf8" fontSize="0.78125rem">
                 {activeFlyoutItem.label}
               </Typography>
               {activeFlyoutItem.badge && (
@@ -818,8 +822,8 @@ export default function Sidebar({
                     px: 0.6,
                     py: 0.05,
                     borderRadius: '5px',
-                    backgroundColor: '#dbeafe',
-                    color: '#0284c7',
+                    backgroundColor: 'rgba(56, 189, 248, 0.2)',
+                    color: '#38bdf8',
                     fontSize: '0.65rem',
                     fontWeight: 700,
                   }}
@@ -841,16 +845,16 @@ export default function Sidebar({
                     borderRadius: '5px',
                     cursor: 'pointer',
                     fontSize: '0.78125rem',
-                    color: pathname === child.path ? '#0284c7' : '#334155',
+                    color: pathname === child.path ? '#38bdf8' : '#94a3b8',
                     fontWeight: pathname === child.path ? 600 : 500,
-                    backgroundColor: pathname === child.path ? '#eff6ff' : 'transparent',
+                    backgroundColor: pathname === child.path ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
                     display: 'flex',
                     alignItems: 'center',
                     gap: 1,
                     transition: 'all 0.12s ease',
                     '&:hover': {
-                      backgroundColor: '#f8fafc',
-                      color: '#0284c7',
+                      backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                      color: '#ffffff',
                     },
                   }}
                 >
@@ -875,7 +879,7 @@ export default function Sidebar({
             minWidth: 220,
             ml: 1,
             borderRadius: '10px',
-            boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)',
+            boxShadow: '0 10px 25px -5px rgba(0,0,0,0.15)',
             border: '1px solid #e2e8f0',
             p: 0.5,
           },
