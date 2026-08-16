@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -44,11 +44,10 @@ interface NavChild {
 interface NavItemDef {
   id: string;
   label: string;
-  shortLabel?: string;
   path?: string;
   icon: React.ReactNode;
-  badge?: number | string;
-  badgeColor?: string;
+  badge?: number | null;
+  badgeColor?: 'warning' | 'error' | 'primary' | 'default';
   permission?: string;
   children?: NavChild[];
 }
@@ -75,6 +74,9 @@ export default function Sidebar({
   // Search in sidebar
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Operational alert stats
+  const [repairCount, setRepairCount] = useState<number | null>(null);
+
   // Expanded items in expanded sidebar mode
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
     eps: pathname.startsWith('/eps'),
@@ -85,6 +87,23 @@ export default function Sidebar({
   // Flyout Popover state for collapsed mode
   const [flyoutAnchor, setFlyoutAnchor] = useState<HTMLElement | null>(null);
   const [activeFlyoutItem, setActiveFlyoutItem] = useState<NavItemDef | null>(null);
+
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/eps/equipment?pageSize=1');
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.data?.statusCounts) {
+            setRepairCount(json.data.statusCounts.underRepair || null);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+    loadStats();
+  }, [pathname]);
 
   const toggleExpand = (id: string) => {
     setExpandedItems((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -117,13 +136,14 @@ export default function Sidebar({
 
   const canAccessAdmin = user?.roles.includes('admin') || hasPermission(PERMISSIONS.ADMIN_USERS_MANAGE);
 
-  // Define Navigation Structure with clean, non-truncating labels
+  // Operational items with dynamic alert badges
   const operationalItems: NavItemDef[] = [
     {
       id: 'eps',
       label: 'Оборудование (EPS)',
       icon: <PrecisionManufacturingIcon sx={{ fontSize: 18 }} />,
-      badge: 3,
+      badge: repairCount && repairCount > 0 ? repairCount : null, // Number of items under repair
+      badgeColor: 'warning',
       permission: PERMISSIONS.EPS_EQUIPMENT_VIEW,
       children: [
         { label: 'Реестр оборудования', path: '/eps', icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} /> },
@@ -192,12 +212,25 @@ export default function Sidebar({
     },
   ];
 
+  const getBadgeColors = (type?: string) => {
+    switch (type) {
+      case 'warning':
+        return { bg: '#fef3c7', text: '#b45309', border: '#fde68a' };
+      case 'error':
+        return { bg: '#fee2e2', text: '#b91c1c', border: '#fecaca' };
+      default:
+        return { bg: '#eff6ff', text: '#0284c7', border: '#bfdbfe' };
+    }
+  };
+
   const renderNavBlock = (item: NavItemDef) => {
     if (item.permission && !hasPermission(item.permission)) return null;
 
     const active = isItemActive(item);
     const hasChildren = item.children && item.children.length > 0;
     const isExpanded = expandedItems[item.id] || false;
+    const badgeColors = getBadgeColors(item.badgeColor);
+    const hasBadge = item.badge !== null && item.badge !== undefined && item.badge > 0;
 
     if (collapsed) {
       return (
@@ -209,8 +242,8 @@ export default function Sidebar({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: 40,
-            height: 40,
+            width: 42,
+            height: 42,
             mx: 'auto',
             my: 0.25,
             borderRadius: '8px',
@@ -241,23 +274,24 @@ export default function Sidebar({
 
           {item.icon}
 
-          {item.badge && (
+          {hasBadge && (
             <Box
               sx={{
                 position: 'absolute',
-                top: 3,
-                right: 3,
-                minWidth: 14,
-                height: 14,
-                borderRadius: '7px',
-                backgroundColor: '#0284c7',
+                top: 4,
+                right: 4,
+                minWidth: 15,
+                height: 15,
+                borderRadius: '8px',
+                backgroundColor: badgeColors.text,
                 color: '#ffffff',
-                fontSize: '0.6rem',
+                fontSize: '0.625rem',
                 fontWeight: 700,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 px: 0.3,
+                fontFamily: 'monospace',
               }}
             >
               {item.badge}
@@ -269,7 +303,7 @@ export default function Sidebar({
 
     return (
       <Box key={item.id} sx={{ mb: 0.25 }}>
-        {/* Main Item Row */}
+        {/* Main Item Row with strictly Right-Aligned Badge and Chevron */}
         <Box
           onClick={() => {
             if (hasChildren) {
@@ -283,7 +317,7 @@ export default function Sidebar({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            px: 1.25,
+            px: 1.5,
             py: 0.75,
             borderRadius: '6px',
             cursor: 'pointer',
@@ -311,7 +345,8 @@ export default function Sidebar({
             />
           )}
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, overflow: 'hidden', minWidth: 0 }}>
+          {/* Left: Icon & Label */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, overflow: 'hidden', minWidth: 0, flexGrow: 1 }}>
             <Box sx={{ color: active ? '#0284c7' : '#64748b', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
               {item.icon}
             </Box>
@@ -328,17 +363,24 @@ export default function Sidebar({
             </Typography>
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexShrink: 0, ml: 0.5 }}>
-            {item.badge && (
+          {/* Right: Badge (strictly right-aligned) & Chevron */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0, ml: 'auto', pl: 1 }}>
+            {hasBadge && (
               <Box
                 sx={{
-                  px: 0.6,
-                  py: 0.05,
-                  borderRadius: '6px',
-                  backgroundColor: active ? '#dbeafe' : '#f1f5f9',
-                  color: active ? '#0284c7' : '#64748b',
-                  fontSize: '0.65rem',
+                  px: 0.75,
+                  height: 18,
+                  borderRadius: '9px',
+                  backgroundColor: badgeColors.bg,
+                  color: badgeColors.text,
+                  border: `1px solid ${badgeColors.border}`,
+                  fontSize: '0.6875rem',
                   fontWeight: 700,
+                  fontFamily: 'monospace',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  lineHeight: 1,
                 }}
               >
                 {item.badge}
