@@ -163,7 +163,7 @@ export default function Sidebar({
   const operationalItems: NavItemDef[] = [
     {
       id: 'eps',
-      label: 'Оборудование (EPS)',
+      label: 'Паспортизация (EPS)',
       icon: <PrecisionManufacturingOutlinedIcon sx={{ fontSize: 18 }} />,
       badge: repairCount && repairCount > 0 ? repairCount : null,
       badgeColor: 'warning',

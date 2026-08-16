@@ -54,7 +54,7 @@ const STATIC_COMMANDS = [
     icon: <AddCircleOutlineIcon color="primary" />,
   },
   {
-    title: 'Реестр оборудования (EPS)',
+    title: 'Паспортизация оборудования (EPS)',
     path: '/eps',
     category: 'Навигация',
     icon: <PrecisionManufacturingIcon />,
