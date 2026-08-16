@@ -8,7 +8,6 @@ import {
   Avatar,
   Badge,
   Popover,
-  Paper,
   InputBase,
   Collapse,
 } from '@mui/material';
@@ -33,8 +32,8 @@ import MoveToInboxIcon from '@mui/icons-material/MoveToInbox';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS } from '@ems/shared';
 
-export const SIDEBAR_WIDTH_EXPANDED = 264;
-export const SIDEBAR_WIDTH_COLLAPSED = 76;
+export const SIDEBAR_WIDTH_EXPANDED = 260;
+export const SIDEBAR_WIDTH_COLLAPSED = 72;
 
 interface NavChild {
   label: string;
@@ -213,13 +212,13 @@ export default function Sidebar({
             height: 44,
             mx: 'auto',
             my: 0.5,
-            borderRadius: '12px',
+            borderRadius: '10px',
             cursor: 'pointer',
             color: active ? '#0284c7' : '#64748b',
             backgroundColor: active ? '#eff6ff' : 'transparent',
             transition: 'all 0.15s ease',
             '&:hover': {
-              backgroundColor: active ? '#eff6ff' : '#f1f5f9',
+              backgroundColor: active ? '#eff6ff' : '#f8fafc',
               color: '#0284c7',
             },
           }}
@@ -232,7 +231,7 @@ export default function Sidebar({
                 left: -12,
                 top: 8,
                 bottom: 8,
-                width: 4,
+                width: 3.5,
                 borderRadius: '0 4px 4px 0',
                 backgroundColor: '#0284c7',
               }}
@@ -285,7 +284,7 @@ export default function Sidebar({
             justifyContent: 'space-between',
             px: 1.5,
             py: 1,
-            borderRadius: '10px',
+            borderRadius: '8px',
             cursor: 'pointer',
             color: active ? '#0284c7' : '#334155',
             backgroundColor: active && !hasChildren ? '#eff6ff' : 'transparent',
@@ -304,7 +303,7 @@ export default function Sidebar({
                 left: -12,
                 top: 6,
                 bottom: 6,
-                width: 4,
+                width: 3.5,
                 borderRadius: '0 4px 4px 0',
                 backgroundColor: '#0284c7',
               }}
@@ -379,7 +378,7 @@ export default function Sidebar({
                     sx={{
                       px: 1.5,
                       py: 0.75,
-                      borderRadius: '8px',
+                      borderRadius: '6px',
                       cursor: 'pointer',
                       fontSize: '0.8125rem',
                       color: isChildActive ? '#0284c7' : '#64748b',
@@ -411,235 +410,225 @@ export default function Sidebar({
       sx={{
         width: currentWidth,
         flexShrink: 0,
-        p: 2,
         height: '100vh',
+        position: 'sticky',
+        top: 0,
         boxSizing: 'border-box',
-        transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: 'width 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
+        backgroundColor: '#ffffff',
+        borderRight: '1px solid #e2e8f0',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        p: collapsed ? 1.25 : 2,
+        zIndex: 100,
       }}
     >
-      {/* Floating Rounded Sidebar Card */}
-      <Paper
-        elevation={0}
+      {/* Top Header: Brand Logo & Collapse Icon */}
+      <Box
         sx={{
-          height: '100%',
-          borderRadius: '20px',
-          backgroundColor: '#ffffff',
-          border: '1px solid #e2e8f0',
-          boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.04)',
           display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          p: collapsed ? 1 : 2,
-          transition: 'padding 0.25s ease',
+          alignItems: 'center',
+          justifyContent: collapsed ? 'center' : 'space-between',
+          mb: 2,
+          minHeight: 44,
         }}
       >
-        {/* Top Header: Brand Logo & Collapse Icon */}
+        {/* Logo */}
         <Box
+          onClick={() => handleNavigate('/eps')}
           sx={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: collapsed ? 'center' : 'space-between',
-            mb: 2,
-            pt: 0.5,
+            gap: 1.5,
+            cursor: 'pointer',
           }}
         >
-          {/* Logo */}
-          <Box
-            onClick={() => handleNavigate('/eps')}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1.5,
-              cursor: 'pointer',
-            }}
-          >
-            <Box
-              sx={{
-                width: 38,
-                height: 38,
-                borderRadius: '12px',
-                backgroundColor: '#0f172a',
-                color: '#ffffff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 800,
-                fontSize: '1.25rem',
-                letterSpacing: -0.5,
-                boxShadow: '0 4px 10px rgba(15, 23, 42, 0.25)',
-              }}
-            >
-              ◬
-            </Box>
-            {!collapsed && (
-              <Box>
-                <Typography variant="subtitle1" fontWeight={800} lineHeight={1.1} color="#0f172a">
-                  EMS
-                </Typography>
-                <Typography variant="caption" color="text.secondary" fontWeight={500} fontSize="0.7rem">
-                  Equipment OS
-                </Typography>
-              </Box>
-            )}
-          </Box>
-
-          {/* Toggle Sidebar Collapse Button */}
-          {!collapsed && (
-            <IconButton
-              size="small"
-              onClick={onToggleCollapse}
-              sx={{
-                color: '#64748b',
-                p: 0.75,
-                borderRadius: '8px',
-                '&:hover': { backgroundColor: '#f1f5f9', color: '#0f172a' },
-              }}
-            >
-              <ViewSidebarOutlinedIcon sx={{ fontSize: 20 }} />
-            </IconButton>
-          )}
-        </Box>
-
-        {/* Search Bar */}
-        {!collapsed ? (
           <Box
             sx={{
-              mb: 2.5,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              px: 1.5,
-              py: 0.85,
-              borderRadius: '12px',
-              backgroundColor: '#f1f5f9',
-              color: '#64748b',
-            }}
-          >
-            <SearchIcon sx={{ fontSize: 18, color: '#94a3b8' }} />
-            <InputBase
-              placeholder="Поиск..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              sx={{
-                fontSize: '0.85rem',
-                flexGrow: 1,
-                '& input::placeholder': { color: '#94a3b8', opacity: 1 },
-              }}
-            />
-          </Box>
-        ) : (
-          <Box
-            onClick={onToggleCollapse}
-            sx={{
-              mb: 2,
-              mx: 'auto',
-              width: 40,
-              height: 40,
+              width: 36,
+              height: 36,
               borderRadius: '10px',
-              backgroundColor: '#f1f5f9',
+              backgroundColor: '#0f172a',
+              color: '#ffffff',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              cursor: 'pointer',
-              color: '#64748b',
-              '&:hover': { backgroundColor: '#e2e8f0' },
+              fontWeight: 800,
+              fontSize: '1.2rem',
+              letterSpacing: -0.5,
             }}
           >
-            <SearchIcon sx={{ fontSize: 18 }} />
+            ◬
           </Box>
-        )}
-
-        {/* Scrollable Navigation Body */}
-        <Box sx={{ flexGrow: 1, overflowY: 'auto', pr: 0.5 }}>
-          {/* Main Menu Section */}
           {!collapsed && (
-            <Typography
-              variant="caption"
-              sx={{
-                display: 'block',
-                px: 1.5,
-                mb: 1,
-                fontSize: '0.725rem',
-                fontWeight: 600,
-                color: '#94a3b8',
-              }}
-            >
-              Главное меню
-            </Typography>
-          )}
-          {operationalItems.map(renderNavBlock)}
-
-          {/* Settings and Support Section */}
-          {canAccessAdmin && (
-            <Box sx={{ mt: 3 }}>
-              {!collapsed && (
-                <Typography
-                  variant="caption"
-                  sx={{
-                    display: 'block',
-                    px: 1.5,
-                    mb: 1,
-                    fontSize: '0.725rem',
-                    fontWeight: 600,
-                    color: '#94a3b8',
-                  }}
-                >
-                  Администрирование
-                </Typography>
-              )}
-              {adminItems.map(renderNavBlock)}
+            <Box>
+              <Typography variant="subtitle1" fontWeight={800} lineHeight={1.1} color="#0f172a">
+                EMS
+              </Typography>
+              <Typography variant="caption" color="text.secondary" fontWeight={500} fontSize="0.7rem">
+                Equipment OS
+              </Typography>
             </Box>
           )}
         </Box>
 
-        {/* Bottom User Account Card */}
+        {/* Toggle Sidebar Collapse Button */}
+        {!collapsed && (
+          <IconButton
+            size="small"
+            onClick={onToggleCollapse}
+            sx={{
+              color: '#64748b',
+              p: 0.75,
+              borderRadius: '6px',
+              '&:hover': { backgroundColor: '#f1f5f9', color: '#0f172a' },
+            }}
+          >
+            <ViewSidebarOutlinedIcon sx={{ fontSize: 20 }} />
+          </IconButton>
+        )}
+      </Box>
+
+      {/* Search Bar */}
+      {!collapsed ? (
         <Box
           sx={{
-            pt: 1.5,
-            mt: 'auto',
-            borderTop: '1px solid #f1f5f9',
+            mb: 2,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: collapsed ? 'center' : 'flex-start',
-            gap: 1.5,
+            gap: 1,
+            px: 1.5,
+            py: 0.75,
+            borderRadius: '8px',
+            backgroundColor: '#f1f5f9',
+            color: '#64748b',
           }}
         >
-          <Badge
-            overlap="circular"
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            variant="dot"
+          <SearchIcon sx={{ fontSize: 18, color: '#94a3b8' }} />
+          <InputBase
+            placeholder="Поиск..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             sx={{
-              '& .MuiBadge-badge': {
-                backgroundColor: '#22c55e',
-                boxShadow: '0 0 0 2px #ffffff',
-              },
+              fontSize: '0.85rem',
+              flexGrow: 1,
+              '& input::placeholder': { color: '#94a3b8', opacity: 1 },
+            }}
+          />
+        </Box>
+      ) : (
+        <Box
+          onClick={onToggleCollapse}
+          sx={{
+            mb: 2,
+            mx: 'auto',
+            width: 40,
+            height: 40,
+            borderRadius: '8px',
+            backgroundColor: '#f1f5f9',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            color: '#64748b',
+            '&:hover': { backgroundColor: '#e2e8f0' },
+          }}
+        >
+          <SearchIcon sx={{ fontSize: 18 }} />
+        </Box>
+      )}
+
+      {/* Scrollable Navigation Body */}
+      <Box sx={{ flexGrow: 1, overflowY: 'auto', pr: 0.5 }}>
+        {/* Main Menu Section */}
+        {!collapsed && (
+          <Typography
+            variant="caption"
+            sx={{
+              display: 'block',
+              px: 1.5,
+              mb: 1,
+              fontSize: '0.725rem',
+              fontWeight: 600,
+              color: '#94a3b8',
             }}
           >
-            <Avatar
-              sx={{
-                width: 38,
-                height: 38,
-                backgroundColor: '#0284c7',
-                fontSize: '0.9rem',
-                fontWeight: 700,
-              }}
-            >
-              {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'A'}
-            </Avatar>
-          </Badge>
+            Главное меню
+          </Typography>
+        )}
+        {operationalItems.map(renderNavBlock)}
 
-          {!collapsed && (
-            <Box sx={{ overflow: 'hidden', flexGrow: 1 }}>
-              <Typography variant="subtitle2" fontWeight={700} noWrap fontSize="0.85rem" color="#0f172a">
-                {user?.displayName || 'Администратор'}
+        {/* Settings and Support Section */}
+        {canAccessAdmin && (
+          <Box sx={{ mt: 2.5 }}>
+            {!collapsed && (
+              <Typography
+                variant="caption"
+                sx={{
+                  display: 'block',
+                  px: 1.5,
+                  mb: 1,
+                  fontSize: '0.725rem',
+                  fontWeight: 600,
+                  color: '#94a3b8',
+                }}
+              >
+                Администрирование
               </Typography>
-              <Typography variant="caption" color="text.secondary" noWrap display="block" fontSize="0.75rem">
-                {user?.roles?.[0] || 'Инженер'}
-              </Typography>
-            </Box>
-          )}
-        </Box>
-      </Paper>
+            )}
+            {adminItems.map(renderNavBlock)}
+          </Box>
+        )}
+      </Box>
+
+      {/* Bottom User Account Card */}
+      <Box
+        sx={{
+          pt: 1.5,
+          mt: 'auto',
+          borderTop: '1px solid #f1f5f9',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: collapsed ? 'center' : 'flex-start',
+          gap: 1.5,
+        }}
+      >
+        <Badge
+          overlap="circular"
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          variant="dot"
+          sx={{
+            '& .MuiBadge-badge': {
+              backgroundColor: '#22c55e',
+              boxShadow: '0 0 0 2px #ffffff',
+            },
+          }}
+        >
+          <Avatar
+            sx={{
+              width: 36,
+              height: 36,
+              backgroundColor: '#0284c7',
+              fontSize: '0.9rem',
+              fontWeight: 700,
+            }}
+          >
+            {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'A'}
+          </Avatar>
+        </Badge>
+
+        {!collapsed && (
+          <Box sx={{ overflow: 'hidden', flexGrow: 1 }}>
+            <Typography variant="subtitle2" fontWeight={700} noWrap fontSize="0.85rem" color="#0f172a">
+              {user?.displayName || 'Администратор'}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" noWrap display="block" fontSize="0.75rem">
+              {user?.roles?.[0] || 'Инженер'}
+            </Typography>
+          </Box>
+        )}
+      </Box>
 
       {/* Collapsed Mode Flyout Popover */}
       <Popover
@@ -659,10 +648,10 @@ export default function Sidebar({
         }}
         PaperProps={{
           sx: {
-            ml: 1.5,
+            ml: 1,
             p: 1.5,
             minWidth: 200,
-            borderRadius: '16px',
+            borderRadius: '12px',
             boxShadow: '0 10px 30px -5px rgba(0,0,0,0.12)',
             border: '1px solid #e2e8f0',
           },
@@ -680,7 +669,7 @@ export default function Sidebar({
                   sx={{
                     px: 0.8,
                     py: 0.1,
-                    borderRadius: '8px',
+                    borderRadius: '6px',
                     backgroundColor: '#dbeafe',
                     color: '#0284c7',
                     fontSize: '0.7rem',
@@ -701,7 +690,7 @@ export default function Sidebar({
                   sx={{
                     px: 1.5,
                     py: 0.85,
-                    borderRadius: '8px',
+                    borderRadius: '6px',
                     cursor: 'pointer',
                     fontSize: '0.85rem',
                     color: pathname === child.path ? '#0284c7' : '#334155',
