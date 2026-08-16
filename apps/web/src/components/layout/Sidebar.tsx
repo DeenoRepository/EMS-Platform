@@ -434,14 +434,27 @@ export default function Sidebar({
           minHeight: 44,
         }}
       >
-        {/* Logo */}
+        {/* Logo (Clicking when collapsed expands the sidebar) */}
         <Box
-          onClick={() => handleNavigate('/eps')}
+          onClick={() => {
+            if (collapsed) {
+              onToggleCollapse();
+            } else {
+              handleNavigate('/eps');
+            }
+          }}
+          title={collapsed ? 'Развернуть меню' : 'Перейти на главную'}
           sx={{
             display: 'flex',
             alignItems: 'center',
             gap: 1.5,
             cursor: 'pointer',
+            p: 0.5,
+            borderRadius: '10px',
+            transition: 'background-color 0.15s ease',
+            '&:hover': {
+              backgroundColor: collapsed ? '#f1f5f9' : 'transparent',
+            },
           }}
         >
           <Box
@@ -457,6 +470,10 @@ export default function Sidebar({
               fontWeight: 800,
               fontSize: '1.2rem',
               letterSpacing: -0.5,
+              transition: 'transform 0.15s ease',
+              '&:hover': {
+                transform: 'scale(1.05)',
+              },
             }}
           >
             ◬
@@ -478,6 +495,7 @@ export default function Sidebar({
           <IconButton
             size="small"
             onClick={onToggleCollapse}
+            title="Свернуть меню"
             sx={{
               color: '#64748b',
               p: 0.75,
