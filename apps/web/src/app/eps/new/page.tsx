@@ -19,9 +19,14 @@ import {
   Switch,
   Divider,
   CircularProgress,
+  Paper,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
+import PlaceIcon from '@mui/icons-material/Place';
+import TuneIcon from '@mui/icons-material/Tune';
+import CategoryIcon from '@mui/icons-material/Category';
 import PageHeader from '@/components/layout/PageHeader';
 import { useRouter } from 'next/navigation';
 import { EQUIPMENT_STATUS_MAP } from '@ems/shared';
@@ -63,7 +68,7 @@ export default function NewEquipmentPage() {
     model: '',
     location: '',
     status: 'ACTIVE',
-    commissionDate: '',
+    commissionDate: new Date().toISOString().split('T')[0],
   });
 
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
@@ -84,7 +89,6 @@ export default function NewEquipmentPage() {
           if (tagsJson.success) setTags(tagsJson.data);
           if (fieldsJson.success) {
             setCustomFieldDefs(fieldsJson.data);
-            // Инициализация значений по умолчанию
             const initialVals: Record<string, any> = {};
             fieldsJson.data.forEach((f: CustomFieldDef) => {
               if (f.fieldType === 'BOOLEAN') {
@@ -150,10 +154,10 @@ export default function NewEquipmentPage() {
   };
 
   return (
-    <Box>
+    <Box sx={{ maxWidth: 1920, mx: 'auto' }}>
       <PageHeader
         title="Добавление единицы оборудования"
-        subtitle="Регистрация нового паспорта оборудования в системе EPS"
+        subtitle="Регистрация нового паспорта оборудования в едином реестре EPS"
         breadcrumbs={[
           { label: 'Главная', href: '/' },
           { label: 'Оборудование', href: '/eps' },
@@ -177,23 +181,30 @@ export default function NewEquipmentPage() {
       ) : (
         <Box component="form" onSubmit={handleSubmit}>
           <Grid container spacing={3}>
-            {/* Main Information */}
-            <Grid item xs={12} md={8}>
+            {/* Left Column (65% on FHD) */}
+            <Grid item xs={12} lg={8}>
+              {/* Section 1: Identification */}
               <Card sx={{ mb: 3 }}>
                 <CardContent sx={{ p: 3 }}>
-                  <Typography variant="h6" fontWeight={600} gutterBottom>
-                    Основные сведения
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                    <PrecisionManufacturingIcon color="primary" />
+                    <Typography variant="h6" fontWeight={700}>
+                      Идентификация оборудования
+                    </Typography>
+                  </Box>
+                  <Typography variant="caption" color="text.secondary" paragraph>
+                    Уникальные заводские и инвентарные реквизиты объекта учёта
                   </Typography>
                   <Divider sx={{ mb: 2.5 }} />
 
                   <Grid container spacing={2.5}>
                     <Grid item xs={12}>
                       <TextField
-                        label="Наименование оборудования"
+                        label="Наименование оборудования *"
                         placeholder="например: Центробежный насос подачи охлаждающей воды"
                         required
                         fullWidth
-                        size="small"
+                        size="medium"
                         value={formData.name}
                         onChange={(e) => handleInputChange('name', e.target.value)}
                       />
@@ -204,7 +215,7 @@ export default function NewEquipmentPage() {
                         label="Инвентарный номер"
                         placeholder="EQ-2024-001"
                         fullWidth
-                        size="small"
+                        size="medium"
                         value={formData.inventoryNumber}
                         onChange={(e) => handleInputChange('inventoryNumber', e.target.value)}
                         helperText="Уникальный учетный номер предприятия"
@@ -216,18 +227,34 @@ export default function NewEquipmentPage() {
                         label="Заводской / Серийный номер"
                         placeholder="GR-8842-A"
                         fullWidth
-                        size="small"
+                        size="medium"
                         value={formData.serialNumber}
                         onChange={(e) => handleInputChange('serialNumber', e.target.value)}
+                        helperText="Номер на шильдике завода-изготовителя"
                       />
                     </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
 
+              {/* Section 2: Manufacturer & Location */}
+              <Card sx={{ mb: 3 }}>
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                    <PlaceIcon color="secondary" />
+                    <Typography variant="h6" fontWeight={700}>
+                      Производитель и местоположение
+                    </Typography>
+                  </Box>
+                  <Divider sx={{ mb: 2.5 }} />
+
+                  <Grid container spacing={2.5}>
                     <Grid item xs={12} sm={6}>
                       <TextField
-                        label="Производитель"
+                        label="Завод-изготовитель"
                         placeholder="Grundfos, Siemens, etc."
                         fullWidth
-                        size="small"
+                        size="medium"
                         value={formData.manufacturer}
                         onChange={(e) => handleInputChange('manufacturer', e.target.value)}
                       />
@@ -235,10 +262,10 @@ export default function NewEquipmentPage() {
 
                     <Grid item xs={12} sm={6}>
                       <TextField
-                        label="Модель / Тип"
+                        label="Модель / Модификация"
                         placeholder="NB 50-200/219"
                         fullWidth
-                        size="small"
+                        size="medium"
                         value={formData.model}
                         onChange={(e) => handleInputChange('model', e.target.value)}
                       />
@@ -246,10 +273,10 @@ export default function NewEquipmentPage() {
 
                     <Grid item xs={12}>
                       <TextField
-                        label="Локация / Место установки"
+                        label="Место установки (Цех, участок, позиция)"
                         placeholder="Цех №1, Насосная станция, поз. Н-1"
                         fullWidth
-                        size="small"
+                        size="medium"
                         value={formData.location}
                         onChange={(e) => handleInputChange('location', e.target.value)}
                       />
@@ -258,12 +285,18 @@ export default function NewEquipmentPage() {
                 </CardContent>
               </Card>
 
-              {/* Dynamic Custom Fields Card */}
+              {/* Section 3: Dynamic Custom Fields */}
               {customFieldDefs.length > 0 && (
                 <Card>
                   <CardContent sx={{ p: 3 }}>
-                    <Typography variant="h6" fontWeight={600} gutterBottom>
-                      Дополнительные характеристики (Кастомные поля)
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                      <TuneIcon color="primary" />
+                      <Typography variant="h6" fontWeight={700}>
+                        Технические параметры (Кастомные характеристики)
+                      </Typography>
+                    </Box>
+                    <Typography variant="caption" color="text.secondary" paragraph>
+                      Параметры, сконфигурированные для паспортов оборудования
                     </Typography>
                     <Divider sx={{ mb: 2.5 }} />
 
@@ -272,22 +305,24 @@ export default function NewEquipmentPage() {
                         if (def.fieldType === 'BOOLEAN') {
                           return (
                             <Grid item xs={12} sm={6} key={def.key}>
-                              <FormControlLabel
-                                control={
-                                  <Switch
-                                    checked={Boolean(customFieldValues[def.key])}
-                                    onChange={(e) => handleCustomFieldChange(def.key, e.target.checked)}
-                                    color="primary"
-                                  />
-                                }
-                                label={
-                                  <Box>
-                                    <Typography variant="body2" fontWeight={500}>
-                                      {def.name}
-                                    </Typography>
-                                  </Box>
-                                }
-                              />
+                              <Paper variant="outlined" sx={{ p: 2, height: '100%', display: 'flex', alignItems: 'center' }}>
+                                <FormControlLabel
+                                  control={
+                                    <Switch
+                                      checked={Boolean(customFieldValues[def.key])}
+                                      onChange={(e) => handleCustomFieldChange(def.key, e.target.checked)}
+                                      color="primary"
+                                    />
+                                  }
+                                  label={
+                                    <Box>
+                                      <Typography variant="body2" fontWeight={600}>
+                                        {def.name}
+                                      </Typography>
+                                    </Box>
+                                  }
+                                />
+                              </Paper>
                             </Grid>
                           );
                         }
@@ -299,7 +334,7 @@ export default function NewEquipmentPage() {
                                 select
                                 label={def.name}
                                 fullWidth
-                                size="small"
+                                size="medium"
                                 required={def.isRequired}
                                 value={customFieldValues[def.key] || ''}
                                 onChange={(e) => handleCustomFieldChange(def.key, e.target.value)}
@@ -322,7 +357,7 @@ export default function NewEquipmentPage() {
                               type={def.fieldType === 'NUMBER' ? 'number' : def.fieldType === 'DATE' ? 'date' : 'text'}
                               InputLabelProps={def.fieldType === 'DATE' ? { shrink: true } : undefined}
                               fullWidth
-                              size="small"
+                              size="medium"
                               required={def.isRequired}
                               value={customFieldValues[def.key] || ''}
                               onChange={(e) => handleCustomFieldChange(def.key, e.target.value)}
@@ -336,83 +371,113 @@ export default function NewEquipmentPage() {
               )}
             </Grid>
 
-            {/* Sidebar Controls */}
-            <Grid item xs={12} md={4}>
-              <Card sx={{ mb: 3 }}>
-                <CardContent sx={{ p: 3 }}>
-                  <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                    Параметры и классификация
-                  </Typography>
-                  <Divider sx={{ mb: 2 }} />
+            {/* Right Column (35% on FHD) - Sticky Sidebar */}
+            <Grid item xs={12} lg={4}>
+              <Box sx={{ position: { lg: 'sticky' }, top: { lg: 88 } }}>
+                <Card sx={{ mb: 3 }}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                      <CategoryIcon color="primary" />
+                      <Typography variant="h6" fontWeight={700}>
+                        Классификация и статус
+                      </Typography>
+                    </Box>
+                    <Divider sx={{ mb: 2.5 }} />
 
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                    <TextField
-                      select
-                      label="Текущий статус"
-                      fullWidth
-                      size="small"
-                      value={formData.status}
-                      onChange={(e) => handleInputChange('status', e.target.value)}
-                    >
-                      {Object.entries(EQUIPMENT_STATUS_MAP).map(([key, info]) => (
-                        <MenuItem key={key} value={key}>
-                          {info.label}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-
-                    <TextField
-                      label="Дата ввода в эксплуатацию"
-                      type="date"
-                      InputLabelProps={{ shrink: true }}
-                      fullWidth
-                      size="small"
-                      value={formData.commissionDate}
-                      onChange={(e) => handleInputChange('commissionDate', e.target.value)}
-                    />
-
-                    <FormControl fullWidth size="small">
-                      <InputLabel id="tags-select-label">Теги / Группы</InputLabel>
-                      <Select
-                        labelId="tags-select-label"
-                        multiple
-                        value={selectedTagIds}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setSelectedTagIds(typeof val === 'string' ? val.split(',') : val);
-                        }}
-                        input={<OutlinedInput label="Теги / Группы" />}
-                        renderValue={(selected) => (
-                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                            {selected.map((tagId) => {
-                              const tag = tags.find((t) => t.id === tagId);
-                              return <Chip key={tagId} label={tag ? tag.name : tagId} size="small" />;
-                            })}
-                          </Box>
-                        )}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                      <TextField
+                        select
+                        label="Текущий статус оборудования"
+                        fullWidth
+                        size="medium"
+                        value={formData.status}
+                        onChange={(e) => handleInputChange('status', e.target.value)}
                       >
-                        {tags.map((tag) => (
-                          <MenuItem key={tag.id} value={tag.id}>
-                            {tag.name}
+                        {Object.entries(EQUIPMENT_STATUS_MAP).map(([key, info]) => (
+                          <MenuItem key={key} value={key}>
+                            {info.label}
                           </MenuItem>
                         ))}
-                      </Select>
-                    </FormControl>
-                  </Box>
-                </CardContent>
-              </Card>
+                      </TextField>
 
-              <Button
-                type="submit"
-                variant="contained"
-                size="large"
-                fullWidth
-                startIcon={<SaveIcon />}
-                disabled={saving}
-                sx={{ py: 1.5, fontWeight: 600 }}
-              >
-                {saving ? <CircularProgress size={24} color="inherit" /> : 'Зарегистрировать оборудование'}
-              </Button>
+                      <TextField
+                        label="Дата ввода в эксплуатацию"
+                        type="date"
+                        InputLabelProps={{ shrink: true }}
+                        fullWidth
+                        size="medium"
+                        value={formData.commissionDate}
+                        onChange={(e) => handleInputChange('commissionDate', e.target.value)}
+                      />
+
+                      <FormControl fullWidth size="medium">
+                        <InputLabel id="tags-select-label">Теги и классификаторы</InputLabel>
+                        <Select
+                          labelId="tags-select-label"
+                          multiple
+                          value={selectedTagIds}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setSelectedTagIds(typeof val === 'string' ? val.split(',') : val);
+                          }}
+                          input={<OutlinedInput label="Теги и классификаторы" />}
+                          renderValue={(selected) => (
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                              {selected.map((tagId) => {
+                                const tag = tags.find((t) => t.id === tagId);
+                                return (
+                                  <Chip
+                                    key={tagId}
+                                    label={tag ? tag.name : tagId}
+                                    size="small"
+                                    sx={{
+                                      backgroundColor: tag?.color ? `${tag.color}20` : undefined,
+                                      color: tag?.color || 'inherit',
+                                    }}
+                                  />
+                                );
+                              })}
+                            </Box>
+                          )}
+                        >
+                          {tags.map((tag) => (
+                            <MenuItem key={tag.id} value={tag.id}>
+                              {tag.name}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Box>
+                  </CardContent>
+                </Card>
+
+                {/* Submit & Cancel Actions Card */}
+                <Card>
+                  <CardContent sx={{ p: 3 }}>
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      size="large"
+                      fullWidth
+                      startIcon={<SaveIcon />}
+                      disabled={saving}
+                      sx={{ py: 1.5, fontWeight: 700, fontSize: '1rem', mb: 1.5 }}
+                    >
+                      {saving ? <CircularProgress size={24} color="inherit" /> : 'Зарегистрировать оборудование'}
+                    </Button>
+
+                    <Button
+                      variant="outlined"
+                      size="medium"
+                      fullWidth
+                      color="inherit"
+                      onClick={() => router.push('/eps')}
+                    >
+                      Отмена
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Box>
             </Grid>
           </Grid>
         </Box>
