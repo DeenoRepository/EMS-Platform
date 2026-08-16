@@ -65,7 +65,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
-        <Header onToggleSidebar={handleDrawerToggle} />
+        <Header onToggleSidebar={handleDrawerToggle} sidebarCollapsed={collapsed} />
         <Box
           component="main"
           sx={{

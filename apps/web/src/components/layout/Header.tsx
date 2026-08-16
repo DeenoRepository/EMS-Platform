@@ -21,9 +21,10 @@ import { PERMISSIONS } from '@ems/shared';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
+  sidebarCollapsed?: boolean;
 }
 
-export default function Header({ onToggleSidebar }: HeaderProps) {
+export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProps) {
   const { user, hasPermission } = useAuth();
   const router = useRouter();
 
@@ -57,8 +58,8 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
         }}
       >
         <Toolbar sx={{ minHeight: 64, px: { xs: 2, sm: 3 }, display: 'flex', justifyContent: 'space-between' }}>
-          {/* Left: Mobile Toggle */}
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          {/* Left: Mobile Toggle & Brand Logo when Sidebar is Collapsed */}
+          <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
             <IconButton
               edge="start"
               color="inherit"
@@ -68,6 +69,61 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
             >
               <MenuIcon />
             </IconButton>
+
+            {sidebarCollapsed && (
+              <Box
+                onClick={() => router.push('/eps')}
+                sx={{
+                  display: { xs: 'none', sm: 'flex' },
+                  alignItems: 'center',
+                  gap: 1.25,
+                  cursor: 'pointer',
+                  mr: 2.5,
+                  p: 0.5,
+                  borderRadius: '8px',
+                  transition: 'background-color 0.15s ease',
+                  '&:hover': { backgroundColor: '#f1f5f9' },
+                }}
+              >
+                <Box
+                  component="img"
+                  src="/logo.png"
+                  alt="EMS Platform"
+                  sx={{
+                    width: 30,
+                    height: 30,
+                    objectFit: 'contain',
+                    filter: 'drop-shadow(0 2px 6px rgba(124, 58, 237, 0.25))',
+                  }}
+                />
+                <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+                  <Typography
+                    component="span"
+                    sx={{
+                      fontWeight: 800,
+                      fontSize: '0.9375rem',
+                      lineHeight: 1.1,
+                      letterSpacing: '-0.02em',
+                      color: '#0f172a',
+                    }}
+                  >
+                    EMS
+                  </Typography>
+                  <Typography
+                    component="span"
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: '0.8125rem',
+                      lineHeight: 1.1,
+                      color: '#0284c7',
+                      letterSpacing: '-0.01em',
+                    }}
+                  >
+                    Platform
+                  </Typography>
+                </Box>
+              </Box>
+            )}
           </Box>
 
           {/* Center: Command Palette Search Bar Trigger */}

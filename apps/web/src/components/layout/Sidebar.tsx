@@ -502,7 +502,7 @@ export default function Sidebar({
         zIndex: 100,
       }}
     >
-      {/* Top Header: Brand Logo & Collapse Icon */}
+      {/* Top Header: Brand Logo / Expand Button */}
       <Box
         sx={{
           display: 'flex',
@@ -512,104 +512,122 @@ export default function Sidebar({
           minHeight: 38,
         }}
       >
-        {/* Brand Logo & Professional Typography */}
-        <Box
-          onClick={() => {
-            if (collapsed) {
-              onToggleCollapse();
-            } else {
-              handleNavigate('/eps');
-            }
-          }}
-          title={collapsed ? 'Развернуть меню' : 'Перейти на главную'}
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.25,
-            cursor: 'pointer',
-            p: 0.25,
-            borderRadius: '8px',
-            '&:hover': { backgroundColor: collapsed ? '#f1f5f9' : 'transparent' },
-          }}
-        >
-          <Box
-            component="img"
-            src="/logo.png"
-            alt="EMS Platform"
-            sx={{
-              width: 32,
-              height: 32,
-              objectFit: 'contain',
-              filter: 'drop-shadow(0 2px 8px rgba(124, 58, 237, 0.25))',
-              flexShrink: 0,
-              transition: 'transform 0.15s ease',
-              '&:hover': {
-                transform: 'scale(1.06)',
-              },
-            }}
-          />
-          {!collapsed && (
-            <Box sx={{ minWidth: 0 }}>
-              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+        {collapsed ? (
+          <Tooltip title="Развернуть меню" placement="right">
+            <IconButton
+              size="small"
+              onClick={onToggleCollapse}
+              sx={{
+                width: 38,
+                height: 38,
+                borderRadius: '8px',
+                color: '#64748b',
+                backgroundColor: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                transition: 'all 0.15s ease',
+                '&:hover': {
+                  backgroundColor: '#eff6ff',
+                  borderColor: '#bfdbfe',
+                  color: '#0284c7',
+                  transform: 'scale(1.05)',
+                },
+              }}
+            >
+              <ViewSidebarOutlinedIcon sx={{ fontSize: 20 }} />
+            </IconButton>
+          </Tooltip>
+        ) : (
+          <>
+            {/* Brand Logo & Professional Typography */}
+            <Box
+              onClick={() => handleNavigate('/eps')}
+              title="Перейти на главную"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.25,
+                cursor: 'pointer',
+                p: 0.25,
+                borderRadius: '8px',
+                '&:hover': { backgroundColor: '#f1f5f9' },
+              }}
+            >
+              <Box
+                component="img"
+                src="/logo.png"
+                alt="EMS Platform"
+                sx={{
+                  width: 32,
+                  height: 32,
+                  objectFit: 'contain',
+                  filter: 'drop-shadow(0 2px 8px rgba(124, 58, 237, 0.25))',
+                  flexShrink: 0,
+                  transition: 'transform 0.15s ease',
+                  '&:hover': {
+                    transform: 'scale(1.06)',
+                  },
+                }}
+              />
+              <Box sx={{ minWidth: 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+                  <Typography
+                    component="span"
+                    sx={{
+                      fontWeight: 800,
+                      fontSize: '0.9375rem',
+                      lineHeight: 1.1,
+                      letterSpacing: '-0.02em',
+                      color: '#0f172a',
+                    }}
+                  >
+                    EMS
+                  </Typography>
+                  <Typography
+                    component="span"
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: '0.8125rem',
+                      lineHeight: 1.1,
+                      color: '#0284c7',
+                      letterSpacing: '-0.01em',
+                    }}
+                  >
+                    Platform
+                  </Typography>
+                </Box>
                 <Typography
-                  component="span"
+                  variant="caption"
                   sx={{
-                    fontWeight: 800,
-                    fontSize: '0.9375rem',
+                    color: '#64748b',
+                    fontWeight: 500,
+                    fontSize: '0.625rem',
+                    display: 'block',
                     lineHeight: 1.1,
-                    letterSpacing: '-0.02em',
-                    color: '#0f172a',
+                    mt: 0.3,
+                    letterSpacing: '0.01em',
+                    whiteSpace: 'nowrap',
                   }}
                 >
-                  EMS
-                </Typography>
-                <Typography
-                  component="span"
-                  sx={{
-                    fontWeight: 600,
-                    fontSize: '0.8125rem',
-                    lineHeight: 1.1,
-                    color: '#0284c7',
-                    letterSpacing: '-0.01em',
-                  }}
-                >
-                  Platform
+                  Управление оборудованием
                 </Typography>
               </Box>
-              <Typography
-                variant="caption"
-                sx={{
-                  color: '#64748b',
-                  fontWeight: 500,
-                  fontSize: '0.625rem',
-                  display: 'block',
-                  lineHeight: 1.1,
-                  mt: 0.3,
-                  letterSpacing: '0.01em',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Управление оборудованием
-              </Typography>
             </Box>
-          )}
-        </Box>
 
-        {/* Toggle Sidebar Collapse Button */}
-        {!collapsed && (
-          <IconButton
-            size="small"
-            onClick={onToggleCollapse}
-            title="Свернуть меню"
-            sx={{
-              color: '#64748b',
-              p: 0.5,
-              borderRadius: '6px',
-              '&:hover': { backgroundColor: '#f1f5f9', color: '#0f172a' },
-            }}
-          >
-            <ViewSidebarOutlinedIcon sx={{ fontSize: 18 }} />
-          </IconButton>
+            {/* Toggle Sidebar Collapse Button */}
+            <IconButton
+              size="small"
+              onClick={onToggleCollapse}
+              title="Свернуть меню"
+              sx={{
+                color: '#64748b',
+                p: 0.5,
+                borderRadius: '6px',
+                '&:hover': { backgroundColor: '#f1f5f9', color: '#0f172a' },
+              }}
+            >
+              <ViewSidebarOutlinedIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </>
         )}
       </Box>
 
