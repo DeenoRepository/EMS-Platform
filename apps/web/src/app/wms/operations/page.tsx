@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, Suspense } from 'react';
+import React, { useEffect, useState, useCallback, Suspense, useMemo } from 'react';
 import {
   Box,
   Card,
@@ -30,6 +30,7 @@ import {
   Autocomplete,
   Tooltip,
   Divider,
+  Alert,
 } from '@mui/material';
 import { useSearchParams } from 'next/navigation';
 import PageHeader from '@/components/layout/PageHeader';
@@ -39,6 +40,7 @@ import MoveToInboxIcon from '@mui/icons-material/MoveToInbox';
 import OutboxIcon from '@mui/icons-material/Outbox';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import TuneIcon from '@mui/icons-material/Tune';
+import CreateNomenclatureDialog from '@/components/wms/CreateNomenclatureDialog';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS, OPERATION_TYPE_MAP, formatDateTime } from '@ems/shared';
@@ -97,6 +99,10 @@ function WmsOperationsContent() {
   const [equipmentList, setEquipmentList] = useState<EquipmentOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Warehouse stock map: nomenclatureId -> quantity in selected warehouse
+  const [warehouseStockMap, setWarehouseStockMap] = useState<Record<string, number>>({});
+  const [isLoadingStock, setIsLoadingStock] = useState(false);
+
   // Filters
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>('');
   const [selectedType, setSelectedType] = useState<string>(searchParams.get('action') || '');
@@ -121,26 +127,24 @@ function WmsOperationsContent() {
 
   // Fast Create Nomenclature inside Operation Modal
   const [isQuickNomOpen, setIsQuickNomOpen] = useState(false);
-  const [quickNomName, setQuickNomName] = useState('');
-  const [quickNomArticle, setQuickNomArticle] = useState('');
-  const [quickNomUnit, setQuickNomUnit] = useState('шт');
+  const [quickNomRowIndex, setQuickNomRowIndex] = useState<number | null>(null);
 
-  // Load initial dictionaries
+  // Load initial dictionaries ONCE on mount
   useEffect(() => {
     async function loadDictionaries() {
       try {
         const [wRes, nRes, eRes] = await Promise.all([
           fetch('/api/wms/warehouses'),
-          fetch('/api/wms/nomenclature?limit=100'),
-          fetch('/api/eps/equipment?pageSize=100'),
+          fetch('/api/wms/nomenclature?limit=500'),
+          fetch('/api/eps/equipment?pageSize=200'),
         ]);
 
         if (wRes.ok) {
           const wJson = await wRes.json();
           if (wJson.success) {
             setWarehouses(wJson.data);
-            if (wJson.data.length > 0 && !opWarehouseId) {
-              setOpWarehouseId(wJson.data[0].id);
+            if (wJson.data.length > 0) {
+              setOpWarehouseId((prev) => prev || wJson.data[0].id);
             }
           }
         }
@@ -167,7 +171,34 @@ function WmsOperationsContent() {
       }
     }
     loadDictionaries();
-  }, [opWarehouseId]);
+  }, []);
+
+  // Fetch stock quantities for the active operation warehouse (for ISSUE / TRANSFER validation)
+  useEffect(() => {
+    if (!opWarehouseId || !isCreateModalOpen) return;
+
+    async function loadWarehouseStock() {
+      setIsLoadingStock(true);
+      try {
+        const res = await fetch(`/api/wms/stock?warehouseId=${opWarehouseId}&pageSize=500`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.data.items) {
+            const stockMap: Record<string, number> = {};
+            json.data.items.forEach((item: any) => {
+              stockMap[item.nomenclatureId] = Number(item.quantity);
+            });
+            setWarehouseStockMap(stockMap);
+          }
+        }
+      } catch (err) {
+        console.error('Ошибка загрузки остатков склада для операции:', err);
+      } finally {
+        setIsLoadingStock(false);
+      }
+    }
+    loadWarehouseStock();
+  }, [opWarehouseId, isCreateModalOpen]);
 
   // Open modal if action query parameter passed
   useEffect(() => {
@@ -207,124 +238,103 @@ function WmsOperationsContent() {
     fetchOperations();
   }, [fetchOperations]);
 
-  // Form rows helpers
+  const handleOpenCreate = (type: 'RECEIPT' | 'ISSUE' | 'TRANSFER') => {
+    setOpType(type);
+    setFormRows([{ nomenclature: null, quantity: 1, equipment: null }]);
+    setOpCounterparty('');
+    setOpDocument('');
+    setOpComment('');
+    if (warehouses.length > 0 && !opWarehouseId) {
+      setOpWarehouseId(warehouses[0].id);
+    }
+    setIsCreateModalOpen(true);
+  };
+
   const handleAddRow = () => {
     setFormRows((prev) => [...prev, { nomenclature: null, quantity: 1, equipment: null }]);
   };
 
-  const handleRemoveRow = (index: number) => {
-    if (formRows.length > 1) {
-      setFormRows((prev) => prev.filter((_, i) => i !== index));
-    }
+  const handleRemoveRow = (idx: number) => {
+    setFormRows((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  const handleRowChange = (index: number, field: keyof FormRow, value: any) => {
+  const handleRowChange = (idx: number, field: keyof FormRow, val: any) => {
     setFormRows((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: value };
-      return updated;
+      const next = [...prev];
+      next[idx] = { ...next[idx], [field]: val };
+      return next;
     });
   };
 
-  // Quick Create Nomenclature
-  const handleQuickCreateNomenclature = async () => {
-    if (!quickNomName.trim()) {
-      enqueueSnackbar('Укажите наименование номенклатуры', { variant: 'warning' });
-      return;
-    }
-
-    try {
-      const res = await fetch('/api/wms/nomenclature', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: quickNomName.trim(),
-          article: quickNomArticle.trim() || undefined,
-          unit: quickNomUnit.trim() || 'шт',
-        }),
-      });
-
-      const json = await res.json();
-      if (res.ok && json.success) {
-        enqueueSnackbar('Номенклатура успешно создана', { variant: 'success' });
-        const newNom = json.data;
-        setNomenclatures((prev) => [newNom, ...prev]);
-        // Автоматически подставляем в последнюю строку
-        setFormRows((prev) => {
-          const lastIdx = prev.length - 1;
-          const updated = [...prev];
-          updated[lastIdx] = { ...updated[lastIdx], nomenclature: newNom };
-          return updated;
-        });
-        setIsQuickNomOpen(false);
-        setQuickNomName('');
-        setQuickNomArticle('');
-      } else {
-        enqueueSnackbar(json.error || 'Ошибка создания номенклатуры', { variant: 'error' });
-      }
-    } catch (err) {
-      enqueueSnackbar('Ошибка сети при создании номенклатуры', { variant: 'error' });
-    }
-  };
-
-  // Submit Operation
-  const handleSubmitOperation = async () => {
+  const handleSubmit = async () => {
     if (!opWarehouseId) {
-      enqueueSnackbar('Выберите склад операции', { variant: 'warning' });
+      enqueueSnackbar('Выберите склад для операции', { variant: 'warning' });
       return;
     }
 
-    if (opType === 'TRANSFER' && !opTargetWarehouseId) {
-      enqueueSnackbar('Выберите склад-получатель для перемещения', { variant: 'warning' });
+    if (opType === 'TRANSFER' && (!opTargetWarehouseId || opTargetWarehouseId === opWarehouseId)) {
+      enqueueSnackbar('Выберите другой склад-получатель для перемещения', { variant: 'warning' });
       return;
     }
 
-    if (opType === 'TRANSFER' && opWarehouseId === opTargetWarehouseId) {
-      enqueueSnackbar('Склад-отправитель и получатель не могут совпадать', { variant: 'warning' });
-      return;
-    }
+    // Validate rows
+    const validItems = [];
+    for (let i = 0; i < formRows.length; i++) {
+      const row = formRows[i];
+      if (!row.nomenclature) {
+        enqueueSnackbar(`В строке #${i + 1} не выбрана номенклатура`, { variant: 'warning' });
+        return;
+      }
+      const qty = Number(row.quantity);
+      if (isNaN(qty) || qty <= 0) {
+        enqueueSnackbar(`В строке #${i + 1} указано некорректное количество`, { variant: 'warning' });
+        return;
+      }
 
-    const validItems = formRows.filter(
-      (r) => r.nomenclature && Number(r.quantity) > 0
-    );
+      // Check available quantity for ISSUE & TRANSFER
+      if (opType !== 'RECEIPT') {
+        const available = warehouseStockMap[row.nomenclature.id] || 0;
+        if (qty > available) {
+          enqueueSnackbar(
+            `В строке #${i + 1} (${row.nomenclature.name}): запрошено ${qty} ${row.nomenclature.unit}, но на складе доступно всего ${available} ${row.nomenclature.unit}!`,
+            { variant: 'error' }
+          );
+          return;
+        }
+      }
+
+      validItems.push({
+        nomenclatureId: row.nomenclature.id,
+        quantity: qty,
+        equipmentId: row.equipment ? row.equipment.id : undefined,
+      });
+    }
 
     if (validItems.length === 0) {
-      enqueueSnackbar('Добавьте хотя бы одну корректную позицию ТМЦ с количеством > 0', {
-        variant: 'warning',
-      });
+      enqueueSnackbar('Добавьте хотя бы одну позицию ТМЦ', { variant: 'warning' });
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const payload = {
-        warehouseId: opWarehouseId,
-        targetWarehouseId: opType === 'TRANSFER' ? opTargetWarehouseId : undefined,
-        type: opType,
-        counterparty: opCounterparty || undefined,
-        document: opDocument || undefined,
-        comment: opComment || undefined,
-        items: validItems.map((r) => ({
-          nomenclatureId: r.nomenclature!.id,
-          quantity: Number(r.quantity),
-          equipmentId: opType === 'ISSUE' ? r.equipment?.id || null : null,
-        })),
-      };
-
       const res = await fetch('/api/wms/operations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          type: opType,
+          warehouseId: opWarehouseId,
+          targetWarehouseId: opType === 'TRANSFER' ? opTargetWarehouseId : undefined,
+          counterparty: opCounterparty || undefined,
+          document: opDocument || undefined,
+          comment: opComment || undefined,
+          items: validItems,
+        }),
       });
 
       const json = await res.json();
       if (res.ok && json.success) {
         enqueueSnackbar('Складская операция успешно проведена', { variant: 'success' });
         setIsCreateModalOpen(false);
-        setFormRows([{ nomenclature: null, quantity: 1, equipment: null }]);
-        setOpCounterparty('');
-        setOpDocument('');
-        setOpComment('');
         fetchOperations();
       } else {
         enqueueSnackbar(json.error || 'Ошибка проведения операции', { variant: 'error' });
@@ -336,11 +346,34 @@ function WmsOperationsContent() {
     }
   };
 
+  const handleNomenclatureCreated = (newItem: { id: string; name: string; article?: string | null; unit: string }) => {
+    setNomenclatures((prev) => [newItem, ...prev]);
+    if (quickNomRowIndex !== null && quickNomRowIndex < formRows.length) {
+      handleRowChange(quickNomRowIndex, 'nomenclature', newItem);
+    }
+    setQuickNomRowIndex(null);
+  };
+
+  const getTypeChip = (type: string) => {
+    switch (type) {
+      case 'RECEIPT':
+        return <Chip icon={<MoveToInboxIcon />} label="Приход" size="small" color="success" sx={{ fontWeight: 700 }} />;
+      case 'ISSUE':
+        return <Chip icon={<OutboxIcon />} label="Списание" size="small" color="warning" sx={{ fontWeight: 700 }} />;
+      case 'TRANSFER':
+        return <Chip icon={<SwapHorizIcon />} label="Перемещение" size="small" color="info" sx={{ fontWeight: 700 }} />;
+      case 'ADJUSTMENT':
+        return <Chip icon={<TuneIcon />} label="Корректировка" size="small" color="default" sx={{ fontWeight: 700 }} />;
+      default:
+        return <Chip label={type} size="small" />;
+    }
+  };
+
   return (
     <Box sx={{ pb: 4 }}>
       <PageHeader
-        title="Складские операции"
-        subtitle="Журнал прихода, списания на оборудование EPS, перемещений и корректировок"
+        title="Складские операции и журнал перемещений"
+        subtitle="Регистрация прихода ТМЦ от поставщиков, списания на оборудование и межскладских перемещений"
         breadcrumbs={[
           { label: 'Главная', href: '/' },
           { label: 'Складской учёт', href: '/wms' },
@@ -348,13 +381,35 @@ function WmsOperationsContent() {
         ]}
         actions={
           hasPermission(PERMISSIONS.WMS_OPERATIONS_CREATE) && (
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => setIsCreateModalOpen(true)}
-            >
-              Оформить операцию
-            </Button>
+            <Stack direction="row" spacing={1.5}>
+              <Button
+                variant="contained"
+                color="success"
+                startIcon={<MoveToInboxIcon />}
+                onClick={() => handleOpenCreate('RECEIPT')}
+                aria-label="Оформить приход ТМЦ"
+              >
+                Приход
+              </Button>
+              <Button
+                variant="contained"
+                color="warning"
+                startIcon={<OutboxIcon />}
+                onClick={() => handleOpenCreate('ISSUE')}
+                aria-label="Оформить списание на оборудование"
+              >
+                Списание
+              </Button>
+              <Button
+                variant="outlined"
+                color="primary"
+                startIcon={<SwapHorizIcon />}
+                onClick={() => handleOpenCreate('TRANSFER')}
+                aria-label="Оформить перемещение"
+              >
+                Перемещение
+              </Button>
+            </Stack>
           )
         }
       />
@@ -362,26 +417,6 @@ function WmsOperationsContent() {
       {/* Фильтры */}
       <Card sx={{ mb: 3, p: 2.5, borderRadius: 2 }}>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={6} md={4}>
-            <TextField
-              select
-              fullWidth
-              size="small"
-              label="Тип операции"
-              value={selectedType}
-              onChange={(e) => {
-                setSelectedType(e.target.value);
-                setPage(0);
-              }}
-            >
-              <MenuItem value="">Все типы операций</MenuItem>
-              <MenuItem value="RECEIPT">Приход (Поступление)</MenuItem>
-              <MenuItem value="ISSUE">Расход (Списание на оборудование)</MenuItem>
-              <MenuItem value="TRANSFER">Перемещение между складами</MenuItem>
-              <MenuItem value="ADJUSTMENT">Корректировка (Инвентаризация)</MenuItem>
-            </TextField>
-          </Grid>
-
           <Grid item xs={12} sm={6} md={4}>
             <TextField
               select
@@ -402,10 +437,30 @@ function WmsOperationsContent() {
               ))}
             </TextField>
           </Grid>
+
+          <Grid item xs={12} sm={6} md={4}>
+            <TextField
+              select
+              fullWidth
+              size="small"
+              label="Тип операции"
+              value={selectedType}
+              onChange={(e) => {
+                setSelectedType(e.target.value);
+                setPage(0);
+              }}
+            >
+              <MenuItem value="">Все типы операций</MenuItem>
+              <MenuItem value="RECEIPT">Приход (поступление от поставщика)</MenuItem>
+              <MenuItem value="ISSUE">Списание (установка на оборудование)</MenuItem>
+              <MenuItem value="TRANSFER">Перемещение между складами</MenuItem>
+              <MenuItem value="ADJUSTMENT">Корректировка инвентаризации</MenuItem>
+            </TextField>
+          </Grid>
         </Grid>
       </Card>
 
-      {/* Таблица операций */}
+      {/* Таблица журнала операций */}
       <Card sx={{ borderRadius: 2 }}>
         <TableContainer>
           <Table size="small" aria-label="Журнал складских операций">
@@ -414,23 +469,23 @@ function WmsOperationsContent() {
                 <TableCell sx={{ fontWeight: 700 }}>Дата / Время</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Тип</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Склад</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Документ / Контрагент</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Позиции ТМЦ и количества</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Списание на оборудование</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Автор</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Позиции и количество</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Оборудование / Получатель</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Документ / Основание</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Исполнитель</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {isLoading ? (
-                Array.from({ length: 6 }).map((_, idx) => (
+                Array.from({ length: 5 }).map((_, idx) => (
                   <TableRow key={idx}>
                     <TableCell><Skeleton variant="text" width={110} /></TableCell>
-                    <TableCell><Skeleton variant="rounded" width={80} height={22} /></TableCell>
-                    <TableCell><Skeleton variant="text" width={120} /></TableCell>
-                    <TableCell><Skeleton variant="text" width={130} /></TableCell>
-                    <TableCell><Skeleton variant="text" width={200} /></TableCell>
-                    <TableCell><Skeleton variant="rounded" width={140} height={20} /></TableCell>
-                    <TableCell><Skeleton variant="text" width={90} /></TableCell>
+                    <TableCell><Skeleton variant="rounded" width={80} height={24} /></TableCell>
+                    <TableCell><Skeleton variant="text" width={100} /></TableCell>
+                    <TableCell><Skeleton variant="text" width={220} /></TableCell>
+                    <TableCell><Skeleton variant="text" width={140} /></TableCell>
+                    <TableCell><Skeleton variant="text" width={100} /></TableCell>
+                    <TableCell><Skeleton variant="text" width={110} /></TableCell>
                   </TableRow>
                 ))
               ) : operations.length === 0 ? (
@@ -440,79 +495,73 @@ function WmsOperationsContent() {
                   </TableCell>
                 </TableRow>
               ) : (
-                operations.map((op) => {
-                  const typeInfo = OPERATION_TYPE_MAP[op.type] || { label: op.type, color: 'default' };
-                  return (
-                    <TableRow key={op.id} hover>
-                      <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600 }}>
+                operations.map((op) => (
+                  <TableRow key={op.id} hover>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                      <Typography variant="body2" fontWeight={600}>
                         {formatDateTime(op.date)}
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={typeInfo.label}
-                          size="small"
-                          color={typeInfo.color as any}
-                          sx={{ fontWeight: 700 }}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight={600}>
-                          {op.warehouse.name}
-                        </Typography>
-                        <Chip label={op.warehouse.code} size="small" variant="outlined" sx={{ mt: 0.2 }} />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight={500}>
-                          {op.document || '—'}
-                        </Typography>
-                        {op.counterparty && (
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                            {op.counterparty}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>{getTypeChip(op.type)}</TableCell>
+                    <TableCell>
+                      <Chip label={op.warehouse.code} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        {op.warehouse.name}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Stack spacing={0.5}>
+                        {op.items.map((it) => (
+                          <Typography key={it.id} variant="body2">
+                            <b>{it.nomenclature.name}</b>: {it.quantity} {it.nomenclature.unit}
                           </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell>
+                        ))}
+                      </Stack>
+                    </TableCell>
+                    <TableCell>
+                      {op.items.some((i) => i.equipment) ? (
                         <Stack spacing={0.5}>
-                          {op.items.map((item) => (
-                            <Box key={item.id} sx={{ fontSize: '0.875rem' }}>
-                              <Typography component="span" fontWeight={600}>
-                                {item.nomenclature.name}
-                              </Typography>{' '}
-                              <Typography component="span" color="text.secondary">
-                                ({item.nomenclature.article || 'б/а'})
-                              </Typography>
-                              : <b>{item.quantity}</b> {item.nomenclature.unit}
-                            </Box>
-                          ))}
+                          {op.items
+                            .filter((i) => i.equipment)
+                            .map((i) => (
+                              <Chip
+                                key={i.id}
+                                label={`${i.equipment?.name} (${i.equipment?.inventoryNumber})`}
+                                size="small"
+                                variant="outlined"
+                                color="primary"
+                              />
+                            ))}
                         </Stack>
-                      </TableCell>
-                      <TableCell>
-                        {op.items.some((i) => i.equipment) ? (
-                          <Stack spacing={0.5}>
-                            {op.items
-                              .filter((i) => i.equipment)
-                              .map((i) => (
-                                <Chip
-                                  key={i.id}
-                                  label={`${i.equipment!.name} (${i.equipment!.inventoryNumber})`}
-                                  size="small"
-                                  color="primary"
-                                  variant="outlined"
-                                />
-                              ))}
-                          </Stack>
-                        ) : (
-                          <Typography variant="caption" color="text.secondary">
-                            —
-                          </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                        <Typography variant="body2">{op.createdBy.displayName}</Typography>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
+                      ) : op.counterparty ? (
+                        <Typography variant="body2">{op.counterparty}</Typography>
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">
+                          —
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {op.document ? (
+                        <Typography variant="body2" fontWeight={600}>
+                          {op.document}
+                        </Typography>
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">
+                          —
+                        </Typography>
+                      )}
+                      {op.comment && (
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                          {op.comment}
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">{op.createdBy?.displayName}</Typography>
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
             </TableBody>
           </Table>
@@ -540,50 +589,14 @@ function WmsOperationsContent() {
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle sx={{ fontWeight: 700 }}>Оформление складской операции</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700 }}>
+          {opType === 'RECEIPT' && 'Оформление прихода ТМЦ (поступление на склад)'}
+          {opType === 'ISSUE' && 'Оформление списания ТМЦ (установка на оборудование)'}
+          {opType === 'TRANSFER' && 'Межскладское перемещение ТМЦ'}
+        </DialogTitle>
         <DialogContent dividers>
           <Stack spacing={3} sx={{ mt: 1 }}>
-            {/* Тип операции */}
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={4}>
-                <Button
-                  fullWidth
-                  variant={opType === 'RECEIPT' ? 'contained' : 'outlined'}
-                  color="success"
-                  startIcon={<MoveToInboxIcon />}
-                  onClick={() => setOpType('RECEIPT')}
-                  sx={{ py: 1.2, fontWeight: 700 }}
-                >
-                  Приход ТМЦ
-                </Button>
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <Button
-                  fullWidth
-                  variant={opType === 'ISSUE' ? 'contained' : 'outlined'}
-                  color="warning"
-                  startIcon={<OutboxIcon />}
-                  onClick={() => setOpType('ISSUE')}
-                  sx={{ py: 1.2, fontWeight: 700 }}
-                >
-                  Расход / Списание
-                </Button>
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <Button
-                  fullWidth
-                  variant={opType === 'TRANSFER' ? 'contained' : 'outlined'}
-                  color="info"
-                  startIcon={<SwapHorizIcon />}
-                  onClick={() => setOpType('TRANSFER')}
-                  sx={{ py: 1.2, fontWeight: 700 }}
-                >
-                  Перемещение
-                </Button>
-              </Grid>
-            </Grid>
-
-            {/* Склады */}
+            {/* Склад и основные реквизиты */}
             <Grid container spacing={2}>
               <Grid item xs={12} sm={opType === 'TRANSFER' ? 6 : 12}>
                 <TextField
@@ -622,24 +635,24 @@ function WmsOperationsContent() {
                   </TextField>
                 </Grid>
               )}
-            </Grid>
 
-            {/* Контрагент и основание */}
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              {opType === 'RECEIPT' && (
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Контрагент / Поставщик"
+                    placeholder="ООО Снабкомплект..."
+                    value={opCounterparty}
+                    onChange={(e) => setOpCounterparty(e.target.value)}
+                  />
+                </Grid>
+              )}
+
+              <Grid item xs={12} sm={opType === 'RECEIPT' ? 6 : 12}>
                 <TextField
                   fullWidth
-                  label={opType === 'RECEIPT' ? 'Поставщик / Источник' : 'Получатель / Подразделение'}
-                  placeholder={opType === 'RECEIPT' ? 'ООО "ПромСнаб"' : 'Цех №1, мастер Иванов'}
-                  value={opCounterparty}
-                  onChange={(e) => setOpCounterparty(e.target.value)}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Документ-основание"
-                  placeholder="Накладная №124 от 12.05.2024"
+                  label="Номер накладной / Документ-основание"
+                  placeholder="ТТН-0492 / Служебная записка..."
                   value={opDocument}
                   onChange={(e) => setOpDocument(e.target.value)}
                 />
@@ -648,109 +661,119 @@ function WmsOperationsContent() {
 
             <Divider />
 
-            {/* Строки ТМЦ */}
+            {/* Строки спецификации ТМЦ */}
             <Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                <Typography variant="subtitle1" fontWeight={700}>
-                  Спецификация ТМЦ ({formRows.length})
+                <Typography variant="subtitle2" fontWeight={700}>
+                  Спецификация позиций ТМЦ
                 </Typography>
-                <Button
-                  size="small"
-                  startIcon={<AddIcon />}
-                  onClick={() => setIsQuickNomOpen(true)}
-                  color="secondary"
-                >
-                  + Создать новую номенклатуру
+                <Button size="small" startIcon={<AddIcon />} onClick={handleAddRow}>
+                  Добавить строку
                 </Button>
               </Box>
 
               <Stack spacing={2}>
-                {formRows.map((row, idx) => (
-                  <Paper key={idx} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-                    <Grid container spacing={2} alignItems="center">
-                      <Grid item xs={12} md={opType === 'ISSUE' ? 5 : 8}>
-                        <Autocomplete
-                          options={nomenclatures}
-                          getOptionLabel={(option) =>
-                            `${option.name} ${option.article ? `[${option.article}]` : ''} (${option.unit})`
-                          }
-                          value={row.nomenclature}
-                          onChange={(_, val) => handleRowChange(idx, 'nomenclature', val)}
-                          renderInput={(params) => (
-                            <TextField
-                              {...params}
-                              required
-                              size="small"
-                              label={`Позиция ${idx + 1}`}
-                              placeholder="Поиск по названию или артикулу..."
-                            />
-                          )}
-                        />
-                      </Grid>
+                {formRows.map((row, idx) => {
+                  const currentStock = row.nomenclature ? warehouseStockMap[row.nomenclature.id] ?? 0 : null;
+                  const isExceeded = opType !== 'RECEIPT' && currentStock !== null && Number(row.quantity) > currentStock;
 
-                      <Grid item xs={6} md={3}>
-                        <TextField
-                          fullWidth
-                          required
-                          size="small"
-                          type="number"
-                          label="Количество"
-                          value={row.quantity}
-                          onChange={(e) => handleRowChange(idx, 'quantity', e.target.value)}
-                          InputProps={{
-                            endAdornment: (
-                              <Typography variant="caption" color="text.secondary">
-                                {row.nomenclature?.unit || 'шт'}
-                              </Typography>
-                            ),
-                          }}
-                        />
-                      </Grid>
-
-                      {opType === 'ISSUE' && (
-                        <Grid item xs={12} md={3.5}>
+                  return (
+                    <Paper key={idx} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                      <Grid container spacing={2} alignItems="center">
+                        <Grid item xs={12} sm={opType === 'ISSUE' ? 5 : 7}>
                           <Autocomplete
-                            options={equipmentList}
-                            getOptionLabel={(option) =>
-                              `${option.name} (${option.inventoryNumber || 'б/н'})`
-                            }
-                            value={row.equipment}
-                            onChange={(_, val) => handleRowChange(idx, 'equipment', val)}
+                            options={nomenclatures}
+                            getOptionLabel={(opt) => `${opt.name}${opt.article ? ` (${opt.article})` : ''}`}
+                            value={row.nomenclature}
+                            onChange={(_, newVal) => handleRowChange(idx, 'nomenclature', newVal)}
                             renderInput={(params) => (
                               <TextField
                                 {...params}
                                 size="small"
-                                label="Оборудование EPS (опционально)"
-                                placeholder="Списать на узел..."
+                                required
+                                label={`Позиция #${idx + 1}`}
+                                placeholder="Выберите номенклатуру..."
                               />
                             )}
                           />
+                          {row.nomenclature && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                              <Typography variant="caption" color="text.secondary">
+                                Ед. изм.: <b>{row.nomenclature.unit}</b>
+                              </Typography>
+                              {opType !== 'RECEIPT' && (
+                                <Chip
+                                  label={`На складе: ${currentStock} ${row.nomenclature.unit}`}
+                                  size="small"
+                                  color={isExceeded ? 'error' : 'default'}
+                                  variant="outlined"
+                                  sx={{ height: 20, fontSize: '0.7rem', fontWeight: 600 }}
+                                />
+                              )}
+                            </Box>
+                          )}
                         </Grid>
-                      )}
 
-                      <Grid item xs={6} md={opType === 'ISSUE' ? 0.5 : 1}>
-                        <IconButton
-                          color="error"
-                          disabled={formRows.length === 1}
-                          onClick={() => handleRemoveRow(idx)}
-                          size="small"
-                        >
-                          <DeleteOutlineIcon fontSize="small" />
-                        </IconButton>
+                        <Grid item xs={12} sm={2.5}>
+                          <TextField
+                            size="small"
+                            type="number"
+                            required
+                            label="Количество"
+                            value={row.quantity}
+                            onChange={(e) => handleRowChange(idx, 'quantity', e.target.value)}
+                            error={isExceeded}
+                            helperText={isExceeded ? 'Превышает остаток' : undefined}
+                            inputProps={{ min: 0.001, step: 1 }}
+                          />
+                        </Grid>
+
+                        {opType === 'ISSUE' && (
+                          <Grid item xs={12} sm={3.5}>
+                            <Autocomplete
+                              options={equipmentList}
+                              getOptionLabel={(eq) => `${eq.name} (${eq.inventoryNumber || 'б/н'})`}
+                              value={row.equipment}
+                              onChange={(_, newVal) => handleRowChange(idx, 'equipment', newVal)}
+                              renderInput={(params) => (
+                                <TextField
+                                  {...params}
+                                  size="small"
+                                  label="Оборудование"
+                                  placeholder="Узел / Станок"
+                                />
+                              )}
+                            />
+                          </Grid>
+                        )}
+
+                        <Grid item xs={12} sm={1} sx={{ textAlign: 'right' }}>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            disabled={formRows.length === 1}
+                            onClick={() => handleRemoveRow(idx)}
+                            aria-label={`Удалить строку #${idx + 1}`}
+                          >
+                            <DeleteOutlineIcon fontSize="small" />
+                          </IconButton>
+                        </Grid>
                       </Grid>
-                    </Grid>
-                  </Paper>
-                ))}
+                    </Paper>
+                  );
+                })}
               </Stack>
 
               <Button
-                startIcon={<AddIcon />}
-                onClick={handleAddRow}
-                sx={{ mt: 1.5 }}
-                variant="outlined"
                 size="small"
+                variant="text"
+                sx={{ mt: 1.5 }}
+                onClick={() => {
+                  setQuickNomRowIndex(formRows.length - 1);
+                  setIsQuickNomOpen(true);
+                }}
               >
-                Добавить строку
+                + Создать новую номенклатуру, если её нет в списке
               </Button>
             </Box>
 
@@ -758,8 +781,8 @@ function WmsOperationsContent() {
               fullWidth
               multiline
               rows={2}
-              label="Примечание к операции"
-              placeholder="Дополнительные сведения, комментарий к накладной..."
+              label="Комментарий к операции"
+              placeholder="Примечание, причина списания или особенности..."
               value={opComment}
               onChange={(e) => setOpComment(e.target.value)}
             />
@@ -769,55 +792,18 @@ function WmsOperationsContent() {
           <Button onClick={() => setIsCreateModalOpen(false)} disabled={isSubmitting}>
             Отмена
           </Button>
-          <Button
-            variant="contained"
-            color={opType === 'RECEIPT' ? 'success' : opType === 'ISSUE' ? 'warning' : 'info'}
-            onClick={handleSubmitOperation}
-            disabled={isSubmitting}
-          >
+          <Button variant="contained" onClick={handleSubmit} disabled={isSubmitting}>
             {isSubmitting ? 'Проведение...' : 'Провести операцию'}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Быстрое создание номенклатуры из модального окна */}
-      <Dialog
+      {/* Быстрое создание номенклатуры */}
+      <CreateNomenclatureDialog
         open={isQuickNomOpen}
         onClose={() => setIsQuickNomOpen(false)}
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogTitle sx={{ fontWeight: 700 }}>Быстрое создание ТМЦ</DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField
-              fullWidth
-              required
-              label="Наименование номенклатуры"
-              value={quickNomName}
-              onChange={(e) => setQuickNomName(e.target.value)}
-            />
-            <TextField
-              fullWidth
-              label="Артикул / Код"
-              value={quickNomArticle}
-              onChange={(e) => setQuickNomArticle(e.target.value)}
-            />
-            <TextField
-              fullWidth
-              label="Единица измерения"
-              value={quickNomUnit}
-              onChange={(e) => setQuickNomUnit(e.target.value)}
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setIsQuickNomOpen(false)}>Отмена</Button>
-          <Button variant="contained" onClick={handleQuickCreateNomenclature}>
-            Создать и выбрать
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onCreated={handleNomenclatureCreated}
+      />
     </Box>
   );
 }

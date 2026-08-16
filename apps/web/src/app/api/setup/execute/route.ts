@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@ems/database';
 import { hashPassword } from '@ems/auth';
 import { PERMISSIONS } from '@ems/shared';
 
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
         where: { code },
         create: {
           code,
-          name: code,
+          displayName: code,
           module: code.split('.')[0] || 'system',
           description: `Право доступа ${code}`,
         },
@@ -81,7 +81,9 @@ export async function POST(req: NextRequest) {
       where: { name: 'admin' },
       create: {
         name: 'admin',
+        displayName: 'Администратор',
         description: 'Полный доступ ко всем модулям и настройкам системы',
+        isSystem: true,
       },
       update: {},
     });
@@ -108,7 +110,9 @@ export async function POST(req: NextRequest) {
       where: { name: 'engineer' },
       create: {
         name: 'engineer',
+        displayName: 'Инженер по надежности',
         description: 'Инженер по надежности: паспорта оборудования, ТО и складские операции',
+        isSystem: true,
       },
       update: {},
     });
@@ -120,7 +124,7 @@ export async function POST(req: NextRequest) {
       PERMISSIONS.EPS_DOCUMENTS_UPLOAD,
       PERMISSIONS.WMS_STOCK_VIEW,
       PERMISSIONS.WMS_OPERATIONS_CREATE,
-      PERMISSIONS.MRO_SCHEDULES_VIEW,
+      PERMISSIONS.MRO_SCHEDULE_VIEW,
       PERMISSIONS.SRM_DASHBOARD_VIEW,
     ];
     for (const perm of allDbPermissions.filter((p) => engineerPermCodes.includes(p.code as any))) {

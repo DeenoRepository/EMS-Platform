@@ -40,8 +40,9 @@ import AddIcon from '@mui/icons-material/Add';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
-import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
 import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined';
+import CreateNomenclatureDialog from '@/components/wms/CreateNomenclatureDialog';
+import { useDebounce } from '@/hooks/useDebounce';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS } from '@ems/shared';
@@ -105,6 +106,7 @@ function WmsStockContent() {
   const [selectedZone, setSelectedZone] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [search, setSearch] = useState<string>('');
+  const debouncedSearch = useDebounce(search, 300);
   const [lowStockOnly, setLowStockOnly] = useState<boolean>(searchParams.get('lowStockOnly') === 'true');
 
   // Pagination
@@ -114,13 +116,6 @@ function WmsStockContent() {
 
   // Modal: Create Nomenclature
   const [isNomenclatureModalOpen, setIsNomenclatureModalOpen] = useState(false);
-  const [newNomName, setNewNomName] = useState('');
-  const [newNomArticle, setNewNomArticle] = useState('');
-  const [newNomUnit, setNewNomUnit] = useState('шт');
-  const [newNomCategory, setNewNomCategory] = useState('');
-  const [newNomMinStock, setNewNomMinStock] = useState('');
-  const [newNomDescription, setNewNomDescription] = useState('');
-  const [isSubmittingNom, setIsSubmittingNom] = useState(false);
 
   // Modal: Assign Storage Location (Cell)
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
@@ -129,7 +124,7 @@ function WmsStockContent() {
   const [selectedCellId, setSelectedCellId] = useState<string>('');
   const [isSavingLoc, setIsSavingLoc] = useState(false);
 
-  // Load dictionaries
+  // Load dictionaries once on mount
   useEffect(() => {
     async function loadDictionaries() {
       try {
@@ -183,7 +178,7 @@ function WmsStockContent() {
       if (selectedWarehouse) params.set('warehouseId', selectedWarehouse);
       if (selectedZone) params.set('zoneId', selectedZone);
       if (selectedCategory) params.set('categoryId', selectedCategory);
-      if (search) params.set('search', search);
+      if (debouncedSearch) params.set('search', debouncedSearch);
       if (lowStockOnly) params.set('lowStockOnly', 'true');
       params.set('page', String(page + 1));
       params.set('pageSize', String(rowsPerPage));
@@ -202,51 +197,11 @@ function WmsStockContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedWarehouse, selectedZone, selectedCategory, search, lowStockOnly, page, rowsPerPage, enqueueSnackbar]);
+  }, [selectedWarehouse, selectedZone, selectedCategory, debouncedSearch, lowStockOnly, page, rowsPerPage, enqueueSnackbar]);
 
   useEffect(() => {
     fetchStock();
   }, [fetchStock]);
-
-  const handleCreateNomenclature = async () => {
-    if (!newNomName.trim()) {
-      enqueueSnackbar('Укажите наименование ТМЦ', { variant: 'warning' });
-      return;
-    }
-
-    setIsSubmittingNom(true);
-    try {
-      const res = await fetch('/api/wms/nomenclature', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newNomName,
-          article: newNomArticle || undefined,
-          unit: newNomUnit,
-          categoryId: newNomCategory || undefined,
-          minStock: newNomMinStock ? Number(newNomMinStock) : undefined,
-          description: newNomDescription || undefined,
-        }),
-      });
-
-      const json = await res.json();
-      if (res.ok && json.success) {
-        enqueueSnackbar('Номенклатура успешно создана', { variant: 'success' });
-        setIsNomenclatureModalOpen(false);
-        setNewNomName('');
-        setNewNomArticle('');
-        setNewNomMinStock('');
-        setNewNomDescription('');
-        fetchStock();
-      } else {
-        enqueueSnackbar(json.error || 'Ошибка создания номенклатуры', { variant: 'error' });
-      }
-    } catch (err) {
-      enqueueSnackbar('Ошибка сети при создании номенклатуры', { variant: 'error' });
-    } finally {
-      setIsSubmittingNom(false);
-    }
-  };
 
   // Open location assignment dialog
   const handleOpenLocationModal = async (row: StockRow) => {
@@ -472,7 +427,9 @@ function WmsStockContent() {
               ) : items.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} align="center" sx={{ py: 6, color: 'text.secondary' }}>
-                    Позиции не найдены
+                    {debouncedSearch || selectedWarehouse || selectedCategory || lowStockOnly
+                      ? 'По заданным критериям фильтрации позиции не найдены'
+                      : 'Номенклатурные позиции еще не оприходованы на склады'}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -698,95 +655,12 @@ function WmsStockContent() {
       </Dialog>
 
       {/* Диалог создания новой номенклатуры */}
-      <Dialog
+      <CreateNomenclatureDialog
         open={isNomenclatureModalOpen}
         onClose={() => setIsNomenclatureModalOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle sx={{ fontWeight: 700 }}>Создание позиции номенклатуры (ТМЦ)</DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={2.5} sx={{ mt: 1 }}>
-            <TextField
-              fullWidth
-              required
-              label="Наименование номенклатуры"
-              placeholder="например, Подшипник радиальный шариковый 6204 2RS"
-              value={newNomName}
-              onChange={(e) => setNewNomName(e.target.value)}
-            />
-
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Артикул / Заводской код"
-                  placeholder="BRG-6204-2RS"
-                  value={newNomArticle}
-                  onChange={(e) => setNewNomArticle(e.target.value)}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Единица измерения"
-                  value={newNomUnit}
-                  onChange={(e) => setNewNomUnit(e.target.value)}
-                />
-              </Grid>
-            </Grid>
-
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  select
-                  fullWidth
-                  label="Категория"
-                  value={newNomCategory}
-                  onChange={(e) => setNewNomCategory(e.target.value)}
-                >
-                  <MenuItem value="">Без категории</MenuItem>
-                  {categories.map((c) => (
-                    <MenuItem key={c.id} value={c.id}>
-                      {c.name}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="Минимальный остаток"
-                  placeholder="для контроля дефицита"
-                  value={newNomMinStock}
-                  onChange={(e) => setNewNomMinStock(e.target.value)}
-                />
-              </Grid>
-            </Grid>
-
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              label="Описание / Применение"
-              placeholder="Дополнительные характеристики, применимость к узлам..."
-              value={newNomDescription}
-              onChange={(e) => setNewNomDescription(e.target.value)}
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setIsNomenclatureModalOpen(false)}>Отмена</Button>
-          <Button
-            variant="contained"
-            onClick={handleCreateNomenclature}
-            disabled={isSubmittingNom}
-          >
-            {isSubmittingNom ? 'Сохранение...' : 'Создать номенклатуру'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onCreated={() => fetchStock()}
+        categories={categories}
+      />
     </Box>
   );
 }
