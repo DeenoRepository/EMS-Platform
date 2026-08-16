@@ -427,32 +427,43 @@ function ModuleSettingsContent() {
     );
   };
 
+  const MODULE_METADATA = [
+    {
+      title: 'Настройки модуля: Паспортизация (EPS)',
+      subtitle: 'Конфигурация технических разделов, кастомных характеристик с единицами измерения и классификаторов',
+      breadcrumb: 'Паспортизация (EPS)',
+    },
+    {
+      title: 'Настройки модуля: Складской учёт (WMS)',
+      subtitle: 'Конфигурация складов, стеллажных зон хранения и категорий номенклатуры',
+      breadcrumb: 'Складской учёт (WMS)',
+    },
+    {
+      title: 'Настройки модуля: Интеграция Jira (SRM)',
+      subtitle: 'Настройки синхронизации с Jira, маппинг проектов, типов задач и SLA',
+      breadcrumb: 'Интеграция Jira (SRM)',
+    },
+    {
+      title: 'Настройки модуля: ТО и Ремонт (MRO)',
+      subtitle: 'Справочник регламентных работ, технологических карт и периодичностей ТО',
+      breadcrumb: 'ТО и Ремонт (MRO)',
+    },
+  ];
+
+  const currentMeta = MODULE_METADATA[activeTab] || MODULE_METADATA[0];
+
   return (
     <Box sx={{ maxWidth: 1920, mx: 'auto' }}>
       <PageHeader
-        title="Настройки модулей"
-        subtitle="Единый центр конфигурации технических разделов, полей, классификаторов и параметров системы"
+        title={currentMeta.title}
+        subtitle={currentMeta.subtitle}
         breadcrumbs={[
           { label: 'Главная', href: '/' },
           { label: 'Администрирование', href: '/admin/users' },
           { label: 'Настройки модулей' },
+          { label: currentMeta.breadcrumb },
         ]}
       />
-
-      <Card sx={{ mb: 3 }}>
-        <Tabs
-          value={activeTab}
-          onChange={(_, v) => setActiveTab(v)}
-          variant="scrollable"
-          scrollButtons="auto"
-          sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}
-        >
-          <Tab icon={<PrecisionManufacturingIcon />} iconPosition="start" label="EPS (Кастомные разделы & Поля)" />
-          <Tab icon={<Inventory2Icon />} iconPosition="start" label="WMS (Складской учёт)" />
-          <Tab icon={<AssessmentIcon />} iconPosition="start" label="SRM (Jira & Метрики)" />
-          <Tab icon={<BuildCircleIcon />} iconPosition="start" label="MRO (ТО и Ремонт)" />
-        </Tabs>
-      </Card>
 
       {/* TAB 0: EPS — Разделы, Поля и Теги */}
       {activeTab === 0 && (
