@@ -27,19 +27,27 @@ import {
   CircularProgress,
   Divider,
   Paper,
+  InputAdornment,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import DownloadIcon from '@mui/icons-material/Download';
-import VisibilityIcon from '@mui/icons-material/Visibility';
 import StarIcon from '@mui/icons-material/Star';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import BuildIcon from '@mui/icons-material/Build';
 import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
 import Inventory2Icon from '@mui/icons-material/Inventory2';
-import HistoryIcon from '@mui/icons-material/History';
+import BoltIcon from '@mui/icons-material/Bolt';
+import WaterDropIcon from '@mui/icons-material/WaterDrop';
+import ShieldIcon from '@mui/icons-material/Shield';
+import StraightenIcon from '@mui/icons-material/Straighten';
+import SpeedIcon from '@mui/icons-material/Speed';
+import TuneIcon from '@mui/icons-material/Tune';
+import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import PageHeader from '@/components/layout/PageHeader';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -54,6 +62,36 @@ import {
 } from '@ems/shared';
 import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
+
+interface CustomFieldDef {
+  id: string;
+  sectionId: string | null;
+  key: string;
+  name: string;
+  fieldType: 'TEXT' | 'TEXTAREA' | 'NUMBER' | 'DATE' | 'SELECT' | 'BOOLEAN';
+  unit: string | null;
+  isRequired: boolean;
+  defaultValue: string | null;
+  options?: string[];
+}
+
+interface CustomSectionDef {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  sortOrder: number;
+  fields: CustomFieldDef[];
+}
+
+const SECTION_ICONS: Record<string, React.ReactNode> = {
+  Bolt: <BoltIcon color="warning" />,
+  WaterDrop: <WaterDropIcon color="primary" />,
+  Shield: <ShieldIcon color="success" />,
+  Straighten: <StraightenIcon color="secondary" />,
+  Speed: <SpeedIcon color="error" />,
+};
 
 interface EquipmentDetails {
   id: string;
@@ -117,12 +155,16 @@ export default function EquipmentPassportPage() {
   const { enqueueSnackbar } = useSnackbar();
 
   const [equipment, setEquipment] = useState<EquipmentDetails | null>(null);
+  const [sections, setSections] = useState<CustomSectionDef[]>([]);
+  const [unassignedFields, setUnassignedFields] = useState<CustomFieldDef[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
 
   // Modals state
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
+  const [editCustomFields, setEditCustomFields] = useState<Record<string, any>>({});
+
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [docModalOpen, setDocModalOpen] = useState(false);
   const [previewDocUrl, setPreviewDocUrl] = useState<string | null>(null);
@@ -136,12 +178,16 @@ export default function EquipmentPassportPage() {
   const [isPrimaryPhoto, setIsPrimaryPhoto] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  const fetchEquipment = useCallback(async () => {
+  const fetchEquipmentAndMeta = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/eps/equipment/${id}`);
-      if (res.ok) {
-        const json = await res.json();
+      const [eqRes, secRes] = await Promise.all([
+        fetch(`/api/eps/equipment/${id}`),
+        fetch('/api/eps/custom-sections'),
+      ]);
+
+      if (eqRes.ok) {
+        const json = await eqRes.json();
         if (json.success && json.data) {
           setEquipment(json.data);
           setEditForm({
@@ -154,6 +200,15 @@ export default function EquipmentPassportPage() {
             status: json.data.status,
             commissionDate: json.data.commissionDate ? json.data.commissionDate.split('T')[0] : '',
           });
+          setEditCustomFields(json.data.customFields || {});
+        }
+      }
+
+      if (secRes.ok) {
+        const secJson = await secRes.json();
+        if (secJson.success && secJson.data) {
+          setSections(secJson.data.sections || []);
+          setUnassignedFields(secJson.data.unassignedFields || []);
         }
       }
     } catch {
@@ -164,8 +219,8 @@ export default function EquipmentPassportPage() {
   }, [id, enqueueSnackbar]);
 
   useEffect(() => {
-    fetchEquipment();
-  }, [fetchEquipment]);
+    fetchEquipmentAndMeta();
+  }, [fetchEquipmentAndMeta]);
 
   const fetchAudit = async () => {
     setLoadingAudit(true);
@@ -185,7 +240,6 @@ export default function EquipmentPassportPage() {
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
     if (newValue === 6) {
-      // Audit tab
       fetchAudit();
     }
   };
@@ -201,7 +255,7 @@ export default function EquipmentPassportPage() {
       const data = await res.json();
       if (data.success) {
         enqueueSnackbar('Статус оборудования обновлен', { variant: 'success' });
-        fetchEquipment();
+        fetchEquipmentAndMeta();
       }
     } catch {
       enqueueSnackbar('Ошибка обновления статуса', { variant: 'error' });
@@ -214,13 +268,16 @@ export default function EquipmentPassportPage() {
       const res = await fetch(`/api/eps/equipment/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify({
+          ...editForm,
+          customFields: editCustomFields,
+        }),
       });
       const data = await res.json();
       if (data.success) {
         enqueueSnackbar('Паспорт оборудования сохранен', { variant: 'success' });
         setEditModalOpen(false);
-        fetchEquipment();
+        fetchEquipmentAndMeta();
       } else {
         enqueueSnackbar(data.error || 'Ошибка сохранения', { variant: 'error' });
       }
@@ -265,7 +322,7 @@ export default function EquipmentPassportPage() {
         enqueueSnackbar('Фотография успешно добавлена', { variant: 'success' });
         setPhotoModalOpen(false);
         setSelectedFile(null);
-        fetchEquipment();
+        fetchEquipmentAndMeta();
       } else {
         enqueueSnackbar(data.error || 'Ошибка загрузки фото', { variant: 'error' });
       }
@@ -296,7 +353,7 @@ export default function EquipmentPassportPage() {
         setDocModalOpen(false);
         setSelectedFile(null);
         setDocDescription('');
-        fetchEquipment();
+        fetchEquipmentAndMeta();
       } else {
         enqueueSnackbar(data.error || 'Ошибка загрузки документа', { variant: 'error' });
       }
@@ -313,7 +370,7 @@ export default function EquipmentPassportPage() {
     try {
       await fetch(`/api/eps/equipment/${id}/photos?photoId=${photoId}`, { method: 'DELETE' });
       enqueueSnackbar('Фотография удалена', { variant: 'info' });
-      fetchEquipment();
+      fetchEquipmentAndMeta();
     } catch {
       enqueueSnackbar('Ошибка удаления', { variant: 'error' });
     }
@@ -325,7 +382,7 @@ export default function EquipmentPassportPage() {
     try {
       await fetch(`/api/eps/equipment/${id}/documents?documentId=${documentId}`, { method: 'DELETE' });
       enqueueSnackbar('Документ удален', { variant: 'info' });
-      fetchEquipment();
+      fetchEquipmentAndMeta();
     } catch {
       enqueueSnackbar('Ошибка удаления', { variant: 'error' });
     }
@@ -344,7 +401,7 @@ export default function EquipmentPassportPage() {
   const canDelete = hasPermission(PERMISSIONS.EPS_EQUIPMENT_DELETE);
 
   return (
-    <Box>
+    <Box sx={{ maxWidth: 1920, mx: 'auto' }}>
       <PageHeader
         title={equipment.name}
         subtitle={`${equipment.manufacturer || ''} ${equipment.model || ''} • Инв. №: ${equipment.inventoryNumber || 'Б/Н'}`}
@@ -391,7 +448,7 @@ export default function EquipmentPassportPage() {
             gap: 2,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, flexWrap: 'wrap' }}>
             <Box>
               <Typography variant="caption" color="text.secondary" display="block">
                 Текущий статус
@@ -399,7 +456,7 @@ export default function EquipmentPassportPage() {
               <Chip
                 label={statusInfo.label}
                 color={statusInfo.color as any}
-                sx={{ fontWeight: 600, mt: 0.5 }}
+                sx={{ fontWeight: 700, mt: 0.5 }}
               />
             </Box>
 
@@ -410,7 +467,7 @@ export default function EquipmentPassportPage() {
                 label="Сменить статус"
                 value={equipment.status}
                 onChange={(e) => handleStatusChange(e.target.value)}
-                sx={{ minWidth: 160 }}
+                sx={{ minWidth: 170 }}
               >
                 {Object.entries(EQUIPMENT_STATUS_MAP).map(([key, info]) => (
                   <MenuItem key={key} value={key}>
@@ -424,7 +481,7 @@ export default function EquipmentPassportPage() {
               <Typography variant="caption" color="text.secondary" display="block">
                 Местоположение
               </Typography>
-              <Typography variant="subtitle2" fontWeight={600} sx={{ mt: 0.5 }}>
+              <Typography variant="subtitle2" fontWeight={700} sx={{ mt: 0.5 }}>
                 {equipment.location || '—'}
               </Typography>
             </Box>
@@ -433,7 +490,7 @@ export default function EquipmentPassportPage() {
               <Typography variant="caption" color="text.secondary" display="block">
                 Заводской номер
               </Typography>
-              <Typography variant="subtitle2" fontWeight={600} sx={{ mt: 0.5 }}>
+              <Typography variant="subtitle2" fontWeight={700} sx={{ mt: 0.5 }}>
                 {equipment.serialNumber || '—'}
               </Typography>
             </Box>
@@ -450,6 +507,7 @@ export default function EquipmentPassportPage() {
                   backgroundColor: tag.color ? `${tag.color}15` : undefined,
                   color: tag.color || 'inherit',
                   borderColor: tag.color || undefined,
+                  fontWeight: 600,
                 }}
               />
             ))}
@@ -466,7 +524,7 @@ export default function EquipmentPassportPage() {
           scrollButtons="auto"
           sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}
         >
-          <Tab label="Паспорт (Общие сведения)" />
+          <Tab label="Паспорт (Общие сведения и разделы)" />
           <Tab label={`Фотогалерея (${equipment.photos.length})`} />
           <Tab label={`Документация (${equipment.documents.length})`} />
           <Tab label={`Запчасти WMS (${equipment.spareParts.length})`} />
@@ -476,29 +534,33 @@ export default function EquipmentPassportPage() {
         </Tabs>
       </Card>
 
-      {/* TAB 0: Паспорт (Общие сведения) */}
+      {/* TAB 0: Паспорт (Общие сведения и кастомные разделы) */}
       {activeTab === 0 && (
         <Grid container spacing={3}>
-          <Grid item xs={12} md={7}>
-            <Card>
+          {/* Main Specifications Card */}
+          <Grid item xs={12} lg={6}>
+            <Card sx={{ height: '100%' }}>
               <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" fontWeight={600} gutterBottom>
-                  Технические характеристики
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                  <PrecisionManufacturingIcon color="primary" />
+                  <Typography variant="h6" fontWeight={700}>
+                    Основные технические реквизиты
+                  </Typography>
+                </Box>
                 <Divider sx={{ mb: 2 }} />
 
                 <TableContainer>
                   <Table size="small">
                     <TableBody>
                       <TableRow>
-                        <TableCell sx={{ fontWeight: 600, width: '40%', color: 'text.secondary' }}>
+                        <TableCell sx={{ fontWeight: 600, width: '45%', color: 'text.secondary' }}>
                           Наименование
                         </TableCell>
-                        <TableCell sx={{ fontWeight: 600 }}>{equipment.name}</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>{equipment.name}</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell sx={{ color: 'text.secondary' }}>Инвентарный номер</TableCell>
-                        <TableCell>{equipment.inventoryNumber || '—'}</TableCell>
+                        <TableCell sx={{ fontWeight: 700, fontFamily: 'monospace' }}>{equipment.inventoryNumber || '—'}</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell sx={{ color: 'text.secondary' }}>Заводской / Серийный №</TableCell>
@@ -517,11 +579,11 @@ export default function EquipmentPassportPage() {
                         <TableCell>{formatDate(equipment.commissionDate)}</TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell sx={{ color: 'text.secondary' }}>Место установки</TableCell>
+                        <TableCell sx={{ color: 'text.secondary' }}>Место установки (Локация)</TableCell>
                         <TableCell>{equipment.location || '—'}</TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell sx={{ color: 'text.secondary' }}>Паспорт создал</TableCell>
+                        <TableCell sx={{ color: 'text.secondary' }}>Паспорт зарегистрировал</TableCell>
                         <TableCell>{equipment.createdBy?.displayName} ({formatDate(equipment.createdAt)})</TableCell>
                       </TableRow>
                     </TableBody>
@@ -531,39 +593,111 @@ export default function EquipmentPassportPage() {
             </Card>
           </Grid>
 
-          {/* Custom Fields Section */}
-          <Grid item xs={12} md={5}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" fontWeight={600} gutterBottom>
-                  Кастомные параметры
-                </Typography>
-                <Divider sx={{ mb: 2 }} />
+          {/* Custom Sections Cards */}
+          <Grid item xs={12} lg={6}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {sections.map((sec) => (
+                <Card key={sec.id}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                      {SECTION_ICONS[sec.icon || 'Bolt'] || <TuneIcon color="primary" />}
+                      <Box>
+                        <Typography variant="h6" fontWeight={700}>
+                          {sec.name}
+                        </Typography>
+                        {sec.description && (
+                          <Typography variant="caption" color="text.secondary">
+                            {sec.description}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
+                    <Divider sx={{ mb: 2 }} />
 
-                {equipment.customFields && Object.keys(equipment.customFields).length > 0 ? (
-                  <TableContainer>
-                    <Table size="small">
-                      <TableBody>
-                        {Object.entries(equipment.customFields).map(([k, v]) => (
-                          <TableRow key={k}>
-                            <TableCell sx={{ fontWeight: 500, color: 'text.secondary', width: '50%' }}>
-                              {k.replace(/_/g, ' ')}
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 600 }}>
-                              {typeof v === 'boolean' ? (v ? 'Да' : 'Нет') : String(v)}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    Дополнительные кастомные поля не заполнены.
-                  </Typography>
-                )}
-              </CardContent>
-            </Card>
+                    <TableContainer>
+                      <Table size="small">
+                        <TableBody>
+                          {sec.fields.map((f) => {
+                            const val = equipment.customFields?.[f.key];
+                            const displayVal =
+                              val === undefined || val === null || val === ''
+                                ? '—'
+                                : typeof val === 'boolean'
+                                ? val
+                                  ? 'Да'
+                                  : 'Нет'
+                                : String(val);
+
+                            return (
+                              <TableRow key={f.key}>
+                                <TableCell sx={{ fontWeight: 500, color: 'text.secondary', width: '50%' }}>
+                                  {f.name}
+                                </TableCell>
+                                <TableCell sx={{ fontWeight: 700 }}>
+                                  {displayVal}
+                                  {val !== undefined && val !== null && val !== '' && f.unit && (
+                                    <Chip
+                                      label={f.unit}
+                                      size="small"
+                                      variant="outlined"
+                                      sx={{ ml: 1, height: 20, fontSize: '0.7rem', fontWeight: 700 }}
+                                    />
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </CardContent>
+                </Card>
+              ))}
+
+              {/* Unassigned Custom Fields if any */}
+              {unassignedFields.length > 0 && (
+                <Card>
+                  <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                      <TuneIcon color="primary" />
+                      <Typography variant="h6" fontWeight={700}>
+                        Дополнительные параметры
+                      </Typography>
+                    </Box>
+                    <Divider sx={{ mb: 2 }} />
+
+                    <TableContainer>
+                      <Table size="small">
+                        <TableBody>
+                          {unassignedFields.map((f) => {
+                            const val = equipment.customFields?.[f.key];
+                            const displayVal =
+                              val === undefined || val === null || val === ''
+                                ? '—'
+                                : typeof val === 'boolean'
+                                ? val
+                                  ? 'Да'
+                                  : 'Нет'
+                                : String(val);
+
+                            return (
+                              <TableRow key={f.key}>
+                                <TableCell sx={{ fontWeight: 500, color: 'text.secondary', width: '50%' }}>
+                                  {f.name}
+                                </TableCell>
+                                <TableCell sx={{ fontWeight: 700 }}>
+                                  {displayVal} {f.unit && val ? f.unit : ''}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </CardContent>
+                </Card>
+              )}
+            </Box>
           </Grid>
         </Grid>
       )}
@@ -572,7 +706,7 @@ export default function EquipmentPassportPage() {
       {activeTab === 1 && (
         <Card sx={{ p: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h6" fontWeight={600}>
+            <Typography variant="h6" fontWeight={700}>
               Фотографии оборудования ({equipment.photos.length})
             </Typography>
             {canEdit && (
@@ -655,7 +789,7 @@ export default function EquipmentPassportPage() {
       {activeTab === 2 && (
         <Card sx={{ p: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h6" fontWeight={600}>
+            <Typography variant="h6" fontWeight={700}>
               Документация и чертежи ({equipment.documents.length})
             </Typography>
             {hasPermission(PERMISSIONS.EPS_DOCUMENTS_UPLOAD) && (
@@ -744,7 +878,7 @@ export default function EquipmentPassportPage() {
       {/* TAB 3: Запчасти (WMS) */}
       {activeTab === 3 && (
         <Card sx={{ p: 3 }}>
-          <Typography variant="h6" fontWeight={600} gutterBottom>
+          <Typography variant="h6" fontWeight={700} gutterBottom>
             Совместимые запасные части и расходные материалы (WMS)
           </Typography>
           <Typography variant="caption" color="text.secondary" paragraph>
@@ -800,7 +934,7 @@ export default function EquipmentPassportPage() {
       {/* TAB 4: ТО и Ремонт (MRO) */}
       {activeTab === 4 && (
         <Card sx={{ p: 3 }}>
-          <Typography variant="h6" fontWeight={600} gutterBottom>
+          <Typography variant="h6" fontWeight={700} gutterBottom>
             Планы технического обслуживания и график ППР (MRO)
           </Typography>
           <Divider sx={{ mb: 2 }} />
@@ -850,7 +984,7 @@ export default function EquipmentPassportPage() {
       {/* TAB 5: Заявки (SRM / Jira) */}
       {activeTab === 5 && (
         <Card sx={{ p: 3 }}>
-          <Typography variant="h6" fontWeight={600} gutterBottom>
+          <Typography variant="h6" fontWeight={700} gutterBottom>
             Связанные заявки на ремонт из Jira (SRM)
           </Typography>
           <Typography variant="caption" color="text.secondary" paragraph>
@@ -901,7 +1035,7 @@ export default function EquipmentPassportPage() {
       {/* TAB 6: История изменений (Аудит) */}
       {activeTab === 6 && (
         <Card sx={{ p: 3 }}>
-          <Typography variant="h6" fontWeight={600} gutterBottom>
+          <Typography variant="h6" fontWeight={700} gutterBottom>
             История изменений паспорта оборудования
           </Typography>
           <Divider sx={{ mb: 2 }} />
@@ -961,62 +1095,170 @@ export default function EquipmentPassportPage() {
         </Card>
       )}
 
-      {/* Edit Equipment Dialog */}
-      <Dialog open={editModalOpen} onClose={() => setEditModalOpen(false)} maxWidth="sm" fullWidth>
+      {/* Edit Equipment Dialog with Custom Sections */}
+      <Dialog open={editModalOpen} onClose={() => setEditModalOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>Редактирование паспорта оборудования</DialogTitle>
         <DialogContent dividers>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-            <TextField
-              label="Наименование оборудования"
-              fullWidth
-              size="small"
-              value={editForm.name || ''}
-              onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-            />
-            <TextField
-              label="Инвентарный номер"
-              fullWidth
-              size="small"
-              value={editForm.inventoryNumber || ''}
-              onChange={(e) => setEditForm({ ...editForm, inventoryNumber: e.target.value })}
-            />
-            <TextField
-              label="Заводской / Серийный номер"
-              fullWidth
-              size="small"
-              value={editForm.serialNumber || ''}
-              onChange={(e) => setEditForm({ ...editForm, serialNumber: e.target.value })}
-            />
-            <TextField
-              label="Производитель"
-              fullWidth
-              size="small"
-              value={editForm.manufacturer || ''}
-              onChange={(e) => setEditForm({ ...editForm, manufacturer: e.target.value })}
-            />
-            <TextField
-              label="Модель"
-              fullWidth
-              size="small"
-              value={editForm.model || ''}
-              onChange={(e) => setEditForm({ ...editForm, model: e.target.value })}
-            />
-            <TextField
-              label="Место установки (Локация)"
-              fullWidth
-              size="small"
-              value={editForm.location || ''}
-              onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
-            />
-            <TextField
-              label="Дата ввода в эксплуатацию"
-              type="date"
-              InputLabelProps={{ shrink: true }}
-              fullWidth
-              size="small"
-              value={editForm.commissionDate || ''}
-              onChange={(e) => setEditForm({ ...editForm, commissionDate: e.target.value })}
-            />
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 1 }}>
+            {/* Section 1: Basic specifications */}
+            <Box>
+              <Typography variant="subtitle1" fontWeight={700} color="primary.main" gutterBottom>
+                Основные параметры
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <TextField
+                    label="Наименование оборудования *"
+                    fullWidth
+                    size="small"
+                    value={editForm.name || ''}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Инвентарный номер"
+                    fullWidth
+                    size="small"
+                    value={editForm.inventoryNumber || ''}
+                    onChange={(e) => setEditForm({ ...editForm, inventoryNumber: e.target.value })}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Заводской / Серийный номер"
+                    fullWidth
+                    size="small"
+                    value={editForm.serialNumber || ''}
+                    onChange={(e) => setEditForm({ ...editForm, serialNumber: e.target.value })}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Производитель"
+                    fullWidth
+                    size="small"
+                    value={editForm.manufacturer || ''}
+                    onChange={(e) => setEditForm({ ...editForm, manufacturer: e.target.value })}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Модель"
+                    fullWidth
+                    size="small"
+                    value={editForm.model || ''}
+                    onChange={(e) => setEditForm({ ...editForm, model: e.target.value })}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Место установки (Локация)"
+                    fullWidth
+                    size="small"
+                    value={editForm.location || ''}
+                    onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Дата ввода в эксплуатацию"
+                    type="date"
+                    InputLabelProps={{ shrink: true }}
+                    fullWidth
+                    size="small"
+                    value={editForm.commissionDate || ''}
+                    onChange={(e) => setEditForm({ ...editForm, commissionDate: e.target.value })}
+                  />
+                </Grid>
+              </Grid>
+            </Box>
+
+            <Divider />
+
+            {/* Section 2: Custom Sections Inputs */}
+            {sections.map((sec) => (
+              <Box key={sec.id}>
+                <Typography variant="subtitle1" fontWeight={700} color="primary.main" gutterBottom>
+                  {sec.name}
+                </Typography>
+                <Grid container spacing={2}>
+                  {sec.fields.map((f) => {
+                    if (f.fieldType === 'BOOLEAN') {
+                      return (
+                        <Grid item xs={12} sm={6} key={f.key}>
+                          <Paper variant="outlined" sx={{ p: 1.5, display: 'flex', alignItems: 'center' }}>
+                            <FormControlLabel
+                              control={
+                                <Switch
+                                  checked={Boolean(editCustomFields[f.key])}
+                                  onChange={(e) =>
+                                    setEditCustomFields({ ...editCustomFields, [f.key]: e.target.checked })
+                                  }
+                                  color="primary"
+                                />
+                              }
+                              label={<Typography variant="body2">{f.name}</Typography>}
+                            />
+                          </Paper>
+                        </Grid>
+                      );
+                    }
+
+                    if (f.fieldType === 'SELECT' && f.options && Array.isArray(f.options)) {
+                      return (
+                        <Grid item xs={12} sm={6} key={f.key}>
+                          <TextField
+                            select
+                            label={f.name}
+                            fullWidth
+                            size="small"
+                            value={editCustomFields[f.key] || ''}
+                            onChange={(e) =>
+                              setEditCustomFields({ ...editCustomFields, [f.key]: e.target.value })
+                            }
+                          >
+                            <MenuItem value="">— Не выбрано —</MenuItem>
+                            {f.options.map((opt: string) => (
+                              <MenuItem key={opt} value={opt}>
+                                {opt}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        </Grid>
+                      );
+                    }
+
+                    return (
+                      <Grid item xs={12} sm={6} key={f.key}>
+                        <TextField
+                          label={f.name}
+                          type={f.fieldType === 'NUMBER' ? 'number' : f.fieldType === 'DATE' ? 'date' : 'text'}
+                          InputLabelProps={f.fieldType === 'DATE' ? { shrink: true } : undefined}
+                          InputProps={
+                            f.unit
+                              ? {
+                                  endAdornment: (
+                                    <InputAdornment position="end">
+                                      <Chip label={f.unit} size="small" variant="outlined" sx={{ fontWeight: 700 }} />
+                                    </InputAdornment>
+                                  ),
+                                }
+                              : undefined
+                          }
+                          fullWidth
+                          size="small"
+                          value={editCustomFields[f.key] || ''}
+                          onChange={(e) =>
+                            setEditCustomFields({ ...editCustomFields, [f.key]: e.target.value })
+                          }
+                        />
+                      </Grid>
+                    );
+                  })}
+                </Grid>
+              </Box>
+            ))}
           </Box>
         </DialogContent>
         <DialogActions>
@@ -1024,7 +1266,7 @@ export default function EquipmentPassportPage() {
             Отмена
           </Button>
           <Button onClick={handleSaveEdit} variant="contained">
-            Сохранить
+            Сохранить изменения
           </Button>
         </DialogActions>
       </Dialog>

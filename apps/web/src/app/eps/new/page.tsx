@@ -20,6 +20,7 @@ import {
   Divider,
   CircularProgress,
   Paper,
+  InputAdornment,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -27,6 +28,11 @@ import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturi
 import PlaceIcon from '@mui/icons-material/Place';
 import TuneIcon from '@mui/icons-material/Tune';
 import CategoryIcon from '@mui/icons-material/Category';
+import BoltIcon from '@mui/icons-material/Bolt';
+import WaterDropIcon from '@mui/icons-material/WaterDrop';
+import ShieldIcon from '@mui/icons-material/Shield';
+import StraightenIcon from '@mui/icons-material/Straighten';
+import SpeedIcon from '@mui/icons-material/Speed';
 import PageHeader from '@/components/layout/PageHeader';
 import { useRouter } from 'next/navigation';
 import { EQUIPMENT_STATUS_MAP } from '@ems/shared';
@@ -40,13 +46,33 @@ interface TagItem {
 
 interface CustomFieldDef {
   id: string;
+  sectionId: string | null;
   key: string;
   name: string;
-  fieldType: 'TEXT' | 'NUMBER' | 'DATE' | 'SELECT' | 'BOOLEAN';
+  fieldType: 'TEXT' | 'TEXTAREA' | 'NUMBER' | 'DATE' | 'SELECT' | 'BOOLEAN';
+  unit: string | null;
   isRequired: boolean;
   defaultValue: string | null;
   options?: string[];
 }
+
+interface CustomSectionDef {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  sortOrder: number;
+  fields: CustomFieldDef[];
+}
+
+const SECTION_ICONS: Record<string, React.ReactNode> = {
+  Bolt: <BoltIcon color="warning" />,
+  WaterDrop: <WaterDropIcon color="primary" />,
+  Shield: <ShieldIcon color="success" />,
+  Straighten: <StraightenIcon color="secondary" />,
+  Speed: <SpeedIcon color="error" />,
+};
 
 export default function NewEquipmentPage() {
   const router = useRouter();
@@ -57,7 +83,8 @@ export default function NewEquipmentPage() {
 
   // Available metadata
   const [tags, setTags] = useState<TagItem[]>([]);
-  const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDef[]>([]);
+  const [sections, setSections] = useState<CustomSectionDef[]>([]);
+  const [unassignedFields, setUnassignedFields] = useState<CustomFieldDef[]>([]);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -77,20 +104,28 @@ export default function NewEquipmentPage() {
   useEffect(() => {
     async function loadMeta() {
       try {
-        const [tagsRes, fieldsRes] = await Promise.all([
+        const [tagsRes, sectionsRes] = await Promise.all([
           fetch('/api/eps/tags'),
-          fetch('/api/eps/custom-fields'),
+          fetch('/api/eps/custom-sections'),
         ]);
 
-        if (tagsRes.ok && fieldsRes.ok) {
+        if (tagsRes.ok && sectionsRes.ok) {
           const tagsJson = await tagsRes.json();
-          const fieldsJson = await fieldsRes.json();
+          const sectionsJson = await sectionsRes.json();
 
           if (tagsJson.success) setTags(tagsJson.data);
-          if (fieldsJson.success) {
-            setCustomFieldDefs(fieldsJson.data);
+          if (sectionsJson.success && sectionsJson.data) {
+            setSections(sectionsJson.data.sections || []);
+            setUnassignedFields(sectionsJson.data.unassignedFields || []);
+
+            // Set initial default values
             const initialVals: Record<string, any> = {};
-            fieldsJson.data.forEach((f: CustomFieldDef) => {
+            const allFields: CustomFieldDef[] = [
+              ...(sectionsJson.data.sections || []).flatMap((s: CustomSectionDef) => s.fields),
+              ...(sectionsJson.data.unassignedFields || []),
+            ];
+
+            allFields.forEach((f) => {
               if (f.fieldType === 'BOOLEAN') {
                 initialVals[f.key] = f.defaultValue === 'true';
               } else if (f.defaultValue) {
@@ -116,6 +151,97 @@ export default function NewEquipmentPage() {
 
   const handleCustomFieldChange = (key: string, value: any) => {
     setCustomFieldValues((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const renderFieldInput = (def: CustomFieldDef) => {
+    if (def.fieldType === 'BOOLEAN') {
+      return (
+        <Grid item xs={12} sm={6} key={def.key}>
+          <Paper variant="outlined" sx={{ p: 2, height: '100%', display: 'flex', alignItems: 'center' }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={Boolean(customFieldValues[def.key])}
+                  onChange={(e) => handleCustomFieldChange(def.key, e.target.checked)}
+                  color="primary"
+                />
+              }
+              label={
+                <Typography variant="body2" fontWeight={600}>
+                  {def.name}
+                </Typography>
+              }
+            />
+          </Paper>
+        </Grid>
+      );
+    }
+
+    if (def.fieldType === 'SELECT' && def.options && Array.isArray(def.options)) {
+      return (
+        <Grid item xs={12} sm={6} key={def.key}>
+          <TextField
+            select
+            label={def.name}
+            fullWidth
+            size="medium"
+            required={def.isRequired}
+            value={customFieldValues[def.key] || ''}
+            onChange={(e) => handleCustomFieldChange(def.key, e.target.value)}
+          >
+            <MenuItem value="">— Не выбрано —</MenuItem>
+            {def.options.map((opt: string) => (
+              <MenuItem key={opt} value={opt}>
+                {opt}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Grid>
+      );
+    }
+
+    if (def.fieldType === 'TEXTAREA') {
+      return (
+        <Grid item xs={12} key={def.key}>
+          <TextField
+            label={def.name}
+            multiline
+            rows={3}
+            fullWidth
+            size="medium"
+            required={def.isRequired}
+            value={customFieldValues[def.key] || ''}
+            onChange={(e) => handleCustomFieldChange(def.key, e.target.value)}
+          />
+        </Grid>
+      );
+    }
+
+    return (
+      <Grid item xs={12} sm={6} key={def.key}>
+        <TextField
+          label={def.name}
+          type={def.fieldType === 'NUMBER' ? 'number' : def.fieldType === 'DATE' ? 'date' : 'text'}
+          InputLabelProps={def.fieldType === 'DATE' ? { shrink: true } : undefined}
+          InputProps={
+            def.unit
+              ? {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <Chip label={def.unit} size="small" variant="outlined" sx={{ fontWeight: 700 }} />
+                    </InputAdornment>
+                  ),
+                }
+              : undefined
+          }
+          fullWidth
+          size="medium"
+          required={def.isRequired}
+          value={customFieldValues[def.key] || ''}
+          onChange={(e) => handleCustomFieldChange(def.key, e.target.value)}
+        />
+      </Grid>
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -285,86 +411,46 @@ export default function NewEquipmentPage() {
                 </CardContent>
               </Card>
 
-              {/* Section 3: Dynamic Custom Fields */}
-              {customFieldDefs.length > 0 && (
-                <Card>
+              {/* Section 3: Custom Sections */}
+              {sections.map((sec) => (
+                <Card key={sec.id} sx={{ mb: 3 }}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                      {SECTION_ICONS[sec.icon || 'Bolt'] || <TuneIcon color="primary" />}
+                      <Box>
+                        <Typography variant="h6" fontWeight={700}>
+                          {sec.name}
+                        </Typography>
+                        {sec.description && (
+                          <Typography variant="caption" color="text.secondary">
+                            {sec.description}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
+                    <Divider sx={{ mb: 2.5 }} />
+
+                    <Grid container spacing={2.5}>
+                      {sec.fields.map((def) => renderFieldInput(def))}
+                    </Grid>
+                  </CardContent>
+                </Card>
+              ))}
+
+              {/* Unassigned Custom Fields (if any) */}
+              {unassignedFields.length > 0 && (
+                <Card sx={{ mb: 3 }}>
                   <CardContent sx={{ p: 3 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
                       <TuneIcon color="primary" />
                       <Typography variant="h6" fontWeight={700}>
-                        Технические параметры (Кастомные характеристики)
+                        Дополнительные параметры
                       </Typography>
                     </Box>
-                    <Typography variant="caption" color="text.secondary" paragraph>
-                      Параметры, сконфигурированные для паспортов оборудования
-                    </Typography>
                     <Divider sx={{ mb: 2.5 }} />
 
                     <Grid container spacing={2.5}>
-                      {customFieldDefs.map((def) => {
-                        if (def.fieldType === 'BOOLEAN') {
-                          return (
-                            <Grid item xs={12} sm={6} key={def.key}>
-                              <Paper variant="outlined" sx={{ p: 2, height: '100%', display: 'flex', alignItems: 'center' }}>
-                                <FormControlLabel
-                                  control={
-                                    <Switch
-                                      checked={Boolean(customFieldValues[def.key])}
-                                      onChange={(e) => handleCustomFieldChange(def.key, e.target.checked)}
-                                      color="primary"
-                                    />
-                                  }
-                                  label={
-                                    <Box>
-                                      <Typography variant="body2" fontWeight={600}>
-                                        {def.name}
-                                      </Typography>
-                                    </Box>
-                                  }
-                                />
-                              </Paper>
-                            </Grid>
-                          );
-                        }
-
-                        if (def.fieldType === 'SELECT' && def.options && Array.isArray(def.options)) {
-                          return (
-                            <Grid item xs={12} sm={6} key={def.key}>
-                              <TextField
-                                select
-                                label={def.name}
-                                fullWidth
-                                size="medium"
-                                required={def.isRequired}
-                                value={customFieldValues[def.key] || ''}
-                                onChange={(e) => handleCustomFieldChange(def.key, e.target.value)}
-                              >
-                                <MenuItem value="">— Не выбрано —</MenuItem>
-                                {def.options.map((opt: string) => (
-                                  <MenuItem key={opt} value={opt}>
-                                    {opt}
-                                  </MenuItem>
-                                ))}
-                              </TextField>
-                            </Grid>
-                          );
-                        }
-
-                        return (
-                          <Grid item xs={12} sm={6} key={def.key}>
-                            <TextField
-                              label={def.name}
-                              type={def.fieldType === 'NUMBER' ? 'number' : def.fieldType === 'DATE' ? 'date' : 'text'}
-                              InputLabelProps={def.fieldType === 'DATE' ? { shrink: true } : undefined}
-                              fullWidth
-                              size="medium"
-                              required={def.isRequired}
-                              value={customFieldValues[def.key] || ''}
-                              onChange={(e) => handleCustomFieldChange(def.key, e.target.value)}
-                            />
-                          </Grid>
-                        );
-                      })}
+                      {unassignedFields.map((def) => renderFieldInput(def))}
                     </Grid>
                   </CardContent>
                 </Card>
