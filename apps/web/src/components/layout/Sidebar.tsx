@@ -548,8 +548,6 @@ export default function Sidebar({
                 gap: 1.25,
                 cursor: 'pointer',
                 p: 0.25,
-                borderRadius: '8px',
-                '&:hover': { backgroundColor: '#f1f5f9' },
               }}
             >
               <Box

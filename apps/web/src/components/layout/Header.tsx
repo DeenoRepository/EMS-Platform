@@ -81,9 +81,6 @@ export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProp
                   cursor: 'pointer',
                   mr: 2.5,
                   p: 0.5,
-                  borderRadius: '8px',
-                  transition: 'background-color 0.15s ease',
-                  '&:hover': { backgroundColor: '#f1f5f9' },
                 }}
               >
                 <Box
