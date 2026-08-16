@@ -28,6 +28,7 @@ import {
   DialogContent,
   DialogActions,
   CircularProgress,
+  Skeleton,
   Stack,
   InputAdornment,
 } from '@mui/material';
@@ -312,7 +313,7 @@ function WmsStockContent() {
       {/* Таблица остатков */}
       <Card sx={{ borderRadius: 2 }}>
         <TableContainer>
-          <Table size="medium">
+          <Table size="small" aria-label="Реестр остатков складов и ТМЦ">
             <TableHead sx={{ bgcolor: 'grey.50' }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 700 }}>Склад</TableCell>
@@ -333,11 +334,18 @@ function WmsStockContent() {
             </TableHead>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 6 }}>
-                    <CircularProgress size={32} />
-                  </TableCell>
-                </TableRow>
+                Array.from({ length: 6 }).map((_, idx) => (
+                  <TableRow key={idx}>
+                    <TableCell><Skeleton variant="rounded" width={80} height={24} /></TableCell>
+                    <TableCell><Skeleton variant="text" width={90} /></TableCell>
+                    <TableCell><Skeleton variant="text" width={220} /></TableCell>
+                    <TableCell><Skeleton variant="text" width={110} /></TableCell>
+                    <TableCell align="right"><Skeleton variant="text" width={60} sx={{ ml: 'auto' }} /></TableCell>
+                    <TableCell align="center"><Skeleton variant="text" width={40} sx={{ mx: 'auto' }} /></TableCell>
+                    <TableCell align="center"><Skeleton variant="rounded" width={70} height={20} sx={{ mx: 'auto' }} /></TableCell>
+                    <TableCell><Skeleton variant="rounded" width={140} height={20} /></TableCell>
+                  </TableRow>
+                ))
               ) : items.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} align="center" sx={{ py: 6, color: 'text.secondary' }}>

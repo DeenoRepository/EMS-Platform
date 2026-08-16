@@ -18,6 +18,7 @@ import {
   FormControlLabel,
   Switch,
   CircularProgress,
+  Skeleton,
   Stack,
   Tooltip,
 } from '@mui/material';
@@ -159,9 +160,24 @@ export default function WmsWarehousesPage() {
       />
 
       {isLoading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-          <CircularProgress />
-        </Box>
+        <Grid container spacing={3}>
+          {Array.from({ length: 3 }).map((_, idx) => (
+            <Grid item xs={12} sm={6} md={4} key={idx}>
+              <Card sx={{ height: '100%', p: 2.5, borderRadius: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                  <Skeleton variant="text" width={140} height={28} />
+                  <Skeleton variant="circular" width={28} height={28} />
+                </Box>
+                <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                  <Skeleton variant="rounded" width={80} height={22} />
+                  <Skeleton variant="rounded" width={70} height={22} />
+                </Stack>
+                <Skeleton variant="text" width="80%" height={20} sx={{ mb: 2 }} />
+                <Skeleton variant="rounded" height={40} />
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
       ) : warehouses.length === 0 ? (
         <Card sx={{ p: 6, textAlign: 'center', borderRadius: 2 }}>
           <Typography variant="body1" color="text.secondary">

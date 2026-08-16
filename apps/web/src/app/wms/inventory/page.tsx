@@ -23,6 +23,7 @@ import {
   TextField,
   MenuItem,
   CircularProgress,
+  Skeleton,
   Stack,
   IconButton,
 } from '@mui/material';
@@ -164,7 +165,7 @@ export default function WmsInventoryListPage() {
 
       <Card sx={{ borderRadius: 2 }}>
         <TableContainer>
-          <Table size="medium">
+          <Table size="small" aria-label="Реестр актов инвентаризации">
             <TableHead sx={{ bgcolor: 'grey.50' }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 700 }}>Номер / Акт</TableCell>
@@ -180,11 +181,17 @@ export default function WmsInventoryListPage() {
             </TableHead>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
-                    <CircularProgress size={32} />
-                  </TableCell>
-                </TableRow>
+                Array.from({ length: 5 }).map((_, idx) => (
+                  <TableRow key={idx}>
+                    <TableCell><Skeleton variant="text" width={90} /></TableCell>
+                    <TableCell><Skeleton variant="text" width={130} /></TableCell>
+                    <TableCell><Skeleton variant="rounded" width={80} height={20} /></TableCell>
+                    <TableCell><Skeleton variant="text" width={70} /></TableCell>
+                    <TableCell><Skeleton variant="text" width={110} /></TableCell>
+                    <TableCell><Skeleton variant="text" width={100} /></TableCell>
+                    <TableCell align="right"><Skeleton variant="rounded" width={90} height={24} sx={{ ml: 'auto' }} /></TableCell>
+                  </TableRow>
+                ))
               ) : inventories.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} align="center" sx={{ py: 6, color: 'text.secondary' }}>

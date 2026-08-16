@@ -88,6 +88,7 @@ export default function Sidebar({
   // Operational alert stats
   const [repairCount, setRepairCount] = useState<number | null>(null);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number | null>(null);
+  const [wmsLowStockCount, setWmsLowStockCount] = useState<number | null>(null);
 
   // Expanded items in expanded sidebar mode
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
@@ -115,10 +116,11 @@ export default function Sidebar({
   useEffect(() => {
     async function loadData() {
       try {
-        const [eqRes, modRes, appRes] = await Promise.all([
+        const [eqRes, modRes, appRes, wmsRes] = await Promise.all([
           fetch('/api/eps/equipment?pageSize=1'),
           fetch('/api/modules/status'),
           fetch('/api/eps/approvals?pageSize=1'),
+          fetch('/api/wms/stats'),
         ]);
         if (eqRes.ok) {
           const json = await eqRes.json();
@@ -136,6 +138,12 @@ export default function Sidebar({
           const appJson = await appRes.json();
           if (appJson.success && appJson.data?.stats?.pending) {
             setPendingApprovalsCount(appJson.data.stats.pending || null);
+          }
+        }
+        if (wmsRes.ok) {
+          const wmsJson = await wmsRes.json();
+          if (wmsJson.success && wmsJson.data?.lowStockCount) {
+            setWmsLowStockCount(wmsJson.data.lowStockCount || null);
           }
         }
       } catch {
@@ -216,6 +224,8 @@ export default function Sidebar({
       id: 'wms',
       label: 'Складской учёт (WMS)',
       icon: <WarehouseOutlinedIcon sx={{ fontSize: 18 }} />,
+      badge: wmsLowStockCount && wmsLowStockCount > 0 ? wmsLowStockCount : null,
+      badgeColor: 'warning',
       permission: PERMISSIONS.WMS_STOCK_VIEW,
       children: [
         { label: 'Сводный дашборд', path: '/wms', icon: <AnalyticsOutlinedIcon sx={{ fontSize: 15 }} /> },

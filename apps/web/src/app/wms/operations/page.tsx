@@ -25,6 +25,7 @@ import {
   DialogContent,
   DialogActions,
   CircularProgress,
+  Skeleton,
   Stack,
   Autocomplete,
   Tooltip,
@@ -407,7 +408,7 @@ function WmsOperationsContent() {
       {/* Таблица операций */}
       <Card sx={{ borderRadius: 2 }}>
         <TableContainer>
-          <Table size="medium">
+          <Table size="small" aria-label="Журнал складских операций">
             <TableHead sx={{ bgcolor: 'grey.50' }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 700 }}>Дата / Время</TableCell>
@@ -421,11 +422,17 @@ function WmsOperationsContent() {
             </TableHead>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
-                    <CircularProgress size={32} />
-                  </TableCell>
-                </TableRow>
+                Array.from({ length: 6 }).map((_, idx) => (
+                  <TableRow key={idx}>
+                    <TableCell><Skeleton variant="text" width={110} /></TableCell>
+                    <TableCell><Skeleton variant="rounded" width={80} height={22} /></TableCell>
+                    <TableCell><Skeleton variant="text" width={120} /></TableCell>
+                    <TableCell><Skeleton variant="text" width={130} /></TableCell>
+                    <TableCell><Skeleton variant="text" width={200} /></TableCell>
+                    <TableCell><Skeleton variant="rounded" width={140} height={20} /></TableCell>
+                    <TableCell><Skeleton variant="text" width={90} /></TableCell>
+                  </TableRow>
+                ))
               ) : operations.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} align="center" sx={{ py: 6, color: 'text.secondary' }}>

@@ -18,6 +18,7 @@ import {
   Paper,
   TextField,
   CircularProgress,
+  Skeleton,
   Stack,
   Alert,
   AlertTitle,
@@ -320,7 +321,7 @@ export default function WmsInventoryDetailPage() {
       {/* Таблица инвентаризации */}
       <Card sx={{ borderRadius: 2 }}>
         <TableContainer component={Paper} elevation={0}>
-          <Table>
+          <Table size="small" aria-label="Ведомость инвентаризации остатков">
             <TableHead sx={{ bgcolor: 'grey.50' }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 700 }}>Артикул</TableCell>
