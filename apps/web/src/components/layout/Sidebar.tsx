@@ -166,11 +166,13 @@ export default function Sidebar({
     {
       id: 'eps',
       label: 'Оборудование (EPS)',
-      path: '/eps',
       icon: <PrecisionManufacturingIcon sx={{ fontSize: 18 }} />,
       badge: repairCount && repairCount > 0 ? repairCount : null,
       badgeColor: 'warning',
       permission: PERMISSIONS.EPS_EQUIPMENT_VIEW,
+      children: [
+        { label: 'Реестр оборудования', path: '/eps', icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} /> },
+      ],
     },
     {
       id: 'wms',
