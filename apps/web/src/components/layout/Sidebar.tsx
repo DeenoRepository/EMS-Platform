@@ -18,7 +18,7 @@ import {
   Popover,
 } from '@mui/material';
 import { usePathname, useRouter } from 'next/navigation';
-import PrecisionManufacturingOutlinedIcon from '@mui/icons-material/PrecisionManufacturingOutlined';
+import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import AnalyticsOutlinedIcon from '@mui/icons-material/AnalyticsOutlined';
 import BuildOutlinedIcon from '@mui/icons-material/BuildOutlined';
@@ -164,7 +164,7 @@ export default function Sidebar({
     {
       id: 'eps',
       label: 'Паспортизация (EPS)',
-      icon: <PrecisionManufacturingOutlinedIcon sx={{ fontSize: 18 }} />,
+      icon: <BadgeOutlinedIcon sx={{ fontSize: 18 }} />,
       badge: repairCount && repairCount > 0 ? repairCount : null,
       badgeColor: 'warning',
       permission: PERMISSIONS.EPS_EQUIPMENT_VIEW,
