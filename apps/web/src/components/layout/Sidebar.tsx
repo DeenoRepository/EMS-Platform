@@ -205,8 +205,8 @@ export default function Sidebar({
     },
   ];
 
-  // Administration & Settings Section with Outlined Icons
-  const adminItems: NavItemDef[] = [
+  // 1. Access & Identity Management
+  const accessItems: NavItemDef[] = [
     {
       id: 'users',
       label: 'Пользователи',
@@ -219,6 +219,10 @@ export default function Sidebar({
       path: '/admin/roles',
       icon: <AdminPanelSettingsOutlinedIcon sx={{ fontSize: 18 }} />,
     },
+  ];
+
+  // 2. System Configuration & Audit
+  const systemItems: NavItemDef[] = [
     {
       id: 'module-settings',
       label: 'Справочники модулей',
@@ -233,7 +237,7 @@ export default function Sidebar({
     },
     {
       id: 'settings',
-      label: 'Настройки системы',
+      label: 'Параметры системы',
       path: '/admin/settings',
       icon: <SettingsOutlinedIcon sx={{ fontSize: 18 }} />,
     },
@@ -648,9 +652,9 @@ export default function Sidebar({
         )}
         {operationalItems.map(renderNavBlock)}
 
-        {/* Settings and Support Section */}
+        {/* Access Management Section */}
         {canAccessAdmin && (
-          <Box sx={{ mt: 2.5 }}>
+          <Box sx={{ mt: 2 }}>
             {!collapsed && (
               <Typography
                 variant="caption"
@@ -664,10 +668,33 @@ export default function Sidebar({
                   letterSpacing: '0.04em',
                 }}
               >
-                АДМИНИСТРИРОВАНИЕ
+                УПРАВЛЕНИЕ ДОСТУПОМ
               </Typography>
             )}
-            {adminItems.map(renderNavBlock)}
+            {accessItems.map(renderNavBlock)}
+          </Box>
+        )}
+
+        {/* System & Configuration Section */}
+        {canAccessAdmin && (
+          <Box sx={{ mt: 2 }}>
+            {!collapsed && (
+              <Typography
+                variant="caption"
+                sx={{
+                  display: 'block',
+                  px: 1.25,
+                  mb: 0.5,
+                  fontSize: '0.6875rem',
+                  fontWeight: 700,
+                  color: '#94a3b8',
+                  letterSpacing: '0.04em',
+                }}
+              >
+                СИСТЕМА И СПРАВОЧНИКИ
+              </Typography>
+            )}
+            {systemItems.map(renderNavBlock)}
           </Box>
         )}
       </Box>
