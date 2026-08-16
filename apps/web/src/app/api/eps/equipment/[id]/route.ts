@@ -47,6 +47,13 @@ export async function GET(
         createdBy: {
           select: { displayName: true, ldapLogin: true },
         },
+        approvals: {
+          include: {
+            requester: { select: { displayName: true, ldapLogin: true } },
+            reviewer: { select: { displayName: true, ldapLogin: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
       },
     });
 

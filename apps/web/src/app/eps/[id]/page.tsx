@@ -48,11 +48,15 @@ import StraightenIcon from '@mui/icons-material/Straighten';
 import SpeedIcon from '@mui/icons-material/Speed';
 import TuneIcon from '@mui/icons-material/Tune';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
+import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
+import AddIcon from '@mui/icons-material/Add';
 import PageHeader from '@/components/layout/PageHeader';
 import { useParams, useRouter } from 'next/navigation';
 import {
   EQUIPMENT_STATUS_MAP,
   DOCUMENT_TYPE_MAP,
+  APPROVAL_TYPE_MAP,
+  APPROVAL_STATUS_MAP,
   MAINTENANCE_STATUS_MAP,
   formatDate,
   formatDateTime,
@@ -146,6 +150,19 @@ interface EquipmentDetails {
     createdDate: string;
     resolvedDate: string | null;
   }[];
+  approvals?: {
+    id: string;
+    type: string;
+    status: string;
+    title: string;
+    description: string | null;
+    proposedData: any | null;
+    createdAt: string;
+    reviewedAt: string | null;
+    resolutionComment: string | null;
+    requester: { displayName: string; ldapLogin: string };
+    reviewer: { displayName: string; ldapLogin: string } | null;
+  }[];
 }
 
 export default function EquipmentPassportPage() {
@@ -170,6 +187,14 @@ export default function EquipmentPassportPage() {
   const [previewDocUrl, setPreviewDocUrl] = useState<string | null>(null);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [loadingAudit, setLoadingAudit] = useState(false);
+
+  // Approval Modal State
+  const [createApprovalModalOpen, setCreateApprovalModalOpen] = useState(false);
+  const [createApprovalType, setCreateApprovalType] = useState('DECOMMISSIONING');
+  const [createApprovalTitle, setCreateApprovalTitle] = useState('');
+  const [createApprovalDescription, setCreateApprovalDescription] = useState('');
+  const [createApprovalTargetStatus, setCreateApprovalTargetStatus] = useState('UNDER_REPAIR');
+  const [submittingApproval, setSubmittingApproval] = useState(false);
 
   // Upload States
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -239,8 +264,54 @@ export default function EquipmentPassportPage() {
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
-    if (newValue === 6) {
+    if (newValue === 7) {
       fetchAudit();
+    }
+  };
+
+  // Submit new approval request from passport page
+  const handleCreateApproval = async () => {
+    if (!createApprovalTitle.trim()) {
+      enqueueSnackbar('Укажите тему заявки', { variant: 'warning' });
+      return;
+    }
+    setSubmittingApproval(true);
+    try {
+      let proposedData: any = null;
+      if (createApprovalType === 'STATUS_CHANGE') {
+        proposedData = { targetStatus: createApprovalTargetStatus };
+      } else if (createApprovalType === 'DECOMMISSIONING') {
+        proposedData = { targetStatus: 'DECOMMISSIONED' };
+      } else if (createApprovalType === 'COMMISSIONING') {
+        proposedData = { targetStatus: 'ACTIVE' };
+      }
+
+      const res = await fetch('/api/eps/approvals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          equipmentId: id,
+          type: createApprovalType,
+          title: createApprovalTitle,
+          description: createApprovalDescription,
+          proposedData,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        enqueueSnackbar('Заявка на согласование создана', { variant: 'success' });
+        setCreateApprovalModalOpen(false);
+        setCreateApprovalTitle('');
+        setCreateApprovalDescription('');
+        fetchEquipmentAndMeta();
+      } else {
+        enqueueSnackbar(data.error || 'Ошибка создания заявки', { variant: 'error' });
+      }
+    } catch {
+      enqueueSnackbar('Ошибка сети при создании заявки', { variant: 'error' });
+    } finally {
+      setSubmittingApproval(false);
     }
   };
 
@@ -527,6 +598,7 @@ export default function EquipmentPassportPage() {
           <Tab label="Паспорт (Общие сведения и разделы)" />
           <Tab label={`Фотогалерея (${equipment.photos.length})`} />
           <Tab label={`Документация (${equipment.documents.length})`} />
+          <Tab label={`Согласования (${equipment.approvals?.length || 0})`} />
           <Tab label={`Запчасти WMS (${equipment.spareParts.length})`} />
           <Tab label={`ТО и Ремонт MRO (${equipment.maintenancePlans.length})`} />
           <Tab label={`Заявки Jira (${equipment.jiraIssues?.length || 0})`} />
@@ -875,8 +947,113 @@ export default function EquipmentPassportPage() {
         </Card>
       )}
 
-      {/* TAB 3: Запчасти (WMS) */}
+      {/* TAB 3: Согласования */}
       {activeTab === 3 && (
+        <Card sx={{ p: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Box>
+              <Typography variant="h6" fontWeight={700}>
+                Заявки на согласование ({equipment.approvals?.length || 0})
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                История и статус заявок на ввод в эксплуатацию, списание и изменение характеристик
+              </Typography>
+            </Box>
+            {hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT) && (
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setCreateApprovalModalOpen(true)}
+              >
+                Создать заявку
+              </Button>
+            )}
+          </Box>
+
+          {(!equipment.approvals || equipment.approvals.length === 0) ? (
+            <Box sx={{ p: 6, textAlign: 'center', color: 'text.secondary' }}>
+              <FactCheckOutlinedIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
+              <Typography variant="body2">Заявок на согласование по данному оборудованию не зарегистрировано</Typography>
+            </Box>
+          ) : (
+            <TableContainer>
+              <Table>
+                <TableHead sx={{ backgroundColor: 'rgba(0,0,0,0.02)' }}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 600 }}>Тема заявки</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Тип согласования</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Статус</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Инициатор</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Дата создания</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Решение / Согласующий</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {equipment.approvals.map((app) => {
+                    const statusInfo = APPROVAL_STATUS_MAP[app.status] || { label: app.status, color: 'default' };
+                    return (
+                      <TableRow key={app.id} hover>
+                        <TableCell>
+                          <Typography variant="subtitle2" fontWeight={600}>
+                            {app.title}
+                          </Typography>
+                          {app.description && (
+                            <Typography variant="caption" color="text.secondary" display="block">
+                              {app.description}
+                            </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={APPROVAL_TYPE_MAP[app.type] || app.type}
+                            size="small"
+                            variant="outlined"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={statusInfo.label}
+                            size="small"
+                            color={statusInfo.color as any}
+                            sx={{ fontWeight: 700 }}
+                          />
+                        </TableCell>
+                        <TableCell sx={{ fontSize: '0.8125rem' }}>
+                          {app.requester.displayName}
+                        </TableCell>
+                        <TableCell sx={{ fontSize: '0.8125rem' }}>
+                          {formatDateTime(app.createdAt)}
+                        </TableCell>
+                        <TableCell sx={{ fontSize: '0.8125rem' }}>
+                          {app.reviewer ? (
+                            <Box>
+                              <Typography variant="caption" fontWeight={600} display="block">
+                                {app.reviewer.displayName} ({formatDate(app.reviewedAt)})
+                              </Typography>
+                              {app.resolutionComment && (
+                                <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                                  «{app.resolutionComment}»
+                                </Typography>
+                              )}
+                            </Box>
+                          ) : (
+                            <Typography variant="caption" color="text.secondary">
+                              На рассмотрении
+                            </Typography>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Card>
+      )}
+
+      {/* TAB 4: Запчасти (WMS) */}
+      {activeTab === 4 && (
         <Card sx={{ p: 3 }}>
           <Typography variant="h6" fontWeight={700} gutterBottom>
             Совместимые запасные части и расходные материалы (WMS)
@@ -931,8 +1108,8 @@ export default function EquipmentPassportPage() {
         </Card>
       )}
 
-      {/* TAB 4: ТО и Ремонт (MRO) */}
-      {activeTab === 4 && (
+      {/* TAB 5: ТО и Ремонт (MRO) */}
+      {activeTab === 5 && (
         <Card sx={{ p: 3 }}>
           <Typography variant="h6" fontWeight={700} gutterBottom>
             Планы технического обслуживания и график ППР (MRO)
@@ -981,8 +1158,8 @@ export default function EquipmentPassportPage() {
         </Card>
       )}
 
-      {/* TAB 5: Заявки (SRM / Jira) */}
-      {activeTab === 5 && (
+      {/* TAB 6: Заявки (SRM / Jira) */}
+      {activeTab === 6 && (
         <Card sx={{ p: 3 }}>
           <Typography variant="h6" fontWeight={700} gutterBottom>
             Связанные заявки на ремонт из Jira (SRM)
@@ -1032,8 +1209,8 @@ export default function EquipmentPassportPage() {
         </Card>
       )}
 
-      {/* TAB 6: История изменений (Аудит) */}
-      {activeTab === 6 && (
+      {/* TAB 7: История изменений (Аудит) */}
+      {activeTab === 7 && (
         <Card sx={{ p: 3 }}>
           <Typography variant="h6" fontWeight={700} gutterBottom>
             История изменений паспорта оборудования
@@ -1351,6 +1528,87 @@ export default function EquipmentPassportPage() {
           </Button>
           <Button onClick={handleUploadDocument} variant="contained" disabled={!selectedFile || uploading}>
             {uploading ? <CircularProgress size={20} /> : 'Прикрепить'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Create Approval Request Dialog */}
+      <Dialog open={createApprovalModalOpen} onClose={() => setCreateApprovalModalOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Создание заявки на согласование</DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
+            <Paper variant="outlined" sx={{ p: 1.5, backgroundColor: '#f8fafc' }}>
+              <Typography variant="caption" color="text.secondary" display="block">
+                Оборудование:
+              </Typography>
+              <Typography variant="subtitle2" fontWeight={700}>
+                {equipment.name} • Инв. №: {equipment.inventoryNumber || 'Б/Н'}
+              </Typography>
+            </Paper>
+
+            <TextField
+              select
+              size="small"
+              label="Тип согласования *"
+              value={createApprovalType}
+              onChange={(e) => setCreateApprovalType(e.target.value)}
+              fullWidth
+            >
+              {Object.entries(APPROVAL_TYPE_MAP).map(([k, label]) => (
+                <MenuItem key={k} value={k}>
+                  {label}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            {createApprovalType === 'STATUS_CHANGE' && (
+              <TextField
+                select
+                size="small"
+                label="Целевой рабочий статус *"
+                value={createApprovalTargetStatus}
+                onChange={(e) => setCreateApprovalTargetStatus(e.target.value)}
+                fullWidth
+              >
+                {Object.entries(EQUIPMENT_STATUS_MAP).map(([k, info]) => (
+                  <MenuItem key={k} value={k}>
+                    {info.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+
+            <TextField
+              label="Тема заявки *"
+              value={createApprovalTitle}
+              onChange={(e) => setCreateApprovalTitle(e.target.value)}
+              size="small"
+              fullWidth
+              placeholder="Например: Согласование акта списания в связи с износом"
+            />
+
+            <TextField
+              label="Обоснование / Описание"
+              value={createApprovalDescription}
+              onChange={(e) => setCreateApprovalDescription(e.target.value)}
+              multiline
+              rows={3}
+              size="small"
+              fullWidth
+              placeholder="Укажите подробную причину, номер служебной записки или дефектной ведомости..."
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreateApprovalModalOpen(false)} color="inherit">
+            Отмена
+          </Button>
+          <Button
+            onClick={handleCreateApproval}
+            variant="contained"
+            disabled={!createApprovalTitle.trim() || submittingApproval}
+          >
+            {submittingApproval ? <CircularProgress size={20} /> : 'Подать заявку'}
           </Button>
         </DialogActions>
       </Dialog>

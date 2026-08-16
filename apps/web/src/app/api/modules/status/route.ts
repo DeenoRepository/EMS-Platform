@@ -94,14 +94,13 @@ export async function PATCH(req: NextRequest) {
 
     await logAuditEvent({
       userId: user.userId,
-      action: 'STATUS_CHANGE',
+      action: 'UPDATE',
       entityType: 'SystemModule',
       entityId: moduleId,
-      details: {
+      changes: {
         action: enabled ? 'ENABLE_MODULE' : 'DISABLE_MODULE',
         moduleId,
         enabled,
-        updatedBy: user.username,
       },
     });
 

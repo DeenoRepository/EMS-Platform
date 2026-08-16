@@ -103,6 +103,35 @@ import { Suspense } from 'react';
 
 const PRESET_COLORS = ['#0284c7', '#0f766e', '#16a34a', '#d97706', '#dc2626', '#7c3aed', '#db2777', '#475569'];
 
+const MODULE_KEYS = ['eps', 'wms', 'srm', 'mro'];
+
+const MODULE_META: Record<string, { title: string; subtitle: string; breadcrumb: string; name: string }> = {
+  eps: {
+    title: 'Настройки модуля — Паспортизация (EPS)',
+    subtitle: 'Управление техническими разделами, пользовательскими полями и классификаторами оборудования',
+    breadcrumb: 'Паспортизация (EPS)',
+    name: 'Паспортизация оборудования (EPS)',
+  },
+  wms: {
+    title: 'Настройки модуля — Складской учёт (WMS)',
+    subtitle: 'Управление параметрами складских остатков и номенклатуры',
+    breadcrumb: 'Складской учёт (WMS)',
+    name: 'Складской учёт (WMS)',
+  },
+  srm: {
+    title: 'Настройки модуля — Интеграция Jira (SRM)',
+    subtitle: 'Управление параметрами синхронизации инцидентов и сервисных заявок',
+    breadcrumb: 'Интеграция Jira (SRM)',
+    name: 'Интеграция Jira (SRM)',
+  },
+  mro: {
+    title: 'Настройки модуля — ТО и Ремонт (MRO)',
+    subtitle: 'Управление технологическими картами, регламентами и графиками ППР',
+    breadcrumb: 'ТО и Ремонт (MRO)',
+    name: 'ТО и Ремонт (MRO)',
+  },
+};
+
 function ModuleSettingsContent() {
   const { enqueueSnackbar } = useSnackbar();
   const searchParams = useSearchParams();
@@ -504,6 +533,7 @@ function ModuleSettingsContent() {
   };
 
   const currentModuleKey = MODULE_KEYS[activeTab] || 'eps';
+  const currentMeta = MODULE_META[currentModuleKey] || MODULE_META.eps;
   const currentModuleEnabled = moduleStatus[currentModuleKey] !== false;
 
   return (
