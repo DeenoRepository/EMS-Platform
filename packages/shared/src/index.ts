@@ -85,6 +85,12 @@ export const OPERATION_TYPE_MAP: Record<string, { label: string; color: 'success
   ADJUSTMENT: { label: 'Корректировка', color: 'default' },
 };
 
+export const INVENTORY_STATUS_MAP: Record<string, { label: string; color: 'warning' | 'info' | 'success' | 'default' }> = {
+  DRAFT: { label: 'Черновик', color: 'default' },
+  IN_PROGRESS: { label: 'В процессе', color: 'warning' },
+  COMPLETED: { label: 'Завершена', color: 'success' },
+};
+
 export const MAINTENANCE_STATUS_MAP: Record<string, { label: string; color: 'info' | 'warning' | 'success' | 'error' | 'default' }> = {
   PLANNED: { label: 'Запланировано', color: 'info' },
   IN_PROGRESS: { label: 'В работе', color: 'warning' },

@@ -218,8 +218,11 @@ export default function Sidebar({
       icon: <WarehouseOutlinedIcon sx={{ fontSize: 18 }} />,
       permission: PERMISSIONS.WMS_STOCK_VIEW,
       children: [
-        { label: 'Остатки номенклатуры', path: '/wms', icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} /> },
-        { label: 'Приход и списание ТМЦ', path: '/wms?tab=operations', icon: <MoveToInboxIcon sx={{ fontSize: 15 }} /> },
+        { label: 'Сводный дашборд', path: '/wms', icon: <AnalyticsOutlinedIcon sx={{ fontSize: 15 }} /> },
+        { label: 'Остатки и ТМЦ', path: '/wms/stock', icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} /> },
+        { label: 'Складские операции', path: '/wms/operations', icon: <MoveToInboxIcon sx={{ fontSize: 15 }} /> },
+        { label: 'Склады', path: '/wms/warehouses', icon: <WarehouseOutlinedIcon sx={{ fontSize: 15 }} /> },
+        { label: 'Инвентаризация', path: '/wms/inventory', icon: <FactCheckOutlinedIcon sx={{ fontSize: 15 }} /> },
       ],
     },
     {
