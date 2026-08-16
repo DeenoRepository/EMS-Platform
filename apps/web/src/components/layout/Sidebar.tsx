@@ -591,9 +591,9 @@ export default function Sidebar({
               sx={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 1.5,
+                gap: 1.25,
                 cursor: 'pointer',
-                p: 0.5,
+                p: 0.25,
               }}
             >
               <Box
@@ -601,24 +601,24 @@ export default function Sidebar({
                 src="/logo.png"
                 alt="EMS Platform"
                 sx={{
-                  width: 38,
-                  height: 38,
+                  width: 34,
+                  height: 34,
                   objectFit: 'contain',
-                  filter: 'drop-shadow(0 2px 10px rgba(56, 189, 248, 0.45))',
+                  filter: 'drop-shadow(0 2px 8px rgba(56, 189, 248, 0.4))',
                   flexShrink: 0,
                   transition: 'transform 0.15s ease',
                   '&:hover': {
-                    transform: 'scale(1.08)',
+                    transform: 'scale(1.06)',
                   },
                 }}
               />
               <Box sx={{ minWidth: 0 }}>
-                <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
+                <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.6 }}>
                   <Typography
                     component="span"
                     sx={{
-                      fontWeight: 900,
-                      fontSize: '1.25rem',
+                      fontWeight: 800,
+                      fontSize: '1.0625rem',
                       lineHeight: 1.1,
                       letterSpacing: '-0.02em',
                       color: '#ffffff',
@@ -630,7 +630,7 @@ export default function Sidebar({
                     component="span"
                     sx={{
                       fontWeight: 700,
-                      fontSize: '1.0625rem',
+                      fontSize: '0.9375rem',
                       lineHeight: 1.1,
                       color: '#38bdf8',
                       letterSpacing: '-0.01em',
@@ -644,10 +644,10 @@ export default function Sidebar({
                   sx={{
                     color: '#94a3b8',
                     fontWeight: 500,
-                    fontSize: '0.75rem',
+                    fontSize: '0.6875rem',
                     display: 'block',
                     lineHeight: 1.15,
-                    mt: 0.35,
+                    mt: 0.3,
                     letterSpacing: '0.01em',
                     whiteSpace: 'nowrap',
                   }}
