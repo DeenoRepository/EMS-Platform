@@ -42,6 +42,8 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import ConstructionOutlinedIcon from '@mui/icons-material/ConstructionOutlined';
+import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
+import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
 import PageHeader from '@/components/layout/PageHeader';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { EQUIPMENT_STATUS_MAP, formatDate, PERMISSIONS } from '@ems/shared';
@@ -233,16 +235,34 @@ function EquipmentListContent() {
         subtitle="Единый реестр технологического оборудования предприятия, документации и технических характеристик"
         breadcrumbs={[{ label: 'Главная', href: '/' }, { label: 'Оборудование' }]}
         actions={
-          canCreate && (
+          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
             <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => router.push('/eps/new')}
-              sx={{ px: 2.5, py: 1, fontWeight: 600 }}
+              variant="outlined"
+              startIcon={<AssessmentOutlinedIcon />}
+              onClick={() => router.push('/eps/reports')}
+              sx={{ px: 2, py: 1, fontWeight: 600 }}
             >
-              Добавить оборудование
+              Конструктор отчетов
             </Button>
-          )
+            <Button
+              variant="outlined"
+              startIcon={<FileUploadOutlinedIcon />}
+              onClick={() => router.push('/eps/import')}
+              sx={{ px: 2, py: 1, fontWeight: 600 }}
+            >
+              Импорт данных
+            </Button>
+            {canCreate && (
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => router.push('/eps/new')}
+                sx={{ px: 2.5, py: 1, fontWeight: 600 }}
+              >
+                Добавить оборудование
+              </Button>
+            )}
+          </Box>
         }
       />
 

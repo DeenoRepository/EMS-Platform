@@ -40,6 +40,8 @@ import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined';
+import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
+import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS } from '@ems/shared';
@@ -203,6 +205,8 @@ export default function Sidebar({
       permission: PERMISSIONS.EPS_EQUIPMENT_VIEW,
       children: [
         { label: 'Реестр оборудования', path: '/eps', icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} /> },
+        { label: 'Конструктор отчетов', path: '/eps/reports', icon: <AssessmentOutlinedIcon sx={{ fontSize: 15 }} /> },
+        { label: 'Импорт оборудования', path: '/eps/import', icon: <FileUploadOutlinedIcon sx={{ fontSize: 15 }} /> },
         { label: 'Документы', path: '/eps/documents', icon: <ArticleOutlinedIcon sx={{ fontSize: 15 }} /> },
         { label: 'Согласования', path: '/eps/approvals', icon: <FactCheckOutlinedIcon sx={{ fontSize: 15 }} /> },
         { label: 'История изменений', path: '/eps/history', icon: <HistoryOutlinedIcon sx={{ fontSize: 15 }} /> },
