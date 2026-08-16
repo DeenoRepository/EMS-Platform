@@ -513,7 +513,7 @@ export default function Sidebar({
           minHeight: 38,
         }}
       >
-        {/* Logo */}
+        {/* Brand Logo & Stylized Text */}
         <Box
           onClick={() => {
             if (collapsed) {
@@ -534,28 +534,49 @@ export default function Sidebar({
           }}
         >
           <Box
+            component="img"
+            src="/logo.png"
+            alt="EMS Logo"
             sx={{
               width: 32,
               height: 32,
-              borderRadius: '8px',
-              backgroundColor: '#0f172a',
-              color: '#ffffff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 800,
-              fontSize: '1.05rem',
-              letterSpacing: -0.5,
+              objectFit: 'contain',
+              filter: 'drop-shadow(0 2px 8px rgba(124, 58, 237, 0.35))',
+              transition: 'transform 0.15s ease',
+              '&:hover': {
+                transform: 'scale(1.08)',
+              },
             }}
-          >
-            ◬
-          </Box>
+          />
           {!collapsed && (
             <Box>
-              <Typography variant="subtitle2" fontWeight={800} lineHeight={1.1} color="#0f172a">
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight: 900,
+                  fontSize: '0.95rem',
+                  lineHeight: 1.1,
+                  letterSpacing: '-0.02em',
+                  background: 'linear-gradient(135deg, #0284c7 0%, #7c3aed 50%, #db2777 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}
+              >
                 EMS
               </Typography>
-              <Typography variant="caption" color="text.secondary" fontWeight={500} fontSize="0.65rem">
+              <Typography
+                variant="caption"
+                sx={{
+                  color: '#64748b',
+                  fontWeight: 600,
+                  fontSize: '0.625rem',
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase',
+                  display: 'block',
+                  lineHeight: 1,
+                  mt: 0.2,
+                }}
+              >
                 Equipment OS
               </Typography>
             </Box>

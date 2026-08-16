@@ -86,21 +86,21 @@ export default function LoginPage() {
           }}
         >
           <Box
+            component="img"
+            src="/logo.png"
+            alt="EMS Logo"
             sx={{
-              display: 'inline-flex',
-              p: 1.5,
-              borderRadius: 3,
-              backgroundColor: 'rgba(255, 255, 255, 0.15)',
+              width: 56,
+              height: 56,
+              objectFit: 'contain',
               mb: 1.5,
-              backdropFilter: 'blur(8px)',
+              filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.25))',
             }}
-          >
-            <PrecisionManufacturingIcon sx={{ fontSize: 36, color: '#ffffff' }} />
-          </Box>
-          <Typography variant="h5" fontWeight={800} letterSpacing={1}>
+          />
+          <Typography variant="h5" fontWeight={900} letterSpacing={0.5}>
             EMS
           </Typography>
-          <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+          <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5, fontSize: '0.8125rem' }}>
             Equipment Management System
           </Typography>
         </Box>
