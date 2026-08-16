@@ -7,9 +7,13 @@ import {
   IconButton,
   Avatar,
   Badge,
-  Popover,
-  InputBase,
-  Collapse,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+  Chip,
+  Tooltip,
 } from '@mui/material';
 import { usePathname, useRouter } from 'next/navigation';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
@@ -21,35 +25,23 @@ import SecurityIcon from '@mui/icons-material/Security';
 import HistoryIcon from '@mui/icons-material/History';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import TuneIcon from '@mui/icons-material/Tune';
-import SearchIcon from '@mui/icons-material/Search';
 import ViewSidebarOutlinedIcon from '@mui/icons-material/ViewSidebarOutlined';
-import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import MoveToInboxIcon from '@mui/icons-material/MoveToInbox';
+import LogoutIcon from '@mui/icons-material/Logout';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS } from '@ems/shared';
 
-export const SIDEBAR_WIDTH_EXPANDED = 284;
-export const SIDEBAR_WIDTH_COLLAPSED = 72;
-
-interface NavChild {
-  label: string;
-  path: string;
-  icon?: React.ReactNode;
-}
+export const SIDEBAR_WIDTH_EXPANDED = 260;
+export const SIDEBAR_WIDTH_COLLAPSED = 68;
 
 interface NavItemDef {
   id: string;
   label: string;
-  path?: string;
+  path: string;
   icon: React.ReactNode;
   badge?: number | null;
   badgeColor?: 'warning' | 'error' | 'primary' | 'default';
   permission?: string;
-  children?: NavChild[];
 }
 
 interface SidebarProps {
@@ -69,24 +61,13 @@ export default function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, hasPermission } = useAuth();
-
-  // Search in sidebar
-  const [searchTerm, setSearchTerm] = useState('');
+  const { user, logout, hasPermission } = useAuth();
 
   // Operational alert stats
   const [repairCount, setRepairCount] = useState<number | null>(null);
 
-  // Expanded items in expanded sidebar mode
-  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
-    eps: pathname.startsWith('/eps'),
-    wms: pathname.startsWith('/wms'),
-    mro: pathname.startsWith('/mro'),
-  });
-
-  // Flyout Popover state for collapsed mode
-  const [flyoutAnchor, setFlyoutAnchor] = useState<HTMLElement | null>(null);
-  const [activeFlyoutItem, setActiveFlyoutItem] = useState<NavItemDef | null>(null);
+  // User Profile Menu Anchor
+  const [profileMenuAnchor, setProfileMenuAnchor] = useState<null | HTMLElement>(null);
 
   useEffect(() => {
     async function loadStats() {
@@ -105,60 +86,51 @@ export default function Sidebar({
     loadStats();
   }, [pathname]);
 
-  const toggleExpand = (id: string) => {
-    setExpandedItems((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
   const handleNavigate = (path: string) => {
     router.push(path);
-    setFlyoutAnchor(null);
-    setActiveFlyoutItem(null);
     if (variant === 'temporary') onClose();
   };
 
-  const handleOpenFlyout = (event: React.MouseEvent<HTMLElement>, item: NavItemDef) => {
-    if (!collapsed) return;
-    if (item.children && item.children.length > 0) {
-      setFlyoutAnchor(event.currentTarget);
-      setActiveFlyoutItem(item);
-    } else if (item.path) {
-      handleNavigate(item.path);
-    }
+  const isItemActive = (item: NavItemDef) => {
+    if (item.path === '/eps' && pathname.startsWith('/eps')) return true;
+    if (item.path === '/wms' && pathname.startsWith('/wms')) return true;
+    if (item.path === '/mro' && pathname.startsWith('/mro')) return true;
+    if (item.path === '/srm' && pathname.startsWith('/srm')) return true;
+    return pathname === item.path;
   };
 
-  const isItemActive = (item: NavItemDef) => {
-    if (item.path && pathname === item.path) return true;
-    if (item.children && item.children.some((c) => pathname === c.path || pathname.startsWith(c.path))) {
-      return true;
-    }
-    return false;
+  const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setProfileMenuAnchor(event.currentTarget);
+  };
+
+  const handleProfileMenuClose = () => {
+    setProfileMenuAnchor(null);
+  };
+
+  const handleLogout = async () => {
+    handleProfileMenuClose();
+    await logout();
   };
 
   const canAccessAdmin = user?.roles.includes('admin') || hasPermission(PERMISSIONS.ADMIN_USERS_MANAGE);
 
-  // Operational items with dynamic alert badges
+  // Direct, single-level operational items
   const operationalItems: NavItemDef[] = [
     {
       id: 'eps',
       label: 'Оборудование (EPS)',
+      path: '/eps',
       icon: <PrecisionManufacturingIcon sx={{ fontSize: 18 }} />,
-      badge: repairCount && repairCount > 0 ? repairCount : null, // Number of items under repair
+      badge: repairCount && repairCount > 0 ? repairCount : null,
       badgeColor: 'warning',
       permission: PERMISSIONS.EPS_EQUIPMENT_VIEW,
-      children: [
-        { label: 'Реестр оборудования', path: '/eps', icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} /> },
-        { label: 'Добавить единицу', path: '/eps/new', icon: <AddCircleOutlineIcon sx={{ fontSize: 15 }} /> },
-      ],
     },
     {
       id: 'wms',
       label: 'Складской учёт (WMS)',
+      path: '/wms',
       icon: <Inventory2Icon sx={{ fontSize: 18 }} />,
       permission: PERMISSIONS.WMS_STOCK_VIEW,
-      children: [
-        { label: 'Остатки и номенклатура', path: '/wms', icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} /> },
-        { label: 'Приход / Расход ТМЦ', path: '/wms', icon: <MoveToInboxIcon sx={{ fontSize: 15 }} /> },
-      ],
     },
     {
       id: 'srm',
@@ -170,12 +142,9 @@ export default function Sidebar({
     {
       id: 'mro',
       label: 'ТО и Ремонт (MRO)',
+      path: '/mro',
       icon: <BuildCircleIcon sx={{ fontSize: 18 }} />,
       permission: PERMISSIONS.MRO_SCHEDULE_VIEW,
-      children: [
-        { label: 'Графики ППР', path: '/mro', icon: <CalendarMonthIcon sx={{ fontSize: 15 }} /> },
-        { label: 'Регламентные чек-листы', path: '/mro', icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} /> },
-      ],
     },
   ];
 
@@ -227,105 +196,97 @@ export default function Sidebar({
     if (item.permission && !hasPermission(item.permission)) return null;
 
     const active = isItemActive(item);
-    const hasChildren = item.children && item.children.length > 0;
-    const isExpanded = expandedItems[item.id] || false;
     const badgeColors = getBadgeColors(item.badgeColor);
     const hasBadge = item.badge !== null && item.badge !== undefined && item.badge > 0;
 
     if (collapsed) {
       return (
-        <Box
-          key={item.id}
-          onClick={(e) => handleOpenFlyout(e, item)}
-          sx={{
-            position: 'relative',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 42,
-            height: 42,
-            mx: 'auto',
-            my: 0.25,
-            borderRadius: '8px',
-            cursor: 'pointer',
-            color: active ? '#0284c7' : '#64748b',
-            backgroundColor: active ? '#eff6ff' : 'transparent',
-            transition: 'all 0.15s ease',
-            '&:hover': {
-              backgroundColor: active ? '#eff6ff' : '#f8fafc',
-              color: '#0284c7',
-            },
-          }}
-        >
-          {/* Active Left Pill Indicator */}
-          {active && (
-            <Box
-              sx={{
-                position: 'absolute',
-                left: -10,
-                top: 8,
-                bottom: 8,
-                width: 3,
-                borderRadius: '0 3px 3px 0',
-                backgroundColor: '#0284c7',
-              }}
-            />
-          )}
+        <Tooltip key={item.id} title={item.label} placement="right">
+          <Box
+            onClick={() => handleNavigate(item.path)}
+            sx={{
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 42,
+              height: 42,
+              mx: 'auto',
+              my: 0.25,
+              borderRadius: '8px',
+              cursor: 'pointer',
+              color: active ? '#0284c7' : '#64748b',
+              backgroundColor: active ? '#eff6ff' : 'transparent',
+              transition: 'all 0.15s ease',
+              '&:hover': {
+                backgroundColor: active ? '#eff6ff' : '#f8fafc',
+                color: '#0284c7',
+              },
+            }}
+          >
+            {/* Active Left Pill Indicator */}
+            {active && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  left: -10,
+                  top: 8,
+                  bottom: 8,
+                  width: 3,
+                  borderRadius: '0 3px 3px 0',
+                  backgroundColor: '#0284c7',
+                }}
+              />
+            )}
 
-          {item.icon}
+            {item.icon}
 
-          {hasBadge && (
-            <Box
-              sx={{
-                position: 'absolute',
-                top: 4,
-                right: 4,
-                minWidth: 15,
-                height: 15,
-                borderRadius: '8px',
-                backgroundColor: badgeColors.text,
-                color: '#ffffff',
-                fontSize: '0.625rem',
-                fontWeight: 700,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                px: 0.3,
-                fontFamily: 'monospace',
-              }}
-            >
-              {item.badge}
-            </Box>
-          )}
-        </Box>
+            {hasBadge && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 4,
+                  right: 4,
+                  minWidth: 15,
+                  height: 15,
+                  borderRadius: '8px',
+                  backgroundColor: badgeColors.text,
+                  color: '#ffffff',
+                  fontSize: '0.625rem',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  px: 0.3,
+                  fontFamily: 'monospace',
+                }}
+              >
+                {item.badge}
+              </Box>
+            )}
+          </Box>
+        </Tooltip>
       );
     }
 
     return (
       <Box key={item.id} sx={{ mb: 0.25 }}>
-        {/* Main Item Row with strictly Right-Aligned Badge and Chevron */}
         <Box
-          onClick={() => {
-            if (hasChildren) {
-              toggleExpand(item.id);
-            } else if (item.path) {
-              handleNavigate(item.path);
-            }
-          }}
+          onClick={() => handleNavigate(item.path)}
           sx={{
             position: 'relative',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             px: 1.5,
-            py: 0.75,
+            py: 0.85,
             borderRadius: '6px',
             cursor: 'pointer',
             color: active ? '#0284c7' : '#334155',
-            backgroundColor: active && !hasChildren ? '#eff6ff' : 'transparent',
+            backgroundColor: active ? '#eff6ff' : 'transparent',
             transition: 'all 0.12s ease',
             '&:hover': {
-              backgroundColor: active && !hasChildren ? '#eff6ff' : '#f8fafc',
+              backgroundColor: active ? '#eff6ff' : '#f8fafc',
               color: '#0284c7',
             },
           }}
@@ -363,85 +324,31 @@ export default function Sidebar({
             </Typography>
           </Box>
 
-          {/* Right: Badge (strictly right-aligned) & Chevron */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0, ml: 'auto', pl: 1 }}>
-            {hasBadge && (
-              <Box
-                sx={{
-                  px: 0.75,
-                  height: 18,
-                  borderRadius: '9px',
-                  backgroundColor: badgeColors.bg,
-                  color: badgeColors.text,
-                  border: `1px solid ${badgeColors.border}`,
-                  fontSize: '0.6875rem',
-                  fontWeight: 700,
-                  fontFamily: 'monospace',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  lineHeight: 1,
-                }}
-              >
-                {item.badge}
-              </Box>
-            )}
-
-            {hasChildren && (
-              <Box sx={{ color: '#94a3b8', display: 'flex', alignItems: 'center' }}>
-                {isExpanded ? (
-                  <KeyboardArrowDownIcon sx={{ fontSize: 16 }} />
-                ) : (
-                  <KeyboardArrowRightIcon sx={{ fontSize: 16 }} />
-                )}
-              </Box>
-            )}
-          </Box>
-        </Box>
-
-        {/* Children Sub-links (Accordion) */}
-        {hasChildren && (
-          <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+          {/* Right: Badge (strictly right-aligned) */}
+          {hasBadge && (
             <Box
               sx={{
-                ml: 2,
-                pl: 1.25,
-                borderLeft: '1px solid #e2e8f0',
-                my: 0.25,
+                px: 0.75,
+                height: 18,
+                borderRadius: '9px',
+                backgroundColor: badgeColors.bg,
+                color: badgeColors.text,
+                border: `1px solid ${badgeColors.border}`,
+                fontSize: '0.6875rem',
+                fontWeight: 700,
+                fontFamily: 'monospace',
                 display: 'flex',
-                flexDirection: 'column',
-                gap: 0.25,
+                alignItems: 'center',
+                justifyContent: 'center',
+                lineHeight: 1,
+                ml: 'auto',
+                flexShrink: 0,
               }}
             >
-              {item.children?.map((child) => {
-                const isChildActive = pathname === child.path;
-                return (
-                  <Box
-                    key={child.path + child.label}
-                    onClick={() => handleNavigate(child.path)}
-                    sx={{
-                      px: 1.25,
-                      py: 0.5,
-                      borderRadius: '5px',
-                      cursor: 'pointer',
-                      fontSize: '0.75rem', // 12px
-                      color: isChildActive ? '#0284c7' : '#64748b',
-                      fontWeight: isChildActive ? 600 : 500,
-                      backgroundColor: isChildActive ? '#eff6ff' : 'transparent',
-                      transition: 'all 0.12s ease',
-                      '&:hover': {
-                        backgroundColor: isChildActive ? '#eff6ff' : '#f8fafc',
-                        color: '#0284c7',
-                      },
-                    }}
-                  >
-                    {child.label}
-                  </Box>
-                );
-              })}
+              {item.badge}
             </Box>
-          </Collapse>
-        )}
+          )}
+        </Box>
       </Box>
     );
   };
@@ -474,7 +381,7 @@ export default function Sidebar({
           display: 'flex',
           alignItems: 'center',
           justifyContent: collapsed ? 'center' : 'space-between',
-          mb: 1.5,
+          mb: 2,
           minHeight: 38,
         }}
       >
@@ -545,55 +452,6 @@ export default function Sidebar({
         )}
       </Box>
 
-      {/* Search Bar */}
-      {!collapsed ? (
-        <Box
-          sx={{
-            mb: 1.5,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            px: 1.25,
-            py: 0.5,
-            borderRadius: '6px',
-            backgroundColor: '#f1f5f9',
-            color: '#64748b',
-          }}
-        >
-          <SearchIcon sx={{ fontSize: 16, color: '#94a3b8' }} />
-          <InputBase
-            placeholder="Поиск..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            sx={{
-              fontSize: '0.78125rem',
-              flexGrow: 1,
-              '& input::placeholder': { color: '#94a3b8', opacity: 1 },
-            }}
-          />
-        </Box>
-      ) : (
-        <Box
-          onClick={onToggleCollapse}
-          sx={{
-            mb: 1.5,
-            mx: 'auto',
-            width: 36,
-            height: 36,
-            borderRadius: '6px',
-            backgroundColor: '#f1f5f9',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            color: '#64748b',
-            '&:hover': { backgroundColor: '#e2e8f0' },
-          }}
-        >
-          <SearchIcon sx={{ fontSize: 16 }} />
-        </Box>
-      )}
-
       {/* Scrollable Navigation Body */}
       <Box sx={{ flexGrow: 1, overflowY: 'auto', pr: 0.25 }}>
         {/* Main Menu Section */}
@@ -617,7 +475,7 @@ export default function Sidebar({
 
         {/* Settings and Support Section */}
         {canAccessAdmin && (
-          <Box sx={{ mt: 2 }}>
+          <Box sx={{ mt: 2.5 }}>
             {!collapsed && (
               <Typography
                 variant="caption"
@@ -639,8 +497,9 @@ export default function Sidebar({
         )}
       </Box>
 
-      {/* Bottom User Account Card */}
+      {/* Bottom User Account Card with Integrated Popup Menu */}
       <Box
+        onClick={handleProfileMenuOpen}
         sx={{
           pt: 1.25,
           mt: 'auto',
@@ -649,6 +508,13 @@ export default function Sidebar({
           alignItems: 'center',
           justifyContent: collapsed ? 'center' : 'flex-start',
           gap: 1.25,
+          cursor: 'pointer',
+          p: 0.75,
+          borderRadius: '8px',
+          transition: 'background-color 0.15s ease',
+          '&:hover': {
+            backgroundColor: '#f8fafc',
+          },
         }}
       >
         <Badge
@@ -690,90 +556,59 @@ export default function Sidebar({
         )}
       </Box>
 
-      {/* Collapsed Mode Flyout Popover */}
-      <Popover
-        open={Boolean(flyoutAnchor && activeFlyoutItem)}
-        anchorEl={flyoutAnchor}
-        onClose={() => {
-          setFlyoutAnchor(null);
-          setActiveFlyoutItem(null);
-        }}
-        anchorOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
-        }}
+      {/* User Profile / Logout Popover Menu */}
+      <Menu
+        anchorEl={profileMenuAnchor}
+        open={Boolean(profileMenuAnchor)}
+        onClose={handleProfileMenuClose}
+        transformOrigin={{ horizontal: 'left', vertical: 'bottom' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
         PaperProps={{
           sx: {
+            minWidth: 220,
             ml: 1,
-            p: 1.25,
-            minWidth: 190,
-            borderRadius: '8px',
+            borderRadius: '10px',
             boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)',
             border: '1px solid #e2e8f0',
+            p: 0.5,
           },
         }}
       >
-        {activeFlyoutItem && (
-          <Box>
-            {/* Flyout Header */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 0.75, mb: 0.75, borderBottom: '1px solid #f1f5f9' }}>
-              <Typography variant="subtitle2" fontWeight={700} color="#0284c7" fontSize="0.78125rem">
-                {activeFlyoutItem.label}
-              </Typography>
-              {activeFlyoutItem.badge && (
-                <Box
-                  sx={{
-                    px: 0.6,
-                    py: 0.05,
-                    borderRadius: '5px',
-                    backgroundColor: '#dbeafe',
-                    color: '#0284c7',
-                    fontSize: '0.65rem',
-                    fontWeight: 700,
-                  }}
-                >
-                  {activeFlyoutItem.badge}
-                </Box>
-              )}
-            </Box>
-
-            {/* Flyout Children List */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-              {activeFlyoutItem.children?.map((child) => (
-                <Box
-                  key={child.path + child.label}
-                  onClick={() => handleNavigate(child.path)}
-                  sx={{
-                    px: 1.25,
-                    py: 0.6,
-                    borderRadius: '5px',
-                    cursor: 'pointer',
-                    fontSize: '0.78125rem',
-                    color: pathname === child.path ? '#0284c7' : '#334155',
-                    fontWeight: pathname === child.path ? 600 : 500,
-                    backgroundColor: pathname === child.path ? '#eff6ff' : 'transparent',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    transition: 'all 0.12s ease',
-                    '&:hover': {
-                      backgroundColor: '#f8fafc',
-                      color: '#0284c7',
-                    },
-                  }}
-                >
-                  {child.icon}
-                  {child.label}
-                </Box>
-              ))}
-            </Box>
+        <Box sx={{ px: 2, py: 1 }}>
+          <Typography variant="subtitle2" fontWeight={700} fontSize="0.8125rem">
+            {user?.displayName}
+          </Typography>
+          <Typography variant="caption" color="text.secondary" display="block">
+            Логин: {user?.ldapLogin}
+          </Typography>
+          <Box sx={{ mt: 0.75, display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+            {user?.roles.map((r) => (
+              <Chip key={r} label={r} size="small" variant="outlined" color="primary" />
+            ))}
           </Box>
+        </Box>
+        <Divider sx={{ my: 0.5 }} />
+        {user?.roles.includes('admin') && (
+          <MenuItem
+            onClick={() => {
+              handleProfileMenuClose();
+              router.push('/admin/users');
+            }}
+            sx={{ borderRadius: '6px', py: 0.75 }}
+          >
+            <ListItemIcon>
+              <AdminPanelSettingsIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText primary="Пользователи и доступ" primaryTypographyProps={{ fontSize: '0.78125rem' }} />
+          </MenuItem>
         )}
-      </Popover>
+        <MenuItem onClick={handleLogout} sx={{ color: 'error.main', borderRadius: '6px', py: 0.75 }}>
+          <ListItemIcon sx={{ color: 'error.main' }}>
+            <LogoutIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="Выйти из системы" primaryTypographyProps={{ fontSize: '0.78125rem', fontWeight: 600 }} />
+        </MenuItem>
+      </Menu>
     </Box>
   );
 }
