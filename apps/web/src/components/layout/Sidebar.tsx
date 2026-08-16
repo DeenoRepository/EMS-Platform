@@ -33,7 +33,6 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import LabelOutlinedIcon from '@mui/icons-material/LabelOutlined';
 import MoveToInboxIcon from '@mui/icons-material/MoveToInbox';
-import WarehouseIcon from '@mui/icons-material/Warehouse';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import SpeedIcon from '@mui/icons-material/Speed';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
@@ -162,7 +161,7 @@ export default function Sidebar({
 
   const canAccessAdmin = user?.roles.includes('admin') || hasPermission(PERMISSIONS.ADMIN_USERS_MANAGE);
 
-  // Structured Operational Modules with Functional Sub-sections
+  // Purely Operational Modules & Sub-sections
   const operationalItems: NavItemDef[] = [
     {
       id: 'eps',
@@ -174,7 +173,6 @@ export default function Sidebar({
       children: [
         { label: 'Реестр оборудования', path: '/eps', icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} /> },
         { label: 'Теги и классификаторы', path: '/eps/tags', icon: <LabelOutlinedIcon sx={{ fontSize: 15 }} /> },
-        { label: 'Кастомные разделы и поля', path: '/admin/module-settings', icon: <TuneIcon sx={{ fontSize: 15 }} /> },
       ],
     },
     {
@@ -183,9 +181,8 @@ export default function Sidebar({
       icon: <Inventory2Icon sx={{ fontSize: 18 }} />,
       permission: PERMISSIONS.WMS_STOCK_VIEW,
       children: [
-        { label: 'Остатки и номенклатура', path: '/wms', icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} /> },
+        { label: 'Остатки номенклатуры', path: '/wms', icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} /> },
         { label: 'Приход и списание ТМЦ', path: '/wms?tab=operations', icon: <MoveToInboxIcon sx={{ fontSize: 15 }} /> },
-        { label: 'Склады и локации', path: '/admin/module-settings?tab=wms', icon: <WarehouseIcon sx={{ fontSize: 15 }} /> },
       ],
     },
     {
@@ -211,6 +208,7 @@ export default function Sidebar({
     },
   ];
 
+  // Administration & Settings Section
   const adminItems: NavItemDef[] = [
     {
       id: 'users',
@@ -706,7 +704,7 @@ export default function Sidebar({
           sx: {
             ml: 1,
             p: 1.25,
-            minWidth: 210,
+            minWidth: 200,
             borderRadius: '8px',
             boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)',
             border: '1px solid #e2e8f0',
