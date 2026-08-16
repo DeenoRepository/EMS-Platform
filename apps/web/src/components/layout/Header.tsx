@@ -80,7 +80,7 @@ export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProp
                   gap: 1.25,
                   cursor: 'pointer',
                   mr: 2.5,
-                  p: 0.5,
+                  p: 0.25,
                 }}
               >
                 <Box
@@ -88,10 +88,10 @@ export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProp
                   src="/logo.png"
                   alt="EMS Platform"
                   sx={{
-                    width: 32,
-                    height: 32,
+                    width: 34,
+                    height: 34,
                     objectFit: 'contain',
-                    filter: 'drop-shadow(0 2px 8px rgba(124, 58, 237, 0.25))',
+                    filter: 'drop-shadow(0 2px 8px rgba(2, 132, 199, 0.3))',
                     flexShrink: 0,
                     transition: 'transform 0.15s ease',
                     '&:hover': {
@@ -100,12 +100,12 @@ export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProp
                   }}
                 />
                 <Box sx={{ minWidth: 0 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.6 }}>
                     <Typography
                       component="span"
                       sx={{
                         fontWeight: 800,
-                        fontSize: '0.9375rem',
+                        fontSize: '1.0625rem',
                         lineHeight: 1.1,
                         letterSpacing: '-0.02em',
                         color: '#0f172a',
@@ -116,8 +116,8 @@ export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProp
                     <Typography
                       component="span"
                       sx={{
-                        fontWeight: 600,
-                        fontSize: '0.8125rem',
+                        fontWeight: 700,
+                        fontSize: '0.9375rem',
                         lineHeight: 1.1,
                         color: '#0284c7',
                         letterSpacing: '-0.01em',
@@ -131,9 +131,9 @@ export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProp
                     sx={{
                       color: '#64748b',
                       fontWeight: 500,
-                      fontSize: '0.625rem',
+                      fontSize: '0.6875rem',
                       display: 'block',
-                      lineHeight: 1.1,
+                      lineHeight: 1.15,
                       mt: 0.3,
                       letterSpacing: '0.01em',
                       whiteSpace: 'nowrap',
