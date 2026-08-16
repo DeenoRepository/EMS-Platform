@@ -18,20 +18,19 @@ import {
   Popover,
 } from '@mui/material';
 import { usePathname, useRouter } from 'next/navigation';
-import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
-import Inventory2Icon from '@mui/icons-material/Inventory2';
-import AssessmentIcon from '@mui/icons-material/Assessment';
-import BuildCircleIcon from '@mui/icons-material/BuildCircle';
-import PeopleOutlineIcon from '@mui/icons-material/PeopleOutline';
-import SecurityIcon from '@mui/icons-material/Security';
-import HistoryIcon from '@mui/icons-material/History';
+import PrecisionManufacturingOutlinedIcon from '@mui/icons-material/PrecisionManufacturingOutlined';
+import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
+import AnalyticsOutlinedIcon from '@mui/icons-material/AnalyticsOutlined';
+import BuildOutlinedIcon from '@mui/icons-material/BuildOutlined';
+import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined';
+import AdminPanelSettingsOutlinedIcon from '@mui/icons-material/AdminPanelSettingsOutlined';
+import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
-import TuneIcon from '@mui/icons-material/Tune';
-import ViewSidebarOutlinedIcon from '@mui/icons-material/ViewSidebarOutlined';
+import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined';
+import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
-import LabelOutlinedIcon from '@mui/icons-material/LabelOutlined';
 import MoveToInboxIcon from '@mui/icons-material/MoveToInbox';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import SpeedIcon from '@mui/icons-material/Speed';
@@ -39,7 +38,6 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import ChecklistIcon from '@mui/icons-material/Checklist';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import LogoutIcon from '@mui/icons-material/Logout';
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS } from '@ems/shared';
 
@@ -161,12 +159,12 @@ export default function Sidebar({
 
   const canAccessAdmin = user?.roles.includes('admin') || hasPermission(PERMISSIONS.ADMIN_USERS_MANAGE);
 
-  // Purely Operational Modules
+  // Purely Operational Modules with Consistent Modern Outlined Icons
   const operationalItems: NavItemDef[] = [
     {
       id: 'eps',
       label: 'Оборудование (EPS)',
-      icon: <PrecisionManufacturingIcon sx={{ fontSize: 18 }} />,
+      icon: <PrecisionManufacturingOutlinedIcon sx={{ fontSize: 18 }} />,
       badge: repairCount && repairCount > 0 ? repairCount : null,
       badgeColor: 'warning',
       permission: PERMISSIONS.EPS_EQUIPMENT_VIEW,
@@ -177,7 +175,7 @@ export default function Sidebar({
     {
       id: 'wms',
       label: 'Складской учёт (WMS)',
-      icon: <Inventory2Icon sx={{ fontSize: 18 }} />,
+      icon: <WarehouseOutlinedIcon sx={{ fontSize: 18 }} />,
       permission: PERMISSIONS.WMS_STOCK_VIEW,
       children: [
         { label: 'Остатки номенклатуры', path: '/wms', icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} /> },
@@ -187,7 +185,7 @@ export default function Sidebar({
     {
       id: 'srm',
       label: 'Дашборд Jira (SRM)',
-      icon: <AssessmentIcon sx={{ fontSize: 18 }} />,
+      icon: <AnalyticsOutlinedIcon sx={{ fontSize: 18 }} />,
       permission: PERMISSIONS.SRM_DASHBOARD_VIEW,
       children: [
         { label: 'Инциденты и заявки', path: '/srm', icon: <TimelineIcon sx={{ fontSize: 15 }} /> },
@@ -197,7 +195,7 @@ export default function Sidebar({
     {
       id: 'mro',
       label: 'ТО и Ремонт (MRO)',
-      icon: <BuildCircleIcon sx={{ fontSize: 18 }} />,
+      icon: <BuildOutlinedIcon sx={{ fontSize: 18 }} />,
       permission: PERMISSIONS.MRO_SCHEDULE_VIEW,
       children: [
         { label: 'Графики ППР', path: '/mro', icon: <CalendarMonthIcon sx={{ fontSize: 15 }} /> },
@@ -207,31 +205,31 @@ export default function Sidebar({
     },
   ];
 
-  // Administration & System Configuration Section
+  // Administration & Settings Section with Outlined Icons
   const adminItems: NavItemDef[] = [
     {
       id: 'users',
       label: 'Пользователи',
       path: '/admin/users',
-      icon: <PeopleOutlineIcon sx={{ fontSize: 18 }} />,
+      icon: <GroupOutlinedIcon sx={{ fontSize: 18 }} />,
     },
     {
       id: 'roles',
       label: 'Роли и права',
       path: '/admin/roles',
-      icon: <SecurityIcon sx={{ fontSize: 18 }} />,
+      icon: <AdminPanelSettingsOutlinedIcon sx={{ fontSize: 18 }} />,
     },
     {
       id: 'module-settings',
       label: 'Справочники модулей',
       path: '/admin/module-settings',
-      icon: <TuneIcon sx={{ fontSize: 18 }} />,
+      icon: <TuneOutlinedIcon sx={{ fontSize: 18 }} />,
     },
     {
       id: 'audit-log',
       label: 'Журнал аудита',
       path: '/admin/audit-log',
-      icon: <HistoryIcon sx={{ fontSize: 18 }} />,
+      icon: <ReceiptLongOutlinedIcon sx={{ fontSize: 18 }} />,
     },
     {
       id: 'settings',
@@ -429,7 +427,7 @@ export default function Sidebar({
           </Box>
         </Box>
 
-        {/* Children Sub-links (Accordion) */}
+        {/* Children Sub-links (Accordion) with Centered Vertical Line */}
         {hasChildren && (
           <Collapse in={isExpanded} timeout="auto" unmountOnExit>
             <Box
@@ -521,19 +519,19 @@ export default function Sidebar({
                 width: 38,
                 height: 38,
                 borderRadius: '8px',
-                color: '#64748b',
-                backgroundColor: '#f8fafc',
-                border: '1px solid #e2e8f0',
+                color: '#0284c7',
+                backgroundColor: '#f0f9ff',
+                border: '1px solid #bae6fd',
                 transition: 'all 0.15s ease',
                 '&:hover': {
-                  backgroundColor: '#eff6ff',
-                  borderColor: '#bfdbfe',
-                  color: '#0284c7',
+                  backgroundColor: '#e0f2fe',
+                  borderColor: '#7dd3fc',
+                  color: '#0369a1',
                   transform: 'scale(1.05)',
                 },
               }}
             >
-              <ViewSidebarOutlinedIcon sx={{ fontSize: 20 }} />
+              <MenuOpenIcon sx={{ fontSize: 20, transform: 'rotate(180deg)' }} />
             </IconButton>
           </Tooltip>
         ) : (
@@ -623,7 +621,7 @@ export default function Sidebar({
                 '&:hover': { backgroundColor: '#f1f5f9', color: '#0f172a' },
               }}
             >
-              <ViewSidebarOutlinedIcon sx={{ fontSize: 18 }} />
+              <MenuOpenIcon sx={{ fontSize: 20 }} />
             </IconButton>
           </>
         )}
@@ -859,7 +857,7 @@ export default function Sidebar({
             sx={{ borderRadius: '6px', py: 0.75 }}
           >
             <ListItemIcon>
-              <AdminPanelSettingsIcon fontSize="small" />
+              <GroupOutlinedIcon fontSize="small" />
             </ListItemIcon>
             <ListItemText primary="Пользователи и доступ" primaryTypographyProps={{ fontSize: '0.78125rem' }} />
           </MenuItem>
