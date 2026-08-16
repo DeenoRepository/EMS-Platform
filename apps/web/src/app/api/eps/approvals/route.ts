@@ -4,6 +4,8 @@ import { prisma, ApprovalStatus, ApprovalType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);

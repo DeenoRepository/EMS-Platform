@@ -5,6 +5,8 @@ import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { saveFile } from '@/lib/storage';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);
