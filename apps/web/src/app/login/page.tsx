@@ -1,0 +1,231 @@
+'use client';
+
+import React, { useState } from 'react';
+import {
+  Box,
+  Card,
+  CardContent,
+  TextField,
+  Button,
+  Typography,
+  Alert,
+  CircularProgress,
+  InputAdornment,
+  IconButton,
+  Divider,
+  Chip,
+  Paper,
+} from '@mui/material';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
+import SecurityIcon from '@mui/icons-material/Security';
+import { useAuth } from '@/lib/auth-client';
+
+export default function LoginPage() {
+  const { login } = useAuth();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!username.trim()) {
+      setError('Пожалуйста, введите ваш корпоративный логин (LDAP)');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    const res = await login(username.trim(), password);
+    if (!res.success) {
+      setError(res.error || 'Ошибка входа');
+      setLoading(false);
+    }
+  };
+
+  const handleDemoLogin = (user: string, pass: string) => {
+    setUsername(user);
+    setPassword(pass);
+    setError(null);
+  };
+
+  return (
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#0f172a', // Slate-900 industrial dark background
+        backgroundImage: 'radial-gradient(at 50% 0%, rgba(2, 132, 199, 0.18) 0px, transparent 60%)',
+        p: 2,
+      }}
+    >
+      <Card
+        sx={{
+          maxWidth: 440,
+          width: '100%',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+          borderRadius: 3,
+          overflow: 'hidden',
+          backgroundColor: '#ffffff',
+        }}
+      >
+        {/* Header Banner */}
+        <Box
+          sx={{
+            backgroundColor: 'primary.main',
+            color: 'white',
+            p: 3.5,
+            textAlign: 'center',
+            background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+          }}
+        >
+          <Box
+            sx={{
+              display: 'inline-flex',
+              p: 1.5,
+              borderRadius: 3,
+              backgroundColor: 'rgba(255, 255, 255, 0.15)',
+              mb: 1.5,
+              backdropFilter: 'blur(8px)',
+            }}
+          >
+            <PrecisionManufacturingIcon sx={{ fontSize: 36, color: '#ffffff' }} />
+          </Box>
+          <Typography variant="h5" fontWeight={800} letterSpacing={1}>
+            EMS
+          </Typography>
+          <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+            Equipment Management System
+          </Typography>
+        </Box>
+
+        <CardContent sx={{ p: 4 }}>
+          <Typography variant="subtitle1" fontWeight={600} gutterBottom textAlign="center">
+            Вход в систему
+          </Typography>
+          <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ mb: 3 }}>
+            Используйте корпоративную учетную запись LDAP / Active Directory
+          </Typography>
+
+          {error && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {error}
+            </Alert>
+          )}
+
+          <Box component="form" onSubmit={handleSubmit} noValidate>
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="username"
+              label="Корпоративный логин (LDAP / sAMAccountName)"
+              name="username"
+              autoComplete="username"
+              autoFocus
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              disabled={loading}
+              size="medium"
+            />
+
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              name="password"
+              label="Пароль"
+              type={showPassword ? 'text' : 'password'}
+              id="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
+              size="medium"
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label="toggle password visibility"
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              size="large"
+              disabled={loading}
+              sx={{
+                mt: 3,
+                mb: 2,
+                py: 1.25,
+                fontWeight: 600,
+                fontSize: '0.95rem',
+              }}
+            >
+              {loading ? <CircularProgress size={24} color="inherit" /> : 'Войти'}
+            </Button>
+          </Box>
+
+          <Divider sx={{ my: 2.5 }}>
+            <Typography variant="caption" color="text.secondary">
+              Быстрый вход для тестирования
+            </Typography>
+          </Divider>
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <Button
+              variant="outlined"
+              size="small"
+              fullWidth
+              onClick={() => handleDemoLogin('admin', 'admin123')}
+              sx={{ justifyContent: 'flex-start', px: 2, py: 1 }}
+            >
+              <SecurityIcon fontSize="small" sx={{ mr: 1, color: 'primary.main' }} />
+              <Box sx={{ textAlign: 'left' }}>
+                <Typography variant="body2" fontWeight={600} lineHeight={1.2}>
+                  Администратор
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  admin / admin123 (Полные права)
+                </Typography>
+              </Box>
+            </Button>
+
+            <Button
+              variant="outlined"
+              size="small"
+              fullWidth
+              onClick={() => handleDemoLogin('engineer', 'engineer123')}
+              sx={{ justifyContent: 'flex-start', px: 2, py: 1 }}
+            >
+              <PrecisionManufacturingIcon fontSize="small" sx={{ mr: 1, color: 'secondary.main' }} />
+              <Box sx={{ textAlign: 'left' }}>
+                <Typography variant="body2" fontWeight={600} lineHeight={1.2}>
+                  Инженер
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  engineer / engineer123 (Паспорта + ТО)
+                </Typography>
+              </Box>
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
+    </Box>
+  );
+}
