@@ -33,7 +33,10 @@ import {
   DialogActions,
   Pagination,
   Badge,
+  InputAdornment,
 } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+import CloseIcon from '@mui/icons-material/Close';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DownloadIcon from '@mui/icons-material/Download';
 import TableChartIcon from '@mui/icons-material/TableChart';
@@ -92,6 +95,7 @@ export default function ReportBuilderPage() {
     'status',
     'commissionDate',
   ]);
+  const [searchQueryColumn, setSearchQueryColumn] = useState('');
   const [rows, setRows] = useState<Record<string, any>[]>([]);
   const [loadingData, setLoadingData] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
@@ -190,6 +194,28 @@ export default function ReportBuilderPage() {
     });
     return map;
   }, [availableColumns]);
+
+  // Filter columns by column search query
+  const filteredColumnsByCategory = useMemo(() => {
+    if (!searchQueryColumn.trim()) return columnsByCategory;
+    const query = searchQueryColumn.toLowerCase().trim();
+    const result: Record<string, ReportColumn[]> = {};
+
+    Object.entries(columnsByCategory).forEach(([category, cols]) => {
+      const matched = cols.filter(
+        (c) =>
+          c.name.toLowerCase().includes(query) ||
+          c.key.toLowerCase().includes(query) ||
+          (c.unit && c.unit.toLowerCase().includes(query)) ||
+          category.toLowerCase().includes(query)
+      );
+      if (matched.length > 0) {
+        result[category] = matched;
+      }
+    });
+
+    return result;
+  }, [columnsByCategory, searchQueryColumn]);
 
   // Toggle single column
   const handleToggleColumn = (key: string) => {
@@ -549,20 +575,51 @@ export default function ReportBuilderPage() {
                   </Button>
                 </Box>
               </Box>
+
+              {/* Instant Column Search Filter */}
+              <TextField
+                size="small"
+                fullWidth
+                placeholder="Поиск по колонкам и параметрам..."
+                value={searchQueryColumn}
+                onChange={(e) => setSearchQueryColumn(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: searchQueryColumn ? (
+                    <InputAdornment position="end">
+                      <IconButton size="small" onClick={() => setSearchQueryColumn('')}>
+                        <CloseIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    </InputAdornment>
+                  ) : null,
+                }}
+                sx={{ mb: 2 }}
+              />
+
               <Typography variant="caption" color="text.secondary" paragraph>
                 Отметьте необходимые поля и разделы характеристик для включения в отчет
               </Typography>
 
               <Divider sx={{ mb: 2 }} />
 
-              {Object.entries(columnsByCategory).map(([category, cols]) => {
+              {Object.entries(filteredColumnsByCategory).map(([category, cols]) => {
                 const catKeys = cols.map((c) => c.key);
                 const checkedCount = catKeys.filter((k) => selectedColumnKeys.includes(k)).length;
                 const isAllChecked = checkedCount === catKeys.length;
                 const isIndeterminate = checkedCount > 0 && checkedCount < catKeys.length;
 
                 return (
-                  <Accordion key={category} defaultExpanded={category === 'Основные реквизиты'} disableGutters sx={{ mb: 1, border: '1px solid #e2e8f0', borderRadius: '8px !important', '&:before': { display: 'none' } }}>
+                  <Accordion
+                    key={category}
+                    defaultExpanded={category === 'Основные реквизиты'}
+                    expanded={searchQueryColumn.trim() ? true : undefined}
+                    disableGutters
+                    sx={{ mb: 1, border: '1px solid #e2e8f0', borderRadius: '8px !important', '&:before': { display: 'none' } }}
+                  >
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', pr: 1 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

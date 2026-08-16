@@ -411,9 +411,16 @@ function EquipmentListContent() {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon sx={{ fontSize: 18 }} />
+                    <SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
                   </InputAdornment>
                 ),
+                endAdornment: search ? (
+                  <InputAdornment position="end">
+                    <IconButton size="small" onClick={() => setSearch('')}>
+                      <CloseIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </InputAdornment>
+                ) : null,
               }}
               sx={{ minWidth: 280, flexGrow: { xs: 1, md: 0 } }}
             />
@@ -456,23 +463,24 @@ function EquipmentListContent() {
               ))}
             </TextField>
 
-            <Button type="submit" variant="outlined" size="small" sx={{ px: 2 }}>
+            <Button type="submit" variant="outlined" size="small" sx={{ px: 2, fontWeight: 600 }}>
               Применить
             </Button>
-            {(search || statusFilter || tagFilter) && (
-              <Button
-                variant="text"
-                size="small"
-                onClick={() => {
+
+            {(Boolean(search) || Boolean(statusFilter) || Boolean(tagFilter)) && (
+              <Chip
+                label={`Сбросить фильтры (${(search ? 1 : 0) + (statusFilter ? 1 : 0) + (tagFilter ? 1 : 0)})`}
+                onDelete={() => {
                   setSearch('');
                   setStatusFilter('');
                   setTagFilter('');
                   setPage(1);
                 }}
-                color="inherit"
-              >
-                Сбросить
-              </Button>
+                color="default"
+                size="small"
+                variant="outlined"
+                sx={{ fontWeight: 600, cursor: 'pointer' }}
+              />
             )}
           </Box>
 

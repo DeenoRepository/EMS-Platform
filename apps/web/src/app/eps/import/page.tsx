@@ -102,6 +102,7 @@ export default function SmartImportPage() {
   // Step 3: Conflict strategy & rows state
   const [conflictStrategy, setConflictStrategy] = useState<'UPSERT' | 'SKIP'>('UPSERT');
   const [validatedRows, setValidatedRows] = useState<ValidatedRow[]>([]);
+  const [previewFilter, setPreviewFilter] = useState<'ALL' | 'NEW' | 'COLLISION' | 'ERROR'>('ALL');
   const [totalRowsCount, setTotalRowsCount] = useState(0);
   const [newCount, setNewCount] = useState(0);
   const [collisionCount, setCollisionCount] = useState(0);
@@ -654,12 +655,23 @@ export default function SmartImportPage() {
             </CardContent>
           </Card>
 
-          {/* Validation Metrics */}
+          {/* Validation Metrics (Clickable Filters) */}
           <Grid container spacing={2} sx={{ mb: 3 }}>
             <Grid item xs={12} sm={4}>
-              <Card sx={{ p: 2, borderLeft: '4px solid #16a34a' }}>
+              <Card
+                onClick={() => setPreviewFilter((prev) => (prev === 'NEW' ? 'ALL' : 'NEW'))}
+                sx={{
+                  p: 2,
+                  borderLeft: '4px solid #16a34a',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  backgroundColor: previewFilter === 'NEW' ? 'rgba(22, 163, 74, 0.08)' : '#ffffff',
+                  boxShadow: previewFilter === 'NEW' ? '0 0 0 2px #16a34a' : undefined,
+                  '&:hover': { transform: 'translateY(-2px)' },
+                }}
+              >
                 <Typography variant="caption" color="text.secondary" fontWeight={700}>
-                  НОВЫХ ЗАПИСЕЙ
+                  НОВЫХ ЗАПИСЕЙ {previewFilter === 'NEW' && '• [АКТИВЕН]'}
                 </Typography>
                 <Typography variant="h5" fontWeight={800} color="success.main">
                   {newCount}
@@ -667,9 +679,20 @@ export default function SmartImportPage() {
               </Card>
             </Grid>
             <Grid item xs={12} sm={4}>
-              <Card sx={{ p: 2, borderLeft: '4px solid #d97706' }}>
+              <Card
+                onClick={() => setPreviewFilter((prev) => (prev === 'COLLISION' ? 'ALL' : 'COLLISION'))}
+                sx={{
+                  p: 2,
+                  borderLeft: '4px solid #d97706',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  backgroundColor: previewFilter === 'COLLISION' ? 'rgba(217, 119, 6, 0.08)' : '#ffffff',
+                  boxShadow: previewFilter === 'COLLISION' ? '0 0 0 2px #d97706' : undefined,
+                  '&:hover': { transform: 'translateY(-2px)' },
+                }}
+              >
                 <Typography variant="caption" color="text.secondary" fontWeight={700}>
-                  ОБНАРУЖЕНО ДУБЛИКАТОВ / КОЛЛИЗИЙ
+                  ОБНАРУЖЕНО ДУБЛИКАТОВ / КОЛЛИЗИЙ {previewFilter === 'COLLISION' && '• [АКТИВЕН]'}
                 </Typography>
                 <Typography variant="h5" fontWeight={800} color="warning.main">
                   {collisionCount}
@@ -677,9 +700,20 @@ export default function SmartImportPage() {
               </Card>
             </Grid>
             <Grid item xs={12} sm={4}>
-              <Card sx={{ p: 2, borderLeft: '4px solid #dc2626' }}>
+              <Card
+                onClick={() => setPreviewFilter((prev) => (prev === 'ERROR' ? 'ALL' : 'ERROR'))}
+                sx={{
+                  p: 2,
+                  borderLeft: '4px solid #dc2626',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  backgroundColor: previewFilter === 'ERROR' ? 'rgba(220, 38, 38, 0.08)' : '#ffffff',
+                  boxShadow: previewFilter === 'ERROR' ? '0 0 0 2px #dc2626' : undefined,
+                  '&:hover': { transform: 'translateY(-2px)' },
+                }}
+              >
                 <Typography variant="caption" color="text.secondary" fontWeight={700}>
-                  ОШИБОК ВАЛИДАЦИИ
+                  ОШИБОК ВАЛИДАЦИИ {previewFilter === 'ERROR' && '• [АКТИВЕН]'}
                 </Typography>
                 <Typography variant="h5" fontWeight={800} color="error.main">
                   {errorCount}
@@ -688,12 +722,57 @@ export default function SmartImportPage() {
             </Grid>
           </Grid>
 
-          {/* Pre-flight Data Preview Table */}
+          {/* Pre-flight Data Preview Table with Filter Bar */}
           <Card sx={{ mb: 3 }}>
             <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" fontWeight={700} gutterBottom>
-                Предпросмотр данных перед импортом ({totalRowsCount} строк)
-              </Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, mb: 2 }}>
+                <Typography variant="h6" fontWeight={700}>
+                  Предпросмотр данных перед импортом ({validatedRows.filter((r) => previewFilter === 'ALL' || r.status === previewFilter).length} из {totalRowsCount})
+                </Typography>
+
+                {/* Filter Chips */}
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                  <Chip
+                    label={`Все (${totalRowsCount})`}
+                    variant={previewFilter === 'ALL' ? 'filled' : 'outlined'}
+                    color={previewFilter === 'ALL' ? 'primary' : 'default'}
+                    onClick={() => setPreviewFilter('ALL')}
+                    clickable
+                    size="small"
+                    sx={{ fontWeight: 600 }}
+                  />
+                  <Chip
+                    label={`Новые (${newCount})`}
+                    variant={previewFilter === 'NEW' ? 'filled' : 'outlined'}
+                    color={previewFilter === 'NEW' ? 'success' : 'default'}
+                    onClick={() => setPreviewFilter('NEW')}
+                    clickable
+                    size="small"
+                    sx={{ fontWeight: 600 }}
+                  />
+                  <Chip
+                    label={`Коллизии (${collisionCount})`}
+                    variant={previewFilter === 'COLLISION' ? 'filled' : 'outlined'}
+                    color={previewFilter === 'COLLISION' ? 'warning' : 'default'}
+                    onClick={() => setPreviewFilter('COLLISION')}
+                    clickable
+                    size="small"
+                    sx={{ fontWeight: 600 }}
+                  />
+                  {errorCount > 0 && (
+                    <Chip
+                      label={`Ошибки (${errorCount})`}
+                      variant={previewFilter === 'ERROR' ? 'filled' : 'outlined'}
+                      color={previewFilter === 'ERROR' ? 'error' : 'default'}
+                      onClick={() => setPreviewFilter('ERROR')}
+                      clickable
+                      size="small"
+                      sx={{ fontWeight: 600 }}
+                    />
+                  )}
+                </Box>
+              </Box>
+
               <TableContainer sx={{ maxHeight: 500, border: '1px solid #e2e8f0', borderRadius: 1 }}>
                 <Table size="small" stickyHeader>
                   <TableHead>
@@ -707,33 +786,36 @@ export default function SmartImportPage() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {validatedRows.slice(0, 100).map((row) => (
-                      <TableRow key={row.rowIndex} hover>
-                        <TableCell sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>{row.rowIndex}</TableCell>
-                        <TableCell>
-                          {row.status === 'NEW' && (
-                            <Chip label="Новая запись" size="small" color="success" sx={{ fontWeight: 600 }} />
-                          )}
-                          {row.status === 'COLLISION' && (
-                            <Chip
-                              label={conflictStrategy === 'UPSERT' ? 'Коллизия ➔ Будет обновлена' : 'Коллизия ➔ Будет пропущена'}
-                              size="small"
-                              color="warning"
-                              sx={{ fontWeight: 600 }}
-                            />
-                          )}
-                          {row.status === 'ERROR' && (
-                            <Tooltip title={row.statusMessage}>
-                              <Chip label="Ошибка валидации" size="small" color="error" sx={{ fontWeight: 600 }} />
-                            </Tooltip>
-                          )}
-                        </TableCell>
-                        <TableCell sx={{ fontWeight: 600 }}>{row.data['Наименование оборудования *'] || row.data['Наименование'] || row.data['name'] || '—'}</TableCell>
-                        <TableCell>{row.data['Инвентарный номер'] || row.data['inventoryNumber'] || '—'}</TableCell>
-                        <TableCell>{row.data['Заводской / Серийный номер'] || row.data['serialNumber'] || '—'}</TableCell>
-                        <TableCell>{row.data['Производитель'] || row.data['manufacturer'] || '—'}</TableCell>
-                      </TableRow>
-                    ))}
+                    {validatedRows
+                      .filter((r) => previewFilter === 'ALL' || r.status === previewFilter)
+                      .slice(0, 100)
+                      .map((row) => (
+                        <TableRow key={row.rowIndex} hover>
+                          <TableCell sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>{row.rowIndex}</TableCell>
+                          <TableCell>
+                            {row.status === 'NEW' && (
+                              <Chip label="Новая запись" size="small" color="success" sx={{ fontWeight: 600 }} />
+                            )}
+                            {row.status === 'COLLISION' && (
+                              <Chip
+                                label={conflictStrategy === 'UPSERT' ? 'Коллизия ➔ Будет обновлена' : 'Коллизия ➔ Будет пропущена'}
+                                size="small"
+                                color="warning"
+                                sx={{ fontWeight: 600 }}
+                              />
+                            )}
+                            {row.status === 'ERROR' && (
+                              <Tooltip title={row.statusMessage}>
+                                <Chip label="Ошибка валидации" size="small" color="error" sx={{ fontWeight: 600 }} />
+                              </Tooltip>
+                            )}
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 600 }}>{row.data['Наименование оборудования *'] || row.data['Наименование'] || row.data['name'] || '—'}</TableCell>
+                          <TableCell>{row.data['Инвентарный номер'] || row.data['inventoryNumber'] || '—'}</TableCell>
+                          <TableCell>{row.data['Заводской / Серийный номер'] || row.data['serialNumber'] || '—'}</TableCell>
+                          <TableCell>{row.data['Производитель'] || row.data['manufacturer'] || '—'}</TableCell>
+                        </TableRow>
+                      ))}
                   </TableBody>
                 </Table>
               </TableContainer>

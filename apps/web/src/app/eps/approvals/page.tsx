@@ -279,6 +279,11 @@ function ApprovalsListContent() {
   const handleProcessReview = async (decision: 'APPROVED' | 'REJECTED' | 'CANCELLED') => {
     if (!selectedApprovalForReview) return;
 
+    if (decision === 'REJECTED' && !resolutionComment.trim()) {
+      enqueueSnackbar('Для отклонения заявки обязательно укажите причину в комментарии', { variant: 'warning' });
+      return;
+    }
+
     setSubmittingReview(true);
     try {
       const res = await fetch(`/api/eps/approvals/${selectedApprovalForReview.id}`, {
