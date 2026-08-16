@@ -434,9 +434,9 @@ export default function Sidebar({
           <Collapse in={isExpanded} timeout="auto" unmountOnExit>
             <Box
               sx={{
-                ml: 2,
-                pl: 1.25,
-                borderLeft: '1px solid #e2e8f0',
+                ml: '21px',
+                pl: '14px',
+                borderLeft: '1.5px solid #e2e8f0',
                 my: 0.25,
                 display: 'flex',
                 flexDirection: 'column',
