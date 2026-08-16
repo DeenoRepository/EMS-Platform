@@ -31,6 +31,8 @@ model User {
   stockOperations   StockOperation[]
   inventories       Inventory[]
   completedSchedules MaintenanceSchedule[] @relation("CompletedBy")
+  requestedApprovals EquipmentApproval[]   @relation("ApprovalRequester")
+  reviewedApprovals  EquipmentApproval[]   @relation("ApprovalReviewer")
 }
 
 model Role {
@@ -166,6 +168,7 @@ model Equipment {
   maintenancePlans MaintenancePlan[]
   stockUsage       StockOperationItem[]
   schedules        MaintenanceSchedule[]
+  approvals        EquipmentApproval[]
 
   @@index([status])
   @@index([name])
@@ -284,6 +287,47 @@ model Photo {
   uploadedBy User      @relation("UploadedPhotos", fields: [uploadedById], references: [id])
 
   @@index([equipmentId])
+}
+
+model EquipmentApproval {
+  id                 String             @id @default(uuid())
+  equipmentId        String
+  type               ApprovalType
+  status             ApprovalStatus     @default(PENDING)
+  title              String
+  description        String?
+  proposedData       Json?
+  requesterId        String
+  reviewerId         String?
+  reviewedAt         DateTime?
+  resolutionComment String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  requester User      @relation("ApprovalRequester", fields: [requesterId], references: [id])
+  reviewer  User?     @relation("ApprovalReviewer", fields: [reviewerId], references: [id])
+
+  @@index([equipmentId])
+  @@index([status])
+  @@index([type])
+  @@index([requesterId])
+  @@index([createdAt])
+}
+
+enum ApprovalType {
+  COMMISSIONING
+  DECOMMISSIONING
+  STATUS_CHANGE
+  PARAMETER_CHANGE
+  DOCUMENT_APPROVAL
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
 }
 
 // ==========================================

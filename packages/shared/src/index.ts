@@ -8,8 +8,13 @@ export const PERMISSIONS = {
   EPS_EQUIPMENT_CREATE: 'eps.equipment.create',
   EPS_EQUIPMENT_EDIT: 'eps.equipment.edit',
   EPS_EQUIPMENT_DELETE: 'eps.equipment.delete',
+  EPS_DOCUMENTS_VIEW: 'eps.documents.view',
   EPS_DOCUMENTS_UPLOAD: 'eps.documents.upload',
   EPS_CUSTOM_FIELDS_MANAGE: 'eps.custom_fields.manage',
+  EPS_APPROVALS_VIEW: 'eps.approvals.view',
+  EPS_APPROVALS_CREATE: 'eps.approvals.create',
+  EPS_APPROVALS_MANAGE: 'eps.approvals.manage',
+  EPS_HISTORY_VIEW: 'eps.history.view',
 
   // WMS
   WMS_STOCK_VIEW: 'wms.stock.view',
@@ -53,6 +58,21 @@ export const DOCUMENT_TYPE_MAP: Record<string, string> = {
   PASSPORT: 'Формуляр / Паспорт',
   ACT: 'Акт ввода / испытаний',
   OTHER: 'Прочий документ',
+};
+
+export const APPROVAL_TYPE_MAP: Record<string, string> = {
+  COMMISSIONING: 'Ввод в эксплуатацию',
+  DECOMMISSIONING: 'Списание оборудования',
+  STATUS_CHANGE: 'Смена рабочего статуса',
+  PARAMETER_CHANGE: 'Изменение характеристик',
+  DOCUMENT_APPROVAL: 'Согласование документации',
+};
+
+export const APPROVAL_STATUS_MAP: Record<string, { label: string; color: 'warning' | 'success' | 'error' | 'default' | 'info' }> = {
+  PENDING: { label: 'На рассмотрении', color: 'warning' },
+  APPROVED: { label: 'Согласовано', color: 'success' },
+  REJECTED: { label: 'Отклонено', color: 'error' },
+  CANCELLED: { label: 'Отозвано', color: 'default' },
 };
 
 export const OPERATION_TYPE_MAP: Record<string, { label: string; color: 'success' | 'warning' | 'info' | 'default' }> = {
