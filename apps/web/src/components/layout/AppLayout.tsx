@@ -1,19 +1,39 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, useMediaQuery, useTheme } from '@mui/material';
 import Header from './Header';
-import Sidebar from './Sidebar';
+import Sidebar, { SIDEBAR_WIDTH_EXPANDED, SIDEBAR_WIDTH_COLLAPSED } from './Sidebar';
 import { usePathname } from 'next/navigation';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+  useEffect(() => {
+    const saved = localStorage.getItem('ems_sidebar_collapsed');
+    if (saved !== null) {
+      setCollapsed(saved === 'true');
+    }
+  }, []);
+
   const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
+    if (isMobile) {
+      setMobileOpen(!mobileOpen);
+    } else {
+      const next = !collapsed;
+      setCollapsed(next);
+      localStorage.setItem('ems_sidebar_collapsed', String(next));
+    }
+  };
+
+  const handleToggleCollapse = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    localStorage.setItem('ems_sidebar_collapsed', String(next));
   };
 
   // If on login page, don't show Shell sidebar/header
@@ -21,12 +41,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return <Box component="main">{children}</Box>;
   }
 
+  const currentSidebarWidth = collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: 'background.default' }}>
       {/* Sidebar Navigation */}
       <Sidebar
         open={mobileOpen}
-        onClose={handleDrawerToggle}
+        collapsed={collapsed}
+        onClose={() => setMobileOpen(false)}
+        onToggleCollapse={handleToggleCollapse}
         variant={isMobile ? 'temporary' : 'permanent'}
       />
 
@@ -37,7 +61,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           display: 'flex',
           flexDirection: 'column',
           minWidth: 0,
-          width: { sm: `calc(100% - 260px)` },
+          width: { sm: `calc(100% - ${currentSidebarWidth}px)` },
+          transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
         <Header onToggleSidebar={handleDrawerToggle} />

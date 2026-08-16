@@ -11,43 +11,46 @@ import {
   Typography,
   Box,
   Divider,
-  Collapse,
   Chip,
+  Tooltip,
+  IconButton,
 } from '@mui/material';
 import { usePathname, useRouter } from 'next/navigation';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import Inventory2Icon from '@mui/icons-material/Inventory2';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import BuildCircleIcon from '@mui/icons-material/BuildCircle';
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import PeopleIcon from '@mui/icons-material/People';
 import SecurityIcon from '@mui/icons-material/Security';
 import HistoryIcon from '@mui/icons-material/History';
 import SettingsIcon from '@mui/icons-material/Settings';
-import ExpandLess from '@mui/icons-material/ExpandLess';
-import ExpandMore from '@mui/icons-material/ExpandMore';
-import ListAltIcon from '@mui/icons-material/ListAlt';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import TuneIcon from '@mui/icons-material/Tune';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS } from '@ems/shared';
 
-const DRAWER_WIDTH = 260;
+export const SIDEBAR_WIDTH_EXPANDED = 260;
+export const SIDEBAR_WIDTH_COLLAPSED = 72;
 
 interface SidebarProps {
   open: boolean;
+  collapsed: boolean;
   onClose: () => void;
+  onToggleCollapse: () => void;
   variant?: 'permanent' | 'temporary';
 }
 
-export default function Sidebar({ open, onClose, variant = 'permanent' }: SidebarProps) {
+export default function Sidebar({
+  open,
+  collapsed,
+  onClose,
+  onToggleCollapse,
+  variant = 'permanent',
+}: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, hasPermission } = useAuth();
-
-  const [epsOpen, setEpsOpen] = React.useState(true);
-  const [adminOpen, setAdminOpen] = React.useState(true);
 
   const navigate = (path: string) => {
     router.push(path);
@@ -67,312 +70,205 @@ export default function Sidebar({ open, onClose, variant = 'permanent' }: Sideba
   const canAccessMro = hasPermission(PERMISSIONS.MRO_SCHEDULE_VIEW);
   const canAccessAdmin = user?.roles.includes('admin') || hasPermission(PERMISSIONS.ADMIN_USERS_MANAGE);
 
-  const drawerContent = (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Brand Header */}
-      <Box sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <Box
+  const drawerWidth = collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
+
+  const renderNavItem = (
+    label: string,
+    path: string,
+    icon: React.ReactNode,
+    badge?: { label: string | number; color?: 'primary' | 'warning' | 'error' | 'default' }
+  ) => {
+    const active = isActive(path, path === '/eps');
+    const button = (
+      <ListItem disablePadding sx={{ display: 'block', mb: 0.5 }}>
+        <ListItemButton
+          onClick={() => navigate(path)}
+          selected={active}
           sx={{
-            width: 36,
-            height: 36,
+            minHeight: 44,
+            px: collapsed ? 2.5 : 2,
+            mx: collapsed ? 1 : 1.5,
             borderRadius: 2,
-            backgroundColor: 'primary.main',
-            color: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 800,
-            fontSize: '1.1rem',
+            justifyContent: collapsed ? 'center' : 'initial',
+            '&.Mui-selected': {
+              backgroundColor: 'rgba(2, 132, 199, 0.09)',
+              color: 'primary.main',
+              '&:hover': { backgroundColor: 'rgba(2, 132, 199, 0.14)' },
+              '& .MuiListItemIcon-root': { color: 'primary.main' },
+            },
           }}
         >
-          E
+          <ListItemIcon
+            sx={{
+              minWidth: 0,
+              mr: collapsed ? 0 : 2,
+              justifyContent: 'center',
+              color: active ? 'primary.main' : 'text.secondary',
+            }}
+          >
+            {icon}
+          </ListItemIcon>
+
+          {!collapsed && (
+            <ListItemText
+              primary={label}
+              primaryTypographyProps={{
+                fontSize: '0.875rem',
+                fontWeight: active ? 600 : 500,
+                noWrap: true,
+              }}
+            />
+          )}
+
+          {!collapsed && badge && (
+            <Chip
+              label={badge.label}
+              size="small"
+              color={badge.color || 'default'}
+              sx={{ height: 20, fontSize: '0.7rem', fontWeight: 600 }}
+            />
+          )}
+        </ListItemButton>
+      </ListItem>
+    );
+
+    if (collapsed) {
+      return (
+        <Tooltip key={path} title={label} placement="right" arrow>
+          {button}
+        </Tooltip>
+      );
+    }
+
+    return <React.Fragment key={path}>{button}</React.Fragment>;
+  };
+
+  const drawerContent = (
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      {/* Brand Header */}
+      <Box
+        sx={{
+          p: collapsed ? 1.5 : 2.5,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: collapsed ? 'center' : 'space-between',
+          minHeight: 64,
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }} onClick={() => navigate('/eps')}>
+          <Box
+            sx={{
+              width: 38,
+              height: 38,
+              borderRadius: 2,
+              backgroundColor: 'primary.main',
+              color: 'white',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 800,
+              fontSize: '1.2rem',
+              boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)',
+            }}
+          >
+            E
+          </Box>
+          {!collapsed && (
+            <Box>
+              <Typography variant="subtitle1" fontWeight={700} lineHeight={1.1}>
+                EMS
+              </Typography>
+              <Typography variant="caption" color="text.secondary" fontWeight={500}>
+                Управление оборудованием
+              </Typography>
+            </Box>
+          )}
         </Box>
-        <Box>
-          <Typography variant="subtitle1" fontWeight={700} lineHeight={1.1}>
-            EMS
-          </Typography>
-          <Typography variant="caption" color="text.secondary" fontWeight={500}>
-            Управление оборудованием
-          </Typography>
-        </Box>
+
+        {variant === 'permanent' && !collapsed && (
+          <IconButton size="small" onClick={onToggleCollapse} sx={{ color: 'text.secondary' }}>
+            <ChevronLeftIcon fontSize="small" />
+          </IconButton>
+        )}
       </Box>
       <Divider />
 
-      {/* Navigation List */}
-      <Box sx={{ flexGrow: 1, overflowY: 'auto', py: 1 }}>
+      {/* Navigation Body */}
+      <Box sx={{ flexGrow: 1, overflowY: 'auto', py: 1.5 }}>
         <List disablePadding>
-          {/* EPS MODULE */}
-          {canAccessEps && (
-            <>
-              <ListItem disablePadding>
-                <ListItemButton
-                  onClick={() => setEpsOpen(!epsOpen)}
-                  selected={isActive('/eps')}
-                  sx={{
-                    py: 1,
-                    px: 2,
-                    mx: 1,
-                    borderRadius: 1.5,
-                    mb: 0.5,
-                    '&.Mui-selected': {
-                      backgroundColor: 'rgba(2, 132, 199, 0.08)',
-                      color: 'primary.main',
-                      '&:hover': { backgroundColor: 'rgba(2, 132, 199, 0.12)' },
-                    },
-                  }}
-                >
-                  <ListItemIcon sx={{ minWidth: 36, color: isActive('/eps') ? 'primary.main' : 'inherit' }}>
-                    <PrecisionManufacturingIcon />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="EPS — Оборудование"
-                    primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: isActive('/eps') ? 600 : 500 }}
-                  />
-                  {epsOpen ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
-                </ListItemButton>
-              </ListItem>
-
-              <Collapse in={epsOpen} timeout="auto" unmountOnExit>
-                <List component="div" disablePadding sx={{ pl: 3 }}>
-                  <ListItemButton
-                    onClick={() => navigate('/eps')}
-                    selected={pathname === '/eps'}
-                    sx={{ py: 0.75, px: 2, mx: 1, borderRadius: 1.5, mb: 0.25 }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 30 }}>
-                      <ListAltIcon fontSize="small" color={pathname === '/eps' ? 'primary' : 'inherit'} />
-                    </ListItemIcon>
-                    <ListItemText primary="Реестр оборудования" primaryTypographyProps={{ fontSize: '0.8125rem' }} />
-                  </ListItemButton>
-
-                  {hasPermission(PERMISSIONS.EPS_EQUIPMENT_CREATE) && (
-                    <ListItemButton
-                      onClick={() => navigate('/eps/new')}
-                      selected={pathname === '/eps/new'}
-                      sx={{ py: 0.75, px: 2, mx: 1, borderRadius: 1.5, mb: 0.25 }}
-                    >
-                      <ListItemIcon sx={{ minWidth: 30 }}>
-                        <AddCircleOutlineIcon fontSize="small" color={pathname === '/eps/new' ? 'primary' : 'inherit'} />
-                      </ListItemIcon>
-                      <ListItemText primary="Добавить единицу" primaryTypographyProps={{ fontSize: '0.8125rem' }} />
-                    </ListItemButton>
-                  )}
-
-                  <ListItemButton
-                    onClick={() => navigate('/eps/tags')}
-                    selected={pathname === '/eps/tags'}
-                    sx={{ py: 0.75, px: 2, mx: 1, borderRadius: 1.5, mb: 0.25 }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 30 }}>
-                      <LocalOfferIcon fontSize="small" color={pathname === '/eps/tags' ? 'primary' : 'inherit'} />
-                    </ListItemIcon>
-                    <ListItemText primary="Теги и категории" primaryTypographyProps={{ fontSize: '0.8125rem' }} />
-                  </ListItemButton>
-
-                  {hasPermission(PERMISSIONS.EPS_CUSTOM_FIELDS_MANAGE) && (
-                    <ListItemButton
-                      onClick={() => navigate('/eps/custom-fields')}
-                      selected={pathname === '/eps/custom-fields'}
-                      sx={{ py: 0.75, px: 2, mx: 1, borderRadius: 1.5, mb: 0.25 }}
-                    >
-                      <ListItemIcon sx={{ minWidth: 30 }}>
-                        <TuneIcon fontSize="small" color={pathname === '/eps/custom-fields' ? 'primary' : 'inherit'} />
-                      </ListItemIcon>
-                      <ListItemText primary="Кастомные поля" primaryTypographyProps={{ fontSize: '0.8125rem' }} />
-                    </ListItemButton>
-                  )}
-                </List>
-              </Collapse>
-            </>
+          {/* SECTION: ОПЕРАЦИОННЫЕ МОДУЛИ */}
+          {!collapsed ? (
+            <Box sx={{ px: 3, pt: 1, pb: 0.75 }}>
+              <Typography variant="caption" color="text.secondary" fontWeight={700} letterSpacing={0.6} fontSize="0.7rem">
+                ОПЕРАЦИОННЫЕ МОДУЛИ
+              </Typography>
+            </Box>
+          ) : (
+            <Divider sx={{ my: 1 }} />
           )}
 
-          {/* WMS MODULE */}
-          {canAccessWms && (
-            <ListItem disablePadding>
-              <ListItemButton
-                onClick={() => navigate('/wms')}
-                selected={isActive('/wms')}
-                sx={{
-                  py: 1,
-                  px: 2,
-                  mx: 1,
-                  borderRadius: 1.5,
-                  mb: 0.5,
-                  '&.Mui-selected': {
-                    backgroundColor: 'rgba(2, 132, 199, 0.08)',
-                    color: 'primary.main',
-                  },
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: 36, color: isActive('/wms') ? 'primary.main' : 'inherit' }}>
-                  <Inventory2Icon />
-                </ListItemIcon>
-                <ListItemText
-                  primary="WMS — Складской учёт"
-                  primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: isActive('/wms') ? 600 : 500 }}
-                />
-              </ListItemButton>
-            </ListItem>
-          )}
+          {canAccessEps && renderNavItem('EPS — Оборудование', '/eps', <PrecisionManufacturingIcon />)}
+          {canAccessWms && renderNavItem('WMS — Складской учёт', '/wms', <Inventory2Icon />)}
+          {canAccessSrm && renderNavItem('SRM — Дашборд Jira', '/srm', <AssessmentIcon />)}
+          {canAccessMro && renderNavItem('MRO — ТО и Ремонт', '/mro', <BuildCircleIcon />)}
 
-          {/* SRM MODULE */}
-          {canAccessSrm && (
-            <ListItem disablePadding>
-              <ListItemButton
-                onClick={() => navigate('/srm')}
-                selected={isActive('/srm')}
-                sx={{
-                  py: 1,
-                  px: 2,
-                  mx: 1,
-                  borderRadius: 1.5,
-                  mb: 0.5,
-                  '&.Mui-selected': {
-                    backgroundColor: 'rgba(2, 132, 199, 0.08)',
-                    color: 'primary.main',
-                  },
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: 36, color: isActive('/srm') ? 'primary.main' : 'inherit' }}>
-                  <AssessmentIcon />
-                </ListItemIcon>
-                <ListItemText
-                  primary="SRM — Дашборд Jira"
-                  primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: isActive('/srm') ? 600 : 500 }}
-                />
-              </ListItemButton>
-            </ListItem>
-          )}
-
-          {/* MRO MODULE */}
-          {canAccessMro && (
-            <ListItem disablePadding>
-              <ListItemButton
-                onClick={() => navigate('/mro')}
-                selected={isActive('/mro')}
-                sx={{
-                  py: 1,
-                  px: 2,
-                  mx: 1,
-                  borderRadius: 1.5,
-                  mb: 0.5,
-                  '&.Mui-selected': {
-                    backgroundColor: 'rgba(2, 132, 199, 0.08)',
-                    color: 'primary.main',
-                  },
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: 36, color: isActive('/mro') ? 'primary.main' : 'inherit' }}>
-                  <BuildCircleIcon />
-                </ListItemIcon>
-                <ListItemText
-                  primary="MRO — ТО и Ремонт"
-                  primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: isActive('/mro') ? 600 : 500 }}
-                />
-              </ListItemButton>
-            </ListItem>
-          )}
-
-          {/* ADMIN SECTION */}
+          {/* SECTION: АДМИНИСТРИРОВАНИЕ И НАСТРОЙКИ */}
           {canAccessAdmin && (
             <>
-              <Box sx={{ mt: 2, mb: 1, px: 3 }}>
-                <Typography variant="caption" color="text.secondary" fontWeight={600} letterSpacing={0.5}>
-                  АДМИНИСТРИРОВАНИЕ
-                </Typography>
-              </Box>
+              <Divider sx={{ my: 1.5, mx: 2 }} />
 
-              <ListItem disablePadding>
-                <ListItemButton
-                  onClick={() => setAdminOpen(!adminOpen)}
-                  selected={isActive('/admin')}
-                  sx={{
-                    py: 1,
-                    px: 2,
-                    mx: 1,
-                    borderRadius: 1.5,
-                    mb: 0.5,
-                    '&.Mui-selected': {
-                      backgroundColor: 'rgba(2, 132, 199, 0.08)',
-                      color: 'primary.main',
-                    },
-                  }}
-                >
-                  <ListItemIcon sx={{ minWidth: 36, color: isActive('/admin') ? 'primary.main' : 'inherit' }}>
-                    <AdminPanelSettingsIcon />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Управление"
-                    primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: isActive('/admin') ? 600 : 500 }}
-                  />
-                  {adminOpen ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
-                </ListItemButton>
-              </ListItem>
+              {!collapsed && (
+                <Box sx={{ px: 3, pt: 0.5, pb: 0.75 }}>
+                  <Typography variant="caption" color="text.secondary" fontWeight={700} letterSpacing={0.6} fontSize="0.7rem">
+                    АДМИНИСТРИРОВАНИЕ
+                  </Typography>
+                </Box>
+              )}
 
-              <Collapse in={adminOpen} timeout="auto" unmountOnExit>
-                <List component="div" disablePadding sx={{ pl: 3 }}>
-                  <ListItemButton
-                    onClick={() => navigate('/admin/users')}
-                    selected={pathname === '/admin/users'}
-                    sx={{ py: 0.75, px: 2, mx: 1, borderRadius: 1.5, mb: 0.25 }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 30 }}>
-                      <PeopleIcon fontSize="small" color={pathname === '/admin/users' ? 'primary' : 'inherit'} />
-                    </ListItemIcon>
-                    <ListItemText primary="Пользователи" primaryTypographyProps={{ fontSize: '0.8125rem' }} />
-                  </ListItemButton>
-
-                  <ListItemButton
-                    onClick={() => navigate('/admin/roles')}
-                    selected={pathname === '/admin/roles'}
-                    sx={{ py: 0.75, px: 2, mx: 1, borderRadius: 1.5, mb: 0.25 }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 30 }}>
-                      <SecurityIcon fontSize="small" color={pathname === '/admin/roles' ? 'primary' : 'inherit'} />
-                    </ListItemIcon>
-                    <ListItemText primary="Роли и права" primaryTypographyProps={{ fontSize: '0.8125rem' }} />
-                  </ListItemButton>
-
-                  <ListItemButton
-                    onClick={() => navigate('/admin/audit-log')}
-                    selected={pathname === '/admin/audit-log'}
-                    sx={{ py: 0.75, px: 2, mx: 1, borderRadius: 1.5, mb: 0.25 }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 30 }}>
-                      <HistoryIcon fontSize="small" color={pathname === '/admin/audit-log' ? 'primary' : 'inherit'} />
-                    </ListItemIcon>
-                    <ListItemText primary="Журнал аудита" primaryTypographyProps={{ fontSize: '0.8125rem' }} />
-                  </ListItemButton>
-
-                  <ListItemButton
-                    onClick={() => navigate('/admin/settings')}
-                    selected={pathname === '/admin/settings'}
-                    sx={{ py: 0.75, px: 2, mx: 1, borderRadius: 1.5, mb: 0.25 }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 30 }}>
-                      <SettingsIcon fontSize="small" color={pathname === '/admin/settings' ? 'primary' : 'inherit'} />
-                    </ListItemIcon>
-                    <ListItemText primary="Настройки системы" primaryTypographyProps={{ fontSize: '0.8125rem' }} />
-                  </ListItemButton>
-                </List>
-              </Collapse>
+              {renderNavItem('Пользователи', '/admin/users', <PeopleIcon />)}
+              {renderNavItem('Роли и права', '/admin/roles', <SecurityIcon />)}
+              {renderNavItem('Справочники модулей', '/admin/module-settings', <TuneIcon />)}
+              {renderNavItem('Журнал аудита', '/admin/audit-log', <HistoryIcon />)}
+              {renderNavItem('Настройки системы', '/admin/settings', <SettingsIcon />)}
             </>
           )}
         </List>
       </Box>
 
-      {/* Footer */}
+      {/* Footer Toggle / Version */}
       <Divider />
-      <Box sx={{ p: 2, textAlign: 'center' }}>
-        <Typography variant="caption" color="text.secondary" display="block">
-          EMS v1.0.0
-        </Typography>
+      <Box
+        sx={{
+          p: collapsed ? 1.5 : 2,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: collapsed ? 'center' : 'space-between',
+          backgroundColor: '#f8fafc',
+        }}
+      >
+        {!collapsed && (
+          <Typography variant="caption" color="text.secondary" fontWeight={500}>
+            Версия 1.0.0
+          </Typography>
+        )}
+        {variant === 'permanent' && (
+          <IconButton size="small" onClick={onToggleCollapse} sx={{ color: 'text.secondary' }}>
+            {collapsed ? <ChevronRightIcon fontSize="small" /> : <ChevronLeftIcon fontSize="small" />}
+          </IconButton>
+        )}
       </Box>
     </Box>
   );
 
   return (
-    <Box component="nav" sx={{ width: { sm: DRAWER_WIDTH }, flexShrink: { sm: 0 } }}>
+    <Box
+      component="nav"
+      sx={{
+        width: { sm: drawerWidth },
+        flexShrink: { sm: 0 },
+        transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+      }}
+    >
       {variant === 'temporary' ? (
         <Drawer
           variant="temporary"
@@ -381,7 +277,11 @@ export default function Sidebar({ open, onClose, variant = 'permanent' }: Sideba
           ModalProps={{ keepMounted: true }}
           sx={{
             display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH, borderRight: '1px solid #e2e8f0' },
+            '& .MuiDrawer-paper': {
+              boxSizing: 'border-box',
+              width: SIDEBAR_WIDTH_EXPANDED,
+              borderRight: '1px solid #e2e8f0',
+            },
           }}
         >
           {drawerContent}
@@ -391,7 +291,13 @@ export default function Sidebar({ open, onClose, variant = 'permanent' }: Sideba
           variant="permanent"
           sx={{
             display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH, borderRight: '1px solid #e2e8f0' },
+            '& .MuiDrawer-paper': {
+              boxSizing: 'border-box',
+              width: drawerWidth,
+              borderRight: '1px solid #e2e8f0',
+              transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+              overflowX: 'hidden',
+            },
           }}
           open
         >
