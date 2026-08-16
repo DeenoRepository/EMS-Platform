@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const warehouseId = searchParams.get('warehouseId')?.trim() || '';
+    const zoneId = searchParams.get('zoneId')?.trim() || '';
     const categoryId = searchParams.get('categoryId')?.trim() || '';
     const search = searchParams.get('search')?.trim() || '';
     const lowStockOnly = searchParams.get('lowStockOnly') === 'true';
@@ -24,6 +25,12 @@ export async function GET(req: NextRequest) {
 
     if (warehouseId) {
       where.warehouseId = warehouseId;
+    }
+
+    if (zoneId) {
+      where.cell = {
+        zoneId,
+      };
     }
 
     if (categoryId) {
@@ -50,6 +57,11 @@ export async function GET(req: NextRequest) {
         where,
         include: {
           warehouse: true,
+          cell: {
+            include: {
+              zone: true,
+            },
+          },
           nomenclature: {
             include: {
               category: true,
@@ -90,6 +102,12 @@ export async function GET(req: NextRequest) {
         quantity: qty,
         minStock: minStock !== null ? minStock : '—',
         isLowStock,
+        cellId: item.cellId,
+        cellCode: item.cell?.code || null,
+        cellName: item.cell?.name || null,
+        zoneId: item.cell?.zone?.id || null,
+        zoneName: item.cell?.zone?.name || null,
+        zoneCode: item.cell?.zone?.code || null,
         compatibleEquipmentCount: item.nomenclature.equipmentLinks.length,
         compatibleEquipment: item.nomenclature.equipmentLinks.map((l) => l.equipment),
         updatedAt: item.updatedAt,

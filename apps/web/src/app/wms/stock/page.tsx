@@ -27,6 +27,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Divider,
   CircularProgress,
   Skeleton,
   Stack,
@@ -39,6 +40,8 @@ import AddIcon from '@mui/icons-material/Add';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
+import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
+import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS } from '@ems/shared';
@@ -56,6 +59,12 @@ interface StockRow {
   quantity: number;
   minStock: number | string;
   isLowStock: boolean;
+  cellId?: string | null;
+  cellCode?: string | null;
+  cellName?: string | null;
+  zoneId?: string | null;
+  zoneName?: string | null;
+  zoneCode?: string | null;
   compatibleEquipmentCount: number;
   compatibleEquipment: Array<{ id: string; name: string; inventoryNumber: string }>;
   updatedAt: string;
@@ -72,6 +81,13 @@ interface CategoryOption {
   name: string;
 }
 
+interface ZoneOption {
+  id: string;
+  name: string;
+  code: string;
+  cells: Array<{ id: string; code: string; name?: string | null }>;
+}
+
 function WmsStockContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -81,10 +97,12 @@ function WmsStockContent() {
   const [items, setItems] = useState<StockRow[]>([]);
   const [warehouses, setWarehouses] = useState<WarehouseOption[]>([]);
   const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [zones, setZones] = useState<ZoneOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Filters
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>('');
+  const [selectedZone, setSelectedZone] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [search, setSearch] = useState<string>('');
   const [lowStockOnly, setLowStockOnly] = useState<boolean>(searchParams.get('lowStockOnly') === 'true');
@@ -103,6 +121,13 @@ function WmsStockContent() {
   const [newNomMinStock, setNewNomMinStock] = useState('');
   const [newNomDescription, setNewNomDescription] = useState('');
   const [isSubmittingNom, setIsSubmittingNom] = useState(false);
+
+  // Modal: Assign Storage Location (Cell)
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [locStockItem, setLocStockItem] = useState<StockRow | null>(null);
+  const [warehouseZonesForLoc, setWarehouseZonesForLoc] = useState<ZoneOption[]>([]);
+  const [selectedCellId, setSelectedCellId] = useState<string>('');
+  const [isSavingLoc, setIsSavingLoc] = useState(false);
 
   // Load dictionaries
   useEffect(() => {
@@ -127,11 +152,36 @@ function WmsStockContent() {
     loadDictionaries();
   }, []);
 
+  // When warehouse changes, fetch its zones for filtering
+  useEffect(() => {
+    if (!selectedWarehouse) {
+      setZones([]);
+      setSelectedZone('');
+      return;
+    }
+
+    async function loadZones() {
+      try {
+        const res = await fetch(`/api/wms/warehouses/${selectedWarehouse}/zones`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success) {
+            setZones(json.data);
+          }
+        }
+      } catch (err) {
+        console.error('Ошибка загрузки зон:', err);
+      }
+    }
+    loadZones();
+  }, [selectedWarehouse]);
+
   const fetchStock = useCallback(async () => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
       if (selectedWarehouse) params.set('warehouseId', selectedWarehouse);
+      if (selectedZone) params.set('zoneId', selectedZone);
       if (selectedCategory) params.set('categoryId', selectedCategory);
       if (search) params.set('search', search);
       if (lowStockOnly) params.set('lowStockOnly', 'true');
@@ -152,7 +202,7 @@ function WmsStockContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedWarehouse, selectedCategory, search, lowStockOnly, page, rowsPerPage, enqueueSnackbar]);
+  }, [selectedWarehouse, selectedZone, selectedCategory, search, lowStockOnly, page, rowsPerPage, enqueueSnackbar]);
 
   useEffect(() => {
     fetchStock();
@@ -198,11 +248,57 @@ function WmsStockContent() {
     }
   };
 
+  // Open location assignment dialog
+  const handleOpenLocationModal = async (row: StockRow) => {
+    setLocStockItem(row);
+    setSelectedCellId(row.cellId || '');
+    setIsLocationModalOpen(true);
+
+    try {
+      const res = await fetch(`/api/wms/warehouses/${row.warehouseId}/zones`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success) {
+          setWarehouseZonesForLoc(json.data);
+        }
+      }
+    } catch (err) {
+      console.error('Ошибка загрузки ячеек для склада:', err);
+    }
+  };
+
+  const handleSaveLocation = async () => {
+    if (!locStockItem) return;
+    setIsSavingLoc(true);
+    try {
+      const res = await fetch(`/api/wms/stock/${locStockItem.id}/location`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cellId: selectedCellId || null,
+        }),
+      });
+
+      const json = await res.json();
+      if (res.ok && json.success) {
+        enqueueSnackbar(json.message || 'Место хранения обновлено', { variant: 'success' });
+        setIsLocationModalOpen(false);
+        fetchStock();
+      } else {
+        enqueueSnackbar(json.error || 'Ошибка назначения ячейки', { variant: 'error' });
+      }
+    } catch (err) {
+      enqueueSnackbar('Ошибка сети при обновлении места хранения', { variant: 'error' });
+    } finally {
+      setIsSavingLoc(false);
+    }
+  };
+
   return (
     <Box sx={{ pb: 4 }}>
       <PageHeader
         title="Остатки складов и номенклатура (ТМЦ)"
-        subtitle="Реестр наличия запасных частей, расходных материалов и привязка к оборудованию"
+        subtitle="Реестр наличия запасных частей, адреса ячеистого хранения и привязка к оборудованию"
         breadcrumbs={[
           { label: 'Главная', href: '/' },
           { label: 'Складской учёт', href: '/wms' },
@@ -215,6 +311,7 @@ function WmsStockContent() {
                 variant="contained"
                 startIcon={<AddIcon />}
                 onClick={() => setIsNomenclatureModalOpen(true)}
+                aria-label="Создать новую номенклатуру"
               >
                 Новая номенклатура
               </Button>
@@ -226,7 +323,7 @@ function WmsStockContent() {
       {/* Фильтры */}
       <Card sx={{ mb: 3, p: 2.5, borderRadius: 2 }}>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={6} md={3.5}>
+          <Grid item xs={12} sm={6} md={3}>
             <TextField
               fullWidth
               size="small"
@@ -246,7 +343,7 @@ function WmsStockContent() {
             />
           </Grid>
 
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={2.5}>
             <TextField
               select
               fullWidth
@@ -255,6 +352,7 @@ function WmsStockContent() {
               value={selectedWarehouse}
               onChange={(e) => {
                 setSelectedWarehouse(e.target.value);
+                setSelectedZone('');
                 setPage(0);
               }}
             >
@@ -267,7 +365,30 @@ function WmsStockContent() {
             </TextField>
           </Grid>
 
-          <Grid item xs={12} sm={6} md={2.5}>
+          {selectedWarehouse && zones.length > 0 && (
+            <Grid item xs={12} sm={6} md={2}>
+              <TextField
+                select
+                fullWidth
+                size="small"
+                label="Зона склада"
+                value={selectedZone}
+                onChange={(e) => {
+                  setSelectedZone(e.target.value);
+                  setPage(0);
+                }}
+              >
+                <MenuItem value="">Все зоны</MenuItem>
+                {zones.map((z) => (
+                  <MenuItem key={z.id} value={z.id}>
+                    {z.name} ({z.code})
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+          )}
+
+          <Grid item xs={12} sm={6} md={selectedWarehouse && zones.length > 0 ? 2.5 : 3.5}>
             <TextField
               select
               fullWidth
@@ -288,7 +409,7 @@ function WmsStockContent() {
             </TextField>
           </Grid>
 
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={selectedWarehouse && zones.length > 0 ? 2 : 3}>
             <FormControlLabel
               control={
                 <Switch
@@ -302,7 +423,7 @@ function WmsStockContent() {
               }
               label={
                 <Typography variant="body2" fontWeight={600} color={lowStockOnly ? 'warning.dark' : 'text.primary'}>
-                  Только с дефицитом
+                  Только дефицит
                 </Typography>
               }
             />
@@ -317,6 +438,7 @@ function WmsStockContent() {
             <TableHead sx={{ bgcolor: 'grey.50' }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 700 }}>Склад</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Место хранения (Ячейка)</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Артикул</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Номенклатура (ТМЦ)</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Категория</TableCell>
@@ -337,6 +459,7 @@ function WmsStockContent() {
                 Array.from({ length: 6 }).map((_, idx) => (
                   <TableRow key={idx}>
                     <TableCell><Skeleton variant="rounded" width={80} height={24} /></TableCell>
+                    <TableCell><Skeleton variant="rounded" width={110} height={22} /></TableCell>
                     <TableCell><Skeleton variant="text" width={90} /></TableCell>
                     <TableCell><Skeleton variant="text" width={220} /></TableCell>
                     <TableCell><Skeleton variant="text" width={110} /></TableCell>
@@ -348,7 +471,7 @@ function WmsStockContent() {
                 ))
               ) : items.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 6, color: 'text.secondary' }}>
+                  <TableCell colSpan={9} align="center" sx={{ py: 6, color: 'text.secondary' }}>
                     Позиции не найдены
                   </TableCell>
                 </TableRow>
@@ -367,6 +490,40 @@ function WmsStockContent() {
                         {row.warehouseName}
                       </Typography>
                     </TableCell>
+
+                    <TableCell>
+                      {row.cellCode ? (
+                        <Tooltip title="Нажмите, чтобы изменить ячейку хранения">
+                          <Chip
+                            icon={<PlaceOutlinedIcon sx={{ fontSize: '14px !important' }} />}
+                            label={`${row.zoneCode || row.zoneName} • ${row.cellCode}`}
+                            size="small"
+                            color="info"
+                            variant="outlined"
+                            clickable={hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE)}
+                            onClick={() => hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) && handleOpenLocationModal(row)}
+                            sx={{ fontWeight: 600 }}
+                          />
+                        </Tooltip>
+                      ) : (
+                        hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) ? (
+                          <Button
+                            size="small"
+                            variant="text"
+                            startIcon={<PlaceOutlinedIcon sx={{ fontSize: 14 }} />}
+                            onClick={() => handleOpenLocationModal(row)}
+                            sx={{ fontSize: '0.75rem', py: 0.2 }}
+                          >
+                            + Ячейка
+                          </Button>
+                        ) : (
+                          <Typography variant="caption" color="text.secondary">
+                            Не указано
+                          </Typography>
+                        )
+                      )}
+                    </TableCell>
+
                     <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600 }}>{row.article}</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>{row.name}</TableCell>
                     <TableCell>{row.category}</TableCell>
@@ -455,6 +612,90 @@ function WmsStockContent() {
           rowsPerPageOptions={[10, 25, 50, 100]}
         />
       </Card>
+
+      {/* Диалог назначения места хранения (ячейки) */}
+      <Dialog
+        open={isLocationModalOpen}
+        onClose={() => setIsLocationModalOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <PlaceOutlinedIcon color="primary" />
+          Место хранения ТМЦ
+        </DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <Box>
+              <Typography variant="caption" color="text.secondary">
+                Номенклатура:
+              </Typography>
+              <Typography variant="subtitle2" fontWeight={700}>
+                {locStockItem?.name} ({locStockItem?.article || 'б/а'})
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Склад: {locStockItem?.warehouseName} ({locStockItem?.warehouseCode})
+              </Typography>
+            </Box>
+
+            <Divider />
+
+            {warehouseZonesForLoc.length === 0 ? (
+              <Box sx={{ p: 2, textAlign: 'center', bgcolor: 'grey.50', borderRadius: 1.5 }}>
+                <Typography variant="body2" color="text.secondary">
+                  На складе <b>{locStockItem?.warehouseName}</b> еще не созданы зоны и ячейки.
+                </Typography>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => {
+                    setIsLocationModalOpen(false);
+                    router.push('/wms/warehouses');
+                  }}
+                  sx={{ mt: 1.5 }}
+                >
+                  Перейти к настройке зон
+                </Button>
+              </Box>
+            ) : (
+              <TextField
+                select
+                fullWidth
+                label="Выберите ячейку хранения"
+                value={selectedCellId}
+                onChange={(e) => setSelectedCellId(e.target.value)}
+                helperText="Закрепляет основную ячейку размещения на складе"
+              >
+                <MenuItem value="">
+                  <em>— Без адреса (очистить ячейку) —</em>
+                </MenuItem>
+                {warehouseZonesForLoc.map((zone) => [
+                  <MenuItem key={`header-${zone.id}`} disabled sx={{ fontWeight: 700, bgcolor: 'grey.100' }}>
+                    {zone.name} ({zone.code})
+                  </MenuItem>,
+                  ...zone.cells.map((cell) => (
+                    <MenuItem key={cell.id} value={cell.id} sx={{ pl: 4 }}>
+                      {cell.code} {cell.name ? `— ${cell.name}` : ''}
+                    </MenuItem>
+                  )),
+                ])}
+              </TextField>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setIsLocationModalOpen(false)} disabled={isSavingLoc}>
+            Отмена
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSaveLocation}
+            disabled={isSavingLoc || warehouseZonesForLoc.length === 0}
+          >
+            {isSavingLoc ? 'Сохранение...' : 'Сохранить'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Диалог создания новой номенклатуры */}
       <Dialog

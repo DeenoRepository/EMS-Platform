@@ -21,17 +21,43 @@ import {
   Skeleton,
   Stack,
   Tooltip,
+  Divider,
+  Paper,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material';
 import PageHeader from '@/components/layout/PageHeader';
 import AddIcon from '@mui/icons-material/Add';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined';
-import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
-import HistoryToggleOffOutlinedIcon from '@mui/icons-material/HistoryToggleOffOutlined';
+import GridViewIcon from '@mui/icons-material/GridView';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS } from '@ems/shared';
+
+interface StorageCell {
+  id: string;
+  zoneId: string;
+  code: string;
+  name?: string | null;
+  _count?: {
+    stockItems: number;
+  };
+}
+
+interface StorageZone {
+  id: string;
+  warehouseId: string;
+  name: string;
+  code: string;
+  description?: string | null;
+  cells: StorageCell[];
+}
 
 interface WarehouseItem {
   id: string;
@@ -54,7 +80,7 @@ export default function WmsWarehousesPage() {
   const [warehouses, setWarehouses] = useState<WarehouseItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Modal: Add / Edit
+  // Modal: Add / Edit Warehouse
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
@@ -62,6 +88,24 @@ export default function WmsWarehousesPage() {
   const [location, setLocation] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Modal: Manage Zones & Cells
+  const [isZonesModalOpen, setIsZonesModalOpen] = useState(false);
+  const [selectedWarehouse, setSelectedWarehouse] = useState<WarehouseItem | null>(null);
+  const [zones, setZones] = useState<StorageZone[]>([]);
+  const [isLoadingZones, setIsLoadingZones] = useState(false);
+
+  // Add Zone Form
+  const [newZoneName, setNewZoneName] = useState('');
+  const [newZoneCode, setNewZoneCode] = useState('');
+  const [newZoneDesc, setNewZoneDesc] = useState('');
+  const [isAddingZone, setIsAddingZone] = useState(false);
+
+  // Add Cell Form (per active zone)
+  const [activeZoneIdForCell, setActiveZoneIdForCell] = useState<string | null>(null);
+  const [newCellCode, setNewCellCode] = useState('');
+  const [newCellName, setNewCellName] = useState('');
+  const [isAddingCell, setIsAddingCell] = useState(false);
 
   const fetchWarehouses = useCallback(async () => {
     setIsLoading(true);
@@ -140,11 +184,140 @@ export default function WmsWarehousesPage() {
     }
   };
 
+  // Zones management
+  const fetchZones = async (whId: string) => {
+    setIsLoadingZones(true);
+    try {
+      const res = await fetch(`/api/wms/warehouses/${whId}/zones`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success) {
+          setZones(json.data);
+        }
+      }
+    } catch (err) {
+      console.error('Ошибка загрузки зон склада:', err);
+    } finally {
+      setIsLoadingZones(false);
+    }
+  };
+
+  const handleOpenZonesModal = (w: WarehouseItem) => {
+    setSelectedWarehouse(w);
+    setIsZonesModalOpen(true);
+    fetchZones(w.id);
+  };
+
+  const handleCreateZone = async () => {
+    if (!selectedWarehouse || !newZoneName.trim() || !newZoneCode.trim()) {
+      enqueueSnackbar('Укажите название и код зоны', { variant: 'warning' });
+      return;
+    }
+
+    setIsAddingZone(true);
+    try {
+      const res = await fetch(`/api/wms/warehouses/${selectedWarehouse.id}/zones`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newZoneName.trim(),
+          code: newZoneCode.trim(),
+          description: newZoneDesc.trim() || undefined,
+        }),
+      });
+
+      const json = await res.json();
+      if (res.ok && json.success) {
+        enqueueSnackbar('Зона склада создана', { variant: 'success' });
+        setNewZoneName('');
+        setNewZoneCode('');
+        setNewZoneDesc('');
+        fetchZones(selectedWarehouse.id);
+      } else {
+        enqueueSnackbar(json.error || 'Ошибка создания зоны', { variant: 'error' });
+      }
+    } catch (err) {
+      enqueueSnackbar('Ошибка сети при создании зоны', { variant: 'error' });
+    } finally {
+      setIsAddingZone(false);
+    }
+  };
+
+  const handleDeleteZone = async (zoneId: string) => {
+    if (!selectedWarehouse) return;
+    try {
+      const res = await fetch(`/api/wms/zones/${zoneId}`, {
+        method: 'DELETE',
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        enqueueSnackbar('Зона удалена', { variant: 'success' });
+        fetchZones(selectedWarehouse.id);
+      } else {
+        enqueueSnackbar(json.error || 'Ошибка удаления зоны', { variant: 'error' });
+      }
+    } catch (err) {
+      enqueueSnackbar('Ошибка сети при удалении зоны', { variant: 'error' });
+    }
+  };
+
+  const handleCreateCell = async (zoneId: string) => {
+    if (!selectedWarehouse || !newCellCode.trim()) {
+      enqueueSnackbar('Укажите номер/код ячейки', { variant: 'warning' });
+      return;
+    }
+
+    setIsAddingCell(true);
+    try {
+      const res = await fetch(`/api/wms/zones/${zoneId}/cells`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: newCellCode.trim(),
+          name: newCellName.trim() || undefined,
+        }),
+      });
+
+      const json = await res.json();
+      if (res.ok && json.success) {
+        enqueueSnackbar('Ячейка добавлена', { variant: 'success' });
+        setNewCellCode('');
+        setNewCellName('');
+        setActiveZoneIdForCell(null);
+        fetchZones(selectedWarehouse.id);
+      } else {
+        enqueueSnackbar(json.error || 'Ошибка добавления ячейки', { variant: 'error' });
+      }
+    } catch (err) {
+      enqueueSnackbar('Ошибка сети при добавлении ячейки', { variant: 'error' });
+    } finally {
+      setIsAddingCell(false);
+    }
+  };
+
+  const handleDeleteCell = async (zoneId: string, cellId: string) => {
+    if (!selectedWarehouse) return;
+    try {
+      const res = await fetch(`/api/wms/zones/${zoneId}/cells?cellId=${cellId}`, {
+        method: 'DELETE',
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        enqueueSnackbar('Ячейка удалена', { variant: 'success' });
+        fetchZones(selectedWarehouse.id);
+      } else {
+        enqueueSnackbar(json.error || 'Ошибка удаления ячейки', { variant: 'error' });
+      }
+    } catch (err) {
+      enqueueSnackbar('Ошибка сети при удалении ячейки', { variant: 'error' });
+    }
+  };
+
   return (
     <Box sx={{ pb: 4 }}>
       <PageHeader
         title="Склады и зоны хранения"
-        subtitle="Справочник складских комплексов, цеховых складов и мест размещения ТМЦ"
+        subtitle="Справочник складских комплексов, топология зон и ячеек адресного хранения ТМЦ"
         breadcrumbs={[
           { label: 'Главная', href: '/' },
           { label: 'Складской учёт', href: '/wms' },
@@ -152,7 +325,12 @@ export default function WmsWarehousesPage() {
         ]}
         actions={
           hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) && (
-            <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenCreate}>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleOpenCreate}
+              aria-label="Создать новый склад"
+            >
               Создать склад
             </Button>
           )
@@ -203,7 +381,7 @@ export default function WmsWarehousesPage() {
                   },
                 }}
               >
-                <CardContent sx={{ p: 2.5, flexGrow: 1 }}>
+                <CardContent sx={{ p: 2.5, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <WarehouseOutlinedIcon color="primary" />
@@ -211,7 +389,11 @@ export default function WmsWarehousesPage() {
                         {w.name}
                       </Typography>
                     </Box>
-                    <IconButton size="small" onClick={() => handleOpenEdit(w)}>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleOpenEdit(w)}
+                      aria-label={`Редактировать ${w.name}`}
+                    >
                       <EditOutlinedIcon fontSize="small" />
                     </IconButton>
                   </Box>
@@ -233,8 +415,8 @@ export default function WmsWarehousesPage() {
                     </Box>
                   )}
 
-                  <Box sx={{ pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
-                    <Grid container spacing={1}>
+                  <Box sx={{ mt: 'auto', pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
+                    <Grid container spacing={1} sx={{ mb: 1.5 }}>
                       <Grid item xs={6}>
                         <Typography variant="caption" color="text.secondary">
                           Номенклатурных позиций
@@ -252,6 +434,17 @@ export default function WmsWarehousesPage() {
                         </Typography>
                       </Grid>
                     </Grid>
+
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      size="small"
+                      startIcon={<GridViewIcon />}
+                      onClick={() => handleOpenZonesModal(w)}
+                      aria-label={`Зоны и ячейки склада ${w.name}`}
+                    >
+                      Зоны и ячейки хранения
+                    </Button>
                   </Box>
                 </CardContent>
               </Card>
@@ -306,6 +499,210 @@ export default function WmsWarehousesPage() {
           <Button variant="contained" onClick={handleSubmit} disabled={isSubmitting}>
             {isSubmitting ? 'Сохранение...' : editingId ? 'Сохранить изменения' : 'Создать склад'}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Модальное окно управления адресным хранением (Зоны и Ячейки) */}
+      <Dialog
+        open={isZonesModalOpen}
+        onClose={() => setIsZonesModalOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <MeetingRoomOutlinedIcon color="primary" />
+          Адресное хранение: {selectedWarehouse?.name} ({selectedWarehouse?.code})
+        </DialogTitle>
+        <DialogContent dividers>
+          {isLoadingZones ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+              <CircularProgress size={32} />
+            </Box>
+          ) : (
+            <Stack spacing={3}>
+              {/* Форма быстрого добавления новой зоны */}
+              {hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) && (
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, bgcolor: 'grey.50' }}>
+                  <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5 }}>
+                    + Создать новую зону хранения
+                  </Typography>
+                  <Grid container spacing={1.5} alignItems="center">
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        size="small"
+                        fullWidth
+                        required
+                        label="Название зоны"
+                        placeholder="Зона A (Мелкие узлы)"
+                        value={newZoneName}
+                        onChange={(e) => setNewZoneName(e.target.value)}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={3}>
+                      <TextField
+                        size="small"
+                        fullWidth
+                        required
+                        label="Код зоны"
+                        placeholder="ZONE-A"
+                        value={newZoneCode}
+                        onChange={(e) => setNewZoneCode(e.target.value)}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={3.5}>
+                      <TextField
+                        size="small"
+                        fullWidth
+                        label="Описание / Назначение"
+                        placeholder="Стеллажи 1-5"
+                        value={newZoneDesc}
+                        onChange={(e) => setNewZoneDesc(e.target.value)}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={1.5}>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        fullWidth
+                        onClick={handleCreateZone}
+                        disabled={isAddingZone}
+                        sx={{ py: 0.9 }}
+                      >
+                        {isAddingZone ? '...' : 'Создать'}
+                      </Button>
+                    </Grid>
+                  </Grid>
+                </Paper>
+              )}
+
+              {/* Список зон и ячеек */}
+              <Box>
+                <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5 }}>
+                  Зоны и ячейки склада ({zones.length})
+                </Typography>
+
+                {zones.length === 0 ? (
+                  <Box sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
+                    <Typography variant="body2">В этом складе пока нет созданных зон хранения</Typography>
+                  </Box>
+                ) : (
+                  <Stack spacing={1.5}>
+                    {zones.map((zone) => (
+                      <Accordion key={zone.id} variant="outlined" defaultExpanded sx={{ borderRadius: 2 }}>
+                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', pr: 2 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Typography variant="subtitle2" fontWeight={700}>
+                                {zone.name}
+                              </Typography>
+                              <Chip label={zone.code} size="small" variant="outlined" sx={{ fontWeight: 700 }} />
+                              {zone.description && (
+                                <Typography variant="caption" color="text.secondary">
+                                  ({zone.description})
+                                </Typography>
+                              )}
+                            </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Chip
+                                label={`${zone.cells.length} ячеек`}
+                                size="small"
+                                color="primary"
+                                variant="outlined"
+                              />
+                              {hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) && (
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteZone(zone.id);
+                                  }}
+                                  aria-label={`Удалить зону ${zone.name}`}
+                                >
+                                  <DeleteOutlineIcon fontSize="small" />
+                                </IconButton>
+                              )}
+                            </Box>
+                          </Box>
+                        </AccordionSummary>
+                        <AccordionDetails sx={{ pt: 0, pb: 2 }}>
+                          <Divider sx={{ mb: 2 }} />
+
+                          {/* Ячейки внутри зоны */}
+                          <Box sx={{ mb: 2 }}>
+                            <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ display: 'block', mb: 1 }}>
+                              Ячейки и места размещения:
+                            </Typography>
+                            {zone.cells.length === 0 ? (
+                              <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                                В зоне пока нет ячеек
+                              </Typography>
+                            ) : (
+                              <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+                                {zone.cells.map((cell) => (
+                                  <Chip
+                                    key={cell.id}
+                                    label={`${cell.code}${cell.name ? ` (${cell.name})` : ''}`}
+                                    size="small"
+                                    color="info"
+                                    variant="outlined"
+                                    onDelete={
+                                      hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE)
+                                        ? () => handleDeleteCell(zone.id, cell.id)
+                                        : undefined
+                                    }
+                                    sx={{ fontWeight: 600 }}
+                                  />
+                                ))}
+                              </Stack>
+                            )}
+                          </Box>
+
+                          {/* Форма добавления ячейки в зону */}
+                          {hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) && (
+                            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 1.5 }}>
+                              <TextField
+                                size="small"
+                                placeholder="Код ячейки (напр. 01-A, Ряд-1)"
+                                value={activeZoneIdForCell === zone.id ? newCellCode : ''}
+                                onChange={(e) => {
+                                  setActiveZoneIdForCell(zone.id);
+                                  setNewCellCode(e.target.value);
+                                }}
+                                sx={{ width: 220 }}
+                              />
+                              <TextField
+                                size="small"
+                                placeholder="Описание (опц.)"
+                                value={activeZoneIdForCell === zone.id ? newCellName : ''}
+                                onChange={(e) => {
+                                  setActiveZoneIdForCell(zone.id);
+                                  setNewCellName(e.target.value);
+                                }}
+                                sx={{ width: 200 }}
+                              />
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<AddIcon />}
+                                onClick={() => handleCreateCell(zone.id)}
+                                disabled={isAddingCell || activeZoneIdForCell !== zone.id || !newCellCode.trim()}
+                              >
+                                Добавить ячейку
+                              </Button>
+                            </Box>
+                          )}
+                        </AccordionDetails>
+                      </Accordion>
+                    ))}
+                  </Stack>
+                )}
+              </Box>
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setIsZonesModalOpen(false)}>Закрыть</Button>
         </DialogActions>
       </Dialog>
     </Box>
