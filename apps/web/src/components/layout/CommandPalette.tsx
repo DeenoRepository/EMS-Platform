@@ -78,7 +78,7 @@ const STATIC_COMMANDS = [
     icon: <BuildCircleIcon />,
   },
   {
-    title: 'Справочники и настройки модулей',
+    title: 'Настройки модулей (EPS, WMS, SRM, MRO)',
     path: '/admin/module-settings',
     category: 'Администрирование',
     icon: <TuneIcon />,

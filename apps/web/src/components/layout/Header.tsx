@@ -203,7 +203,7 @@ export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProp
 
             {/* Settings Quick Link */}
             {canAccessSettings && (
-              <Tooltip title="Справочники и настройки модулей">
+              <Tooltip title="Настройки модулей">
                 <IconButton
                   size="small"
                   onClick={() => router.push('/admin/module-settings')}

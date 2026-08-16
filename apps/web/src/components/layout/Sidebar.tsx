@@ -225,7 +225,7 @@ export default function Sidebar({
   const systemItems: NavItemDef[] = [
     {
       id: 'module-settings',
-      label: 'Справочники модулей',
+      label: 'Настройки модулей',
       path: '/admin/module-settings',
       icon: <TuneOutlinedIcon sx={{ fontSize: 18 }} />,
     },

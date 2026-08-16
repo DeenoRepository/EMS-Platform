@@ -404,12 +404,12 @@ export default function ModuleSettingsPage() {
   return (
     <Box sx={{ maxWidth: 1920, mx: 'auto' }}>
       <PageHeader
-        title="Справочники и настройки модулей"
+        title="Настройки модулей"
         subtitle="Единый центр конфигурации технических разделов, полей, классификаторов и параметров системы"
         breadcrumbs={[
           { label: 'Главная', href: '/' },
           { label: 'Администрирование', href: '/admin/users' },
-          { label: 'Справочники модулей' },
+          { label: 'Настройки модулей' },
         ]}
       />
 
