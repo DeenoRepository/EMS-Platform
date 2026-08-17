@@ -1,87 +1,785 @@
 'use client';
 
-import React from 'react';
-import { Box, Card, CardContent, Typography, Grid } from '@mui/material';
-import BuildCircleIcon from '@mui/icons-material/BuildCircle';
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Grid,
+  Tabs,
+  Tab,
+  Button,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
+  CircularProgress,
+  IconButton,
+  Tooltip,
+  Divider,
+  Checkbox,
+  FormControlLabel,
+} from '@mui/material';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import ChecklistRtlIcon from '@mui/icons-material/ChecklistRtl';
-import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import BuildCircleIcon from '@mui/icons-material/BuildCircle';
+import AddIcon from '@mui/icons-material/Add';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import AssignmentIcon from '@mui/icons-material/Assignment';
 import PageHeader from '@/components/layout/PageHeader';
+import { MAINTENANCE_STATUS_MAP } from '@ems/shared';
+import { useSnackbar } from 'notistack';
 
 export default function MroOverviewPage() {
+  const { enqueueSnackbar } = useSnackbar();
+  const [tab, setTab] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  // Data states
+  const [schedules, setSchedules] = useState<any[]>([]);
+  const [plans, setPlans] = useState<any[]>([]);
+  const [checklists, setChecklists] = useState<any[]>([]);
+  const [equipmentList, setEquipmentList] = useState<any[]>([]);
+  const [nomenclatureList, setNomenclatureList] = useState<any[]>([]);
+  const [warehouses, setWarehouses] = useState<any[]>([]);
+
+  // Dialog states
+  const [openScheduleDialog, setOpenScheduleDialog] = useState(false);
+  const [openPlanDialog, setOpenPlanDialog] = useState(false);
+  const [openChecklistDialog, setOpenChecklistDialog] = useState(false);
+  const [openExecuteDialog, setOpenExecuteDialog] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState<any | null>(null);
+
+  // Form states
+  const [scheduleForm, setScheduleForm] = useState({
+    equipmentId: '',
+    planId: '',
+    title: '',
+    scheduledDate: new Date().toISOString().split('T')[0],
+    notes: '',
+  });
+
+  const [planForm, setPlanForm] = useState({
+    equipmentId: '',
+    name: '',
+    description: '',
+    frequency: 'MONTHLY',
+    intervalDays: 30,
+    checklistId: '',
+  });
+
+  const [checklistForm, setChecklistForm] = useState({
+    name: '',
+    description: '',
+    items: [{ description: '', itemType: 'BOOLEAN', isRequired: true }],
+  });
+
+  // Execution form state
+  const [checklistAnswers, setChecklistAnswers] = useState<Record<string, any>>({});
+  const [usedParts, setUsedParts] = useState<{ nomenclatureId: string; warehouseId: string; quantity: number }[]>([]);
+  const [execNotes, setExecNotes] = useState('');
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [resSchedules, resPlans, resChecklists, resEquip, resNom, resWh] = await Promise.all([
+        fetch('/api/mro/schedules').then((r) => r.json()),
+        fetch('/api/mro/plans').then((r) => r.json()),
+        fetch('/api/mro/checklists').then((r) => r.json()),
+        fetch('/api/eps/equipment?limit=100').then((r) => r.json()),
+        fetch('/api/wms/nomenclature').then((r) => r.json()).catch(() => ({ success: false })),
+        fetch('/api/wms/warehouses').then((r) => r.json()).catch(() => ({ success: false })),
+      ]);
+
+      if (resSchedules.success) setSchedules(resSchedules.data);
+      if (resPlans.success) setPlans(resPlans.data);
+      if (resChecklists.success) setChecklists(resChecklists.data);
+      if (resEquip.success) setEquipmentList(resEquip.data?.items || resEquip.data || []);
+      if (resNom.success) setNomenclatureList(resNom.data || []);
+      if (resWh.success) setWarehouses(resWh.data || []);
+    } catch (err) {
+      console.error('Ошибка загрузки данных ТОиР:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const handleCreateSchedule = async () => {
+    try {
+      const res = await fetch('/api/mro/schedules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(scheduleForm),
+      });
+      const data = await res.json();
+      if (data.success) {
+        enqueueSnackbar('Работа по ТО успешно запланирована', { variant: 'success' });
+        setOpenScheduleDialog(false);
+        loadData();
+      } else {
+        enqueueSnackbar(data.error || 'Ошибка планирования', { variant: 'error' });
+      }
+    } catch {
+      enqueueSnackbar('Ошибка сервера при создании', { variant: 'error' });
+    }
+  };
+
+  const handleCreatePlan = async () => {
+    try {
+      const res = await fetch('/api/mro/plans', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(planForm),
+      });
+      const data = await res.json();
+      if (data.success) {
+        enqueueSnackbar('Регламентный план ТО создан', { variant: 'success' });
+        setOpenPlanDialog(false);
+        loadData();
+      } else {
+        enqueueSnackbar(data.error || 'Ошибка создания плана', { variant: 'error' });
+      }
+    } catch {
+      enqueueSnackbar('Ошибка сервера', { variant: 'error' });
+    }
+  };
+
+  const handleCreateChecklist = async () => {
+    try {
+      const res = await fetch('/api/mro/checklists', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(checklistForm),
+      });
+      const data = await res.json();
+      if (data.success) {
+        enqueueSnackbar('Шаблон чек-листа создан', { variant: 'success' });
+        setOpenChecklistDialog(false);
+        loadData();
+      } else {
+        enqueueSnackbar(data.error || 'Ошибка создания чек-листа', { variant: 'error' });
+      }
+    } catch {
+      enqueueSnackbar('Ошибка сервера', { variant: 'error' });
+    }
+  };
+
+  const handleOpenExecute = (sched: any) => {
+    setSelectedSchedule(sched);
+    setExecNotes(sched.notes || '');
+    setChecklistAnswers({});
+    setUsedParts([]);
+    setOpenExecuteDialog(true);
+  };
+
+  const handleCompleteSchedule = async () => {
+    if (!selectedSchedule) return;
+    try {
+      const itemsPayload = Object.entries(checklistAnswers).map(([key, val]) => ({
+        itemId: key,
+        value: val,
+      }));
+
+      const res = await fetch(`/api/mro/schedules/${selectedSchedule.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'COMPLETED',
+          notes: execNotes,
+          checklistItems: itemsPayload,
+          usedParts,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        enqueueSnackbar('Регламент ТО успешно завершен, запчасти списаны', { variant: 'success' });
+        setOpenExecuteDialog(false);
+        loadData();
+      } else {
+        enqueueSnackbar(data.error || 'Ошибка завершения ТО', { variant: 'error' });
+      }
+    } catch {
+      enqueueSnackbar('Ошибка сервера при выполнении', { variant: 'error' });
+    }
+  };
+
   return (
     <Box>
       <PageHeader
         title="MRO — Техническое обслуживание и ремонт"
-        subtitle="Календарные графики планово-предупредительного ремонта (ППР), чек-листы регламентных работ"
+        subtitle="Календарные графики планово-предупредительного ремонта (ППР), электронные чек-листы и списание запчастей"
         breadcrumbs={[{ label: 'Главная', href: '/' }, { label: 'ТО и Ремонт' }]}
+        action={
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {tab === 0 && (
+              <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenScheduleDialog(true)}>
+                Запланировать ТО
+              </Button>
+            )}
+            {tab === 1 && (
+              <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenPlanDialog(true)}>
+                Новый план ТО
+              </Button>
+            )}
+            {tab === 2 && (
+              <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenChecklistDialog(true)}>
+                Новый чек-лист
+              </Button>
+            )}
+          </Box>
+        }
       />
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} sm={6} md={3}>
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={4}>
           <Card>
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                <CalendarMonthIcon color="primary" />
-                <Typography variant="h6" fontWeight={700}>
-                  Графики ППР
+            <CardContent sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 2 }}>
+              <CalendarMonthIcon color="primary" sx={{ fontSize: 40 }} />
+              <Box>
+                <Typography variant="h5" fontWeight={700}>
+                  {schedules.length}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Всего нарядов ТО в графике
                 </Typography>
               </Box>
-              <Typography variant="body2" color="text.secondary">
-                Календарный план периодических ТО по всему парку оборудования
-              </Typography>
             </CardContent>
           </Card>
         </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={4}>
           <Card>
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                <ChecklistRtlIcon color="success" />
-                <Typography variant="h6" fontWeight={700}>
-                  Чек-листы
+            <CardContent sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 2 }}>
+              <AssignmentIcon color="secondary" sx={{ fontSize: 40 }} />
+              <Box>
+                <Typography variant="h5" fontWeight={700}>
+                  {plans.length}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Действующих регламентных планов
                 </Typography>
               </Box>
-              <Typography variant="body2" color="text.secondary">
-                Электронные формы регламентов с числовыми замерами и фиксацией
-              </Typography>
             </CardContent>
           </Card>
         </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={4}>
           <Card>
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                <BuildCircleIcon color="warning" />
-                <Typography variant="h6" fontWeight={700}>
-                  Списание запчастей
+            <CardContent sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 2 }}>
+              <ChecklistRtlIcon color="success" sx={{ fontSize: 40 }} />
+              <Box>
+                <Typography variant="h5" fontWeight={700}>
+                  {schedules.filter((s) => s.status === 'COMPLETED').length}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Успешно выполненных регламентов
                 </Typography>
               </Box>
-              <Typography variant="body2" color="text.secondary">
-                Автоматическое списание использованных ТМЦ со склада WMS
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                <AutoFixHighIcon color="secondary" />
-                <Typography variant="h6" fontWeight={700}>
-                  Связка с Jira
-                </Typography>
-              </Box>
-              <Typography variant="body2" color="text.secondary">
-                Создание аварийных нарядов в Jira прямо из формы выполнения ТО
-              </Typography>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
+
+      <Card sx={{ mb: 4 }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}>
+          <Tabs value={tab} onChange={(_, val) => setTab(val)}>
+            <Tab label="График нарядов ТО" />
+            <Tab label="Регламентные планы" />
+            <Tab label="Шаблоны чек-листов" />
+          </Tabs>
+        </Box>
+
+        <CardContent sx={{ p: 0 }}>
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <>
+              {/* TAB 0: График нарядов ТО */}
+              {tab === 0 && (
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Оборудование</TableCell>
+                      <TableCell>Название регламента</TableCell>
+                      <TableCell>Дата проведения</TableCell>
+                      <TableCell>Статус</TableCell>
+                      <TableCell>Исполнитель</TableCell>
+                      <TableCell align="right">Действия</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {schedules.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                          В графике пока нет запланированных работ
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      schedules.map((s) => {
+                        const statusConfig = MAINTENANCE_STATUS_MAP[s.status] || { label: s.status, color: 'default' };
+                        return (
+                          <TableRow key={s.id} hover>
+                            <TableCell>
+                              <Typography variant="body2" fontWeight={600}>
+                                {s.equipment?.name}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Инв: {s.equipment?.inventoryNumber} | {s.equipment?.location || 'Цех'}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">{s.title}</Typography>
+                              {s.plan?.name && (
+                                <Typography variant="caption" color="primary">
+                                  План: {s.plan.name}
+                                </Typography>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {new Date(s.scheduledDate).toLocaleDateString('ru-RU')}
+                            </TableCell>
+                            <TableCell>
+                              <Chip size="small" label={statusConfig.label} color={statusConfig.color as any} />
+                            </TableCell>
+                            <TableCell>
+                              {s.completedBy?.displayName || '—'}
+                            </TableCell>
+                            <TableCell align="right">
+                              {s.status !== 'COMPLETED' ? (
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  color="success"
+                                  startIcon={<PlayArrowIcon />}
+                                  onClick={() => handleOpenExecute(s)}
+                                >
+                                  Выполнить
+                                </Button>
+                              ) : (
+                                <Chip size="small" icon={<CheckCircleIcon />} label="Выполнено" color="success" variant="outlined" />
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+
+              {/* TAB 1: Регламентные планы */}
+              {tab === 1 && (
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Оборудование</TableCell>
+                      <TableCell>Название плана</TableCell>
+                      <TableCell>Периодичность</TableCell>
+                      <TableCell>Чек-лист</TableCell>
+                      <TableCell>Нарядов в графике</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {plans.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                          Регламентные планы еще не созданы
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      plans.map((p) => (
+                        <TableRow key={p.id} hover>
+                          <TableCell>
+                            <Typography variant="body2" fontWeight={600}>
+                              {p.equipment?.name}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {p.equipment?.inventoryNumber}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">{p.name}</Typography>
+                            {p.description && (
+                              <Typography variant="caption" color="text.secondary">
+                                {p.description}
+                              </Typography>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Chip size="small" label={p.frequency} variant="outlined" />
+                          </TableCell>
+                          <TableCell>
+                            {p.checklist?.name || 'Без чек-листа'}
+                          </TableCell>
+                          <TableCell>{p._count?.schedules || 0}</TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+
+              {/* TAB 2: Шаблоны чек-листов */}
+              {tab === 2 && (
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Название чек-листа</TableCell>
+                      <TableCell>Описание</TableCell>
+                      <TableCell>Количество пунктов</TableCell>
+                      <TableCell>Используется в планах</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {checklists.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                          Шаблоны чек-листов отсутствуют
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      checklists.map((c) => (
+                        <TableRow key={c.id} hover>
+                          <TableCell>
+                            <Typography variant="body2" fontWeight={600}>
+                              {c.name}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>{c.description || '—'}</TableCell>
+                          <TableCell>
+                            <Chip size="small" label={`${c.items?.length || 0} пунктов`} color="info" />
+                          </TableCell>
+                          <TableCell>{c._count?.plans || 0}</TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Диалог создания наряда ТО */}
+      <Dialog open={openScheduleDialog} onClose={() => setOpenScheduleDialog(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Запланировать проведение ТО</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+          <FormControl fullWidth size="small">
+            <InputLabel>Оборудование</InputLabel>
+            <Select
+              value={scheduleForm.equipmentId}
+              label="Оборудование"
+              onChange={(e) => setScheduleForm({ ...scheduleForm, equipmentId: e.target.value })}
+            >
+              {equipmentList.map((eq) => (
+                <MenuItem key={eq.id} value={eq.id}>
+                  {eq.name} ({eq.inventoryNumber})
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <TextField
+            fullWidth
+            size="small"
+            label="Название регламента / наряда"
+            value={scheduleForm.title}
+            onChange={(e) => setScheduleForm({ ...scheduleForm, title: e.target.value })}
+          />
+          <TextField
+            fullWidth
+            size="small"
+            type="date"
+            label="Плановая дата"
+            InputLabelProps={{ shrink: true }}
+            value={scheduleForm.scheduledDate}
+            onChange={(e) => setScheduleForm({ ...scheduleForm, scheduledDate: e.target.value })}
+          />
+          <TextField
+            fullWidth
+            size="small"
+            multiline
+            rows={3}
+            label="Примечания к наряду"
+            value={scheduleForm.notes}
+            onChange={(e) => setScheduleForm({ ...scheduleForm, notes: e.target.value })}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenScheduleDialog(false)}>Отмена</Button>
+          <Button variant="contained" onClick={handleCreateSchedule}>
+            Запланировать
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Диалог создания регламентного плана */}
+      <Dialog open={openPlanDialog} onClose={() => setOpenPlanDialog(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Создать регламентный план ТО</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+          <FormControl fullWidth size="small">
+            <InputLabel>Оборудование</InputLabel>
+            <Select
+              value={planForm.equipmentId}
+              label="Оборудование"
+              onChange={(e) => setPlanForm({ ...planForm, equipmentId: e.target.value })}
+            >
+              {equipmentList.map((eq) => (
+                <MenuItem key={eq.id} value={eq.id}>
+                  {eq.name} ({eq.inventoryNumber})
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <TextField
+            fullWidth
+            size="small"
+            label="Название регламента"
+            value={planForm.name}
+            onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
+          />
+          <FormControl fullWidth size="small">
+            <InputLabel>Периодичность</InputLabel>
+            <Select
+              value={planForm.frequency}
+              label="Периодичность"
+              onChange={(e) => setPlanForm({ ...planForm, frequency: e.target.value })}
+            >
+              <MenuItem value="DAILY">Ежедневно</MenuItem>
+              <MenuItem value="WEEKLY">Еженедельно</MenuItem>
+              <MenuItem value="MONTHLY">Ежемесячно</MenuItem>
+              <MenuItem value="QUARTERLY">Ежеквартально</MenuItem>
+              <MenuItem value="YEARLY">Ежегодно</MenuItem>
+            </Select>
+          </FormControl>
+          <FormControl fullWidth size="small">
+            <InputLabel>Шаблон чек-листа</InputLabel>
+            <Select
+              value={planForm.checklistId}
+              label="Шаблон чек-листа"
+              onChange={(e) => setPlanForm({ ...planForm, checklistId: e.target.value })}
+            >
+              <MenuItem value="">Без чек-листа</MenuItem>
+              {checklists.map((c) => (
+                <MenuItem key={c.id} value={c.id}>
+                  {c.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenPlanDialog(false)}>Отмена</Button>
+          <Button variant="contained" onClick={handleCreatePlan}>
+            Сохранить план
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Диалог создания шаблона чек-листа */}
+      <Dialog open={openChecklistDialog} onClose={() => setOpenChecklistDialog(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Создать шаблон чек-листа ТО</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+          <TextField
+            fullWidth
+            size="small"
+            label="Название чек-листа"
+            value={checklistForm.name}
+            onChange={(e) => setChecklistForm({ ...checklistForm, name: e.target.value })}
+          />
+          <TextField
+            fullWidth
+            size="small"
+            label="Описание"
+            value={checklistForm.description}
+            onChange={(e) => setChecklistForm({ ...checklistForm, description: e.target.value })}
+          />
+          <Typography variant="subtitle2" sx={{ mt: 1 }}>
+            Пункты проверки:
+          </Typography>
+          {checklistForm.items.map((it, idx) => (
+            <Box key={idx} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+              <TextField
+                fullWidth
+                size="small"
+                label={`Пункт #${idx + 1}`}
+                value={it.description}
+                onChange={(e) => {
+                  const newItems = [...checklistForm.items];
+                  newItems[idx].description = e.target.value;
+                  setChecklistForm({ ...checklistForm, items: newItems });
+                }}
+              />
+            </Box>
+          ))}
+          <Button
+            size="small"
+            startIcon={<AddIcon />}
+            onClick={() =>
+              setChecklistForm({
+                ...checklistForm,
+                items: [...checklistForm.items, { description: '', itemType: 'BOOLEAN', isRequired: true }],
+              })
+            }
+          >
+            Добавить пункт
+          </Button>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenChecklistDialog(false)}>Отмена</Button>
+          <Button variant="contained" onClick={handleCreateChecklist}>
+            Сохранить чек-лист
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Диалог выполнения регламента ТО с чек-листом и списанием запчастей */}
+      <Dialog open={openExecuteDialog} onClose={() => setOpenExecuteDialog(false)} fullWidth maxWidth="md">
+        <DialogTitle>
+          Выполнение ТО: {selectedSchedule?.title}
+        </DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+          <Typography variant="body2" color="text.secondary">
+            Оборудование: <strong>{selectedSchedule?.equipment?.name}</strong> (Инв: {selectedSchedule?.equipment?.inventoryNumber})
+          </Typography>
+
+          <Divider sx={{ my: 1 }} />
+          <Typography variant="subtitle1" fontWeight={700}>
+            1. Электронный чек-лист проверки
+          </Typography>
+          {selectedSchedule?.plan?.checklist?.items?.map((item: any) => (
+            <Box key={item.id} sx={{ p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={!!checklistAnswers[item.id]}
+                    onChange={(e) =>
+                      setChecklistAnswers({ ...checklistAnswers, [item.id]: e.target.checked })
+                    }
+                  />
+                }
+                label={
+                  <Typography variant="body2">
+                    {item.description} {item.isRequired && <span style={{ color: 'red' }}>*</span>}
+                  </Typography>
+                }
+              />
+            </Box>
+          )) || (
+            <Typography variant="body2" color="text.secondary">
+              Чек-лист для данного наряда не задан.
+            </Typography>
+          )}
+
+          <Divider sx={{ my: 1 }} />
+          <Typography variant="subtitle1" fontWeight={700}>
+            2. Использованные запчасти (списание со склада WMS)
+          </Typography>
+          {usedParts.map((p, idx) => (
+            <Box key={idx} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+              <FormControl size="small" sx={{ minWidth: 200 }}>
+                <InputLabel>Запчасть</InputLabel>
+                <Select
+                  value={p.nomenclatureId}
+                  label="Запчасть"
+                  onChange={(e) => {
+                    const next = [...usedParts];
+                    next[idx].nomenclatureId = e.target.value;
+                    setUsedParts(next);
+                  }}
+                >
+                  {nomenclatureList.map((nom) => (
+                    <MenuItem key={nom.id} value={nom.id}>
+                      {nom.name} ({nom.sku})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 160 }}>
+                <InputLabel>Склад списания</InputLabel>
+                <Select
+                  value={p.warehouseId}
+                  label="Склад списания"
+                  onChange={(e) => {
+                    const next = [...usedParts];
+                    next[idx].warehouseId = e.target.value;
+                    setUsedParts(next);
+                  }}
+                >
+                  {warehouses.map((wh) => (
+                    <MenuItem key={wh.id} value={wh.id}>
+                      {wh.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField
+                size="small"
+                type="number"
+                label="Кол-во"
+                sx={{ width: 100 }}
+                value={p.quantity}
+                onChange={(e) => {
+                  const next = [...usedParts];
+                  next[idx].quantity = parseFloat(e.target.value) || 1;
+                  setUsedParts(next);
+                }}
+              />
+            </Box>
+          ))}
+          <Button
+            size="small"
+            startIcon={<AddIcon />}
+            onClick={() =>
+              setUsedParts([
+                ...usedParts,
+                {
+                  nomenclatureId: nomenclatureList[0]?.id || '',
+                  warehouseId: warehouses[0]?.id || '',
+                  quantity: 1,
+                },
+              ])
+            }
+          >
+            Добавить запчасть для списания
+          </Button>
+
+          <Divider sx={{ my: 1 }} />
+          <TextField
+            fullWidth
+            size="small"
+            multiline
+            rows={2}
+            label="Заключение / Результаты осмотра"
+            value={execNotes}
+            onChange={(e) => setExecNotes(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenExecuteDialog(false)}>Отмена</Button>
+          <Button variant="contained" color="success" onClick={handleCompleteSchedule}>
+            Завершить регламент и списать ТМЦ
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
