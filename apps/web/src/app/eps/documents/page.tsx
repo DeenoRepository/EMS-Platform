@@ -49,6 +49,7 @@ import {
   PageLoading,
   FormDialog,
   StatusBadge,
+  type TableColumnOption,
   FileUploadDropzone,
 } from '@/components/ui';
 
@@ -266,12 +267,28 @@ function DocumentsListContent() {
 
   const canUpload = hasPermission(PERMISSIONS.EPS_DOCUMENTS_UPLOAD);
   const canEdit = hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT);
+  const canDelete = hasPermission(PERMISSIONS.EPS_EQUIPMENT_DELETE);
+
+  const DOCUMENT_COLUMNS: any[] = [
+    { id: 'name', label: 'Имя файла', defaultVisible: true, required: true },
+    { id: 'equipment', label: 'Оборудование', defaultVisible: true },
+    { id: 'docType', label: 'Тип документа', defaultVisible: true },
+    { id: 'description', label: 'Описание / Примечание', defaultVisible: true },
+    { id: 'size', label: 'Размер', defaultVisible: true },
+    { id: 'uploadedBy', label: 'Загрузил', defaultVisible: true },
+    { id: 'date', label: 'Дата', defaultVisible: true },
+    { id: 'actions', label: 'Действия', defaultVisible: true, required: true },
+  ];
+
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(() =>
+    DOCUMENT_COLUMNS.map((c) => c.id)
+  );
 
   return (
-    <Box sx={{ maxWidth: 1920, mx: 'auto' }}>
+    <Box sx={{ pb: 4 }}>
       <PageHeader
-        title="EPS — Электронный архив документации"
-        subtitle="Централизованный реестр схем, чертежей, инструкций по эксплуатации, паспортов и актов оборудования"
+        title="Электронный архив документов"
+        subtitle="Техническая документация, паспорта, чертежи, схемы, руководства и регламенты обслуживания оборудования"
         breadcrumbs={[
           { label: 'Главная', href: '/' },
           { label: 'Оборудование', href: '/eps' },
@@ -291,8 +308,8 @@ function DocumentsListContent() {
         }
       />
 
-      {/* Top KPI StatCards Bar */}
-      <Grid container spacing={1.75} sx={{ mb: 2.5 }}>
+      {/* KPI Metric Cards */}
+      <Grid container spacing={1.75} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={2.4}>
           <StatCard
             title="Всего документов"
@@ -367,109 +384,164 @@ function DocumentsListContent() {
         </Grid>
       </Grid>
 
-      {/* Filter and Search Bar */}
-      <FilterToolbar
-        activeFilterCount={activeFilterCount}
-        onResetFilters={handleResetFilters}
-      >
-        <Box sx={{ minWidth: { xs: '100%', sm: 280 } }}>
-          <SearchInput
-            value={search}
-            placeholder="Поиск по названию файла, описанию, инв. №..."
-            onSearch={(val) => {
-              setSearch(val);
-              setPage(1);
-            }}
-          />
-        </Box>
-
-        <TextField
-          select
-          size="small"
-          label="Тип документа"
-          value={docTypeFilter}
-          onChange={(e) => {
-            setDocTypeFilter(e.target.value);
-            setPage(1);
-          }}
-          sx={{ minWidth: 180 }}
-        >
-          <MenuItem value="">Все типы</MenuItem>
-          {Object.entries(DOCUMENT_TYPE_MAP).map(([key, label]) => (
-            <MenuItem key={key} value={key}>
-              {label}
-            </MenuItem>
-          ))}
-        </TextField>
-
-        <TextField
-          select
-          size="small"
-          label="Оборудование"
-          value={equipmentFilter}
-          onChange={(e) => {
-            setEquipmentFilter(e.target.value);
-            setPage(1);
-          }}
-          sx={{ minWidth: 220 }}
-        >
-          <MenuItem value="">Все единицы оборудования</MenuItem>
-          {equipmentList.map((eq) => (
-            <MenuItem key={eq.id} value={eq.id}>
-              {eq.inventoryNumber ? `[${eq.inventoryNumber}] ` : ''}{eq.name}
-            </MenuItem>
-          ))}
-        </TextField>
-      </FilterToolbar>
-
       {/* Main Table */}
-      {items.length === 0 && !loading ? (
-        <EmptyState
-          paper
-          icon={<DescriptionOutlinedIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
-          title="Документы не найдены"
-          description={
-            activeFilterCount > 0
-              ? 'По заданным параметрам документы не найдены. Попробуйте сбросить фильтры.'
-              : 'В электронном архиве пока нет загруженных документов.'
-          }
-          actionText={activeFilterCount > 0 ? 'Сбросить фильтры' : (canUpload ? 'Загрузить документ' : undefined)}
-          onAction={activeFilterCount > 0 ? handleResetFilters : (canUpload ? () => setUploadModalOpen(true) : undefined)}
-        />
-      ) : (
-        <DataTableWrapper
-          loading={loading}
-          page={page - 1}
-          pageSize={pageSize}
-          total={total}
-          onPageChange={(_, newPage) => setPage(newPage + 1)}
-          onPageSizeChange={(e) => {
-            setPageSize(parseInt(e.target.value, 10));
-            setPage(1);
-          }}
-          stickyHeader
-        >
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 700 }}>Имя файла</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Оборудование</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 170 }}>Тип документа</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Описание / Примечание</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 100 }}>Размер</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 140 }}>Загрузил</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 120 }}>Дата</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, width: 100 }}>Действия</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {items.map((doc) => (
-                <TableRow key={doc.id} hover>
+      <DataTableWrapper
+        loading={loading}
+        page={page - 1}
+        pageSize={pageSize}
+        total={total}
+        onPageChange={(_, newPage) => setPage(newPage + 1)}
+        onPageSizeChange={(e) => {
+          setPageSize(parseInt(e.target.value, 10));
+          setPage(1);
+        }}
+        columns={DOCUMENT_COLUMNS}
+        visibleColumns={visibleColumns}
+        onVisibleColumnsChange={setVisibleColumns}
+        stickyHeader
+        empty={items.length === 0 && !loading}
+        emptyState={
+          <EmptyState
+            icon={<DescriptionOutlinedIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+            title="Документы не найдены"
+            description={
+              activeFilterCount > 0
+                ? 'По заданным параметрам документы не найдены. Попробуйте сбросить фильтры.'
+                : 'В электронном архиве пока нет загруженных документов.'
+            }
+            actionText={activeFilterCount > 0 ? 'Сбросить фильтры' : (canUpload ? 'Загрузить документ' : undefined)}
+            onAction={activeFilterCount > 0 ? handleResetFilters : (canUpload ? () => setUploadModalOpen(true) : undefined)}
+          />
+        }
+        toolbar={
+          <FilterToolbar
+            variant="embedded"
+            activeFilterCount={activeFilterCount}
+            onResetFilters={handleResetFilters}
+          >
+            <Box sx={{ minWidth: { xs: '100%', sm: 260 } }}>
+              <SearchInput
+                value={search}
+                placeholder="Поиск по названию файла, описанию, инв. №..."
+                onSearch={(val) => {
+                  setSearch(val);
+                  setPage(1);
+                }}
+              />
+            </Box>
+
+            <TextField
+              select
+              size="small"
+              value={docTypeFilter}
+              onChange={(e) => {
+                setDocTypeFilter(e.target.value);
+                setPage(1);
+              }}
+              sx={{
+                minWidth: 160,
+                backgroundColor: '#ffffff',
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  fontSize: '0.8125rem',
+                  height: 36,
+                  '& fieldset': { borderColor: '#e2e8f0' },
+                  '&:hover fieldset': { borderColor: '#cbd5e1' },
+                },
+              }}
+            >
+              <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все типы</MenuItem>
+              {Object.entries(DOCUMENT_TYPE_MAP).map(([key, label]) => (
+                <MenuItem key={key} value={key} sx={{ fontSize: '0.8125rem' }}>
+                  {label}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              select
+              size="small"
+              value={equipmentFilter}
+              onChange={(e) => {
+                setEquipmentFilter(e.target.value);
+                setPage(1);
+              }}
+              sx={{
+                minWidth: 200,
+                backgroundColor: '#ffffff',
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  fontSize: '0.8125rem',
+                  height: 36,
+                  '& fieldset': { borderColor: '#e2e8f0' },
+                  '&:hover fieldset': { borderColor: '#cbd5e1' },
+                },
+              }}
+            >
+              <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все оборудование</MenuItem>
+              {equipmentList.map((eq) => (
+                <MenuItem key={eq.id} value={eq.id} sx={{ fontSize: '0.8125rem' }}>
+                  {eq.inventoryNumber ? `[${eq.inventoryNumber}] ` : ''}{eq.name}
+                </MenuItem>
+              ))}
+            </TextField>
+          </FilterToolbar>
+        }
+      >
+        <Table size="small">
+          <TableHead>
+            <TableRow sx={{ backgroundColor: '#ffffff' }}>
+              {visibleColumns.includes('name') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  ИМЯ ФАЙЛА
+                </TableCell>
+              )}
+              {visibleColumns.includes('equipment') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  ОБОРУДОВАНИЕ
+                </TableCell>
+              )}
+              {visibleColumns.includes('docType') && (
+                <TableCell sx={{ fontWeight: 700, width: 170, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  ТИП ДОКУМЕНТА
+                </TableCell>
+              )}
+              {visibleColumns.includes('description') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  ОПИСАНИЕ
+                </TableCell>
+              )}
+              {visibleColumns.includes('size') && (
+                <TableCell sx={{ fontWeight: 700, width: 100, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  РАЗМЕР
+                </TableCell>
+              )}
+              {visibleColumns.includes('uploadedBy') && (
+                <TableCell sx={{ fontWeight: 700, width: 140, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  ЗАГРУЗИЛ
+                </TableCell>
+              )}
+              {visibleColumns.includes('date') && (
+                <TableCell sx={{ fontWeight: 700, width: 120, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  ДАТА
+                </TableCell>
+              )}
+              {visibleColumns.includes('actions') && (
+                <TableCell align="right" sx={{ fontWeight: 700, width: 100, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  ДЕЙСТВИЯ
+                </TableCell>
+              )}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {items.map((doc) => (
+              <TableRow key={doc.id} hover>
+                {visibleColumns.includes('name') && (
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <DescriptionOutlinedIcon color="primary" sx={{ fontSize: 18 }} />
                       <Box>
-                        <Typography variant="subtitle2" fontWeight={600} color="primary.main">
+                        <Typography variant="subtitle2" fontWeight={600} color="primary.main" sx={{ fontSize: '0.8125rem' }}>
                           {doc.originalName}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
@@ -478,30 +550,40 @@ function DocumentsListContent() {
                       </Box>
                     </Box>
                   </TableCell>
+                )}
 
+                {visibleColumns.includes('equipment') && (
                   <TableCell>
-                    <Box
-                      onClick={() => router.push(`/eps/${doc.equipment.id}`)}
-                      sx={{
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 0.75,
-                        '&:hover': { color: 'primary.main', textDecoration: 'underline' },
-                      }}
-                    >
-                      <Chip
-                        label={doc.equipment.inventoryNumber || 'Б/Н'}
-                        size="small"
-                        variant="outlined"
-                        sx={{ fontWeight: 700, fontFamily: 'monospace', height: 20, borderRadius: '4px' }}
-                      />
-                      <Typography variant="body2" fontWeight={500}>
-                        {doc.equipment.name}
+                    {doc.equipment ? (
+                      <Box
+                        onClick={() => router.push(`/eps/${doc.equipment.id}`)}
+                        sx={{
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 0.75,
+                          '&:hover': { color: 'primary.main', textDecoration: 'underline' },
+                        }}
+                      >
+                        <Chip
+                          label={doc.equipment.inventoryNumber || 'Б/Н'}
+                          size="small"
+                          variant="outlined"
+                          sx={{ fontWeight: 700, fontFamily: 'monospace', height: 20, borderRadius: '4px' }}
+                        />
+                        <Typography variant="body2" fontWeight={500}>
+                          {doc.equipment.name}
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <Typography variant="caption" color="text.secondary">
+                        Общий документ
                       </Typography>
-                    </Box>
+                    )}
                   </TableCell>
+                )}
 
+                {visibleColumns.includes('docType') && (
                   <TableCell>
                     <StatusBadge
                       status={doc.docType}
@@ -510,23 +592,33 @@ function DocumentsListContent() {
                       variant="outlined"
                     />
                   </TableCell>
+                )}
 
+                {visibleColumns.includes('description') && (
                   <TableCell sx={{ fontSize: '0.8125rem', color: doc.description ? 'inherit' : 'text.secondary' }}>
                     {doc.description || '—'}
                   </TableCell>
+                )}
 
+                {visibleColumns.includes('size') && (
                   <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace' }}>
                     {formatBytes(doc.fileSize)}
                   </TableCell>
+                )}
 
+                {visibleColumns.includes('uploadedBy') && (
                   <TableCell sx={{ fontSize: '0.8125rem' }}>
                     {doc.uploadedBy?.displayName || 'Система'}
                   </TableCell>
+                )}
 
+                {visibleColumns.includes('date') && (
                   <TableCell sx={{ fontSize: '0.8125rem' }}>
                     {formatDate(doc.createdAt)}
                   </TableCell>
+                )}
 
+                {visibleColumns.includes('actions') && (
                   <TableCell align="right">
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
                       <Tooltip title="Скачать / Просмотреть">
@@ -554,12 +646,12 @@ function DocumentsListContent() {
                       )}
                     </Box>
                   </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </DataTableWrapper>
-      )}
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </DataTableWrapper>
 
       {/* Confirm Delete Dialog */}
       <ConfirmDialog

@@ -167,7 +167,7 @@ export default function CustomFieldsBuilderPage() {
   };
 
   return (
-    <Box sx={{ maxWidth: 1920, mx: 'auto' }}>
+    <Box sx={{ pb: 4 }}>
       <PageHeader
         title="Конструктор кастомных полей оборудования"
         subtitle="Добавление произвольных технических параметров в паспорта оборудования без изменения программного кода"

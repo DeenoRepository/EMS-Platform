@@ -37,6 +37,7 @@ import {
   DataTableWrapper,
   ConfirmDialog,
   PageLoading,
+  CriticalAlertBanner,
 } from '@/components/ui';
 
 interface InventoryDetail {
@@ -301,10 +302,18 @@ export default function WmsInventoryDetailPage() {
       </Grid>
 
       {isCompleted && (
-        <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>
-          <AlertTitle sx={{ fontWeight: 700 }}>Инвентаризация завершена</AlertTitle>
-          Акт закрыт {inventory.closedAt ? formatDateTime(inventory.closedAt) : ''}. Складские остатки скорректированы в соответствии с фактическими данными.
-        </Alert>
+        <Box sx={{ mb: 3 }}>
+          <CriticalAlertBanner
+            alerts={[
+              {
+                id: 'inv-completed-alert',
+                severity: 'INFO',
+                title: 'Инвентаризация завершена',
+                description: `Акт закрыт ${inventory.closedAt ? formatDateTime(inventory.closedAt) : ''}. Складские остатки скорректированы в соответствии с фактическими данными.`,
+              },
+            ]}
+          />
+        </Box>
       )}
 
       {/* Таблица инвентаризации */}

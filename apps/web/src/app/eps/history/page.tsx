@@ -29,6 +29,7 @@ import EditNoteIcon from '@mui/icons-material/EditNote';
 import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import ArrowRightAltIcon from '@mui/icons-material/ArrowRightAlt';
+import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import PageHeader from '@/components/layout/PageHeader';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -49,6 +50,8 @@ import {
   StatusBadge,
   PageLoading,
   DatePickerField,
+  FormDialog,
+  type TableColumnOption,
 } from '@/components/ui';
 
 interface AuditLogItem {
@@ -263,6 +266,19 @@ function HistoryListContent() {
     setPage(1);
   };
 
+  const HISTORY_COLUMNS: TableColumnOption[] = [
+    { id: 'createdAt', label: 'Дата и время', defaultVisible: true, required: true },
+    { id: 'user', label: 'Пользователь', defaultVisible: true },
+    { id: 'action', label: 'Действие', defaultVisible: true },
+    { id: 'entityType', label: 'Сущность', defaultVisible: true },
+    { id: 'equipment', label: 'Оборудование', defaultVisible: true },
+    { id: 'changes', label: 'Детализация изменений', defaultVisible: true, required: true },
+  ];
+
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(() =>
+    HISTORY_COLUMNS.map((c) => c.id)
+  );
+
   const activeFilterCount =
     (actionFilter ? 1 : 0) +
     (equipmentFilter ? 1 : 0) +
@@ -270,10 +286,10 @@ function HistoryListContent() {
     (endDate ? 1 : 0);
 
   return (
-    <Box sx={{ maxWidth: 1920, mx: 'auto' }}>
+    <Box sx={{ pb: 4 }}>
       <PageHeader
-        title="EPS — История изменений и аудит"
-        subtitle="Сквозной журнал аудита событий оборудования, смены рабочих статусов, загрузки документов и решений согласования"
+        title="История изменений и аудит (EPS)"
+        subtitle="Неизменяемый реестр всех операций создания, изменения реквизитов, согласований и списаний оборудования"
         breadcrumbs={[
           { label: 'Главная', href: '/' },
           { label: 'Оборудование', href: '/eps' },
@@ -281,8 +297,8 @@ function HistoryListContent() {
         ]}
       />
 
-      {/* Top KPI Metric Cards Bar */}
-      <Grid container spacing={1.75} sx={{ mb: 2.5 }}>
+      {/* KPI Cards */}
+      <Grid container spacing={1.75} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Всего событий"
@@ -297,7 +313,6 @@ function HistoryListContent() {
             loading={loading && stats.total === 0}
           />
         </Grid>
-
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Создание объектов"
@@ -312,7 +327,6 @@ function HistoryListContent() {
             loading={loading && stats.total === 0}
           />
         </Grid>
-
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Изменения и статусы"
@@ -327,7 +341,6 @@ function HistoryListContent() {
             loading={loading && stats.total === 0}
           />
         </Grid>
-
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Удаления"
@@ -344,148 +357,207 @@ function HistoryListContent() {
         </Grid>
       </Grid>
 
-      {/* Filter and Date Range Bar */}
-      <FilterToolbar
-        activeFilterCount={activeFilterCount}
-        onResetFilters={handleResetFilters}
-      >
-        <TextField
-          select
-          size="small"
-          label="Тип действия"
-          value={actionFilter}
-          onChange={(e) => {
-            setActionFilter(e.target.value);
-            setPage(1);
-          }}
-          sx={{ minWidth: 170 }}
-        >
-          <MenuItem value="">Все действия</MenuItem>
-          {Object.entries(AUDIT_ACTION_MAP).map(([key, info]) => (
-            <MenuItem key={key} value={key}>
-              {info.label}
-            </MenuItem>
-          ))}
-        </TextField>
-
-        <TextField
-          select
-          size="small"
-          label="Оборудование"
-          value={equipmentFilter}
-          onChange={(e) => {
-            setEquipmentFilter(e.target.value);
-            setPage(1);
-          }}
-          sx={{ minWidth: 240 }}
-        >
-          <MenuItem value="">Все единицы оборудования</MenuItem>
-          {equipmentList.map((eq) => (
-            <MenuItem key={eq.id} value={eq.id}>
-              {eq.inventoryNumber ? `[${eq.inventoryNumber}] ` : ''}{eq.name}
-            </MenuItem>
-          ))}
-        </TextField>
-
-        <Box sx={{ width: 160 }}>
-          <DatePickerField
-            size="small"
-            label="С даты"
-            value={startDate}
-            onChange={(val) => {
-              setStartDate(val || '');
-              setPage(1);
-            }}
-          />
-        </Box>
-
-        <Box sx={{ width: 160 }}>
-          <DatePickerField
-            size="small"
-            label="По дату"
-            value={endDate}
-            onChange={(val) => {
-              setEndDate(val || '');
-              setPage(1);
-            }}
-          />
-        </Box>
-      </FilterToolbar>
-
       {/* Main Audit Log Table */}
-      {items.length === 0 && !loading ? (
-        <EmptyState
-          paper
-          icon={<HistoryOutlinedIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
-          title="События аудита не найдены"
-          description={
-            activeFilterCount > 0
-              ? 'По выбранным параметрам фильтрации события аудита не найдены. Попробуйте сбросить фильтры.'
-              : 'В журнале аудита пока нет зафиксированных событий.'
-          }
-          actionText={activeFilterCount > 0 ? 'Сбросить фильтры' : undefined}
-          onAction={activeFilterCount > 0 ? handleResetFilters : undefined}
-        />
-      ) : (
-        <DataTableWrapper
-          loading={loading}
-          page={page - 1}
-          pageSize={pageSize}
-          total={total}
-          onPageChange={(_, newPage) => setPage(newPage + 1)}
-          onPageSizeChange={(e) => {
-            setPageSize(parseInt(e.target.value, 10));
-            setPage(1);
-          }}
-          stickyHeader
-        >
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 700, width: 150 }}>Дата и время</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 150 }}>Пользователь</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 120 }}>Действие</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 180 }}>Сущность</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Оборудование</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Детализация изменений</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {items.map((log) => {
-                const actionInfo = AUDIT_ACTION_MAP[log.action] || { label: log.action, color: 'default' };
+      <DataTableWrapper
+        loading={loading}
+        page={page - 1}
+        pageSize={pageSize}
+        total={total}
+        onPageChange={(_, newPage) => setPage(newPage + 1)}
+        onPageSizeChange={(e) => {
+          setPageSize(parseInt(e.target.value, 10));
+          setPage(1);
+        }}
+        columns={HISTORY_COLUMNS}
+        visibleColumns={visibleColumns}
+        onVisibleColumnsChange={setVisibleColumns}
+        stickyHeader
+        empty={items.length === 0 && !loading}
+        emptyState={
+          <EmptyState
+            icon={<HistoryOutlinedIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+            title="События аудита не найдены"
+            description={
+              activeFilterCount > 0
+                ? 'По выбранным параметрам фильтрации события аудита не найдены. Попробуйте сбросить фильтры.'
+                : 'В журнале аудита пока нет зафиксированных событий.'
+            }
+            actionText={activeFilterCount > 0 ? 'Сбросить фильтры' : undefined}
+            onAction={activeFilterCount > 0 ? handleResetFilters : undefined}
+          />
+        }
+        toolbar={
+          <FilterToolbar
+            variant="embedded"
+            activeFilterCount={activeFilterCount}
+            onResetFilters={handleResetFilters}
+          >
+            <TextField
+              select
+              size="small"
+              value={actionFilter}
+              onChange={(e) => {
+                setActionFilter(e.target.value);
+                setPage(1);
+              }}
+              sx={{
+                minWidth: 160,
+                backgroundColor: '#ffffff',
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  fontSize: '0.8125rem',
+                  height: 36,
+                  '& fieldset': { borderColor: '#e2e8f0' },
+                  '&:hover fieldset': { borderColor: '#cbd5e1' },
+                },
+              }}
+            >
+              <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все действия</MenuItem>
+              {Object.entries(AUDIT_ACTION_MAP).map(([key, info]) => (
+                <MenuItem key={key} value={key} sx={{ fontSize: '0.8125rem' }}>
+                  {info.label}
+                </MenuItem>
+              ))}
+            </TextField>
 
-                return (
-                  <TableRow key={log.id} hover>
-                    <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace' }}>
+            <TextField
+              select
+              size="small"
+              value={equipmentFilter}
+              onChange={(e) => {
+                setEquipmentFilter(e.target.value);
+                setPage(1);
+              }}
+              sx={{
+                minWidth: 200,
+                backgroundColor: '#ffffff',
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  fontSize: '0.8125rem',
+                  height: 36,
+                  '& fieldset': { borderColor: '#e2e8f0' },
+                  '&:hover fieldset': { borderColor: '#cbd5e1' },
+                },
+              }}
+            >
+              <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все оборудование</MenuItem>
+              {equipmentList.map((eq) => (
+                <MenuItem key={eq.id} value={eq.id} sx={{ fontSize: '0.8125rem' }}>
+                  {eq.inventoryNumber ? `[${eq.inventoryNumber}] ` : ''}{eq.name}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <Box sx={{ width: 150 }}>
+              <DatePickerField
+                size="small"
+                label="С даты"
+                value={startDate}
+                onChange={(val) => {
+                  setStartDate(val || '');
+                  setPage(1);
+                }}
+              />
+            </Box>
+
+            <Box sx={{ width: 150 }}>
+              <DatePickerField
+                size="small"
+                label="По дату"
+                value={endDate}
+                onChange={(val) => {
+                  setEndDate(val || '');
+                  setPage(1);
+                }}
+              />
+            </Box>
+          </FilterToolbar>
+        }
+      >
+        <Table size="small">
+          <TableHead>
+            <TableRow sx={{ backgroundColor: '#ffffff' }}>
+              {visibleColumns.includes('createdAt') && (
+                <TableCell sx={{ fontWeight: 700, width: 150, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  ДАТА И ВРЕМЯ
+                </TableCell>
+              )}
+              {visibleColumns.includes('user') && (
+                <TableCell sx={{ fontWeight: 700, width: 150, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  ПОЛЬЗОВАТЕЛЬ
+                </TableCell>
+              )}
+              {visibleColumns.includes('action') && (
+                <TableCell sx={{ fontWeight: 700, width: 120, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  ДЕЙСТВИЕ
+                </TableCell>
+              )}
+              {visibleColumns.includes('entityType') && (
+                <TableCell sx={{ fontWeight: 700, width: 160, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  СУЩНОСТЬ
+                </TableCell>
+              )}
+              {visibleColumns.includes('equipment') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  ОБОРУДОВАНИЕ
+                </TableCell>
+              )}
+              {visibleColumns.includes('changes') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  ДЕТАЛИЗАЦИЯ ИЗМЕНЕНИЙ
+                </TableCell>
+              )}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {items.map((log) => {
+              const eq = log.equipment;
+              const hasDiff = log.changes && Object.keys(log.changes).length > 0;
+
+              return (
+                <TableRow key={log.id} hover>
+                  {visibleColumns.includes('createdAt') && (
+                    <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace', whiteSpace: 'nowrap', color: '#64748b' }}>
                       {formatDateTime(log.createdAt)}
                     </TableCell>
+                  )}
 
-                    <TableCell sx={{ fontSize: '0.8125rem', fontWeight: 600 }}>
-                      {log.user?.displayName || 'Система'}
-                      {log.user?.ldapLogin && (
-                        <Typography variant="caption" color="text.secondary" display="block">
-                          @{log.user.ldapLogin}
+                  {visibleColumns.includes('user') && (
+                    <TableCell>
+                      {log.user ? (
+                        <Box>
+                          <Typography variant="body2" fontWeight={600} fontSize="0.8125rem" sx={{ color: '#0f172a' }}>
+                            {log.user.displayName}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {log.user.ldapLogin}
+                          </Typography>
+                        </Box>
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">
+                          Система
                         </Typography>
                       )}
                     </TableCell>
+                  )}
 
+                  {visibleColumns.includes('action') && (
                     <TableCell>
                       <StatusBadge status={log.action} />
                     </TableCell>
+                  )}
 
-                    <TableCell sx={{ fontSize: '0.8125rem' }}>
-                      <StatusBadge
-                        status={log.entityType}
-                        label={ENTITY_TYPE_LABELS[log.entityType] || log.entityType}
-                        size="small"
-                        variant="outlined"
-                      />
-                    </TableCell>
-
+                  {visibleColumns.includes('entityType') && (
                     <TableCell>
-                      {log.equipment ? (
+                      <StatusBadge status={log.entityType} size="small" variant="outlined" />
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('equipment') && (
+                    <TableCell>
+                      {eq ? (
                         <Box
-                          onClick={() => router.push(`/eps/${log.equipment!.id}`)}
+                          onClick={() => router.push(`/eps/${eq.id}`)}
                           sx={{
                             cursor: 'pointer',
                             display: 'inline-flex',
@@ -494,15 +566,18 @@ function HistoryListContent() {
                             '&:hover': { color: 'primary.main', textDecoration: 'underline' },
                           }}
                         >
-                          <Chip
-                            label={log.equipment.inventoryNumber || 'Б/Н'}
-                            size="small"
-                            variant="outlined"
-                            sx={{ fontWeight: 700, fontFamily: 'monospace', height: 20, borderRadius: '4px' }}
-                          />
-                          <Typography variant="body2" fontWeight={500}>
-                            {log.equipment.name}
+                          <PrecisionManufacturingIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                          <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
+                            {eq.name}
                           </Typography>
+                          {eq.inventoryNumber && (
+                            <Chip
+                              label={eq.inventoryNumber}
+                              size="small"
+                              variant="outlined"
+                              sx={{ fontWeight: 700, fontFamily: 'monospace', height: 20, borderRadius: '4px' }}
+                            />
+                          )}
                         </Box>
                       ) : (
                         <Typography variant="caption" color="text.secondary">
@@ -510,17 +585,19 @@ function HistoryListContent() {
                         </Typography>
                       )}
                     </TableCell>
+                  )}
 
+                  {visibleColumns.includes('changes') && (
                     <TableCell>
                       <RenderChangesDiff changes={log.changes} />
                     </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </DataTableWrapper>
-      )}
+                  )}
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </DataTableWrapper>
     </Box>
   );
 }

@@ -98,7 +98,7 @@ export default function TagsManagementPage() {
   };
 
   return (
-    <Box sx={{ maxWidth: 1920, mx: 'auto' }}>
+    <Box sx={{ pb: 4 }}>
       <PageHeader
         title="Теги и классификаторы оборудования"
         subtitle="Группировка оборудования по технологическим признакам и цеховой принадлежности"

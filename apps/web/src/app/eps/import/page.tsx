@@ -52,6 +52,7 @@ import {
   DataTableWrapper,
   StatusBadge,
   FileUploadDropzone,
+  CriticalAlertBanner,
 } from '@/components/ui';
 
 interface MissingFieldItem {
@@ -386,12 +387,19 @@ export default function SmartImportPage() {
       {activeStep === 1 && (
         <Box>
           {missingFields.length > 0 && (
-            <Alert severity="info" sx={{ mb: 3 }}>
-              <AlertTitle sx={{ fontWeight: 700 }}>
-                Обнаружено новых колонок: {missingFields.length}
-              </AlertTitle>
-              В загруженном файле найдены колонки, которых пока нет в справочнике характеристик оборудования. Вы можете добавить их в систему как новые поля или пропустить.
-            </Alert>
+            <Box sx={{ mb: 3 }}>
+              <CriticalAlertBanner
+                alerts={[
+                  {
+                    id: 'missing-fields-alert',
+                    severity: 'INFO',
+                    title: `Обнаружено новых колонок: ${missingFields.length}`,
+                    description:
+                      'В загруженном файле найдены колонки, которых пока нет в справочнике характеристик оборудования. Вы можете добавить их в систему как новые поля или пропустить.',
+                  },
+                ]}
+              />
+            </Box>
           )}
 
           {/* Missing Fields Cards */}
@@ -855,14 +863,19 @@ export default function SmartImportPage() {
             </Grid>
 
             {importResults.errors && importResults.errors.length > 0 && (
-              <Alert severity="warning" sx={{ mb: 4, maxWidth: 900, mx: 'auto', textAlign: 'left' }}>
-                <AlertTitle sx={{ fontWeight: 700 }}>Предупреждения при импорте ({importResults.errors.length}):</AlertTitle>
-                {importResults.errors.slice(0, 5).map((e, idx) => (
-                  <Typography key={idx} variant="caption" display="block">
-                    Строка {e.row}: {e.error}
-                  </Typography>
-                ))}
-              </Alert>
+              <Box sx={{ mb: 4, maxWidth: 900, mx: 'auto' }}>
+                <CriticalAlertBanner
+                  alerts={[
+                    {
+                      id: 'import-errors-alert',
+                      severity: 'WARNING',
+                      title: `Предупреждения при импорте (${importResults.errors.length}):`,
+                      description: importResults.errors.slice(0, 5).map((e) => `Строка ${e.row}: ${e.error}`).join('; '),
+                      count: importResults.errors.length,
+                    },
+                  ]}
+                />
+              </Box>
             )}
 
             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>

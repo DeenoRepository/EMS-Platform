@@ -1072,7 +1072,8 @@ export default function EquipmentPassportPage() {
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Chip
+                        <StatusBadge
+                          status={doc.docType}
                           label={DOCUMENT_TYPE_MAP[doc.docType] || doc.docType}
                           size="small"
                           variant="outlined"

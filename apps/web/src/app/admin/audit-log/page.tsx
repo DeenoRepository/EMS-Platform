@@ -35,6 +35,7 @@ import {
   EmptyState,
   StatusBadge,
   FormDialog,
+  type TableColumnOption,
 } from '@/components/ui';
 
 interface AuditItem {
@@ -113,32 +114,47 @@ export default function AdminAuditLogPage() {
 
   const activeFilterCount = (actionFilter ? 1 : 0) + (entityTypeFilter ? 1 : 0) + (search ? 1 : 0);
 
+  const AUDIT_COLUMNS: TableColumnOption[] = [
+    { id: 'createdAt', label: 'Дата и время', defaultVisible: true, required: true },
+    { id: 'user', label: 'Пользователь', defaultVisible: true },
+    { id: 'action', label: 'Действие', defaultVisible: true },
+    { id: 'entityType', label: 'Тип объекта', defaultVisible: true },
+    { id: 'entityId', label: 'ID объекта', defaultVisible: true },
+    { id: 'ipAddress', label: 'IP адрес', defaultVisible: true },
+    { id: 'changes', label: 'Изменения', defaultVisible: true, required: true },
+  ];
+
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(() =>
+    AUDIT_COLUMNS.map((c) => c.id)
+  );
+
   return (
-    <Box sx={{ maxWidth: 1920, mx: 'auto', pb: 4 }}>
+    <Box sx={{ pb: 4 }}>
       <PageHeader
-        title="Журнал аудита действий"
-        subtitle="Неизменяемый реестр всех операций создания, изменения и удаления данных"
+        title="Журнал аудита системы"
+        subtitle="Неизменяемый журнал всех пользовательских действий и системных событий платформы"
         breadcrumbs={[
           { label: 'Главная', href: '/' },
-          { label: 'Администрирование', href: '/admin/settings' },
-          { label: 'Журнал аудита' },
+          { label: 'Администрирование', href: '/admin' },
+          { label: 'Аудит' },
         ]}
       />
 
-      {/* KPI Metric Cards */}
-      <Grid container spacing={1.75} sx={{ mb: 2.5 }}>
+      {/* KPI Cards */}
+      <Grid container spacing={1.75} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Всего событий"
             value={total}
-            subtitle="Зафиксировано в аудите"
+            subtitle="Зафиксировано в БД"
             icon={<HistoryIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(2, 132, 199, 0.08)"
             iconColor="#0284c7"
             accentColor="#0284c7"
-            active={actionFilter === ''}
+            active={actionFilter === '' && entityTypeFilter === ''}
             onClick={() => {
               setActionFilter('');
+              setEntityTypeFilter('');
               setPage(1);
             }}
             loading={loading && total === 0}
@@ -148,7 +164,7 @@ export default function AdminAuditLogPage() {
           <StatCard
             title="Создание (CREATE)"
             value={logs.filter((l) => l.action === 'CREATE').length}
-            subtitle="Новые объекты"
+            subtitle="Новые записи"
             icon={<AddCircleOutlineIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(22, 163, 74, 0.08)"
             iconColor="#16a34a"
@@ -197,108 +213,161 @@ export default function AdminAuditLogPage() {
         </Grid>
       </Grid>
 
-      {/* Filter Toolbar */}
-      <FilterToolbar
-        activeFilterCount={activeFilterCount}
-        onResetFilters={handleResetFilters}
-      >
-        <Box sx={{ minWidth: 280 }}>
-          <SearchInput
-            placeholder="Поиск по ID или пользователю..."
-            value={search}
-            onSearch={(val: string) => {
-              setSearch(val);
-              setPage(1);
-            }}
-          />
-        </Box>
-
-        <TextField
-          select
-          size="small"
-          label="Действие"
-          value={actionFilter}
-          onChange={(e) => {
-            setActionFilter(e.target.value);
-            setPage(1);
-          }}
-          sx={{ minWidth: 160 }}
-        >
-          <MenuItem value="">Все действия</MenuItem>
-          <MenuItem value="CREATE">Создание</MenuItem>
-          <MenuItem value="UPDATE">Изменение</MenuItem>
-          <MenuItem value="DELETE">Удаление</MenuItem>
-          <MenuItem value="LOGIN">Вход</MenuItem>
-          <MenuItem value="LOGOUT">Выход</MenuItem>
-        </TextField>
-
-        <TextField
-          select
-          size="small"
-          label="Объект"
-          value={entityTypeFilter}
-          onChange={(e) => {
-            setEntityTypeFilter(e.target.value);
-            setPage(1);
-          }}
-          sx={{ minWidth: 180 }}
-        >
-          <MenuItem value="">Все объекты</MenuItem>
-          <MenuItem value="Equipment">Оборудование (Equipment)</MenuItem>
-          <MenuItem value="Document">Документ (Document)</MenuItem>
-          <MenuItem value="StockOperation">Складская операция</MenuItem>
-          <MenuItem value="Role">Роль (Role)</MenuItem>
-          <MenuItem value="User">Пользователь (User)</MenuItem>
-          <MenuItem value="SystemSetting">Настройки</MenuItem>
-        </TextField>
-      </FilterToolbar>
-
       {/* Audit Log Table */}
-      {logs.length === 0 && !loading ? (
-        <EmptyState
-          paper
-          icon={<HistoryIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
-          title="Записей аудита не найдено"
-          description={
-            activeFilterCount > 0
-              ? 'По указанным критериям поиска события не найдены. Попробуйте сбросить фильтры.'
-              : 'В системе пока не зафиксировано событий аудита.'
-          }
-          actionText={activeFilterCount > 0 ? 'Сбросить фильтры' : undefined}
-          onAction={activeFilterCount > 0 ? handleResetFilters : undefined}
-        />
-      ) : (
-        <DataTableWrapper
-          loading={loading}
-          page={page - 1}
-          pageSize={20}
-          total={total}
-          onPageChange={(_, newPage) => setPage(newPage + 1)}
-          stickyHeader
-        >
-          <Table size="small" aria-label="Журнал аудита действий">
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 700, width: 150 }}>Дата и время</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Пользователь</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 120 }}>Действие</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 150 }}>Тип объекта</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>ID объекта</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 130 }}>IP адрес</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, width: 100 }}>Изменения</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {logs.map((log) => {
-                return (
-                  <TableRow key={log.id} hover>
-                    <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+      <DataTableWrapper
+        loading={loading}
+        page={page - 1}
+        pageSize={20}
+        total={total}
+        onPageChange={(_, newPage) => setPage(newPage + 1)}
+        columns={AUDIT_COLUMNS}
+        visibleColumns={visibleColumns}
+        onVisibleColumnsChange={setVisibleColumns}
+        stickyHeader
+        empty={logs.length === 0 && !loading}
+        emptyState={
+          <EmptyState
+            icon={<HistoryIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+            title="Записей аудита не найдено"
+            description={
+              activeFilterCount > 0
+                ? 'По указанным критериям поиска события не найдены. Попробуйте сбросить фильтры.'
+                : 'В системе пока не зафиксировано событий аудита.'
+            }
+            actionText={activeFilterCount > 0 ? 'Сбросить фильтры' : undefined}
+            onAction={activeFilterCount > 0 ? handleResetFilters : undefined}
+          />
+        }
+        toolbar={
+          <FilterToolbar
+            variant="embedded"
+            activeFilterCount={activeFilterCount}
+            onResetFilters={handleResetFilters}
+          >
+            <Box sx={{ minWidth: { xs: '100%', sm: 260 } }}>
+              <SearchInput
+                placeholder="Поиск по ID или пользователю..."
+                value={search}
+                onSearch={(val: string) => {
+                  setSearch(val);
+                  setPage(1);
+                }}
+              />
+            </Box>
+
+            <TextField
+              select
+              size="small"
+              value={actionFilter}
+              onChange={(e) => {
+                setActionFilter(e.target.value);
+                setPage(1);
+              }}
+              sx={{
+                minWidth: 150,
+                backgroundColor: '#ffffff',
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  fontSize: '0.8125rem',
+                  height: 36,
+                  '& fieldset': { borderColor: '#e2e8f0' },
+                  '&:hover fieldset': { borderColor: '#cbd5e1' },
+                },
+              }}
+            >
+              <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все действия</MenuItem>
+              <MenuItem value="CREATE" sx={{ fontSize: '0.8125rem' }}>Создание</MenuItem>
+              <MenuItem value="UPDATE" sx={{ fontSize: '0.8125rem' }}>Изменение</MenuItem>
+              <MenuItem value="DELETE" sx={{ fontSize: '0.8125rem' }}>Удаление</MenuItem>
+              <MenuItem value="LOGIN" sx={{ fontSize: '0.8125rem' }}>Вход</MenuItem>
+              <MenuItem value="LOGOUT" sx={{ fontSize: '0.8125rem' }}>Выход</MenuItem>
+            </TextField>
+
+            <TextField
+              select
+              size="small"
+              value={entityTypeFilter}
+              onChange={(e) => {
+                setEntityTypeFilter(e.target.value);
+                setPage(1);
+              }}
+              sx={{
+                minWidth: 160,
+                backgroundColor: '#ffffff',
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  fontSize: '0.8125rem',
+                  height: 36,
+                  '& fieldset': { borderColor: '#e2e8f0' },
+                  '&:hover fieldset': { borderColor: '#cbd5e1' },
+                },
+              }}
+            >
+              <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все объекты</MenuItem>
+              <MenuItem value="Equipment" sx={{ fontSize: '0.8125rem' }}>Оборудование (Equipment)</MenuItem>
+              <MenuItem value="Document" sx={{ fontSize: '0.8125rem' }}>Документ (Document)</MenuItem>
+              <MenuItem value="StockOperation" sx={{ fontSize: '0.8125rem' }}>Складская операция</MenuItem>
+              <MenuItem value="Role" sx={{ fontSize: '0.8125rem' }}>Роль (Role)</MenuItem>
+              <MenuItem value="User" sx={{ fontSize: '0.8125rem' }}>Пользователь (User)</MenuItem>
+              <MenuItem value="SystemSetting" sx={{ fontSize: '0.8125rem' }}>Настройки</MenuItem>
+            </TextField>
+          </FilterToolbar>
+        }
+      >
+        <Table size="small" aria-label="Журнал аудита действий">
+          <TableHead>
+            <TableRow sx={{ backgroundColor: '#ffffff' }}>
+              {visibleColumns.includes('createdAt') && (
+                <TableCell sx={{ fontWeight: 700, width: 150, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  ДАТА И ВРЕМЯ
+                </TableCell>
+              )}
+              {visibleColumns.includes('user') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  ПОЛЬЗОВАТЕЛЬ
+                </TableCell>
+              )}
+              {visibleColumns.includes('action') && (
+                <TableCell sx={{ fontWeight: 700, width: 120, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  ДЕЙСТВИЕ
+                </TableCell>
+              )}
+              {visibleColumns.includes('entityType') && (
+                <TableCell sx={{ fontWeight: 700, width: 150, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  ТИП ОБЪЕКТА
+                </TableCell>
+              )}
+              {visibleColumns.includes('entityId') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  ID ОБЪЕКТА
+                </TableCell>
+              )}
+              {visibleColumns.includes('ipAddress') && (
+                <TableCell sx={{ fontWeight: 700, width: 130, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  IP АДРЕС
+                </TableCell>
+              )}
+              {visibleColumns.includes('changes') && (
+                <TableCell align="right" sx={{ fontWeight: 700, width: 100, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  ИЗМЕНЕНИЯ
+                </TableCell>
+              )}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {logs.map((log) => {
+              return (
+                <TableRow key={log.id} hover>
+                  {visibleColumns.includes('createdAt') && (
+                    <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace', whiteSpace: 'nowrap', color: '#64748b' }}>
                       {formatDateTime(log.createdAt)}
                     </TableCell>
+                  )}
+                  {visibleColumns.includes('user') && (
                     <TableCell>
                       {log.user ? (
                         <Box>
-                          <Typography variant="body2" fontWeight={600} fontSize="0.8125rem">
+                          <Typography variant="body2" fontWeight={600} fontSize="0.8125rem" sx={{ color: '#0f172a' }}>
                             {log.user.displayName}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
@@ -311,24 +380,43 @@ export default function AdminAuditLogPage() {
                         </Typography>
                       )}
                     </TableCell>
+                  )}
+                  {visibleColumns.includes('action') && (
                     <TableCell>
                       <StatusBadge status={log.action} />
                     </TableCell>
+                  )}
+                  {visibleColumns.includes('entityType') && (
                     <TableCell>
                       <StatusBadge status={log.entityType} size="small" variant="outlined" />
                     </TableCell>
-                    <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                  )}
+                  {visibleColumns.includes('entityId') && (
+                    <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#475569' }}>
                       {log.entityId}
                     </TableCell>
+                  )}
+                  {visibleColumns.includes('ipAddress') && (
                     <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary', fontFamily: 'monospace' }}>
                       {log.ipAddress || '—'}
                     </TableCell>
+                  )}
+                  {visibleColumns.includes('changes') && (
                     <TableCell align="right">
                       {log.changes ? (
                         <Button
                           size="small"
                           variant="outlined"
                           onClick={() => setSelectedChanges(log.changes)}
+                          sx={{
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            borderRadius: '6px',
+                            py: 0.3,
+                            px: 1.25,
+                            borderColor: '#e2e8f0',
+                            color: '#334155',
+                          }}
                         >
                           Детали
                         </Button>
@@ -336,13 +424,13 @@ export default function AdminAuditLogPage() {
                         '—'
                       )}
                     </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </DataTableWrapper>
-      )}
+                  )}
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </DataTableWrapper>
 
       {/* Changes JSON Viewer Modal */}
       <FormDialog
