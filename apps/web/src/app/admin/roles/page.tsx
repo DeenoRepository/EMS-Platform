@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   Box,
   Card,
+  Grid,
   Table,
   TableBody,
   TableCell,
@@ -31,8 +32,17 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import SecurityIcon from '@mui/icons-material/Security';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import PageHeader from '@/components/layout/PageHeader';
 import { useSnackbar } from 'notistack';
+import {
+  StatCard,
+  DataTableWrapper,
+  EmptyState,
+  ConfirmDialog,
+} from '@/components/ui';
 
 interface PermissionItem {
   id: string;
@@ -190,20 +200,26 @@ export default function AdminRolesPage() {
     }
   };
 
-  const handleDeleteRole = async (role: RoleItem) => {
-    if (!confirm(`Вы действительно хотите удалить роль «${role.displayName}»?`)) return;
+  const [roleToDelete, setRoleToDelete] = useState<RoleItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
+  const handleConfirmDeleteRole = async () => {
+    if (!roleToDelete) return;
+    setIsDeleting(true);
     try {
-      const res = await fetch(`/api/admin/roles/${role.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/roles/${roleToDelete.id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
-        enqueueSnackbar('Роль удалена', { variant: 'info' });
+        enqueueSnackbar('Роль успешно удалена', { variant: 'info' });
+        setRoleToDelete(null);
         fetchData();
       } else {
         enqueueSnackbar(data.error || 'Ошибка удаления роли', { variant: 'error' });
       }
     } catch {
       enqueueSnackbar('Ошибка сети', { variant: 'error' });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -214,8 +230,12 @@ export default function AdminRolesPage() {
     return acc;
   }, {} as Record<string, PermissionItem[]>);
 
+  const totalRoles = roles.length;
+  const systemRoles = roles.filter((r) => r.isSystem).length;
+  const customRoles = roles.filter((r) => !r.isSystem).length;
+
   return (
-    <Box>
+    <Box sx={{ maxWidth: 1920, mx: 'auto', pb: 4 }}>
       <PageHeader
         title="Роли и гранулярные права"
         subtitle="Настройка матриц прав доступа и создание кастомных ролей"
@@ -235,80 +255,145 @@ export default function AdminRolesPage() {
         }
       />
 
-      <Card>
-        {loading ? (
-          <Box sx={{ p: 4, textAlign: 'center' }}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <TableContainer>
-            <Table>
-              <TableHead sx={{ backgroundColor: 'rgba(0,0,0,0.02)' }}>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 600 }}>Название роли</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Системный код</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Описание</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Пользователей</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Количество прав</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 600 }}>Действия</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {roles.map((r) => (
-                  <TableRow key={r.id} hover>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="subtitle2" fontWeight={600}>
-                          {r.displayName}
-                        </Typography>
-                        {r.isSystem && (
-                          <Chip label="Системная" size="small" variant="outlined" color="primary" />
-                        )}
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Chip label={r.name} size="small" variant="outlined" />
-                    </TableCell>
-                    <TableCell>{r.description || '—'}</TableCell>
-                    <TableCell>
-                      <Typography variant="body2" fontWeight={500}>
-                        {r.userCount}
+      {/* KPI Metric Cards */}
+      <Grid container spacing={1.75} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={4}>
+          <StatCard
+            title="Всего ролей"
+            value={totalRoles}
+            subtitle="Настроенных в системе"
+            icon={<SecurityIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(2, 132, 199, 0.08)"
+            iconColor="#0284c7"
+            accentColor="#0284c7"
+            loading={loading}
+          />
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <StatCard
+            title="Системные роли"
+            value={systemRoles}
+            subtitle="Встроенные базовые роли EMS"
+            icon={<AdminPanelSettingsIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(124, 58, 237, 0.08)"
+            iconColor="#7c3aed"
+            accentColor="#7c3aed"
+            loading={loading}
+          />
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <StatCard
+            title="Кастомные роли"
+            value={customRoles}
+            subtitle="Созданные администраторами"
+            icon={<VpnKeyIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(22, 163, 74, 0.08)"
+            iconColor="#16a34a"
+            accentColor="#16a34a"
+            loading={loading}
+          />
+        </Grid>
+      </Grid>
+
+      {/* Roles Registry Table */}
+      {roles.length === 0 && !loading ? (
+        <EmptyState
+          paper
+          icon={<SecurityIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+          title="Роли не найдены"
+          description="В системе пока нет зарегистрированных ролей доступа."
+          actionText="Создать роль"
+          onAction={handleOpenCreate}
+        />
+      ) : (
+        <DataTableWrapper
+          loading={loading}
+          total={roles.length}
+          stickyHeader
+        >
+          <Table size="small" aria-label="Таблица ролей и прав доступа">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700 }}>Название роли</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 160 }}>Системный код</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Описание</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 140 }}>Пользователей</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 160 }}>Количество прав</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, width: 120 }}>Действия</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {roles.map((r) => (
+                <TableRow key={r.id} hover>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
+                        {r.displayName}
                       </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={`${r.permissions.length} из ${permissions.length}`}
-                        size="small"
-                        color={r.name === 'admin' ? 'primary' : 'default'}
-                      />
-                    </TableCell>
-                    <TableCell align="right">
+                      {r.isSystem && (
+                        <Chip label="Системная" size="small" variant="outlined" color="primary" sx={{ borderRadius: '4px', height: 20 }} />
+                      )}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Chip label={r.name} size="small" variant="outlined" sx={{ borderRadius: '4px', height: 22, fontFamily: 'monospace' }} />
+                  </TableCell>
+                  <TableCell sx={{ fontSize: '0.8125rem' }}>{r.description || '—'}</TableCell>
+                  <TableCell>
+                    <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
+                      {r.userCount}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={`${r.permissions.length} из ${permissions.length}`}
+                      size="small"
+                      color={r.name === 'admin' ? 'primary' : 'default'}
+                      sx={{ borderRadius: '4px', height: 22 }}
+                    />
+                  </TableCell>
+                  <TableCell align="right">
+                    <IconButton
+                      size="small"
+                      color="primary"
+                      onClick={() => handleOpenEdit(r)}
+                      title="Редактировать права"
+                    >
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                    {!r.isSystem && (
                       <IconButton
                         size="small"
-                        color="primary"
-                        onClick={() => handleOpenEdit(r)}
-                        title="Редактировать права"
+                        color="error"
+                        onClick={() => setRoleToDelete(r)}
+                        title="Удалить роль"
                       >
-                        <EditIcon fontSize="small" />
+                        <DeleteOutlineIcon fontSize="small" />
                       </IconButton>
-                      {!r.isSystem && (
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleDeleteRole(r)}
-                          title="Удалить роль"
-                        >
-                          <DeleteOutlineIcon fontSize="small" />
-                        </IconButton>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </Card>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </DataTableWrapper>
+      )}
+
+      {/* Диалог подтверждения удаления роли */}
+      <ConfirmDialog
+        open={Boolean(roleToDelete)}
+        title="Удаление роли"
+        message={
+          <Typography variant="body2">
+            Вы действительно хотите безвозвратно удалить роль <b>«{roleToDelete?.displayName}»</b>? Пользователи, привязанные к этой роли, потеряют соответствующие привилегии.
+          </Typography>
+        }
+        confirmText="Удалить роль"
+        variant="danger"
+        loading={isDeleting}
+        onConfirm={handleConfirmDeleteRole}
+        onClose={() => setRoleToDelete(null)}
+      />
 
       {/* Role Form & Permission Matrix Dialog */}
       <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="md" fullWidth>

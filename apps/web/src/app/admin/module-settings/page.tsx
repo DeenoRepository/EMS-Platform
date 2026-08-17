@@ -50,6 +50,12 @@ import AssessmentIcon from '@mui/icons-material/Assessment';
 import BuildCircleIcon from '@mui/icons-material/BuildCircle';
 import PageHeader from '@/components/layout/PageHeader';
 import { useSnackbar } from 'notistack';
+import {
+  StatCard,
+  DataTableWrapper,
+  EmptyState,
+  ConfirmDialog,
+} from '@/components/ui';
 
 interface CustomFieldItem {
   id: string;
@@ -399,45 +405,48 @@ function ModuleSettingsContent() {
   const renderFieldTable = (fieldList: CustomFieldItem[]) => {
     if (fieldList.length === 0) {
       return (
-        <Box sx={{ p: 2.5, textAlign: 'center', color: 'text.secondary' }}>
-          <Typography variant="body2">В этом разделе пока нет добавленных полей</Typography>
-        </Box>
+        <EmptyState
+          title="В этом разделе пока нет добавленных полей"
+          description="Вы можете добавить кастомное поле с заданным типом данных и единицей измерения."
+          actionText="Добавить поле"
+          onAction={() => handleOpenCreateField()}
+        />
       );
     }
 
     return (
-      <TableContainer>
-        <Table size="small">
-          <TableHead sx={{ backgroundColor: '#f8fafc' }}>
+      <DataTableWrapper total={fieldList.length} stickyHeader>
+        <Table size="small" aria-label="Таблица пользовательских полей">
+          <TableHead>
             <TableRow>
               <TableCell sx={{ fontWeight: 700 }}>Название поля</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Системный ключ</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Тип данных</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Ед. изм.</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Обязательное</TableCell>
+              <TableCell sx={{ fontWeight: 700, width: 140 }}>Системный ключ</TableCell>
+              <TableCell sx={{ fontWeight: 700, width: 140 }}>Тип данных</TableCell>
+              <TableCell sx={{ fontWeight: 700, width: 90 }}>Ед. изм.</TableCell>
+              <TableCell sx={{ fontWeight: 700, width: 110 }}>Обязательное</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Значение / Опции</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 700 }}>Действия</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 700, width: 80 }}>Действия</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {fieldList.map((f) => (
               <TableRow key={f.id} hover>
-                <TableCell sx={{ fontWeight: 600 }}>{f.name}</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>{f.name}</TableCell>
                 <TableCell>
-                  <Chip label={f.key} size="small" variant="outlined" sx={{ fontFamily: 'monospace' }} />
+                  <Chip label={f.key} size="small" variant="outlined" sx={{ fontFamily: 'monospace', borderRadius: '4px', height: 20 }} />
                 </TableCell>
                 <TableCell>
-                  <Chip label={FIELD_TYPE_LABELS[f.fieldType] || f.fieldType} size="small" color="primary" />
+                  <Chip label={FIELD_TYPE_LABELS[f.fieldType] || f.fieldType} size="small" color="primary" sx={{ borderRadius: '4px', height: 20 }} />
                 </TableCell>
                 <TableCell>
-                  {f.unit ? <Chip label={f.unit} size="small" variant="outlined" sx={{ fontWeight: 700 }} /> : '—'}
+                  {f.unit ? <Chip label={f.unit} size="small" variant="outlined" sx={{ fontWeight: 700, borderRadius: '4px', height: 20 }} /> : '—'}
                 </TableCell>
-                <TableCell>{f.isRequired ? 'Да' : 'Нет'}</TableCell>
+                <TableCell sx={{ fontSize: '0.8125rem' }}>{f.isRequired ? 'Да' : 'Нет'}</TableCell>
                 <TableCell>
                   {f.fieldType === 'SELECT' && f.options ? (
                     <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                       {f.options.map((opt, i) => (
-                        <Chip key={i} label={opt} size="small" variant="outlined" />
+                        <Chip key={i} label={opt} size="small" variant="outlined" sx={{ borderRadius: '4px', height: 20 }} />
                       ))}
                     </Box>
                   ) : (
@@ -453,7 +462,7 @@ function ModuleSettingsContent() {
             ))}
           </TableBody>
         </Table>
-      </TableContainer>
+      </DataTableWrapper>
     );
   };
 

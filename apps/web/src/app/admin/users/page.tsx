@@ -4,6 +4,9 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   Box,
   Card,
+  Grid,
+  TextField,
+  MenuItem,
   Table,
   TableBody,
   TableCell,
@@ -25,9 +28,19 @@ import {
   CircularProgress,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import PageHeader from '@/components/layout/PageHeader';
 import { formatDateTime } from '@ems/shared';
 import { useSnackbar } from 'notistack';
+import {
+  StatCard,
+  SearchInput,
+  FilterToolbar,
+  DataTableWrapper,
+  EmptyState,
+} from '@/components/ui';
 
 interface UserItem {
   id: string;
@@ -149,8 +162,27 @@ export default function AdminUsersPage() {
     }
   };
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+
+  const totalUsers = users.length;
+  const activeUsers = users.filter((u) => u.isActive).length;
+  const adminUsers = users.filter((u) => u.roles.some((r) => r.name === 'admin')).length;
+
+  const filteredUsers = users.filter((u) => {
+    if (roleFilter && !u.roles.some((r) => r.id === roleFilter)) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchName = u.displayName.toLowerCase().includes(q);
+      const matchLogin = u.ldapLogin.toLowerCase().includes(q);
+      const matchEmail = u.email ? u.email.toLowerCase().includes(q) : false;
+      if (!matchName && !matchLogin && !matchEmail) return false;
+    }
+    return true;
+  });
+
   return (
-    <Box>
+    <Box sx={{ maxWidth: 1920, mx: 'auto', pb: 4 }}>
       <PageHeader
         title="Управление пользователями"
         subtitle="Синхронизированные учетные записи LDAP и назначение ролей"
@@ -161,81 +193,176 @@ export default function AdminUsersPage() {
         ]}
       />
 
-      <Card>
-        {loading ? (
-          <Box sx={{ p: 4, textAlign: 'center' }}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <TableContainer>
-            <Table>
-              <TableHead sx={{ backgroundColor: 'rgba(0,0,0,0.02)' }}>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 600 }}>Пользователь</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>LDAP Логин</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Назначенные роли</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Последний вход</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Активен</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 600 }}>Действия</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {users.map((u) => (
-                  <TableRow key={u.id} hover>
-                    <TableCell>
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        {u.displayName}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip label={u.ldapLogin} size="small" variant="outlined" />
-                    </TableCell>
-                    <TableCell>{u.email || '—'}</TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                        {u.roles.length === 0 ? (
-                          <Typography variant="caption" color="text.secondary">
-                            Нет ролей
-                          </Typography>
-                        ) : (
-                          u.roles.map((r) => (
-                            <Chip
-                              key={r.id}
-                              label={r.displayName}
-                              size="small"
-                              color={r.name === 'admin' ? 'primary' : 'default'}
-                            />
-                          ))
-                        )}
-                      </Box>
-                    </TableCell>
-                    <TableCell>{formatDateTime(u.lastLoginAt)}</TableCell>
-                    <TableCell>
-                      <Switch
-                        checked={u.isActive}
-                        onChange={() => handleToggleActive(u)}
-                        color="success"
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      <IconButton
-                        size="small"
-                        color="primary"
-                        onClick={() => handleOpenEdit(u)}
-                        title="Настроить роли"
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+      {/* KPI Metric Cards */}
+      <Grid container spacing={1.75} sx={{ mb: 2.5 }}>
+        <Grid item xs={12} sm={4}>
+          <StatCard
+            title="Всего пользователей"
+            value={totalUsers}
+            subtitle="Учетных записей LDAP"
+            icon={<PersonOutlineIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(2, 132, 199, 0.08)"
+            iconColor="#0284c7"
+            accentColor="#0284c7"
+            loading={loading}
+          />
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <StatCard
+            title="Активных аккаунтов"
+            value={activeUsers}
+            subtitle="С разрешенным входом"
+            icon={<VerifiedUserIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(22, 163, 74, 0.08)"
+            iconColor="#16a34a"
+            accentColor="#16a34a"
+            loading={loading}
+          />
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <StatCard
+            title="Администраторов"
+            value={adminUsers}
+            subtitle="С полным доступом к системе"
+            icon={<AdminPanelSettingsIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(124, 58, 237, 0.08)"
+            iconColor="#7c3aed"
+            accentColor="#7c3aed"
+            loading={loading}
+          />
+        </Grid>
+      </Grid>
+
+      {/* Filter Toolbar */}
+      <FilterToolbar
+        activeFilterCount={(searchQuery ? 1 : 0) + (roleFilter ? 1 : 0)}
+        onResetFilters={() => {
+          setSearchQuery('');
+          setRoleFilter('');
+        }}
+      >
+        <Box sx={{ minWidth: 280 }}>
+          <SearchInput
+            placeholder="Поиск по ФИО, логину или email..."
+            value={searchQuery}
+            onSearch={setSearchQuery}
+          />
+        </Box>
+
+        {availableRoles.length > 0 && (
+          <TextField
+            select
+            size="small"
+            label="Фильтр по роли"
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            sx={{ minWidth: 200 }}
+          >
+            <MenuItem value="">Все роли</MenuItem>
+            {availableRoles.map((r) => (
+              <MenuItem key={r.id} value={r.id}>
+                {r.displayName}
+              </MenuItem>
+            ))}
+          </TextField>
         )}
-      </Card>
+      </FilterToolbar>
+
+      {/* Users Registry Table */}
+      {filteredUsers.length === 0 && !loading ? (
+        <EmptyState
+          paper
+          icon={<PersonOutlineIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+          title="Пользователи не найдены"
+          description={
+            searchQuery || roleFilter
+              ? 'По указанным критериям поиска пользователи не найдены. Попробуйте сбросить фильтры.'
+              : 'В системе пока нет зарегистрированных учетных записей.'
+          }
+          actionText={searchQuery || roleFilter ? 'Сбросить фильтры' : undefined}
+          onAction={
+            searchQuery || roleFilter
+              ? () => {
+                  setSearchQuery('');
+                  setRoleFilter('');
+                }
+              : undefined
+          }
+        />
+      ) : (
+        <DataTableWrapper
+          loading={loading}
+          total={filteredUsers.length}
+          stickyHeader
+        >
+          <Table size="small" aria-label="Таблица пользователей системы">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700 }}>Пользователь</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 150 }}>LDAP Логин</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Email</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Назначенные роли</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 160 }}>Последний вход</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 100 }}>Активен</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, width: 100 }}>Действия</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredUsers.map((u) => (
+                <TableRow key={u.id} hover>
+                  <TableCell>
+                    <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
+                      {u.displayName}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Chip label={u.ldapLogin} size="small" variant="outlined" sx={{ borderRadius: '4px', height: 22, fontFamily: 'monospace' }} />
+                  </TableCell>
+                  <TableCell sx={{ fontSize: '0.8125rem' }}>{u.email || '—'}</TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                      {u.roles.length === 0 ? (
+                        <Typography variant="caption" color="text.secondary">
+                          Нет ролей
+                        </Typography>
+                      ) : (
+                        u.roles.map((r) => (
+                          <Chip
+                            key={r.id}
+                            label={r.displayName}
+                            size="small"
+                            color={r.name === 'admin' ? 'primary' : 'default'}
+                            sx={{ borderRadius: '4px', height: 22 }}
+                          />
+                        ))
+                      )}
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace' }}>{formatDateTime(u.lastLoginAt)}</TableCell>
+                  <TableCell>
+                    <Switch
+                      checked={u.isActive}
+                      onChange={() => handleToggleActive(u)}
+                      color="success"
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell align="right">
+                    <IconButton
+                      size="small"
+                      color="primary"
+                      onClick={() => handleOpenEdit(u)}
+                      title="Настроить роли"
+                    >
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </DataTableWrapper>
+      )}
 
       {/* Dialog for Editing User Roles */}
       <Dialog open={Boolean(selectedUser)} onClose={handleCloseDialog} maxWidth="xs" fullWidth>

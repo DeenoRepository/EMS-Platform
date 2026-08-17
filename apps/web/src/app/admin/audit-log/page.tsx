@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   Box,
   Card,
+  Grid,
   Table,
   TableBody,
   TableCell,
@@ -24,11 +25,20 @@ import {
   CircularProgress,
   InputAdornment,
 } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import VisibilityIcon from '@mui/icons-material/Visibility';
+import HistoryIcon from '@mui/icons-material/History';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PageHeader from '@/components/layout/PageHeader';
 import { formatDateTime, AUDIT_ACTION_MAP } from '@ems/shared';
 import { useSnackbar } from 'notistack';
+import {
+  StatCard,
+  SearchInput,
+  FilterToolbar,
+  DataTableWrapper,
+  EmptyState,
+} from '@/components/ui';
 
 interface AuditItem {
   id: string;
@@ -97,8 +107,17 @@ export default function AdminAuditLogPage() {
     fetchLogs();
   };
 
+  const handleResetFilters = () => {
+    setActionFilter('');
+    setEntityTypeFilter('');
+    setSearch('');
+    setPage(1);
+  };
+
+  const activeFilterCount = (actionFilter ? 1 : 0) + (entityTypeFilter ? 1 : 0) + (search ? 1 : 0);
+
   return (
-    <Box>
+    <Box sx={{ maxWidth: 1920, mx: 'auto', pb: 4 }}>
       <PageHeader
         title="Журнал аудита действий"
         subtitle="Неизменяемый реестр всех операций создания, изменения и удаления данных"
@@ -109,173 +128,225 @@ export default function AdminAuditLogPage() {
         ]}
       />
 
-      {/* Filters Bar */}
-      <Card sx={{ p: 2, mb: 3 }}>
-        <Box
-          component="form"
-          onSubmit={handleSearchSubmit}
-          sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}
-        >
-          <TextField
-            size="small"
+      {/* KPI Metric Cards */}
+      <Grid container spacing={1.75} sx={{ mb: 2.5 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Всего событий"
+            value={total}
+            subtitle="Зафиксировано в аудите"
+            icon={<HistoryIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(2, 132, 199, 0.08)"
+            iconColor="#0284c7"
+            accentColor="#0284c7"
+            active={actionFilter === ''}
+            onClick={() => {
+              setActionFilter('');
+              setPage(1);
+            }}
+            loading={loading && total === 0}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Создание (CREATE)"
+            value={logs.filter((l) => l.action === 'CREATE').length}
+            subtitle="Новые объекты"
+            icon={<AddCircleOutlineIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(22, 163, 74, 0.08)"
+            iconColor="#16a34a"
+            accentColor="#16a34a"
+            active={actionFilter === 'CREATE'}
+            onClick={() => {
+              setActionFilter(actionFilter === 'CREATE' ? '' : 'CREATE');
+              setPage(1);
+            }}
+            loading={loading && total === 0}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Изменение (UPDATE)"
+            value={logs.filter((l) => l.action === 'UPDATE').length}
+            subtitle="Корректировка данных"
+            icon={<EditOutlinedIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(217, 119, 6, 0.08)"
+            iconColor="#d97706"
+            accentColor="#d97706"
+            active={actionFilter === 'UPDATE'}
+            onClick={() => {
+              setActionFilter(actionFilter === 'UPDATE' ? '' : 'UPDATE');
+              setPage(1);
+            }}
+            loading={loading && total === 0}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Удаление (DELETE)"
+            value={logs.filter((l) => l.action === 'DELETE').length}
+            subtitle="Удаленные записи"
+            icon={<DeleteOutlineIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(220, 38, 38, 0.08)"
+            iconColor="#dc2626"
+            accentColor="#dc2626"
+            active={actionFilter === 'DELETE'}
+            onClick={() => {
+              setActionFilter(actionFilter === 'DELETE' ? '' : 'DELETE');
+              setPage(1);
+            }}
+            loading={loading && total === 0}
+          />
+        </Grid>
+      </Grid>
+
+      {/* Filter Toolbar */}
+      <FilterToolbar
+        activeFilterCount={activeFilterCount}
+        onResetFilters={handleResetFilters}
+      >
+        <Box sx={{ minWidth: 280 }}>
+          <SearchInput
             placeholder="Поиск по ID или пользователю..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" />
-                </InputAdornment>
-              ),
+            onSearch={(val: string) => {
+              setSearch(val);
+              setPage(1);
             }}
-            sx={{ minWidth: 260 }}
           />
-
-          <TextField
-            select
-            size="small"
-            label="Действие"
-            value={actionFilter}
-            onChange={(e) => {
-              setActionFilter(e.target.value);
-              setPage(1);
-            }}
-            sx={{ minWidth: 160 }}
-          >
-            <MenuItem value="">Все действия</MenuItem>
-            <MenuItem value="CREATE">Создание</MenuItem>
-            <MenuItem value="UPDATE">Изменение</MenuItem>
-            <MenuItem value="DELETE">Удаление</MenuItem>
-            <MenuItem value="LOGIN">Вход</MenuItem>
-            <MenuItem value="LOGOUT">Выход</MenuItem>
-          </TextField>
-
-          <TextField
-            select
-            size="small"
-            label="Объект"
-            value={entityTypeFilter}
-            onChange={(e) => {
-              setEntityTypeFilter(e.target.value);
-              setPage(1);
-            }}
-            sx={{ minWidth: 180 }}
-          >
-            <MenuItem value="">Все объекты</MenuItem>
-            <MenuItem value="Equipment">Оборудование (Equipment)</MenuItem>
-            <MenuItem value="Document">Документ (Document)</MenuItem>
-            <MenuItem value="StockOperation">Складская операция</MenuItem>
-            <MenuItem value="Role">Роль (Role)</MenuItem>
-            <MenuItem value="User">Пользователь (User)</MenuItem>
-            <MenuItem value="SystemSetting">Настройки</MenuItem>
-          </TextField>
-
-          <Button type="submit" variant="outlined" size="medium">
-            Применить
-          </Button>
         </Box>
-      </Card>
 
-      {/* Log Table */}
-      <Card>
-        {loading ? (
-          <Box sx={{ p: 4, textAlign: 'center' }}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <>
-            <TableContainer>
-              <Table>
-                <TableHead sx={{ backgroundColor: 'rgba(0,0,0,0.02)' }}>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 600 }}>Дата и время</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Пользователь</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Действие</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Тип объекта</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>ID объекта</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>IP адрес</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 600 }}>Изменения</TableCell>
+        <TextField
+          select
+          size="small"
+          label="Действие"
+          value={actionFilter}
+          onChange={(e) => {
+            setActionFilter(e.target.value);
+            setPage(1);
+          }}
+          sx={{ minWidth: 160 }}
+        >
+          <MenuItem value="">Все действия</MenuItem>
+          <MenuItem value="CREATE">Создание</MenuItem>
+          <MenuItem value="UPDATE">Изменение</MenuItem>
+          <MenuItem value="DELETE">Удаление</MenuItem>
+          <MenuItem value="LOGIN">Вход</MenuItem>
+          <MenuItem value="LOGOUT">Выход</MenuItem>
+        </TextField>
+
+        <TextField
+          select
+          size="small"
+          label="Объект"
+          value={entityTypeFilter}
+          onChange={(e) => {
+            setEntityTypeFilter(e.target.value);
+            setPage(1);
+          }}
+          sx={{ minWidth: 180 }}
+        >
+          <MenuItem value="">Все объекты</MenuItem>
+          <MenuItem value="Equipment">Оборудование (Equipment)</MenuItem>
+          <MenuItem value="Document">Документ (Document)</MenuItem>
+          <MenuItem value="StockOperation">Складская операция</MenuItem>
+          <MenuItem value="Role">Роль (Role)</MenuItem>
+          <MenuItem value="User">Пользователь (User)</MenuItem>
+          <MenuItem value="SystemSetting">Настройки</MenuItem>
+        </TextField>
+      </FilterToolbar>
+
+      {/* Audit Log Table */}
+      {logs.length === 0 && !loading ? (
+        <EmptyState
+          paper
+          icon={<HistoryIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+          title="Записей аудита не найдено"
+          description={
+            activeFilterCount > 0
+              ? 'По указанным критериям поиска события не найдены. Попробуйте сбросить фильтры.'
+              : 'В системе пока не зафиксировано событий аудита.'
+          }
+          actionText={activeFilterCount > 0 ? 'Сбросить фильтры' : undefined}
+          onAction={activeFilterCount > 0 ? handleResetFilters : undefined}
+        />
+      ) : (
+        <DataTableWrapper
+          loading={loading}
+          page={page - 1}
+          pageSize={20}
+          total={total}
+          onPageChange={(_, newPage) => setPage(newPage + 1)}
+          stickyHeader
+        >
+          <Table size="small" aria-label="Журнал аудита действий">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700, width: 150 }}>Дата и время</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Пользователь</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 120 }}>Действие</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 150 }}>Тип объекта</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>ID объекта</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 130 }}>IP адрес</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, width: 100 }}>Изменения</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {logs.map((log) => {
+                const actionInfo = AUDIT_ACTION_MAP[log.action] || { label: log.action, color: 'default' };
+                return (
+                  <TableRow key={log.id} hover>
+                    <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+                      {formatDateTime(log.createdAt)}
+                    </TableCell>
+                    <TableCell>
+                      {log.user ? (
+                        <Box>
+                          <Typography variant="body2" fontWeight={600} fontSize="0.8125rem">
+                            {log.user.displayName}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {log.user.ldapLogin}
+                          </Typography>
+                        </Box>
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">
+                          Системный процесс
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Chip label={actionInfo.label} size="small" color={actionInfo.color as any} sx={{ borderRadius: '4px', height: 22, fontWeight: 700 }} />
+                    </TableCell>
+                    <TableCell>
+                      <Chip label={log.entityType} size="small" variant="outlined" sx={{ borderRadius: '4px', height: 22 }} />
+                    </TableCell>
+                    <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                      {log.entityId}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary', fontFamily: 'monospace' }}>
+                      {log.ipAddress || '—'}
+                    </TableCell>
+                    <TableCell align="right">
+                      {log.changes ? (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => setSelectedChanges(log.changes)}
+                        >
+                          Детали
+                        </Button>
+                      ) : (
+                        '—'
+                      )}
+                    </TableCell>
                   </TableRow>
-                </TableHead>
-                <TableBody>
-                  {logs.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} align="center" sx={{ py: 4, color: 'text.secondary' }}>
-                        Записей аудита не найдено
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    logs.map((log) => {
-                      const actionInfo = AUDIT_ACTION_MAP[log.action] || { label: log.action, color: 'default' };
-                      return (
-                        <TableRow key={log.id} hover>
-                          <TableCell sx={{ fontSize: '0.8125rem' }}>{formatDateTime(log.createdAt)}</TableCell>
-                          <TableCell>
-                            {log.user ? (
-                              <Box>
-                                <Typography variant="body2" fontWeight={600} fontSize="0.8125rem">
-                                  {log.user.displayName}
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  {log.user.ldapLogin}
-                                </Typography>
-                              </Box>
-                            ) : (
-                              <Typography variant="caption" color="text.secondary">
-                                Системный процесс
-                              </Typography>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Chip label={actionInfo.label} size="small" color={actionInfo.color as any} />
-                          </TableCell>
-                          <TableCell>
-                            <Chip label={log.entityType} size="small" variant="outlined" />
-                          </TableCell>
-                          <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
-                            {log.entityId}
-                          </TableCell>
-                          <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
-                            {log.ipAddress || '—'}
-                          </TableCell>
-                          <TableCell align="right">
-                            {log.changes ? (
-                              <IconButton
-                                size="small"
-                                color="primary"
-                                onClick={() => setSelectedChanges(log.changes)}
-                                title="Посмотреть детали изменений"
-                              >
-                                <VisibilityIcon fontSize="small" />
-                              </IconButton>
-                            ) : (
-                              '—'
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-
-            {/* Pagination */}
-            <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" color="text.secondary">
-                Всего записей: {total}
-              </Typography>
-              <Pagination
-                count={totalPages}
-                page={page}
-                onChange={(_, val) => setPage(val)}
-                color="primary"
-                size="small"
-              />
-            </Box>
-          </>
-        )}
-      </Card>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </DataTableWrapper>
+      )}
 
       {/* Changes JSON Viewer Modal */}
       <Dialog open={Boolean(selectedChanges)} onClose={() => setSelectedChanges(null)} maxWidth="sm" fullWidth>
