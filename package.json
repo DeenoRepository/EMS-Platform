@@ -7,6 +7,7 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
+    "test": "tsx --test packages/auth/src/rbac.test.ts packages/auth/src/jwt.test.ts",
     "db:generate": "pnpm --filter @ems/database generate",
     "db:push": "pnpm --filter @ems/database push",
     "db:migrate": "pnpm --filter @ems/database migrate",
@@ -14,6 +15,7 @@
     "db:studio": "pnpm --filter @ems/database studio"
   },
   "devDependencies": {
+    "tsx": "^4.23.12",
     "turbo": "^2.4.4",
     "typescript": "^5.7.3"
   }

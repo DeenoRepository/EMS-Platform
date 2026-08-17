@@ -227,7 +227,7 @@ export default function MroOverviewPage() {
         title="MRO — Техническое обслуживание и ремонт"
         subtitle="Календарные графики планово-предупредительного ремонта (ППР), электронные чек-листы и списание запчастей"
         breadcrumbs={[{ label: 'Главная', href: '/' }, { label: 'ТО и Ремонт' }]}
-        action={
+        actions={
           <Box sx={{ display: 'flex', gap: 1 }}>
             {tab === 0 && (
               <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenScheduleDialog(true)}>

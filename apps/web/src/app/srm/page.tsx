@@ -105,7 +105,7 @@ export default function SrmOverviewPage() {
         title="SRM — Дашборд заявок Jira"
         subtitle="Мониторинг заявок на ремонт оборудования, контроль SLA и аналитика метрик надежности"
         breadcrumbs={[{ label: 'Главная', href: '/' }, { label: 'Дашборд Jira' }]}
-        action={
+        actions={
           <Button
             variant="contained"
             color="primary"

@@ -108,14 +108,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
           });
 
           // Создаем операцию списания в WMS
-          const opNumber = `MRO-ISSUE-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+          const docNumber = `ТО-#${existingSchedule.id.slice(0, 8)}`;
           await tx.stockOperation.create({
             data: {
-              operationNumber: opNumber,
+              warehouseId,
               type: 'ISSUE',
-              sourceWarehouseId: warehouseId,
-              performedById: auth.user.userId,
-              reason: `Списание запчастей по наряду ТО #${existingSchedule.id.slice(0, 8)} (${existingSchedule.title})`,
+              document: docNumber,
+              createdById: auth.user.userId,
+              comment: `Списание запчастей по наряду ТО #${existingSchedule.id.slice(0, 8)} (${existingSchedule.title})`,
               items: {
                 create: {
                   nomenclatureId,
