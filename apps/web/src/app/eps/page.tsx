@@ -38,6 +38,7 @@ import ConstructionOutlinedIcon from '@mui/icons-material/ConstructionOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
+import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import PageHeader from '@/components/layout/PageHeader';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -280,35 +281,36 @@ function EquipmentListContent() {
     <Box sx={{ pb: 6 }}>
       {/* Page Header */}
       <PageHeader
-        title="Реестр оборудования (EPS)"
-        subtitle="Централизованный учет, паспортизация и жизненный цикл производственных активов"
+        title="Оборудование"
+        subtitle="Реестр и управление основными средствами предприятия"
         breadcrumbs={[
           { label: 'Главная', href: '/' },
-          { label: 'Паспортизация EPS', href: '/eps' },
-          { label: 'Реестр оборудования' },
+          { label: 'Портфолио (EPS)', href: '/eps' },
+          { label: 'Оборудование' },
         ]}
         actions={
-          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
             <Button
               variant="outlined"
               size="small"
-              startIcon={<AssessmentOutlinedIcon />}
-              onClick={() => router.push('/eps/reports')}
-              sx={{ borderRadius: '8px' }}
+              startIcon={<FileDownloadOutlinedIcon />}
+              onClick={handleBulkExport}
+              sx={{
+                borderRadius: '8px',
+                borderColor: '#e2e8f0',
+                color: '#334155',
+                px: 2,
+                py: 0.75,
+                fontWeight: 600,
+                backgroundColor: '#ffffff',
+                '&:hover': {
+                  borderColor: '#cbd5e1',
+                  backgroundColor: '#f8fafc',
+                },
+              }}
             >
-              Отчеты
+              Экспорт
             </Button>
-            {canImport && (
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<FileUploadOutlinedIcon />}
-                onClick={() => router.push('/eps/import')}
-                sx={{ borderRadius: '8px' }}
-              >
-                Импорт Excel / CSV
-              </Button>
-            )}
             {canCreate && (
               <Button
                 variant="contained"
@@ -318,10 +320,15 @@ function EquipmentListContent() {
                 sx={{
                   borderRadius: '8px',
                   fontWeight: 600,
-                  boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)',
+                  px: 2,
+                  py: 0.75,
+                  backgroundColor: '#0284c7',
+                  '&:hover': {
+                    backgroundColor: '#0369a1',
+                  },
                 }}
               >
-                Новое оборудование
+                Добавить оборудование
               </Button>
             )}
           </Box>
@@ -335,10 +342,9 @@ function EquipmentListContent() {
             {
               id: 'under-repair-alert',
               severity: 'WARNING',
-              title: `Внимание: ${statusCounts.underRepair} ед. оборудования находятся в статусе «В ремонте»`,
-              description:
-                'Требуется оперативный контроль проведения восстановительных работ и наличия необходимых запасных частей на складе.',
-              actionLabel: 'Показать требующие ремонта',
+              title: 'Оборудование требует завершения ремонта.',
+              description: `Есть ${statusCounts.underRepair} запись с просроченным сроком технического обслуживания.`,
+              actionLabel: 'Показать список',
               onAction: () => handleKpiFilter('UNDER_REPAIR'),
               count: statusCounts.underRepair,
             },
@@ -350,12 +356,10 @@ function EquipmentListContent() {
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={2.4}>
           <StatCard
-            title="Всего активов"
+            title="Всего оборудования"
             value={statusCounts.total}
-            subtitle="Зарегистрировано в базе"
-            icon={<PrecisionManufacturingIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(2, 132, 199, 0.08)"
-            iconColor="#0284c7"
+            subtitle="Единиц в реестре"
+            icon={<InventoryIcon sx={{ fontSize: 20 }} />}
             accentColor="#0284c7"
             active={!statusFilter}
             onClick={() => handleKpiFilter(null)}
@@ -367,10 +371,8 @@ function EquipmentListContent() {
           <StatCard
             title="В работе"
             value={statusCounts.active}
-            subtitle="Штатная эксплуатация"
+            subtitle="В штатной эксплуатации"
             icon={<CheckCircleOutlineIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(22, 163, 74, 0.08)"
-            iconColor="#16a34a"
             accentColor="#16a34a"
             active={statusFilter === 'ACTIVE'}
             onClick={() => handleKpiFilter('ACTIVE')}
@@ -382,10 +384,8 @@ function EquipmentListContent() {
           <StatCard
             title="В ремонте"
             value={statusCounts.underRepair}
-            subtitle="ТО или восстановление"
+            subtitle="ТО или аварийные работы"
             icon={<BuildCircleOutlinedIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(217, 119, 6, 0.08)"
-            iconColor="#d97706"
             accentColor="#d97706"
             active={statusFilter === 'UNDER_REPAIR'}
             onClick={() => handleKpiFilter('UNDER_REPAIR')}
@@ -395,12 +395,10 @@ function EquipmentListContent() {
 
         <Grid item xs={12} sm={6} md={2.4}>
           <StatCard
-            title="На хранении"
+            title="На складе"
             value={statusCounts.inStorage}
-            subtitle="Резерв на складе"
+            subtitle="Резерв и консервация"
             icon={<InventoryIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(100, 116, 139, 0.08)"
-            iconColor="#64748b"
             accentColor="#64748b"
             active={statusFilter === 'IN_STORAGE'}
             onClick={() => handleKpiFilter('IN_STORAGE')}
@@ -414,8 +412,6 @@ function EquipmentListContent() {
             value={statusCounts.decommissioned}
             subtitle="Выведено из эксплуатации"
             icon={<CancelOutlinedIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(220, 38, 38, 0.08)"
-            iconColor="#dc2626"
             accentColor="#dc2626"
             active={statusFilter === 'DECOMMISSIONED'}
             onClick={() => handleKpiFilter('DECOMMISSIONED')}
@@ -465,74 +461,95 @@ function EquipmentListContent() {
             activeFilterCount={activeFilterCount}
             onResetFilters={handleResetFilters}
             actions={
-              <ToggleButtonGroup
-                value={viewMode}
-                exclusive
-                onChange={(_, mode) => mode && setViewMode(mode)}
-                size="small"
-                sx={{ height: 36 }}
-              >
-                <ToggleButton value="table" aria-label="табличный вид" sx={{ px: 1.25, py: 0.5 }}>
-                  <Tooltip title="Табличный вид">
-                    <ViewListIcon fontSize="small" />
-                  </Tooltip>
-                </ToggleButton>
-                <ToggleButton value="grid" aria-label="сетка карточек" sx={{ px: 1.25, py: 0.5 }}>
-                  <Tooltip title="Сетка карточек">
-                    <ViewModuleIcon fontSize="small" />
-                  </Tooltip>
-                </ToggleButton>
-              </ToggleButtonGroup>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <TextField
+                  select
+                  size="small"
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    setPage(1);
+                  }}
+                  sx={{
+                    minWidth: 140,
+                    backgroundColor: '#ffffff',
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '8px',
+                      fontSize: '0.8125rem',
+                      height: 36,
+                      '& fieldset': { borderColor: '#e2e8f0' },
+                      '&:hover fieldset': { borderColor: '#cbd5e1' },
+                    },
+                  }}
+                >
+                  <MenuItem value="">Все статусы</MenuItem>
+                  {Object.entries(EQUIPMENT_STATUS_MAP).map(([key, info]) => (
+                    <MenuItem key={key} value={key} sx={{ fontSize: '0.8125rem' }}>
+                      {info.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+
+                <TextField
+                  select
+                  size="small"
+                  value={tagFilter}
+                  onChange={(e) => {
+                    setTagFilter(e.target.value);
+                    setPage(1);
+                  }}
+                  SelectProps={{ displayEmpty: true }}
+                  sx={{
+                    minWidth: 130,
+                    backgroundColor: '#ffffff',
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '8px',
+                      fontSize: '0.8125rem',
+                      height: 36,
+                      '& fieldset': { borderColor: '#e2e8f0' },
+                      '&:hover fieldset': { borderColor: '#cbd5e1' },
+                    },
+                  }}
+                >
+                  <MenuItem value="">Все теги</MenuItem>
+                  {tags.map((t) => (
+                    <MenuItem key={t.id} value={t.id} sx={{ fontSize: '0.8125rem' }}>
+                      {t.name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+
+                <ToggleButtonGroup
+                  value={viewMode}
+                  exclusive
+                  onChange={(_, mode) => mode && setViewMode(mode)}
+                  size="small"
+                  sx={{ height: 36 }}
+                >
+                  <ToggleButton value="table" aria-label="табличный вид" sx={{ px: 1, py: 0.5, borderRadius: '8px' }}>
+                    <Tooltip title="Табличный вид">
+                      <ViewListIcon fontSize="small" />
+                    </Tooltip>
+                  </ToggleButton>
+                  <ToggleButton value="grid" aria-label="сетка карточек" sx={{ px: 1, py: 0.5, borderRadius: '8px' }}>
+                    <Tooltip title="Сетка карточек">
+                      <ViewModuleIcon fontSize="small" />
+                    </Tooltip>
+                  </ToggleButton>
+                </ToggleButtonGroup>
+              </Box>
             }
           >
-            <Box sx={{ minWidth: { xs: '100%', sm: 280, md: 340 }, flexGrow: 1 }}>
+            <Box sx={{ minWidth: { xs: '100%', sm: 260, md: 320 }, flexGrow: 1 }}>
               <SearchInput
                 value={search}
-                placeholder="Поиск по наименованию, инвентарному или зав. номеру..."
+                placeholder="Поиск по наименованию, номеру..."
                 onSearch={(val) => {
                   setSearch(val);
                   setPage(1);
                 }}
               />
             </Box>
-
-            <TextField
-              select
-              size="small"
-              label="Статус"
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-              sx={{ minWidth: 150 }}
-            >
-              <MenuItem value="">Все статусы</MenuItem>
-              {Object.entries(EQUIPMENT_STATUS_MAP).map(([key, info]) => (
-                <MenuItem key={key} value={key}>
-                  {info.label}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <TextField
-              select
-              size="small"
-              label="Тег / Классификатор"
-              value={tagFilter}
-              onChange={(e) => {
-                setTagFilter(e.target.value);
-                setPage(1);
-              }}
-              sx={{ minWidth: 170 }}
-            >
-              <MenuItem value="">Все теги</MenuItem>
-              {tags.map((t) => (
-                <MenuItem key={t.id} value={t.id}>
-                  {t.name}
-                </MenuItem>
-              ))}
-            </TextField>
           </FilterToolbar>
         }
         gridContent={
@@ -585,12 +602,17 @@ function EquipmentListContent() {
 
                   <CardContent sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.75 }}>
-                      <Chip
-                        label={eq.inventoryNumber || 'Б/Н'}
-                        size="small"
-                        variant="outlined"
-                        sx={{ fontWeight: 700, fontSize: '0.7rem', height: 20, borderRadius: '4px', fontFamily: 'monospace' }}
-                      />
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: '0.75rem',
+                          fontFamily: 'monospace',
+                          color: '#64748b',
+                        }}
+                      >
+                        {eq.inventoryNumber || '—'}
+                      </Typography>
                       <Typography variant="caption" color="text.secondary">
                         {eq.location || '—'}
                       </Typography>
@@ -658,8 +680,8 @@ function EquipmentListContent() {
       >
         <Table size="small" aria-label="Реестр оборудования">
           <TableHead>
-            <TableRow>
-              <TableCell padding="checkbox" sx={{ width: 48 }}>
+            <TableRow sx={{ backgroundColor: '#ffffff' }}>
+              <TableCell padding="checkbox" sx={{ width: 44, pl: 2 }}>
                 <Checkbox
                   size="small"
                   indeterminate={selectedIds.length > 0 && selectedIds.length < equipmentList.length}
@@ -674,15 +696,27 @@ function EquipmentListContent() {
                   inputProps={{ 'aria-label': 'Выбрать все записи' }}
                 />
               </TableCell>
-              <TableCell sx={{ width: 140, fontWeight: 700 }}>Инв. номер</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Наименование оборудования</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Производитель / Модель</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Локация / Место</TableCell>
-              <TableCell sx={{ width: 140, fontWeight: 700 }}>Статус</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Теги</TableCell>
-              <TableCell sx={{ width: 130, fontWeight: 700 }}>Связи</TableCell>
-              <TableCell sx={{ width: 120, fontWeight: 700 }}>Ввод в экспл.</TableCell>
-              <TableCell align="right" sx={{ width: 80, fontWeight: 700 }}>Действия</TableCell>
+              <TableCell sx={{ width: 130, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                ИНВ. НОМЕР
+              </TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                НАИМЕНОВАНИЕ ОБОРУДОВАНИЯ
+              </TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                ПРОИЗВОДИТЕЛЬ / МОДЕЛЬ
+              </TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                ЛОКАЦИЯ / МЕСТО
+              </TableCell>
+              <TableCell sx={{ width: 140, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                СТАТУС
+              </TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                ТЕГИ
+              </TableCell>
+              <TableCell sx={{ width: 120, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                ВВОД В ЭКСПЛ.
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -697,13 +731,13 @@ function EquipmentListContent() {
                   sx={{
                     cursor: 'pointer',
                     '&.Mui-selected': {
-                      backgroundColor: 'rgba(2, 132, 199, 0.08) !important',
+                      backgroundColor: 'rgba(2, 132, 199, 0.06) !important',
                     },
                   }}
                   onClick={() => handleRowClick(eq)}
                   onDoubleClick={() => router.push(`/eps/${eq.id}`)}
                 >
-                  <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
+                  <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()} sx={{ pl: 2 }}>
                     <Checkbox
                       size="small"
                       checked={isChecked}
@@ -716,86 +750,76 @@ function EquipmentListContent() {
                     />
                   </TableCell>
                   <TableCell>
-                    <Chip
-                      label={eq.inventoryNumber || 'Б/Н'}
-                      size="small"
-                      variant="outlined"
-                      sx={{ fontWeight: 700, fontFamily: 'monospace', borderRadius: '4px', height: 22 }}
-                    />
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontFamily: 'monospace',
+                        color: '#475569',
+                        fontSize: '0.8125rem',
+                        fontWeight: 500,
+                      }}
+                    >
+                      {eq.inventoryNumber || '—'}
+                    </Typography>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="subtitle2" fontWeight={600} color="primary.main">
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: 600,
+                        color: '#0284c7',
+                        fontSize: '0.8125rem',
+                        lineHeight: 1.3,
+                      }}
+                    >
                       {eq.name}
                     </Typography>
-                    {eq.serialNumber && (
-                      <Typography variant="caption" color="text.secondary" display="block">
-                        Зав. №: {eq.serialNumber}
-                      </Typography>
-                    )}
+                    <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '0.75rem', display: 'block', mt: 0.25 }}>
+                      {eq.serialNumber ? `Зав. №: ${eq.serialNumber}` : 'Единица основных средств'}
+                    </Typography>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2" fontWeight={500}>{eq.manufacturer || '—'}</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#334155', fontSize: '0.8125rem' }}>
+                      {eq.manufacturer || '—'}
+                    </Typography>
                     {eq.model && (
-                      <Typography variant="caption" color="text.secondary" display="block">
+                      <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.75rem', display: 'block', mt: 0.25 }}>
                         {eq.model}
                       </Typography>
                     )}
                   </TableCell>
-                  <TableCell sx={{ fontSize: '0.8125rem' }}>{eq.location || '—'}</TableCell>
+                  <TableCell sx={{ fontSize: '0.8125rem', color: '#334155' }}>
+                    {eq.location || '—'}
+                  </TableCell>
                   <TableCell>
                     <StatusBadge status={eq.status} />
                   </TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                      {eq.tags.map((t) => (
-                        <Chip
-                          key={t.id}
-                          label={t.name}
-                          size="small"
-                          sx={{
-                            fontSize: '0.6875rem',
-                            height: 20,
-                            backgroundColor: t.color ? `${t.color}15` : undefined,
-                            color: t.color || 'text.primary',
-                            borderColor: t.color || undefined,
-                            borderRadius: '4px',
-                          }}
-                          variant="outlined"
-                        />
-                      ))}
+                      {eq.tags && eq.tags.length > 0 ? (
+                        eq.tags.map((t) => (
+                          <Chip
+                            key={t.id}
+                            label={t.name}
+                            size="small"
+                            sx={{
+                              fontSize: '0.6875rem',
+                              height: 22,
+                              backgroundColor: '#ffffff',
+                              color: '#475569',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '4px',
+                              fontWeight: 500,
+                            }}
+                          />
+                        ))
+                      ) : (
+                        <Typography variant="caption" sx={{ color: '#94a3b8' }}>—</Typography>
+                      )}
                     </Box>
                   </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', gap: 1.5, color: 'text.secondary', fontSize: '0.75rem' }}>
-                      <Tooltip title="Документов прикреплено">
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-                          <DescriptionOutlinedIcon sx={{ fontSize: 15 }} />
-                          <span>{eq.counts.documents}</span>
-                        </Box>
-                      </Tooltip>
-                      <Tooltip title="Планов ТО">
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-                          <ConstructionOutlinedIcon sx={{ fontSize: 15 }} />
-                          <span>{eq.counts.maintenancePlans}</span>
-                        </Box>
-                      </Tooltip>
-                    </Box>
-                  </TableCell>
-                  <TableCell sx={{ fontSize: '0.8125rem' }}>{formatDate(eq.commissionDate)}</TableCell>
-                  <TableCell align="right">
-                    <Tooltip title="Открыть полный паспорт">
-                      <IconButton
-                        size="small"
-                        color="primary"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/eps/${eq.id}`);
-                        }}
-                        aria-label={`Открыть паспорт ${eq.name}`}
-                      >
-                        <ArrowForwardIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
+                  <TableCell sx={{ fontSize: '0.8125rem', color: '#64748b', fontFeatureSettings: '"tnum"' }}>
+                    {formatDate(eq.commissionDate)}
                   </TableCell>
                 </TableRow>
               );

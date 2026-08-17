@@ -51,30 +51,30 @@ const STATUS_CONFIG_MAP: Record<string, StatusTheme> = {
   // EPS Equipment Statuses
   ACTIVE: {
     label: 'В работе',
-    color: '#16a34a',
-    bg: '#f0fdf4',
-    border: '#bbf7d0',
+    color: '#15803d',
+    bg: '#ecfdf5',
+    border: '#a7f3d0',
     icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
   },
   UNDER_REPAIR: {
     label: 'В ремонте',
-    color: '#d97706',
+    color: '#b45309',
     bg: '#fffbeb',
     border: '#fde68a',
     icon: <BuildCircleIcon sx={{ fontSize: 13 }} />,
   },
   IN_STORAGE: {
     label: 'На складе',
-    color: '#0284c7',
-    bg: '#f0f9ff',
-    border: '#bae6fd',
+    color: '#475569',
+    bg: '#f1f5f9',
+    border: '#e2e8f0',
     icon: <InventoryIcon sx={{ fontSize: 13 }} />,
   },
   DECOMMISSIONED: {
     label: 'Списано',
-    color: '#64748b',
-    bg: '#f8fafc',
-    border: '#e2e8f0',
+    color: '#b91c1c',
+    bg: '#fef2f2',
+    border: '#fecaca',
     icon: <CancelIcon sx={{ fontSize: 13 }} />,
   },
 
@@ -671,11 +671,11 @@ export function StatusBadge({
       sx={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: 0.65,
-        px: size === 'small' ? 1 : 1.25,
-        py: size === 'small' ? 0.25 : 0.45,
-        borderRadius: '6px',
-        fontSize: size === 'small' ? '0.6875rem' : '0.75rem',
+        gap: 0.8,
+        px: size === 'small' ? 1.25 : 1.5,
+        py: size === 'small' ? 0.35 : 0.5,
+        borderRadius: '20px',
+        fontSize: size === 'small' ? '0.75rem' : '0.8125rem',
         fontWeight: 600,
         lineHeight: 1.2,
         letterSpacing: '0.01em',
@@ -683,15 +683,15 @@ export function StatusBadge({
         whiteSpace: 'nowrap',
         userSelect: 'none',
         transition: 'all 0.15s ease',
+        backgroundColor: config.bg,
+        color: config.color,
         ...(variant === 'subtle' && {
-          backgroundColor: config.bg,
-          color: config.color,
           border: `1px solid ${config.border}`,
         }),
         ...(variant === 'dot' && {
-          backgroundColor: '#ffffff',
-          color: '#334155',
-          border: '1px solid #e2e8f0',
+          backgroundColor: config.bg,
+          color: config.color,
+          border: `1px solid ${config.border}`,
         }),
         ...(variant === 'outlined' && {
           backgroundColor: 'transparent',
@@ -705,23 +705,17 @@ export function StatusBadge({
         }),
       }}
     >
-      {variant === 'dot' ? (
-        <Box
-          component="span"
-          sx={{
-            width: size === 'small' ? 6 : 8,
-            height: size === 'small' ? 6 : 8,
-            borderRadius: '50%',
-            backgroundColor: config.color,
-            flexShrink: 0,
-            boxShadow: `0 0 0 2px ${config.bg}`,
-          }}
-        />
-      ) : showIcon ? (
-        <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', color: variant === 'solid' ? '#ffffff' : config.color, flexShrink: 0 }}>
-          {config.icon}
-        </Box>
-      ) : null}
+      {/* Status Dot Indicator */}
+      <Box
+        component="span"
+        sx={{
+          width: size === 'small' ? 6 : 7,
+          height: size === 'small' ? 6 : 7,
+          borderRadius: '50%',
+          backgroundColor: variant === 'solid' ? '#ffffff' : config.color,
+          flexShrink: 0,
+        }}
+      />
 
       <Typography
         component="span"
@@ -729,6 +723,7 @@ export function StatusBadge({
           fontSize: 'inherit',
           fontWeight: 'inherit',
           color: 'inherit',
+          lineHeight: 'inherit',
         }}
       >
         {displayText}

@@ -73,29 +73,28 @@ export const theme = createTheme(
     },
     typography: {
       fontFamily: SANS_FONT_FAMILY,
-      // Compact Enterprise Typography Scale
       h1: {
-        fontSize: '1.25rem', // 20px
+        fontSize: '1.625rem', // 26px
+        lineHeight: 1.2,
+        fontWeight: 800,
+        letterSpacing: '-0.025em',
+        color: '#0f172a',
+      },
+      h2: {
+        fontSize: '1.375rem', // 22px
         lineHeight: 1.25,
         fontWeight: 700,
         letterSpacing: '-0.02em',
         color: '#0f172a',
       },
-      h2: {
-        fontSize: '1.125rem', // 18px
-        lineHeight: 1.25,
-        fontWeight: 700,
-        letterSpacing: '-0.015em',
-        color: '#0f172a',
-      },
       h3: {
-        fontSize: '1rem', // 16px
+        fontSize: '1.125rem', // 18px
         lineHeight: 1.3,
-        fontWeight: 600,
+        fontWeight: 700,
         color: '#0f172a',
       },
       h4: {
-        fontSize: '0.9375rem', // 15px
+        fontSize: '1rem', // 16px
         lineHeight: 1.35,
         fontWeight: 600,
         color: '#0f172a',
@@ -113,57 +112,58 @@ export const theme = createTheme(
         color: '#0f172a',
       },
       subtitle1: {
-        fontSize: '0.8125rem', // 13px
-        lineHeight: 1.35,
+        fontSize: '0.875rem', // 14px
+        lineHeight: 1.4,
         fontWeight: 600,
         color: '#0f172a',
       },
       subtitle2: {
-        fontSize: '0.75rem', // 12px
-        lineHeight: 1.3,
+        fontSize: '0.8125rem', // 13px
+        lineHeight: 1.35,
         fontWeight: 600,
         color: '#1e293b',
       },
       body1: {
-        fontSize: '0.8125rem', // 13px
-        lineHeight: 1.4,
+        fontSize: '0.875rem', // 14px
+        lineHeight: 1.45,
         fontWeight: 400,
         color: '#334155',
       },
       body2: {
-        fontSize: '0.75rem', // 12px
-        lineHeight: 1.35,
+        fontSize: '0.8125rem', // 13px
+        lineHeight: 1.4,
         fontWeight: 400,
         color: '#475569',
       },
       caption: {
-        fontSize: '0.6875rem', // 11px
-        lineHeight: 1.25,
+        fontSize: '0.75rem', // 12px
+        lineHeight: 1.3,
         fontWeight: 500,
         color: '#64748b',
       },
       overline: {
-        fontSize: '0.625rem', // 10px
-        lineHeight: 1.2,
+        fontSize: '0.6875rem', // 11px
+        lineHeight: 1.25,
         fontWeight: 700,
-        letterSpacing: '0.04em',
+        letterSpacing: '0.05em',
         textTransform: 'uppercase',
         color: '#64748b',
       },
       button: {
-        fontSize: '0.75rem', // 12px
+        fontSize: '0.8125rem', // 13px
         lineHeight: 1.3,
         fontWeight: 600,
         textTransform: 'none',
       },
     },
     shape: {
-      borderRadius: 8,
+      borderRadius: 10,
     },
     components: {
       MuiCssBaseline: {
         styleOverrides: {
           body: {
+            backgroundColor: '#f8fafc',
             fontFeatureSettings: '"cv02", "cv03", "cv04", "cv11"',
             textRendering: 'optimizeLegibility',
             WebkitFontSmoothing: 'antialiased',
@@ -179,34 +179,51 @@ export const theme = createTheme(
         styleOverrides: {
           root: {
             boxShadow: 'none',
-            borderRadius: 6,
+            borderRadius: 8,
             fontWeight: 600,
-            fontSize: '0.75rem',
-            padding: '4px 12px',
-            minHeight: 32,
+            fontSize: '0.8125rem',
+            padding: '6px 14px',
+            minHeight: 36,
+            textTransform: 'none',
             '&:hover': {
-              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.08)',
+            },
+          },
+          outlined: {
+            borderColor: '#e2e8f0',
+            color: '#334155',
+            backgroundColor: '#ffffff',
+            '&:hover': {
+              borderColor: '#cbd5e1',
+              backgroundColor: '#f8fafc',
+            },
+          },
+          containedPrimary: {
+            backgroundColor: '#0284c7',
+            '&:hover': {
+              backgroundColor: '#0369a1',
             },
           },
           sizeSmall: {
-            fontSize: '0.6875rem',
-            padding: '2px 8px',
-            minHeight: 26,
+            fontSize: '0.75rem',
+            padding: '4px 10px',
+            minHeight: 30,
           },
           sizeLarge: {
-            fontSize: '0.8125rem',
-            padding: '6px 16px',
-            minHeight: 36,
+            fontSize: '0.875rem',
+            padding: '8px 18px',
+            minHeight: 40,
           },
         },
       },
       MuiCard: {
         styleOverrides: {
           root: {
-            boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.03)',
+            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
             border: '1px solid #e2e8f0',
-            borderRadius: 10,
+            borderRadius: 12,
             backgroundImage: 'none',
+            backgroundColor: '#ffffff',
           },
         },
       },
@@ -220,16 +237,16 @@ export const theme = createTheme(
       MuiTableHead: {
         styleOverrides: {
           root: {
-            backgroundColor: '#f8fafc',
+            backgroundColor: '#ffffff',
             '& .MuiTableCell-head': {
               fontSize: '0.6875rem', // 11px
               fontWeight: 700,
               lineHeight: 1.25,
-              letterSpacing: '0.03em',
+              letterSpacing: '0.05em',
               textTransform: 'uppercase',
-              color: '#475569',
-              padding: '7px 10px',
-              borderBottom: '1px solid #e2e8f0',
+              color: '#64748b',
+              padding: '10px 14px',
+              borderBottom: '1px solid #f1f5f9',
             },
           },
         },
@@ -237,10 +254,10 @@ export const theme = createTheme(
       MuiTableCell: {
         styleOverrides: {
           root: {
-            fontSize: '0.75rem', // 12px
-            lineHeight: 1.35,
-            padding: '6px 10px',
-            borderBottom: '1px solid #f1f5f9',
+            fontSize: '0.8125rem', // 13px
+            lineHeight: 1.4,
+            padding: '12px 14px',
+            borderBottom: '1px solid #f8fafc',
             color: '#334155',
           },
         },
