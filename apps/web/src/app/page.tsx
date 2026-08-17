@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-client';
-import { Box, CircularProgress, Typography } from '@mui/material';
+import { Box, CircularProgress, Typography, Button } from '@mui/material';
 
 export default function HomePage() {
   const { user, isLoading } = useAuth();
@@ -19,6 +19,20 @@ export default function HomePage() {
     }
   }, [user, isLoading, router]);
 
+  // Safety fallback for fast redirection
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!isLoading) {
+        if (user) {
+          window.location.href = '/eps';
+        } else {
+          window.location.href = '/login';
+        }
+      }
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [user, isLoading]);
+
   return (
     <Box
       sx={{
@@ -30,10 +44,21 @@ export default function HomePage() {
         gap: 2,
       }}
     >
-      <CircularProgress size={48} thickness={4} />
+      <CircularProgress size={44} thickness={4} />
       <Typography variant="body2" color="text.secondary">
         Загрузка системы EMS...
       </Typography>
+      <Button
+        variant="text"
+        size="small"
+        onClick={() => {
+          window.location.href = user ? '/eps' : '/login';
+        }}
+        sx={{ mt: 1, textTransform: 'none', color: 'primary.main' }}
+      >
+        Перейти в раздел оборудования →
+      </Button>
     </Box>
   );
 }
+
