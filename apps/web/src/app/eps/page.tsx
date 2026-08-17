@@ -144,16 +144,22 @@ function EquipmentListContent() {
       const res = await fetch(`/api/eps/equipment?${params.toString()}`);
       if (res.ok) {
         const json = await res.json();
-        if (json.success) {
-          setItems(json.data);
-          setTotal(json.meta.total);
-          setTotalPages(json.meta.totalPages);
-          if (json.meta.statusCounts) {
-            setStatusCounts(json.meta.statusCounts);
+        if (json.success && json.data) {
+          const list = Array.isArray(json.data) ? json.data : (json.data.items || []);
+          setItems(list);
+          setTotal(json.data.total ?? json.meta?.total ?? list.length);
+          setTotalPages(json.data.totalPages ?? json.meta?.totalPages ?? 1);
+          if (json.data.statusCounts || json.meta?.statusCounts) {
+            setStatusCounts(json.data.statusCounts || json.meta?.statusCounts);
           }
+        } else {
+          setItems([]);
         }
+      } else {
+        setItems([]);
       }
     } catch (e) {
+      setItems([]);
       enqueueSnackbar('Ошибка при загрузке реестра оборудования', { variant: 'error' });
     } finally {
       setLoading(false);
@@ -248,13 +254,15 @@ function EquipmentListContent() {
   // Bulk Selection State
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
+  const equipmentList = Array.isArray(items) ? items : [];
+
   const handleRowClick = (eq: EquipmentItem) => {
     setSelectedEquipment(eq);
   };
 
   // Bulk Export Handlers
   const handleBulkExport = () => {
-    const idsToExport = selectedIds.length > 0 ? selectedIds : items.map((i) => i.id);
+    const idsToExport = selectedIds.length > 0 ? selectedIds : equipmentList.map((i) => i.id);
     if (idsToExport.length === 0) {
       enqueueSnackbar('Нет оборудования для экспорта', { variant: 'warning' });
       return;
@@ -529,7 +537,7 @@ function EquipmentListContent() {
         }
         gridContent={
           <Grid container spacing={2.5}>
-            {items.map((eq) => (
+            {equipmentList.map((eq) => (
               <Grid item xs={12} sm={6} md={4} lg={3} key={eq.id}>
                 <Card
                   sx={{
@@ -654,11 +662,11 @@ function EquipmentListContent() {
               <TableCell padding="checkbox" sx={{ width: 48 }}>
                 <Checkbox
                   size="small"
-                  indeterminate={selectedIds.length > 0 && selectedIds.length < items.length}
-                  checked={items.length > 0 && selectedIds.length === items.length}
+                  indeterminate={selectedIds.length > 0 && selectedIds.length < equipmentList.length}
+                  checked={equipmentList.length > 0 && selectedIds.length === equipmentList.length}
                   onChange={(e) => {
                     if (e.target.checked) {
-                      setSelectedIds(items.map((i) => i.id));
+                      setSelectedIds(equipmentList.map((i) => i.id));
                     } else {
                       setSelectedIds([]);
                     }
@@ -678,7 +686,7 @@ function EquipmentListContent() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {items.map((eq) => {
+            {equipmentList.map((eq) => {
               const isSelected = selectedEquipment?.id === eq.id;
               const isChecked = selectedIds.includes(eq.id);
               return (
