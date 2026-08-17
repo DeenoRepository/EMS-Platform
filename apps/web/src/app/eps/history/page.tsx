@@ -48,6 +48,7 @@ import {
   DataTableWrapper,
   StatusBadge,
   PageLoading,
+  DatePickerField,
 } from '@/components/ui';
 
 interface AuditLogItem {
@@ -386,31 +387,29 @@ function HistoryListContent() {
           ))}
         </TextField>
 
-        <TextField
-          size="small"
-          label="С даты"
-          type="date"
-          InputLabelProps={{ shrink: true }}
-          value={startDate}
-          onChange={(e) => {
-            setStartDate(e.target.value);
-            setPage(1);
-          }}
-          sx={{ width: 150 }}
-        />
+        <Box sx={{ width: 160 }}>
+          <DatePickerField
+            size="small"
+            label="С даты"
+            value={startDate}
+            onChange={(val) => {
+              setStartDate(val || '');
+              setPage(1);
+            }}
+          />
+        </Box>
 
-        <TextField
-          size="small"
-          label="По дату"
-          type="date"
-          InputLabelProps={{ shrink: true }}
-          value={endDate}
-          onChange={(e) => {
-            setEndDate(e.target.value);
-            setPage(1);
-          }}
-          sx={{ width: 150 }}
-        />
+        <Box sx={{ width: 160 }}>
+          <DatePickerField
+            size="small"
+            label="По дату"
+            value={endDate}
+            onChange={(val) => {
+              setEndDate(val || '');
+              setPage(1);
+            }}
+          />
+        </Box>
       </FilterToolbar>
 
       {/* Main Audit Log Table */}

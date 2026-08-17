@@ -55,6 +55,7 @@ import {
   PageLoading,
   FormDialog,
   StatusBadge,
+  FileUploadDropzone,
 } from '@/components/ui';
 
 interface DocumentItem {
@@ -625,20 +626,13 @@ function DocumentsListContent() {
           </TextField>
 
           {/* File Picker */}
-          <Button
-            variant="outlined"
-            component="label"
-            fullWidth
-            startIcon={<UploadFileIcon />}
-            sx={{ py: 1.75, borderStyle: 'dashed' }}
-          >
-            {selectedFile ? selectedFile.name : 'Нажмите для выбора файла (PDF, DOCX, XLSX, Схемы)'}
-            <input
-              type="file"
-              hidden
-              onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-            />
-          </Button>
+          <FileUploadDropzone
+            files={selectedFile ? [selectedFile] : []}
+            onChange={(files) => setSelectedFile(files[0] || null)}
+            compact
+            title="Перетащите файл документа или выберите"
+            description="PDF, Word, Excel, чертежи и схемы (до 15 МБ)"
+          />
 
           {/* Description */}
           <TextField

@@ -77,6 +77,8 @@ import {
   FormDialog,
   DataTableWrapper,
   NavTabsContainer,
+  FileUploadDropzone,
+  DatePickerField,
   type LifecycleEvent,
 } from '@/components/ui';
 
@@ -1532,14 +1534,12 @@ export default function EquipmentPassportPage() {
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField
+                <DatePickerField
                   label="Дата ввода в эксплуатацию"
-                  type="date"
-                  InputLabelProps={{ shrink: true }}
-                  fullWidth
-                  size="small"
                   value={editForm.commissioningDate ? editForm.commissioningDate.substring(0, 10) : ''}
-                  onChange={(e) => setEditForm({ ...editForm, commissioningDate: e.target.value })}
+                  onChange={(val) => setEditForm({ ...editForm, commissioningDate: val })}
+                  size="small"
+                  fullWidth
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -1664,15 +1664,14 @@ export default function EquipmentPassportPage() {
         submitDisabled={!selectedFile || uploading}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-          <Button variant="outlined" component="label" fullWidth sx={{ py: 1.5 }}>
-            {selectedFile ? selectedFile.name : 'Выбрать фото с диска'}
-            <input
-              type="file"
-              hidden
-              accept="image/*"
-              onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-            />
-          </Button>
+          <FileUploadDropzone
+            accept="image/*"
+            files={selectedFile ? [selectedFile] : []}
+            onChange={(files) => setSelectedFile(files[0] || null)}
+            compact
+            title="Перетащите фото или выберите с диска"
+            description="JPG, PNG, WebP (до 15 МБ)"
+          />
           <TextField
             select
             size="small"
@@ -1698,14 +1697,13 @@ export default function EquipmentPassportPage() {
         submitDisabled={!selectedFile || uploading}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-          <Button variant="outlined" component="label" fullWidth sx={{ py: 1.5 }}>
-            {selectedFile ? selectedFile.name : 'Выбрать файл (PDF, DOCX, XLSX, Схемы)'}
-            <input
-              type="file"
-              hidden
-              onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-            />
-          </Button>
+          <FileUploadDropzone
+            files={selectedFile ? [selectedFile] : []}
+            onChange={(files) => setSelectedFile(files[0] || null)}
+            compact
+            title="Перетащите файл документа или выберите"
+            description="PDF, DOCX, XLSX, чертежи (до 15 МБ)"
+          />
 
           <TextField
             select
@@ -1745,7 +1743,7 @@ export default function EquipmentPassportPage() {
         submitDisabled={!createApprovalTitle.trim() || submittingApproval}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-          <Paper variant="outlined" sx={{ p: 1.5, backgroundColor: '#f8fafc' }}>
+          <Paper variant="outlined" sx={{ p: 1.5, backgroundColor: 'action.hover' }}>
             <Typography variant="caption" color="text.secondary" display="block">
               Оборудование:
             </Typography>

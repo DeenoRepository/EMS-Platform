@@ -59,8 +59,10 @@ import {
   DataTableWrapper,
   StatusBadge,
   SearchInput,
-  FormDialog,
+  ExportButton,
+  DatePickerField,
   ConfirmDialog,
+  FormDialog,
 } from '@/components/ui';
 
 interface ReportColumn {
@@ -484,7 +486,7 @@ export default function ReportBuilderPage() {
           { label: 'Конструктор отчетов' },
         ]}
         actions={
-          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
             <Button
               variant="outlined"
               startIcon={<BookmarkAddOutlinedIcon />}
@@ -493,23 +495,16 @@ export default function ReportBuilderPage() {
             >
               Сохранить шаблон
             </Button>
-            <Button
+            <ExportButton
+              formats={['xlsx', 'csv']}
               variant="contained"
               color="success"
-              startIcon={<FileDownloadIcon />}
-              onClick={handleExportExcel}
-              sx={{ fontWeight: 600 }}
-            >
-              Экспорт в Excel (.xlsx)
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<DownloadIcon />}
-              onClick={handleExportCsv}
-              sx={{ fontWeight: 600 }}
-            >
-              CSV
-            </Button>
+              label="Экспорт ведомости"
+              onExport={(fmt) => {
+                if (fmt === 'xlsx') handleExportExcel();
+                else if (fmt === 'csv') handleExportCsv();
+              }}
+            />
             <Button
               variant="outlined"
               startIcon={<DataObjectIcon />}
@@ -523,7 +518,7 @@ export default function ReportBuilderPage() {
       />
 
       {/* Saved Presets / Templates Quick Bar */}
-      <Paper variant="outlined" sx={{ p: 2, mb: 3, backgroundColor: '#f8fafc', borderRadius: 2 }}>
+      <Paper variant="outlined" sx={{ p: 2, mb: 3, backgroundColor: 'action.hover', borderRadius: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <BookmarkOutlinedIcon color="primary" sx={{ fontSize: 20 }} />
@@ -730,23 +725,19 @@ export default function ReportBuilderPage() {
                 />
 
                 <Box sx={{ display: 'flex', gap: 1.5 }}>
-                  <TextField
+                  <DatePickerField
                     label="Ввод в эксплуатацию с"
-                    type="date"
                     size="small"
-                    InputLabelProps={{ shrink: true }}
                     fullWidth
                     value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
+                    onChange={(val) => setDateFrom(val || '')}
                   />
-                  <TextField
+                  <DatePickerField
                     label="по"
-                    type="date"
                     size="small"
-                    InputLabelProps={{ shrink: true }}
                     fullWidth
                     value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
+                    onChange={(val) => setDateTo(val || '')}
                   />
                 </Box>
 

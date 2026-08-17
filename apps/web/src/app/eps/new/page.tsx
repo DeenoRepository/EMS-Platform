@@ -34,7 +34,7 @@ import ShieldIcon from '@mui/icons-material/Shield';
 import StraightenIcon from '@mui/icons-material/Straighten';
 import SpeedIcon from '@mui/icons-material/Speed';
 import PageHeader from '@/components/layout/PageHeader';
-import { PageLoading } from '@/components/ui';
+import { PageLoading, DatePickerField, StatusBadge } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import { EQUIPMENT_STATUS_MAP } from '@ems/shared';
 import { useSnackbar } from 'notistack';
@@ -485,14 +485,12 @@ export default function NewEquipmentPage() {
                         ))}
                       </TextField>
 
-                      <TextField
+                      <DatePickerField
                         label="Дата ввода в эксплуатацию"
-                        type="date"
-                        InputLabelProps={{ shrink: true }}
                         fullWidth
                         size="medium"
                         value={formData.commissionDate}
-                        onChange={(e) => handleInputChange('commissionDate', e.target.value)}
+                        onChange={(val) => handleInputChange('commissionDate', val || '')}
                       />
 
                       <FormControl fullWidth size="medium">
@@ -511,14 +509,13 @@ export default function NewEquipmentPage() {
                               {selected.map((tagId) => {
                                 const tag = tags.find((t) => t.id === tagId);
                                 return (
-                                  <Chip
+                                  <StatusBadge
                                     key={tagId}
+                                    status={tag ? tag.name : tagId}
                                     label={tag ? tag.name : tagId}
+                                    customColor={tag?.color || undefined}
                                     size="small"
-                                    sx={{
-                                      backgroundColor: tag?.color ? `${tag.color}20` : undefined,
-                                      color: tag?.color || 'inherit',
-                                    }}
+                                    variant="outlined"
                                   />
                                 );
                               })}

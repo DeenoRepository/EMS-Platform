@@ -51,6 +51,7 @@ import {
   EmptyState,
   DataTableWrapper,
   StatusBadge,
+  FileUploadDropzone,
 } from '@/components/ui';
 
 interface MissingFieldItem {
@@ -301,44 +302,13 @@ export default function SmartImportPage() {
           <Grid item xs={12} md={8}>
             <Card sx={{ height: '100%' }}>
               <CardContent sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <Box
-                  onClick={() => fileInputRef.current?.click()}
-                  sx={{
-                    border: '2px dashed #0284c7',
-                    borderRadius: 3,
-                    p: 6,
-                    textAlign: 'center',
-                    width: '100%',
-                    cursor: 'pointer',
-                    backgroundColor: 'rgba(2, 132, 199, 0.02)',
-                    transition: 'all 0.15s ease',
-                    '&:hover': {
-                      backgroundColor: 'rgba(2, 132, 199, 0.06)',
-                      borderColor: '#0369a1',
-                    },
-                  }}
-                >
-                  <CloudUploadIcon sx={{ fontSize: 56, color: 'primary.main', mb: 2 }} />
-                  <Typography variant="h6" fontWeight={700} gutterBottom>
-                    {selectedFile ? selectedFile.name : 'Выберите или перетащите файл таблицы'}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Поддерживаются форматы Excel (.xlsx, .xls) и CSV с разделителями
-                  </Typography>
-                  {selectedFile && (
-                    <Chip
-                      label={`Размер: ${(selectedFile.size / 1024).toFixed(1)} КБ`}
-                      color="primary"
-                      size="small"
-                      sx={{ mt: 2, fontWeight: 600 }}
-                    />
-                  )}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    hidden
-                    accept=".xlsx, .xls, .csv"
-                    onChange={handleFileChange}
+                <Box sx={{ width: '100%' }}>
+                  <FileUploadDropzone
+                    accept=".xlsx,.xls,.csv"
+                    files={selectedFile ? [selectedFile] : []}
+                    onChange={(files) => setSelectedFile(files[0] || null)}
+                    title="Выберите или перетащите файл реестра оборудования"
+                    description="Поддерживаются книги Excel (.xlsx, .xls) и таблицы CSV (до 15 МБ)"
                   />
                 </Box>
 
