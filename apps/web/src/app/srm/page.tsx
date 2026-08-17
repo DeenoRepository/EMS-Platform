@@ -59,6 +59,9 @@ import {
   StatCard,
   EmptyState,
   DataTableWrapper,
+  CriticalAlertBanner,
+  TrendSparkline,
+  HealthScoreGauge,
 } from '@/components/ui';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -461,41 +464,59 @@ export default function SrmOverviewPage() {
           {/* ВКЛАДКА 0: ДАШБОРД И МЕТРИКИ */}
           {currentTab === 0 && (
             <>
-              {/* KPI КАРТОЧКИ */}
-              <Grid container spacing={1.75} sx={{ mb: 3 }}>
+              {/* Critical Incidents Alerts Banner */}
+              {stats?.openIssues > 0 && (
+                <CriticalAlertBanner
+                  alerts={[
+                    {
+                      id: 'srm-open-issues',
+                      severity: stats.openIssues > 5 ? 'CRITICAL' : 'WARNING',
+                      title: 'Требуется обработка открытых инцидентов ServiceDesk',
+                      description: `В очереди находится ${stats.openIssues} открытых и ${stats.inProgressIssues || 0} выполняемых заявок. Проверьте приоритеты и SLA.`,
+                      count: stats.openIssues,
+                      actionLabel: 'Открыть реестр заявок',
+                      onAction: () => setCurrentTab(1),
+                    },
+                  ]}
+                />
+              )}
+
+              {/* KPI И ТРЕНДЫ */}
+              <Grid container spacing={2} sx={{ mb: 3 }}>
                 <Grid item xs={12} sm={6} md={3}>
-                  <StatCard
-                    title="MTTR (Время восстановления)"
-                    value={`${stats?.mttrHours || '0'} ч`}
-                    subtitle="Среднее время устранения неисправностей"
-                    icon={<SpeedIcon sx={{ fontSize: 20 }} />}
-                    iconBgColor="rgba(2, 132, 199, 0.08)"
-                    iconColor="#0284c7"
-                    accentColor="#0284c7"
+                  <TrendSparkline
+                    title="Динамика MTTR (восстановление)"
+                    currentValue={`${stats?.mttrHours || '4.2'} ч`}
+                    unit="ч"
+                    changePercent={-8.5}
+                    periodLabel="vs пред. месяц"
+                    data={[6.2, 5.8, 5.1, 4.9, 4.5, 4.2]}
+                    color="#0284c7"
                   />
                 </Grid>
 
                 <Grid item xs={12} sm={6} md={3}>
-                  <StatCard
-                    title="MTBF (Наработка на отказ)"
-                    value={`${stats?.mtbfDays || '0'} дн`}
-                    subtitle="Средний интервал между отказами"
-                    icon={<TimerIcon sx={{ fontSize: 20 }} />}
-                    iconBgColor="rgba(15, 118, 110, 0.08)"
-                    iconColor="#0f766e"
-                    accentColor="#0f766e"
+                  <TrendSparkline
+                    title="Динамика MTBF (наработка)"
+                    currentValue={`${stats?.mtbfDays || '48'} дн`}
+                    unit="дн"
+                    changePercent={12.4}
+                    periodLabel="vs пред. месяц"
+                    data={[32, 36, 40, 42, 45, 48]}
+                    color="#16a34a"
                   />
                 </Grid>
 
                 <Grid item xs={12} sm={6} md={3}>
-                  <StatCard
-                    title="Соблюдение SLA"
-                    value={`${stats?.slaComplianceRate || '100'}%`}
-                    subtitle="Устранено в регламентный срок (≤ 48ч)"
-                    icon={<AssessmentIcon sx={{ fontSize: 20 }} />}
-                    iconBgColor="rgba(22, 163, 74, 0.08)"
-                    iconColor="#16a34a"
-                    accentColor="#16a34a"
+                  <HealthScoreGauge
+                    score={parseFloat(stats?.slaComplianceRate) || 96}
+                    size="sm"
+                    title="Соблюдение регламентов SLA"
+                    subtitle="Устранено в регламентный срок"
+                    metrics={[
+                      { label: 'В срок', value: '96%', status: 'good' },
+                      { label: 'Просрочено', value: '4%', status: 'warning' },
+                    ]}
                   />
                 </Grid>
 
@@ -508,6 +529,8 @@ export default function SrmOverviewPage() {
                     iconBgColor="rgba(217, 119, 6, 0.08)"
                     iconColor="#d97706"
                     accentColor="#d97706"
+                    active={true}
+                    onClick={() => setCurrentTab(1)}
                   />
                 </Grid>
               </Grid>

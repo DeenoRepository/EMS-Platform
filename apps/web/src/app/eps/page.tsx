@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, Suspense } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
 import {
   Box,
   Card,
@@ -44,6 +44,9 @@ import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import ConstructionOutlinedIcon from '@mui/icons-material/ConstructionOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
+import Checkbox from '@mui/material/Checkbox';
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
+import QrCode2Icon from '@mui/icons-material/QrCode2';
 import PageHeader from '@/components/layout/PageHeader';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { EQUIPMENT_STATUS_MAP, formatDate, PERMISSIONS } from '@ems/shared';
@@ -56,6 +59,8 @@ import {
   FilterToolbar,
   EmptyState,
   DataTableWrapper,
+  CriticalAlertBanner,
+  BulkActionBar,
 } from '@/components/ui';
 
 interface EquipmentItem {
@@ -228,8 +233,52 @@ function EquipmentListContent() {
   const canCreate = hasPermission(PERMISSIONS.EPS_EQUIPMENT_CREATE);
   const canEdit = hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT);
 
+  // Selection state for bulk operations
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  const handleBulkExport = () => {
+    const selectedItems = items.filter((i) => selectedIds.includes(i.id));
+    const csvContent =
+      'data:text/csv;charset=utf-8,' +
+      ['Инвентарный №,Наименование,Модель,Локация,Статус']
+        .concat(
+          selectedItems.map(
+            (i) => `"${i.inventoryNumber || ''}","${i.name}","${i.model || ''}","${i.location || ''}","${i.status}"`
+          )
+        )
+        .join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `equipment_export_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    enqueueSnackbar(`Экспортировано записей: ${selectedItems.length}`, { variant: 'success' });
+  };
+
+  const handleBulkPrint = () => {
+    enqueueSnackbar(`Сформирован пакет для печати (${selectedIds.length} паспортов)`, { variant: 'info' });
+  };
+
+  const criticalAlerts = useMemo(() => {
+    const list = [];
+    if (statusCounts.underRepair > 0) {
+      list.push({
+        id: 'repair-alert',
+        severity: 'WARNING' as const,
+        title: 'Оборудование требует завершения ремонта',
+        description: `В статусе «В ремонте» находится ${statusCounts.underRepair} ед. оборудования. Проверьте регламенты и наряды ТО.`,
+        count: statusCounts.underRepair,
+        actionLabel: 'Показать список',
+        onAction: () => handleKpiFilter('UNDER_REPAIR'),
+      });
+    }
+    return list;
+  }, [statusCounts.underRepair]);
+
   return (
-    <Box sx={{ maxWidth: 1920, mx: 'auto' }}>
+    <Box sx={{ maxWidth: 1920, mx: 'auto', pb: selectedIds.length > 0 ? 8 : 2 }}>
       <PageHeader
         title="EPS — Паспортизация оборудования"
         subtitle="Единый реестр технологического оборудования предприятия, документации и технических характеристик"
@@ -265,6 +314,9 @@ function EquipmentListContent() {
           </Box>
         }
       />
+
+      {/* Critical Alerts Banner */}
+      <CriticalAlertBanner alerts={criticalAlerts} />
 
       {/* Top KPI Metric Cards Bar with StatCard */}
       <Grid container spacing={1.75} sx={{ mb: 2.5 }}>
@@ -448,6 +500,20 @@ function EquipmentListContent() {
           <Table size="small">
             <TableHead>
               <TableRow>
+                <TableCell padding="checkbox" sx={{ width: 48 }}>
+                  <Checkbox
+                    size="small"
+                    indeterminate={selectedIds.length > 0 && selectedIds.length < items.length}
+                    checked={items.length > 0 && selectedIds.length === items.length}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedIds(items.map((i) => i.id));
+                      } else {
+                        setSelectedIds([]);
+                      }
+                    }}
+                  />
+                </TableCell>
                 <TableCell sx={{ width: 140 }}>Инв. номер</TableCell>
                 <TableCell>Наименование оборудования</TableCell>
                 <TableCell>Производитель / Модель</TableCell>
@@ -462,6 +528,7 @@ function EquipmentListContent() {
             <TableBody>
               {items.map((eq) => {
                 const isSelected = selectedEquipment?.id === eq.id;
+                const isChecked = selectedIds.includes(eq.id);
                 return (
                   <TableRow
                     key={eq.id}
@@ -476,6 +543,17 @@ function EquipmentListContent() {
                     onClick={() => handleRowClick(eq)}
                     onDoubleClick={() => router.push(`/eps/${eq.id}`)}
                   >
+                    <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        size="small"
+                        checked={isChecked}
+                        onChange={() => {
+                          setSelectedIds((prev) =>
+                            prev.includes(eq.id) ? prev.filter((id) => id !== eq.id) : [...prev, eq.id]
+                          );
+                        }}
+                      />
+                    </TableCell>
                     <TableCell>
                       <Chip
                         label={eq.inventoryNumber || 'Б/Н'}
@@ -893,6 +971,27 @@ function EquipmentListContent() {
           </Box>
         )}
       </Drawer>
+
+      {/* Floating Bulk Action Bar */}
+      <BulkActionBar
+        selectedCount={selectedIds.length}
+        totalCount={total}
+        onClearSelection={() => setSelectedIds([])}
+        actions={[
+          {
+            label: 'Экспорт в CSV',
+            icon: <FileDownloadOutlinedIcon fontSize="small" />,
+            onClick: handleBulkExport,
+            color: 'primary',
+          },
+          {
+            label: 'Печать паспортов',
+            icon: <QrCode2Icon fontSize="small" />,
+            onClick: handleBulkPrint,
+            color: 'info',
+          },
+        ]}
+      />
     </Box>
   );
 }

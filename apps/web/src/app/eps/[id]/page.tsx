@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   Box,
   Card,
@@ -70,6 +70,10 @@ import {
   StatusBadge,
   EmptyState,
   ConfirmDialog,
+  HealthScoreGauge,
+  LifecycleTimeline,
+  TrendSparkline,
+  type LifecycleEvent,
 } from '@/components/ui';
 
 interface CustomFieldDef {
@@ -476,6 +480,99 @@ export default function EquipmentPassportPage() {
   const canEdit = hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT);
   const canDelete = hasPermission(PERMISSIONS.EPS_EQUIPMENT_DELETE);
 
+  const healthScore = useMemo(() => {
+    if (!equipment) return 100;
+    if (equipment.status === 'DECOMMISSIONED') return 10;
+    if (equipment.status === 'UNDER_REPAIR') return 45;
+    if (equipment.status === 'IN_STORAGE') return 75;
+    const openIssues = (equipment.jiraIssues || []).filter((i: any) => i.status !== 'Closed' && i.status !== 'Resolved').length;
+    const plansCount = (equipment.maintenancePlans || []).length;
+    return Math.max(50, Math.min(100, 95 - openIssues * 10 + (plansCount > 0 ? 5 : 0)));
+  }, [equipment]);
+
+  const lifecycleEvents: LifecycleEvent[] = useMemo(() => {
+    if (!equipment) return [];
+    const evts: LifecycleEvent[] = [];
+
+    // Commissioning event
+    if (equipment.commissionDate) {
+      evts.push({
+        id: `commissioning-${equipment.id}`,
+        type: 'COMMISSIONING',
+        title: 'Ввод единицы оборудования в эксплуатацию',
+        description: `Оборудование «${equipment.name}» (инв. № ${equipment.inventoryNumber || 'Б/Н'}) введено в эксплуатацию на площадке ${equipment.location || 'Основная'}.`,
+        date: equipment.commissionDate,
+        author: 'Главный механик',
+      });
+    }
+
+    // Maintenance events
+    (equipment.maintenancePlans || []).forEach((mp: any) => {
+      evts.push({
+        id: `mro-${mp.id}`,
+        type: 'MAINTENANCE',
+        title: `Регламент ТО: ${mp.title || 'Периодическое обслуживание'}`,
+        description: `Периодичность: каждые ${mp.intervalDays || 30} дн. Статус регламента: ${mp.status || 'Активен'}.`,
+        date: mp.nextDueDate || mp.createdAt,
+        metadata: {
+          'Интервал (дней)': mp.intervalDays || 30,
+          'Статус регламента': mp.status || 'ACTIVE',
+        },
+      });
+    });
+
+    // Spare parts replacements
+    (equipment.spareParts || []).forEach((sp: any) => {
+      evts.push({
+        id: `wms-${sp.id}`,
+        type: 'PARTS_REPLACED',
+        title: `Установка/списание комплектующих: ${sp.nomenclature?.name || 'ТМЦ'}`,
+        description: `Количество: ${sp.quantity || 1} ${sp.nomenclature?.unit || 'шт.'}. Установлено в узел оборудования.`,
+        date: sp.installedAt || sp.createdAt,
+        metadata: {
+          'Артикул ТМЦ': sp.nomenclature?.sku || '—',
+          'Количество': `${sp.quantity || 1} ${sp.nomenclature?.unit || 'шт.'}`,
+        },
+      });
+    });
+
+    // Jira / SRM Incidents
+    (equipment.jiraIssues || []).forEach((issue: any) => {
+      evts.push({
+        id: `srm-${issue.id}`,
+        type: 'INCIDENT',
+        title: `Инцидент ServiceDesk: [${issue.jiraKey}] ${issue.summary}`,
+        description: `Приоритет: ${issue.priority}. Статус: ${issue.status}.`,
+        date: issue.createdDate,
+        author: issue.reporter,
+        metadata: {
+          'Ключ заявки': issue.jiraKey,
+          'Приоритет': issue.priority,
+          'Статус': issue.status,
+        },
+        link: {
+          label: 'Открыть заявку в Jira',
+          href: issue.jiraUrl || '#',
+        },
+      });
+    });
+
+    // Audit changes
+    (auditLogs || []).forEach((log: any) => {
+      evts.push({
+        id: `audit-${log.id}`,
+        type: log.action === 'CREATE' ? 'COMMISSIONING' : 'AUDIT',
+        title: `Аудит: ${AUDIT_ACTION_MAP[log.action]?.label || log.action} данных паспорта`,
+        date: log.createdAt,
+        author: log.user?.displayName || 'Системный сервис',
+        description: `Зафиксированы изменения в структуре паспорта или атрибутов оборудования.`,
+      });
+    });
+
+    // Sort descending by date
+    return evts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [equipment, auditLogs]);
+
   return (
     <Box sx={{ maxWidth: 1920, mx: 'auto' }}>
       <PageHeader
@@ -513,79 +610,119 @@ export default function EquipmentPassportPage() {
         }
       />
 
-      {/* Overview Quick Stats Bar */}
-      <Card sx={{ p: 2.5, mb: 3 }}>
-        <Box
-          sx={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: 2,
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, flexWrap: 'wrap' }}>
-            <Box>
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
-                Текущий статус
-              </Typography>
-              <StatusBadge status={equipment.status} />
-            </Box>
+      {/* Top Overview & Reliability Cards */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={12} md={8}>
+          <Card sx={{ p: 2.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 2,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, flexWrap: 'wrap' }}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
+                    Текущий статус
+                  </Typography>
+                  <StatusBadge status={equipment.status} />
+                </Box>
 
-            {canEdit && (
-              <TextField
-                select
-                size="small"
-                label="Сменить статус"
-                value={equipment.status}
-                onChange={(e) => handleStatusChange(e.target.value)}
-                sx={{ minWidth: 170 }}
-              >
-                {Object.entries(EQUIPMENT_STATUS_MAP).map(([key, info]) => (
-                  <MenuItem key={key} value={key}>
-                    {info.label}
-                  </MenuItem>
+                {canEdit && (
+                  <TextField
+                    select
+                    size="small"
+                    label="Сменить статус"
+                    value={equipment.status}
+                    onChange={(e) => handleStatusChange(e.target.value)}
+                    sx={{ minWidth: 170 }}
+                  >
+                    {Object.entries(EQUIPMENT_STATUS_MAP).map(([key, info]) => (
+                      <MenuItem key={key} value={key}>
+                        {info.label}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                )}
+
+                <Box>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Местоположение
+                  </Typography>
+                  <Typography variant="subtitle2" fontWeight={700} sx={{ mt: 0.5 }}>
+                    {equipment.location || '—'}
+                  </Typography>
+                </Box>
+
+                <Box>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Заводской номер
+                  </Typography>
+                  <Typography variant="subtitle2" fontWeight={700} sx={{ mt: 0.5 }}>
+                    {equipment.serialNumber || '—'}
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                {equipment.tags.map(({ tag }) => (
+                  <Chip
+                    key={tag.id}
+                    label={tag.name}
+                    size="small"
+                    variant="outlined"
+                    sx={{
+                      backgroundColor: tag.color ? `${tag.color}15` : undefined,
+                      color: tag.color || 'inherit',
+                      borderColor: tag.color || undefined,
+                      fontWeight: 600,
+                    }}
+                  />
                 ))}
-              </TextField>
-            )}
-
-            <Box>
-              <Typography variant="caption" color="text.secondary" display="block">
-                Местоположение
-              </Typography>
-              <Typography variant="subtitle2" fontWeight={700} sx={{ mt: 0.5 }}>
-                {equipment.location || '—'}
-              </Typography>
+              </Box>
             </Box>
 
-            <Box>
-              <Typography variant="caption" color="text.secondary" display="block">
-                Заводской номер
-              </Typography>
-              <Typography variant="subtitle2" fontWeight={700} sx={{ mt: 0.5 }}>
-                {equipment.serialNumber || '—'}
-              </Typography>
-            </Box>
-          </Box>
+            <Divider sx={{ my: 2 }} />
 
-          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-            {equipment.tags.map(({ tag }) => (
-              <Chip
-                key={tag.id}
-                label={tag.name}
-                size="small"
-                variant="outlined"
-                sx={{
-                  backgroundColor: tag.color ? `${tag.color}15` : undefined,
-                  color: tag.color || 'inherit',
-                  borderColor: tag.color || undefined,
-                  fontWeight: 600,
-                }}
-              />
-            ))}
-          </Box>
-        </Box>
-      </Card>
+            {/* Quick Metrics Summary */}
+            <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+              <Box>
+                <Typography variant="caption" color="text.secondary">Дата ввода:</Typography>
+                <Typography variant="body2" fontWeight={600}>{formatDate(equipment.commissionDate)}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary">Прикреплено документов:</Typography>
+                <Typography variant="body2" fontWeight={600}>{equipment.documents.length} файлов</Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary">Регламентов ТО:</Typography>
+                <Typography variant="body2" fontWeight={600}>{equipment.maintenancePlans.length} планов</Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary">Установлено ТМЦ:</Typography>
+                <Typography variant="body2" fontWeight={600}>{equipment.spareParts.length} позиций</Typography>
+              </Box>
+            </Box>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={4}>
+          <HealthScoreGauge
+            score={healthScore}
+            size="sm"
+            title="Индекс технического состояния"
+            subtitle="Надежность и готовность к работе"
+            metrics={[
+              { label: 'ТО', value: equipment.maintenancePlans.length, status: equipment.maintenancePlans.length > 0 ? 'good' : 'warning' },
+              { label: 'Сбоев', value: (equipment.jiraIssues || []).length, status: (equipment.jiraIssues || []).length > 0 ? 'critical' : 'good' },
+              { label: 'ТМЦ', value: equipment.spareParts.length, status: 'good' },
+            ]}
+          />
+        </Grid>
+      </Grid>
 
       {/* Tabs Bar */}
       <Card sx={{ mb: 3 }}>
@@ -1210,67 +1347,77 @@ export default function EquipmentPassportPage() {
         </Card>
       )}
 
-      {/* TAB 7: История изменений (Аудит) */}
+      {/* TAB 7: История изменений (Жизненный цикл и Аудит) */}
       {activeTab === 7 && (
-        <Card sx={{ p: 3 }}>
-          <Typography variant="h6" fontWeight={700} gutterBottom>
-            История изменений паспорта оборудования
-          </Typography>
-          <Divider sx={{ mb: 2 }} />
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {/* Visual Lifecycle Timeline */}
+          <LifecycleTimeline
+            events={lifecycleEvents}
+            title="Хронология полного жизненного цикла актива"
+            loading={loadingAudit}
+          />
 
-          {loadingAudit ? (
-            <Box sx={{ p: 4, textAlign: 'center' }}>
-              <CircularProgress />
-            </Box>
-          ) : auditLogs.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">
-              Записей изменений не найдено.
+          {/* Raw Audit Logs Table */}
+          <Card sx={{ p: 3 }}>
+            <Typography variant="h6" fontWeight={700} gutterBottom sx={{ fontSize: '1rem' }}>
+              Системный журнал аудита изменений данных
             </Typography>
-          ) : (
-            <TableContainer>
-              <Table>
-                <TableHead sx={{ backgroundColor: 'rgba(0,0,0,0.02)' }}>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 600 }}>Дата и время</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Пользователь</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Действие</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Изменения</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {auditLogs.map((log) => {
-                    const actionInfo = AUDIT_ACTION_MAP[log.action] || { label: log.action, color: 'default' };
-                    return (
-                      <TableRow key={log.id}>
-                        <TableCell sx={{ fontSize: '0.8125rem' }}>{formatDateTime(log.createdAt)}</TableCell>
-                        <TableCell sx={{ fontWeight: 600 }}>{log.user?.displayName || 'Система'}</TableCell>
-                        <TableCell>
-                          <Chip label={actionInfo.label} size="small" color={actionInfo.color as any} />
-                        </TableCell>
-                        <TableCell>
-                          <Box
-                            component="pre"
-                            sx={{
-                              p: 1,
-                              backgroundColor: '#f8fafc',
-                              borderRadius: 1,
-                              fontSize: '0.75rem',
-                              m: 0,
-                              maxHeight: 120,
-                              overflow: 'auto',
-                            }}
-                          >
-                            {JSON.stringify(log.changes, null, 2)}
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </Card>
+            <Divider sx={{ mb: 2 }} />
+
+            {loadingAudit ? (
+              <Box sx={{ p: 4, textAlign: 'center' }}>
+                <CircularProgress />
+              </Box>
+            ) : auditLogs.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                Записей аудита не найдено.
+              </Typography>
+            ) : (
+              <TableContainer>
+                <Table size="small">
+                  <TableHead sx={{ backgroundColor: 'rgba(0,0,0,0.02)' }}>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 600, width: 160 }}>Дата и время</TableCell>
+                      <TableCell sx={{ fontWeight: 600, width: 180 }}>Пользователь</TableCell>
+                      <TableCell sx={{ fontWeight: 600, width: 140 }}>Действие</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Детали изменений</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {auditLogs.map((log) => {
+                      const actionInfo = AUDIT_ACTION_MAP[log.action] || { label: log.action, color: 'default' };
+                      return (
+                        <TableRow key={log.id} hover>
+                          <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace' }}>{formatDateTime(log.createdAt)}</TableCell>
+                          <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>{log.user?.displayName || 'Система'}</TableCell>
+                          <TableCell>
+                            <Chip label={actionInfo.label} size="small" color={actionInfo.color as any} sx={{ borderRadius: '4px', height: 20 }} />
+                          </TableCell>
+                          <TableCell>
+                            <Box
+                              component="pre"
+                              sx={{
+                                p: 1,
+                                backgroundColor: '#f8fafc',
+                                borderRadius: 1,
+                                fontSize: '0.75rem',
+                                m: 0,
+                                maxHeight: 120,
+                                overflow: 'auto',
+                              }}
+                            >
+                              {JSON.stringify(log.changes, null, 2)}
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </Card>
+        </Box>
       )}
 
       {/* Edit Equipment Dialog with Custom Sections */}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, Suspense } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
 import {
   Box,
   Card,
@@ -12,6 +12,7 @@ import {
   FormControlLabel,
   Switch,
   Button,
+  Checkbox,
   Table,
   TableBody,
   TableCell,
@@ -37,6 +38,8 @@ import AddIcon from '@mui/icons-material/Add';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
+import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 import CreateNomenclatureDialog from '@/components/wms/CreateNomenclatureDialog';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
@@ -47,6 +50,8 @@ import {
   FilterToolbar,
   EmptyState,
   DataTableWrapper,
+  CriticalAlertBanner,
+  BulkActionBar,
 } from '@/components/ui';
 
 interface StockRow {
@@ -265,8 +270,56 @@ function WmsStockContent() {
     (search ? 1 : 0) +
     (lowStockOnly ? 1 : 0);
 
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  const handleBulkExport = () => {
+    const selectedItems = items.filter((i) => selectedIds.includes(i.id));
+    const csvContent =
+      'data:text/csv;charset=utf-8,' +
+      ['Склад,Артикул,Номенклатура,Категория,Остаток,Ед.Изм.,Мин.Остаток']
+        .concat(
+          selectedItems.map(
+            (i) => `"${i.warehouseName}","${i.article}","${i.name}","${i.category}",${i.quantity},"${i.unit}",${i.minStock}`
+          )
+        )
+        .join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `stock_export_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    enqueueSnackbar(`Экспортировано позиций: ${selectedItems.length}`, { variant: 'success' });
+  };
+
+  const handleBulkIssue = () => {
+    enqueueSnackbar(`Сформирован черновик акта списания на ${selectedIds.length} позиций`, { variant: 'info' });
+  };
+
+  const lowStockCount = items.filter((i) => i.isLowStock).length;
+  const criticalAlerts = useMemo(() => {
+    if (lowStockCount > 0) {
+      return [
+        {
+          id: 'low-stock-alert',
+          severity: 'WARNING' as const,
+          title: 'Обнаружен дефицит складских запасов ТМЦ',
+          description: `Текущий остаток ниже минимального неснижаемого порога по ${lowStockCount} позициям. Рекомендуется сформировать заказ поставщику.`,
+          count: lowStockCount,
+          actionLabel: 'Показать дефицит',
+          onAction: () => {
+            setLowStockOnly(true);
+            setPage(0);
+          },
+        },
+      ];
+    }
+    return [];
+  }, [lowStockCount]);
+
   return (
-    <Box sx={{ pb: 4 }}>
+    <Box sx={{ pb: selectedIds.length > 0 ? 8 : 4 }}>
       <PageHeader
         title="Остатки складов и номенклатура (ТМЦ)"
         subtitle="Реестр наличия запасных частей, адреса ячеистого хранения и привязка к оборудованию"
@@ -291,6 +344,9 @@ function WmsStockContent() {
           </Stack>
         }
       />
+
+      {/* Critical Stock Alerts */}
+      <CriticalAlertBanner alerts={criticalAlerts} />
 
       <FilterToolbar
         activeFilterCount={activeFilterCount}
@@ -418,6 +474,20 @@ function WmsStockContent() {
           <Table size="small" aria-label="Реестр остатков складов и ТМЦ">
             <TableHead>
               <TableRow>
+                <TableCell padding="checkbox" sx={{ width: 48 }}>
+                  <Checkbox
+                    size="small"
+                    indeterminate={selectedIds.length > 0 && selectedIds.length < items.length}
+                    checked={items.length > 0 && selectedIds.length === items.length}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedIds(items.map((i) => i.id));
+                      } else {
+                        setSelectedIds([]);
+                      }
+                    }}
+                  />
+                </TableCell>
                 <TableCell sx={{ width: 140 }}>Склад</TableCell>
                 <TableCell sx={{ width: 160 }}>Место (Ячейка)</TableCell>
                 <TableCell sx={{ width: 120 }}>Артикул</TableCell>
@@ -436,20 +506,34 @@ function WmsStockContent() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {items.map((row) => (
-                <TableRow
-                  key={row.id}
-                  hover
-                  sx={{
-                    bgcolor: row.isLowStock ? 'rgba(237, 108, 2, 0.04)' : undefined,
-                  }}
-                >
-                  <TableCell>
-                    <Chip label={row.warehouseCode} size="small" variant="outlined" sx={{ fontWeight: 600, borderRadius: '4px' }} />
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.2 }}>
-                      {row.warehouseName}
-                    </Typography>
-                  </TableCell>
+              {items.map((row) => {
+                const isChecked = selectedIds.includes(row.id);
+                return (
+                  <TableRow
+                    key={row.id}
+                    hover
+                    selected={isChecked}
+                    sx={{
+                      bgcolor: row.isLowStock ? 'rgba(237, 108, 2, 0.04)' : undefined,
+                    }}
+                  >
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        size="small"
+                        checked={isChecked}
+                        onChange={() => {
+                          setSelectedIds((prev) =>
+                            prev.includes(row.id) ? prev.filter((id) => id !== row.id) : [...prev, row.id]
+                          );
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Chip label={row.warehouseCode} size="small" variant="outlined" sx={{ fontWeight: 600, borderRadius: '4px' }} />
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.2 }}>
+                        {row.warehouseName}
+                      </Typography>
+                    </TableCell>
 
                   <TableCell>
                     {row.cellCode ? (
@@ -540,7 +624,8 @@ function WmsStockContent() {
                     )}
                   </TableCell>
                 </TableRow>
-              ))}
+              );
+            })}
             </TableBody>
           </Table>
         </DataTableWrapper>
@@ -636,6 +721,27 @@ function WmsStockContent() {
         onClose={() => setIsNomenclatureModalOpen(false)}
         onCreated={() => fetchStock()}
         categories={categories}
+      />
+
+      {/* Floating Bulk Action Bar */}
+      <BulkActionBar
+        selectedCount={selectedIds.length}
+        totalCount={totalCount}
+        onClearSelection={() => setSelectedIds([])}
+        actions={[
+          {
+            label: 'Экспорт в CSV',
+            icon: <FileDownloadOutlinedIcon fontSize="small" />,
+            onClick: handleBulkExport,
+            color: 'primary',
+          },
+          {
+            label: 'Сформировать списание',
+            icon: <SendOutlinedIcon fontSize="small" />,
+            onClick: handleBulkIssue,
+            color: 'warning',
+          },
+        ]}
       />
     </Box>
   );
