@@ -854,74 +854,76 @@ export default function SrmOverviewPage() {
                       minHeight={140}
                     />
                   ) : (
-                    <Table size="small">
-                      <TableHead sx={{ backgroundColor: 'action.hover' }}>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 700 }}>Ключ в SRM</TableCell>
-                          <TableCell sx={{ fontWeight: 700 }}>Отображаемое название</TableCell>
-                          <TableCell sx={{ fontWeight: 700 }}>Путь в JSON</TableCell>
-                          <TableCell sx={{ fontWeight: 700 }}>Тип</TableCell>
-                          <TableCell sx={{ fontWeight: 700 }}>Дефолт</TableCell>
-                          <TableCell sx={{ fontWeight: 700 }} align="center">
-                            Удалить
-                          </TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {mappingConfig.customMappings.map((custom: any, idx: number) => (
-                          <TableRow key={idx} hover>
-                            <TableCell>
-                              <TextField
-                                size="small"
-                                value={custom.key}
-                                onChange={(e) => handleCustomFieldChange(idx, 'key', e.target.value)}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <TextField
-                                size="small"
-                                value={custom.label}
-                                onChange={(e) => handleCustomFieldChange(idx, 'label', e.target.value)}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <TextField
-                                size="small"
-                                fullWidth
-                                value={custom.jiraPath}
-                                onChange={(e) => handleCustomFieldChange(idx, 'jiraPath', e.target.value)}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <FormControl size="small" fullWidth>
-                                <Select
-                                  value={custom.transformType}
-                                  onChange={(e) => handleCustomFieldChange(idx, 'transformType', e.target.value)}
-                                >
-                                  <MenuItem value="string">Строка</MenuItem>
-                                  <MenuItem value="number">Число</MenuItem>
-                                  <MenuItem value="date">Дата</MenuItem>
-                                  <MenuItem value="boolean">Boolean</MenuItem>
-                                  <MenuItem value="json">JSON</MenuItem>
-                                </Select>
-                              </FormControl>
-                            </TableCell>
-                            <TableCell>
-                              <TextField
-                                size="small"
-                                value={custom.defaultValue || ''}
-                                onChange={(e) => handleCustomFieldChange(idx, 'defaultValue', e.target.value)}
-                              />
-                            </TableCell>
-                            <TableCell align="center">
-                              <IconButton size="small" color="error" onClick={() => handleDeleteCustomField(idx)}>
-                                <DeleteOutlineIcon fontSize="small" />
-                              </IconButton>
+                    <DataTableWrapper>
+                      <Table size="small">
+                        <TableHead sx={{ backgroundColor: 'action.hover' }}>
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 700 }}>Ключ в SRM</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }}>Отображаемое название</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }}>Путь в JSON</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }}>Тип</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }}>Дефолт</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }} align="center">
+                              Удалить
                             </TableCell>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHead>
+                        <TableBody>
+                          {mappingConfig.customMappings.map((custom: any, idx: number) => (
+                            <TableRow key={idx} hover>
+                              <TableCell>
+                                <TextField
+                                  size="small"
+                                  value={custom.key}
+                                  onChange={(e) => handleCustomFieldChange(idx, 'key', e.target.value)}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <TextField
+                                  size="small"
+                                  value={custom.label}
+                                  onChange={(e) => handleCustomFieldChange(idx, 'label', e.target.value)}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <TextField
+                                  size="small"
+                                  fullWidth
+                                  value={custom.jiraPath}
+                                  onChange={(e) => handleCustomFieldChange(idx, 'jiraPath', e.target.value)}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <FormControl size="small" fullWidth>
+                                  <Select
+                                    value={custom.transformType}
+                                    onChange={(e) => handleCustomFieldChange(idx, 'transformType', e.target.value)}
+                                  >
+                                    <MenuItem value="string">Строка</MenuItem>
+                                    <MenuItem value="number">Число</MenuItem>
+                                    <MenuItem value="date">Дата</MenuItem>
+                                    <MenuItem value="boolean">Boolean</MenuItem>
+                                    <MenuItem value="json">JSON</MenuItem>
+                                  </Select>
+                                </FormControl>
+                              </TableCell>
+                              <TableCell>
+                                <TextField
+                                  size="small"
+                                  value={custom.defaultValue || ''}
+                                  onChange={(e) => handleCustomFieldChange(idx, 'defaultValue', e.target.value)}
+                                />
+                              </TableCell>
+                              <TableCell align="center">
+                                <IconButton size="small" color="error" onClick={() => handleDeleteCustomField(idx)}>
+                                  <DeleteOutlineIcon fontSize="small" />
+                                </IconButton>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </DataTableWrapper>
                   )}
                 </CardContent>
               </Card>
@@ -1140,90 +1142,92 @@ export default function SrmOverviewPage() {
                       minHeight={180}
                     />
                   ) : (
-                    <Table>
-                      <TableHead sx={{ backgroundColor: 'action.hover' }}>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 700 }}>Название подключения</TableCell>
-                          <TableCell sx={{ fontWeight: 700 }}>Тип провайдера</TableCell>
-                          <TableCell sx={{ fontWeight: 700 }}>Базовый URL</TableCell>
-                          <TableCell sx={{ fontWeight: 700 }}>Авторизация</TableCell>
-                          <TableCell sx={{ fontWeight: 700 }}>Синхронизировано задач</TableCell>
-                          <TableCell sx={{ fontWeight: 700 }}>Последняя синхронизация</TableCell>
-                          <TableCell sx={{ fontWeight: 700 }}>Статус</TableCell>
-                          <TableCell sx={{ fontWeight: 700 }} align="right">
-                            Действия
-                          </TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {integrations.map((item) => (
-                          <TableRow key={item.id} hover>
-                            <TableCell>
-                              <Typography variant="body2" fontWeight={700}>
-                                {item.name}
-                              </Typography>
-                              {item.isDefault && <Chip label="По умолчанию" size="small" color="primary" sx={{ mt: 0.5 }} />}
-                            </TableCell>
-                            <TableCell>
-                              <Chip label={item.providerType} size="small" variant="outlined" color="primary" />
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
-                                {item.baseUrl}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="caption" color="text.secondary">
-                                {item.authType}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body2" fontWeight={600}>
-                                {item._count?.issues || 0}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              {item.lastSyncAt ? new Date(item.lastSyncAt).toLocaleString('ru-RU') : 'Никогда'}
-                            </TableCell>
-                            <TableCell>
-                              <StatusBadge
-                                status={item.lastSyncStatus || 'WAITING'}
-                                tooltip={item.lastSyncError || undefined}
-                              />
-                            </TableCell>
-                            <TableCell align="right">
-                              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                                <Button
-                                  size="small"
-                                  variant="outlined"
-                                  startIcon={testingIntegrationId === item.id ? <CircularProgress size={16} /> : <PlayArrowIcon />}
-                                  onClick={() => handleTestIntegrationConnection(item.id)}
-                                  disabled={testingIntegrationId === item.id}
-                                >
-                                  Проверить связь
-                                </Button>
-                                <Button
-                                  size="small"
-                                  variant="contained"
-                                  color="primary"
-                                  startIcon={<SyncIcon />}
-                                  onClick={() => handleSyncSingleIntegration(item.id)}
-                                >
-                                  Синхронизировать
-                                </Button>
-                                <IconButton
-                                  size="small"
-                                  color="error"
-                                  onClick={() => handleDeleteIntegration(item.id)}
-                                >
-                                  <DeleteOutlineIcon fontSize="small" />
-                                </IconButton>
-                              </Box>
+                    <DataTableWrapper>
+                      <Table>
+                        <TableHead sx={{ backgroundColor: 'action.hover' }}>
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 700 }}>Название подключения</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }}>Тип провайдера</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }}>Базовый URL</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }}>Авторизация</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }}>Синхронизировано задач</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }}>Последняя синхронизация</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }}>Статус</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }} align="right">
+                              Действия
                             </TableCell>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHead>
+                        <TableBody>
+                          {integrations.map((item) => (
+                            <TableRow key={item.id} hover>
+                              <TableCell>
+                                <Typography variant="body2" fontWeight={700}>
+                                  {item.name}
+                                </Typography>
+                                {item.isDefault && <Chip label="По умолчанию" size="small" color="primary" sx={{ mt: 0.5 }} />}
+                              </TableCell>
+                              <TableCell>
+                                <Chip label={item.providerType} size="small" variant="outlined" color="primary" />
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
+                                  {item.baseUrl}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="caption" color="text.secondary">
+                                  {item.authType}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2" fontWeight={600}>
+                                  {item._count?.issues || 0}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                {item.lastSyncAt ? new Date(item.lastSyncAt).toLocaleString('ru-RU') : 'Никогда'}
+                              </TableCell>
+                              <TableCell>
+                                <StatusBadge
+                                  status={item.lastSyncStatus || 'WAITING'}
+                                  tooltip={item.lastSyncError || undefined}
+                                />
+                              </TableCell>
+                              <TableCell align="right">
+                                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                                  <Button
+                                    size="small"
+                                    variant="outlined"
+                                    startIcon={testingIntegrationId === item.id ? <CircularProgress size={16} /> : <PlayArrowIcon />}
+                                    onClick={() => handleTestIntegrationConnection(item.id)}
+                                    disabled={testingIntegrationId === item.id}
+                                  >
+                                    Проверить связь
+                                  </Button>
+                                  <Button
+                                    size="small"
+                                    variant="contained"
+                                    color="primary"
+                                    startIcon={<SyncIcon />}
+                                    onClick={() => handleSyncSingleIntegration(item.id)}
+                                  >
+                                    Синхронизировать
+                                  </Button>
+                                  <IconButton
+                                    size="small"
+                                    color="error"
+                                    onClick={() => handleDeleteIntegration(item.id)}
+                                  >
+                                    <DeleteOutlineIcon fontSize="small" />
+                                  </IconButton>
+                                </Box>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </DataTableWrapper>
                   )}
                 </CardContent>
               </Card>
