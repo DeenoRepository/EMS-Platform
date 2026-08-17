@@ -18,9 +18,9 @@ import {
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
-import DensitySmallIcon from '@mui/icons-material/DensitySmall';
-import DensityMediumIcon from '@mui/icons-material/DensityMedium';
-import DensityLargeIcon from '@mui/icons-material/DensityLarge';
+import ViewHeadlineIcon from '@mui/icons-material/ViewHeadline';
+import ViewStreamIcon from '@mui/icons-material/ViewStream';
+import ViewAgendaIcon from '@mui/icons-material/ViewAgenda';
 import CloseIcon from '@mui/icons-material/Close';
 
 export type TableDensity = 'compact' | 'standard' | 'comfortable';
@@ -230,17 +230,17 @@ export function DataTableWrapper({
                   >
                     <ToggleButton value="compact" aria-label="компактный">
                       <Tooltip title="Компактный вид">
-                        <DensitySmallIcon fontSize="small" sx={{ fontSize: 16 }} />
+                        <ViewHeadlineIcon fontSize="small" sx={{ fontSize: 16 }} />
                       </Tooltip>
                     </ToggleButton>
                     <ToggleButton value="standard" aria-label="стандартный">
                       <Tooltip title="Стандартный вид">
-                        <DensityMediumIcon fontSize="small" sx={{ fontSize: 16 }} />
+                        <ViewStreamIcon fontSize="small" sx={{ fontSize: 16 }} />
                       </Tooltip>
                     </ToggleButton>
                     <ToggleButton value="comfortable" aria-label="просторный">
                       <Tooltip title="Просторный вид">
-                        <DensityLargeIcon fontSize="small" sx={{ fontSize: 16 }} />
+                        <ViewAgendaIcon fontSize="small" sx={{ fontSize: 16 }} />
                       </Tooltip>
                     </ToggleButton>
                   </ToggleButtonGroup>
