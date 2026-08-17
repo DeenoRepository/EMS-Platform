@@ -52,6 +52,14 @@ import {
 } from '@ems/shared';
 import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
+import {
+  StatCard,
+  StatusBadge,
+  SearchInput,
+  FilterToolbar,
+  EmptyState,
+  DataTableWrapper,
+} from '@/components/ui';
 
 interface ApprovalItem {
   id: string;
@@ -105,6 +113,7 @@ function ApprovalsListContent() {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [loading, setLoading] = useState(true);
 
   // Scope Tab: 'all' | 'to_review' | 'my_requests'
@@ -140,50 +149,48 @@ function ApprovalsListContent() {
   // Review Resolution Modal State
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [selectedApprovalForReview, setSelectedApprovalForReview] = useState<ApprovalItem | null>(null);
+  const [reviewDecision, setReviewDecision] = useState<'APPROVED' | 'REJECTED' | 'CANCELLED'>('APPROVED');
   const [resolutionComment, setResolutionComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
 
-  // Details Modal State
+  // Detailed Modal View
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedApprovalForDetails, setSelectedApprovalForDetails] = useState<ApprovalItem | null>(null);
 
-  // Load equipment list for selectors
-  useEffect(() => {
-    async function loadEquipment() {
-      try {
-        const res = await fetch('/api/eps/equipment?pageSize=100');
-        if (res.ok) {
-          const json = await res.json();
-          if (json.success && json.data?.items) {
-            setEquipmentList(
-              json.data.items.map((eq: any) => ({
-                id: eq.id,
-                name: eq.name,
-                inventoryNumber: eq.inventoryNumber,
-                status: eq.status,
-              }))
-            );
-          }
+  const fetchEquipmentList = async () => {
+    try {
+      const res = await fetch('/api/eps/equipment?pageSize=100');
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success) {
+          setEquipmentList(
+            json.data.items.map((eq: any) => ({
+              id: eq.id,
+              name: eq.name,
+              inventoryNumber: eq.inventoryNumber,
+              status: eq.status,
+            }))
+          );
         }
-      } catch {
-        // ignore
       }
+    } catch {
+      // ignore
     }
-    loadEquipment();
-  }, []);
+  };
 
   const fetchApprovals = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
         page: String(page),
-        pageSize: '25',
-        scope: scopeTab,
+        pageSize: String(pageSize),
       });
       if (search) params.append('search', search);
       if (statusFilter) params.append('status', statusFilter);
       if (typeFilter) params.append('type', typeFilter);
       if (equipmentFilter) params.append('equipmentId', equipmentFilter);
+      if (scopeTab === 'to_review') params.append('scope', 'to_review');
+      if (scopeTab === 'my_requests') params.append('scope', 'my_requests');
 
       const res = await fetch(`/api/eps/approvals?${params.toString()}`);
       if (res.ok) {
@@ -198,21 +205,19 @@ function ApprovalsListContent() {
         }
       }
     } catch {
-      enqueueSnackbar('Ошибка загрузки списка согласований', { variant: 'error' });
+      enqueueSnackbar('Ошибка загрузки заявок на согласование', { variant: 'error' });
     } finally {
       setLoading(false);
     }
-  }, [page, scopeTab, search, statusFilter, typeFilter, equipmentFilter, enqueueSnackbar]);
+  }, [page, pageSize, search, statusFilter, typeFilter, equipmentFilter, scopeTab, enqueueSnackbar]);
+
+  useEffect(() => {
+    fetchEquipmentList();
+  }, []);
 
   useEffect(() => {
     fetchApprovals();
   }, [fetchApprovals]);
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(1);
-    fetchApprovals();
-  };
 
   const handleKpiFilter = (status: string) => {
     if (statusFilter === status) {
@@ -220,6 +225,14 @@ function ApprovalsListContent() {
     } else {
       setStatusFilter(status);
     }
+    setPage(1);
+  };
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setStatusFilter('');
+    setTypeFilter('');
+    setEquipmentFilter('');
     setPage(1);
   };
 
@@ -275,28 +288,25 @@ function ApprovalsListContent() {
     }
   };
 
-  // Process Resolution Submit (Approve or Reject)
   const handleProcessReview = async (decision: 'APPROVED' | 'REJECTED' | 'CANCELLED') => {
     if (!selectedApprovalForReview) return;
-
     if (decision === 'REJECTED' && !resolutionComment.trim()) {
       enqueueSnackbar('Для отклонения заявки обязательно укажите причину в комментарии', { variant: 'warning' });
       return;
     }
-
     setSubmittingReview(true);
     try {
-      const res = await fetch(`/api/eps/approvals/${selectedApprovalForReview.id}`, {
-        method: 'PATCH',
+      const res = await fetch(`/api/eps/approvals/${selectedApprovalForReview.id}/resolution`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          status: decision,
+          decision,
           resolutionComment: resolutionComment.trim() || undefined,
         }),
       });
 
       const json = await res.json();
-      if (json.success) {
+      if (res.ok && json.success) {
         const msg =
           decision === 'APPROVED'
             ? 'Заявка успешно согласована. Статус оборудования обновлен!'
@@ -318,6 +328,12 @@ function ApprovalsListContent() {
     }
   };
 
+  const activeFilterCount =
+    (search ? 1 : 0) +
+    (statusFilter ? 1 : 0) +
+    (typeFilter ? 1 : 0) +
+    (equipmentFilter ? 1 : 0);
+
   const canCreate = hasPermission(PERMISSIONS.EPS_APPROVALS_CREATE) || hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT);
   const canManage = hasPermission(PERMISSIONS.EPS_APPROVALS_MANAGE) || hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT);
 
@@ -337,7 +353,7 @@ function ApprovalsListContent() {
               variant="contained"
               startIcon={<AddIcon />}
               onClick={() => setCreateModalOpen(true)}
-              sx={{ px: 2.5, py: 1, fontWeight: 600 }}
+              sx={{ px: 2.25, py: 0.75, fontWeight: 600 }}
             >
               Создать заявку
             </Button>
@@ -345,456 +361,368 @@ function ApprovalsListContent() {
         }
       />
 
-      {/* KPI Metric Cards */}
-      <Grid container spacing={1.5} sx={{ mb: 2 }}>
+      {/* Top KPI Metric Cards Bar with StatCard */}
+      <Grid container spacing={1.75} sx={{ mb: 2.5 }}>
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card
+          <StatCard
+            title="На рассмотрении"
+            value={stats.pending}
+            subtitle="Ожидают решения"
+            icon={<PendingActionsOutlinedIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(217, 119, 6, 0.08)"
+            iconColor="#d97706"
+            accentColor="#d97706"
+            active={statusFilter === 'PENDING'}
             onClick={() => handleKpiFilter('PENDING')}
-            sx={{
-              p: 1.25,
-              cursor: 'pointer',
-              border: statusFilter === 'PENDING' ? '2px solid #d97706' : '1px solid #e2e8f0',
-              backgroundColor: statusFilter === 'PENDING' ? 'rgba(217, 119, 6, 0.04)' : '#ffffff',
-              transition: 'all 0.12s ease',
-              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" color="warning.main" fontWeight={700} fontSize="0.6875rem">
-                НА РАССМОТРЕНИИ
-              </Typography>
-              <PendingActionsOutlinedIcon color="warning" sx={{ fontSize: 18 }} />
-            </Box>
-            <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5, color: 'warning.main', fontSize: '1.25rem' }}>
-              {stats.pending}
-            </Typography>
-          </Card>
+            loading={loading && stats.total === 0}
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card
+          <StatCard
+            title="Согласовано"
+            value={stats.approved}
+            subtitle="Одобренные заявки"
+            icon={<CheckCircleOutlineIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(22, 163, 74, 0.08)"
+            iconColor="#16a34a"
+            accentColor="#16a34a"
+            active={statusFilter === 'APPROVED'}
             onClick={() => handleKpiFilter('APPROVED')}
-            sx={{
-              p: 1.25,
-              cursor: 'pointer',
-              border: statusFilter === 'APPROVED' ? '2px solid #16a34a' : '1px solid #e2e8f0',
-              backgroundColor: statusFilter === 'APPROVED' ? 'rgba(22, 163, 74, 0.04)' : '#ffffff',
-              transition: 'all 0.12s ease',
-              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" color="success.main" fontWeight={700} fontSize="0.6875rem">
-                СОГЛАСОВАНО
-              </Typography>
-              <CheckCircleOutlineIcon color="success" sx={{ fontSize: 18 }} />
-            </Box>
-            <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5, color: 'success.main', fontSize: '1.25rem' }}>
-              {stats.approved}
-            </Typography>
-          </Card>
+            loading={loading && stats.total === 0}
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card
+          <StatCard
+            title="Отклонено"
+            value={stats.rejected}
+            subtitle="Отклоненные заявки"
+            icon={<CancelOutlinedIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(220, 38, 38, 0.08)"
+            iconColor="#dc2626"
+            accentColor="#dc2626"
+            active={statusFilter === 'REJECTED'}
             onClick={() => handleKpiFilter('REJECTED')}
-            sx={{
-              p: 1.25,
-              cursor: 'pointer',
-              border: statusFilter === 'REJECTED' ? '2px solid #dc2626' : '1px solid #e2e8f0',
-              backgroundColor: statusFilter === 'REJECTED' ? 'rgba(220, 38, 38, 0.04)' : '#ffffff',
-              transition: 'all 0.12s ease',
-              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" color="error.main" fontWeight={700} fontSize="0.6875rem">
-                ОТКЛОНЕНО
-              </Typography>
-              <CancelOutlinedIcon color="error" sx={{ fontSize: 18 }} />
-            </Box>
-            <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5, color: 'error.main', fontSize: '1.25rem' }}>
-              {stats.rejected}
-            </Typography>
-          </Card>
+            loading={loading && stats.total === 0}
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card
+          <StatCard
+            title="Отозвано"
+            value={stats.cancelled}
+            subtitle="Отмененные инициатором"
+            icon={<RemoveCircleOutlineIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(100, 116, 139, 0.08)"
+            iconColor="#64748b"
+            accentColor="#64748b"
+            active={statusFilter === 'CANCELLED'}
             onClick={() => handleKpiFilter('CANCELLED')}
-            sx={{
-              p: 1.25,
-              cursor: 'pointer',
-              border: statusFilter === 'CANCELLED' ? '2px solid #64748b' : '1px solid #e2e8f0',
-              backgroundColor: statusFilter === 'CANCELLED' ? 'rgba(100, 116, 139, 0.04)' : '#ffffff',
-              transition: 'all 0.12s ease',
-              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={700} fontSize="0.6875rem">
-                ОТОЗВАНО
-              </Typography>
-              <RemoveCircleOutlineIcon sx={{ color: 'text.secondary', fontSize: 18 }} />
-            </Box>
-            <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5, color: 'text.primary', fontSize: '1.25rem' }}>
-              {stats.cancelled}
-            </Typography>
-          </Card>
+            loading={loading && stats.total === 0}
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card
+          <StatCard
+            title="Всего заявок"
+            value={stats.total}
+            subtitle="За все время"
+            icon={<FactCheckOutlinedIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(2, 132, 199, 0.08)"
+            iconColor="#0284c7"
+            accentColor="#0284c7"
+            active={statusFilter === ''}
             onClick={() => handleKpiFilter('')}
-            sx={{
-              p: 1.25,
-              cursor: 'pointer',
-              border: statusFilter === '' ? '2px solid #0284c7' : '1px solid #e2e8f0',
-              backgroundColor: statusFilter === '' ? 'rgba(2, 132, 199, 0.04)' : '#ffffff',
-              transition: 'all 0.12s ease',
-              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" color="primary.main" fontWeight={700} fontSize="0.6875rem">
-                ВСЕГО ЗАЯВОК
-              </Typography>
-              <FactCheckOutlinedIcon color="primary" sx={{ fontSize: 18 }} />
-            </Box>
-            <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5, color: '#0f172a', fontSize: '1.25rem' }}>
-              {stats.total}
-            </Typography>
-          </Card>
+            loading={loading && stats.total === 0}
+          />
         </Grid>
       </Grid>
 
       {/* Scope Navigation Tabs */}
-      <Card sx={{ mb: 2 }}>
+      <Paper
+        elevation={0}
+        sx={{
+          mb: 2,
+          borderRadius: '10px',
+          border: '1px solid #e2e8f0',
+          backgroundColor: '#ffffff',
+          overflow: 'hidden',
+        }}
+      >
         <Tabs
           value={scopeTab}
           onChange={(_, val) => {
             setScopeTab(val);
             setPage(1);
           }}
-          sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}
+          sx={{ px: 2, minHeight: 44 }}
         >
-          <Tab value="all" label="Все заявки" />
+          <Tab value="all" label="Все заявки" sx={{ minHeight: 44 }} />
           <Tab
             value="to_review"
             label={`Требуют рассмотрения (${stats.pending})`}
-            sx={{ fontWeight: stats.pending > 0 ? 700 : 500 }}
+            sx={{ fontWeight: stats.pending > 0 ? 700 : 500, minHeight: 44 }}
           />
-          <Tab value="my_requests" label="Мои заявки" />
+          <Tab value="my_requests" label="Мои заявки" sx={{ minHeight: 44 }} />
         </Tabs>
-      </Card>
+      </Paper>
 
       {/* Filter and Search Bar */}
-      <Card sx={{ p: 1.25, mb: 2 }}>
-        <Box
-          component="form"
-          onSubmit={handleSearchSubmit}
-          sx={{
-            display: 'flex',
-            gap: 1.5,
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center', flexGrow: 1 }}>
-            <TextField
-              size="small"
-              placeholder="Поиск по теме, описанию, инв. номеру..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon sx={{ fontSize: 18 }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{ minWidth: 280, flexGrow: { xs: 1, md: 0 } }}
-            />
-
-            <TextField
-              select
-              size="small"
-              label="Тип согласования"
-              value={typeFilter}
-              onChange={(e) => {
-                setTypeFilter(e.target.value);
-                setPage(1);
-              }}
-              sx={{ minWidth: 190 }}
-            >
-              <MenuItem value="">Все типы</MenuItem>
-              {Object.entries(APPROVAL_TYPE_MAP).map(([key, label]) => (
-                <MenuItem key={key} value={key}>
-                  {label}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <TextField
-              select
-              size="small"
-              label="Статус"
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-              sx={{ minWidth: 160 }}
-            >
-              <MenuItem value="">Все статусы</MenuItem>
-              {Object.entries(APPROVAL_STATUS_MAP).map(([key, info]) => (
-                <MenuItem key={key} value={key}>
-                  {info.label}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <TextField
-              select
-              size="small"
-              label="Оборудование"
-              value={equipmentFilter}
-              onChange={(e) => {
-                setEquipmentFilter(e.target.value);
-                setPage(1);
-              }}
-              sx={{ minWidth: 220 }}
-            >
-              <MenuItem value="">Все единицы</MenuItem>
-              {equipmentList.map((eq) => (
-                <MenuItem key={eq.id} value={eq.id}>
-                  {eq.inventoryNumber ? `[${eq.inventoryNumber}] ` : ''}{eq.name}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <Button type="submit" variant="outlined" size="small" sx={{ px: 2 }}>
-              Применить
-            </Button>
-            {(search || statusFilter || typeFilter || equipmentFilter) && (
-              <Button
-                variant="text"
-                size="small"
-                onClick={() => {
-                  setSearch('');
-                  setStatusFilter('');
-                  setTypeFilter('');
-                  setEquipmentFilter('');
-                  setPage(1);
-                }}
-                color="inherit"
-              >
-                Сбросить
-              </Button>
-            )}
-          </Box>
+      <FilterToolbar
+        activeFilterCount={activeFilterCount}
+        onResetFilters={handleResetFilters}
+      >
+        <Box sx={{ minWidth: { xs: '100%', sm: 280 } }}>
+          <SearchInput
+            value={search}
+            placeholder="Поиск по теме, описанию, инв. номеру..."
+            onSearch={(val) => {
+              setSearch(val);
+              setPage(1);
+            }}
+          />
         </Box>
-      </Card>
+
+        <TextField
+          select
+          size="small"
+          label="Тип согласования"
+          value={typeFilter}
+          onChange={(e) => {
+            setTypeFilter(e.target.value);
+            setPage(1);
+          }}
+          sx={{ minWidth: 190 }}
+        >
+          <MenuItem value="">Все типы</MenuItem>
+          {Object.entries(APPROVAL_TYPE_MAP).map(([key, label]) => (
+            <MenuItem key={key} value={key}>
+              {label}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        <TextField
+          select
+          size="small"
+          label="Статус"
+          value={statusFilter}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setPage(1);
+          }}
+          sx={{ minWidth: 160 }}
+        >
+          <MenuItem value="">Все статусы</MenuItem>
+          {Object.entries(APPROVAL_STATUS_MAP).map(([key, info]) => (
+            <MenuItem key={key} value={key}>
+              {info.label}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        <TextField
+          select
+          size="small"
+          label="Оборудование"
+          value={equipmentFilter}
+          onChange={(e) => {
+            setEquipmentFilter(e.target.value);
+            setPage(1);
+          }}
+          sx={{ minWidth: 220 }}
+        >
+          <MenuItem value="">Все единицы</MenuItem>
+          {equipmentList.map((eq) => (
+            <MenuItem key={eq.id} value={eq.id}>
+              {eq.inventoryNumber ? `[${eq.inventoryNumber}] ` : ''}{eq.name}
+            </MenuItem>
+          ))}
+        </TextField>
+      </FilterToolbar>
 
       {/* Main Approvals Table */}
-      {loading ? (
-        <Card sx={{ p: 6, textAlign: 'center' }}>
-          <CircularProgress />
-        </Card>
-      ) : items.length === 0 ? (
-        <Card sx={{ p: 6, textAlign: 'center' }}>
-          <FactCheckOutlinedIcon sx={{ fontSize: 56, color: 'text.secondary', opacity: 0.4, mb: 1 }} />
-          <Typography variant="h6" fontWeight={600} gutterBottom>
-            Заявки на согласование не найдены
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Попробуйте изменить фильтры или подайте новую заявку
-          </Typography>
-          {canCreate && (
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateModalOpen(true)}>
-              Создать заявку
-            </Button>
-          )}
-        </Card>
+      {items.length === 0 && !loading ? (
+        <EmptyState
+          paper
+          icon={<FactCheckOutlinedIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+          title="Заявки на согласование не найдены"
+          description={
+            activeFilterCount > 0
+              ? 'По заданным критериям фильтрации заявки не найдены. Попробуйте сбросить фильтры.'
+              : 'В системе пока нет активных заявок на согласование.'
+          }
+          actionText={activeFilterCount > 0 ? 'Сбросить фильтры' : (canCreate ? 'Создать заявку' : undefined)}
+          onAction={activeFilterCount > 0 ? handleResetFilters : (canCreate ? () => setCreateModalOpen(true) : undefined)}
+        />
       ) : (
-        <Card>
-          <TableContainer>
-            <Table size="medium">
-              <TableHead sx={{ backgroundColor: '#f8fafc' }}>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>Тема / Заявка</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Оборудование</TableCell>
-                  <TableCell sx={{ fontWeight: 700, width: 170 }}>Тип согласования</TableCell>
-                  <TableCell sx={{ fontWeight: 700, width: 140 }}>Статус</TableCell>
-                  <TableCell sx={{ fontWeight: 700, width: 150 }}>Инициатор</TableCell>
-                  <TableCell sx={{ fontWeight: 700, width: 130 }}>Дата подачи</TableCell>
-                  <TableCell sx={{ fontWeight: 700, width: 160 }}>Решение / Автор</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 700, width: 120 }}>Действия</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {items.map((app) => {
-                  const statusInfo = APPROVAL_STATUS_MAP[app.status] || { label: app.status, color: 'default' };
-                  const isPending = app.status === 'PENDING';
-                  const isRequester = user?.userId === app.requesterId;
+        <DataTableWrapper
+          loading={loading}
+          page={page - 1}
+          pageSize={pageSize}
+          total={total}
+          onPageChange={(_, newPage) => setPage(newPage + 1)}
+          onPageSizeChange={(e) => {
+            setPageSize(parseInt(e.target.value, 10));
+            setPage(1);
+          }}
+          stickyHeader
+        >
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700 }}>Тема / Заявка</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Оборудование</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 170 }}>Тип согласования</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 140 }}>Статус</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 150 }}>Инициатор</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 130 }}>Дата подачи</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 160 }}>Решение / Автор</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, width: 120 }}>Действия</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {items.map((app) => {
+                const isPending = app.status === 'PENDING';
+                const isRequester = user?.userId === app.requesterId;
 
-                  return (
-                    <TableRow
-                      key={app.id}
-                      hover
-                      sx={{ cursor: 'pointer' }}
-                      onClick={() => {
-                        setSelectedApprovalForDetails(app);
-                        setDetailsModalOpen(true);
-                      }}
-                    >
-                      <TableCell>
-                        <Typography variant="subtitle2" fontWeight={600} color="primary.main">
-                          {app.title}
+                return (
+                  <TableRow
+                    key={app.id}
+                    hover
+                    sx={{ cursor: 'pointer' }}
+                    onClick={() => {
+                      setSelectedApprovalForDetails(app);
+                      setDetailsModalOpen(true);
+                    }}
+                  >
+                    <TableCell>
+                      <Typography variant="subtitle2" fontWeight={600} color="primary.main">
+                        {app.title}
+                      </Typography>
+                      {app.description && (
+                        <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block', maxWidth: 260 }}>
+                          {app.description}
                         </Typography>
-                        {app.description && (
-                          <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block', maxWidth: 260 }}>
-                            {app.description}
-                          </Typography>
-                        )}
-                      </TableCell>
+                      )}
+                    </TableCell>
 
-                      <TableCell>
-                        <Box
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/eps/${app.equipment.id}`);
-                          }}
-                          sx={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 0.75,
-                            '&:hover': { color: 'primary.main', textDecoration: 'underline' },
-                          }}
-                        >
-                          <Chip
-                            label={app.equipment.inventoryNumber || 'Б/Н'}
-                            size="small"
-                            variant="outlined"
-                            sx={{ fontWeight: 700, fontFamily: 'monospace', height: 22 }}
-                          />
-                          <Typography variant="body2" fontWeight={500}>
-                            {app.equipment.name}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-
-                      <TableCell>
+                    <TableCell>
+                      <Box
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/eps/${app.equipment.id}`);
+                        }}
+                        sx={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 0.75,
+                          '&:hover': { color: 'primary.main', textDecoration: 'underline' },
+                        }}
+                      >
                         <Chip
-                          label={APPROVAL_TYPE_MAP[app.type] || app.type}
+                          label={app.equipment.inventoryNumber || 'Б/Н'}
                           size="small"
                           variant="outlined"
-                          sx={{ fontWeight: 600 }}
+                          sx={{ fontWeight: 700, fontFamily: 'monospace', height: 20, borderRadius: '4px' }}
                         />
-                      </TableCell>
+                        <Typography variant="body2" fontWeight={500}>
+                          {app.equipment.name}
+                        </Typography>
+                      </Box>
+                    </TableCell>
 
-                      <TableCell>
-                        <Chip
-                          label={statusInfo.label}
-                          size="small"
-                          color={statusInfo.color as any}
-                          sx={{ fontWeight: 700 }}
-                        />
-                      </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={APPROVAL_TYPE_MAP[app.type] || app.type}
+                        size="small"
+                        variant="outlined"
+                        sx={{ fontWeight: 600, borderRadius: '4px' }}
+                      />
+                    </TableCell>
 
-                      <TableCell sx={{ fontSize: '0.8125rem' }}>
-                        {app.requester.displayName}
-                      </TableCell>
+                    <TableCell>
+                      <StatusBadge status={app.status} />
+                    </TableCell>
 
-                      <TableCell sx={{ fontSize: '0.8125rem' }}>
-                        {formatDateTime(app.createdAt)}
-                      </TableCell>
+                    <TableCell sx={{ fontSize: '0.8125rem' }}>
+                      {app.requester.displayName}
+                    </TableCell>
 
-                      <TableCell sx={{ fontSize: '0.8125rem' }}>
-                        {app.reviewer ? (
-                          <Box>
-                            <Typography variant="caption" fontWeight={600} display="block">
-                              {app.reviewer.displayName}
-                            </Typography>
-                            {app.resolutionComment && (
-                              <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block', maxWidth: 150 }}>
-                                «{app.resolutionComment}»
-                              </Typography>
-                            )}
-                          </Box>
-                        ) : (
-                          <Typography variant="caption" color="text.secondary">
-                            Ожидает рассмотрения
+                    <TableCell sx={{ fontSize: '0.8125rem' }}>
+                      {formatDateTime(app.createdAt)}
+                    </TableCell>
+
+                    <TableCell sx={{ fontSize: '0.8125rem' }}>
+                      {app.reviewer ? (
+                        <Box>
+                          <Typography variant="caption" fontWeight={600} display="block">
+                            {app.reviewer.displayName}
                           </Typography>
-                        )}
-                      </TableCell>
+                          {app.resolutionComment && (
+                            <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block', maxWidth: 150 }}>
+                              «{app.resolutionComment}»
+                            </Typography>
+                          )}
+                        </Box>
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">
+                          Ожидает рассмотрения
+                        </Typography>
+                      )}
+                    </TableCell>
 
-                      <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-                        {isPending && canManage ? (
-                          <Button
-                            size="small"
-                            variant="contained"
-                            color="primary"
-                            onClick={() => {
+                    <TableCell align="right" onClick={(e) => e.stopPropagation()}>
+                      {isPending && canManage ? (
+                        <Button
+                          size="small"
+                          variant="contained"
+                          color="primary"
+                          onClick={() => {
+                            setSelectedApprovalForReview(app);
+                            setResolutionComment('');
+                            setReviewModalOpen(true);
+                          }}
+                          sx={{ fontSize: '0.75rem', px: 1.25, py: 0.25, borderRadius: '6px' }}
+                        >
+                          Решение
+                        </Button>
+                      ) : isPending && isRequester ? (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          color="inherit"
+                          onClick={() => {
+                            if (confirm('Отозвать данную заявку?')) {
                               setSelectedApprovalForReview(app);
-                              setResolutionComment('');
-                              setReviewModalOpen(true);
-                            }}
-                            sx={{ fontSize: '0.75rem', px: 1.25, py: 0.25 }}
-                          >
-                            Решение
-                          </Button>
-                        ) : isPending && isRequester ? (
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            color="inherit"
-                            onClick={() => {
-                              if (confirm('Отозвать данную заявку?')) {
-                                setSelectedApprovalForReview(app);
-                                handleProcessReview('CANCELLED');
-                              }
-                            }}
-                            sx={{ fontSize: '0.75rem', px: 1 }}
-                          >
-                            Отозвать
-                          </Button>
-                        ) : (
-                          <Button
-                            size="small"
-                            variant="text"
-                            onClick={() => {
-                              setSelectedApprovalForDetails(app);
-                              setDetailsModalOpen(true);
-                            }}
-                            sx={{ fontSize: '0.75rem' }}
-                          >
-                            Детали
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          {/* Pagination */}
-          <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="caption" color="text.secondary">
-              Всего заявок: {total}
-            </Typography>
-            <Pagination
-              count={totalPages}
-              page={page}
-              onChange={(_, val) => setPage(val)}
-              color="primary"
-              size="medium"
-            />
-          </Box>
-        </Card>
+                              handleProcessReview('CANCELLED');
+                            }
+                          }}
+                          sx={{ fontSize: '0.75rem', px: 1, borderRadius: '6px' }}
+                        >
+                          Отозвать
+                        </Button>
+                      ) : (
+                        <Button
+                          size="small"
+                          variant="text"
+                          onClick={() => {
+                            setSelectedApprovalForDetails(app);
+                            setDetailsModalOpen(true);
+                          }}
+                          sx={{ fontSize: '0.75rem', borderRadius: '6px' }}
+                        >
+                          Детали
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </DataTableWrapper>
       )}
 
       {/* Dialog 1: Create Approval Request */}

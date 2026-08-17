@@ -49,6 +49,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { EQUIPMENT_STATUS_MAP, formatDate, PERMISSIONS } from '@ems/shared';
 import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
+import {
+  StatCard,
+  StatusBadge,
+  SearchInput,
+  FilterToolbar,
+  EmptyState,
+  DataTableWrapper,
+} from '@/components/ui';
 
 interface EquipmentItem {
   id: string;
@@ -84,6 +92,7 @@ function EquipmentListContent() {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [loading, setLoading] = useState(true);
 
   // View mode: 'table' or 'grid'
@@ -125,7 +134,7 @@ function EquipmentListContent() {
     try {
       const params = new URLSearchParams({
         page: String(page),
-        pageSize: viewMode === 'grid' ? '12' : '25',
+        pageSize: viewMode === 'grid' ? '12' : String(pageSize),
       });
       if (search) params.append('search', search);
       if (statusFilter) params.append('status', statusFilter);
@@ -151,7 +160,7 @@ function EquipmentListContent() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, statusFilter, tagFilter, viewMode, enqueueSnackbar]);
+  }, [page, pageSize, search, statusFilter, tagFilter, viewMode, enqueueSnackbar]);
 
   useEffect(() => {
     fetchTags();
@@ -161,14 +170,16 @@ function EquipmentListContent() {
     fetchEquipment();
   }, [fetchEquipment]);
 
-  const handleRowClick = async (eq: EquipmentItem) => {
-    setSelectedEquipment(eq);
+  const handleRowClick = async (item: EquipmentItem) => {
+    setSelectedEquipment(item);
     setLoadingDetails(true);
     try {
-      const res = await fetch(`/api/eps/equipment/${eq.id}`);
+      const res = await fetch(`/api/eps/equipment/${item.id}`);
       if (res.ok) {
         const json = await res.json();
-        if (json.success) setQuickViewDetails(json.data);
+        if (json.success) {
+          setQuickViewDetails(json.data);
+        }
       }
     } catch {
       // ignore
@@ -197,12 +208,6 @@ function EquipmentListContent() {
     }
   };
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(1);
-    fetchEquipment();
-  };
-
   const handleKpiFilter = (status: string) => {
     if (statusFilter === status) {
       setStatusFilter('');
@@ -212,6 +217,14 @@ function EquipmentListContent() {
     setPage(1);
   };
 
+  const handleResetFilters = () => {
+    setSearch('');
+    setStatusFilter('');
+    setTagFilter('');
+    setPage(1);
+  };
+
+  const activeFilterCount = (search ? 1 : 0) + (statusFilter ? 1 : 0) + (tagFilter ? 1 : 0);
   const canCreate = hasPermission(PERMISSIONS.EPS_EQUIPMENT_CREATE);
   const canEdit = hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT);
 
@@ -227,7 +240,7 @@ function EquipmentListContent() {
               variant="outlined"
               startIcon={<AssessmentOutlinedIcon />}
               onClick={() => router.push('/eps/reports')}
-              sx={{ px: 2, py: 1, fontWeight: 600 }}
+              sx={{ px: 2, py: 0.75, fontWeight: 600 }}
             >
               Конструктор отчетов
             </Button>
@@ -235,7 +248,7 @@ function EquipmentListContent() {
               variant="outlined"
               startIcon={<FileUploadOutlinedIcon />}
               onClick={() => router.push('/eps/import')}
-              sx={{ px: 2, py: 1, fontWeight: 600 }}
+              sx={{ px: 2, py: 0.75, fontWeight: 600 }}
             >
               Импорт данных
             </Button>
@@ -244,7 +257,7 @@ function EquipmentListContent() {
                 variant="contained"
                 startIcon={<AddIcon />}
                 onClick={() => router.push('/eps/new')}
-                sx={{ px: 2.5, py: 1, fontWeight: 600 }}
+                sx={{ px: 2.25, py: 0.75, fontWeight: 600 }}
               >
                 Добавить оборудование
               </Button>
@@ -253,519 +266,433 @@ function EquipmentListContent() {
         }
       />
 
-      {/* Top KPI Metric Cards Bar (Compact Enterprise Grid) */}
-      <Grid container spacing={1.5} sx={{ mb: 2 }}>
+      {/* Top KPI Metric Cards Bar with StatCard */}
+      <Grid container spacing={1.75} sx={{ mb: 2.5 }}>
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card
+          <StatCard
+            title="Всего оборудования"
+            value={statusCounts.total}
+            subtitle="Единиц в реестре предприятия"
+            icon={<PrecisionManufacturingIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(2, 132, 199, 0.08)"
+            iconColor="#0284c7"
+            accentColor="#0284c7"
+            active={statusFilter === ''}
             onClick={() => handleKpiFilter('')}
-            sx={{
-              p: 1.25,
-              cursor: 'pointer',
-              border: statusFilter === '' ? '2px solid #0284c7' : '1px solid #e2e8f0',
-              backgroundColor: statusFilter === '' ? 'rgba(2, 132, 199, 0.04)' : '#ffffff',
-              transition: 'all 0.12s ease',
-              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" color="primary.main" fontWeight={700} fontSize="0.6875rem">
-                ВСЕГО ЕДИНИЦ
-              </Typography>
-              <PrecisionManufacturingIcon color="primary" sx={{ fontSize: 18 }} />
-            </Box>
-            <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5, color: '#0f172a', fontSize: '1.25rem' }}>
-              {statusCounts.total}
-            </Typography>
-          </Card>
+            loading={loading && statusCounts.total === 0}
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card
+          <StatCard
+            title="В работе"
+            value={statusCounts.active}
+            subtitle="В штатной эксплуатации"
+            icon={<CheckCircleOutlineIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(22, 163, 74, 0.08)"
+            iconColor="#16a34a"
+            accentColor="#16a34a"
+            active={statusFilter === 'ACTIVE'}
             onClick={() => handleKpiFilter('ACTIVE')}
-            sx={{
-              p: 1.25,
-              cursor: 'pointer',
-              border: statusFilter === 'ACTIVE' ? '2px solid #16a34a' : '1px solid #e2e8f0',
-              backgroundColor: statusFilter === 'ACTIVE' ? 'rgba(22, 163, 74, 0.04)' : '#ffffff',
-              transition: 'all 0.12s ease',
-              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" color="success.main" fontWeight={700} fontSize="0.6875rem">
-                В РАБОТЕ
-              </Typography>
-              <CheckCircleOutlineIcon color="success" sx={{ fontSize: 18 }} />
-            </Box>
-            <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5, color: 'success.main', fontSize: '1.25rem' }}>
-              {statusCounts.active}
-            </Typography>
-          </Card>
+            loading={loading && statusCounts.total === 0}
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card
+          <StatCard
+            title="В ремонте"
+            value={statusCounts.underRepair}
+            subtitle="ТО или аварийные работы"
+            icon={<BuildCircleOutlinedIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(217, 119, 6, 0.08)"
+            iconColor="#d97706"
+            accentColor="#d97706"
+            active={statusFilter === 'UNDER_REPAIR'}
             onClick={() => handleKpiFilter('UNDER_REPAIR')}
-            sx={{
-              p: 1.25,
-              cursor: 'pointer',
-              border: statusFilter === 'UNDER_REPAIR' ? '2px solid #d97706' : '1px solid #e2e8f0',
-              backgroundColor: statusFilter === 'UNDER_REPAIR' ? 'rgba(217, 119, 6, 0.04)' : '#ffffff',
-              transition: 'all 0.12s ease',
-              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" color="warning.main" fontWeight={700} fontSize="0.6875rem">
-                НА РЕМОНТЕ
-              </Typography>
-              <BuildCircleOutlinedIcon color="warning" sx={{ fontSize: 18 }} />
-            </Box>
-            <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5, color: 'warning.main', fontSize: '1.25rem' }}>
-              {statusCounts.underRepair}
-            </Typography>
-          </Card>
+            loading={loading && statusCounts.total === 0}
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card
+          <StatCard
+            title="На складе"
+            value={statusCounts.inStorage}
+            subtitle="Резерв и консервация"
+            icon={<InventoryIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(100, 116, 139, 0.08)"
+            iconColor="#64748b"
+            accentColor="#64748b"
+            active={statusFilter === 'IN_STORAGE'}
             onClick={() => handleKpiFilter('IN_STORAGE')}
-            sx={{
-              p: 1.25,
-              cursor: 'pointer',
-              border: statusFilter === 'IN_STORAGE' ? '2px solid #64748b' : '1px solid #e2e8f0',
-              backgroundColor: statusFilter === 'IN_STORAGE' ? 'rgba(100, 116, 139, 0.04)' : '#ffffff',
-              transition: 'all 0.12s ease',
-              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={700} fontSize="0.6875rem">
-                НА СКЛАДЕ
-              </Typography>
-              <InventoryIcon sx={{ color: 'text.secondary', fontSize: 18 }} />
-            </Box>
-            <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5, color: 'text.primary', fontSize: '1.25rem' }}>
-              {statusCounts.inStorage}
-            </Typography>
-          </Card>
+            loading={loading && statusCounts.total === 0}
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card
+          <StatCard
+            title="Списано"
+            value={statusCounts.decommissioned}
+            subtitle="Выведено из эксплуатации"
+            icon={<CancelOutlinedIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(220, 38, 38, 0.08)"
+            iconColor="#dc2626"
+            accentColor="#dc2626"
+            active={statusFilter === 'DECOMMISSIONED'}
             onClick={() => handleKpiFilter('DECOMMISSIONED')}
-            sx={{
-              p: 1.25,
-              cursor: 'pointer',
-              border: statusFilter === 'DECOMMISSIONED' ? '2px solid #dc2626' : '1px solid #e2e8f0',
-              backgroundColor: statusFilter === 'DECOMMISSIONED' ? 'rgba(220, 38, 38, 0.04)' : '#ffffff',
-              transition: 'all 0.12s ease',
-              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" color="error.main" fontWeight={700} fontSize="0.6875rem">
-                СПИСАНО
-              </Typography>
-              <CancelOutlinedIcon sx={{ color: 'error.main', fontSize: 18 }} />
-            </Box>
-            <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5, color: 'error.main', fontSize: '1.25rem' }}>
-              {statusCounts.decommissioned}
-            </Typography>
-          </Card>
+            loading={loading && statusCounts.total === 0}
+          />
         </Grid>
       </Grid>
 
-      {/* Filter and Search Toolbar */}
-      <Card sx={{ p: 1.25, mb: 2 }}>
-        <Box
-          component="form"
-          onSubmit={handleSearchSubmit}
-          sx={{
-            display: 'flex',
-            gap: 1.5,
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center', flexGrow: 1 }}>
-            <TextField
-              size="small"
-              placeholder="Поиск по названию, инвентарному..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-                  </InputAdornment>
-                ),
-                endAdornment: search ? (
-                  <InputAdornment position="end">
-                    <IconButton size="small" onClick={() => setSearch('')}>
-                      <CloseIcon sx={{ fontSize: 16 }} />
-                    </IconButton>
-                  </InputAdornment>
-                ) : null,
-              }}
-              sx={{ minWidth: 280, flexGrow: { xs: 1, md: 0 } }}
-            />
-
-            <TextField
-              select
-              size="small"
-              label="Статус"
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-              sx={{ minWidth: 150 }}
-            >
-              <MenuItem value="">Все статусы</MenuItem>
-              {Object.entries(EQUIPMENT_STATUS_MAP).map(([key, info]) => (
-                <MenuItem key={key} value={key}>
-                  {info.label}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <TextField
-              select
-              size="small"
-              label="Тег / Классификатор"
-              value={tagFilter}
-              onChange={(e) => {
-                setTagFilter(e.target.value);
-                setPage(1);
-              }}
-              sx={{ minWidth: 180 }}
-            >
-              <MenuItem value="">Все теги</MenuItem>
-              {tags.map((t) => (
-                <MenuItem key={t.id} value={t.id}>
-                  {t.name}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <Button type="submit" variant="outlined" size="small" sx={{ px: 2, fontWeight: 600 }}>
-              Применить
-            </Button>
-
-            {(Boolean(search) || Boolean(statusFilter) || Boolean(tagFilter)) && (
-              <Chip
-                label={`Сбросить фильтры (${(search ? 1 : 0) + (statusFilter ? 1 : 0) + (tagFilter ? 1 : 0)})`}
-                onDelete={() => {
-                  setSearch('');
-                  setStatusFilter('');
-                  setTagFilter('');
-                  setPage(1);
-                }}
-                color="default"
-                size="small"
-                variant="outlined"
-                sx={{ fontWeight: 600, cursor: 'pointer' }}
-              />
-            )}
-          </Box>
-
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <ToggleButtonGroup
-              value={viewMode}
-              exclusive
-              onChange={(_, mode) => mode && setViewMode(mode)}
-              size="small"
-            >
-              <ToggleButton value="table" aria-label="table view" sx={{ p: 0.5 }}>
-                <Tooltip title="Табличный вид">
-                  <ViewListIcon fontSize="small" />
-                </Tooltip>
-              </ToggleButton>
-              <ToggleButton value="grid" aria-label="grid view" sx={{ p: 0.5 }}>
-                <Tooltip title="Сетка карточек">
-                  <ViewModuleIcon fontSize="small" />
-                </Tooltip>
-              </ToggleButton>
-            </ToggleButtonGroup>
-          </Box>
+      {/* Modern Filter and Search Toolbar */}
+      <FilterToolbar
+        activeFilterCount={activeFilterCount}
+        onResetFilters={handleResetFilters}
+        actions={
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={(_, mode) => mode && setViewMode(mode)}
+            size="small"
+          >
+            <ToggleButton value="table" aria-label="table view" sx={{ px: 1, py: 0.5 }}>
+              <Tooltip title="Табличный вид">
+                <ViewListIcon fontSize="small" />
+              </Tooltip>
+            </ToggleButton>
+            <ToggleButton value="grid" aria-label="grid view" sx={{ px: 1, py: 0.5 }}>
+              <Tooltip title="Сетка карточек">
+                <ViewModuleIcon fontSize="small" />
+              </Tooltip>
+            </ToggleButton>
+          </ToggleButtonGroup>
+        }
+      >
+        <Box sx={{ minWidth: { xs: '100%', sm: 300, md: 360 } }}>
+          <SearchInput
+            value={search}
+            placeholder="Поиск по наименованию, инвентарному или зав. номеру..."
+            onSearch={(val) => {
+              setSearch(val);
+              setPage(1);
+            }}
+          />
         </Box>
-      </Card>
+
+        <TextField
+          select
+          size="small"
+          label="Статус"
+          value={statusFilter}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setPage(1);
+          }}
+          sx={{ minWidth: 160 }}
+        >
+          <MenuItem value="">Все статусы</MenuItem>
+          {Object.entries(EQUIPMENT_STATUS_MAP).map(([key, info]) => (
+            <MenuItem key={key} value={key}>
+              {info.label}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        <TextField
+          select
+          size="small"
+          label="Тег / Классификатор"
+          value={tagFilter}
+          onChange={(e) => {
+            setTagFilter(e.target.value);
+            setPage(1);
+          }}
+          sx={{ minWidth: 180 }}
+        >
+          <MenuItem value="">Все теги</MenuItem>
+          {tags.map((t) => (
+            <MenuItem key={t.id} value={t.id}>
+              {t.name}
+            </MenuItem>
+          ))}
+        </TextField>
+      </FilterToolbar>
 
       {/* Main Table / Grid Container */}
-      {loading ? (
-        <Card sx={{ p: 6, textAlign: 'center' }}>
-          <CircularProgress />
-        </Card>
-      ) : items.length === 0 ? (
-        <Card sx={{ p: 6, textAlign: 'center' }}>
-          <PrecisionManufacturingIcon sx={{ fontSize: 56, color: 'text.secondary', opacity: 0.4, mb: 1 }} />
-          <Typography variant="h6" fontWeight={600} gutterBottom>
-            Оборудование не найдено
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Попробуйте изменить параметры поиска или сбросить фильтры
-          </Typography>
-          {canCreate && (
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => router.push('/eps/new')}>
-              Создать единицу оборудования
-            </Button>
-          )}
-        </Card>
+      {items.length === 0 && !loading ? (
+        <EmptyState
+          paper
+          icon={<PrecisionManufacturingIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+          title="Оборудование не найдено"
+          description={
+            activeFilterCount > 0
+              ? 'По заданным критериям фильтрации ничего не найдено. Попробуйте сбросить фильтры.'
+              : 'В реестре пока нет зарегистрированного оборудования.'
+          }
+          actionText={activeFilterCount > 0 ? 'Сбросить фильтры' : (canCreate ? 'Добавить оборудование' : undefined)}
+          onAction={activeFilterCount > 0 ? handleResetFilters : (canCreate ? () => router.push('/eps/new') : undefined)}
+        />
       ) : viewMode === 'table' ? (
-        <Card>
-          <TableContainer>
-            <Table size="medium">
-              <TableHead sx={{ backgroundColor: '#f8fafc' }}>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700, width: 140 }}>Инв. номер</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Наименование оборудования</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Производитель / Модель</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Локация / Место</TableCell>
-                  <TableCell sx={{ fontWeight: 700, width: 140 }}>Статус</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Теги</TableCell>
-                  <TableCell sx={{ fontWeight: 700, width: 150 }}>Связи</TableCell>
-                  <TableCell sx={{ fontWeight: 700, width: 120 }}>Ввод в экспл.</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 700, width: 110 }}>Действия</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {items.map((eq) => {
-                  const statusInfo = EQUIPMENT_STATUS_MAP[eq.status] || { label: eq.status, color: 'default' };
-                  const isSelected = selectedEquipment?.id === eq.id;
-                  return (
-                    <TableRow
-                      key={eq.id}
-                      hover
-                      selected={isSelected}
-                      sx={{
-                        cursor: 'pointer',
-                        '&.Mui-selected': {
-                          backgroundColor: 'rgba(2, 132, 199, 0.08) !important',
-                        },
-                      }}
-                      onClick={() => handleRowClick(eq)}
-                      onDoubleClick={() => router.push(`/eps/${eq.id}`)}
-                    >
-                      <TableCell>
-                        <Chip
-                          label={eq.inventoryNumber || 'Б/Н'}
-                          size="small"
-                          variant="outlined"
-                          sx={{ fontWeight: 700, fontFamily: 'monospace' }}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="subtitle2" fontWeight={600} color="primary.main">
-                          {eq.name}
-                        </Typography>
-                        {eq.serialNumber && (
-                          <Typography variant="caption" color="text.secondary" display="block">
-                            Зав. №: {eq.serialNumber}
-                          </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight={500}>{eq.manufacturer || '—'}</Typography>
-                        {eq.model && (
-                          <Typography variant="caption" color="text.secondary" display="block">
-                            {eq.model}
-                          </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell sx={{ fontSize: '0.8125rem' }}>{eq.location || '—'}</TableCell>
-                      <TableCell>
-                        <Chip label={statusInfo.label} size="small" color={statusInfo.color as any} sx={{ fontWeight: 600 }} />
-                      </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                          {eq.tags.map((t) => (
-                            <Chip
-                              key={t.id}
-                              label={t.name}
-                              size="small"
-                              sx={{
-                                fontSize: '0.725rem',
-                                height: 22,
-                                backgroundColor: t.color ? `${t.color}15` : undefined,
-                                color: t.color || 'text.primary',
-                                borderColor: t.color || undefined,
-                              }}
-                              variant="outlined"
-                            />
-                          ))}
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', gap: 1.5, color: 'text.secondary', fontSize: '0.75rem' }}>
-                          <Tooltip title="Документов прикреплено">
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-                              <DescriptionOutlinedIcon fontSize="inherit" />
-                              <span>{eq.counts.documents}</span>
-                            </Box>
-                          </Tooltip>
-                          <Tooltip title="Планов ТО">
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-                              <ConstructionOutlinedIcon fontSize="inherit" />
-                              <span>{eq.counts.maintenancePlans}</span>
-                            </Box>
-                          </Tooltip>
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{ fontSize: '0.8125rem' }}>{formatDate(eq.commissionDate)}</TableCell>
-                      <TableCell align="right">
-                        <Tooltip title="Открыть полный паспорт">
-                          <IconButton
-                            size="small"
-                            color="primary"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(`/eps/${eq.id}`);
-                            }}
-                          >
-                            <ArrowForwardIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          {/* Pagination */}
-          <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="caption" color="text.secondary">
-              Всего единиц оборудования в реестре: {total} (кликните по строке для быстрого просмотра)
-            </Typography>
-            <Pagination
-              count={totalPages}
-              page={page}
-              onChange={(_, val) => setPage(val)}
-              color="primary"
-              size="medium"
-            />
-          </Box>
-        </Card>
-      ) : (
-        /* Grid Card View */
-        <Box>
-          <Grid container spacing={3}>
-            {items.map((eq) => {
-              const statusInfo = EQUIPMENT_STATUS_MAP[eq.status] || { label: eq.status, color: 'default' };
-              return (
-                <Grid item xs={12} sm={6} md={4} lg={3} key={eq.id}>
-                  <Card
+        <DataTableWrapper
+          loading={loading}
+          page={page - 1}
+          pageSize={pageSize}
+          total={total}
+          onPageChange={(_, newPage) => setPage(newPage + 1)}
+          onPageSizeChange={(e) => {
+            setPageSize(parseInt(e.target.value, 10));
+            setPage(1);
+          }}
+          stickyHeader
+        >
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ width: 140 }}>Инв. номер</TableCell>
+                <TableCell>Наименование оборудования</TableCell>
+                <TableCell>Производитель / Модель</TableCell>
+                <TableCell>Локация / Место</TableCell>
+                <TableCell sx={{ width: 140 }}>Статус</TableCell>
+                <TableCell>Теги</TableCell>
+                <TableCell sx={{ width: 140 }}>Связи</TableCell>
+                <TableCell sx={{ width: 120 }}>Ввод в экспл.</TableCell>
+                <TableCell align="right" sx={{ width: 80 }}>Действия</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {items.map((eq) => {
+                const isSelected = selectedEquipment?.id === eq.id;
+                return (
+                  <TableRow
+                    key={eq.id}
+                    hover
+                    selected={isSelected}
                     sx={{
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
                       cursor: 'pointer',
-                      transition: 'transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out',
-                      '&:hover': {
-                        transform: 'translateY(-3px)',
-                        boxShadow: '0 10px 20px -5px rgba(0,0,0,0.1)',
+                      '&.Mui-selected': {
+                        backgroundColor: 'rgba(2, 132, 199, 0.08) !important',
                       },
                     }}
                     onClick={() => handleRowClick(eq)}
+                    onDoubleClick={() => router.push(`/eps/${eq.id}`)}
                   >
-                    <Box
-                      sx={{
-                        height: 140,
-                        backgroundColor: '#f1f5f9',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderBottom: '1px solid #e2e8f0',
-                        position: 'relative',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      {eq.primaryPhoto ? (
-                        <Box
-                          component="img"
-                          src={`/api/files/${eq.primaryPhoto}`}
-                          alt={eq.name}
-                          sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                      ) : (
-                        <PrecisionManufacturingIcon sx={{ fontSize: 48, color: '#94a3b8' }} />
-                      )}
-                      <Box sx={{ position: 'absolute', top: 10, right: 10 }}>
-                        <Chip
-                          label={statusInfo.label}
-                          size="small"
-                          color={statusInfo.color as any}
-                          sx={{ fontWeight: 600 }}
-                        />
-                      </Box>
-                    </Box>
-
-                    <CardContent sx={{ p: 2.5, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                        <Chip
-                          label={eq.inventoryNumber || 'Б/Н'}
-                          size="small"
-                          variant="outlined"
-                          sx={{ fontWeight: 700, fontSize: '0.75rem' }}
-                        />
-                        <Typography variant="caption" color="text.secondary">
-                          {eq.location || '—'}
-                        </Typography>
-                      </Box>
-
-                      <Typography variant="subtitle2" fontWeight={700} lineHeight={1.3} sx={{ mb: 1 }}>
+                    <TableCell>
+                      <Chip
+                        label={eq.inventoryNumber || 'Б/Н'}
+                        size="small"
+                        variant="outlined"
+                        sx={{ fontWeight: 700, fontFamily: 'monospace', borderRadius: '4px' }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="subtitle2" fontWeight={600} color="primary.main">
                         {eq.name}
                       </Typography>
-
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                        {eq.manufacturer} {eq.model && `• ${eq.model}`}
-                      </Typography>
-
-                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 2, flexGrow: 1 }}>
+                      {eq.serialNumber && (
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          Зав. №: {eq.serialNumber}
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight={500}>{eq.manufacturer || '—'}</Typography>
+                      {eq.model && (
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          {eq.model}
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: '0.8125rem' }}>{eq.location || '—'}</TableCell>
+                    <TableCell>
+                      <StatusBadge status={eq.status} />
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                         {eq.tags.map((t) => (
                           <Chip
                             key={t.id}
                             label={t.name}
                             size="small"
                             sx={{
-                              fontSize: '0.7rem',
+                              fontSize: '0.6875rem',
                               height: 20,
                               backgroundColor: t.color ? `${t.color}15` : undefined,
                               color: t.color || 'text.primary',
+                              borderColor: t.color || undefined,
+                              borderRadius: '4px',
                             }}
+                            variant="outlined"
                           />
                         ))}
                       </Box>
-
-                      <Box
-                        sx={{
-                          pt: 1.5,
-                          borderTop: '1px solid #f1f5f9',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          color: 'text.secondary',
-                          fontSize: '0.75rem',
-                        }}
-                      >
-                        <span>📄 Документов: {eq.counts.documents}</span>
-                        <span>🔧 ТО: {eq.counts.maintenancePlans}</span>
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', gap: 1.5, color: 'text.secondary', fontSize: '0.75rem' }}>
+                        <Tooltip title="Документов прикреплено">
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+                            <DescriptionOutlinedIcon sx={{ fontSize: 15 }} />
+                            <span>{eq.counts.documents}</span>
+                          </Box>
+                        </Tooltip>
+                        <Tooltip title="Планов ТО">
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+                            <ConstructionOutlinedIcon sx={{ fontSize: 15 }} />
+                            <span>{eq.counts.maintenancePlans}</span>
+                          </Box>
+                        </Tooltip>
                       </Box>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              );
-            })}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: '0.8125rem' }}>{formatDate(eq.commissionDate)}</TableCell>
+                    <TableCell align="right">
+                      <Tooltip title="Открыть полный паспорт">
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/eps/${eq.id}`);
+                          }}
+                        >
+                          <ArrowForwardIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </DataTableWrapper>
+      ) : (
+        /* Grid Card View */
+        <Box>
+          <Grid container spacing={2.5}>
+            {items.map((eq) => (
+              <Grid item xs={12} sm={6} md={4} lg={3} key={eq.id}>
+                <Card
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    cursor: 'pointer',
+                    borderRadius: '12px',
+                    border: '1px solid #e2e8f0',
+                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      transform: 'translateY(-3px)',
+                      boxShadow: '0 12px 24px -8px rgba(15, 23, 42, 0.12)',
+                      borderColor: '#0284c7',
+                    },
+                  }}
+                  onClick={() => handleRowClick(eq)}
+                >
+                  <Box
+                    sx={{
+                      height: 140,
+                      backgroundColor: '#f8fafc',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderBottom: '1px solid #e2e8f0',
+                      position: 'relative',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {eq.primaryPhoto ? (
+                      <Box
+                        component="img"
+                        src={`/api/files/${eq.primaryPhoto}`}
+                        alt={eq.name}
+                        sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <PrecisionManufacturingIcon sx={{ fontSize: 44, color: '#94a3b8' }} />
+                    )}
+                    <Box sx={{ position: 'absolute', top: 10, right: 10 }}>
+                      <StatusBadge status={eq.status} />
+                    </Box>
+                  </Box>
+
+                  <CardContent sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.75 }}>
+                      <Chip
+                        label={eq.inventoryNumber || 'Б/Н'}
+                        size="small"
+                        variant="outlined"
+                        sx={{ fontWeight: 700, fontSize: '0.7rem', height: 20, borderRadius: '4px' }}
+                      />
+                      <Typography variant="caption" color="text.secondary">
+                        {eq.location || '—'}
+                      </Typography>
+                    </Box>
+
+                    <Typography variant="subtitle2" fontWeight={700} lineHeight={1.3} sx={{ mb: 0.75, color: '#0f172a' }}>
+                      {eq.name}
+                    </Typography>
+
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.75rem' }}>
+                      {eq.manufacturer} {eq.model && `• ${eq.model}`}
+                    </Typography>
+
+                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 2, flexGrow: 1 }}>
+                      {eq.tags.map((t) => (
+                        <Chip
+                          key={t.id}
+                          label={t.name}
+                          size="small"
+                          sx={{
+                            fontSize: '0.65rem',
+                            height: 18,
+                            backgroundColor: t.color ? `${t.color}15` : undefined,
+                            color: t.color || 'text.primary',
+                            borderRadius: '4px',
+                          }}
+                        />
+                      ))}
+                    </Box>
+
+                    <Box
+                      sx={{
+                        pt: 1.25,
+                        borderTop: '1px solid #f1f5f9',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        color: 'text.secondary',
+                        fontSize: '0.75rem',
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', gap: 1.5 }}>
+                        <Tooltip title="Документов">
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+                            <DescriptionOutlinedIcon sx={{ fontSize: 15 }} />
+                            <span>{eq.counts.documents}</span>
+                          </Box>
+                        </Tooltip>
+                        <Tooltip title="Планов ТО">
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+                            <ConstructionOutlinedIcon sx={{ fontSize: 15 }} />
+                            <span>{eq.counts.maintenancePlans}</span>
+                          </Box>
+                        </Tooltip>
+                      </Box>
+                      <Typography variant="caption" sx={{ color: 'text.disabled', fontFeatureSettings: '"tnum"' }}>
+                        {formatDate(eq.commissionDate)}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
           </Grid>
 
-          <Box sx={{ p: 3, display: 'flex', justifyContent: 'center' }}>
+          {/* Grid View Pagination */}
+          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
             <Pagination
               count={totalPages}
               page={page}
               onChange={(_, val) => setPage(val)}
               color="primary"
+              shape="rounded"
             />
           </Box>
         </Box>

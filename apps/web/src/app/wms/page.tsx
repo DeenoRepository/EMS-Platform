@@ -35,6 +35,7 @@ import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { OPERATION_TYPE_MAP, formatDateTime } from '@ems/shared';
+import { StatCard, StatusBadge, EmptyState } from '@/components/ui';
 
 interface WmsStats {
   warehousesCount: number;
@@ -106,6 +107,7 @@ export default function WmsDashboardPage() {
             disabled={isLoading}
             size="small"
             aria-label="Обновить аналитику склада"
+            sx={{ fontWeight: 600, borderRadius: '8px' }}
           >
             Обновить данные
           </Button>
@@ -117,7 +119,7 @@ export default function WmsDashboardPage() {
         <Alert
           severity="warning"
           icon={<WarningAmberOutlinedIcon fontSize="inherit" />}
-          sx={{ mb: 3, borderRadius: 2 }}
+          sx={{ mb: 3, borderRadius: '10px', border: '1px solid #fde68a' }}
           action={
             <Button
               color="inherit"
@@ -125,6 +127,7 @@ export default function WmsDashboardPage() {
               onClick={() => router.push('/wms/stock?lowStockOnly=true')}
               endIcon={<ArrowForwardIcon />}
               aria-label="Перейти к дефицитным позициям"
+              sx={{ fontWeight: 700 }}
             >
               Смотреть все ({stats.lowStockCount})
             </Button>
@@ -137,106 +140,62 @@ export default function WmsDashboardPage() {
         </Alert>
       )}
 
-      {/* KPI Карточки со скелетонами */}
-      <Grid container spacing={2.5} sx={{ mb: 3.5 }}>
+      {/* KPI Карточки со StatCard */}
+      <Grid container spacing={2} sx={{ mb: 3.5 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ height: '100%', border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-                <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                  Склады предприятия
-                </Typography>
-                <WarehouseOutlinedIcon color="primary" />
-              </Box>
-              {isLoading && !stats ? (
-                <Skeleton variant="text" width={60} height={42} />
-              ) : (
-                <Typography variant="h4" fontWeight={800}>
-                  {stats?.warehousesCount || 0}
-                </Typography>
-              )}
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                Активных складских комплексов
-              </Typography>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Склады предприятия"
+            value={stats?.warehousesCount ?? 0}
+            subtitle="Активных складских комплексов"
+            icon={<WarehouseOutlinedIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(2, 132, 199, 0.08)"
+            iconColor="#0284c7"
+            accentColor="#0284c7"
+            loading={isLoading && !stats}
+            onClick={() => router.push('/wms/warehouses')}
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ height: '100%', border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-                <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                  Справочник номенклатуры
-                </Typography>
-                <Inventory2OutlinedIcon sx={{ color: '#0288d1' }} />
-              </Box>
-              {isLoading && !stats ? (
-                <Skeleton variant="text" width={60} height={42} />
-              ) : (
-                <Typography variant="h4" fontWeight={800}>
-                  {stats?.nomenclatureCount || 0}
-                </Typography>
-              )}
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                Уникальных позиций ТМЦ
-              </Typography>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Справочник номенклатуры"
+            value={stats?.nomenclatureCount ?? 0}
+            subtitle="Уникальных позиций ТМЦ"
+            icon={<Inventory2OutlinedIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(15, 118, 110, 0.08)"
+            iconColor="#0f766e"
+            accentColor="#0f766e"
+            loading={isLoading && !stats}
+            onClick={() => router.push('/wms/nomenclature')}
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              height: '100%',
-              border: '1px solid',
-              borderColor: (stats?.lowStockCount || 0) > 0 ? 'warning.main' : 'divider',
-              bgcolor: (stats?.lowStockCount || 0) > 0 ? 'warning.light' : 'background.paper',
-              borderRadius: 2,
-            }}
-          >
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-                <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                  Минимальный остаток
-                </Typography>
-                <WarningAmberOutlinedIcon color="warning" />
-              </Box>
-              {isLoading && !stats ? (
-                <Skeleton variant="text" width={60} height={42} />
-              ) : (
-                <Typography variant="h4" fontWeight={800} color={stats?.lowStockCount ? 'warning.dark' : 'text.primary'}>
-                  {stats?.lowStockCount || 0}
-                </Typography>
-              )}
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                Позиций требуют пополнения
-              </Typography>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Минимальный остаток"
+            value={stats?.lowStockCount ?? 0}
+            subtitle="Позиций требуют пополнения"
+            icon={<WarningAmberOutlinedIcon sx={{ fontSize: 20 }} />}
+            iconBgColor={stats && stats.lowStockCount > 0 ? 'rgba(220, 38, 38, 0.1)' : 'rgba(217, 119, 6, 0.08)'}
+            iconColor={stats && stats.lowStockCount > 0 ? '#dc2626' : '#d97706'}
+            accentColor={stats && stats.lowStockCount > 0 ? '#dc2626' : '#d97706'}
+            loading={isLoading && !stats}
+            onClick={() => router.push('/wms/stock?lowStockOnly=true')}
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ height: '100%', border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-                <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                  Инвентаризации
-                </Typography>
-                <FactCheckOutlinedIcon sx={{ color: '#7b1fa2' }} />
-              </Box>
-              {isLoading && !stats ? (
-                <Skeleton variant="text" width={60} height={42} />
-              ) : (
-                <Typography variant="h4" fontWeight={800}>
-                  {stats?.activeInventoriesCount || 0}
-                </Typography>
-              )}
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                Актов в процессе сверки
-              </Typography>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Инвентаризации"
+            value={stats?.activeInventoriesCount ?? 0}
+            subtitle="Актов в процессе сверки"
+            icon={<FactCheckOutlinedIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(123, 31, 162, 0.08)"
+            iconColor="#7b1fa2"
+            accentColor="#7b1fa2"
+            loading={isLoading && !stats}
+            onClick={() => router.push('/wms/inventory')}
+          />
         </Grid>
       </Grid>
 
@@ -347,12 +306,12 @@ export default function WmsDashboardPage() {
                         <TableRow key={item.id} hover>
                           <TableCell sx={{ fontWeight: 600 }}>{item.name}</TableCell>
                           <TableCell>
-                            <Chip label={item.warehouseCode} size="small" variant="outlined" />
+                            <Chip label={item.warehouseCode} size="small" variant="outlined" sx={{ borderRadius: '4px' }} />
                           </TableCell>
-                          <TableCell align="right" sx={{ color: 'error.main', fontWeight: 700 }}>
+                          <TableCell align="right" sx={{ color: 'error.main', fontWeight: 700, fontFeatureSettings: '"tnum"' }}>
                             {item.quantity} {item.unit}
                           </TableCell>
-                          <TableCell align="right" sx={{ color: 'text.secondary' }}>
+                          <TableCell align="right" sx={{ color: 'text.secondary', fontFeatureSettings: '"tnum"' }}>
                             {item.minStock} {item.unit}
                           </TableCell>
                         </TableRow>
@@ -361,11 +320,12 @@ export default function WmsDashboardPage() {
                   </Table>
                 </TableContainer>
               ) : (
-                <Box sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
-                  <Typography variant="body2">
-                    Все складские позиции находятся в пределах нормативных остатков
-                  </Typography>
-                </Box>
+                <EmptyState
+                  icon={<Inventory2OutlinedIcon sx={{ fontSize: 32, color: '#16a34a' }} />}
+                  title="Дефицит отсутствует"
+                  description="Все складские позиции находятся в пределах нормативных остатков"
+                  minHeight={160}
+                />
               )}
             </CardContent>
           </Card>
@@ -405,13 +365,14 @@ export default function WmsDashboardPage() {
                         variant="outlined"
                         sx={{
                           p: 1.5,
-                          borderRadius: 1.5,
+                          borderRadius: '10px',
                           display: 'flex',
                           justifyContent: 'space-between',
                           alignItems: 'center',
-                          transition: 'background-color 0.15s ease',
+                          transition: 'all 0.15s ease',
                           '&:hover': {
-                            bgcolor: 'action.hover',
+                            bgcolor: '#f8fafc',
+                            borderColor: '#cbd5e1',
                           },
                         }}
                       >
@@ -421,7 +382,7 @@ export default function WmsDashboardPage() {
                               label={typeInfo.label}
                               size="small"
                               color={typeInfo.color as any}
-                              sx={{ fontWeight: 700 }}
+                              sx={{ fontWeight: 700, borderRadius: '4px' }}
                             />
                             <Typography variant="caption" color="text.secondary">
                               {formatDateTime(op.date)} • Склад: {op.warehouse.name}
@@ -445,9 +406,12 @@ export default function WmsDashboardPage() {
                   })}
                 </Stack>
               ) : (
-                <Box sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
-                  <Typography variant="body2">Операции ещё не проводились</Typography>
-                </Box>
+                <EmptyState
+                  icon={<SwapHorizIcon sx={{ fontSize: 32, color: '#94a3b8' }} />}
+                  title="Операции не проводились"
+                  description="В системе пока нет записей о движении ТМЦ"
+                  minHeight={160}
+                />
               )}
             </CardContent>
           </Card>

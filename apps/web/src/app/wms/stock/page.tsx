@@ -29,23 +29,25 @@ import {
   DialogActions,
   Divider,
   CircularProgress,
-  Skeleton,
   Stack,
-  InputAdornment,
 } from '@mui/material';
 import { useSearchParams, useRouter } from 'next/navigation';
 import PageHeader from '@/components/layout/PageHeader';
-import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined';
+import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import CreateNomenclatureDialog from '@/components/wms/CreateNomenclatureDialog';
-import { useDebounce } from '@/hooks/useDebounce';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS } from '@ems/shared';
+import {
+  StatusBadge,
+  SearchInput,
+  FilterToolbar,
+  EmptyState,
+  DataTableWrapper,
+} from '@/components/ui';
 
 interface StockRow {
   id: string;
@@ -106,7 +108,6 @@ function WmsStockContent() {
   const [selectedZone, setSelectedZone] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [search, setSearch] = useState<string>('');
-  const debouncedSearch = useDebounce(search, 300);
   const [lowStockOnly, setLowStockOnly] = useState<boolean>(searchParams.get('lowStockOnly') === 'true');
 
   // Pagination
@@ -141,63 +142,62 @@ function WmsStockContent() {
           if (cData.success) setCategories(cData.data);
         }
       } catch (err) {
-        console.error('Ошибка загрузки справочников:', err);
+        console.error('Ошибка загрузки справочников WMS:', err);
       }
     }
     loadDictionaries();
   }, []);
 
-  // When warehouse changes, fetch its zones for filtering
+  // When warehouse changes, fetch its storage zones for detailed filtering
   useEffect(() => {
     if (!selectedWarehouse) {
       setZones([]);
       setSelectedZone('');
       return;
     }
-
     async function loadZones() {
       try {
         const res = await fetch(`/api/wms/warehouses/${selectedWarehouse}/zones`);
         if (res.ok) {
           const json = await res.json();
-          if (json.success) {
-            setZones(json.data);
-          }
+          if (json.success) setZones(json.data);
         }
       } catch (err) {
-        console.error('Ошибка загрузки зон:', err);
+        console.error('Ошибка загрузки зон склада:', err);
       }
     }
     loadZones();
   }, [selectedWarehouse]);
 
+  // Fetch Stock Items
   const fetchStock = useCallback(async () => {
     setIsLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (selectedWarehouse) params.set('warehouseId', selectedWarehouse);
-      if (selectedZone) params.set('zoneId', selectedZone);
-      if (selectedCategory) params.set('categoryId', selectedCategory);
-      if (debouncedSearch) params.set('search', debouncedSearch);
-      if (lowStockOnly) params.set('lowStockOnly', 'true');
-      params.set('page', String(page + 1));
-      params.set('pageSize', String(rowsPerPage));
+      const params = new URLSearchParams({
+        page: (page + 1).toString(),
+        limit: rowsPerPage.toString(),
+      });
+
+      if (selectedWarehouse) params.append('warehouseId', selectedWarehouse);
+      if (selectedZone) params.append('zoneId', selectedZone);
+      if (selectedCategory) params.append('categoryId', selectedCategory);
+      if (search) params.append('search', search);
+      if (lowStockOnly) params.append('lowStockOnly', 'true');
 
       const res = await fetch(`/api/wms/stock?${params.toString()}`);
       if (res.ok) {
         const json = await res.json();
         if (json.success) {
-          setItems(json.data.items);
-          setTotalCount(json.data.total);
+          setItems(json.data.items || []);
+          setTotalCount(json.data.total || 0);
         }
       }
-    } catch (err) {
-      console.error('Ошибка загрузки остатков:', err);
-      enqueueSnackbar('Ошибка загрузки складских остатков', { variant: 'error' });
+    } catch {
+      enqueueSnackbar('Ошибка загрузки остатков склада', { variant: 'error' });
     } finally {
       setIsLoading(false);
     }
-  }, [selectedWarehouse, selectedZone, selectedCategory, debouncedSearch, lowStockOnly, page, rowsPerPage, enqueueSnackbar]);
+  }, [selectedWarehouse, selectedZone, selectedCategory, search, lowStockOnly, page, rowsPerPage, enqueueSnackbar]);
 
   useEffect(() => {
     fetchStock();
@@ -242,12 +242,28 @@ function WmsStockContent() {
       } else {
         enqueueSnackbar(json.error || 'Ошибка назначения ячейки', { variant: 'error' });
       }
-    } catch (err) {
+    } catch {
       enqueueSnackbar('Ошибка сети при обновлении места хранения', { variant: 'error' });
     } finally {
       setIsSavingLoc(false);
     }
   };
+
+  const handleResetFilters = () => {
+    setSelectedWarehouse('');
+    setSelectedZone('');
+    setSelectedCategory('');
+    setSearch('');
+    setLowStockOnly(false);
+    setPage(0);
+  };
+
+  const activeFilterCount =
+    (selectedWarehouse ? 1 : 0) +
+    (selectedZone ? 1 : 0) +
+    (selectedCategory ? 1 : 0) +
+    (search ? 1 : 0) +
+    (lowStockOnly ? 1 : 0);
 
   return (
     <Box sx={{ pb: 4 }}>
@@ -267,6 +283,7 @@ function WmsStockContent() {
                 startIcon={<AddIcon />}
                 onClick={() => setIsNomenclatureModalOpen(true)}
                 aria-label="Создать новую номенклатуру"
+                sx={{ px: 2.25, py: 0.75, fontWeight: 600 }}
               >
                 Новая номенклатура
               </Button>
@@ -275,300 +292,259 @@ function WmsStockContent() {
         }
       />
 
-      {/* Фильтры */}
-      <Card sx={{ mb: 3, p: 2.5, borderRadius: 2 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={6} md={3}>
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="Поиск по названию или артикулу..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(0);
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon fontSize="small" color="action" />
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={2.5}>
-            <TextField
-              select
-              fullWidth
-              size="small"
-              label="Склад"
-              value={selectedWarehouse}
-              onChange={(e) => {
-                setSelectedWarehouse(e.target.value);
-                setSelectedZone('');
-                setPage(0);
-              }}
-            >
-              <MenuItem value="">Все склады</MenuItem>
-              {warehouses.map((w) => (
-                <MenuItem key={w.id} value={w.id}>
-                  {w.name} ({w.code})
-                </MenuItem>
-              ))}
-            </TextField>
-          </Grid>
-
-          {selectedWarehouse && zones.length > 0 && (
-            <Grid item xs={12} sm={6} md={2}>
-              <TextField
-                select
-                fullWidth
+      <FilterToolbar
+        activeFilterCount={activeFilterCount}
+        onResetFilters={handleResetFilters}
+        actions={
+          <FormControlLabel
+            control={
+              <Switch
+                checked={lowStockOnly}
+                color="warning"
                 size="small"
-                label="Зона склада"
-                value={selectedZone}
                 onChange={(e) => {
-                  setSelectedZone(e.target.value);
+                  setLowStockOnly(e.target.checked);
                   setPage(0);
                 }}
-              >
-                <MenuItem value="">Все зоны</MenuItem>
-                {zones.map((z) => (
-                  <MenuItem key={z.id} value={z.id}>
-                    {z.name} ({z.code})
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-          )}
+              />
+            }
+            label={
+              <Typography variant="body2" fontWeight={600} color={lowStockOnly ? 'warning.dark' : 'text.primary'}>
+                Только дефицит
+              </Typography>
+            }
+            sx={{ m: 0 }}
+          />
+        }
+      >
+        <Box sx={{ minWidth: { xs: '100%', sm: 260 } }}>
+          <SearchInput
+            value={search}
+            placeholder="Поиск по названию или артикулу..."
+            onSearch={(val) => {
+              setSearch(val);
+              setPage(0);
+            }}
+          />
+        </Box>
 
-          <Grid item xs={12} sm={6} md={selectedWarehouse && zones.length > 0 ? 2.5 : 3.5}>
-            <TextField
-              select
-              fullWidth
-              size="small"
-              label="Категория"
-              value={selectedCategory}
-              onChange={(e) => {
-                setSelectedCategory(e.target.value);
-                setPage(0);
-              }}
-            >
-              <MenuItem value="">Все категории</MenuItem>
-              {categories.map((c) => (
-                <MenuItem key={c.id} value={c.id}>
-                  {c.name}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Grid>
+        <TextField
+          select
+          size="small"
+          label="Склад"
+          value={selectedWarehouse}
+          onChange={(e) => {
+            setSelectedWarehouse(e.target.value);
+            setSelectedZone('');
+            setPage(0);
+          }}
+          sx={{ minWidth: 180 }}
+        >
+          <MenuItem value="">Все склады</MenuItem>
+          {warehouses.map((w) => (
+            <MenuItem key={w.id} value={w.id}>
+              {w.name} ({w.code})
+            </MenuItem>
+          ))}
+        </TextField>
 
-          <Grid item xs={12} sm={6} md={selectedWarehouse && zones.length > 0 ? 2 : 3}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={lowStockOnly}
-                  color="warning"
-                  onChange={(e) => {
-                    setLowStockOnly(e.target.checked);
-                    setPage(0);
-                  }}
-                />
-              }
-              label={
-                <Typography variant="body2" fontWeight={600} color={lowStockOnly ? 'warning.dark' : 'text.primary'}>
-                  Только дефицит
-                </Typography>
-              }
-            />
-          </Grid>
-        </Grid>
-      </Card>
+        {selectedWarehouse && zones.length > 0 && (
+          <TextField
+            select
+            size="small"
+            label="Зона склада"
+            value={selectedZone}
+            onChange={(e) => {
+              setSelectedZone(e.target.value);
+              setPage(0);
+            }}
+            sx={{ minWidth: 160 }}
+          >
+            <MenuItem value="">Все зоны</MenuItem>
+            {zones.map((z) => (
+              <MenuItem key={z.id} value={z.id}>
+                {z.name} ({z.code})
+              </MenuItem>
+            ))}
+          </TextField>
+        )}
 
-      {/* Таблица остатков */}
-      <Card sx={{ borderRadius: 2 }}>
-        <TableContainer>
-          <Table size="small" aria-label="Реестр остатков складов и ТМЦ">
-            <TableHead sx={{ bgcolor: 'grey.50' }}>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 700 }}>Склад</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Место хранения (Ячейка)</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Артикул</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Номенклатура (ТМЦ)</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Категория</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700 }}>
-                  Остаток на складе
-                </TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700 }}>
-                  Мин. остаток
-                </TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700 }}>
-                  Статус
-                </TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Совместимое оборудование</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 6 }).map((_, idx) => (
-                  <TableRow key={idx}>
-                    <TableCell><Skeleton variant="rounded" width={80} height={24} /></TableCell>
-                    <TableCell><Skeleton variant="rounded" width={110} height={22} /></TableCell>
-                    <TableCell><Skeleton variant="text" width={90} /></TableCell>
-                    <TableCell><Skeleton variant="text" width={220} /></TableCell>
-                    <TableCell><Skeleton variant="text" width={110} /></TableCell>
-                    <TableCell align="right"><Skeleton variant="text" width={60} sx={{ ml: 'auto' }} /></TableCell>
-                    <TableCell align="center"><Skeleton variant="text" width={40} sx={{ mx: 'auto' }} /></TableCell>
-                    <TableCell align="center"><Skeleton variant="rounded" width={70} height={20} sx={{ mx: 'auto' }} /></TableCell>
-                    <TableCell><Skeleton variant="rounded" width={140} height={20} /></TableCell>
-                  </TableRow>
-                ))
-              ) : items.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={9} align="center" sx={{ py: 6, color: 'text.secondary' }}>
-                    {debouncedSearch || selectedWarehouse || selectedCategory || lowStockOnly
-                      ? 'По заданным критериям фильтрации позиции не найдены'
-                      : 'Номенклатурные позиции еще не оприходованы на склады'}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                items.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    hover
-                    sx={{
-                      bgcolor: row.isLowStock ? 'rgba(237, 108, 2, 0.04)' : undefined,
-                    }}
-                  >
-                    <TableCell>
-                      <Chip label={row.warehouseCode} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.2 }}>
-                        {row.warehouseName}
-                      </Typography>
-                    </TableCell>
+        <TextField
+          select
+          size="small"
+          label="Категория"
+          value={selectedCategory}
+          onChange={(e) => {
+            setSelectedCategory(e.target.value);
+            setPage(0);
+          }}
+          sx={{ minWidth: 180 }}
+        >
+          <MenuItem value="">Все категории</MenuItem>
+          {categories.map((c) => (
+            <MenuItem key={c.id} value={c.id}>
+              {c.name}
+            </MenuItem>
+          ))}
+        </TextField>
+      </FilterToolbar>
 
-                    <TableCell>
-                      {row.cellCode ? (
-                        <Tooltip title="Нажмите, чтобы изменить ячейку хранения">
-                          <Chip
-                            icon={<PlaceOutlinedIcon sx={{ fontSize: '14px !important' }} />}
-                            label={`${row.zoneCode || row.zoneName} • ${row.cellCode}`}
-                            size="small"
-                            color="info"
-                            variant="outlined"
-                            clickable={hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE)}
-                            onClick={() => hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) && handleOpenLocationModal(row)}
-                            sx={{ fontWeight: 600 }}
-                          />
-                        </Tooltip>
-                      ) : (
-                        hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) ? (
-                          <Button
-                            size="small"
-                            variant="text"
-                            startIcon={<PlaceOutlinedIcon sx={{ fontSize: 14 }} />}
-                            onClick={() => handleOpenLocationModal(row)}
-                            sx={{ fontSize: '0.75rem', py: 0.2 }}
-                          >
-                            + Ячейка
-                          </Button>
-                        ) : (
-                          <Typography variant="caption" color="text.secondary">
-                            Не указано
-                          </Typography>
-                        )
-                      )}
-                    </TableCell>
-
-                    <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600 }}>{row.article}</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>{row.name}</TableCell>
-                    <TableCell>{row.category}</TableCell>
-                    <TableCell align="right">
-                      <Typography
-                        variant="body2"
-                        fontWeight={700}
-                        color={row.isLowStock ? 'warning.dark' : 'text.primary'}
-                      >
-                        {row.quantity} {row.unit}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      <Typography variant="body2" color="text.secondary">
-                        {row.minStock} {row.minStock !== '—' ? row.unit : ''}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      {row.isLowStock ? (
-                        <Chip
-                          icon={<WarningAmberIcon />}
-                          label="Дефицит"
-                          size="small"
-                          color="warning"
-                          sx={{ fontWeight: 700 }}
-                        />
-                      ) : (
-                        <Chip
-                          icon={<CheckCircleOutlineIcon />}
-                          label="В норме"
-                          size="small"
-                          color="success"
-                          variant="outlined"
-                          sx={{ fontWeight: 600 }}
-                        />
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {row.compatibleEquipment && row.compatibleEquipment.length > 0 ? (
-                        <Stack direction="row" spacing={0.5} flexWrap="wrap" gap={0.5}>
-                          {row.compatibleEquipment.slice(0, 3).map((eq) => (
-                            <Tooltip key={eq.id} title={`Инв. № ${eq.inventoryNumber}`}>
-                              <Chip
-                                icon={<PrecisionManufacturingIcon sx={{ fontSize: '14px !important' }} />}
-                                label={eq.name}
-                                size="small"
-                                clickable
-                                onClick={() => router.push(`/eps/${eq.id}`)}
-                                sx={{ fontSize: '0.75rem' }}
-                              />
-                            </Tooltip>
-                          ))}
-                          {row.compatibleEquipment.length > 3 && (
-                            <Chip
-                              label={`+${row.compatibleEquipment.length - 3}`}
-                              size="small"
-                              variant="outlined"
-                              sx={{ fontSize: '0.75rem' }}
-                            />
-                          )}
-                        </Stack>
-                      ) : (
-                        <Typography variant="caption" color="text.secondary">
-                          Универсальное
-                        </Typography>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-
-        <TablePagination
-          component="div"
-          count={totalCount}
+      {items.length === 0 && !isLoading ? (
+        <EmptyState
+          paper
+          icon={<Inventory2OutlinedIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+          title="Позиции ТМЦ не найдены"
+          description={
+            activeFilterCount > 0
+              ? 'По заданным критериям фильтрации позиции не найдены. Попробуйте сбросить фильтры.'
+              : 'Номенклатурные позиции еще не оприходованы на склады.'
+          }
+          actionText={activeFilterCount > 0 ? 'Сбросить фильтры' : undefined}
+          onAction={activeFilterCount > 0 ? handleResetFilters : undefined}
+        />
+      ) : (
+        <DataTableWrapper
+          loading={isLoading}
           page={page}
+          pageSize={rowsPerPage}
+          total={totalCount}
           onPageChange={(_, newPage) => setPage(newPage)}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={(e) => {
+          onPageSizeChange={(e) => {
             setRowsPerPage(parseInt(e.target.value, 10));
             setPage(0);
           }}
-          labelRowsPerPage="Строк на странице:"
-          rowsPerPageOptions={[10, 25, 50, 100]}
-        />
-      </Card>
+          stickyHeader
+        >
+          <Table size="small" aria-label="Реестр остатков складов и ТМЦ">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ width: 140 }}>Склад</TableCell>
+                <TableCell sx={{ width: 160 }}>Место (Ячейка)</TableCell>
+                <TableCell sx={{ width: 120 }}>Артикул</TableCell>
+                <TableCell>Номенклатура (ТМЦ)</TableCell>
+                <TableCell sx={{ width: 140 }}>Категория</TableCell>
+                <TableCell align="right" sx={{ width: 140 }}>
+                  Остаток на складе
+                </TableCell>
+                <TableCell align="center" sx={{ width: 110 }}>
+                  Мин. остаток
+                </TableCell>
+                <TableCell align="center" sx={{ width: 120 }}>
+                  Статус
+                </TableCell>
+                <TableCell>Совместимое оборудование</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {items.map((row) => (
+                <TableRow
+                  key={row.id}
+                  hover
+                  sx={{
+                    bgcolor: row.isLowStock ? 'rgba(237, 108, 2, 0.04)' : undefined,
+                  }}
+                >
+                  <TableCell>
+                    <Chip label={row.warehouseCode} size="small" variant="outlined" sx={{ fontWeight: 600, borderRadius: '4px' }} />
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.2 }}>
+                      {row.warehouseName}
+                    </Typography>
+                  </TableCell>
+
+                  <TableCell>
+                    {row.cellCode ? (
+                      <Tooltip title="Нажмите, чтобы изменить ячейку хранения">
+                        <Chip
+                          icon={<PlaceOutlinedIcon sx={{ fontSize: '13px !important' }} />}
+                          label={`${row.zoneCode || row.zoneName} • ${row.cellCode}`}
+                          size="small"
+                          color="info"
+                          variant="outlined"
+                          clickable={hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE)}
+                          onClick={() => hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) && handleOpenLocationModal(row)}
+                          sx={{ fontWeight: 600, borderRadius: '4px' }}
+                        />
+                      </Tooltip>
+                    ) : (
+                      hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) ? (
+                        <Button
+                          size="small"
+                          variant="text"
+                          startIcon={<PlaceOutlinedIcon sx={{ fontSize: 13 }} />}
+                          onClick={() => handleOpenLocationModal(row)}
+                          sx={{ fontSize: '0.75rem', py: 0.2 }}
+                        >
+                          + Ячейка
+                        </Button>
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">
+                          Не указано
+                        </Typography>
+                      )
+                    )}
+                  </TableCell>
+
+                  <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600, fontSize: '0.75rem' }}>{row.article}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{row.name}</TableCell>
+                  <TableCell sx={{ fontSize: '0.8125rem' }}>{row.category}</TableCell>
+                  <TableCell align="right">
+                    <Typography
+                      variant="body2"
+                      fontWeight={700}
+                      color={row.isLowStock ? 'error.main' : 'text.primary'}
+                      sx={{ fontFeatureSettings: '"tnum"' }}
+                    >
+                      {row.quantity} {row.unit}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="center">
+                    <Typography variant="body2" color="text.secondary" sx={{ fontFeatureSettings: '"tnum"' }}>
+                      {row.minStock} {row.minStock !== '—' ? row.unit : ''}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="center">
+                    <StatusBadge
+                      status={row.isLowStock ? 'LOW_STOCK' : 'NORMAL_STOCK'}
+                      label={row.isLowStock ? 'Дефицит' : 'В норме'}
+                      variant={row.isLowStock ? 'subtle' : 'dot'}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {row.compatibleEquipment && row.compatibleEquipment.length > 0 ? (
+                      <Stack direction="row" spacing={0.5} flexWrap="wrap" gap={0.5}>
+                        {row.compatibleEquipment.slice(0, 3).map((eq) => (
+                          <Tooltip key={eq.id} title={`Инв. № ${eq.inventoryNumber}`}>
+                            <Chip
+                              icon={<PrecisionManufacturingIcon sx={{ fontSize: '13px !important' }} />}
+                              label={eq.name}
+                              size="small"
+                              clickable
+                              onClick={() => router.push(`/eps/${eq.id}`)}
+                              sx={{ fontSize: '0.7rem', height: 20, borderRadius: '4px' }}
+                            />
+                          </Tooltip>
+                        ))}
+                        {row.compatibleEquipment.length > 3 && (
+                          <Chip
+                            label={`+${row.compatibleEquipment.length - 3}`}
+                            size="small"
+                            variant="outlined"
+                            sx={{ fontSize: '0.7rem', height: 20, borderRadius: '4px' }}
+                          />
+                        )}
+                      </Stack>
+                    ) : (
+                      <Typography variant="caption" color="text.secondary">
+                        Универсальное
+                      </Typography>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </DataTableWrapper>
+      )}
 
       {/* Диалог назначения места хранения (ячейки) */}
       <Dialog
