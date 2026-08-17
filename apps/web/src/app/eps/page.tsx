@@ -17,6 +17,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TableSortLabel,
   ToggleButtonGroup,
   ToggleButton,
   Tooltip,
@@ -57,6 +58,7 @@ import {
   BulkActionBar,
   PageLoading,
   type TableDensity,
+  type TableColumnOption,
 } from '@/components/ui';
 
 interface EquipmentItem {
@@ -81,6 +83,16 @@ interface TagItem {
   name: string;
   color: string | null;
 }
+
+const EPS_COLUMNS: TableColumnOption[] = [
+  { id: 'inventoryNumber', label: 'Инв. номер', defaultVisible: true },
+  { id: 'name', label: 'Наименование оборудования', defaultVisible: true, required: true },
+  { id: 'manufacturer', label: 'Производитель / Модель', defaultVisible: true },
+  { id: 'location', label: 'Локация / Место', defaultVisible: true },
+  { id: 'status', label: 'Статус', defaultVisible: true },
+  { id: 'tags', label: 'Теги', defaultVisible: true },
+  { id: 'commissionDate', label: 'Ввод в экспл.', defaultVisible: true },
+];
 
 function EquipmentListContent() {
   const router = useRouter();
@@ -255,7 +267,64 @@ function EquipmentListContent() {
   // Bulk Selection State
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
+  // Columns visibility & Sorting
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(() =>
+    EPS_COLUMNS.map((c) => c.id)
+  );
+  const [sortField, setSortField] = useState<string>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
   const equipmentList = Array.isArray(items) ? items : [];
+
+  const handleRequestSort = (property: string) => {
+    const isAsc = sortField === property && sortDirection === 'asc';
+    setSortDirection(isAsc ? 'desc' : 'asc');
+    setSortField(property);
+  };
+
+  const sortedEquipmentList = useMemo(() => {
+    if (!sortField) return equipmentList;
+    return [...equipmentList].sort((a, b) => {
+      let aVal: any = '';
+      let bVal: any = '';
+      switch (sortField) {
+        case 'inventoryNumber':
+          aVal = a.inventoryNumber || '';
+          bVal = b.inventoryNumber || '';
+          break;
+        case 'name':
+          aVal = a.name || '';
+          bVal = b.name || '';
+          break;
+        case 'manufacturer':
+          aVal = `${a.manufacturer || ''} ${a.model || ''}`;
+          bVal = `${b.manufacturer || ''} ${b.model || ''}`;
+          break;
+        case 'location':
+          aVal = a.location || '';
+          bVal = b.location || '';
+          break;
+        case 'status':
+          aVal = a.status || '';
+          bVal = b.status || '';
+          break;
+        case 'commissionDate':
+          aVal = a.commissionDate ? new Date(a.commissionDate).getTime() : 0;
+          bVal = b.commissionDate ? new Date(b.commissionDate).getTime() : 0;
+          break;
+        default:
+          aVal = (a as any)[sortField] || '';
+          bVal = (b as any)[sortField] || '';
+      }
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      return sortDirection === 'asc'
+        ? String(aVal).localeCompare(String(bVal), 'ru')
+        : String(bVal).localeCompare(String(aVal), 'ru');
+    });
+  }, [equipmentList, sortField, sortDirection]);
 
   const handleRowClick = (eq: EquipmentItem) => {
     setSelectedEquipment(eq);
@@ -434,6 +503,9 @@ function EquipmentListContent() {
         showDensityToggle
         density={density}
         onDensityChange={setDensity}
+        columns={EPS_COLUMNS}
+        visibleColumns={visibleColumns}
+        onVisibleColumnsChange={setVisibleColumns}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         onRefresh={fetchEquipment}
@@ -481,7 +553,7 @@ function EquipmentListContent() {
                     },
                   }}
                 >
-                  <MenuItem value="">Все статусы</MenuItem>
+                  <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все статусы</MenuItem>
                   {Object.entries(EQUIPMENT_STATUS_MAP).map(([key, info]) => (
                     <MenuItem key={key} value={key} sx={{ fontSize: '0.8125rem' }}>
                       {info.label}
@@ -510,7 +582,7 @@ function EquipmentListContent() {
                     },
                   }}
                 >
-                  <MenuItem value="">Все теги</MenuItem>
+                  <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все теги</MenuItem>
                   {tags.map((t) => (
                     <MenuItem key={t.id} value={t.id} sx={{ fontSize: '0.8125rem' }}>
                       {t.name}
@@ -553,7 +625,7 @@ function EquipmentListContent() {
         }
         gridContent={
           <Grid container spacing={2.5}>
-            {equipmentList.map((eq) => (
+            {sortedEquipmentList.map((eq) => (
               <Grid item xs={12} sm={6} md={4} lg={3} key={eq.id}>
                 <Card
                   sx={{
@@ -695,31 +767,88 @@ function EquipmentListContent() {
                   inputProps={{ 'aria-label': 'Выбрать все записи' }}
                 />
               </TableCell>
-              <TableCell sx={{ width: 130, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                ИНВ. НОМЕР
-              </TableCell>
-              <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                НАИМЕНОВАНИЕ ОБОРУДОВАНИЯ
-              </TableCell>
-              <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                ПРОИЗВОДИТЕЛЬ / МОДЕЛЬ
-              </TableCell>
-              <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                ЛОКАЦИЯ / МЕСТО
-              </TableCell>
-              <TableCell sx={{ width: 140, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                СТАТУС
-              </TableCell>
-              <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                ТЕГИ
-              </TableCell>
-              <TableCell sx={{ width: 120, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                ВВОД В ЭКСПЛ.
-              </TableCell>
+
+              {visibleColumns.includes('inventoryNumber') && (
+                <TableCell sx={{ width: 130, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'inventoryNumber'}
+                    direction={sortField === 'inventoryNumber' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('inventoryNumber')}
+                  >
+                    ИНВ. НОМЕР
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('name') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'name'}
+                    direction={sortField === 'name' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('name')}
+                  >
+                    НАИМЕНОВАНИЕ ОБОРУДОВАНИЯ
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('manufacturer') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'manufacturer'}
+                    direction={sortField === 'manufacturer' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('manufacturer')}
+                  >
+                    ПРОИЗВОДИТЕЛЬ / МОДЕЛЬ
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('location') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'location'}
+                    direction={sortField === 'location' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('location')}
+                  >
+                    ЛОКАЦИЯ / МЕСТО
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('status') && (
+                <TableCell sx={{ width: 140, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'status'}
+                    direction={sortField === 'status' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('status')}
+                  >
+                    СТАТУС
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('tags') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  ТЕГИ
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('commissionDate') && (
+                <TableCell sx={{ width: 120, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'commissionDate'}
+                    direction={sortField === 'commissionDate' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('commissionDate')}
+                  >
+                    ВВОД В ЭКСПЛ.
+                  </TableSortLabel>
+                </TableCell>
+              )}
             </TableRow>
           </TableHead>
           <TableBody>
-            {equipmentList.map((eq) => {
+            {sortedEquipmentList.map((eq) => {
               const isSelected = selectedEquipment?.id === eq.id;
               const isChecked = selectedIds.includes(eq.id);
               return (
@@ -748,78 +877,99 @@ function EquipmentListContent() {
                       inputProps={{ 'aria-label': `Выбрать ${eq.name}` }}
                     />
                   </TableCell>
-                  <TableCell>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontFamily: 'monospace',
-                        color: '#475569',
-                        fontSize: '0.8125rem',
-                        fontWeight: 500,
-                      }}
-                    >
-                      {eq.inventoryNumber || '—'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontWeight: 600,
-                        color: '#0284c7',
-                        fontSize: '0.8125rem',
-                        lineHeight: 1.3,
-                      }}
-                    >
-                      {eq.name}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '0.75rem', display: 'block', mt: 0.25 }}>
-                      {eq.serialNumber ? `Зав. №: ${eq.serialNumber}` : 'Единица основных средств'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#334155', fontSize: '0.8125rem' }}>
-                      {eq.manufacturer || '—'}
-                    </Typography>
-                    {eq.model && (
-                      <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.75rem', display: 'block', mt: 0.25 }}>
-                        {eq.model}
+
+                  {visibleColumns.includes('inventoryNumber') && (
+                    <TableCell>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontFamily: 'monospace',
+                          color: '#475569',
+                          fontSize: '0.8125rem',
+                          fontWeight: 500,
+                        }}
+                      >
+                        {eq.inventoryNumber || '—'}
                       </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell sx={{ fontSize: '0.8125rem', color: '#334155' }}>
-                    {eq.location || '—'}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={eq.status} />
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                      {eq.tags && eq.tags.length > 0 ? (
-                        eq.tags.map((t) => (
-                          <Chip
-                            key={t.id}
-                            label={t.name}
-                            size="small"
-                            sx={{
-                              fontSize: '0.6875rem',
-                              height: 22,
-                              backgroundColor: '#ffffff',
-                              color: '#475569',
-                              border: '1px solid #e2e8f0',
-                              borderRadius: '4px',
-                              fontWeight: 500,
-                            }}
-                          />
-                        ))
-                      ) : (
-                        <Typography variant="caption" sx={{ color: '#94a3b8' }}>—</Typography>
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('name') && (
+                    <TableCell>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontWeight: 600,
+                          color: '#0284c7',
+                          fontSize: '0.8125rem',
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        {eq.name}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '0.75rem', display: 'block', mt: 0.25 }}>
+                        {eq.serialNumber ? `Зав. №: ${eq.serialNumber}` : 'Единица основных средств'}
+                      </Typography>
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('manufacturer') && (
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#334155', fontSize: '0.8125rem' }}>
+                        {eq.manufacturer || '—'}
+                      </Typography>
+                      {eq.model && (
+                        <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.75rem', display: 'block', mt: 0.25 }}>
+                          {eq.model}
+                        </Typography>
                       )}
-                    </Box>
-                  </TableCell>
-                  <TableCell sx={{ fontSize: '0.8125rem', color: '#64748b', fontFeatureSettings: '"tnum"' }}>
-                    {formatDate(eq.commissionDate)}
-                  </TableCell>
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('location') && (
+                    <TableCell sx={{ fontSize: '0.8125rem', color: '#334155' }}>
+                      {eq.location || '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('status') && (
+                    <TableCell>
+                      <StatusBadge status={eq.status} />
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('tags') && (
+                    <TableCell>
+                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                        {eq.tags && eq.tags.length > 0 ? (
+                          eq.tags.map((t) => (
+                            <Chip
+                              key={t.id}
+                              label={t.name}
+                              size="small"
+                              sx={{
+                                fontSize: '0.6875rem',
+                                height: 22,
+                                backgroundColor: '#ffffff',
+                                color: '#475569',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '4px',
+                                fontWeight: 500,
+                              }}
+                            />
+                          ))
+                        ) : (
+                          <Typography variant="caption" sx={{ color: '#94a3b8' }}>—</Typography>
+                        )}
+                      </Box>
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('commissionDate') && (
+                    <TableCell sx={{ fontSize: '0.8125rem', color: '#64748b', fontFeatureSettings: '"tnum"' }}>
+                      {formatDate(eq.commissionDate)}
+                    </TableCell>
+                  )}
                 </TableRow>
               );
             })}

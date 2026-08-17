@@ -19,6 +19,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TableSortLabel,
   Paper,
   TablePagination,
   Chip,
@@ -51,6 +52,7 @@ import {
   FormDialog,
   ExportButton,
   type ExportFormat,
+  type TableColumnOption,
 } from '@/components/ui';
 
 interface StockRow {
@@ -95,17 +97,48 @@ interface ZoneOption {
   cells: Array<{ id: string; code: string; name?: string | null }>;
 }
 
+const STOCK_COLUMNS: TableColumnOption[] = [
+  { id: 'warehouse', label: 'Склад', defaultVisible: true },
+  { id: 'zone', label: 'Место (Ячейка)', defaultVisible: true },
+  { id: 'sku', label: 'Артикул', defaultVisible: true },
+  { id: 'name', label: 'Номенклатура (ТМЦ)', defaultVisible: true, required: true },
+  { id: 'category', label: 'Категория', defaultVisible: true },
+  { id: 'quantity', label: 'Остаток на складе', defaultVisible: true },
+  { id: 'minQuantity', label: 'Мин. остаток', defaultVisible: true },
+  { id: 'status', label: 'Статус', defaultVisible: true },
+  { id: 'equipment', label: 'Совместимое оборудование', defaultVisible: true },
+];
+
+export default function WmsStockPage() {
+  return (
+    <Suspense fallback={<PageLoading text="Загрузка остатков ТМЦ..." />}>
+      <WmsStockContent />
+    </Suspense>
+  );
+}
+
 function WmsStockContent() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
   const { enqueueSnackbar } = useSnackbar();
   const { hasPermission } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
+  // Data States
   const [items, setItems] = useState<StockRow[]>([]);
   const [warehouses, setWarehouses] = useState<WarehouseOption[]>([]);
-  const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [zones, setZones] = useState<ZoneOption[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Sorting
+  const [sortField, setSortField] = useState<string>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  // Columns visibility
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(() =>
+    STOCK_COLUMNS.map((c) => c.id)
+  );
 
   // Filters
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>('');
@@ -269,8 +302,6 @@ function WmsStockContent() {
     (search ? 1 : 0) +
     (lowStockOnly ? 1 : 0);
 
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-
   const handleExport = (format: ExportFormat) => {
     const targetItems = selectedIds.length > 0
       ? items.filter((i) => selectedIds.includes(i.id))
@@ -333,6 +364,64 @@ function WmsStockContent() {
     return [];
   }, [lowStockCount]);
 
+  const handleRequestSort = (property: string) => {
+    const isAsc = sortField === property && sortDirection === 'asc';
+    setSortDirection(isAsc ? 'desc' : 'asc');
+    setSortField(property);
+  };
+
+  const sortedItems = useMemo(() => {
+    if (!sortField) return items;
+    return [...items].sort((a, b) => {
+      let aVal: any = '';
+      let bVal: any = '';
+      switch (sortField) {
+        case 'warehouse':
+          aVal = a.warehouseName || '';
+          bVal = b.warehouseName || '';
+          break;
+        case 'zone':
+          aVal = `${a.zoneCode || ''} ${a.cellCode || ''}`;
+          bVal = `${b.zoneCode || ''} ${b.cellCode || ''}`;
+          break;
+        case 'sku':
+          aVal = a.article || '';
+          bVal = b.article || '';
+          break;
+        case 'name':
+          aVal = a.name || '';
+          bVal = b.name || '';
+          break;
+        case 'category':
+          aVal = a.category || '';
+          bVal = b.category || '';
+          break;
+        case 'quantity':
+          aVal = Number(a.quantity) || 0;
+          bVal = Number(b.quantity) || 0;
+          break;
+        case 'minQuantity':
+          aVal = Number(a.minStock) || 0;
+          bVal = Number(b.minStock) || 0;
+          break;
+        case 'status':
+          aVal = a.isLowStock ? 0 : 1;
+          bVal = b.isLowStock ? 0 : 1;
+          break;
+        default:
+          aVal = (a as any)[sortField] || '';
+          bVal = (b as any)[sortField] || '';
+      }
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      return sortDirection === 'asc'
+        ? String(aVal).localeCompare(String(bVal), 'ru')
+        : String(bVal).localeCompare(String(aVal), 'ru');
+    });
+  }, [items, sortField, sortDirection]);
+
   return (
     <Box sx={{ pb: selectedIds.length > 0 ? 8 : 4 }}>
       <PageHeader
@@ -375,6 +464,9 @@ function WmsStockContent() {
         }}
         stickyHeader
         showDensityToggle
+        columns={STOCK_COLUMNS}
+        visibleColumns={visibleColumns}
+        onVisibleColumnsChange={setVisibleColumns}
         onRefresh={fetchStock}
         refreshing={isLoading}
         selectedCount={selectedIds.length}
@@ -399,7 +491,7 @@ function WmsStockContent() {
             activeFilterCount={activeFilterCount}
             onResetFilters={handleResetFilters}
             actions={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
                 <FormControlLabel
                   control={
                     <Switch
@@ -413,7 +505,7 @@ function WmsStockContent() {
                     />
                   }
                   label={
-                    <Typography variant="body2" fontWeight={600} color={lowStockOnly ? 'warning.dark' : 'text.primary'}>
+                    <Typography variant="body2" fontWeight={600} color={lowStockOnly ? 'warning.dark' : 'text.primary'} sx={{ fontSize: '0.8125rem' }}>
                       Только дефицит
                     </Typography>
                   }
@@ -441,18 +533,27 @@ function WmsStockContent() {
             <TextField
               select
               size="small"
-              label="Склад"
               value={selectedWarehouse}
               onChange={(e) => {
                 setSelectedWarehouse(e.target.value);
                 setSelectedZone('');
                 setPage(0);
               }}
-              sx={{ minWidth: 180 }}
+              sx={{
+                minWidth: 160,
+                backgroundColor: '#ffffff',
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  fontSize: '0.8125rem',
+                  height: 36,
+                  '& fieldset': { borderColor: '#e2e8f0' },
+                  '&:hover fieldset': { borderColor: '#cbd5e1' },
+                },
+              }}
             >
-              <MenuItem value="">Все склады</MenuItem>
+              <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все склады</MenuItem>
               {warehouses.map((w) => (
-                <MenuItem key={w.id} value={w.id}>
+                <MenuItem key={w.id} value={w.id} sx={{ fontSize: '0.8125rem' }}>
                   {w.name} ({w.code})
                 </MenuItem>
               ))}
@@ -462,17 +563,26 @@ function WmsStockContent() {
               <TextField
                 select
                 size="small"
-                label="Зона склада"
                 value={selectedZone}
                 onChange={(e) => {
                   setSelectedZone(e.target.value);
                   setPage(0);
                 }}
-                sx={{ minWidth: 160 }}
+                sx={{
+                  minWidth: 140,
+                  backgroundColor: '#ffffff',
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '8px',
+                    fontSize: '0.8125rem',
+                    height: 36,
+                    '& fieldset': { borderColor: '#e2e8f0' },
+                    '&:hover fieldset': { borderColor: '#cbd5e1' },
+                  },
+                }}
               >
-                <MenuItem value="">Все зоны</MenuItem>
+                <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все зоны</MenuItem>
                 {zones.map((z) => (
-                  <MenuItem key={z.id} value={z.id}>
+                  <MenuItem key={z.id} value={z.id} sx={{ fontSize: '0.8125rem' }}>
                     {z.name} ({z.code})
                   </MenuItem>
                 ))}
@@ -482,17 +592,26 @@ function WmsStockContent() {
             <TextField
               select
               size="small"
-              label="Категория"
               value={selectedCategory}
               onChange={(e) => {
                 setSelectedCategory(e.target.value);
                 setPage(0);
               }}
-              sx={{ minWidth: 180 }}
+              sx={{
+                minWidth: 160,
+                backgroundColor: '#ffffff',
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  fontSize: '0.8125rem',
+                  height: 36,
+                  '& fieldset': { borderColor: '#e2e8f0' },
+                  '&:hover fieldset': { borderColor: '#cbd5e1' },
+                },
+              }}
             >
-              <MenuItem value="">Все категории</MenuItem>
+              <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все категории</MenuItem>
               {categories.map((c) => (
-                <MenuItem key={c.id} value={c.id}>
+                <MenuItem key={c.id} value={c.id} sx={{ fontSize: '0.8125rem' }}>
                   {c.name}
                 </MenuItem>
               ))}
@@ -500,163 +619,314 @@ function WmsStockContent() {
           </FilterToolbar>
         }
       >
-          <Table size="small" aria-label="Реестр остатков складов и ТМЦ">
-            <TableHead>
-              <TableRow>
-                <TableCell padding="checkbox" sx={{ width: 48 }}>
-                  <Checkbox
-                    size="small"
-                    indeterminate={selectedIds.length > 0 && selectedIds.length < items.length}
-                    checked={items.length > 0 && selectedIds.length === items.length}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedIds(items.map((i) => i.id));
-                      } else {
-                        setSelectedIds([]);
-                      }
-                    }}
-                  />
-                </TableCell>
-                <TableCell sx={{ width: 140 }}>Склад</TableCell>
-                <TableCell sx={{ width: 160 }}>Место (Ячейка)</TableCell>
-                <TableCell sx={{ width: 120 }}>Артикул</TableCell>
-                <TableCell>Номенклатура (ТМЦ)</TableCell>
-                <TableCell sx={{ width: 140 }}>Категория</TableCell>
-                <TableCell align="right" sx={{ width: 140 }}>
-                  Остаток на складе
-                </TableCell>
-                <TableCell align="center" sx={{ width: 110 }}>
-                  Мин. остаток
-                </TableCell>
-                <TableCell align="center" sx={{ width: 120 }}>
-                  Статус
-                </TableCell>
-                <TableCell>Совместимое оборудование</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {items.map((row) => {
-                const isChecked = selectedIds.includes(row.id);
-                return (
-                  <TableRow
-                    key={row.id}
-                    hover
-                    selected={isChecked}
-                    sx={{
-                      bgcolor: row.isLowStock ? 'rgba(237, 108, 2, 0.04)' : undefined,
-                    }}
+        <Table size="small" aria-label="Реестр остатков складов и ТМЦ">
+          <TableHead>
+            <TableRow sx={{ backgroundColor: '#ffffff' }}>
+              <TableCell padding="checkbox" sx={{ width: 44, pl: 2 }}>
+                <Checkbox
+                  size="small"
+                  indeterminate={selectedIds.length > 0 && selectedIds.length < items.length}
+                  checked={items.length > 0 && selectedIds.length === items.length}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedIds(items.map((i) => i.id));
+                    } else {
+                      setSelectedIds([]);
+                    }
+                  }}
+                />
+              </TableCell>
+
+              {visibleColumns.includes('warehouse') && (
+                <TableCell sx={{ width: 140, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'warehouse'}
+                    direction={sortField === 'warehouse' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('warehouse')}
                   >
-                    <TableCell padding="checkbox">
-                      <Checkbox
+                    СКЛАД
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('zone') && (
+                <TableCell sx={{ width: 160, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'zone'}
+                    direction={sortField === 'zone' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('zone')}
+                  >
+                    МЕСТО (ЯЧЕЙКА)
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('sku') && (
+                <TableCell sx={{ width: 120, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'sku'}
+                    direction={sortField === 'sku' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('sku')}
+                  >
+                    АРТИКУЛ
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('name') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'name'}
+                    direction={sortField === 'name' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('name')}
+                  >
+                    НОМЕНКЛАТУРА (ТМЦ)
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('category') && (
+                <TableCell sx={{ width: 140, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'category'}
+                    direction={sortField === 'category' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('category')}
+                  >
+                    КАТЕГОРИЯ
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('quantity') && (
+                <TableCell align="right" sx={{ width: 140, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'quantity'}
+                    direction={sortField === 'quantity' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('quantity')}
+                  >
+                    ОСТАТОК НА СКЛАДЕ
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('minQuantity') && (
+                <TableCell align="center" sx={{ width: 110, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'minQuantity'}
+                    direction={sortField === 'minQuantity' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('minQuantity')}
+                  >
+                    МИН. ОСТАТОК
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('status') && (
+                <TableCell align="center" sx={{ width: 120, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'status'}
+                    direction={sortField === 'status' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('status')}
+                  >
+                    СТАТУС
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('equipment') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  СОВМЕСТИМОЕ ОБОРУДОВАНИЕ
+                </TableCell>
+              )}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {sortedItems.map((row) => {
+              const isChecked = selectedIds.includes(row.id);
+              return (
+                <TableRow
+                  key={row.id}
+                  hover
+                  selected={isChecked}
+                  sx={{
+                    cursor: 'pointer',
+                    bgcolor: row.isLowStock ? 'rgba(237, 108, 2, 0.04)' : undefined,
+                  }}
+                >
+                  <TableCell padding="checkbox" sx={{ pl: 2 }}>
+                    <Checkbox
+                      size="small"
+                      checked={isChecked}
+                      onChange={() => {
+                        setSelectedIds((prev) =>
+                          prev.includes(row.id) ? prev.filter((id) => id !== row.id) : [...prev, row.id]
+                        );
+                      }}
+                    />
+                  </TableCell>
+
+                  {visibleColumns.includes('warehouse') && (
+                    <TableCell>
+                      <Chip
+                        label={row.warehouseCode}
                         size="small"
-                        checked={isChecked}
-                        onChange={() => {
-                          setSelectedIds((prev) =>
-                            prev.includes(row.id) ? prev.filter((id) => id !== row.id) : [...prev, row.id]
-                          );
+                        sx={{
+                          fontWeight: 600,
+                          borderRadius: '4px',
+                          fontSize: '0.6875rem',
+                          backgroundColor: '#ffffff',
+                          color: '#475569',
+                          border: '1px solid #e2e8f0',
+                          height: 20,
                         }}
                       />
-                    </TableCell>
-                    <TableCell>
-                      <Chip label={row.warehouseCode} size="small" variant="outlined" sx={{ fontWeight: 600, borderRadius: '4px' }} />
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.2 }}>
+                      <Typography variant="caption" sx={{ display: 'block', mt: 0.25, color: '#64748b', fontSize: '0.75rem' }}>
                         {row.warehouseName}
                       </Typography>
                     </TableCell>
+                  )}
 
-                  <TableCell>
-                    {row.cellCode ? (
-                      <Tooltip title="Нажмите, чтобы изменить ячейку хранения">
-                        <Chip
-                          icon={<PlaceOutlinedIcon sx={{ fontSize: '13px !important' }} />}
-                          label={`${row.zoneCode || row.zoneName} • ${row.cellCode}`}
-                          size="small"
-                          variant="outlined"
-                          clickable={hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE)}
-                          onClick={() => hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) && handleOpenLocationModal(row)}
-                          sx={{ fontWeight: 600, borderRadius: '4px' }}
-                        />
-                      </Tooltip>
-                    ) : (
-                      hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) ? (
-                        <Button
-                          size="small"
-                          variant="text"
-                          startIcon={<PlaceOutlinedIcon sx={{ fontSize: 13 }} />}
-                          onClick={() => handleOpenLocationModal(row)}
-                          sx={{ fontSize: '0.75rem', py: 0.2 }}
-                        >
-                          + Ячейка
-                        </Button>
-                      ) : (
-                        <Typography variant="caption" color="text.secondary">
-                          Не указано
-                        </Typography>
-                      )
-                    )}
-                  </TableCell>
-
-                  <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600, fontSize: '0.75rem' }}>{row.article}</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>{row.name}</TableCell>
-                  <TableCell sx={{ fontSize: '0.8125rem' }}>{row.category}</TableCell>
-                  <TableCell align="right">
-                    <Typography
-                      variant="body2"
-                      fontWeight={700}
-                      color={row.isLowStock ? 'error.main' : 'text.primary'}
-                      sx={{ fontFeatureSettings: '"tnum"' }}
-                    >
-                      {row.quantity} {row.unit}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="center">
-                    <Typography variant="body2" color="text.secondary" sx={{ fontFeatureSettings: '"tnum"' }}>
-                      {row.minStock} {row.minStock !== '—' ? row.unit : ''}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="center">
-                    <StatusBadge
-                      status={row.isLowStock ? 'LOW_STOCK' : 'NORMAL_STOCK'}
-                      label={row.isLowStock ? 'Дефицит' : 'В норме'}
-                      variant={row.isLowStock ? 'subtle' : 'dot'}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {row.compatibleEquipment && row.compatibleEquipment.length > 0 ? (
-                      <Stack direction="row" spacing={0.5} flexWrap="wrap" gap={0.5}>
-                        {row.compatibleEquipment.slice(0, 3).map((eq) => (
-                          <Tooltip key={eq.id} title={`Инв. № ${eq.inventoryNumber}`}>
-                            <Chip
-                              icon={<PrecisionManufacturingIcon sx={{ fontSize: '13px !important' }} />}
-                              label={eq.name}
-                              size="small"
-                              clickable
-                              onClick={() => router.push(`/eps/${eq.id}`)}
-                              sx={{ fontSize: '0.7rem', height: 20, borderRadius: '4px' }}
-                            />
-                          </Tooltip>
-                        ))}
-                        {row.compatibleEquipment.length > 3 && (
+                  {visibleColumns.includes('zone') && (
+                    <TableCell>
+                      {row.cellCode ? (
+                        <Tooltip title="Нажмите, чтобы изменить ячейку хранения">
                           <Chip
-                            label={`+${row.compatibleEquipment.length - 3}`}
+                            icon={<PlaceOutlinedIcon sx={{ fontSize: '13px !important' }} />}
+                            label={`${row.zoneCode || row.zoneName} • ${row.cellCode}`}
                             size="small"
-                            variant="outlined"
-                            sx={{ fontSize: '0.7rem', height: 20, borderRadius: '4px' }}
+                            clickable={hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE)}
+                            onClick={() => hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) && handleOpenLocationModal(row)}
+                            sx={{
+                              fontWeight: 600,
+                              borderRadius: '4px',
+                              fontSize: '0.75rem',
+                              backgroundColor: '#f0f9ff',
+                              color: '#0284c7',
+                              border: '1px solid #bae6fd',
+                            }}
                           />
-                        )}
-                      </Stack>
-                    ) : (
-                      <Typography variant="caption" color="text.secondary">
-                        Универсальное
+                        </Tooltip>
+                      ) : (
+                        hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) ? (
+                          <Button
+                            size="small"
+                            variant="text"
+                            startIcon={<PlaceOutlinedIcon sx={{ fontSize: 13, color: '#0284c7' }} />}
+                            onClick={() => handleOpenLocationModal(row)}
+                            sx={{ fontSize: '0.75rem', py: 0.2, fontWeight: 600, color: '#0284c7' }}
+                          >
+                            + Ячейка
+                          </Button>
+                        ) : (
+                          <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                            —
+                          </Typography>
+                        )
+                      )}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('sku') && (
+                    <TableCell sx={{ fontFamily: 'monospace', fontWeight: 500, fontSize: '0.8125rem', color: '#475569' }}>
+                      {row.article || '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('name') && (
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#0f172a' }}>
+                      {row.name}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('category') && (
+                    <TableCell sx={{ fontSize: '0.8125rem', color: '#334155' }}>
+                      {row.category}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('quantity') && (
+                    <TableCell align="right">
+                      <Typography
+                        variant="body2"
+                        fontWeight={700}
+                        sx={{
+                          fontFeatureSettings: '"tnum"',
+                          fontSize: '0.8125rem',
+                          color: row.isLowStock ? '#dc2626' : '#0f172a',
+                        }}
+                      >
+                        {row.quantity} {row.unit}
                       </Typography>
-                    )}
-                  </TableCell>
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('minQuantity') && (
+                    <TableCell align="center">
+                      <Typography variant="body2" sx={{ fontFeatureSettings: '"tnum"', fontSize: '0.8125rem', color: '#64748b' }}>
+                        {row.minStock} {row.minStock !== '—' ? row.unit : ''}
+                      </Typography>
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('status') && (
+                    <TableCell align="center">
+                      <StatusBadge
+                        status={row.isLowStock ? 'LOW_STOCK' : 'NORMAL_STOCK'}
+                        label={row.isLowStock ? 'Дефицит' : 'В норме'}
+                      />
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('equipment') && (
+                    <TableCell>
+                      {row.compatibleEquipment && row.compatibleEquipment.length > 0 ? (
+                        <Stack direction="row" spacing={0.5} flexWrap="wrap" gap={0.5}>
+                          {row.compatibleEquipment.slice(0, 3).map((eq) => (
+                            <Tooltip key={eq.id} title={`Инв. № ${eq.inventoryNumber}`}>
+                              <Chip
+                                icon={<PrecisionManufacturingIcon sx={{ fontSize: '13px !important' }} />}
+                                label={eq.name}
+                                size="small"
+                                clickable
+                                onClick={() => router.push(`/eps/${eq.id}`)}
+                                sx={{
+                                  fontSize: '0.6875rem',
+                                  height: 22,
+                                  borderRadius: '4px',
+                                  backgroundColor: '#ffffff',
+                                  border: '1px solid #e2e8f0',
+                                  color: '#475569',
+                                  fontWeight: 500,
+                                }}
+                              />
+                            </Tooltip>
+                          ))}
+                          {row.compatibleEquipment.length > 3 && (
+                            <Chip
+                              label={`+${row.compatibleEquipment.length - 3}`}
+                              size="small"
+                              sx={{
+                                fontSize: '0.6875rem',
+                                height: 22,
+                                borderRadius: '4px',
+                                backgroundColor: '#f1f5f9',
+                                color: '#64748b',
+                                fontWeight: 600,
+                              }}
+                            />
+                          )}
+                        </Stack>
+                      ) : (
+                        <Typography variant="caption" sx={{ color: '#94a3b8' }}>—</Typography>
+                      )}
+                    </TableCell>
+                  )}
                 </TableRow>
               );
             })}
-            </TableBody>
-          </Table>
-        </DataTableWrapper>
+          </TableBody>
+        </Table>
+      </DataTableWrapper>
 
       {/* Диалог назначения места хранения (ячейки) */}
       <FormDialog
@@ -759,13 +1029,5 @@ function WmsStockContent() {
         ]}
       />
     </Box>
-  );
-}
-
-export default function WmsStockPage() {
-  return (
-    <Suspense fallback={<PageLoading text="Загрузка остатков ТМЦ на складах..." />}>
-      <WmsStockContent />
-    </Suspense>
   );
 }
