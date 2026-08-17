@@ -76,6 +76,7 @@ import {
   PageLoading,
   FormDialog,
   DataTableWrapper,
+  NavTabsContainer,
   type LifecycleEvent,
 } from '@/components/ui';
 
@@ -754,25 +755,24 @@ export default function EquipmentPassportPage() {
         </Grid>
       </Grid>
 
-      {/* Tabs Bar */}
-      <Card sx={{ mb: 3 }}>
-        <Tabs
+      {/* Navigation Tabs Bar */}
+      <Box sx={{ mb: 3 }}>
+        <NavTabsContainer
           value={activeTab}
-          onChange={handleTabChange}
-          variant="scrollable"
-          scrollButtons="auto"
-          sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}
-        >
-          <Tab label="Паспорт (Общие сведения и разделы)" />
-          <Tab label={`Фотогалерея (${equipment.photos.length})`} />
-          <Tab label={`Документация (${equipment.documents.length})`} />
-          <Tab label={`Согласования (${equipment.approvals?.length || 0})`} />
-          <Tab label={`Запчасти WMS (${equipment.spareParts.length})`} />
-          <Tab label={`ТО и Ремонт MRO (${equipment.maintenancePlans.length})`} />
-          <Tab label={`Заявки Jira (${equipment.jiraIssues?.length || 0})`} />
-          <Tab label="История изменений (Аудит)" />
-        </Tabs>
-      </Card>
+          onChange={(val) => setActiveTab(val)}
+          paper
+          tabs={[
+            { label: 'Паспорт (Общие сведения и разделы)', value: 0 },
+            { label: 'Фотогалерея', value: 1, badge: equipment.photos.length },
+            { label: 'Документация', value: 2, badge: equipment.documents.length },
+            { label: 'Согласования', value: 3, badge: equipment.approvals?.length || 0 },
+            { label: 'Запчасти WMS', value: 4, badge: equipment.spareParts.length },
+            { label: 'ТО и Ремонт MRO', value: 5, badge: equipment.maintenancePlans.length },
+            { label: 'Заявки Jira', value: 6, badge: equipment.jiraIssues?.length || 0 },
+            { label: 'История изменений (Аудит)', value: 7 },
+          ]}
+        />
+      </Box>
 
       {/* TAB 0: Паспорт (Общие сведения и кастомные разделы) */}
       {activeTab === 0 && (

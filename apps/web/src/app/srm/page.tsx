@@ -66,6 +66,7 @@ import {
   PageLoading,
   FormDialog,
   ConfirmDialog,
+  NavTabsContainer,
 } from '@/components/ui';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -450,21 +451,19 @@ export default function SrmOverviewPage() {
         }
       />
 
-      <Paper sx={{ mb: 3 }}>
-        <Tabs
+      <Box sx={{ mb: 3 }}>
+        <NavTabsContainer
           value={currentTab}
-          onChange={(_, val) => setCurrentTab(val)}
-          indicatorColor="primary"
-          textColor="primary"
-          variant="scrollable"
-          scrollButtons="auto"
-        >
-          <Tab icon={<DashboardIcon />} iconPosition="start" label="Дашборд и Метрики" />
-          <Tab icon={<ListAltIcon />} iconPosition="start" label={`Реестр заявок (${issues.length})`} />
-          <Tab icon={<SettingsSuggestIcon />} iconPosition="start" label="Конструктор сопоставления полей" />
-          <Tab icon={<CableIcon />} iconPosition="start" label={`Внешние API и Интеграции (${integrations.length})`} />
-        </Tabs>
-      </Paper>
+          onChange={(val) => setCurrentTab(val)}
+          paper
+          tabs={[
+            { label: 'Дашборд и Метрики', value: 0, icon: <DashboardIcon /> },
+            { label: 'Реестр заявок', value: 1, icon: <ListAltIcon />, badge: issues.length },
+            { label: 'Конструктор сопоставления полей', value: 2, icon: <SettingsSuggestIcon /> },
+            { label: 'Внешние API и Интеграции', value: 3, icon: <CableIcon />, badge: integrations.length },
+          ]}
+        />
+      </Box>
 
       {loading ? (
         <PageLoading text="Синхронизация данных SRM и загрузка метрик..." />
@@ -722,62 +721,64 @@ export default function SrmOverviewPage() {
                     Укажите dot-нотацию пути к соответствующему свойству в структуре задачи (например: <code>fields.summary</code>, <code>fields.status.name</code>, <code>subject</code>, <code>title</code>).
                   </Typography>
 
-                  <Table size="small">
-                    <TableHead sx={{ backgroundColor: 'action.hover' }}>
-                      <TableRow>
-                        <TableCell sx={{ fontWeight: 700, width: '25%' }}>Поле в SRM</TableCell>
-                        <TableCell sx={{ fontWeight: 700, width: '35%' }}>Путь в JSON объекта</TableCell>
-                        <TableCell sx={{ fontWeight: 700, width: '20%' }}>Тип данных</TableCell>
-                        <TableCell sx={{ fontWeight: 700, width: '20%' }}>Значение по умолчанию</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {mappingConfig.standardMappings.map((item: any, idx: number) => (
-                        <TableRow key={item.srmField} hover>
-                          <TableCell>
-                            <Typography variant="body2" fontWeight={600}>
-                              {item.label}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              <code>{item.srmField}</code> {item.isRequired && <span style={{ color: 'red' }}>*</span>}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            <TextField
-                              size="small"
-                              fullWidth
-                              value={item.jiraPath}
-                              onChange={(e) => handleStandardFieldChange(idx, 'jiraPath', e.target.value)}
-                              placeholder="fields.xxx или xxx"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <FormControl size="small" fullWidth>
-                              <Select
-                                value={item.transformType}
-                                onChange={(e) => handleStandardFieldChange(idx, 'transformType', e.target.value)}
-                              >
-                                <MenuItem value="string">Строка (String)</MenuItem>
-                                <MenuItem value="date">Дата (DateTime)</MenuItem>
-                                <MenuItem value="number">Число (Number)</MenuItem>
-                                <MenuItem value="boolean">Логический (Boolean)</MenuItem>
-                                <MenuItem value="json">Сырой JSON</MenuItem>
-                              </Select>
-                            </FormControl>
-                          </TableCell>
-                          <TableCell>
-                            <TextField
-                              size="small"
-                              fullWidth
-                              value={item.defaultValue || ''}
-                              onChange={(e) => handleStandardFieldChange(idx, 'defaultValue', e.target.value)}
-                              placeholder="Дефолт"
-                            />
-                          </TableCell>
+                  <DataTableWrapper total={mappingConfig.standardMappings.length} stickyHeader>
+                    <Table size="small" aria-label="Сопоставление базовых полей SRM">
+                      <TableHead sx={{ backgroundColor: 'action.hover' }}>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 700, width: '25%' }}>Поле в SRM</TableCell>
+                          <TableCell sx={{ fontWeight: 700, width: '35%' }}>Путь в JSON объекта</TableCell>
+                          <TableCell sx={{ fontWeight: 700, width: '20%' }}>Тип данных</TableCell>
+                          <TableCell sx={{ fontWeight: 700, width: '20%' }}>Значение по умолчанию</TableCell>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHead>
+                      <TableBody>
+                        {mappingConfig.standardMappings.map((item: any, idx: number) => (
+                          <TableRow key={item.srmField} hover>
+                            <TableCell>
+                              <Typography variant="body2" fontWeight={600}>
+                                {item.label}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                <code>{item.srmField}</code> {item.isRequired && <span style={{ color: 'red' }}>*</span>}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <TextField
+                                size="small"
+                                fullWidth
+                                value={item.jiraPath}
+                                onChange={(e) => handleStandardFieldChange(idx, 'jiraPath', e.target.value)}
+                                placeholder="fields.xxx или xxx"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <FormControl size="small" fullWidth>
+                                <Select
+                                  value={item.transformType}
+                                  onChange={(e) => handleStandardFieldChange(idx, 'transformType', e.target.value)}
+                                >
+                                  <MenuItem value="string">Строка (String)</MenuItem>
+                                  <MenuItem value="date">Дата (DateTime)</MenuItem>
+                                  <MenuItem value="number">Число (Number)</MenuItem>
+                                  <MenuItem value="boolean">Логический (Boolean)</MenuItem>
+                                  <MenuItem value="json">Сырой JSON</MenuItem>
+                                </Select>
+                              </FormControl>
+                            </TableCell>
+                            <TableCell>
+                              <TextField
+                                size="small"
+                                fullWidth
+                                value={item.defaultValue || ''}
+                                onChange={(e) => handleStandardFieldChange(idx, 'defaultValue', e.target.value)}
+                                placeholder="Дефолт"
+                              />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </DataTableWrapper>
                 </CardContent>
               </Card>
 

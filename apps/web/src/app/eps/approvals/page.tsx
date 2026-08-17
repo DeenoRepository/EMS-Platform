@@ -63,6 +63,7 @@ import {
   PageLoading,
   FormDialog,
   ConfirmDialog,
+  NavTabsContainer,
 } from '@/components/ui';
 
 interface ApprovalItem {
@@ -445,33 +446,26 @@ function ApprovalsListContent() {
       </Grid>
 
       {/* Scope Navigation Tabs */}
-      <Paper
-        elevation={0}
-        sx={{
-          mb: 2,
-          borderRadius: '10px',
-          border: '1px solid #e2e8f0',
-          backgroundColor: '#ffffff',
-          overflow: 'hidden',
-        }}
-      >
-        <Tabs
+      <Box sx={{ mb: 2 }}>
+        <NavTabsContainer
           value={scopeTab}
-          onChange={(_, val) => {
+          onChange={(val) => {
             setScopeTab(val);
             setPage(1);
           }}
-          sx={{ px: 2, minHeight: 44 }}
-        >
-          <Tab value="all" label="Все заявки" sx={{ minHeight: 44 }} />
-          <Tab
-            value="to_review"
-            label={`Требуют рассмотрения (${stats.pending})`}
-            sx={{ fontWeight: stats.pending > 0 ? 700 : 500, minHeight: 44 }}
-          />
-          <Tab value="my_requests" label="Мои заявки" sx={{ minHeight: 44 }} />
-        </Tabs>
-      </Paper>
+          paper
+          tabs={[
+            { label: 'Все заявки', value: 'all' },
+            {
+              label: 'Требуют рассмотрения',
+              value: 'to_review',
+              badge: stats.pending,
+              badgeColor: stats.pending > 0 ? 'warning' : 'default',
+            },
+            { label: 'Мои заявки', value: 'my_requests' },
+          ]}
+        />
+      </Box>
 
       {/* Filter and Search Bar */}
       <FilterToolbar

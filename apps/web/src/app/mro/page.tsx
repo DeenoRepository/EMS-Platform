@@ -51,6 +51,7 @@ import {
   TrendSparkline,
   PageLoading,
   FormDialog,
+  NavTabsContainer,
 } from '@/components/ui';
 
 export default function MroOverviewPage() {
@@ -314,15 +315,20 @@ export default function MroOverviewPage() {
         </Grid>
       </Grid>
 
-      <Card sx={{ mb: 4, borderRadius: 2 }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}>
-          <Tabs value={tab} onChange={(_, val) => setTab(val)}>
-            <Tab label={`График нарядов ТО (${schedules.length})`} />
-            <Tab label={`Регламентные планы (${plans.length})`} />
-            <Tab label={`Шаблоны чек-листов (${checklists.length})`} />
-          </Tabs>
-        </Box>
+      <Box sx={{ mb: 3 }}>
+        <NavTabsContainer
+          value={tab}
+          onChange={(val) => setTab(val)}
+          paper
+          tabs={[
+            { label: 'График нарядов ТО', value: 0, badge: schedules.length },
+            { label: 'Регламентные планы', value: 1, badge: plans.length },
+            { label: 'Шаблоны чек-листов', value: 2, badge: checklists.length },
+          ]}
+        />
+      </Box>
 
+      <Card sx={{ mb: 4, borderRadius: 2 }}>
         <Box sx={{ p: 2 }}>
           {loading ? (
             <PageLoading text="Загрузка нарядов и регламентных планов ТО..." />
