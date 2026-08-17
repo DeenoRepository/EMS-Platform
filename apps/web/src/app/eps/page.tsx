@@ -500,16 +500,11 @@ function EquipmentListContent() {
           setPage(1);
         }}
         stickyHeader
-        showDensityToggle
-        density={density}
-        onDensityChange={setDensity}
         columns={EPS_COLUMNS}
         visibleColumns={visibleColumns}
         onVisibleColumnsChange={setVisibleColumns}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
-        onRefresh={fetchEquipment}
-        refreshing={loading}
         selectedCount={selectedIds.length}
         onClearSelection={() => setSelectedIds([])}
         empty={items.length === 0 && !loading}

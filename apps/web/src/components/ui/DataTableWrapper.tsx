@@ -10,17 +10,11 @@ import {
   Typography,
   IconButton,
   Tooltip,
-  ToggleButtonGroup,
-  ToggleButton,
   Chip,
   Button,
 } from '@mui/material';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
-import ViewHeadlineIcon from '@mui/icons-material/ViewHeadline';
-import ViewStreamIcon from '@mui/icons-material/ViewStream';
-import ViewAgendaIcon from '@mui/icons-material/ViewAgenda';
 import CloseIcon from '@mui/icons-material/Close';
 
 export type TableDensity = 'compact' | 'standard' | 'comfortable';
@@ -365,80 +359,6 @@ export function DataTableWrapper({
             </Box>
           </Menu>
         </>
-      )}
-
-      {/* Density Toggle */}
-      {showDensityToggle && viewMode === 'table' && (
-        <ToggleButtonGroup
-          size="small"
-          value={currentDensity}
-          exclusive
-          onChange={(_, val) => val && handleDensityChange(val)}
-          aria-label="плотность таблицы"
-          sx={{
-            height: 36,
-            backgroundColor: '#ffffff',
-            '& .MuiToggleButton-root': {
-              borderColor: '#e2e8f0',
-              px: 1,
-              py: 0.5,
-              '&.Mui-selected': {
-                backgroundColor: 'rgba(2, 132, 199, 0.08)',
-                color: '#0284c7',
-              },
-            },
-          }}
-        >
-          <ToggleButton value="compact" aria-label="компактный">
-            <Tooltip title="Компактная плотность">
-              <ViewHeadlineIcon fontSize="small" sx={{ fontSize: 16 }} />
-            </Tooltip>
-          </ToggleButton>
-          <ToggleButton value="standard" aria-label="стандартный">
-            <Tooltip title="Стандартная плотность">
-              <ViewStreamIcon fontSize="small" sx={{ fontSize: 16 }} />
-            </Tooltip>
-          </ToggleButton>
-          <ToggleButton value="comfortable" aria-label="просторный">
-            <Tooltip title="Просторная плотность">
-              <ViewAgendaIcon fontSize="small" sx={{ fontSize: 16 }} />
-            </Tooltip>
-          </ToggleButton>
-        </ToggleButtonGroup>
-      )}
-
-      {/* Refresh Button */}
-      {onRefresh && (
-        <Tooltip title="Обновить данные">
-          <span>
-            <IconButton
-              size="small"
-              onClick={onRefresh}
-              disabled={loading || refreshing}
-              sx={{
-                height: 36,
-                width: 36,
-                border: '1px solid #e2e8f0',
-                borderRadius: '8px',
-                backgroundColor: '#ffffff',
-                color: '#64748b',
-                '&:hover': { color: '#0284c7', borderColor: '#cbd5e1', backgroundColor: '#f8fafc' },
-              }}
-            >
-              <RefreshIcon
-                fontSize="small"
-                sx={{
-                  fontSize: 18,
-                  animation: refreshing ? 'spin 1s linear infinite' : 'none',
-                  '@keyframes spin': {
-                    '0%': { transform: 'rotate(0deg)' },
-                    '100%': { transform: 'rotate(360deg)' },
-                  },
-                }}
-              />
-            </IconButton>
-          </span>
-        </Tooltip>
       )}
 
       {headerActions}

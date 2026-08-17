@@ -463,12 +463,9 @@ function WmsStockContent() {
           setPage(0);
         }}
         stickyHeader
-        showDensityToggle
         columns={STOCK_COLUMNS}
         visibleColumns={visibleColumns}
         onVisibleColumnsChange={setVisibleColumns}
-        onRefresh={fetchStock}
-        refreshing={isLoading}
         selectedCount={selectedIds.length}
         onClearSelection={() => setSelectedIds([])}
         empty={items.length === 0 && !isLoading}
