@@ -202,6 +202,15 @@ function ModuleSettingsContent() {
   const [tagColor, setTagColor] = useState('#0284c7');
   const [savingTag, setSavingTag] = useState(false);
 
+  // Confirm State
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => Promise<void> | void;
+    loading?: boolean;
+  }>({ open: false, title: '', message: '', onConfirm: () => {} });
+
   const fetchEpsData = useCallback(async () => {
     setLoadingEps(true);
     try {
@@ -289,20 +298,27 @@ function ModuleSettingsContent() {
   };
 
   // Delete Section
-  const handleDeleteSection = async (s: CustomSectionItem) => {
-    if (!confirm(`Удалить кастомный раздел «${s.name}»? (Привязанные поля будут сохранены как общие)`)) return;
-    try {
-      const res = await fetch(`/api/eps/custom-sections?id=${s.id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        enqueueSnackbar('Раздел удален', { variant: 'info' });
-        fetchEpsData();
-      } else {
-        enqueueSnackbar(data.error || 'Ошибка удаления', { variant: 'error' });
-      }
-    } catch {
-      enqueueSnackbar('Ошибка сети', { variant: 'error' });
-    }
+  const handleDeleteSection = (s: CustomSectionItem) => {
+    setDeleteConfirm({
+      open: true,
+      title: 'Удаление кастомного раздела',
+      message: `Удалить кастомный раздел «${s.name}»? Привязанные поля будут сохранены как общие.`,
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/eps/custom-sections?id=${s.id}`, { method: 'DELETE' });
+          const data = await res.json();
+          if (data.success) {
+            enqueueSnackbar('Раздел удален', { variant: 'info' });
+            setDeleteConfirm((prev) => ({ ...prev, open: false }));
+            fetchEpsData();
+          } else {
+            enqueueSnackbar(data.error || 'Ошибка удаления', { variant: 'error' });
+          }
+        } catch {
+          enqueueSnackbar('Ошибка сети', { variant: 'error' });
+        }
+      },
+    });
   };
 
   // Open Create Field Modal
@@ -359,20 +375,27 @@ function ModuleSettingsContent() {
   };
 
   // Delete Field
-  const handleDeleteField = async (f: CustomFieldItem) => {
-    if (!confirm(`Удалить кастомное поле «${f.name}»?`)) return;
-    try {
-      const res = await fetch(`/api/eps/custom-fields?id=${f.id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        enqueueSnackbar('Поле удалено', { variant: 'info' });
-        fetchEpsData();
-      } else {
-        enqueueSnackbar(data.error || 'Ошибка удаления', { variant: 'error' });
-      }
-    } catch {
-      enqueueSnackbar('Ошибка сети', { variant: 'error' });
-    }
+  const handleDeleteField = (f: CustomFieldItem) => {
+    setDeleteConfirm({
+      open: true,
+      title: 'Удаление кастомного поля',
+      message: `Удалить кастомное поле «${f.name}»?`,
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/eps/custom-fields?id=${f.id}`, { method: 'DELETE' });
+          const data = await res.json();
+          if (data.success) {
+            enqueueSnackbar('Поле удалено', { variant: 'info' });
+            setDeleteConfirm((prev) => ({ ...prev, open: false }));
+            fetchEpsData();
+          } else {
+            enqueueSnackbar(data.error || 'Ошибка удаления', { variant: 'error' });
+          }
+        } catch {
+          enqueueSnackbar('Ошибка сети', { variant: 'error' });
+        }
+      },
+    });
   };
 
   // Save Tag
@@ -1130,6 +1153,17 @@ function ModuleSettingsContent() {
           </Box>
         </Box>
       </FormDialog>
+
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        title={deleteConfirm.title}
+        message={deleteConfirm.message}
+        variant="danger"
+        confirmText="Удалить"
+        cancelText="Отмена"
+        onConfirm={deleteConfirm.onConfirm}
+        onClose={() => setDeleteConfirm((prev) => ({ ...prev, open: false }))}
+      />
     </Box>
   );
 }

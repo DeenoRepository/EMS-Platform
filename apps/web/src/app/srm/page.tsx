@@ -65,6 +65,7 @@ import {
   StatusBadge,
   PageLoading,
   FormDialog,
+  ConfirmDialog,
 } from '@/components/ui';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -246,13 +247,20 @@ export default function SrmOverviewPage() {
     }
   };
 
-  const handleDeleteIntegration = async (id: string) => {
-    if (!confirm('Вы уверены, что хотите удалить данное подключение?')) return;
+  const [deleteIntegrationId, setDeleteIntegrationId] = useState<string | null>(null);
+
+  const handleDeleteIntegration = (id: string) => {
+    setDeleteIntegrationId(id);
+  };
+
+  const confirmDeleteIntegration = async () => {
+    if (!deleteIntegrationId) return;
     try {
-      const res = await fetch(`/api/srm/integrations/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/srm/integrations/${deleteIntegrationId}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
         enqueueSnackbar('Подключение удалено', { variant: 'success' });
+        setDeleteIntegrationId(null);
         loadData();
       } else {
         enqueueSnackbar(data.error || 'Ошибка удаления', { variant: 'error' });
@@ -1463,6 +1471,17 @@ export default function SrmOverviewPage() {
           <Button onClick={() => setSelectedRawIssue(null)}>Закрыть</Button>
         </Box>
       </FormDialog>
+
+      <ConfirmDialog
+        open={Boolean(deleteIntegrationId)}
+        title="Удаление подключения"
+        message="Вы уверены, что хотите удалить данное подключение ServiceDesk?"
+        variant="danger"
+        confirmText="Удалить"
+        cancelText="Отмена"
+        onConfirm={confirmDeleteIntegration}
+        onClose={() => setDeleteIntegrationId(null)}
+      />
     </Box>
   );
 }

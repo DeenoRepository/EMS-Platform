@@ -60,6 +60,7 @@ import {
   StatusBadge,
   SearchInput,
   FormDialog,
+  ConfirmDialog,
 } from '@/components/ui';
 
 interface ReportColumn {
@@ -341,17 +342,23 @@ export default function ReportBuilderPage() {
     }
   };
 
-  // Delete saved template
-  const handleDeleteTemplate = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!confirm('Вы уверены, что хотите удалить этот шаблон отчета?')) return;
+  const [deleteTemplateId, setDeleteTemplateId] = useState<string | null>(null);
 
+  // Delete saved template
+  const handleDeleteTemplate = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeleteTemplateId(id);
+  };
+
+  const confirmDeleteTemplate = async () => {
+    if (!deleteTemplateId) return;
     try {
-      const res = await fetch(`/api/eps/reports/templates/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/eps/reports/templates/${deleteTemplateId}`, { method: 'DELETE' });
       const json = await res.json();
       if (json.success) {
         enqueueSnackbar('Шаблон отчета удален', { variant: 'info' });
-        if (activeTemplateId === id) setActiveTemplateId(null);
+        if (activeTemplateId === deleteTemplateId) setActiveTemplateId(null);
+        setDeleteTemplateId(null);
         fetchTemplates();
       } else {
         enqueueSnackbar(json.error || 'Ошибка удаления шаблона', { variant: 'error' });
@@ -926,6 +933,17 @@ export default function ReportBuilderPage() {
           />
         </Box>
       </FormDialog>
+
+      <ConfirmDialog
+        open={Boolean(deleteTemplateId)}
+        title="Удаление шаблона отчета"
+        message="Вы уверены, что хотите удалить этот сохраненный шаблон отчета?"
+        variant="danger"
+        confirmText="Удалить"
+        cancelText="Отмена"
+        onConfirm={confirmDeleteTemplate}
+        onClose={() => setDeleteTemplateId(null)}
+      />
     </Box>
   );
 }

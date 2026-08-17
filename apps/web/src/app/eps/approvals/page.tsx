@@ -62,6 +62,7 @@ import {
   DataTableWrapper,
   PageLoading,
   FormDialog,
+  ConfirmDialog,
 } from '@/components/ui';
 
 interface ApprovalItem {
@@ -159,6 +160,7 @@ function ApprovalsListContent() {
   // Detailed Modal View
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedApprovalForDetails, setSelectedApprovalForDetails] = useState<ApprovalItem | null>(null);
+  const [revokeApproval, setRevokeApproval] = useState<ApprovalItem | null>(null);
 
   const fetchEquipmentList = async () => {
     try {
@@ -691,12 +693,7 @@ function ApprovalsListContent() {
                           size="small"
                           variant="outlined"
                           color="inherit"
-                          onClick={() => {
-                            if (confirm('Отозвать данную заявку?')) {
-                              setSelectedApprovalForReview(app);
-                              handleProcessReview('CANCELLED');
-                            }
-                          }}
+                          onClick={() => setRevokeApproval(app)}
                           sx={{ fontSize: '0.75rem', px: 1, borderRadius: '6px' }}
                         >
                           Отозвать
@@ -986,6 +983,23 @@ function ApprovalsListContent() {
           </Box>
         )}
       </FormDialog>
+
+      <ConfirmDialog
+        open={Boolean(revokeApproval)}
+        title="Отозвать заявку"
+        message={`Вы действительно хотите отозвать заявку «${revokeApproval?.title || ''}»?`}
+        variant="warning"
+        confirmText="Отозвать заявку"
+        cancelText="Отмена"
+        loading={submittingReview}
+        onConfirm={async () => {
+          if (!revokeApproval) return;
+          setSelectedApprovalForReview(revokeApproval);
+          setRevokeApproval(null);
+          await handleProcessReview('CANCELLED');
+        }}
+        onClose={() => setRevokeApproval(null)}
+      />
     </Box>
   );
 }

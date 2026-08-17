@@ -215,6 +215,14 @@ export default function EquipmentPassportPage() {
   const [isPrimaryPhoto, setIsPrimaryPhoto] = useState(false);
   const [uploading, setUploading] = useState(false);
 
+  // Confirm State
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => Promise<void> | void;
+  }>({ open: false, title: '', message: '', onConfirm: () => {} });
+
   const fetchEquipmentAndMeta = useCallback(async () => {
     setLoading(true);
     try {
@@ -370,21 +378,28 @@ export default function EquipmentPassportPage() {
   };
 
   // Delete Equipment
-  const handleDeleteEquipment = async () => {
-    if (!confirm('Вы действительно хотите удалить эту единицу оборудования из системы?')) return;
-
-    try {
-      const res = await fetch(`/api/eps/equipment/${id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        enqueueSnackbar('Оборудование удалено', { variant: 'info' });
-        router.push('/eps');
-      } else {
-        enqueueSnackbar(data.error || 'Ошибка удаления', { variant: 'error' });
-      }
-    } catch {
-      enqueueSnackbar('Ошибка сети', { variant: 'error' });
-    }
+  const handleDeleteEquipment = () => {
+    setConfirmState({
+      open: true,
+      title: 'Удаление оборудования',
+      message: 'Вы действительно хотите удалить эту единицу оборудования из системы?',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/eps/equipment/${id}`, { method: 'DELETE' });
+          const data = await res.json();
+          if (data.success) {
+            enqueueSnackbar('Оборудование удалено', { variant: 'info' });
+            router.push('/eps');
+          } else {
+            enqueueSnackbar(data.error || 'Ошибка удаления', { variant: 'error' });
+          }
+        } catch {
+          enqueueSnackbar('Ошибка сети', { variant: 'error' });
+        } finally {
+          setConfirmState((prev) => ({ ...prev, open: false }));
+        }
+      },
+    });
   };
 
   // Upload Photo
@@ -448,27 +463,43 @@ export default function EquipmentPassportPage() {
   };
 
   // Delete Photo
-  const handleDeletePhoto = async (photoId: string) => {
-    if (!confirm('Удалить эту фотографию?')) return;
-    try {
-      await fetch(`/api/eps/equipment/${id}/photos?photoId=${photoId}`, { method: 'DELETE' });
-      enqueueSnackbar('Фотография удалена', { variant: 'info' });
-      fetchEquipmentAndMeta();
-    } catch {
-      enqueueSnackbar('Ошибка удаления', { variant: 'error' });
-    }
+  const handleDeletePhoto = (photoId: string) => {
+    setConfirmState({
+      open: true,
+      title: 'Удаление фотографии',
+      message: 'Удалить эту фотографию оборудования?',
+      onConfirm: async () => {
+        try {
+          await fetch(`/api/eps/equipment/${id}/photos?photoId=${photoId}`, { method: 'DELETE' });
+          enqueueSnackbar('Фотография удалена', { variant: 'info' });
+          fetchEquipmentAndMeta();
+        } catch {
+          enqueueSnackbar('Ошибка удаления', { variant: 'error' });
+        } finally {
+          setConfirmState((prev) => ({ ...prev, open: false }));
+        }
+      },
+    });
   };
 
   // Delete Document
-  const handleDeleteDoc = async (documentId: string) => {
-    if (!confirm('Удалить этот документ?')) return;
-    try {
-      await fetch(`/api/eps/equipment/${id}/documents?documentId=${documentId}`, { method: 'DELETE' });
-      enqueueSnackbar('Документ удален', { variant: 'info' });
-      fetchEquipmentAndMeta();
-    } catch {
-      enqueueSnackbar('Ошибка удаления', { variant: 'error' });
-    }
+  const handleDeleteDoc = (documentId: string) => {
+    setConfirmState({
+      open: true,
+      title: 'Удаление документа',
+      message: 'Удалить этот прикрепленный документ?',
+      onConfirm: async () => {
+        try {
+          await fetch(`/api/eps/equipment/${id}/documents?documentId=${documentId}`, { method: 'DELETE' });
+          enqueueSnackbar('Документ удален', { variant: 'info' });
+          fetchEquipmentAndMeta();
+        } catch {
+          enqueueSnackbar('Ошибка удаления', { variant: 'error' });
+        } finally {
+          setConfirmState((prev) => ({ ...prev, open: false }));
+        }
+      },
+    });
   };
 
   if (loading || !equipment) {
@@ -1796,6 +1827,17 @@ export default function EquipmentPassportPage() {
           )}
         </Box>
       </FormDialog>
+
+      <ConfirmDialog
+        open={confirmState.open}
+        title={confirmState.title}
+        message={confirmState.message}
+        variant="danger"
+        confirmText="Удалить"
+        cancelText="Отмена"
+        onConfirm={confirmState.onConfirm}
+        onClose={() => setConfirmState((prev) => ({ ...prev, open: false }))}
+      />
     </Box>
   );
 }

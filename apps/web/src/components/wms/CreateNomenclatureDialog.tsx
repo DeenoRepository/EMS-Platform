@@ -2,17 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextField,
   Grid,
   MenuItem,
-  Button,
   Stack,
 } from '@mui/material';
+import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import { useSnackbar } from 'notistack';
+import { FormDialog } from '@/components/ui';
 
 interface CategoryOption {
   id: string;
@@ -103,87 +100,87 @@ export default function CreateNomenclatureDialog({
   };
 
   return (
-    <Dialog open={open} onClose={() => !isSubmitting && onClose()} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 700 }}>Создание позиции номенклатуры (ТМЦ)</DialogTitle>
-      <DialogContent dividers>
-        <Stack spacing={2.5} sx={{ mt: 1 }}>
-          <TextField
-            fullWidth
-            required
-            label="Наименование номенклатуры"
-            placeholder="например, Подшипник радиальный шариковый 6204 2RS"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+    <FormDialog
+      open={open}
+      onClose={() => !isSubmitting && onClose()}
+      title="Создание позиции номенклатуры (ТМЦ)"
+      subtitle="Добавление новой позиции в каталог запасных частей и материалов"
+      icon={<Inventory2OutlinedIcon />}
+      maxWidth="sm"
+      loading={isSubmitting}
+      submitLabel={isSubmitting ? 'Сохранение...' : 'Создать номенклатуру'}
+      onSubmit={handleSubmit}
+      submitDisabled={isSubmitting || !name.trim()}
+    >
+      <Stack spacing={2.5} sx={{ mt: 1 }}>
+        <TextField
+          fullWidth
+          required
+          label="Наименование номенклатуры"
+          placeholder="например, Подшипник радиальный шариковый 6204 2RS"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
 
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Артикул / Заводской код"
-                placeholder="BRG-6204-2RS"
-                value={article}
-                onChange={(e) => setArticle(e.target.value)}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Единица измерения"
-                value={unit}
-                onChange={(e) => setUnit(e.target.value)}
-              />
-            </Grid>
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="Артикул / Заводской код"
+              placeholder="BRG-6204-2RS"
+              value={article}
+              onChange={(e) => setArticle(e.target.value)}
+            />
           </Grid>
-
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                select
-                fullWidth
-                label="Категория"
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-              >
-                <MenuItem value="">Без категории</MenuItem>
-                {categories.map((c) => (
-                  <MenuItem key={c.id} value={c.id}>
-                    {c.name}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                type="number"
-                label="Минимальный остаток"
-                placeholder="для контроля дефицита"
-                value={minStock}
-                onChange={(e) => setMinStock(e.target.value)}
-              />
-            </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="Единица измерения"
+              value={unit}
+              onChange={(e) => setUnit(e.target.value)}
+            />
           </Grid>
+        </Grid>
 
-          <TextField
-            fullWidth
-            multiline
-            rows={3}
-            label="Описание / Применение"
-            placeholder="Характеристики, область применения к узлам оборудования..."
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </Stack>
-      </DialogContent>
-      <DialogActions sx={{ p: 2 }}>
-        <Button onClick={onClose} disabled={isSubmitting}>
-          Отмена
-        </Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={isSubmitting}>
-          {isSubmitting ? 'Сохранение...' : 'Создать номенклатуру'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              select
+              fullWidth
+              label="Категория"
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+            >
+              <MenuItem value="">Без категории</MenuItem>
+              {categories.map((c) => (
+                <MenuItem key={c.id} value={c.id}>
+                  {c.name}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              type="number"
+              label="Минимальный остаток"
+              placeholder="для контроля дефицита"
+              value={minStock}
+              onChange={(e) => setMinStock(e.target.value)}
+            />
+          </Grid>
+        </Grid>
+
+        <TextField
+          fullWidth
+          multiline
+          rows={3}
+          label="Описание / Применение"
+          placeholder="Характеристики, область применения к узлам оборудования..."
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+      </Stack>
+    </FormDialog>
   );
 }
