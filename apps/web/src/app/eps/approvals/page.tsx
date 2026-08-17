@@ -634,12 +634,7 @@ function ApprovalsListContent() {
                     </TableCell>
 
                     <TableCell>
-                      <Chip
-                        label={APPROVAL_TYPE_MAP[app.type] || app.type}
-                        size="small"
-                        variant="outlined"
-                        sx={{ fontWeight: 600, borderRadius: '4px' }}
-                      />
+                      <StatusBadge status={app.type} />
                     </TableCell>
 
                     <TableCell>
@@ -837,12 +832,9 @@ function ApprovalsListContent() {
                 <Typography variant="caption" color="text.secondary" display="block">
                   Тип согласования:
                 </Typography>
-                <Chip
-                  label={APPROVAL_TYPE_MAP[selectedApprovalForReview.type] || selectedApprovalForReview.type}
-                  size="small"
-                  color="primary"
-                  sx={{ mt: 0.5, fontWeight: 700 }}
-                />
+                <Box sx={{ mt: 0.5 }}>
+                  <StatusBadge status={selectedApprovalForReview.type} />
+                </Box>
 
                 <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1.5 }}>
                   Тема заявки:
@@ -912,18 +904,8 @@ function ApprovalsListContent() {
           {selectedApprovalForDetails && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Chip
-                  label={APPROVAL_TYPE_MAP[selectedApprovalForDetails.type] || selectedApprovalForDetails.type}
-                  size="small"
-                  variant="outlined"
-                  sx={{ fontWeight: 700 }}
-                />
-                <Chip
-                  label={APPROVAL_STATUS_MAP[selectedApprovalForDetails.status]?.label || selectedApprovalForDetails.status}
-                  size="small"
-                  color={APPROVAL_STATUS_MAP[selectedApprovalForDetails.status]?.color as any}
-                  sx={{ fontWeight: 700 }}
-                />
+                <StatusBadge status={selectedApprovalForDetails.type} />
+                <StatusBadge status={selectedApprovalForDetails.status} />
               </Box>
 
               <Typography variant="h6" fontWeight={700}>

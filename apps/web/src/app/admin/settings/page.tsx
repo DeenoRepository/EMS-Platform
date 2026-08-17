@@ -27,6 +27,7 @@ import BuildOutlinedIcon from '@mui/icons-material/BuildOutlined';
 import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined';
 import PageHeader from '@/components/layout/PageHeader';
 import { useSnackbar } from 'notistack';
+import { StatusBadge, PageLoading } from '@/components/ui';
 
 export default function AdminSettingsPage() {
   const { enqueueSnackbar } = useSnackbar();
@@ -171,9 +172,7 @@ export default function AdminSettingsPage() {
       />
 
       {loading ? (
-        <Card sx={{ p: 6, textAlign: 'center' }}>
-          <CircularProgress />
-        </Card>
+        <PageLoading text="Загрузка параметров и конфигурации системы..." />
       ) : (
         <Box component="form" onSubmit={handleSave} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           {/* Section 1: Module Enablement & Activation Grid */}
@@ -222,11 +221,10 @@ export default function AdminSettingsPage() {
                                 {mod.name}
                               </Typography>
                             </Box>
-                            <Chip
+                            <StatusBadge
+                              status={enabled ? 'ACTIVE' : 'INACTIVE'}
                               label={enabled ? 'Активен' : 'Отключен'}
-                              color={enabled ? 'success' : 'default'}
                               size="small"
-                              sx={{ fontWeight: 700, fontSize: '0.6875rem', height: 20 }}
                             />
                           </Box>
                           <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.78125rem', lineHeight: 1.4, mb: 2 }}>

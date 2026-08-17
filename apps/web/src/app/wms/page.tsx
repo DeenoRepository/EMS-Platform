@@ -35,7 +35,7 @@ import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { OPERATION_TYPE_MAP, formatDateTime } from '@ems/shared';
-import { StatCard, StatusBadge, EmptyState } from '@/components/ui';
+import { StatCard, StatusBadge, EmptyState, DataTableWrapper } from '@/components/ui';
 
 interface WmsStats {
   warehousesCount: number;
@@ -287,7 +287,7 @@ export default function WmsDashboardPage() {
                   <Skeleton variant="rounded" height={36} />
                 </Stack>
               ) : stats && stats.lowStockItems.length > 0 ? (
-                <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 1.5 }}>
+                <DataTableWrapper total={stats.lowStockItems.length}>
                   <Table size="small" aria-label="Таблица дефицита ТМЦ">
                     <TableHead sx={{ bgcolor: 'grey.50' }}>
                       <TableRow>
@@ -318,7 +318,7 @@ export default function WmsDashboardPage() {
                       ))}
                     </TableBody>
                   </Table>
-                </TableContainer>
+                </DataTableWrapper>
               ) : (
                 <EmptyState
                   icon={<Inventory2OutlinedIcon sx={{ fontSize: 32, color: '#16a34a' }} />}
@@ -378,12 +378,7 @@ export default function WmsDashboardPage() {
                       >
                         <Box sx={{ minWidth: 0, pr: 2 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                            <Chip
-                              label={typeInfo.label}
-                              size="small"
-                              color={typeInfo.color as any}
-                              sx={{ fontWeight: 700, borderRadius: '4px' }}
-                            />
+                            <StatusBadge status={op.type} />
                             <Typography variant="caption" color="text.secondary">
                               {formatDateTime(op.date)} • Склад: {op.warehouse.name}
                             </Typography>
