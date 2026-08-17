@@ -29,6 +29,7 @@ import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined';
 import {
   EmptyState,
   DataTableWrapper,
+  FormDialog,
 } from '@/components/ui';
 
 interface TagItem {
@@ -209,54 +210,53 @@ export default function TagsManagementPage() {
       )}
 
       {/* Create Tag Modal */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Создание тега оборудования</DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-            <TextField
-              label="Название тега"
-              placeholder="например: Взрывозащищенное"
-              value={tagName}
-              onChange={(e) => setTagName(e.target.value)}
-              fullWidth
-              size="small"
-              required
-            />
+      <FormDialog
+        open={openDialog}
+        onClose={() => setOpenDialog(false)}
+        title="Создание тега оборудования"
+        icon={<LocalOfferOutlinedIcon color="primary" />}
+        maxWidth="xs"
+        loading={saving}
+        submitLabel={saving ? 'Создание...' : 'Создать тег'}
+        onSubmit={handleCreateTag}
+        submitDisabled={saving || !tagName.trim()}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
+          <TextField
+            label="Название тега"
+            placeholder="например: Взрывозащищенное"
+            value={tagName}
+            onChange={(e) => setTagName(e.target.value)}
+            fullWidth
+            size="small"
+            required
+          />
 
-            <Box>
-              <Typography variant="caption" color="text.secondary" gutterBottom display="block">
-                Выберите цвет бейджа:
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                {PRESET_COLORS.map((color) => (
-                  <Box
-                    key={color}
-                    onClick={() => setTagColor(color)}
-                    sx={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: '50%',
-                      backgroundColor: color,
-                      cursor: 'pointer',
-                      border: tagColor === color ? '3px solid #0f172a' : '2px solid transparent',
-                      transition: 'transform 0.1s ease',
-                      '&:hover': { transform: 'scale(1.15)' },
-                    }}
-                  />
-                ))}
-              </Box>
+          <Box>
+            <Typography variant="caption" color="text.secondary" gutterBottom display="block">
+              Выберите цвет бейджа:
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              {PRESET_COLORS.map((color) => (
+                <Box
+                  key={color}
+                  onClick={() => setTagColor(color)}
+                  sx={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: '50%',
+                    backgroundColor: color,
+                    cursor: 'pointer',
+                    border: tagColor === color ? '3px solid #0f172a' : '2px solid transparent',
+                    transition: 'transform 0.1s ease',
+                    '&:hover': { transform: 'scale(1.15)' },
+                  }}
+                />
+              ))}
             </Box>
           </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDialog(false)} color="inherit">
-            Отмена
-          </Button>
-          <Button onClick={handleCreateTag} variant="contained" disabled={saving}>
-            {saving ? <CircularProgress size={20} /> : 'Создать'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </Box>
+      </FormDialog>
     </Box>
   );
 }

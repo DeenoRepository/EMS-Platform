@@ -41,6 +41,7 @@ import {
   DataTableWrapper,
   EmptyState,
   StatusBadge,
+  FormDialog,
 } from '@/components/ui';
 
 interface UserItem {
@@ -373,50 +374,47 @@ export default function AdminUsersPage() {
       )}
 
       {/* Dialog for Editing User Roles */}
-      <Dialog open={Boolean(selectedUser)} onClose={handleCloseDialog} maxWidth="xs" fullWidth>
-        <DialogTitle>Назначение ролей</DialogTitle>
-        <DialogContent dividers>
-          {selectedUser && (
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>
-                {selectedUser.displayName} ({selectedUser.ldapLogin})
-              </Typography>
-              <Typography variant="caption" color="text.secondary" paragraph>
-                Выберите роли, предоставляющие доступ к модулям EMS:
-              </Typography>
+      <FormDialog
+        open={Boolean(selectedUser)}
+        onClose={handleCloseDialog}
+        title="Назначение ролей"
+        subtitle={selectedUser ? `${selectedUser.displayName} (@${selectedUser.ldapLogin})` : undefined}
+        icon={<AdminPanelSettingsIcon color="primary" />}
+        maxWidth="xs"
+        loading={saving}
+        submitLabel={saving ? 'Сохранение...' : 'Сохранить роли'}
+        onSubmit={handleSaveRoles}
+        submitDisabled={saving}
+      >
+        {selectedUser && (
+          <Box sx={{ pt: 1 }}>
+            <Typography variant="caption" color="text.secondary" paragraph>
+              Выберите роли, предоставляющие доступ к модулям EMS:
+            </Typography>
 
-              <FormGroup>
-                {availableRoles.map((role) => (
-                  <FormControlLabel
-                    key={role.id}
-                    control={
-                      <Checkbox
-                        checked={selectedRoleIds.includes(role.id)}
-                        onChange={() => handleToggleRole(role.id)}
-                      />
-                    }
-                    label={
-                      <Box>
-                        <Typography variant="body2" fontWeight={500}>
-                          {role.displayName}
-                        </Typography>
-                      </Box>
-                    }
-                  />
-                ))}
-              </FormGroup>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog} color="inherit">
-            Отмена
-          </Button>
-          <Button onClick={handleSaveRoles} variant="contained" disabled={saving}>
-            {saving ? <CircularProgress size={20} /> : 'Сохранить'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+            <FormGroup>
+              {availableRoles.map((role) => (
+                <FormControlLabel
+                  key={role.id}
+                  control={
+                    <Checkbox
+                      checked={selectedRoleIds.includes(role.id)}
+                      onChange={() => handleToggleRole(role.id)}
+                    />
+                  }
+                  label={
+                    <Box>
+                      <Typography variant="body2" fontWeight={600}>
+                        {role.displayName}
+                      </Typography>
+                    </Box>
+                  }
+                />
+              ))}
+            </FormGroup>
+          </Box>
+        )}
+      </FormDialog>
     </Box>
   );
 }

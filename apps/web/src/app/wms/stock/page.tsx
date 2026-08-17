@@ -53,6 +53,7 @@ import {
   CriticalAlertBanner,
   BulkActionBar,
   PageLoading,
+  FormDialog,
 } from '@/components/ui';
 
 interface StockRow {
@@ -633,88 +634,76 @@ function WmsStockContent() {
       )}
 
       {/* Диалог назначения места хранения (ячейки) */}
-      <Dialog
+      <FormDialog
         open={isLocationModalOpen}
         onClose={() => setIsLocationModalOpen(false)}
+        title="Место хранения ТМЦ"
+        subtitle={locStockItem ? `${locStockItem.name} (${locStockItem.warehouseName})` : undefined}
+        icon={<PlaceOutlinedIcon color="primary" />}
         maxWidth="xs"
-        fullWidth
+        loading={isSavingLoc}
+        submitLabel={isSavingLoc ? 'Сохранение...' : 'Сохранить'}
+        onSubmit={handleSaveLocation}
+        submitDisabled={isSavingLoc || warehouseZonesForLoc.length === 0}
       >
-        <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <PlaceOutlinedIcon color="primary" />
-          Место хранения ТМЦ
-        </DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <Box>
-              <Typography variant="caption" color="text.secondary">
-                Номенклатура:
-              </Typography>
-              <Typography variant="subtitle2" fontWeight={700}>
-                {locStockItem?.name} ({locStockItem?.article || 'б/а'})
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Склад: {locStockItem?.warehouseName} ({locStockItem?.warehouseCode})
-              </Typography>
-            </Box>
+        <Stack spacing={2} sx={{ mt: 1 }}>
+          <Box>
+            <Typography variant="caption" color="text.secondary">
+              Номенклатура:
+            </Typography>
+            <Typography variant="subtitle2" fontWeight={700}>
+              {locStockItem?.name} ({locStockItem?.article || 'б/а'})
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Склад: {locStockItem?.warehouseName} ({locStockItem?.warehouseCode})
+            </Typography>
+          </Box>
 
-            <Divider />
+          <Divider />
 
-            {warehouseZonesForLoc.length === 0 ? (
-              <Box sx={{ p: 2, textAlign: 'center', bgcolor: 'grey.50', borderRadius: 1.5 }}>
-                <Typography variant="body2" color="text.secondary">
-                  На складе <b>{locStockItem?.warehouseName}</b> еще не созданы зоны и ячейки.
-                </Typography>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  onClick={() => {
-                    setIsLocationModalOpen(false);
-                    router.push('/wms/warehouses');
-                  }}
-                  sx={{ mt: 1.5 }}
-                >
-                  Перейти к настройке зон
-                </Button>
-              </Box>
-            ) : (
-              <TextField
-                select
-                fullWidth
-                label="Выберите ячейку хранения"
-                value={selectedCellId}
-                onChange={(e) => setSelectedCellId(e.target.value)}
-                helperText="Закрепляет основную ячейку размещения на складе"
+          {warehouseZonesForLoc.length === 0 ? (
+            <Box sx={{ p: 2, textAlign: 'center', bgcolor: 'grey.50', borderRadius: 1.5 }}>
+              <Typography variant="body2" color="text.secondary">
+                На складе <b>{locStockItem?.warehouseName}</b> еще не созданы зоны и ячейки.
+              </Typography>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => {
+                  setIsLocationModalOpen(false);
+                  router.push('/wms/warehouses');
+                }}
+                sx={{ mt: 1.5 }}
               >
-                <MenuItem value="">
-                  <em>— Без адреса (очистить ячейку) —</em>
-                </MenuItem>
-                {warehouseZonesForLoc.map((zone) => [
-                  <MenuItem key={`header-${zone.id}`} disabled sx={{ fontWeight: 700, bgcolor: 'grey.100' }}>
-                    {zone.name} ({zone.code})
-                  </MenuItem>,
-                  ...zone.cells.map((cell) => (
-                    <MenuItem key={cell.id} value={cell.id} sx={{ pl: 4 }}>
-                      {cell.code} {cell.name ? `— ${cell.name}` : ''}
-                    </MenuItem>
-                  )),
-                ])}
-              </TextField>
-            )}
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setIsLocationModalOpen(false)} disabled={isSavingLoc}>
-            Отмена
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleSaveLocation}
-            disabled={isSavingLoc || warehouseZonesForLoc.length === 0}
-          >
-            {isSavingLoc ? 'Сохранение...' : 'Сохранить'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+                Перейти к настройке зон
+              </Button>
+            </Box>
+          ) : (
+            <TextField
+              select
+              fullWidth
+              label="Выберите ячейку хранения"
+              value={selectedCellId}
+              onChange={(e) => setSelectedCellId(e.target.value)}
+              helperText="Закрепляет основную ячейку размещения на складе"
+            >
+              <MenuItem value="">
+                <em>— Без адреса (очистить ячейку) —</em>
+              </MenuItem>
+              {warehouseZonesForLoc.map((zone) => [
+                <MenuItem key={`header-${zone.id}`} disabled sx={{ fontWeight: 700, bgcolor: 'grey.100' }}>
+                  {zone.name} ({zone.code})
+                </MenuItem>,
+                ...zone.cells.map((cell) => (
+                  <MenuItem key={cell.id} value={cell.id} sx={{ pl: 4 }}>
+                    {cell.code} {cell.name ? `— ${cell.name}` : ''}
+                  </MenuItem>
+                )),
+              ])}
+            </TextField>
+          )}
+        </Stack>
+      </FormDialog>
 
       {/* Диалог создания новой номенклатуры */}
       <CreateNomenclatureDialog

@@ -35,6 +35,7 @@ import {
   EmptyState,
   DataTableWrapper,
   ConfirmDialog,
+  FormDialog,
 } from '@/components/ui';
 
 interface CustomFieldItem {
@@ -276,98 +277,100 @@ export default function CustomFieldsBuilderPage() {
         loading={deleting}
         onConfirm={handleConfirmDelete}
         onClose={() => setDeleteDialogField(null)}
-      /><Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Добавление кастомного поля оборудования</DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
+      />
+
+      {/* Create Field Dialog */}
+      <FormDialog
+        open={openDialog}
+        onClose={() => setOpenDialog(false)}
+        title="Добавление кастомного поля оборудования"
+        icon={<TuneIcon color="primary" />}
+        maxWidth="sm"
+        loading={saving}
+        submitLabel={saving ? 'Сохранение...' : 'Сохранить поле'}
+        onSubmit={handleSaveField}
+        submitDisabled={saving || !name || !key}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
+          <TextField
+            label="Отображаемое название"
+            placeholder="например: Рабочее давление (бар)"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            fullWidth
+            size="small"
+            required
+          />
+
+          <TextField
+            label="Системный ключ (латиницей)"
+            placeholder="например: working_pressure_bar"
+            value={key}
+            onChange={(e) => setKey(e.target.value)}
+            fullWidth
+            size="small"
+            required
+            helperText="Идентификатор поля в базе данных"
+          />
+
+          <TextField
+            select
+            label="Тип данных поля"
+            value={fieldType}
+            onChange={(e) => setFieldType(e.target.value)}
+            fullWidth
+            size="small"
+          >
+            {Object.entries(FIELD_TYPE_LABELS).map(([k, label]) => (
+              <MenuItem key={k} value={k}>
+                {label}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          {fieldType === 'SELECT' && (
             <TextField
-              label="Отображаемое название"
-              placeholder="например: Рабочее давление (бар)"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              label="Варианты выбора (через запятую)"
+              placeholder="например: 10 бар, 16 бар, 25 бар, 40 бар"
+              value={optionsStr}
+              onChange={(e) => setOptionsStr(e.target.value)}
               fullWidth
               size="small"
-              required
+              helperText="Укажите доступные пункты для выпадающего списка"
             />
+          )}
 
+          {fieldType !== 'BOOLEAN' && (
             <TextField
-              label="Системный ключ (латиницей)"
-              placeholder="например: working_pressure_bar"
-              value={key}
-              onChange={(e) => setKey(e.target.value)}
+              label="Значение по умолчанию"
+              placeholder="например: 16"
+              value={defaultValue}
+              onChange={(e) => setDefaultValue(e.target.value)}
               fullWidth
               size="small"
-              required
-              helperText="Идентификатор поля в базе данных"
             />
+          )}
 
-            <TextField
-              select
-              label="Тип данных поля"
-              value={fieldType}
-              onChange={(e) => setFieldType(e.target.value)}
-              fullWidth
-              size="small"
-            >
-              {Object.entries(FIELD_TYPE_LABELS).map(([k, label]) => (
-                <MenuItem key={k} value={k}>
-                  {label}
-                </MenuItem>
-              ))}
-            </TextField>
+          <TextField
+            label="Порядковый номер сортировки"
+            type="number"
+            value={sortOrder}
+            onChange={(e) => setSortOrder(Number(e.target.value))}
+            fullWidth
+            size="small"
+          />
 
-            {fieldType === 'SELECT' && (
-              <TextField
-                label="Варианты выбора (через запятую)"
-                placeholder="например: 10 бар, 16 бар, 25 бар, 40 бар"
-                value={optionsStr}
-                onChange={(e) => setOptionsStr(e.target.value)}
-                fullWidth
-                size="small"
-                helperText="Укажите доступные пункты для выпадающего списка"
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={isRequired}
+                onChange={(e) => setIsRequired(e.target.checked)}
               />
-            )}
-
-            {fieldType !== 'BOOLEAN' && (
-              <TextField
-                label="Значение по умолчанию"
-                placeholder="например: 16"
-                value={defaultValue}
-                onChange={(e) => setDefaultValue(e.target.value)}
-                fullWidth
-                size="small"
-              />
-            )}
-
-            <TextField
-              label="Порядковый номер сортировки"
-              type="number"
-              value={sortOrder}
-              onChange={(e) => setSortOrder(Number(e.target.value))}
-              fullWidth
-              size="small"
-            />
-
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={isRequired}
-                  onChange={(e) => setIsRequired(e.target.checked)}
-                />
-              }
-              label="Обязательно для заполнения при создании оборудования"
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDialog(false)} color="inherit">
-            Отмена
-          </Button>
-          <Button onClick={handleSaveField} variant="contained" disabled={saving}>
-            {saving ? <CircularProgress size={20} /> : 'Сохранить поле'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+            }
+            label="Обязательно для заполнения при создании оборудования"
+          />
+        </Box>
+      </FormDialog>
     </Box>
   );
 }

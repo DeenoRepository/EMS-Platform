@@ -53,6 +53,7 @@ import {
   DataTableWrapper,
   ConfirmDialog,
   PageLoading,
+  FormDialog,
 } from '@/components/ui';
 
 interface DocumentItem {
@@ -578,85 +579,80 @@ function DocumentsListContent() {
       />
 
       {/* Upload Document Modal Dialog */}
-      <Dialog open={uploadModalOpen} onClose={() => setUploadModalOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Загрузка документа в архив EPS</DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-            {/* Equipment Picker */}
-            <Autocomplete
-              options={equipmentList}
-              getOptionLabel={(option) => `${option.inventoryNumber ? `[${option.inventoryNumber}] ` : ''}${option.name}`}
-              value={selectedEquipmentForUpload}
-              onChange={(_, val) => setSelectedEquipmentForUpload(val)}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Оборудование *"
-                  placeholder="Выберите единицу оборудования"
-                  size="small"
-                  fullWidth
-                />
-              )}
-            />
-
-            {/* Document Type */}
-            <TextField
-              select
-              size="small"
-              label="Тип документа *"
-              value={uploadDocType}
-              onChange={(e) => setUploadDocType(e.target.value)}
-              fullWidth
-            >
-              {Object.entries(DOCUMENT_TYPE_MAP).map(([k, label]) => (
-                <MenuItem key={k} value={k}>
-                  {label}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            {/* File Picker */}
-            <Button
-              variant="outlined"
-              component="label"
-              fullWidth
-              startIcon={<UploadFileIcon />}
-              sx={{ py: 1.75, borderStyle: 'dashed' }}
-            >
-              {selectedFile ? selectedFile.name : 'Нажмите для выбора файла (PDF, DOCX, XLSX, Схемы)'}
-              <input
-                type="file"
-                hidden
-                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+      <FormDialog
+        open={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+        title="Загрузка документа в архив EPS"
+        icon={<UploadFileIcon color="primary" />}
+        maxWidth="sm"
+        loading={uploading}
+        submitLabel={uploading ? 'Загрузка...' : 'Загрузить в архив'}
+        onSubmit={handleUploadSubmit}
+        submitDisabled={!selectedFile || !selectedEquipmentForUpload || uploading}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
+          {/* Equipment Picker */}
+          <Autocomplete
+            options={equipmentList}
+            getOptionLabel={(option) => `${option.inventoryNumber ? `[${option.inventoryNumber}] ` : ''}${option.name}`}
+            value={selectedEquipmentForUpload}
+            onChange={(_, val) => setSelectedEquipmentForUpload(val)}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Оборудование *"
+                placeholder="Выберите единицу оборудования"
+                size="small"
+                fullWidth
               />
-            </Button>
+            )}
+          />
 
-            {/* Description */}
-            <TextField
-              label="Описание / Примечание к документу"
-              value={uploadDescription}
-              onChange={(e) => setUploadDescription(e.target.value)}
-              multiline
-              rows={3}
-              size="small"
-              fullWidth
-              placeholder="Укажите номер чертежа, редакцию, дату утверждения или краткое содержание..."
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setUploadModalOpen(false)} color="inherit">
-            Отмена
-          </Button>
-          <Button
-            onClick={handleUploadSubmit}
-            variant="contained"
-            disabled={!selectedFile || !selectedEquipmentForUpload || uploading}
+          {/* Document Type */}
+          <TextField
+            select
+            size="small"
+            label="Тип документа *"
+            value={uploadDocType}
+            onChange={(e) => setUploadDocType(e.target.value)}
+            fullWidth
           >
-            {uploading ? <CircularProgress size={20} /> : 'Загрузить в архив'}
+            {Object.entries(DOCUMENT_TYPE_MAP).map(([k, label]) => (
+              <MenuItem key={k} value={k}>
+                {label}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          {/* File Picker */}
+          <Button
+            variant="outlined"
+            component="label"
+            fullWidth
+            startIcon={<UploadFileIcon />}
+            sx={{ py: 1.75, borderStyle: 'dashed' }}
+          >
+            {selectedFile ? selectedFile.name : 'Нажмите для выбора файла (PDF, DOCX, XLSX, Схемы)'}
+            <input
+              type="file"
+              hidden
+              onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+            />
           </Button>
-        </DialogActions>
-      </Dialog>
+
+          {/* Description */}
+          <TextField
+            label="Описание / Примечание к документу"
+            value={uploadDescription}
+            onChange={(e) => setUploadDescription(e.target.value)}
+            multiline
+            rows={3}
+            size="small"
+            fullWidth
+            placeholder="Укажите номер чертежа, редакцию, дату утверждения или краткое содержание..."
+          />
+        </Box>
+      </FormDialog>
     </Box>
   );
 }

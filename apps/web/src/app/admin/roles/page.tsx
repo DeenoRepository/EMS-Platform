@@ -42,6 +42,7 @@ import {
   DataTableWrapper,
   EmptyState,
   ConfirmDialog,
+  FormDialog,
 } from '@/components/ui';
 
 interface PermissionItem {
@@ -396,114 +397,110 @@ export default function AdminRolesPage() {
       />
 
       {/* Role Form & Permission Matrix Dialog */}
-      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-        <DialogTitle>
-          {editingRole ? `Редактирование роли: ${editingRole.displayName}` : 'Создание новой роли'}
-        </DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                label="Отображаемое название"
-                placeholder="например: Специалист ОТК"
-                value={roleDisplayName}
-                onChange={(e) => setRoleDisplayName(e.target.value)}
-                fullWidth
-                required
-                size="small"
-              />
-              <TextField
-                label="Системный код (латиницей)"
-                placeholder="например: quality_inspector"
-                value={roleName}
-                onChange={(e) => setRoleName(e.target.value)}
-                disabled={Boolean(editingRole)}
-                fullWidth
-                required
-                size="small"
-              />
-            </Box>
+      <FormDialog
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        title={editingRole ? `Редактирование роли: ${editingRole.displayName}` : 'Создание новой роли'}
+        icon={<SecurityIcon color="primary" />}
+        maxWidth="md"
+        loading={saving}
+        submitLabel={saving ? 'Сохранение...' : 'Сохранить роль'}
+        onSubmit={handleSaveRole}
+        submitDisabled={saving || !roleDisplayName || !roleName}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3, pt: 1 }}>
+          <Box sx={{ display: 'flex', gap: 2 }}>
             <TextField
-              label="Описание роли"
-              placeholder="Кратко опишите назначение и уровень доступа этой роли"
-              value={roleDescription}
-              onChange={(e) => setRoleDescription(e.target.value)}
+              label="Отображаемое название"
+              placeholder="например: Специалист ОТК"
+              value={roleDisplayName}
+              onChange={(e) => setRoleDisplayName(e.target.value)}
               fullWidth
-              multiline
-              rows={2}
+              required
+              size="small"
+            />
+            <TextField
+              label="Системный код (латиницей)"
+              placeholder="например: quality_inspector"
+              value={roleName}
+              onChange={(e) => setRoleName(e.target.value)}
+              disabled={Boolean(editingRole)}
+              fullWidth
+              required
               size="small"
             />
           </Box>
+          <TextField
+            label="Описание роли"
+            placeholder="Кратко опишите назначение и уровень доступа этой роли"
+            value={roleDescription}
+            onChange={(e) => setRoleDescription(e.target.value)}
+            fullWidth
+            multiline
+            rows={2}
+            size="small"
+          />
+        </Box>
 
-          <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-            Матрица гранулярных прав доступа:
-          </Typography>
+        <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+          Матрица гранулярных прав доступа:
+        </Typography>
 
-          {Object.entries(permsByModule).map(([moduleKey, modulePerms]) => {
-            const allSelected = modulePerms.every((p) => selectedPermCodes.includes(p.code));
-            const someSelected = modulePerms.some((p) => selectedPermCodes.includes(p.code));
+        {Object.entries(permsByModule).map(([moduleKey, modulePerms]) => {
+          const allSelected = modulePerms.every((p) => selectedPermCodes.includes(p.code));
 
-            return (
-              <Accordion key={moduleKey} defaultExpanded sx={{ border: '1px solid #e2e8f0', mb: 1, boxShadow: 'none' }}>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between', pr: 2 }}>
-                    <Typography variant="subtitle2" fontWeight={600}>
-                      {MODULE_LABELS[moduleKey] || moduleKey.toUpperCase()}
-                    </Typography>
-                    <Button
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleToggleModulePerms(moduleKey);
-                      }}
-                      color={allSelected ? 'primary' : 'inherit'}
-                      sx={{ fontSize: '0.75rem' }}
-                    >
-                      {allSelected ? 'Снять все' : 'Выбрать все в модуле'}
-                    </Button>
-                  </Box>
-                </AccordionSummary>
-                <AccordionDetails sx={{ pt: 0 }}>
-                  <FormGroup sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1 }}>
-                    {modulePerms.map((perm) => (
-                      <FormControlLabel
-                        key={perm.id}
-                        control={
-                          <Checkbox
-                            checked={selectedPermCodes.includes(perm.code)}
-                            onChange={() => handleTogglePerm(perm.code)}
-                            size="small"
-                          />
-                        }
-                        label={
-                          <Box>
-                            <Typography variant="body2" fontWeight={500} fontSize="0.8125rem">
-                              {perm.displayName}
+          return (
+            <Accordion key={moduleKey} defaultExpanded sx={{ border: '1px solid #e2e8f0', mb: 1, boxShadow: 'none' }}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between', pr: 2 }}>
+                  <Typography variant="subtitle2" fontWeight={600}>
+                    {MODULE_LABELS[moduleKey] || moduleKey.toUpperCase()}
+                  </Typography>
+                  <Button
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleModulePerms(moduleKey);
+                    }}
+                    color={allSelected ? 'primary' : 'inherit'}
+                    sx={{ fontSize: '0.75rem' }}
+                  >
+                    {allSelected ? 'Снять все' : 'Выбрать все в модуле'}
+                  </Button>
+                </Box>
+              </AccordionSummary>
+              <AccordionDetails sx={{ pt: 0 }}>
+                <FormGroup sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1 }}>
+                  {modulePerms.map((perm) => (
+                    <FormControlLabel
+                      key={perm.id}
+                      control={
+                        <Checkbox
+                          checked={selectedPermCodes.includes(perm.code)}
+                          onChange={() => handleTogglePerm(perm.code)}
+                          size="small"
+                        />
+                      }
+                      label={
+                        <Box>
+                          <Typography variant="body2" fontWeight={500} fontSize="0.8125rem">
+                            {perm.displayName}
+                          </Typography>
+                          {perm.description && (
+                            <Typography variant="caption" color="text.secondary" display="block">
+                              {perm.description}
                             </Typography>
-                            {perm.description && (
-                              <Typography variant="caption" color="text.secondary" display="block">
-                                {perm.description}
-                              </Typography>
-                            )}
-                          </Box>
-                        }
-                      />
-                    ))}
-                  </FormGroup>
-                </AccordionDetails>
-              </Accordion>
-            );
-          })}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog} color="inherit">
-            Отмена
-          </Button>
-          <Button onClick={handleSaveRole} variant="contained" disabled={saving}>
-            {saving ? <CircularProgress size={20} /> : 'Сохранить роль'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+                          )}
+                        </Box>
+                      }
+                    />
+                  ))}
+                </FormGroup>
+              </AccordionDetails>
+            </Accordion>
+          );
+        })}
+      </FormDialog>
     </Box>
   );
 }

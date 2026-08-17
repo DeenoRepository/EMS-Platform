@@ -56,6 +56,7 @@ import {
   EmptyState,
   ConfirmDialog,
   PageLoading,
+  FormDialog,
 } from '@/components/ui';
 
 interface CustomFieldItem {
@@ -899,242 +900,236 @@ function ModuleSettingsContent() {
       )}
 
       {/* Create / Edit Section Modal */}
-      <Dialog open={sectionDialogOpen} onClose={() => setSectionDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{sectionEditingId ? 'Редактирование кастомного раздела' : 'Создание кастомного раздела'}</DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
+      <FormDialog
+        open={sectionDialogOpen}
+        onClose={() => setSectionDialogOpen(false)}
+        title={sectionEditingId ? 'Редактирование кастомного раздела' : 'Создание кастомного раздела'}
+        maxWidth="sm"
+        loading={savingSection}
+        submitLabel={savingSection ? 'Сохранение...' : 'Сохранить раздел'}
+        onSubmit={handleSaveSection}
+        submitDisabled={savingSection || !sectionName}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
+          <TextField
+            label="Отображаемое название раздела"
+            placeholder="например: Электротехнические характеристики"
+            value={sectionName}
+            onChange={(e) => setSectionName(e.target.value)}
+            fullWidth
+            size="small"
+            required
+          />
+          {!sectionEditingId && (
             <TextField
-              label="Отображаемое название раздела"
-              placeholder="например: Электротехнические характеристики"
-              value={sectionName}
-              onChange={(e) => setSectionName(e.target.value)}
+              label="Системный код (латиницей)"
+              placeholder="например: electrical_characteristics"
+              value={sectionCode}
+              onChange={(e) => setSectionCode(e.target.value)}
               fullWidth
               size="small"
-              required
+              helperText="Оставьте пустым для автогенерации из названия"
             />
-            {!sectionEditingId && (
-              <TextField
-                label="Системный код (латиницей)"
-                placeholder="например: electrical_characteristics"
-                value={sectionCode}
-                onChange={(e) => setSectionCode(e.target.value)}
-                fullWidth
-                size="small"
-                helperText="Оставьте пустым для автогенерации из названия"
-              />
-            )}
-            <TextField
-              label="Краткое описание"
-              placeholder="Параметры мощности, напряжения, питающей сети"
-              value={sectionDesc}
-              onChange={(e) => setSectionDesc(e.target.value)}
-              fullWidth
-              size="small"
-              multiline
-              rows={2}
-            />
-            <TextField
-              select
-              label="Иконка раздела"
-              value={sectionIcon}
-              onChange={(e) => setSectionIcon(e.target.value)}
-              fullWidth
-              size="small"
-            >
-              <MenuItem value="Bolt">Электричество (Молния)</MenuItem>
-              <MenuItem value="WaterDrop">Гидравлика (Капля)</MenuItem>
-              <MenuItem value="Shield">Безопасность / Надежность (Щит)</MenuItem>
-              <MenuItem value="Straighten">Габариты / Размеры (Линейка)</MenuItem>
-              <MenuItem value="Speed">Скорость / Давление (Спидометр)</MenuItem>
-            </TextField>
-            <TextField
-              label="Порядковый номер сортировки"
-              type="number"
-              value={sectionSort}
-              onChange={(e) => setSectionSort(Number(e.target.value))}
-              fullWidth
-              size="small"
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setSectionDialogOpen(false)} color="inherit">
-            Отмена
-          </Button>
-          <Button onClick={handleSaveSection} variant="contained" disabled={savingSection}>
-            {savingSection ? <CircularProgress size={20} /> : 'Сохранить раздел'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+          )}
+          <TextField
+            label="Краткое описание"
+            placeholder="Параметры мощности, напряжения, питающей сети"
+            value={sectionDesc}
+            onChange={(e) => setSectionDesc(e.target.value)}
+            fullWidth
+            size="small"
+            multiline
+            rows={2}
+          />
+          <TextField
+            select
+            label="Иконка раздела"
+            value={sectionIcon}
+            onChange={(e) => setSectionIcon(e.target.value)}
+            fullWidth
+            size="small"
+          >
+            <MenuItem value="Bolt">Электричество (Молния)</MenuItem>
+            <MenuItem value="WaterDrop">Гидравлика (Капля)</MenuItem>
+            <MenuItem value="Shield">Безопасность / Надежность (Щит)</MenuItem>
+            <MenuItem value="Straighten">Габариты / Размеры (Линейка)</MenuItem>
+            <MenuItem value="Speed">Скорость / Давление (Спидометр)</MenuItem>
+          </TextField>
+          <TextField
+            label="Порядковый номер сортировки"
+            type="number"
+            value={sectionSort}
+            onChange={(e) => setSectionSort(Number(e.target.value))}
+            fullWidth
+            size="small"
+          />
+        </Box>
+      </FormDialog>
 
       {/* Create / Edit Custom Field Modal */}
-      <Dialog open={fieldDialogOpen} onClose={() => setFieldDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Добавление кастомного поля в паспорт</DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-            <TextField
-              select
-              label="Целевой раздел паспорта"
-              value={fieldTargetSectionId}
-              onChange={(e) => setFieldTargetSectionId(e.target.value)}
-              fullWidth
-              size="small"
-            >
-              <MenuItem value="">— Общий (без раздела) —</MenuItem>
-              {sections.map((s) => (
-                <MenuItem key={s.id} value={s.id}>
-                  {s.name}
-                </MenuItem>
-              ))}
-            </TextField>
+      <FormDialog
+        open={fieldDialogOpen}
+        onClose={() => setFieldDialogOpen(false)}
+        title="Добавление кастомного поля в паспорт"
+        maxWidth="sm"
+        loading={savingField}
+        submitLabel={savingField ? 'Сохранение...' : 'Сохранить поле'}
+        onSubmit={handleSaveField}
+        submitDisabled={savingField || !fieldName || !fieldKey}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
+          <TextField
+            select
+            label="Целевой раздел паспорта"
+            value={fieldTargetSectionId}
+            onChange={(e) => setFieldTargetSectionId(e.target.value)}
+            fullWidth
+            size="small"
+          >
+            <MenuItem value="">— Общий (без раздела) —</MenuItem>
+            {sections.map((s) => (
+              <MenuItem key={s.id} value={s.id}>
+                {s.name}
+              </MenuItem>
+            ))}
+          </TextField>
 
-            <TextField
-              label="Отображаемое название поля"
-              placeholder="например: Номинальная мощность"
-              value={fieldName}
-              onChange={(e) => setFieldName(e.target.value)}
-              fullWidth
-              size="small"
-              required
-            />
+          <TextField
+            label="Отображаемое название поля"
+            placeholder="например: Номинальная мощность"
+            value={fieldName}
+            onChange={(e) => setFieldName(e.target.value)}
+            fullWidth
+            size="small"
+            required
+          />
 
-            <TextField
-              label="Системный ключ (латиницей)"
-              placeholder="например: nominal_power_kw"
-              value={fieldKey}
-              onChange={(e) => setFieldKey(e.target.value)}
-              fullWidth
-              size="small"
-              required
-              helperText="Идентификатор поля в JSON-объекте оборудования"
-            />
+          <TextField
+            label="Системный ключ (латиницей)"
+            placeholder="например: nominal_power_kw"
+            value={fieldKey}
+            onChange={(e) => setFieldKey(e.target.value)}
+            fullWidth
+            size="small"
+            required
+            helperText="Идентификатор поля в JSON-объекте оборудования"
+          />
 
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={7}>
-                <TextField
-                  select
-                  label="Тип данных"
-                  value={fieldType}
-                  onChange={(e) => setFieldType(e.target.value)}
-                  fullWidth
-                  size="small"
-                >
-                  {Object.entries(FIELD_TYPE_LABELS).map(([k, label]) => (
-                    <MenuItem key={k} value={k}>
-                      {label}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-
-              <Grid item xs={12} sm={5}>
-                <TextField
-                  label="Единица изм."
-                  placeholder="кВт, бар, В, кг, мм"
-                  value={fieldUnit}
-                  onChange={(e) => setFieldUnit(e.target.value)}
-                  fullWidth
-                  size="small"
-                />
-              </Grid>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={7}>
+              <TextField
+                select
+                label="Тип данных"
+                value={fieldType}
+                onChange={(e) => setFieldType(e.target.value)}
+                fullWidth
+                size="small"
+              >
+                {Object.entries(FIELD_TYPE_LABELS).map(([k, label]) => (
+                  <MenuItem key={k} value={k}>
+                    {label}
+                  </MenuItem>
+                ))}
+              </TextField>
             </Grid>
 
-            {fieldType === 'SELECT' && (
+            <Grid item xs={12} sm={5}>
               <TextField
-                label="Варианты (через запятую)"
-                placeholder="220 В, 380 В, 6 кВ, 10 кВ"
-                value={optionsStr}
-                onChange={(e) => setOptionsStr(e.target.value)}
+                label="Единица изм."
+                placeholder="кВт, бар, В, кг, мм"
+                value={fieldUnit}
+                onChange={(e) => setFieldUnit(e.target.value)}
                 fullWidth
                 size="small"
               />
-            )}
+            </Grid>
+          </Grid>
 
-            {fieldType !== 'BOOLEAN' && fieldType !== 'TEXTAREA' && (
-              <TextField
-                label="Значение по умолчанию"
-                value={defaultValue}
-                onChange={(e) => setDefaultValue(e.target.value)}
-                fullWidth
-                size="small"
-              />
-            )}
-
+          {fieldType === 'SELECT' && (
             <TextField
-              label="Порядковый номер внутри раздела"
-              type="number"
-              value={sortOrder}
-              onChange={(e) => setSortOrder(Number(e.target.value))}
+              label="Варианты (через запятую)"
+              placeholder="220 В, 380 В, 6 кВ, 10 кВ"
+              value={optionsStr}
+              onChange={(e) => setOptionsStr(e.target.value)}
               fullWidth
               size="small"
             />
+          )}
 
-            <FormControlLabel
-              control={
-                <Checkbox checked={isRequired} onChange={(e) => setIsRequired(e.target.checked)} />
-              }
-              label="Обязательно для заполнения в паспорте"
+          {fieldType !== 'BOOLEAN' && fieldType !== 'TEXTAREA' && (
+            <TextField
+              label="Значение по умолчанию"
+              value={defaultValue}
+              onChange={(e) => setDefaultValue(e.target.value)}
+              fullWidth
+              size="small"
             />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setFieldDialogOpen(false)} color="inherit">
-            Отмена
-          </Button>
-          <Button onClick={handleSaveField} variant="contained" disabled={savingField}>
-            {savingField ? <CircularProgress size={20} /> : 'Сохранить поле'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+          )}
+
+          <TextField
+            label="Порядковый номер внутри раздела"
+            type="number"
+            value={sortOrder}
+            onChange={(e) => setSortOrder(Number(e.target.value))}
+            fullWidth
+            size="small"
+          />
+
+          <FormControlLabel
+            control={
+              <Checkbox checked={isRequired} onChange={(e) => setIsRequired(e.target.checked)} />
+            }
+            label="Обязательно для заполнения в паспорте"
+          />
+        </Box>
+      </FormDialog>
 
       {/* Create Tag Modal */}
-      <Dialog open={tagDialogOpen} onClose={() => setTagDialogOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Создание тега оборудования</DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-            <TextField
-              label="Название тега"
-              placeholder="например: Взрывозащищенное"
-              value={tagName}
-              onChange={(e) => setTagName(e.target.value)}
-              fullWidth
-              size="small"
-              required
-            />
-            <Box>
-              <Typography variant="caption" color="text.secondary" gutterBottom display="block">
-                Цвет бейджа:
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                {PRESET_COLORS.map((color) => (
-                  <Box
-                    key={color}
-                    onClick={() => setTagColor(color)}
-                    sx={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: '50%',
-                      backgroundColor: color,
-                      cursor: 'pointer',
-                      border: tagColor === color ? '3px solid #0f172a' : '2px solid transparent',
-                      transition: 'transform 0.1s ease',
-                      '&:hover': { transform: 'scale(1.15)' },
-                    }}
-                  />
-                ))}
-              </Box>
+      <FormDialog
+        open={tagDialogOpen}
+        onClose={() => setTagDialogOpen(false)}
+        title="Создание тега оборудования"
+        maxWidth="xs"
+        loading={savingTag}
+        submitLabel={savingTag ? 'Создание...' : 'Создать тег'}
+        onSubmit={handleSaveTag}
+        submitDisabled={savingTag || !tagName}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
+          <TextField
+            label="Название тега"
+            placeholder="например: Взрывозащищенное"
+            value={tagName}
+            onChange={(e) => setTagName(e.target.value)}
+            fullWidth
+            size="small"
+            required
+          />
+          <Box>
+            <Typography variant="caption" color="text.secondary" gutterBottom display="block">
+              Цвет бейджа:
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              {PRESET_COLORS.map((color) => (
+                <Box
+                  key={color}
+                  onClick={() => setTagColor(color)}
+                  sx={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: '50%',
+                    backgroundColor: color,
+                    cursor: 'pointer',
+                    border: tagColor === color ? '3px solid #0f172a' : '2px solid transparent',
+                    transition: 'transform 0.1s ease',
+                    '&:hover': { transform: 'scale(1.15)' },
+                  }}
+                />
+              ))}
             </Box>
           </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setTagDialogOpen(false)} color="inherit">
-            Отмена
-          </Button>
-          <Button onClick={handleSaveTag} variant="contained" disabled={savingTag}>
-            {savingTag ? <CircularProgress size={20} /> : 'Создать'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </Box>
+      </FormDialog>
     </Box>
   );
 }

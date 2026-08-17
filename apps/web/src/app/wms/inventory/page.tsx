@@ -40,6 +40,7 @@ import {
   DataTableWrapper,
   EmptyState,
   StatusBadge,
+  FormDialog,
 } from '@/components/ui';
 
 interface InventoryItemSummary {
@@ -303,49 +304,48 @@ export default function WmsInventoryListPage() {
       )}
 
       {/* Модальное окно запуска инвентаризации */}
-      <Dialog open={isModalOpen} onClose={() => !isSubmitting && setIsModalOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700 }}>Создание акта инвентаризации</DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={2.5} sx={{ mt: 1 }}>
-            <Typography variant="body2" color="text.secondary">
-              При создании акта система зафиксирует текущие учетные остатки по всем позициям выбранного склада.
-            </Typography>
+      <FormDialog
+        open={isModalOpen}
+        onClose={() => !isSubmitting && setIsModalOpen(false)}
+        title="Создание акта инвентаризации"
+        icon={<FactCheckOutlinedIcon color="primary" />}
+        maxWidth="sm"
+        loading={isSubmitting}
+        submitLabel={isSubmitting ? 'Создание...' : 'Начать инвентаризацию'}
+        onSubmit={handleCreateInventory}
+        submitDisabled={!selectedWarehouseId || isSubmitting}
+      >
+        <Stack spacing={2.5} sx={{ mt: 1 }}>
+          <Typography variant="body2" color="text.secondary">
+            При создании акта система зафиксирует текущие учетные остатки по всем позициям выбранного склада.
+          </Typography>
 
-            <TextField
-              select
-              fullWidth
-              required
-              label="Склад для инвентаризации"
-              value={selectedWarehouseId}
-              onChange={(e) => setSelectedWarehouseId(e.target.value)}
-            >
-              {warehouses.map((w) => (
-                <MenuItem key={w.id} value={w.id}>
-                  {w.name} ({w.code})
-                </MenuItem>
-              ))}
-            </TextField>
+          <TextField
+            select
+            fullWidth
+            required
+            label="Склад для инвентаризации"
+            value={selectedWarehouseId}
+            onChange={(e) => setSelectedWarehouseId(e.target.value)}
+          >
+            {warehouses.map((w) => (
+              <MenuItem key={w.id} value={w.id}>
+                {w.name} ({w.code})
+              </MenuItem>
+            ))}
+          </TextField>
 
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              label="Основание / Примечание"
-              placeholder="Плановая квартальная инвентаризация, приказ №..."
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setIsModalOpen(false)} disabled={isSubmitting}>
-            Отмена
-          </Button>
-          <Button variant="contained" onClick={handleCreateInventory} disabled={isSubmitting}>
-            {isSubmitting ? 'Создание...' : 'Начать инвентаризацию'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+          <TextField
+            fullWidth
+            multiline
+            rows={3}
+            label="Основание / Примечание"
+            placeholder="Плановая квартальная инвентаризация, приказ №..."
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+          />
+        </Stack>
+      </FormDialog>
     </Box>
   );
 }

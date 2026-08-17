@@ -39,6 +39,7 @@ import {
   DataTableWrapper,
   EmptyState,
   StatusBadge,
+  FormDialog,
 } from '@/components/ui';
 
 interface AuditItem {
@@ -350,29 +351,31 @@ export default function AdminAuditLogPage() {
       )}
 
       {/* Changes JSON Viewer Modal */}
-      <Dialog open={Boolean(selectedChanges)} onClose={() => setSelectedChanges(null)} maxWidth="sm" fullWidth>
-        <DialogTitle>Детали изменений (Payload / Diff)</DialogTitle>
-        <DialogContent dividers>
-          <Box
-            component="pre"
-            sx={{
-              p: 2,
-              backgroundColor: '#0f172a',
-              color: '#38bdf8',
-              borderRadius: 2,
-              overflow: 'auto',
-              fontSize: '0.8125rem',
-              fontFamily: 'monospace',
-              m: 0,
-            }}
-          >
-            {JSON.stringify(selectedChanges, null, 2)}
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setSelectedChanges(null)}>Закрыть</Button>
-        </DialogActions>
-      </Dialog>
+      <FormDialog
+        open={Boolean(selectedChanges)}
+        onClose={() => setSelectedChanges(null)}
+        title="Детали изменений (Payload / Diff)"
+        icon={<HistoryIcon color="primary" />}
+        maxWidth="sm"
+        hideActions
+      >
+        <Box
+          component="pre"
+          sx={{
+            p: 2,
+            backgroundColor: '#0f172a',
+            color: '#38bdf8',
+            borderRadius: 2,
+            overflow: 'auto',
+            fontSize: '0.8125rem',
+            fontFamily: 'monospace',
+            m: 0,
+            maxHeight: 400,
+          }}
+        >
+          {JSON.stringify(selectedChanges, null, 2)}
+        </Box>
+      </FormDialog>
     </Box>
   );
 }
