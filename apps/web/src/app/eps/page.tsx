@@ -61,6 +61,7 @@ import {
   DataTableWrapper,
   CriticalAlertBanner,
   BulkActionBar,
+  PageLoading,
 } from '@/components/ui';
 
 interface EquipmentItem {
@@ -823,9 +824,7 @@ function EquipmentListContent() {
             {/* Drawer Body */}
             <Box sx={{ p: 3, flexGrow: 1, overflowY: 'auto' }}>
               {loadingDetails ? (
-                <Box sx={{ p: 4, textAlign: 'center' }}>
-                  <CircularProgress size={32} />
-                </Box>
+                <PageLoading text="Загрузка сведений..." minHeight={200} size={28} />
               ) : (
                 <>
                   <Typography variant="h6" fontWeight={700} color="primary.main" gutterBottom>
@@ -998,13 +997,7 @@ function EquipmentListContent() {
 
 export default function EquipmentListPage() {
   return (
-    <Suspense
-      fallback={
-        <Card sx={{ p: 6, textAlign: 'center' }}>
-          <CircularProgress />
-        </Card>
-      }
-    >
+    <Suspense fallback={<PageLoading text="Загрузка реестра оборудования..." />}>
       <EquipmentListContent />
     </Suspense>
   );

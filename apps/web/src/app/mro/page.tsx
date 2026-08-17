@@ -49,6 +49,7 @@ import {
   StatusBadge,
   CriticalAlertBanner,
   TrendSparkline,
+  PageLoading,
 } from '@/components/ui';
 
 export default function MroOverviewPage() {
@@ -323,9 +324,7 @@ export default function MroOverviewPage() {
 
         <Box sx={{ p: 2 }}>
           {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>
-              <CircularProgress />
-            </Box>
+            <PageLoading text="Загрузка нарядов и регламентных планов ТО..." />
           ) : (
             <>
               {/* TAB 0: График нарядов ТО */}

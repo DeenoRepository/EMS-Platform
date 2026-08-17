@@ -63,6 +63,7 @@ import {
   TrendSparkline,
   HealthScoreGauge,
   StatusBadge,
+  PageLoading,
 } from '@/components/ui';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -457,9 +458,7 @@ export default function SrmOverviewPage() {
       </Paper>
 
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 8 }}>
-          <CircularProgress />
-        </Box>
+        <PageLoading text="Синхронизация данных SRM и загрузка метрик..." />
       ) : (
         <>
           {/* ВКЛАДКА 0: ДАШБОРД И МЕТРИКИ */}

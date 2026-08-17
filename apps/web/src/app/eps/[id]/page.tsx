@@ -73,6 +73,7 @@ import {
   HealthScoreGauge,
   LifecycleTimeline,
   TrendSparkline,
+  PageLoading,
   type LifecycleEvent,
 } from '@/components/ui';
 
@@ -469,11 +470,7 @@ export default function EquipmentPassportPage() {
   };
 
   if (loading || !equipment) {
-    return (
-      <Box sx={{ p: 6, textAlign: 'center' }}>
-        <CircularProgress />
-      </Box>
-    );
+    return <PageLoading text="Загрузка электронного паспорта оборудования..." />;
   }
 
   const statusInfo = EQUIPMENT_STATUS_MAP[equipment.status] || { label: equipment.status, color: 'default' };
