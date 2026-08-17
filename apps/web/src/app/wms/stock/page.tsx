@@ -54,6 +54,8 @@ import {
   BulkActionBar,
   PageLoading,
   FormDialog,
+  ExportButton,
+  type ExportFormat,
 } from '@/components/ui';
 
 interface StockRow {
@@ -274,25 +276,41 @@ function WmsStockContent() {
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  const handleBulkExport = () => {
-    const selectedItems = items.filter((i) => selectedIds.includes(i.id));
-    const csvContent =
-      'data:text/csv;charset=utf-8,' +
-      ['Склад,Артикул,Номенклатура,Категория,Остаток,Ед.Изм.,Мин.Остаток']
-        .concat(
-          selectedItems.map(
-            (i) => `"${i.warehouseName}","${i.article}","${i.name}","${i.category}",${i.quantity},"${i.unit}",${i.minStock}`
-          )
-        )
-        .join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `stock_export_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    enqueueSnackbar(`Экспортировано позиций: ${selectedItems.length}`, { variant: 'success' });
+  const handleExport = (format: ExportFormat) => {
+    const targetItems = selectedIds.length > 0
+      ? items.filter((i) => selectedIds.includes(i.id))
+      : items;
+
+    if (targetItems.length === 0) {
+      enqueueSnackbar('Нет данных для экспорта', { variant: 'warning' });
+      return;
+    }
+
+    if (format === 'csv' || format === 'xlsx') {
+      const headers = ['Склад', 'Артикул', 'Номенклатура', 'Категория', 'Остаток', 'Ед.Изм.', 'Мин.Остаток', 'Адрес ячейки'];
+      const rows = targetItems.map((i) => [
+        `"${i.warehouseName}"`,
+        `"${i.article}"`,
+        `"${i.name}"`,
+        `"${i.category}"`,
+        i.quantity,
+        `"${i.unit}"`,
+        i.minStock,
+        `"${i.cellCode || 'Не назначена'}"`,
+      ]);
+
+      const csvContent =
+        'data:text/csv;charset=utf-8,\uFEFF' +
+        [headers.join(',')].concat(rows.map((r) => r.join(','))).join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `wms_stock_${format}_${Date.now()}.${format === 'xlsx' ? 'csv' : 'csv'}`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      enqueueSnackbar(`Экспортировано позиций: ${targetItems.length}`, { variant: 'success' });
+    }
   };
 
   const handleBulkIssue = () => {
@@ -354,25 +372,32 @@ function WmsStockContent() {
         activeFilterCount={activeFilterCount}
         onResetFilters={handleResetFilters}
         actions={
-          <FormControlLabel
-            control={
-              <Switch
-                checked={lowStockOnly}
-                color="warning"
-                size="small"
-                onChange={(e) => {
-                  setLowStockOnly(e.target.checked);
-                  setPage(0);
-                }}
-              />
-            }
-            label={
-              <Typography variant="body2" fontWeight={600} color={lowStockOnly ? 'warning.dark' : 'text.primary'}>
-                Только дефицит
-              </Typography>
-            }
-            sx={{ m: 0 }}
-          />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={lowStockOnly}
+                  color="warning"
+                  size="small"
+                  onChange={(e) => {
+                    setLowStockOnly(e.target.checked);
+                    setPage(0);
+                  }}
+                />
+              }
+              label={
+                <Typography variant="body2" fontWeight={600} color={lowStockOnly ? 'warning.dark' : 'text.primary'}>
+                  Только дефицит
+                </Typography>
+              }
+              sx={{ m: 0 }}
+            />
+            <ExportButton
+              onExport={handleExport}
+              formats={['xlsx', 'csv']}
+              disabled={items.length === 0}
+            />
+          </Box>
         }
       >
         <Box sx={{ minWidth: { xs: '100%', sm: 260 } }}>
@@ -722,7 +747,7 @@ function WmsStockContent() {
           {
             label: 'Экспорт в CSV',
             icon: <FileDownloadOutlinedIcon fontSize="small" />,
-            onClick: handleBulkExport,
+            onClick: () => handleExport('csv'),
             color: 'primary',
           },
           {
