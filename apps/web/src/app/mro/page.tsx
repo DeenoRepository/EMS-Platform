@@ -392,7 +392,7 @@ export default function MroOverviewPage() {
                                   Выполнить
                                 </Button>
                               ) : (
-                                <Chip size="small" icon={<CheckCircleIcon />} label="Выполнено" color="success" variant="outlined" sx={{ borderRadius: '4px', height: 22 }} />
+                                <StatusBadge status="COMPLETED" size="small" />
                               )}
                             </TableCell>
                           </TableRow>

@@ -9,8 +9,28 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import MoveToInboxIcon from '@mui/icons-material/MoveToInbox';
+import OutboxIcon from '@mui/icons-material/Outbox';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import TuneIcon from '@mui/icons-material/Tune';
+import EventIcon from '@mui/icons-material/Event';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import LoginIcon from '@mui/icons-material/Login';
+import LogoutIcon from '@mui/icons-material/Logout';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
 
 export type StatusVariant = 'subtle' | 'dot' | 'outlined' | 'solid';
+
+export interface StatusTheme {
+  label: string;
+  color: string;
+  bg: string;
+  border: string;
+  icon: React.ReactNode;
+}
 
 export interface StatusBadgeProps {
   status: string;
@@ -20,14 +40,11 @@ export interface StatusBadgeProps {
   showIcon?: boolean;
   tooltip?: string;
   className?: string;
-}
-
-interface StatusTheme {
-  label: string;
-  color: string;
-  bg: string;
-  border: string;
-  icon: React.ReactNode;
+  customColor?: string;
+  customBg?: string;
+  customBorder?: string;
+  customIcon?: React.ReactNode;
+  customConfig?: Partial<StatusTheme>;
 }
 
 const STATUS_CONFIG_MAP: Record<string, StatusTheme> = {
@@ -127,6 +144,202 @@ const STATUS_CONFIG_MAP: Record<string, StatusTheme> = {
     border: '#bbf7d0',
     icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
   },
+
+  // WMS Operations Types
+  RECEIPT: {
+    label: 'Приход',
+    color: '#16a34a',
+    bg: '#f0fdf4',
+    border: '#bbf7d0',
+    icon: <MoveToInboxIcon sx={{ fontSize: 13 }} />,
+  },
+  ISSUE: {
+    label: 'Списание',
+    color: '#d97706',
+    bg: '#fffbeb',
+    border: '#fde68a',
+    icon: <OutboxIcon sx={{ fontSize: 13 }} />,
+  },
+  TRANSFER: {
+    label: 'Перемещение',
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+    icon: <SwapHorizIcon sx={{ fontSize: 13 }} />,
+  },
+  ADJUSTMENT: {
+    label: 'Корректировка',
+    color: '#64748b',
+    bg: '#f8fafc',
+    border: '#e2e8f0',
+    icon: <TuneIcon sx={{ fontSize: 13 }} />,
+  },
+
+  // MRO Maintenance Statuses
+  PLANNED: {
+    label: 'Запланировано',
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+    icon: <EventIcon sx={{ fontSize: 13 }} />,
+  },
+  MISSED: {
+    label: 'Просрочено',
+    color: '#dc2626',
+    bg: '#fef2f2',
+    border: '#fecaca',
+    icon: <WarningAmberIcon sx={{ fontSize: 13 }} />,
+  },
+
+  // Audit Actions
+  CREATE: {
+    label: 'Создание',
+    color: '#16a34a',
+    bg: '#f0fdf4',
+    border: '#bbf7d0',
+    icon: <AddCircleOutlineIcon sx={{ fontSize: 13 }} />,
+  },
+  UPDATE: {
+    label: 'Изменение',
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+    icon: <EditOutlinedIcon sx={{ fontSize: 13 }} />,
+  },
+  DELETE: {
+    label: 'Удаление',
+    color: '#dc2626',
+    bg: '#fef2f2',
+    border: '#fecaca',
+    icon: <DeleteOutlineIcon sx={{ fontSize: 13 }} />,
+  },
+  LOGIN: {
+    label: 'Вход в систему',
+    color: '#64748b',
+    bg: '#f8fafc',
+    border: '#e2e8f0',
+    icon: <LoginIcon sx={{ fontSize: 13 }} />,
+  },
+  LOGOUT: {
+    label: 'Выход из системы',
+    color: '#64748b',
+    bg: '#f8fafc',
+    border: '#e2e8f0',
+    icon: <LogoutIcon sx={{ fontSize: 13 }} />,
+  },
+
+  // User Statuses
+  USER_ACTIVE: {
+    label: 'Активен',
+    color: '#16a34a',
+    bg: '#f0fdf4',
+    border: '#bbf7d0',
+    icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
+  },
+  USER_BLOCKED: {
+    label: 'Заблокирован',
+    color: '#dc2626',
+    bg: '#fef2f2',
+    border: '#fecaca',
+    icon: <CancelIcon sx={{ fontSize: 13 }} />,
+  },
+  USER_INACTIVE: {
+    label: 'Неактивен',
+    color: '#64748b',
+    bg: '#f8fafc',
+    border: '#e2e8f0',
+    icon: <CancelIcon sx={{ fontSize: 13 }} />,
+  },
+
+  // SRM / Jira Issue Statuses
+  OPEN: {
+    label: 'Открыто',
+    color: '#dc2626',
+    bg: '#fef2f2',
+    border: '#fecaca',
+    icon: <ErrorOutlineIcon sx={{ fontSize: 13 }} />,
+  },
+  RESOLVED: {
+    label: 'Решено',
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+    icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
+  },
+  CLOSED: {
+    label: 'Закрыто',
+    color: '#16a34a',
+    bg: '#f0fdf4',
+    border: '#bbf7d0',
+    icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
+  },
+
+  // Integration Statuses
+  SUCCESS: {
+    label: 'ОК',
+    color: '#16a34a',
+    bg: '#f0fdf4',
+    border: '#bbf7d0',
+    icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
+  },
+  OK: {
+    label: 'ОК',
+    color: '#16a34a',
+    bg: '#f0fdf4',
+    border: '#bbf7d0',
+    icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
+  },
+  ERROR: {
+    label: 'Ошибка',
+    color: '#dc2626',
+    bg: '#fef2f2',
+    border: '#fecaca',
+    icon: <ErrorOutlineIcon sx={{ fontSize: 13 }} />,
+  },
+  WAITING: {
+    label: 'Ожидание',
+    color: '#d97706',
+    bg: '#fffbeb',
+    border: '#fde68a',
+    icon: <HourglassEmptyIcon sx={{ fontSize: 13 }} />,
+  },
+
+  // Priorities
+  EMERGENCY: {
+    label: 'Критический',
+    color: '#dc2626',
+    bg: '#fef2f2',
+    border: '#fecaca',
+    icon: <PriorityHighIcon sx={{ fontSize: 13 }} />,
+  },
+  HIGHEST: {
+    label: 'Высочайший',
+    color: '#dc2626',
+    bg: '#fef2f2',
+    border: '#fecaca',
+    icon: <PriorityHighIcon sx={{ fontSize: 13 }} />,
+  },
+  HIGH: {
+    label: 'Высокий',
+    color: '#ea580c',
+    bg: '#fff7ed',
+    border: '#ffedd5',
+    icon: <PriorityHighIcon sx={{ fontSize: 13 }} />,
+  },
+  MEDIUM: {
+    label: 'Средний',
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+    icon: <HourglassEmptyIcon sx={{ fontSize: 13 }} />,
+  },
+  LOW: {
+    label: 'Низкий',
+    color: '#64748b',
+    bg: '#f8fafc',
+    border: '#e2e8f0',
+    icon: <HelpOutlineIcon sx={{ fontSize: 13 }} />,
+  },
 };
 
 export function StatusBadge({
@@ -137,9 +350,14 @@ export function StatusBadge({
   showIcon = true,
   tooltip,
   className,
+  customColor,
+  customBg,
+  customBorder,
+  customIcon,
+  customConfig,
 }: StatusBadgeProps) {
-  const normKey = (status || '').toUpperCase().trim();
-  const config = STATUS_CONFIG_MAP[normKey] || {
+  const normKey = (status || '').toUpperCase().trim().replace(/[\s-]+/g, '_');
+  const baseConfig = STATUS_CONFIG_MAP[normKey] || {
     label: label || status || '—',
     color: '#64748b',
     bg: '#f8fafc',
@@ -147,7 +365,15 @@ export function StatusBadge({
     icon: <HelpOutlineIcon sx={{ fontSize: 13 }} />,
   };
 
-  const displayText = label || config.label;
+  const config: StatusTheme = {
+    label: customConfig?.label || label || baseConfig.label,
+    color: customColor || customConfig?.color || baseConfig.color,
+    bg: customBg || customConfig?.bg || (customColor ? `${customColor}14` : baseConfig.bg),
+    border: customBorder || customConfig?.border || (customColor ? `${customColor}40` : baseConfig.border),
+    icon: customIcon || customConfig?.icon || baseConfig.icon,
+  };
+
+  const displayText = config.label;
 
   const content = (
     <Box
@@ -227,3 +453,4 @@ export function StatusBadge({
 
   return content;
 }
+

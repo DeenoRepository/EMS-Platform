@@ -62,6 +62,7 @@ import {
   CriticalAlertBanner,
   TrendSparkline,
   HealthScoreGauge,
+  StatusBadge,
 } from '@/components/ui';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -654,26 +655,10 @@ export default function SrmOverviewPage() {
                             />
                           </TableCell>
                           <TableCell>
-                            <Chip
-                              label={issue.status}
-                              size="small"
-                              sx={{
-                                backgroundColor: (STATUS_COLORS[issue.status] || '#757575') + '22',
-                                color: STATUS_COLORS[issue.status] || '#757575',
-                                fontWeight: 700,
-                                borderRadius: '4px',
-                                height: 22,
-                              }}
-                            />
+                            <StatusBadge status={issue.status} />
                           </TableCell>
                           <TableCell>
-                            <Chip
-                              label={issue.priority}
-                              size="small"
-                              variant="outlined"
-                              color={issue.priority === 'High' || issue.priority === 'Highest' ? 'error' : 'default'}
-                              sx={{ borderRadius: '4px', height: 22 }}
-                            />
+                            <StatusBadge status={issue.priority} variant="outlined" />
                           </TableCell>
                           <TableCell>
                             {issue.equipment ? (
@@ -1199,15 +1184,10 @@ export default function SrmOverviewPage() {
                               {item.lastSyncAt ? new Date(item.lastSyncAt).toLocaleString('ru-RU') : 'Никогда'}
                             </TableCell>
                             <TableCell>
-                              {item.lastSyncStatus === 'SUCCESS' ? (
-                                <Chip icon={<CheckCircleIcon />} label="ОК" color="success" size="small" />
-                              ) : item.lastSyncStatus === 'ERROR' ? (
-                                <Tooltip title={item.lastSyncError || 'Ошибка'}>
-                                  <Chip icon={<ErrorOutlineIcon />} label="Ошибка" color="error" size="small" />
-                                </Tooltip>
-                              ) : (
-                                <Chip label="Ожидание" size="small" />
-                              )}
+                              <StatusBadge
+                                status={item.lastSyncStatus || 'WAITING'}
+                                tooltip={item.lastSyncError || undefined}
+                              />
                             </TableCell>
                             <TableCell align="right">
                               <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>

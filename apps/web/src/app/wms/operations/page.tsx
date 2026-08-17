@@ -362,18 +362,7 @@ function WmsOperationsContent() {
   };
 
   const getTypeChip = (type: string) => {
-    switch (type) {
-      case 'RECEIPT':
-        return <Chip icon={<MoveToInboxIcon />} label="Приход" size="small" color="success" sx={{ fontWeight: 700 }} />;
-      case 'ISSUE':
-        return <Chip icon={<OutboxIcon />} label="Списание" size="small" color="warning" sx={{ fontWeight: 700 }} />;
-      case 'TRANSFER':
-        return <Chip icon={<SwapHorizIcon />} label="Перемещение" size="small" color="info" sx={{ fontWeight: 700 }} />;
-      case 'ADJUSTMENT':
-        return <Chip icon={<TuneIcon />} label="Корректировка" size="small" color="default" sx={{ fontWeight: 700 }} />;
-      default:
-        return <Chip label={type} size="small" />;
-    }
+    return <StatusBadge status={type} />;
   };
 
   const handleKpiFilter = (type: string) => {

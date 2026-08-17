@@ -46,6 +46,7 @@ import {
   FilterToolbar,
   EmptyState,
   DataTableWrapper,
+  StatusBadge,
 } from '@/components/ui';
 
 interface AuditLogItem {
@@ -89,10 +90,7 @@ function formatValue(key: string, val: any): React.ReactNode {
   if (typeof val === 'boolean') return val ? 'Да' : 'Нет';
 
   if (key === 'status') {
-    const s = EQUIPMENT_STATUS_MAP[val];
-    if (s) {
-      return <Chip label={s.label} size="small" color={s.color as any} sx={{ height: 20, fontSize: '0.7rem' }} />;
-    }
+    return <StatusBadge status={val} size="small" />;
   }
 
   if (key === 'docType') {
@@ -104,10 +102,7 @@ function formatValue(key: string, val: any): React.ReactNode {
   }
 
   if (key === 'approvalStatus') {
-    const a = APPROVAL_STATUS_MAP[val];
-    if (a) {
-      return <Chip label={a.label} size="small" color={a.color as any} sx={{ height: 20, fontSize: '0.7rem' }} />;
-    }
+    return <StatusBadge status={val} size="small" />;
   }
 
   if (typeof val === 'object') {
@@ -475,12 +470,7 @@ function HistoryListContent() {
                     </TableCell>
 
                     <TableCell>
-                      <Chip
-                        label={actionInfo.label}
-                        size="small"
-                        color={actionInfo.color as any}
-                        sx={{ fontWeight: 700, height: 22, borderRadius: '4px' }}
-                      />
+                      <StatusBadge status={log.action} />
                     </TableCell>
 
                     <TableCell sx={{ fontSize: '0.8125rem' }}>

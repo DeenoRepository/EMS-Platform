@@ -40,6 +40,7 @@ import {
   FilterToolbar,
   DataTableWrapper,
   EmptyState,
+  StatusBadge,
 } from '@/components/ui';
 
 interface UserItem {
@@ -340,12 +341,19 @@ export default function AdminUsersPage() {
                   </TableCell>
                   <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace' }}>{formatDateTime(u.lastLoginAt)}</TableCell>
                   <TableCell>
-                    <Switch
-                      checked={u.isActive}
-                      onChange={() => handleToggleActive(u)}
-                      color="success"
-                      size="small"
-                    />
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <StatusBadge
+                        status={u.isActive ? 'USER_ACTIVE' : 'USER_INACTIVE'}
+                        variant="dot"
+                        size="small"
+                      />
+                      <Switch
+                        checked={u.isActive}
+                        onChange={() => handleToggleActive(u)}
+                        color="success"
+                        size="small"
+                      />
+                    </Box>
                   </TableCell>
                   <TableCell align="right">
                     <IconButton

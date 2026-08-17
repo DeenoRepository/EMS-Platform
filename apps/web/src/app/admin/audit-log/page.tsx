@@ -38,6 +38,7 @@ import {
   FilterToolbar,
   DataTableWrapper,
   EmptyState,
+  StatusBadge,
 } from '@/components/ui';
 
 interface AuditItem {
@@ -316,7 +317,7 @@ export default function AdminAuditLogPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Chip label={actionInfo.label} size="small" color={actionInfo.color as any} sx={{ borderRadius: '4px', height: 22, fontWeight: 700 }} />
+                      <StatusBadge status={log.action} />
                     </TableCell>
                     <TableCell>
                       <Chip label={log.entityType} size="small" variant="outlined" sx={{ borderRadius: '4px', height: 22 }} />

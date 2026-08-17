@@ -1282,7 +1282,7 @@ export default function EquipmentPassportPage() {
                             <TableCell sx={{ fontWeight: 500 }}>{sch.title}</TableCell>
                             <TableCell>{formatDate(sch.scheduledDate)}</TableCell>
                             <TableCell>
-                              <Chip label={mStatus.label} size="small" color={mStatus.color as any} />
+                              <StatusBadge status={sch.status} />
                             </TableCell>
                           </TableRow>
                         );
@@ -1332,9 +1332,11 @@ export default function EquipmentPassportPage() {
                         <Chip label={issue.issueKey} size="small" color="primary" variant="outlined" />
                       </TableCell>
                       <TableCell sx={{ fontWeight: 600 }}>{issue.summary}</TableCell>
-                      <TableCell>{issue.priority}</TableCell>
                       <TableCell>
-                        <Chip label={issue.status} size="small" />
+                        <StatusBadge status={issue.priority} variant="outlined" />
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={issue.status} />
                       </TableCell>
                       <TableCell sx={{ fontSize: '0.8125rem' }}>{formatDateTime(issue.createdDate)}</TableCell>
                       <TableCell sx={{ fontSize: '0.8125rem' }}>{formatDateTime(issue.resolvedDate)}</TableCell>
@@ -1385,13 +1387,12 @@ export default function EquipmentPassportPage() {
                   </TableHead>
                   <TableBody>
                     {auditLogs.map((log) => {
-                      const actionInfo = AUDIT_ACTION_MAP[log.action] || { label: log.action, color: 'default' };
                       return (
                         <TableRow key={log.id} hover>
                           <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace' }}>{formatDateTime(log.createdAt)}</TableCell>
                           <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>{log.user?.displayName || 'Система'}</TableCell>
                           <TableCell>
-                            <Chip label={actionInfo.label} size="small" color={actionInfo.color as any} sx={{ borderRadius: '4px', height: 20 }} />
+                            <StatusBadge status={log.action} />
                           </TableCell>
                           <TableCell>
                             <Box
