@@ -13,7 +13,6 @@ import {
   ListItemIcon,
   Button,
   Divider,
-  CircularProgress,
 } from '@mui/material';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import BuildIcon from '@mui/icons-material/Build';
@@ -23,6 +22,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import { formatDateTime } from '@ems/shared';
 import { useRouter } from 'next/navigation';
+import { EmptyState } from '@/components/ui';
 
 interface NotificationItem {
   id: string;
@@ -157,10 +157,11 @@ export default function NotificationCenter() {
 
         <Box sx={{ overflowY: 'auto', flexGrow: 1 }}>
           {notifications.length === 0 ? (
-            <Box sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
-              <NotificationsIcon sx={{ fontSize: 40, opacity: 0.3, mb: 1 }} />
-              <Typography variant="body2">Нет новых уведомлений</Typography>
-            </Box>
+            <EmptyState
+              icon={<NotificationsIcon sx={{ fontSize: 36 }} />}
+              title="Нет новых уведомлений"
+              minHeight={160}
+            />
           ) : (
             <List disablePadding>
               {notifications.map((item) => (

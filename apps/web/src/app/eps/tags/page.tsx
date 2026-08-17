@@ -30,6 +30,7 @@ import {
   EmptyState,
   DataTableWrapper,
   FormDialog,
+  StatusBadge,
 } from '@/components/ui';
 
 interface TagItem {
@@ -159,16 +160,11 @@ export default function TagsManagementPage() {
               {tags.map((t) => (
                 <TableRow key={t.id} hover>
                   <TableCell>
-                    <Chip
+                    <StatusBadge
+                      status={t.name}
                       label={t.name}
+                      customColor={t.color}
                       size="small"
-                      sx={{
-                        fontWeight: 700,
-                        backgroundColor: `${t.color}15`,
-                        color: t.color,
-                        borderColor: t.color,
-                        borderRadius: '4px',
-                      }}
                       variant="outlined"
                     />
                   </TableCell>

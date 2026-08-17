@@ -656,8 +656,8 @@ export default function WmsWarehousesPage() {
                               <Chip
                                 label={`${zone.cells.length} ячеек`}
                                 size="small"
-                                color="primary"
                                 variant="outlined"
+                                sx={{ borderRadius: '4px', height: 22 }}
                               />
                               {hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) && (
                                 <IconButton
@@ -694,14 +694,13 @@ export default function WmsWarehousesPage() {
                                     key={cell.id}
                                     label={`${cell.code}${cell.name ? ` (${cell.name})` : ''}`}
                                     size="small"
-                                    color="info"
                                     variant="outlined"
                                     onDelete={
                                       hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE)
                                         ? () => handleDeleteCell(zone.id, cell.id)
                                         : undefined
                                     }
-                                    sx={{ fontWeight: 600 }}
+                                    sx={{ fontWeight: 600, borderRadius: '4px' }}
                                   />
                                 ))}
                               </Stack>

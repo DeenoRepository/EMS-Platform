@@ -295,7 +295,6 @@ export default function AdminAuditLogPage() {
             </TableHead>
             <TableBody>
               {logs.map((log) => {
-                const actionInfo = AUDIT_ACTION_MAP[log.action] || { label: log.action, color: 'default' };
                 return (
                   <TableRow key={log.id} hover>
                     <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
@@ -321,7 +320,7 @@ export default function AdminAuditLogPage() {
                       <StatusBadge status={log.action} />
                     </TableCell>
                     <TableCell>
-                      <Chip label={log.entityType} size="small" variant="outlined" sx={{ borderRadius: '4px', height: 22 }} />
+                      <StatusBadge status={log.entityType} size="small" variant="outlined" />
                     </TableCell>
                     <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
                       {log.entityId}

@@ -340,6 +340,295 @@ const STATUS_CONFIG_MAP: Record<string, StatusTheme> = {
     border: '#e2e8f0',
     icon: <HelpOutlineIcon sx={{ fontSize: 13 }} />,
   },
+
+  // Russian equipment statuses & aliases
+  IN_SERVICE: {
+    label: 'В работе',
+    color: '#16a34a',
+    bg: '#f0fdf4',
+    border: '#bbf7d0',
+    icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
+  },
+  IN_REPAIR: {
+    label: 'В ремонте',
+    color: '#d97706',
+    bg: '#fffbeb',
+    border: '#fde68a',
+    icon: <BuildCircleIcon sx={{ fontSize: 13 }} />,
+  },
+  PRESERVATION: {
+    label: 'Консервация',
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+    icon: <InventoryIcon sx={{ fontSize: 13 }} />,
+  },
+  DECOMMISSIONING: {
+    label: 'Списание',
+    color: '#64748b',
+    bg: '#f8fafc',
+    border: '#e2e8f0',
+    icon: <CancelIcon sx={{ fontSize: 13 }} />,
+  },
+
+  // Maintenance Periodicity
+  DAILY: {
+    label: 'Ежедневно',
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+    icon: <EventIcon sx={{ fontSize: 13 }} />,
+  },
+  WEEKLY: {
+    label: 'Еженедельно',
+    color: '#0f766e',
+    bg: '#f0fdfa',
+    border: '#99f6e4',
+    icon: <EventIcon sx={{ fontSize: 13 }} />,
+  },
+  MONTHLY: {
+    label: 'Ежемесячно',
+    color: '#16a34a',
+    bg: '#f0fdf4',
+    border: '#bbf7d0',
+    icon: <EventIcon sx={{ fontSize: 13 }} />,
+  },
+  QUARTERLY: {
+    label: 'Ежеквартально',
+    color: '#d97706',
+    bg: '#fffbeb',
+    border: '#fde68a',
+    icon: <EventIcon sx={{ fontSize: 13 }} />,
+  },
+  SEMI_ANNUAL: {
+    label: 'Раз в полгода',
+    color: '#7c3aed',
+    bg: '#faf5ff',
+    border: '#e9d5ff',
+    icon: <EventIcon sx={{ fontSize: 13 }} />,
+  },
+  ANNUAL: {
+    label: 'Ежегодно',
+    color: '#db2777',
+    bg: '#fdf2f8',
+    border: '#fbcfe8',
+    icon: <EventIcon sx={{ fontSize: 13 }} />,
+  },
+
+  // Inventory Discrepancy & Stock
+  SURPLUS: {
+    label: 'Излишек (+)',
+    color: '#16a34a',
+    bg: '#f0fdf4',
+    border: '#bbf7d0',
+    icon: <AddCircleOutlineIcon sx={{ fontSize: 13 }} />,
+  },
+  DEFICIT: {
+    label: 'Недостача (-)',
+    color: '#dc2626',
+    bg: '#fef2f2',
+    border: '#fecaca',
+    icon: <WarningAmberIcon sx={{ fontSize: 13 }} />,
+  },
+  MATCH: {
+    label: 'Без расхождений',
+    color: '#16a34a',
+    bg: '#f0fdf4',
+    border: '#bbf7d0',
+    icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
+  },
+  IN_STOCK: {
+    label: 'В наличии',
+    color: '#16a34a',
+    bg: '#f0fdf4',
+    border: '#bbf7d0',
+    icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
+  },
+  OUT_OF_STOCK: {
+    label: 'Нет в наличии',
+    color: '#64748b',
+    bg: '#f8fafc',
+    border: '#e2e8f0',
+    icon: <CancelIcon sx={{ fontSize: 13 }} />,
+  },
+
+  // Roles & System
+  SYSTEM: {
+    label: 'Системная',
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+    icon: <TuneIcon sx={{ fontSize: 13 }} />,
+  },
+  ADMIN: {
+    label: 'Администратор',
+    color: '#7c3aed',
+    bg: '#faf5ff',
+    border: '#e9d5ff',
+    icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
+  },
+  USER: {
+    label: 'Пользователь',
+    color: '#64748b',
+    bg: '#f8fafc',
+    border: '#e2e8f0',
+    icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
+  },
+
+  // Document Types
+  PASSPORT: {
+    label: 'Тех. паспорт',
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+    icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
+  },
+  MANUAL: {
+    label: 'Руководство',
+    color: '#0f766e',
+    bg: '#f0fdfa',
+    border: '#99f6e4',
+    icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
+  },
+  SCHEMA: {
+    label: 'Схема / Чертеж',
+    color: '#7c3aed',
+    bg: '#faf5ff',
+    border: '#e9d5ff',
+    icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
+  },
+  ACT: {
+    label: 'Акт',
+    color: '#d97706',
+    bg: '#fffbeb',
+    border: '#fde68a',
+    icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
+  },
+  CERTIFICATE: {
+    label: 'Сертификат',
+    color: '#16a34a',
+    bg: '#f0fdf4',
+    border: '#bbf7d0',
+    icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
+  },
+  OTHER: {
+    label: 'Прочее',
+    color: '#64748b',
+    bg: '#f8fafc',
+    border: '#e2e8f0',
+    icon: <HelpOutlineIcon sx={{ fontSize: 13 }} />,
+  },
+
+  // Field Types
+  TEXT: {
+    label: 'Текст',
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+    icon: <EditOutlinedIcon sx={{ fontSize: 13 }} />,
+  },
+  TEXTAREA: {
+    label: 'Многострочный текст',
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+    icon: <EditOutlinedIcon sx={{ fontSize: 13 }} />,
+  },
+  NUMBER: {
+    label: 'Число',
+    color: '#0f766e',
+    bg: '#f0fdfa',
+    border: '#99f6e4',
+    icon: <TuneIcon sx={{ fontSize: 13 }} />,
+  },
+  DATE: {
+    label: 'Дата',
+    color: '#7c3aed',
+    bg: '#faf5ff',
+    border: '#e9d5ff',
+    icon: <EventIcon sx={{ fontSize: 13 }} />,
+  },
+  SELECT: {
+    label: 'Список',
+    color: '#d97706',
+    bg: '#fffbeb',
+    border: '#fde68a',
+    icon: <TuneIcon sx={{ fontSize: 13 }} />,
+  },
+  BOOLEAN: {
+    label: 'Да/Нет',
+    color: '#16a34a',
+    bg: '#f0fdf4',
+    border: '#bbf7d0',
+    icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
+  },
+
+  // Entity Types in Audit
+  EQUIPMENT: {
+    label: 'Оборудование',
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+    icon: <InventoryIcon sx={{ fontSize: 13 }} />,
+  },
+  DOCUMENT: {
+    label: 'Документ',
+    color: '#7c3aed',
+    bg: '#faf5ff',
+    border: '#e9d5ff',
+    icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
+  },
+  SPARE_PART: {
+    label: 'Запчасть / ТМЦ',
+    color: '#0f766e',
+    bg: '#f0fdfa',
+    border: '#99f6e4',
+    icon: <BuildCircleIcon sx={{ fontSize: 13 }} />,
+  },
+  WAREHOUSE: {
+    label: 'Склад',
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+    icon: <InventoryIcon sx={{ fontSize: 13 }} />,
+  },
+  APPROVAL: {
+    label: 'Согласование',
+    color: '#d97706',
+    bg: '#fffbeb',
+    border: '#fde68a',
+    icon: <HourglassEmptyIcon sx={{ fontSize: 13 }} />,
+  },
+  MAINTENANCE: {
+    label: 'ТО и Ремонт',
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+    icon: <BuildCircleIcon sx={{ fontSize: 13 }} />,
+  },
+
+  // Import Validation
+  NEW_RECORD: {
+    label: 'Новая запись',
+    color: '#16a34a',
+    bg: '#f0fdf4',
+    border: '#bbf7d0',
+    icon: <AddCircleOutlineIcon sx={{ fontSize: 13 }} />,
+  },
+  COLLISION: {
+    label: 'Коллизия',
+    color: '#d97706',
+    bg: '#fffbeb',
+    border: '#fde68a',
+    icon: <WarningAmberIcon sx={{ fontSize: 13 }} />,
+  },
+  VALIDATION_ERROR: {
+    label: 'Ошибка валидации',
+    color: '#dc2626',
+    bg: '#fef2f2',
+    border: '#fecaca',
+    icon: <ErrorOutlineIcon sx={{ fontSize: 13 }} />,
+  },
 };
 
 export function StatusBadge({

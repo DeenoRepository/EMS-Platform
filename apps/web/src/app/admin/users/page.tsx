@@ -329,12 +329,12 @@ export default function AdminUsersPage() {
                         </Typography>
                       ) : (
                         u.roles.map((r) => (
-                          <Chip
+                          <StatusBadge
                             key={r.id}
+                            status={r.name === 'admin' ? 'ADMIN' : 'USER'}
                             label={r.displayName}
                             size="small"
-                            color={r.name === 'admin' ? 'primary' : 'default'}
-                            sx={{ borderRadius: '4px', height: 22 }}
+                            variant="outlined"
                           />
                         ))
                       )}

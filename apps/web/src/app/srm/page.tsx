@@ -654,12 +654,11 @@ export default function SrmOverviewPage() {
                             </Typography>
                           </TableCell>
                           <TableCell>
-                            <Chip
-                              label={issue.integration?.name || 'Jira Env'}
-                              size="small"
+                            <StatusBadge
+                              status={issue.integration?.name || 'JIRA'}
+                              label={issue.integration?.name || 'Jira'}
                               variant="outlined"
-                              color="primary"
-                              sx={{ borderRadius: '4px', height: 22 }}
+                              size="small"
                             />
                           </TableCell>
                           <TableCell>
@@ -991,8 +990,10 @@ export default function SrmOverviewPage() {
                                 <TableRow>
                                   <TableCell sx={{ fontWeight: 600 }}>Статус / Приоритет:</TableCell>
                                   <TableCell>
-                                    <Chip label={testResult.mapped?.status} size="small" color="primary" sx={{ mr: 1 }} />
-                                    <Chip label={testResult.mapped?.priority} size="small" variant="outlined" />
+                                    <Box sx={{ display: 'inline-flex', gap: 1 }}>
+                                      <StatusBadge status={testResult.mapped?.status || 'OPEN'} size="small" />
+                                      <StatusBadge status={testResult.mapped?.priority || 'MEDIUM'} size="small" variant="outlined" />
+                                    </Box>
                                   </TableCell>
                                 </TableRow>
                                 <TableRow>
@@ -1007,7 +1008,7 @@ export default function SrmOverviewPage() {
                                   <TableCell sx={{ fontWeight: 600 }}>Связанное оборудование:</TableCell>
                                   <TableCell>
                                     {testResult.mapped?.equipmentId ? (
-                                      <Chip icon={<CheckCircleOutlineIcon />} label="Оборудование привязано" color="success" size="small" />
+                                      <StatusBadge status="SURPLUS" label="Оборудование привязано" size="small" />
                                     ) : (
                                       <Typography variant="caption" color="error">Не привязано</Typography>
                                     )}
@@ -1134,7 +1135,7 @@ export default function SrmOverviewPage() {
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
                         {template.description}
                       </Typography>
-                      <Chip label={`Тип: ${template.type}`} size="small" variant="outlined" />
+                      <StatusBadge status={template.type} label={`Тип: ${template.type}`} size="small" variant="outlined" />
                     </Card>
                   </Grid>
                 ))}
@@ -1173,10 +1174,10 @@ export default function SrmOverviewPage() {
                                 <Typography variant="body2" fontWeight={700}>
                                   {item.name}
                                 </Typography>
-                                {item.isDefault && <Chip label="По умолчанию" size="small" color="primary" sx={{ mt: 0.5 }} />}
+                                {item.isDefault && <StatusBadge status="ACTIVE" label="По умолчанию" size="small" />}
                               </TableCell>
                               <TableCell>
-                                <Chip label={item.providerType} size="small" variant="outlined" color="primary" />
+                                <StatusBadge status={item.providerType} size="small" variant="outlined" />
                               </TableCell>
                               <TableCell>
                                 <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>

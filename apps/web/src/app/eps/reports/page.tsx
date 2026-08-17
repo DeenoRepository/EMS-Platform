@@ -851,17 +851,7 @@ export default function ReportBuilderPage() {
                             <TableCell key={col.key} sx={{ fontSize: '0.8125rem', whiteSpace: 'nowrap' }}>
                               {col.key === 'status' ? (
                                 <StatusBadge
-                                  status={
-                                    row.status === 'В работе'
-                                      ? 'IN_SERVICE'
-                                      : row.status === 'На ремонте'
-                                      ? 'IN_REPAIR'
-                                      : row.status === 'Консервация'
-                                      ? 'PRESERVATION'
-                                      : row.status === 'Списано'
-                                      ? 'DECOMMISSIONED'
-                                      : row.status
-                                  }
+                                  status={row.status || 'ACTIVE'}
                                 />
                               ) : (
                                 row[col.key] ?? '—'

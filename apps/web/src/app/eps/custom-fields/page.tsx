@@ -36,6 +36,7 @@ import {
   DataTableWrapper,
   ConfirmDialog,
   FormDialog,
+  StatusBadge,
 } from '@/components/ui';
 
 interface CustomFieldItem {
@@ -236,7 +237,7 @@ export default function CustomFieldsBuilderPage() {
                     <Chip label={f.key} size="small" variant="outlined" sx={{ fontFamily: 'monospace', borderRadius: '4px' }} />
                   </TableCell>
                   <TableCell>
-                    <Chip label={FIELD_TYPE_LABELS[f.fieldType] || f.fieldType} size="small" color="primary" variant="outlined" sx={{ borderRadius: '4px', fontWeight: 600 }} />
+                    <StatusBadge status={f.fieldType} label={FIELD_TYPE_LABELS[f.fieldType] || f.fieldType} size="small" />
                   </TableCell>
                   <TableCell>{f.isRequired ? 'Да' : 'Нет'}</TableCell>
                   <TableCell>

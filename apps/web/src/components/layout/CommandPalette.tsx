@@ -29,6 +29,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import KeyboardReturnIcon from '@mui/icons-material/KeyboardReturn';
 import { useRouter } from 'next/navigation';
 import { EQUIPMENT_STATUS_MAP } from '@ems/shared';
+import { StatusBadge, EmptyState } from '@/components/ui';
 
 interface CommandPaletteProps {
   open: boolean;
@@ -274,11 +275,9 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
                           secondary={`${eq.manufacturer || ''} ${eq.model ? '• ' + eq.model : ''} ${eq.location ? '• ' + eq.location : ''}`}
                           secondaryTypographyProps={{ fontSize: '0.75rem', noWrap: true }}
                         />
-                        <Chip
-                          label={statusInfo.label}
+                        <StatusBadge
+                          status={eq.status}
                           size="small"
-                          color={statusInfo.color as any}
-                          sx={{ height: 20, fontSize: '0.65rem', fontWeight: 600, ml: 1 }}
                         />
                       </ListItemButton>
                     </ListItem>
@@ -330,9 +329,11 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
           )}
 
           {totalItems === 0 && !loading && (
-            <Box sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
-              <Typography variant="body2">Ничего не найдено по запросу «{query}»</Typography>
-            </Box>
+            <EmptyState
+              title={`Ничего не найдено по запросу «${query}»`}
+              description="Попробуйте изменить поисковый запрос или проверить правильность написания."
+              minHeight={140}
+            />
           )}
         </Box>
 

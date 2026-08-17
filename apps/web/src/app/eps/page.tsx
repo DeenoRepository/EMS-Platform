@@ -868,9 +868,8 @@ function EquipmentListContent() {
                         ))}
                       </TextField>
                     ) : (
-                      <Chip
-                        label={EQUIPMENT_STATUS_MAP[selectedEquipment.status]?.label || selectedEquipment.status}
-                        color={EQUIPMENT_STATUS_MAP[selectedEquipment.status]?.color as any}
+                      <StatusBadge
+                        status={selectedEquipment.status}
                       />
                     )}
                   </Card>

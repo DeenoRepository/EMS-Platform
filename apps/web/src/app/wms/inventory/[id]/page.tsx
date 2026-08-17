@@ -394,18 +394,16 @@ export default function WmsInventoryDetailPage() {
                         0
                       </Typography>
                     ) : diff > 0 ? (
-                      <Chip
+                      <StatusBadge
+                        status="SURPLUS"
                         label={`+${diff} ${item.nomenclature.unit}`}
                         size="small"
-                        color="success"
-                        sx={{ fontWeight: 700, borderRadius: '4px' }}
                       />
                     ) : (
-                      <Chip
+                      <StatusBadge
+                        status="DEFICIT"
                         label={`${diff} ${item.nomenclature.unit}`}
                         size="small"
-                        color="error"
-                        sx={{ fontWeight: 700, borderRadius: '4px' }}
                       />
                     )}
                   </TableCell>

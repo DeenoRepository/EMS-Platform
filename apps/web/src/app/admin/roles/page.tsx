@@ -43,6 +43,7 @@ import {
   EmptyState,
   ConfirmDialog,
   FormDialog,
+  StatusBadge,
 } from '@/components/ui';
 
 interface PermissionItem {
@@ -332,7 +333,7 @@ export default function AdminRolesPage() {
                         {r.displayName}
                       </Typography>
                       {r.isSystem && (
-                        <Chip label="Системная" size="small" variant="outlined" color="primary" sx={{ borderRadius: '4px', height: 20 }} />
+                        <StatusBadge status="SYSTEM" size="small" variant="outlined" />
                       )}
                     </Box>
                   </TableCell>
@@ -346,11 +347,11 @@ export default function AdminRolesPage() {
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    <Chip
+                    <StatusBadge
+                      status={r.name === 'admin' ? 'ADMIN' : 'USER'}
                       label={`${r.permissions.length} из ${permissions.length}`}
                       size="small"
-                      color={r.name === 'admin' ? 'primary' : 'default'}
-                      sx={{ borderRadius: '4px', height: 22 }}
+                      variant="subtle"
                     />
                   </TableCell>
                   <TableCell align="right">

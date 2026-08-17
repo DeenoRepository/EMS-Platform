@@ -57,6 +57,7 @@ import {
   ConfirmDialog,
   PageLoading,
   FormDialog,
+  StatusBadge,
 } from '@/components/ui';
 
 interface CustomFieldItem {
@@ -461,7 +462,7 @@ function ModuleSettingsContent() {
                   <Chip label={f.key} size="small" variant="outlined" sx={{ fontFamily: 'monospace', borderRadius: '4px', height: 20 }} />
                 </TableCell>
                 <TableCell>
-                  <Chip label={FIELD_TYPE_LABELS[f.fieldType] || f.fieldType} size="small" color="primary" sx={{ borderRadius: '4px', height: 20 }} />
+                  <StatusBadge status={f.fieldType} label={FIELD_TYPE_LABELS[f.fieldType] || f.fieldType} size="small" />
                 </TableCell>
                 <TableCell>
                   {f.unit ? <Chip label={f.unit} size="small" variant="outlined" sx={{ fontWeight: 700, borderRadius: '4px', height: 20 }} /> : '—'}
@@ -600,11 +601,10 @@ function ModuleSettingsContent() {
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Chip
+          <StatusBadge
+            status={currentModuleEnabled ? 'ACTIVE' : 'INACTIVE'}
             label={currentModuleEnabled ? 'Модуль активен' : 'Модуль отключен'}
-            color={currentModuleEnabled ? 'success' : 'default'}
             size="small"
-            sx={{ fontWeight: 700, fontSize: '0.75rem' }}
           />
           <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem' }}>
             {currentModuleEnabled
@@ -791,9 +791,9 @@ function ModuleSettingsContent() {
                 {loadingEps ? (
                   <PageLoading text="Загрузка списка тегов..." minHeight={140} size={24} />
                 ) : (
-                  <TableContainer>
-                    <Table size="small">
-                      <TableHead sx={{ backgroundColor: '#f8fafc' }}>
+                  <DataTableWrapper total={tags.length} stickyHeader>
+                    <Table size="small" aria-label="Таблица тегов оборудования">
+                      <TableHead sx={{ backgroundColor: 'action.hover' }}>
                         <TableRow>
                           <TableCell sx={{ fontWeight: 700 }}>Тег</TableCell>
                           <TableCell sx={{ fontWeight: 700 }}>Цвет</TableCell>
@@ -804,15 +804,11 @@ function ModuleSettingsContent() {
                         {tags.map((t) => (
                           <TableRow key={t.id} hover>
                             <TableCell>
-                              <Chip
+                              <StatusBadge
+                                status={t.name}
                                 label={t.name}
+                                customColor={t.color}
                                 size="small"
-                                sx={{
-                                  backgroundColor: `${t.color}15`,
-                                  color: t.color,
-                                  borderColor: t.color,
-                                  fontWeight: 600,
-                                }}
                                 variant="outlined"
                               />
                             </TableCell>
@@ -829,7 +825,7 @@ function ModuleSettingsContent() {
                         ))}
                       </TableBody>
                     </Table>
-                  </TableContainer>
+                  </DataTableWrapper>
                 )}
               </CardContent>
             </Card>

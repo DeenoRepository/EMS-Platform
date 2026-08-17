@@ -54,6 +54,7 @@ import {
   ConfirmDialog,
   PageLoading,
   FormDialog,
+  StatusBadge,
 } from '@/components/ui';
 
 interface DocumentItem {
@@ -507,12 +508,11 @@ function DocumentsListContent() {
                   </TableCell>
 
                   <TableCell>
-                    <Chip
+                    <StatusBadge
+                      status={doc.docType}
                       label={DOCUMENT_TYPE_MAP[doc.docType] || doc.docType}
                       size="small"
                       variant="outlined"
-                      color="primary"
-                      sx={{ fontWeight: 600, borderRadius: '4px' }}
                     />
                   </TableCell>
 

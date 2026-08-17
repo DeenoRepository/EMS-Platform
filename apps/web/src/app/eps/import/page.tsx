@@ -50,6 +50,7 @@ import {
   StatCard,
   EmptyState,
   DataTableWrapper,
+  StatusBadge,
 } from '@/components/ui';
 
 interface MissingFieldItem {
@@ -542,9 +543,9 @@ export default function SmartImportPage() {
               <Typography variant="h6" fontWeight={700} gutterBottom>
                 Итоговая карта сопоставления колонок
               </Typography>
-              <TableContainer sx={{ border: '1px solid #e2e8f0', borderRadius: 1 }}>
-                <Table size="small">
-                  <TableHead sx={{ backgroundColor: '#f8fafc' }}>
+              <DataTableWrapper total={fileHeaders.length} stickyHeader>
+                <Table size="small" aria-label="Карта сопоставления колонок">
+                  <TableHead sx={{ backgroundColor: 'action.hover' }}>
                     <TableRow>
                       <TableCell sx={{ fontWeight: 700 }}>Колонка в файле</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Статус распознавания</TableCell>
@@ -563,12 +564,12 @@ export default function SmartImportPage() {
                           <TableCell>
                             {isMissing ? (
                               res?.action === 'CREATE' ? (
-                                <Chip label="Будет создано новое поле" size="small" color="success" />
+                                <StatusBadge status="NEW_RECORD" label="Будет создано новое поле" size="small" />
                               ) : (
-                                <Chip label="Будет пропущено (Игнорируется)" size="small" />
+                                <StatusBadge status="OUT_OF_STOCK" label="Будет пропущено (Игнорируется)" size="small" />
                               )
                             ) : (
-                              <Chip label="Распознано автоматически" size="small" color="primary" variant="outlined" />
+                              <StatusBadge status="ACTIVE" label="Распознано автоматически" size="small" variant="outlined" />
                             )}
                           </TableCell>
                           <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
@@ -579,7 +580,7 @@ export default function SmartImportPage() {
                     })}
                   </TableBody>
                 </Table>
-              </TableContainer>
+              </DataTableWrapper>
             </CardContent>
           </Card>
 
@@ -754,16 +755,16 @@ export default function SmartImportPage() {
                 </Box>
               </Box>
 
-              <TableContainer sx={{ maxHeight: 500, border: '1px solid #e2e8f0', borderRadius: 1 }}>
-                <Table size="small" stickyHeader>
+              <DataTableWrapper total={validatedRows.length} stickyHeader maxHeight={500}>
+                <Table size="small" stickyHeader aria-label="Предпросмотр данных импорта">
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ fontWeight: 700, backgroundColor: '#f1f5f9' }}>Строка</TableCell>
-                      <TableCell sx={{ fontWeight: 700, backgroundColor: '#f1f5f9' }}>Статус проверки</TableCell>
-                      <TableCell sx={{ fontWeight: 700, backgroundColor: '#f1f5f9' }}>Наименование</TableCell>
-                      <TableCell sx={{ fontWeight: 700, backgroundColor: '#f1f5f9' }}>Инв. номер</TableCell>
-                      <TableCell sx={{ fontWeight: 700, backgroundColor: '#f1f5f9' }}>Серийный номер</TableCell>
-                      <TableCell sx={{ fontWeight: 700, backgroundColor: '#f1f5f9' }}>Производитель</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Строка</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Статус проверки</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Наименование</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Инв. номер</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Серийный номер</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Производитель</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -775,19 +776,20 @@ export default function SmartImportPage() {
                           <TableCell sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>{row.rowIndex}</TableCell>
                           <TableCell>
                             {row.status === 'NEW' && (
-                              <Chip label="Новая запись" size="small" color="success" sx={{ fontWeight: 600 }} />
+                              <StatusBadge status="NEW_RECORD" size="small" />
                             )}
                             {row.status === 'COLLISION' && (
-                              <Chip
+                              <StatusBadge
+                                status="COLLISION"
                                 label={conflictStrategy === 'UPSERT' ? 'Коллизия ➔ Будет обновлена' : 'Коллизия ➔ Будет пропущена'}
                                 size="small"
-                                color="warning"
-                                sx={{ fontWeight: 600 }}
                               />
                             )}
                             {row.status === 'ERROR' && (
                               <Tooltip title={row.statusMessage}>
-                                <Chip label="Ошибка валидации" size="small" color="error" sx={{ fontWeight: 600 }} />
+                                <Box component="span">
+                                  <StatusBadge status="VALIDATION_ERROR" size="small" />
+                                </Box>
                               </Tooltip>
                             )}
                           </TableCell>
@@ -799,7 +801,7 @@ export default function SmartImportPage() {
                       ))}
                   </TableBody>
                 </Table>
-              </TableContainer>
+              </DataTableWrapper>
             </CardContent>
           </Card>
 

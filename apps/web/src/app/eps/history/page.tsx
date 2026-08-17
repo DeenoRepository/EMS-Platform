@@ -475,11 +475,11 @@ function HistoryListContent() {
                     </TableCell>
 
                     <TableCell sx={{ fontSize: '0.8125rem' }}>
-                      <Chip
+                      <StatusBadge
+                        status={log.entityType}
                         label={ENTITY_TYPE_LABELS[log.entityType] || log.entityType}
                         size="small"
                         variant="outlined"
-                        sx={{ fontWeight: 500, height: 22, borderRadius: '4px' }}
                       />
                     </TableCell>
 

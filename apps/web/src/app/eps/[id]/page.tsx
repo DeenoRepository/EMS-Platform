@@ -1178,18 +1178,17 @@ export default function EquipmentPassportPage() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Chip
+                          <StatusBadge
+                            status={app.type}
                             label={APPROVAL_TYPE_MAP[app.type] || app.type}
                             size="small"
                             variant="outlined"
                           />
                         </TableCell>
                         <TableCell>
-                          <Chip
-                            label={statusInfo.label}
+                          <StatusBadge
+                            status={app.status}
                             size="small"
-                            color={statusInfo.color as any}
-                            sx={{ fontWeight: 700 }}
                           />
                         </TableCell>
                         <TableCell sx={{ fontSize: '0.8125rem' }}>
@@ -1265,11 +1264,12 @@ export default function EquipmentPassportPage() {
                       <TableCell>
                         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                           {nom.stockItems.map((si, idx) => (
-                            <Chip
+                            <StatusBadge
                               key={idx}
+                              status={Number(si.quantity) > 0 ? 'NORMAL_STOCK' : 'OUT_OF_STOCK'}
                               label={`${si.warehouse.name}: ${si.quantity} ${nom.unit}`}
                               size="small"
-                              color={Number(si.quantity) > 0 ? 'success' : 'default'}
+                              variant="subtle"
                             />
                           ))}
                         </Box>

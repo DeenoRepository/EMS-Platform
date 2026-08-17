@@ -569,7 +569,6 @@ function WmsStockContent() {
                           icon={<PlaceOutlinedIcon sx={{ fontSize: '13px !important' }} />}
                           label={`${row.zoneCode || row.zoneName} • ${row.cellCode}`}
                           size="small"
-                          color="info"
                           variant="outlined"
                           clickable={hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE)}
                           onClick={() => hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) && handleOpenLocationModal(row)}

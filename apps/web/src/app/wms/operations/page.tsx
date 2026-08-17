@@ -599,13 +599,12 @@ function WmsOperationsContent() {
                         {op.items
                           .filter((i) => i.equipment)
                           .map((i) => (
-                            <Chip
+                            <StatusBadge
                               key={i.id}
+                              status="EQUIPMENT"
                               label={`${i.equipment?.name} (${i.equipment?.inventoryNumber})`}
                               size="small"
                               variant="outlined"
-                              color="primary"
-                              sx={{ borderRadius: '4px', height: 22 }}
                             />
                           ))}
                       </Stack>
@@ -769,12 +768,11 @@ function WmsOperationsContent() {
                               Ед. изм.: <b>{row.nomenclature.unit}</b>
                             </Typography>
                             {opType !== 'RECEIPT' && (
-                              <Chip
+                              <StatusBadge
+                                status={isExceeded ? 'DEFICIT' : 'IN_STOCK'}
                                 label={`На складе: ${currentStock} ${row.nomenclature.unit}`}
                                 size="small"
-                                color={isExceeded ? 'error' : 'default'}
-                                variant="outlined"
-                                sx={{ height: 20, fontSize: '0.7rem', fontWeight: 600 }}
+                                variant="subtle"
                               />
                             )}
                           </Box>

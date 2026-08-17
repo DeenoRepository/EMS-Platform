@@ -446,7 +446,7 @@ export default function MroOverviewPage() {
                               )}
                             </TableCell>
                             <TableCell>
-                              <Chip size="small" label={p.frequency} variant="outlined" sx={{ borderRadius: '4px', height: 22 }} />
+                              <StatusBadge status={p.frequency} size="small" />
                             </TableCell>
                             <TableCell sx={{ fontSize: '0.8125rem' }}>
                               {p.checklist?.name || 'Без чек-листа'}
@@ -492,7 +492,7 @@ export default function MroOverviewPage() {
                             </TableCell>
                             <TableCell sx={{ fontSize: '0.8125rem' }}>{c.description || '—'}</TableCell>
                             <TableCell>
-                              <Chip size="small" label={`${c.items?.length || 0} пунктов`} color="info" sx={{ borderRadius: '4px', height: 22 }} />
+                              <Chip size="small" label={`${c.items?.length || 0} пунктов`} variant="outlined" sx={{ borderRadius: '4px', height: 22 }} />
                             </TableCell>
                             <TableCell sx={{ fontSize: '0.8125rem', fontWeight: 600 }}>{c._count?.plans || 0}</TableCell>
                           </TableRow>
