@@ -30,6 +30,12 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PageHeader from '@/components/layout/PageHeader';
 import { useRouter } from 'next/navigation';
 import { useSnackbar } from 'notistack';
+import TuneIcon from '@mui/icons-material/Tune';
+import {
+  EmptyState,
+  DataTableWrapper,
+  ConfirmDialog,
+} from '@/components/ui';
 
 interface CustomFieldItem {
   id: string;
@@ -55,6 +61,10 @@ export default function CustomFieldsBuilderPage() {
   const { enqueueSnackbar } = useSnackbar();
   const [fields, setFields] = useState<CustomFieldItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Delete dialog state
+  const [deleteDialogField, setDeleteDialogField] = useState<CustomFieldItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Modal state
   const [openDialog, setOpenDialog] = useState(false);
@@ -139,25 +149,28 @@ export default function CustomFieldsBuilderPage() {
     }
   };
 
-  const handleDeleteField = async (field: CustomFieldItem) => {
-    if (!confirm(`Удалить кастомное поле «${field.name}»?`)) return;
-
+  const handleConfirmDelete = async () => {
+    if (!deleteDialogField) return;
+    setDeleting(true);
     try {
-      const res = await fetch(`/api/eps/custom-fields?id=${field.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/eps/custom-fields?id=${deleteDialogField.id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
-        enqueueSnackbar('Поле удалено', { variant: 'info' });
+        enqueueSnackbar('Поле успешно удалено', { variant: 'info' });
+        setDeleteDialogField(null);
         fetchFields();
       } else {
         enqueueSnackbar(data.error || 'Ошибка удаления', { variant: 'error' });
       }
     } catch {
       enqueueSnackbar('Ошибка сети', { variant: 'error' });
+    } finally {
+      setDeleting(false);
     }
   };
 
   return (
-    <Box>
+    <Box sx={{ maxWidth: 1920, mx: 'auto' }}>
       <PageHeader
         title="Конструктор кастомных полей оборудования"
         subtitle="Добавление произвольных технических параметров в паспорта оборудования без изменения программного кода"
@@ -186,76 +199,84 @@ export default function CustomFieldsBuilderPage() {
         }
       />
 
-      <Card>
-        {loading ? (
-          <Box sx={{ p: 4, textAlign: 'center' }}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <TableContainer>
-            <Table>
-              <TableHead sx={{ backgroundColor: 'rgba(0,0,0,0.02)' }}>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 600 }}>Порядок</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Отображаемое название</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Системный ключ</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Тип данных</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Обязательное</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Значение по умолчанию / Варианты</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 600 }}>Действия</TableCell>
+      {fields.length === 0 && !loading ? (
+        <EmptyState
+          paper
+          icon={<TuneIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+          title="Кастомные поля еще не созданы"
+          description="Вы можете настроить дополнительные технические атрибуты, которые будут отображаться в паспортах оборудования."
+          actionText="Создать первое поле"
+          onAction={handleOpenCreate}
+        />
+      ) : (
+        <DataTableWrapper
+          loading={loading}
+          total={fields.length}
+          stickyHeader
+        >
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700, width: 80 }}>Порядок</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Отображаемое название</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Системный ключ</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Тип данных</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 120 }}>Обязательное</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Значение по умолчанию / Варианты</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, width: 100 }}>Действия</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {fields.map((f) => (
+                <TableRow key={f.id} hover>
+                  <TableCell sx={{ fontWeight: 600, color: 'text.secondary' }}>{f.sortOrder}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{f.name}</TableCell>
+                  <TableCell>
+                    <Chip label={f.key} size="small" variant="outlined" sx={{ fontFamily: 'monospace', borderRadius: '4px' }} />
+                  </TableCell>
+                  <TableCell>
+                    <Chip label={FIELD_TYPE_LABELS[f.fieldType] || f.fieldType} size="small" color="primary" variant="outlined" sx={{ borderRadius: '4px', fontWeight: 600 }} />
+                  </TableCell>
+                  <TableCell>{f.isRequired ? 'Да' : 'Нет'}</TableCell>
+                  <TableCell>
+                    {f.fieldType === 'SELECT' && f.options ? (
+                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                        {f.options.map((opt, i) => (
+                          <Chip key={i} label={opt} size="small" variant="outlined" sx={{ borderRadius: '4px' }} />
+                        ))}
+                      </Box>
+                    ) : (
+                      f.defaultValue || '—'
+                    )}
+                  </TableCell>
+                  <TableCell align="right">
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={() => setDeleteDialogField(f)}
+                      title="Удалить поле"
+                    >
+                      <DeleteOutlineIcon fontSize="small" />
+                    </IconButton>
+                  </TableCell>
                 </TableRow>
-              </TableHead>
-              <TableBody>
-                {fields.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} align="center" sx={{ py: 4, color: 'text.secondary' }}>
-                      Кастомные поля еще не созданы
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  fields.map((f) => (
-                    <TableRow key={f.id} hover>
-                      <TableCell>{f.sortOrder}</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>{f.name}</TableCell>
-                      <TableCell>
-                        <Chip label={f.key} size="small" variant="outlined" sx={{ fontFamily: 'monospace' }} />
-                      </TableCell>
-                      <TableCell>
-                        <Chip label={FIELD_TYPE_LABELS[f.fieldType] || f.fieldType} size="small" color="primary" />
-                      </TableCell>
-                      <TableCell>{f.isRequired ? 'Да' : 'Нет'}</TableCell>
-                      <TableCell>
-                        {f.fieldType === 'SELECT' && f.options ? (
-                          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                            {f.options.map((opt, i) => (
-                              <Chip key={i} label={opt} size="small" variant="outlined" />
-                            ))}
-                          </Box>
-                        ) : (
-                          f.defaultValue || '—'
-                        )}
-                      </TableCell>
-                      <TableCell align="right">
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleDeleteField(f)}
-                          title="Удалить поле"
-                        >
-                          <DeleteOutlineIcon fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </Card>
+              ))}
+            </TableBody>
+          </Table>
+        </DataTableWrapper>
+      )}
 
-      {/* Create Custom Field Modal */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        open={Boolean(deleteDialogField)}
+        title="Удаление кастомного поля"
+        message={`Вы действительно хотите удалить поле «${deleteDialogField?.name}»? Значения этого поля в паспортах оборудования будут недоступны.`}
+        confirmText="Удалить"
+        variant="danger"
+        loading={deleting}
+        onConfirm={handleConfirmDelete}
+        onClose={() => setDeleteDialogField(null)}
+      /><Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Добавление кастомного поля оборудования</DialogTitle>
         <DialogContent dividers>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>

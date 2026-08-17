@@ -66,6 +66,11 @@ import {
 } from '@ems/shared';
 import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
+import {
+  StatusBadge,
+  EmptyState,
+  ConfirmDialog,
+} from '@/components/ui';
 
 interface CustomFieldDef {
   id: string;
@@ -521,14 +526,10 @@ export default function EquipmentPassportPage() {
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, flexWrap: 'wrap' }}>
             <Box>
-              <Typography variant="caption" color="text.secondary" display="block">
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
                 Текущий статус
               </Typography>
-              <Chip
-                label={statusInfo.label}
-                color={statusInfo.color as any}
-                sx={{ fontWeight: 700, mt: 0.5 }}
-              />
+              <StatusBadge status={equipment.status} />
             </Box>
 
             {canEdit && (

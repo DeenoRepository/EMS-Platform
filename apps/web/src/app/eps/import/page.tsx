@@ -46,6 +46,11 @@ import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturi
 import PageHeader from '@/components/layout/PageHeader';
 import { useSnackbar } from 'notistack';
 import { useRouter } from 'next/navigation';
+import {
+  StatCard,
+  EmptyState,
+  DataTableWrapper,
+} from '@/components/ui';
 
 interface MissingFieldItem {
   header: string;
@@ -658,67 +663,43 @@ export default function SmartImportPage() {
           {/* Validation Metrics (Clickable Filters) */}
           <Grid container spacing={2} sx={{ mb: 3 }}>
             <Grid item xs={12} sm={4}>
-              <Card
+              <StatCard
+                title="Новых записей"
+                value={newCount}
+                subtitle="Будет создано в реестре"
+                icon={<AddCircleOutlineIcon sx={{ fontSize: 20 }} />}
+                iconBgColor="rgba(22, 163, 74, 0.08)"
+                iconColor="#16a34a"
+                accentColor="#16a34a"
+                active={previewFilter === 'NEW'}
                 onClick={() => setPreviewFilter((prev) => (prev === 'NEW' ? 'ALL' : 'NEW'))}
-                sx={{
-                  p: 2,
-                  borderLeft: '4px solid #16a34a',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  backgroundColor: previewFilter === 'NEW' ? 'rgba(22, 163, 74, 0.08)' : '#ffffff',
-                  boxShadow: previewFilter === 'NEW' ? '0 0 0 2px #16a34a' : undefined,
-                  '&:hover': { transform: 'translateY(-2px)' },
-                }}
-              >
-                <Typography variant="caption" color="text.secondary" fontWeight={700}>
-                  НОВЫХ ЗАПИСЕЙ {previewFilter === 'NEW' && '• [АКТИВЕН]'}
-                </Typography>
-                <Typography variant="h5" fontWeight={800} color="success.main">
-                  {newCount}
-                </Typography>
-              </Card>
+              />
             </Grid>
             <Grid item xs={12} sm={4}>
-              <Card
+              <StatCard
+                title="Коллизии / Дубликаты"
+                value={collisionCount}
+                subtitle="Совпадение номеров"
+                icon={<AutorenewIcon sx={{ fontSize: 20 }} />}
+                iconBgColor="rgba(217, 119, 6, 0.08)"
+                iconColor="#d97706"
+                accentColor="#d97706"
+                active={previewFilter === 'COLLISION'}
                 onClick={() => setPreviewFilter((prev) => (prev === 'COLLISION' ? 'ALL' : 'COLLISION'))}
-                sx={{
-                  p: 2,
-                  borderLeft: '4px solid #d97706',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  backgroundColor: previewFilter === 'COLLISION' ? 'rgba(217, 119, 6, 0.08)' : '#ffffff',
-                  boxShadow: previewFilter === 'COLLISION' ? '0 0 0 2px #d97706' : undefined,
-                  '&:hover': { transform: 'translateY(-2px)' },
-                }}
-              >
-                <Typography variant="caption" color="text.secondary" fontWeight={700}>
-                  ОБНАРУЖЕНО ДУБЛИКАТОВ / КОЛЛИЗИЙ {previewFilter === 'COLLISION' && '• [АКТИВЕН]'}
-                </Typography>
-                <Typography variant="h5" fontWeight={800} color="warning.main">
-                  {collisionCount}
-                </Typography>
-              </Card>
+              />
             </Grid>
             <Grid item xs={12} sm={4}>
-              <Card
+              <StatCard
+                title="Ошибки валидации"
+                value={errorCount}
+                subtitle="Некорректные данные"
+                icon={<ErrorOutlineIcon sx={{ fontSize: 20 }} />}
+                iconBgColor="rgba(220, 38, 38, 0.08)"
+                iconColor="#dc2626"
+                accentColor="#dc2626"
+                active={previewFilter === 'ERROR'}
                 onClick={() => setPreviewFilter((prev) => (prev === 'ERROR' ? 'ALL' : 'ERROR'))}
-                sx={{
-                  p: 2,
-                  borderLeft: '4px solid #dc2626',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  backgroundColor: previewFilter === 'ERROR' ? 'rgba(220, 38, 38, 0.08)' : '#ffffff',
-                  boxShadow: previewFilter === 'ERROR' ? '0 0 0 2px #dc2626' : undefined,
-                  '&:hover': { transform: 'translateY(-2px)' },
-                }}
-              >
-                <Typography variant="caption" color="text.secondary" fontWeight={700}>
-                  ОШИБОК ВАЛИДАЦИИ {previewFilter === 'ERROR' && '• [АКТИВЕН]'}
-                </Typography>
-                <Typography variant="h5" fontWeight={800} color="error.main">
-                  {errorCount}
-                </Typography>
-              </Card>
+              />
             </Grid>
           </Grid>
 

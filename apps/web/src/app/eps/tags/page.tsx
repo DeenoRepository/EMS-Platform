@@ -25,6 +25,11 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PageHeader from '@/components/layout/PageHeader';
 import { useRouter } from 'next/navigation';
 import { useSnackbar } from 'notistack';
+import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined';
+import {
+  EmptyState,
+  DataTableWrapper,
+} from '@/components/ui';
 
 interface TagItem {
   id: string;
@@ -96,7 +101,7 @@ export default function TagsManagementPage() {
   };
 
   return (
-    <Box>
+    <Box sx={{ maxWidth: 1920, mx: 'auto' }}>
       <PageHeader
         title="Теги и классификаторы оборудования"
         subtitle="Группировка оборудования по технологическим признакам и цеховой принадлежности"
@@ -125,73 +130,83 @@ export default function TagsManagementPage() {
         }
       />
 
-      <Card>
-        {loading ? (
-          <Box sx={{ p: 4, textAlign: 'center' }}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <TableContainer>
-            <Table>
-              <TableHead sx={{ backgroundColor: 'rgba(0,0,0,0.02)' }}>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 600 }}>Тег / Бейдж</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Цвет</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Количество единиц оборудования</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 600 }}>Действия</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {tags.map((t) => (
-                  <TableRow key={t.id} hover>
-                    <TableCell>
-                      <Chip
-                        label={t.name}
-                        size="medium"
+      {tags.length === 0 && !loading ? (
+        <EmptyState
+          paper
+          icon={<LocalOfferOutlinedIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+          title="Теги оборудования еще не созданы"
+          description="Теги позволяют классифицировать оборудование по цехам, критичности или функциональным группам."
+          actionText="Создать первый тег"
+          onAction={() => setOpenDialog(true)}
+        />
+      ) : (
+        <DataTableWrapper
+          loading={loading}
+          total={tags.length}
+          stickyHeader
+        >
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700 }}>Тег / Бейдж</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Цвет метки</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Количество оборудования</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, width: 220 }}>Действия</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {tags.map((t) => (
+                <TableRow key={t.id} hover>
+                  <TableCell>
+                    <Chip
+                      label={t.name}
+                      size="small"
+                      sx={{
+                        fontWeight: 700,
+                        backgroundColor: `${t.color}15`,
+                        color: t.color,
+                        borderColor: t.color,
+                        borderRadius: '4px',
+                      }}
+                      variant="outlined"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box
                         sx={{
-                          fontWeight: 600,
-                          backgroundColor: `${t.color}15`,
-                          color: t.color,
-                          borderColor: t.color,
+                          width: 16,
+                          height: 16,
+                          borderRadius: '50%',
+                          backgroundColor: t.color,
+                          boxShadow: '0 0 0 1px rgba(0,0,0,0.1)',
                         }}
-                        variant="outlined"
                       />
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Box
-                          sx={{
-                            width: 18,
-                            height: 18,
-                            borderRadius: '50%',
-                            backgroundColor: t.color,
-                          }}
-                        />
-                        <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>
-                          {t.color}
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" fontWeight={600}>
-                        {t.equipmentCount} ед.
+                      <Typography variant="caption" sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                        {t.color}
                       </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Button
-                        size="small"
-                        onClick={() => router.push(`/eps?tagId=${t.id}`)}
-                      >
-                        Показать оборудование
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </Card>
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" fontWeight={600}>
+                      {t.equipmentCount} ед.
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="right">
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => router.push(`/eps?tagId=${t.id}`)}
+                    >
+                      Показать оборудование
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </DataTableWrapper>
+      )}
 
       {/* Create Tag Modal */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="xs" fullWidth>

@@ -41,9 +41,18 @@ import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturi
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import PageHeader from '@/components/layout/PageHeader';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { DOCUMENT_TYPE_MAP, formatDate, formatDateTime, formatBytes, PERMISSIONS } from '@ems/shared';
+import { DOCUMENT_TYPE_MAP, formatDate, formatBytes, PERMISSIONS } from '@ems/shared';
 import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
+
+import {
+  StatCard,
+  SearchInput,
+  FilterToolbar,
+  EmptyState,
+  DataTableWrapper,
+  ConfirmDialog,
+} from '@/components/ui';
 
 interface DocumentItem {
   id: string;
@@ -87,8 +96,8 @@ function DocumentsListContent() {
 
   const [items, setItems] = useState<DocumentItem[]>([]);
   const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [loading, setLoading] = useState(true);
 
   // Filters
@@ -103,25 +112,22 @@ function DocumentsListContent() {
   const [stats, setStats] = useState({
     totalDocuments: 0,
     totalSizeBytes: 0,
-    byTypeCounts: {
-      SCHEMA: 0,
-      MANUAL: 0,
-      CERTIFICATE: 0,
-      PASSPORT: 0,
-      ACT: 0,
-      OTHER: 0,
-    } as Record<string, number>,
+    byTypeCounts: {} as Record<string, number>,
   });
 
-  // Upload modal state
+  // Upload Modal State
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedEquipmentForUpload, setSelectedEquipmentForUpload] = useState<EquipmentOption | null>(null);
   const [uploadDocType, setUploadDocType] = useState('SCHEMA');
   const [uploadDescription, setUploadDescription] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  // Load equipment list for selectors
+  // Confirm Delete Dialog State
+  const [deleteDialogDoc, setDeleteDialogDoc] = useState<{ id: string; name: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // Load equipment list for picker
   useEffect(() => {
     async function loadEquipment() {
       try {
@@ -150,7 +156,7 @@ function DocumentsListContent() {
     try {
       const params = new URLSearchParams({
         page: String(page),
-        pageSize: '25',
+        pageSize: String(pageSize),
       });
       if (search) params.append('search', search);
       if (docTypeFilter) params.append('docType', docTypeFilter);
@@ -162,52 +168,55 @@ function DocumentsListContent() {
         if (json.success) {
           setItems(json.data.items || []);
           setTotal(json.data.total || 0);
-          setTotalPages(json.data.totalPages || 1);
           if (json.data.stats) {
             setStats(json.data.stats);
           }
         }
       }
     } catch {
-      enqueueSnackbar('Ошибка загрузки реестра документов', { variant: 'error' });
+      enqueueSnackbar('Ошибка загрузки электронного архива документов', { variant: 'error' });
     } finally {
       setLoading(false);
     }
-  }, [page, search, docTypeFilter, equipmentFilter, enqueueSnackbar]);
+  }, [page, pageSize, search, docTypeFilter, equipmentFilter, enqueueSnackbar]);
 
   useEffect(() => {
     fetchDocuments();
   }, [fetchDocuments]);
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(1);
-    fetchDocuments();
-  };
-
-  const handleKpiFilter = (type: string) => {
-    if (docTypeFilter === type) {
+  const handleKpiFilter = (docType: string) => {
+    if (docTypeFilter === docType) {
       setDocTypeFilter('');
     } else {
-      setDocTypeFilter(type);
+      setDocTypeFilter(docType);
     }
     setPage(1);
   };
 
-  const handleDeleteDocument = async (id: string, name: string) => {
-    if (!confirm(`Вы действительно хотите удалить документ "${name}"?`)) return;
+  const handleResetFilters = () => {
+    setSearch('');
+    setDocTypeFilter('');
+    setEquipmentFilter('');
+    setPage(1);
+  };
 
+  const handleConfirmDelete = async () => {
+    if (!deleteDialogDoc) return;
+    setDeleting(true);
     try {
-      const res = await fetch(`/api/eps/documents/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/eps/documents/${deleteDialogDoc.id}`, { method: 'DELETE' });
       const json = await res.json();
       if (json.success) {
-        enqueueSnackbar('Документ успешно удален', { variant: 'info' });
+        enqueueSnackbar(`Документ «${deleteDialogDoc.name}» успешно удален`, { variant: 'info' });
+        setDeleteDialogDoc(null);
         fetchDocuments();
       } else {
         enqueueSnackbar(json.error || 'Ошибка удаления', { variant: 'error' });
       }
     } catch {
       enqueueSnackbar('Ошибка сети при удалении', { variant: 'error' });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -252,6 +261,11 @@ function DocumentsListContent() {
     }
   };
 
+  const activeFilterCount =
+    (search ? 1 : 0) +
+    (docTypeFilter ? 1 : 0) +
+    (equipmentFilter ? 1 : 0);
+
   const canUpload = hasPermission(PERMISSIONS.EPS_DOCUMENTS_UPLOAD);
   const canEdit = hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT);
 
@@ -271,7 +285,7 @@ function DocumentsListContent() {
               variant="contained"
               startIcon={<UploadFileIcon />}
               onClick={() => setUploadModalOpen(true)}
-              sx={{ px: 2.5, py: 1, fontWeight: 600 }}
+              sx={{ px: 2.25, py: 0.75, fontWeight: 600 }}
             >
               Загрузить документ
             </Button>
@@ -279,364 +293,288 @@ function DocumentsListContent() {
         }
       />
 
-      {/* KPI Metric Cards */}
-      <Grid container spacing={1.5} sx={{ mb: 2 }}>
+      {/* Top KPI StatCards Bar */}
+      <Grid container spacing={1.75} sx={{ mb: 2.5 }}>
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card
+          <StatCard
+            title="Всего документов"
+            value={stats.totalDocuments}
+            subtitle="Файлов в архиве"
+            icon={<DescriptionOutlinedIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(2, 132, 199, 0.08)"
+            iconColor="#0284c7"
+            accentColor="#0284c7"
+            active={docTypeFilter === ''}
             onClick={() => handleKpiFilter('')}
-            sx={{
-              p: 1.25,
-              cursor: 'pointer',
-              border: docTypeFilter === '' ? '2px solid #0284c7' : '1px solid #e2e8f0',
-              backgroundColor: docTypeFilter === '' ? 'rgba(2, 132, 199, 0.04)' : '#ffffff',
-              transition: 'all 0.12s ease',
-              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" color="primary.main" fontWeight={700} fontSize="0.6875rem">
-                ВСЕГО ДОКУМЕНТОВ
-              </Typography>
-              <DescriptionOutlinedIcon color="primary" sx={{ fontSize: 18 }} />
-            </Box>
-            <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5, color: '#0f172a', fontSize: '1.25rem' }}>
-              {stats.totalDocuments}
-            </Typography>
-          </Card>
+            loading={loading && stats.totalDocuments === 0}
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card
-            sx={{
-              p: 1.25,
-              border: '1px solid #e2e8f0',
-              backgroundColor: '#ffffff',
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={700} fontSize="0.6875rem">
-                ОБЩИЙ ОБЪЁМ
-              </Typography>
-              <FolderZipOutlinedIcon color="action" sx={{ fontSize: 18 }} />
-            </Box>
-            <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5, color: '#0f172a', fontSize: '1.25rem' }}>
-              {formatBytes(stats.totalSizeBytes)}
-            </Typography>
-          </Card>
+          <StatCard
+            title="Общий объём"
+            value={formatBytes(stats.totalSizeBytes)}
+            subtitle="Занято на сервере"
+            icon={<FolderZipOutlinedIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(100, 116, 139, 0.08)"
+            iconColor="#64748b"
+            accentColor="#64748b"
+            loading={loading && stats.totalDocuments === 0}
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card
+          <StatCard
+            title="Схемы и чертежи"
+            value={stats.byTypeCounts.SCHEMA || 0}
+            subtitle="Принципиальные схемы"
+            icon={<SchemaOutlinedIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(2, 132, 199, 0.08)"
+            iconColor="#0284c7"
+            accentColor="#0284c7"
+            active={docTypeFilter === 'SCHEMA'}
             onClick={() => handleKpiFilter('SCHEMA')}
-            sx={{
-              p: 1.25,
-              cursor: 'pointer',
-              border: docTypeFilter === 'SCHEMA' ? '2px solid #0284c7' : '1px solid #e2e8f0',
-              backgroundColor: docTypeFilter === 'SCHEMA' ? 'rgba(2, 132, 199, 0.04)' : '#ffffff',
-              transition: 'all 0.12s ease',
-              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" color="info.main" fontWeight={700} fontSize="0.6875rem">
-                СХЕМЫ И ЧЕРТЕЖИ
-              </Typography>
-              <SchemaOutlinedIcon color="info" sx={{ fontSize: 18 }} />
-            </Box>
-            <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5, color: 'info.main', fontSize: '1.25rem' }}>
-              {stats.byTypeCounts.SCHEMA || 0}
-            </Typography>
-          </Card>
+            loading={loading && stats.totalDocuments === 0}
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card
+          <StatCard
+            title="Инструкции"
+            value={stats.byTypeCounts.MANUAL || 0}
+            subtitle="Руководства и регламенты"
+            icon={<MenuBookOutlinedIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(22, 163, 74, 0.08)"
+            iconColor="#16a34a"
+            accentColor="#16a34a"
+            active={docTypeFilter === 'MANUAL'}
             onClick={() => handleKpiFilter('MANUAL')}
-            sx={{
-              p: 1.25,
-              cursor: 'pointer',
-              border: docTypeFilter === 'MANUAL' ? '2px solid #16a34a' : '1px solid #e2e8f0',
-              backgroundColor: docTypeFilter === 'MANUAL' ? 'rgba(22, 163, 74, 0.04)' : '#ffffff',
-              transition: 'all 0.12s ease',
-              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" color="success.main" fontWeight={700} fontSize="0.6875rem">
-                ИНСТРУКЦИИ
-              </Typography>
-              <MenuBookOutlinedIcon color="success" sx={{ fontSize: 18 }} />
-            </Box>
-            <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5, color: 'success.main', fontSize: '1.25rem' }}>
-              {stats.byTypeCounts.MANUAL || 0}
-            </Typography>
-          </Card>
+            loading={loading && stats.totalDocuments === 0}
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card
+          <StatCard
+            title="Сертификаты и акты"
+            value={(stats.byTypeCounts.CERTIFICATE || 0) + (stats.byTypeCounts.ACT || 0)}
+            subtitle="Юридические документы"
+            icon={<VerifiedOutlinedIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(139, 92, 246, 0.08)"
+            iconColor="#8b5cf6"
+            accentColor="#8b5cf6"
+            active={docTypeFilter === 'CERTIFICATE'}
             onClick={() => handleKpiFilter('CERTIFICATE')}
-            sx={{
-              p: 1.25,
-              cursor: 'pointer',
-              border: docTypeFilter === 'CERTIFICATE' ? '2px solid #8b5cf6' : '1px solid #e2e8f0',
-              backgroundColor: docTypeFilter === 'CERTIFICATE' ? 'rgba(139, 92, 246, 0.04)' : '#ffffff',
-              transition: 'all 0.12s ease',
-              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" color="#8b5cf6" fontWeight={700} fontSize="0.6875rem">
-                СЕРТИФИКАТЫ И АКТЫ
-              </Typography>
-              <VerifiedOutlinedIcon sx={{ color: '#8b5cf6', fontSize: 18 }} />
-            </Box>
-            <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5, color: '#8b5cf6', fontSize: '1.25rem' }}>
-              {(stats.byTypeCounts.CERTIFICATE || 0) + (stats.byTypeCounts.ACT || 0)}
-            </Typography>
-          </Card>
+            loading={loading && stats.totalDocuments === 0}
+          />
         </Grid>
       </Grid>
 
       {/* Filter and Search Bar */}
-      <Card sx={{ p: 1.25, mb: 2 }}>
-        <Box
-          component="form"
-          onSubmit={handleSearchSubmit}
-          sx={{
-            display: 'flex',
-            gap: 1.5,
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center', flexGrow: 1 }}>
-            <TextField
-              size="small"
-              placeholder="Поиск по названию файла, описанию, инв. №..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon sx={{ fontSize: 18 }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{ minWidth: 280, flexGrow: { xs: 1, md: 0 } }}
-            />
-
-            <TextField
-              select
-              size="small"
-              label="Тип документа"
-              value={docTypeFilter}
-              onChange={(e) => {
-                setDocTypeFilter(e.target.value);
-                setPage(1);
-              }}
-              sx={{ minWidth: 180 }}
-            >
-              <MenuItem value="">Все типы</MenuItem>
-              {Object.entries(DOCUMENT_TYPE_MAP).map(([key, label]) => (
-                <MenuItem key={key} value={key}>
-                  {label}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <TextField
-              select
-              size="small"
-              label="Оборудование"
-              value={equipmentFilter}
-              onChange={(e) => {
-                setEquipmentFilter(e.target.value);
-                setPage(1);
-              }}
-              sx={{ minWidth: 220 }}
-            >
-              <MenuItem value="">Все единицы оборудования</MenuItem>
-              {equipmentList.map((eq) => (
-                <MenuItem key={eq.id} value={eq.id}>
-                  {eq.inventoryNumber ? `[${eq.inventoryNumber}] ` : ''}{eq.name}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <Button type="submit" variant="outlined" size="small" sx={{ px: 2 }}>
-              Применить
-            </Button>
-            {(search || docTypeFilter || equipmentFilter) && (
-              <Button
-                variant="text"
-                size="small"
-                onClick={() => {
-                  setSearch('');
-                  setDocTypeFilter('');
-                  setEquipmentFilter('');
-                  setPage(1);
-                }}
-                color="inherit"
-              >
-                Сбросить
-              </Button>
-            )}
-          </Box>
+      <FilterToolbar
+        activeFilterCount={activeFilterCount}
+        onResetFilters={handleResetFilters}
+      >
+        <Box sx={{ minWidth: { xs: '100%', sm: 280 } }}>
+          <SearchInput
+            value={search}
+            placeholder="Поиск по названию файла, описанию, инв. №..."
+            onSearch={(val) => {
+              setSearch(val);
+              setPage(1);
+            }}
+          />
         </Box>
-      </Card>
+
+        <TextField
+          select
+          size="small"
+          label="Тип документа"
+          value={docTypeFilter}
+          onChange={(e) => {
+            setDocTypeFilter(e.target.value);
+            setPage(1);
+          }}
+          sx={{ minWidth: 180 }}
+        >
+          <MenuItem value="">Все типы</MenuItem>
+          {Object.entries(DOCUMENT_TYPE_MAP).map(([key, label]) => (
+            <MenuItem key={key} value={key}>
+              {label}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        <TextField
+          select
+          size="small"
+          label="Оборудование"
+          value={equipmentFilter}
+          onChange={(e) => {
+            setEquipmentFilter(e.target.value);
+            setPage(1);
+          }}
+          sx={{ minWidth: 220 }}
+        >
+          <MenuItem value="">Все единицы оборудования</MenuItem>
+          {equipmentList.map((eq) => (
+            <MenuItem key={eq.id} value={eq.id}>
+              {eq.inventoryNumber ? `[${eq.inventoryNumber}] ` : ''}{eq.name}
+            </MenuItem>
+          ))}
+        </TextField>
+      </FilterToolbar>
 
       {/* Main Table */}
-      {loading ? (
-        <Card sx={{ p: 6, textAlign: 'center' }}>
-          <CircularProgress />
-        </Card>
-      ) : items.length === 0 ? (
-        <Card sx={{ p: 6, textAlign: 'center' }}>
-          <DescriptionOutlinedIcon sx={{ fontSize: 56, color: 'text.secondary', opacity: 0.4, mb: 1 }} />
-          <Typography variant="h6" fontWeight={600} gutterBottom>
-            Документы не найдены
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Попробуйте изменить параметры поиска или прикрепите новый документ к оборудованию
-          </Typography>
-          {canUpload && (
-            <Button variant="contained" startIcon={<UploadFileIcon />} onClick={() => setUploadModalOpen(true)}>
-              Загрузить документ
-            </Button>
-          )}
-        </Card>
+      {items.length === 0 && !loading ? (
+        <EmptyState
+          paper
+          icon={<DescriptionOutlinedIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+          title="Документы не найдены"
+          description={
+            activeFilterCount > 0
+              ? 'По заданным параметрам документы не найдены. Попробуйте сбросить фильтры.'
+              : 'В электронном архиве пока нет загруженных документов.'
+          }
+          actionText={activeFilterCount > 0 ? 'Сбросить фильтры' : (canUpload ? 'Загрузить документ' : undefined)}
+          onAction={activeFilterCount > 0 ? handleResetFilters : (canUpload ? () => setUploadModalOpen(true) : undefined)}
+        />
       ) : (
-        <Card>
-          <TableContainer>
-            <Table size="medium">
-              <TableHead sx={{ backgroundColor: '#f8fafc' }}>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>Имя файла</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Оборудование</TableCell>
-                  <TableCell sx={{ fontWeight: 700, width: 170 }}>Тип документа</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Описание / Примечание</TableCell>
-                  <TableCell sx={{ fontWeight: 700, width: 100 }}>Размер</TableCell>
-                  <TableCell sx={{ fontWeight: 700, width: 140 }}>Загрузил</TableCell>
-                  <TableCell sx={{ fontWeight: 700, width: 120 }}>Дата</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 700, width: 100 }}>Действия</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {items.map((doc) => (
-                  <TableRow key={doc.id} hover>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <DescriptionOutlinedIcon color="primary" sx={{ fontSize: 20 }} />
-                        <Box>
-                          <Typography variant="subtitle2" fontWeight={600}>
-                            {doc.originalName}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Версия {doc.version}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </TableCell>
-
-                    <TableCell>
-                      <Box
-                        onClick={() => router.push(`/eps/${doc.equipment.id}`)}
-                        sx={{
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 0.75,
-                          '&:hover': { color: 'primary.main', textDecoration: 'underline' },
-                        }}
-                      >
-                        <Chip
-                          label={doc.equipment.inventoryNumber || 'Б/Н'}
-                          size="small"
-                          variant="outlined"
-                          sx={{ fontWeight: 700, fontFamily: 'monospace', height: 22 }}
-                        />
-                        <Typography variant="body2" fontWeight={500}>
-                          {doc.equipment.name}
+        <DataTableWrapper
+          loading={loading}
+          page={page - 1}
+          pageSize={pageSize}
+          total={total}
+          onPageChange={(_, newPage) => setPage(newPage + 1)}
+          onPageSizeChange={(e) => {
+            setPageSize(parseInt(e.target.value, 10));
+            setPage(1);
+          }}
+          stickyHeader
+        >
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700 }}>Имя файла</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Оборудование</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 170 }}>Тип документа</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Описание / Примечание</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 100 }}>Размер</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 140 }}>Загрузил</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 120 }}>Дата</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, width: 100 }}>Действия</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {items.map((doc) => (
+                <TableRow key={doc.id} hover>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <DescriptionOutlinedIcon color="primary" sx={{ fontSize: 18 }} />
+                      <Box>
+                        <Typography variant="subtitle2" fontWeight={600} color="primary.main">
+                          {doc.originalName}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Версия {doc.version}
                         </Typography>
                       </Box>
-                    </TableCell>
+                    </Box>
+                  </TableCell>
 
-                    <TableCell>
+                  <TableCell>
+                    <Box
+                      onClick={() => router.push(`/eps/${doc.equipment.id}`)}
+                      sx={{
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 0.75,
+                        '&:hover': { color: 'primary.main', textDecoration: 'underline' },
+                      }}
+                    >
                       <Chip
-                        label={DOCUMENT_TYPE_MAP[doc.docType] || doc.docType}
+                        label={doc.equipment.inventoryNumber || 'Б/Н'}
                         size="small"
                         variant="outlined"
-                        color="primary"
-                        sx={{ fontWeight: 600 }}
+                        sx={{ fontWeight: 700, fontFamily: 'monospace', height: 20, borderRadius: '4px' }}
                       />
-                    </TableCell>
+                      <Typography variant="body2" fontWeight={500}>
+                        {doc.equipment.name}
+                      </Typography>
+                    </Box>
+                  </TableCell>
 
-                    <TableCell sx={{ fontSize: '0.8125rem', color: doc.description ? 'inherit' : 'text.secondary' }}>
-                      {doc.description || '—'}
-                    </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={DOCUMENT_TYPE_MAP[doc.docType] || doc.docType}
+                      size="small"
+                      variant="outlined"
+                      color="primary"
+                      sx={{ fontWeight: 600, borderRadius: '4px' }}
+                    />
+                  </TableCell>
 
-                    <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace' }}>
-                      {formatBytes(doc.fileSize)}
-                    </TableCell>
+                  <TableCell sx={{ fontSize: '0.8125rem', color: doc.description ? 'inherit' : 'text.secondary' }}>
+                    {doc.description || '—'}
+                  </TableCell>
 
-                    <TableCell sx={{ fontSize: '0.8125rem' }}>
-                      {doc.uploadedBy?.displayName || 'Система'}
-                    </TableCell>
+                  <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace' }}>
+                    {formatBytes(doc.fileSize)}
+                  </TableCell>
 
-                    <TableCell sx={{ fontSize: '0.8125rem' }}>
-                      {formatDate(doc.createdAt)}
-                    </TableCell>
+                  <TableCell sx={{ fontSize: '0.8125rem' }}>
+                    {doc.uploadedBy?.displayName || 'Система'}
+                  </TableCell>
 
-                    <TableCell align="right">
-                      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
-                        <Tooltip title="Скачать / Просмотреть">
+                  <TableCell sx={{ fontSize: '0.8125rem' }}>
+                    {formatDate(doc.createdAt)}
+                  </TableCell>
+
+                  <TableCell align="right">
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
+                      <Tooltip title="Скачать / Просмотреть">
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          component="a"
+                          href={`/api/files/${doc.filePath}`}
+                          target="_blank"
+                        >
+                          <DownloadIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+
+                      {canEdit && (
+                        <Tooltip title="Удалить документ">
                           <IconButton
                             size="small"
-                            color="primary"
-                            component="a"
-                            href={`/api/files/${doc.filePath}`}
-                            target="_blank"
+                            color="error"
+                            onClick={() => setDeleteDialogDoc({ id: doc.id, name: doc.originalName })}
                           >
-                            <DownloadIcon fontSize="small" />
+                            <DeleteOutlineIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-
-                        {canEdit && (
-                          <Tooltip title="Удалить документ">
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => handleDeleteDocument(doc.id, doc.originalName)}
-                            >
-                              <DeleteOutlineIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          {/* Pagination */}
-          <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="caption" color="text.secondary">
-              Всего документов в архиве: {total}
-            </Typography>
-            <Pagination
-              count={totalPages}
-              page={page}
-              onChange={(_, val) => setPage(val)}
-              color="primary"
-              size="medium"
-            />
-          </Box>
-        </Card>
+                      )}
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </DataTableWrapper>
       )}
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        open={Boolean(deleteDialogDoc)}
+        title="Удаление документа"
+        message={`Вы действительно хотите удалить документ «${deleteDialogDoc?.name}» из архива? Это действие необратимо.`}
+        confirmText="Удалить"
+        variant="danger"
+        loading={deleting}
+        onConfirm={handleConfirmDelete}
+        onClose={() => setDeleteDialogDoc(null)}
+      />
 
       {/* Upload Document Modal Dialog */}
       <Dialog open={uploadModalOpen} onClose={() => setUploadModalOpen(false)} maxWidth="sm" fullWidth>

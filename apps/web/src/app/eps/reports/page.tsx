@@ -54,6 +54,7 @@ import PageHeader from '@/components/layout/PageHeader';
 import { useSnackbar } from 'notistack';
 import { EQUIPMENT_STATUS_MAP } from '@ems/shared';
 import * as XLSX from 'xlsx';
+import { EmptyState, DataTableWrapper, StatusBadge } from '@/components/ui';
 
 interface ReportColumn {
   key: string;
@@ -804,85 +805,74 @@ export default function ReportBuilderPage() {
 
               <Divider sx={{ mb: 2 }} />
 
-              {loadingData ? (
-                <Box sx={{ p: 8, textAlign: 'center', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <CircularProgress />
-                </Box>
-              ) : rows.length === 0 ? (
-                <Box sx={{ p: 8, textAlign: 'center', color: 'text.secondary', flex: 1 }}>
-                  <TableChartIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
-                  <Typography variant="body2">Нет записей, соответствующих выбранным фильтрам</Typography>
-                </Box>
+              {rows.length === 0 && !loadingData ? (
+                <EmptyState
+                  paper
+                  icon={<TableChartIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+                  title="Нет записей для предпросмотра"
+                  description="Записей, соответствующих выбранным критериям фильтрации, не найдено. Нажмите «Сбросить» или измените параметры."
+                />
               ) : (
-                <>
-                  <TableContainer sx={{ flex: 1, maxHeight: 650, borderRadius: 1, border: '1px solid #e2e8f0' }}>
-                    <Table size="small" stickyHeader>
-                      <TableHead>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 700, backgroundColor: '#f1f5f9', width: 48 }}>
-                            №
+                <DataTableWrapper
+                  loading={loadingData}
+                  page={page - 1}
+                  pageSize={pageSize}
+                  total={rows.length}
+                  onPageChange={(_, p) => setPage(p + 1)}
+                  stickyHeader
+                >
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: 700, width: 48 }}>
+                          №
+                        </TableCell>
+                        {activeColumnsDef.map((col) => (
+                          <TableCell
+                            key={col.key}
+                            sx={{
+                              fontWeight: 700,
+                              whiteSpace: 'nowrap',
+                              fontSize: '0.8125rem',
+                            }}
+                          >
+                            {col.name}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {paginatedRows.map((row, idx) => (
+                        <TableRow key={row.id || idx} hover>
+                          <TableCell sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
+                            {(page - 1) * pageSize + idx + 1}
                           </TableCell>
                           {activeColumnsDef.map((col) => (
-                            <TableCell
-                              key={col.key}
-                              sx={{
-                                fontWeight: 700,
-                                backgroundColor: '#f1f5f9',
-                                whiteSpace: 'nowrap',
-                                fontSize: '0.8125rem',
-                              }}
-                            >
-                              {col.name}
+                            <TableCell key={col.key} sx={{ fontSize: '0.8125rem', whiteSpace: 'nowrap' }}>
+                              {col.key === 'status' ? (
+                                <StatusBadge
+                                  status={
+                                    row.status === 'В работе'
+                                      ? 'IN_SERVICE'
+                                      : row.status === 'На ремонте'
+                                      ? 'IN_REPAIR'
+                                      : row.status === 'Консервация'
+                                      ? 'PRESERVATION'
+                                      : row.status === 'Списано'
+                                      ? 'DECOMMISSIONED'
+                                      : row.status
+                                  }
+                                />
+                              ) : (
+                                row[col.key] ?? '—'
+                              )}
                             </TableCell>
                           ))}
                         </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {paginatedRows.map((row, idx) => (
-                          <TableRow key={row.id || idx} hover>
-                            <TableCell sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
-                              {(page - 1) * pageSize + idx + 1}
-                            </TableCell>
-                            {activeColumnsDef.map((col) => (
-                              <TableCell key={col.key} sx={{ fontSize: '0.8125rem', whiteSpace: 'nowrap' }}>
-                                {col.key === 'status' ? (
-                                  <Chip
-                                    label={row.status}
-                                    size="small"
-                                    color={
-                                      row.status === 'В работе'
-                                        ? 'success'
-                                        : row.status === 'На ремонте'
-                                        ? 'warning'
-                                        : 'default'
-                                    }
-                                    sx={{ fontWeight: 600, fontSize: '0.7rem', height: 22 }}
-                                  />
-                                ) : (
-                                  row[col.key] ?? '—'
-                                )}
-                              </TableCell>
-                            ))}
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-
-                  {/* Pagination */}
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2, pt: 1 }}>
-                    <Typography variant="caption" color="text.secondary">
-                      Показано {Math.min(rows.length, (page - 1) * pageSize + 1)}–{Math.min(rows.length, page * pageSize)} из {totalCount}
-                    </Typography>
-                    <Pagination
-                      count={Math.ceil(rows.length / pageSize)}
-                      page={page}
-                      onChange={(_, p) => setPage(p)}
-                      color="primary"
-                      size="small"
-                    />
-                  </Box>
-                </>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </DataTableWrapper>
               )}
             </CardContent>
           </Card>

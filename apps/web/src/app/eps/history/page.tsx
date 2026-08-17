@@ -39,8 +39,14 @@ import {
   APPROVAL_STATUS_MAP,
   formatDateTime,
 } from '@ems/shared';
-import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
+
+import {
+  StatCard,
+  FilterToolbar,
+  EmptyState,
+  DataTableWrapper,
+} from '@/components/ui';
 
 interface AuditLogItem {
   id: string;
@@ -118,58 +124,38 @@ function RenderChangesDiff({ changes }: { changes: any }) {
 
   const entries = Object.entries(changes);
 
+  if (entries.length === 0) {
+    return <Typography variant="caption" color="text.secondary">—</Typography>;
+  }
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
       {entries.map(([key, val]: [string, any]) => {
-        // If it's a diff with old/new
-        if (val && typeof val === 'object' && ('old' in val || 'new' in val)) {
+        if (val && typeof val === 'object' && 'old' in val && 'new' in val) {
           return (
-            <Box
-              key={key}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                backgroundColor: '#f8fafc',
-                p: 0.75,
-                borderRadius: '6px',
-                border: '1px solid #e2e8f0',
-                fontSize: '0.78125rem',
-              }}
-            >
-              <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ minWidth: 100 }}>
+            <Box key={key} sx={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+              <Typography component="span" sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.75rem' }}>
                 {key}:
               </Typography>
-              <Box sx={{ color: '#dc2626', textDecoration: 'line-through', display: 'flex', alignItems: 'center' }}>
+              <Box component="span" sx={{ textDecoration: 'line-through', color: 'error.main', opacity: 0.8 }}>
                 {formatValue(key, val.old)}
               </Box>
-              <ArrowRightAltIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-              <Box sx={{ color: '#16a34a', fontWeight: 600, display: 'flex', alignItems: 'center' }}>
+              <ArrowRightAltIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+              <Box component="span" sx={{ color: 'success.main', fontWeight: 600 }}>
                 {formatValue(key, val.new)}
               </Box>
             </Box>
           );
         }
 
-        // Single field change / creation metadata
         return (
-          <Box
-            key={key}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              backgroundColor: '#f8fafc',
-              p: 0.5,
-              px: 0.75,
-              borderRadius: '4px',
-              fontSize: '0.75rem',
-            }}
-          >
-            <Typography variant="caption" fontWeight={600} color="text.secondary">
+          <Box key={key} sx={{ fontSize: '0.75rem' }}>
+            <Typography component="span" sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.75rem' }}>
               {key}:
+            </Typography>{' '}
+            <Typography component="span" sx={{ fontSize: '0.75rem' }}>
+              {formatValue(key, val)}
             </Typography>
-            <Box sx={{ fontWeight: 500 }}>{formatValue(key, val)}</Box>
           </Box>
         );
       })}
@@ -184,17 +170,17 @@ function HistoryListContent() {
 
   const [items, setItems] = useState<AuditLogItem[]>([]);
   const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [loading, setLoading] = useState(true);
 
   // Filters
   const [actionFilter, setActionFilter] = useState(searchParams?.get('action') || '');
   const [equipmentFilter, setEquipmentFilter] = useState(searchParams?.get('equipmentId') || '');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState(searchParams?.get('startDate') || '');
+  const [endDate, setEndDate] = useState(searchParams?.get('endDate') || '');
 
-  // Equipment options for filter
+  // Equipment List for picker
   const [equipmentList, setEquipmentList] = useState<EquipmentOption[]>([]);
 
   // Statistics
@@ -234,7 +220,7 @@ function HistoryListContent() {
     try {
       const params = new URLSearchParams({
         page: String(page),
-        pageSize: '25',
+        pageSize: String(pageSize),
       });
       if (actionFilter) params.append('action', actionFilter);
       if (equipmentFilter) params.append('equipmentId', equipmentFilter);
@@ -247,7 +233,6 @@ function HistoryListContent() {
         if (json.success) {
           setItems(json.data.items || []);
           setTotal(json.data.total || 0);
-          setTotalPages(json.data.totalPages || 1);
           if (json.data.stats) {
             setStats(json.data.stats);
           }
@@ -258,7 +243,7 @@ function HistoryListContent() {
     } finally {
       setLoading(false);
     }
-  }, [page, actionFilter, equipmentFilter, startDate, endDate, enqueueSnackbar]);
+  }, [page, pageSize, actionFilter, equipmentFilter, startDate, endDate, enqueueSnackbar]);
 
   useEffect(() => {
     fetchHistory();
@@ -273,6 +258,20 @@ function HistoryListContent() {
     setPage(1);
   };
 
+  const handleResetFilters = () => {
+    setActionFilter('');
+    setEquipmentFilter('');
+    setStartDate('');
+    setEndDate('');
+    setPage(1);
+  };
+
+  const activeFilterCount =
+    (actionFilter ? 1 : 0) +
+    (equipmentFilter ? 1 : 0) +
+    (startDate ? 1 : 0) +
+    (endDate ? 1 : 0);
+
   return (
     <Box sx={{ maxWidth: 1920, mx: 'auto' }}>
       <PageHeader
@@ -285,320 +284,252 @@ function HistoryListContent() {
         ]}
       />
 
-      {/* KPI Cards */}
-      <Grid container spacing={1.5} sx={{ mb: 2 }}>
+      {/* Top KPI Metric Cards Bar */}
+      <Grid container spacing={1.75} sx={{ mb: 2.5 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card
+          <StatCard
+            title="Всего событий"
+            value={stats.total}
+            subtitle="Зафиксировано в аудите"
+            icon={<TimelineIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(2, 132, 199, 0.08)"
+            iconColor="#0284c7"
+            accentColor="#0284c7"
+            active={actionFilter === ''}
             onClick={() => handleKpiFilter('')}
-            sx={{
-              p: 1.25,
-              cursor: 'pointer',
-              border: actionFilter === '' ? '2px solid #0284c7' : '1px solid #e2e8f0',
-              backgroundColor: actionFilter === '' ? 'rgba(2, 132, 199, 0.04)' : '#ffffff',
-              transition: 'all 0.12s ease',
-              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" color="primary.main" fontWeight={700} fontSize="0.6875rem">
-                ВСЕГО СОБЫТИЙ
-              </Typography>
-              <TimelineIcon color="primary" sx={{ fontSize: 18 }} />
-            </Box>
-            <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5, color: '#0f172a', fontSize: '1.25rem' }}>
-              {stats.total}
-            </Typography>
-          </Card>
+            loading={loading && stats.total === 0}
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card
+          <StatCard
+            title="Создание объектов"
+            value={stats.creates}
+            subtitle="Новое оборудование / файлы"
+            icon={<AddCircleOutlineIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(22, 163, 74, 0.08)"
+            iconColor="#16a34a"
+            accentColor="#16a34a"
+            active={actionFilter === 'CREATE'}
             onClick={() => handleKpiFilter('CREATE')}
-            sx={{
-              p: 1.25,
-              cursor: 'pointer',
-              border: actionFilter === 'CREATE' ? '2px solid #16a34a' : '1px solid #e2e8f0',
-              backgroundColor: actionFilter === 'CREATE' ? 'rgba(22, 163, 74, 0.04)' : '#ffffff',
-              transition: 'all 0.12s ease',
-              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" color="success.main" fontWeight={700} fontSize="0.6875rem">
-                СОЗДАНИЕ ОБЪЕКТОВ
-              </Typography>
-              <AddCircleOutlineIcon color="success" sx={{ fontSize: 18 }} />
-            </Box>
-            <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5, color: 'success.main', fontSize: '1.25rem' }}>
-              {stats.creates}
-            </Typography>
-          </Card>
+            loading={loading && stats.total === 0}
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card
+          <StatCard
+            title="Изменения и статусы"
+            value={stats.updates}
+            subtitle="Корректировка паспортов"
+            icon={<EditNoteIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(2, 132, 199, 0.08)"
+            iconColor="#0284c7"
+            accentColor="#0284c7"
+            active={actionFilter === 'UPDATE'}
             onClick={() => handleKpiFilter('UPDATE')}
-            sx={{
-              p: 1.25,
-              cursor: 'pointer',
-              border: actionFilter === 'UPDATE' ? '2px solid #0284c7' : '1px solid #e2e8f0',
-              backgroundColor: actionFilter === 'UPDATE' ? 'rgba(2, 132, 199, 0.04)' : '#ffffff',
-              transition: 'all 0.12s ease',
-              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" color="info.main" fontWeight={700} fontSize="0.6875rem">
-                ИЗМЕНЕНИЯ И СТАТУСЫ
-              </Typography>
-              <EditNoteIcon color="info" sx={{ fontSize: 18 }} />
-            </Box>
-            <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5, color: 'info.main', fontSize: '1.25rem' }}>
-              {stats.updates}
-            </Typography>
-          </Card>
+            loading={loading && stats.total === 0}
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card
+          <StatCard
+            title="Удаления"
+            value={stats.deletes}
+            subtitle="Удаленные документы и записи"
+            icon={<DeleteForeverOutlinedIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(220, 38, 38, 0.08)"
+            iconColor="#dc2626"
+            accentColor="#dc2626"
+            active={actionFilter === 'DELETE'}
             onClick={() => handleKpiFilter('DELETE')}
-            sx={{
-              p: 1.25,
-              cursor: 'pointer',
-              border: actionFilter === 'DELETE' ? '2px solid #dc2626' : '1px solid #e2e8f0',
-              backgroundColor: actionFilter === 'DELETE' ? 'rgba(220, 38, 38, 0.04)' : '#ffffff',
-              transition: 'all 0.12s ease',
-              '&:hover': { transform: 'translateY(-1px)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" color="error.main" fontWeight={700} fontSize="0.6875rem">
-                УДАЛЕНИЯ
-              </Typography>
-              <DeleteForeverOutlinedIcon color="error" sx={{ fontSize: 18 }} />
-            </Box>
-            <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5, color: 'error.main', fontSize: '1.25rem' }}>
-              {stats.deletes}
-            </Typography>
-          </Card>
+            loading={loading && stats.total === 0}
+          />
         </Grid>
       </Grid>
 
       {/* Filter and Date Range Bar */}
-      <Card sx={{ p: 1.25, mb: 2 }}>
-        <Box
-          sx={{
-            display: 'flex',
-            gap: 1.5,
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+      <FilterToolbar
+        activeFilterCount={activeFilterCount}
+        onResetFilters={handleResetFilters}
+      >
+        <TextField
+          select
+          size="small"
+          label="Тип действия"
+          value={actionFilter}
+          onChange={(e) => {
+            setActionFilter(e.target.value);
+            setPage(1);
           }}
+          sx={{ minWidth: 170 }}
         >
-          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center', flexGrow: 1 }}>
-            <TextField
-              select
-              size="small"
-              label="Тип действия"
-              value={actionFilter}
-              onChange={(e) => {
-                setActionFilter(e.target.value);
-                setPage(1);
-              }}
-              sx={{ minWidth: 170 }}
-            >
-              <MenuItem value="">Все действия</MenuItem>
-              {Object.entries(AUDIT_ACTION_MAP).map(([key, info]) => (
-                <MenuItem key={key} value={key}>
-                  {info.label}
-                </MenuItem>
-              ))}
-            </TextField>
+          <MenuItem value="">Все действия</MenuItem>
+          {Object.entries(AUDIT_ACTION_MAP).map(([key, info]) => (
+            <MenuItem key={key} value={key}>
+              {info.label}
+            </MenuItem>
+          ))}
+        </TextField>
 
-            <TextField
-              select
-              size="small"
-              label="Оборудование"
-              value={equipmentFilter}
-              onChange={(e) => {
-                setEquipmentFilter(e.target.value);
-                setPage(1);
-              }}
-              sx={{ minWidth: 240 }}
-            >
-              <MenuItem value="">Все единицы оборудования</MenuItem>
-              {equipmentList.map((eq) => (
-                <MenuItem key={eq.id} value={eq.id}>
-                  {eq.inventoryNumber ? `[${eq.inventoryNumber}] ` : ''}{eq.name}
-                </MenuItem>
-              ))}
-            </TextField>
+        <TextField
+          select
+          size="small"
+          label="Оборудование"
+          value={equipmentFilter}
+          onChange={(e) => {
+            setEquipmentFilter(e.target.value);
+            setPage(1);
+          }}
+          sx={{ minWidth: 240 }}
+        >
+          <MenuItem value="">Все единицы оборудования</MenuItem>
+          {equipmentList.map((eq) => (
+            <MenuItem key={eq.id} value={eq.id}>
+              {eq.inventoryNumber ? `[${eq.inventoryNumber}] ` : ''}{eq.name}
+            </MenuItem>
+          ))}
+        </TextField>
 
-            <TextField
-              size="small"
-              label="С даты"
-              type="date"
-              InputLabelProps={{ shrink: true }}
-              value={startDate}
-              onChange={(e) => {
-                setStartDate(e.target.value);
-                setPage(1);
-              }}
-              sx={{ width: 150 }}
-            />
+        <TextField
+          size="small"
+          label="С даты"
+          type="date"
+          InputLabelProps={{ shrink: true }}
+          value={startDate}
+          onChange={(e) => {
+            setStartDate(e.target.value);
+            setPage(1);
+          }}
+          sx={{ width: 150 }}
+        />
 
-            <TextField
-              size="small"
-              label="По дату"
-              type="date"
-              InputLabelProps={{ shrink: true }}
-              value={endDate}
-              onChange={(e) => {
-                setEndDate(e.target.value);
-                setPage(1);
-              }}
-              sx={{ width: 150 }}
-            />
-
-            {(actionFilter || equipmentFilter || startDate || endDate) && (
-              <Button
-                variant="text"
-                size="small"
-                onClick={() => {
-                  setActionFilter('');
-                  setEquipmentFilter('');
-                  setStartDate('');
-                  setEndDate('');
-                  setPage(1);
-                }}
-                color="inherit"
-              >
-                Сбросить фильтры
-              </Button>
-            )}
-          </Box>
-        </Box>
-      </Card>
+        <TextField
+          size="small"
+          label="По дату"
+          type="date"
+          InputLabelProps={{ shrink: true }}
+          value={endDate}
+          onChange={(e) => {
+            setEndDate(e.target.value);
+            setPage(1);
+          }}
+          sx={{ width: 150 }}
+        />
+      </FilterToolbar>
 
       {/* Main Audit Log Table */}
-      {loading ? (
-        <Card sx={{ p: 6, textAlign: 'center' }}>
-          <CircularProgress />
-        </Card>
-      ) : items.length === 0 ? (
-        <Card sx={{ p: 6, textAlign: 'center' }}>
-          <HistoryOutlinedIcon sx={{ fontSize: 56, color: 'text.secondary', opacity: 0.4, mb: 1 }} />
-          <Typography variant="h6" fontWeight={600} gutterBottom>
-            События аудита не найдены
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Попробуйте изменить выбранные параметры фильтрации
-          </Typography>
-        </Card>
+      {items.length === 0 && !loading ? (
+        <EmptyState
+          paper
+          icon={<HistoryOutlinedIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+          title="События аудита не найдены"
+          description={
+            activeFilterCount > 0
+              ? 'По выбранным параметрам фильтрации события аудита не найдены. Попробуйте сбросить фильтры.'
+              : 'В журнале аудита пока нет зафиксированных событий.'
+          }
+          actionText={activeFilterCount > 0 ? 'Сбросить фильтры' : undefined}
+          onAction={activeFilterCount > 0 ? handleResetFilters : undefined}
+        />
       ) : (
-        <Card>
-          <TableContainer>
-            <Table size="medium">
-              <TableHead sx={{ backgroundColor: '#f8fafc' }}>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700, width: 150 }}>Дата и время</TableCell>
-                  <TableCell sx={{ fontWeight: 700, width: 150 }}>Пользователь</TableCell>
-                  <TableCell sx={{ fontWeight: 700, width: 120 }}>Действие</TableCell>
-                  <TableCell sx={{ fontWeight: 700, width: 180 }}>Сущность</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Оборудование</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Детализация изменений</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {items.map((log) => {
-                  const actionInfo = AUDIT_ACTION_MAP[log.action] || { label: log.action, color: 'default' };
+        <DataTableWrapper
+          loading={loading}
+          page={page - 1}
+          pageSize={pageSize}
+          total={total}
+          onPageChange={(_, newPage) => setPage(newPage + 1)}
+          onPageSizeChange={(e) => {
+            setPageSize(parseInt(e.target.value, 10));
+            setPage(1);
+          }}
+          stickyHeader
+        >
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700, width: 150 }}>Дата и время</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 150 }}>Пользователь</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 120 }}>Действие</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 180 }}>Сущность</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Оборудование</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Детализация изменений</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {items.map((log) => {
+                const actionInfo = AUDIT_ACTION_MAP[log.action] || { label: log.action, color: 'default' };
 
-                  return (
-                    <TableRow key={log.id} hover>
-                      <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace' }}>
-                        {formatDateTime(log.createdAt)}
-                      </TableCell>
+                return (
+                  <TableRow key={log.id} hover>
+                    <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace' }}>
+                      {formatDateTime(log.createdAt)}
+                    </TableCell>
 
-                      <TableCell sx={{ fontSize: '0.8125rem', fontWeight: 600 }}>
-                        {log.user?.displayName || 'Система'}
-                        {log.user?.ldapLogin && (
-                          <Typography variant="caption" color="text.secondary" display="block">
-                            @{log.user.ldapLogin}
+                    <TableCell sx={{ fontSize: '0.8125rem', fontWeight: 600 }}>
+                      {log.user?.displayName || 'Система'}
+                      {log.user?.ldapLogin && (
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          @{log.user.ldapLogin}
+                        </Typography>
+                      )}
+                    </TableCell>
+
+                    <TableCell>
+                      <Chip
+                        label={actionInfo.label}
+                        size="small"
+                        color={actionInfo.color as any}
+                        sx={{ fontWeight: 700, height: 22, borderRadius: '4px' }}
+                      />
+                    </TableCell>
+
+                    <TableCell sx={{ fontSize: '0.8125rem' }}>
+                      <Chip
+                        label={ENTITY_TYPE_LABELS[log.entityType] || log.entityType}
+                        size="small"
+                        variant="outlined"
+                        sx={{ fontWeight: 500, height: 22, borderRadius: '4px' }}
+                      />
+                    </TableCell>
+
+                    <TableCell>
+                      {log.equipment ? (
+                        <Box
+                          onClick={() => router.push(`/eps/${log.equipment!.id}`)}
+                          sx={{
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 0.75,
+                            '&:hover': { color: 'primary.main', textDecoration: 'underline' },
+                          }}
+                        >
+                          <Chip
+                            label={log.equipment.inventoryNumber || 'Б/Н'}
+                            size="small"
+                            variant="outlined"
+                            sx={{ fontWeight: 700, fontFamily: 'monospace', height: 20, borderRadius: '4px' }}
+                          />
+                          <Typography variant="body2" fontWeight={500}>
+                            {log.equipment.name}
                           </Typography>
-                        )}
-                      </TableCell>
+                        </Box>
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">
+                          —
+                        </Typography>
+                      )}
+                    </TableCell>
 
-                      <TableCell>
-                        <Chip
-                          label={actionInfo.label}
-                          size="small"
-                          color={actionInfo.color as any}
-                          sx={{ fontWeight: 700 }}
-                        />
-                      </TableCell>
-
-                      <TableCell sx={{ fontSize: '0.8125rem' }}>
-                        <Chip
-                          label={ENTITY_TYPE_LABELS[log.entityType] || log.entityType}
-                          size="small"
-                          variant="outlined"
-                          sx={{ fontWeight: 500 }}
-                        />
-                      </TableCell>
-
-                      <TableCell>
-                        {log.equipment ? (
-                          <Box
-                            onClick={() => router.push(`/eps/${log.equipment!.id}`)}
-                            sx={{
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 0.75,
-                              '&:hover': { color: 'primary.main', textDecoration: 'underline' },
-                            }}
-                          >
-                            <Chip
-                              label={log.equipment.inventoryNumber || 'Б/Н'}
-                              size="small"
-                              variant="outlined"
-                              sx={{ fontWeight: 700, fontFamily: 'monospace', height: 22 }}
-                            />
-                            <Typography variant="body2" fontWeight={500}>
-                              {log.equipment.name}
-                            </Typography>
-                          </Box>
-                        ) : (
-                          <Typography variant="caption" color="text.secondary">
-                            —
-                          </Typography>
-                        )}
-                      </TableCell>
-
-                      <TableCell>
-                        <RenderChangesDiff changes={log.changes} />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          {/* Pagination */}
-          <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="caption" color="text.secondary">
-              Всего записей в истории: {total}
-            </Typography>
-            <Pagination
-              count={totalPages}
-              page={page}
-              onChange={(_, val) => setPage(val)}
-              color="primary"
-              size="medium"
-            />
-          </Box>
-        </Card>
+                    <TableCell>
+                      <RenderChangesDiff changes={log.changes} />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </DataTableWrapper>
       )}
     </Box>
   );
