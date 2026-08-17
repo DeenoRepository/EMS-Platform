@@ -68,10 +68,11 @@ export function ChartCard({
           fontSize: '0.6875rem',
           fontWeight: 700,
           fontFeatureSettings: '"tnum"',
-          bgcolor: isUp ? '#f0fdf4' : isDown ? '#fef2f2' : '#f8fafc',
-          color: isUp ? '#16a34a' : isDown ? '#dc2626' : '#64748b',
+          borderRadius: '20px',
+          bgcolor: isUp ? '#ecfdf5' : isDown ? '#fef2f2' : '#f1f5f9',
+          color: isUp ? '#15803d' : isDown ? '#b91c1c' : '#475569',
           border: '1px solid',
-          borderColor: isUp ? '#bbf7d0' : isDown ? '#fecaca' : '#e2e8f0',
+          borderColor: isUp ? '#a7f3d0' : isDown ? '#fecaca' : '#e2e8f0',
         }}
       />
     );
@@ -79,16 +80,18 @@ export function ChartCard({
 
   return (
     <Paper
-      variant="outlined"
+      elevation={0}
       className={className}
       sx={{
         p: { xs: 2, sm: 2.5 },
-        borderRadius: 2,
+        borderRadius: '12px',
+        border: '1px solid #e2e8f0',
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
         minHeight,
-        bgcolor: 'background.paper',
+        bgcolor: '#ffffff',
+        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
       }}
     >
       {/* Header */}
@@ -106,20 +109,20 @@ export function ChartCard({
           <Typography
             variant="h6"
             fontWeight={700}
-            color="text.primary"
-            sx={{ fontSize: { xs: '0.9375rem', sm: '1.05rem' }, lineHeight: 1.3 }}
+            color="#0f172a"
+            sx={{ fontSize: { xs: '0.9375rem', sm: '1.05rem' }, lineHeight: 1.3, letterSpacing: '-0.015em' }}
           >
             {title}
           </Typography>
           {subtitle && (
-            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.25 }}>
+            <Typography variant="caption" display="block" sx={{ color: '#64748b', fontSize: '0.75rem', mt: 0.25 }}>
               {subtitle}
             </Typography>
           )}
 
           {value !== undefined && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-              <Typography variant="h5" fontWeight={800} sx={{ fontFeatureSettings: '"tnum"' }}>
+              <Typography variant="h5" fontWeight={800} sx={{ fontFeatureSettings: '"tnum"', color: '#0f172a' }}>
                 {typeof value === 'number' ? value.toLocaleString('ru-RU') : value}
               </Typography>
               {getTrendChip()}
@@ -138,7 +141,7 @@ export function ChartCard({
       <Box sx={{ flex: 1, position: 'relative', minHeight: 220, display: 'flex', flexDirection: 'column' }}>
         {loading ? (
           <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
-            <Skeleton variant="rectangular" width="100%" height="80%" sx={{ borderRadius: 1.5 }} />
+            <Skeleton variant="rectangular" width="100%" height="80%" sx={{ borderRadius: '8px' }} />
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
               <Skeleton variant="text" width="20%" />
               <Skeleton variant="text" width="20%" />
@@ -147,7 +150,7 @@ export function ChartCard({
           </Box>
         ) : empty ? (
           <EmptyState
-            icon={<BarChartIcon sx={{ fontSize: 36, color: 'text.secondary', opacity: 0.5 }} />}
+            icon={<BarChartIcon sx={{ fontSize: 32, color: '#94a3b8' }} />}
             title="Данные отсутствуют"
             description={emptyMessage}
             minHeight={200}

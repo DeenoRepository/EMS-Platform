@@ -63,14 +63,13 @@ export function BulkActionBar({
         <Paper
           elevation={8}
           sx={{
-            p: 1.5,
-            px: 2.5,
-            borderRadius: 3,
+            p: 1.25,
+            px: 2,
+            borderRadius: '10px',
             bgcolor: '#0f172a',
             color: '#f8fafc',
             border: '1px solid rgba(255, 255, 255, 0.12)',
-            boxShadow: '0 12px 32px rgba(0, 0, 0, 0.35)',
-            backdropFilter: 'blur(12px)',
+            boxShadow: '0 12px 32px rgba(15, 23, 42, 0.35)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -82,8 +81,8 @@ export function BulkActionBar({
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
             <Box
               sx={{
-                width: 28,
-                height: 28,
+                width: 26,
+                height: 26,
                 borderRadius: '50%',
                 bgcolor: 'rgba(2, 132, 199, 0.2)',
                 color: '#38bdf8',
@@ -92,13 +91,13 @@ export function BulkActionBar({
                 justifyContent: 'center',
               }}
             >
-              <CheckBoxOutlinedIcon sx={{ fontSize: 18 }} />
+              <CheckBoxOutlinedIcon sx={{ fontSize: 16 }} />
             </Box>
 
-            <Typography variant="body2" fontWeight={600} sx={{ color: '#f8fafc', fontSize: '0.875rem' }}>
+            <Typography variant="body2" fontWeight={600} sx={{ color: '#f8fafc', fontSize: '0.8125rem' }}>
               Выбрано: <b>{selectedCount}</b>
               {totalCount !== undefined && (
-                <Typography component="span" sx={{ color: '#94a3b8', ml: 0.5, fontSize: '0.8125rem' }}>
+                <Typography component="span" sx={{ color: '#94a3b8', ml: 0.5, fontSize: '0.75rem' }}>
                   из {totalCount}
                 </Typography>
               )}
@@ -107,11 +106,11 @@ export function BulkActionBar({
             <IconButton
               size="small"
               onClick={onClearSelection}
-              sx={{ color: '#94a3b8', '&:hover': { color: '#ffffff' }, ml: 0.5 }}
+              sx={{ color: '#94a3b8', '&:hover': { color: '#ffffff' }, ml: 0.5, p: 0.25 }}
               title="Снять выделение"
               aria-label="Снять выделение со всех строк"
             >
-              <CloseIcon fontSize="small" />
+              <CloseIcon sx={{ fontSize: 15 }} />
             </IconButton>
           </Box>
 
@@ -127,11 +126,17 @@ export function BulkActionBar({
                 onClick={act.onClick}
                 disabled={act.disabled}
                 sx={{
-                  fontWeight: 700,
+                  fontWeight: 600,
                   fontSize: '0.8125rem',
                   textTransform: 'none',
-                  borderRadius: 1.5,
+                  borderRadius: '8px',
                   px: 1.75,
+                  py: 0.5,
+                  minHeight: 32,
+                  ...(act.variant === 'contained' && act.color === 'primary' && {
+                    backgroundColor: '#0284c7',
+                    '&:hover': { backgroundColor: '#0369a1' },
+                  }),
                 }}
               >
                 {act.label}

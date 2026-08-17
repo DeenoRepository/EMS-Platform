@@ -50,7 +50,9 @@ export function DetailDrawer({
           maxWidth: '100vw',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '-8px 0 24px rgba(0, 0, 0, 0.1)',
+          backgroundColor: '#ffffff',
+          borderLeft: '1px solid #e2e8f0',
+          boxShadow: '-10px 0 30px -10px rgba(15, 23, 42, 0.12)',
         },
       }}
     >
@@ -74,9 +76,8 @@ export function DetailDrawer({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          bgcolor: 'background.paper',
+          borderBottom: '1px solid #f1f5f9',
+          bgcolor: '#ffffff',
           gap: 1.5,
         }}
       >
@@ -86,8 +87,12 @@ export function DetailDrawer({
               <Typography
                 variant="h6"
                 fontWeight={700}
-                color="text.primary"
-                sx={{ fontSize: { xs: '1rem', sm: '1.125rem' }, lineHeight: 1.3 }}
+                color="#0f172a"
+                sx={{
+                  fontSize: { xs: '1rem', sm: '1.125rem' },
+                  lineHeight: 1.3,
+                  letterSpacing: '-0.015em',
+                }}
                 noWrap
               >
                 {title}
@@ -98,7 +103,7 @@ export function DetailDrawer({
             {statusBadge}
           </Box>
           {subtitle && (
-            <Typography variant="caption" color="text.secondary" noWrap display="block">
+            <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.75rem' }} noWrap display="block">
               {subtitle}
             </Typography>
           )}
@@ -110,7 +115,12 @@ export function DetailDrawer({
             aria-label="Закрыть панель"
             size="small"
             onClick={onClose}
-            sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
+            sx={{
+              color: '#64748b',
+              borderRadius: '6px',
+              p: 0.5,
+              '&:hover': { bgcolor: '#f1f5f9', color: '#0f172a' },
+            }}
           >
             <CloseIcon fontSize="small" />
           </IconButton>
@@ -120,12 +130,12 @@ export function DetailDrawer({
       {/* Content */}
       <Box
         sx={{
-          p: { xs: 2, sm: 3 },
+          p: { xs: 2, sm: 2.5 },
           flex: 1,
           overflowY: 'auto',
           '&::-webkit-scrollbar': { width: 6 },
           '&::-webkit-scrollbar-thumb': {
-            bgcolor: 'rgba(0,0,0,0.15)',
+            bgcolor: '#cbd5e1',
             borderRadius: 3,
           },
         }}
@@ -137,13 +147,12 @@ export function DetailDrawer({
       {footerActions && (
         <Box
           sx={{
-            p: { xs: 2, sm: 2.5 },
-            borderTop: '1px solid',
-            borderColor: 'divider',
-            bgcolor: 'grey.50',
+            p: { xs: 2, sm: 2 },
+            borderTop: '1px solid #f1f5f9',
+            bgcolor: '#ffffff',
             display: 'flex',
             justifyContent: 'flex-end',
-            gap: 1.5,
+            gap: 1.25,
           }}
         >
           {footerActions}

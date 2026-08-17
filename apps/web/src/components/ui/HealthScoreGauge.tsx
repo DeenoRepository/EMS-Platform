@@ -192,12 +192,13 @@ export function HealthScoreGauge({
                   size="small"
                   sx={{
                     mt: 0.5,
-                    height: 18,
-                    fontSize: '0.625rem',
+                    height: 20,
+                    fontSize: '0.6875rem',
                     fontWeight: 700,
                     bgcolor: `${color}15`,
                     color,
-                    borderRadius: '4px',
+                    borderRadius: '20px',
+                    border: `1px solid ${color}30`,
                     '& .MuiChip-icon': { color: 'inherit' },
                   }}
                 />
@@ -217,12 +218,12 @@ export function HealthScoreGauge({
         ) : (
           <>
             {title && (
-              <Typography variant="subtitle2" fontWeight={700} sx={{ fontSize: '0.875rem', lineHeight: 1.2 }}>
+              <Typography variant="subtitle2" fontWeight={700} sx={{ fontSize: '0.875rem', lineHeight: 1.2, color: '#0f172a' }}>
                 {title}
               </Typography>
             )}
             {subtitle && (
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25, fontSize: dimensions.subSize }}>
+              <Typography variant="caption" sx={{ display: 'block', mt: 0.25, fontSize: dimensions.subSize, color: '#64748b' }}>
                 {subtitle}
               </Typography>
             )}
@@ -239,7 +240,8 @@ export function HealthScoreGauge({
                   fontWeight: 700,
                   bgcolor: `${color}15`,
                   color,
-                  borderRadius: '4px',
+                  borderRadius: '20px',
+                  border: `1px solid ${color}30`,
                   '& .MuiChip-icon': { color: 'inherit' },
                 }}
               />
@@ -256,8 +258,7 @@ export function HealthScoreGauge({
             sx={{
               mt: 1.75,
               pt: 1.5,
-              borderTop: '1px solid',
-              borderColor: 'divider',
+              borderTop: '1px solid #f1f5f9',
               width: '100%',
             }}
           >
@@ -269,14 +270,14 @@ export function HealthScoreGauge({
                     fontWeight={700}
                     sx={{
                       display: 'block',
-                      color: m.color || (m.status === 'critical' ? '#dc2626' : m.status === 'warning' ? '#d97706' : 'text.primary'),
+                      color: m.color || (m.status === 'critical' ? '#dc2626' : m.status === 'warning' ? '#d97706' : '#0f172a'),
                       fontSize: '0.8125rem',
                       fontFamily: 'monospace',
                     }}
                   >
                     {m.value}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6875rem' }}>
+                  <Typography variant="caption" sx={{ fontSize: '0.6875rem', color: '#64748b' }}>
                     {m.label}
                   </Typography>
                 </Box>
@@ -293,10 +294,10 @@ export function HealthScoreGauge({
       <Paper
         elevation={0}
         sx={{
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 2,
-          background: bgGradient,
+          border: `1px solid ${color}30`,
+          borderRadius: '12px',
+          backgroundColor: '#ffffff',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
         }}
       >
         {Content}

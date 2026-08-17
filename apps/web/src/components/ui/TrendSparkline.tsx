@@ -184,11 +184,11 @@ export function TrendSparkline({
             <Chip
               icon={
                 isPositive ? (
-                  <TrendingUpIcon sx={{ fontSize: '14px !important' }} />
+                  <TrendingUpIcon sx={{ fontSize: '13px !important' }} />
                 ) : isNegative ? (
-                  <TrendingDownIcon sx={{ fontSize: '14px !important' }} />
+                  <TrendingDownIcon sx={{ fontSize: '13px !important' }} />
                 ) : (
-                  <TrendingFlatIcon sx={{ fontSize: '14px !important' }} />
+                  <TrendingFlatIcon sx={{ fontSize: '13px !important' }} />
                 )
               }
               label={`${isPositive ? '+' : ''}${changePercent}%`}
@@ -197,18 +197,20 @@ export function TrendSparkline({
                 height: 20,
                 fontSize: '0.6875rem',
                 fontWeight: 700,
-                borderRadius: '4px',
+                borderRadius: '20px',
                 bgcolor: isPositive
-                  ? 'rgba(22, 163, 74, 0.1)'
+                  ? '#ecfdf5'
                   : isNegative
-                  ? 'rgba(220, 38, 38, 0.1)'
-                  : 'rgba(100, 116, 139, 0.1)',
-                color: isPositive ? '#16a34a' : isNegative ? '#dc2626' : '#64748b',
+                  ? '#fef2f2'
+                  : '#f1f5f9',
+                color: isPositive ? '#15803d' : isNegative ? '#b91c1c' : '#475569',
+                border: '1px solid',
+                borderColor: isPositive ? '#a7f3d0' : isNegative ? '#fecaca' : '#e2e8f0',
                 '& .MuiChip-icon': { color: 'inherit' },
               }}
             />
             {periodLabel && (
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.625rem', mt: 0.25 }}>
+              <Typography variant="caption" sx={{ display: 'block', fontSize: '0.625rem', mt: 0.25, color: '#64748b' }}>
                 {periodLabel}
               </Typography>
             )}
@@ -229,7 +231,7 @@ export function TrendSparkline({
         }}
       >
         {loading ? (
-          <Skeleton variant="rounded" width="100%" height={height} />
+          <Skeleton variant="rounded" width="100%" height={height} sx={{ borderRadius: '8px' }} />
         ) : points.length >= 2 ? (
           <>
             <svg
@@ -241,7 +243,7 @@ export function TrendSparkline({
             >
               <defs>
                 <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={color} stopOpacity={0.25} />
+                  <stop offset="0%" stopColor={color} stopOpacity={0.2} />
                   <stop offset="100%" stopColor={color} stopOpacity={0.0} />
                 </linearGradient>
               </defs>
@@ -306,14 +308,14 @@ export function TrendSparkline({
                   transform: 'translateX(-50%)',
                   bgcolor: '#0f172a',
                   color: '#ffffff',
-                  px: 0.75,
+                  px: 1,
                   py: 0.25,
-                  borderRadius: 1,
+                  borderRadius: '6px',
                   fontSize: '0.6875rem',
                   fontWeight: 600,
                   whiteSpace: 'nowrap',
                   pointerEvents: 'none',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  boxShadow: '0 4px 12px rgba(15, 23, 42, 0.2)',
                   zIndex: 2,
                 }}
               >
@@ -322,7 +324,7 @@ export function TrendSparkline({
             )}
           </>
         ) : (
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'text.disabled' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8' }}>
             <Typography variant="caption">Недостаточно данных для тренда</Typography>
           </Box>
         )}
@@ -335,13 +337,13 @@ export function TrendSparkline({
       <Paper
         elevation={0}
         sx={{
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 2,
-          bgcolor: 'background.paper',
+          border: '1px solid #e2e8f0',
+          borderRadius: '12px',
+          bgcolor: '#ffffff',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
           transition: 'all 0.2s ease',
           '&:hover': {
-            borderColor: `${color}66`,
+            borderColor: `${color}80`,
           },
         }}
       >

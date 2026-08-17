@@ -113,29 +113,57 @@ export function ConfirmDialog({
       fullWidth
       PaperProps={{
         sx: {
-          borderRadius: '14px',
+          borderRadius: '12px',
           p: 0.5,
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.05)',
         },
       }}
     >
       <DialogTitle sx={{ pb: 1, pt: 2, px: 2.5 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           {getIcon()}
-          <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1rem', lineHeight: 1.3, color: '#0f172a' }}>
+          <Typography
+            variant="h6"
+            component="span"
+            sx={{
+              fontWeight: 700,
+              fontSize: '1rem',
+              lineHeight: 1.3,
+              color: '#0f172a',
+              letterSpacing: '-0.01em',
+            }}
+          >
             {title}
           </Typography>
         </Box>
       </DialogTitle>
 
       <DialogContent sx={{ px: 2.5, py: 1 }}>
-        <Box sx={{ color: '#475569', fontSize: '0.8125rem', lineHeight: 1.45, pl: 7.25 }}>
-          {typeof message === 'string' ? <Typography variant="body2">{message}</Typography> : message}
+        <Box sx={{ color: '#475569', fontSize: '0.8125rem', lineHeight: 1.5, pl: 6.5 }}>
+          {typeof message === 'string' ? <Typography variant="body2" sx={{ color: '#475569', fontSize: '0.8125rem' }}>{message}</Typography> : message}
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ px: 2.5, pb: 2, pt: 2, gap: 1 }}>
-        <Button onClick={onClose} disabled={loading} variant="outlined" color="inherit" size="small" sx={{ borderRadius: '8px' }}>
+      <DialogActions sx={{ px: 2.5, pb: 2, pt: 1.5, gap: 1, justifyContent: 'flex-end' }}>
+        <Button
+          onClick={onClose}
+          disabled={loading}
+          variant="outlined"
+          size="small"
+          sx={{
+            borderRadius: '8px',
+            borderColor: '#e2e8f0',
+            color: '#334155',
+            fontWeight: 600,
+            px: 2,
+            py: 0.6,
+            '&:hover': {
+              borderColor: '#cbd5e1',
+              backgroundColor: '#f8fafc',
+            },
+          }}
+        >
           {cancelText}
         </Button>
         <Button
@@ -144,7 +172,12 @@ export function ConfirmDialog({
           variant="contained"
           color={getConfirmButtonColor()}
           size="small"
-          sx={{ borderRadius: '8px', fontWeight: 600 }}
+          sx={{
+            borderRadius: '8px',
+            fontWeight: 600,
+            px: 2,
+            py: 0.6,
+          }}
           startIcon={loading ? <CircularProgress size={14} color="inherit" /> : undefined}
         >
           {loading ? 'Обработка...' : confirmText}

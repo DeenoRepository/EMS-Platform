@@ -126,14 +126,21 @@ export function LifecycleTimeline({
     <Box sx={{ p: paper ? 2.5 : 1 }} className={className}>
       {title && (
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5 }}>
-          <Typography variant="h6" fontWeight={700} sx={{ fontSize: '1rem' }}>
+          <Typography variant="h6" fontWeight={700} sx={{ fontSize: '1rem', color: '#0f172a', letterSpacing: '-0.01em' }}>
             {title}
           </Typography>
           <Chip
             label={`${events.length} событий`}
             size="small"
-            variant="outlined"
-            sx={{ fontWeight: 600, fontSize: '0.6875rem', height: 20 }}
+            sx={{
+              fontWeight: 600,
+              fontSize: '0.6875rem',
+              height: 22,
+              backgroundColor: '#f1f5f9',
+              color: '#475569',
+              border: '1px solid #e2e8f0',
+              borderRadius: '4px',
+            }}
           />
         </Box>
       )}
@@ -142,7 +149,7 @@ export function LifecycleTimeline({
         <Stack spacing={2}>
           {Array.from({ length: 3 }).map((_, i) => (
             <Box key={i} sx={{ display: 'flex', gap: 2 }}>
-              <Skeleton variant="circular" width={32} height={32} />
+              <Skeleton variant="circular" width={28} height={28} />
               <Box sx={{ flex: 1 }}>
                 <Skeleton variant="text" width="60%" height={24} />
                 <Skeleton variant="text" width="40%" height={16} />
@@ -151,27 +158,27 @@ export function LifecycleTimeline({
           ))}
         </Stack>
       ) : displayedEvents.length === 0 ? (
-        <Box sx={{ py: 4, textAlign: 'center', color: 'text.secondary' }}>
-          <Typography variant="body2">{emptyMessage}</Typography>
+        <Box sx={{ py: 4, textAlign: 'center', color: '#64748b' }}>
+          <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>{emptyMessage}</Typography>
         </Box>
       ) : (
-        <Box sx={{ position: 'relative', pl: 1 }}>
+        <Box sx={{ position: 'relative', pl: 0.5 }}>
           {/* Vertical Connecting Line */}
           <Box
             sx={{
               position: 'absolute',
-              top: 16,
-              bottom: 16,
-              left: 21,
+              top: 14,
+              bottom: 14,
+              left: 17,
               width: '2px',
-              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : '#e2e8f0',
+              bgcolor: '#e2e8f0',
               zIndex: 0,
             }}
           />
 
           {/* Timeline Nodes */}
-          <Stack spacing={2.5}>
-            {displayedEvents.map((evt, idx) => {
+          <Stack spacing={2}>
+            {displayedEvents.map((evt) => {
               const cfg = EVENT_CONFIG[evt.type] || EVENT_CONFIG.AUDIT;
               const IconComponent = cfg.icon;
               const isExpanded = expandedId === evt.id;
@@ -185,16 +192,16 @@ export function LifecycleTimeline({
                     zIndex: 1,
                     display: 'flex',
                     alignItems: 'flex-start',
-                    gap: 2,
+                    gap: 1.5,
                   }}
                 >
                   {/* Node Icon Avatar */}
                   <Box
                     sx={{
-                      width: 28,
-                      height: 28,
+                      width: 26,
+                      height: 26,
                       borderRadius: '50%',
-                      bgcolor: 'background.paper',
+                      bgcolor: '#ffffff',
                       border: `2px solid ${cfg.color}`,
                       color: cfg.color,
                       display: 'flex',
@@ -205,7 +212,7 @@ export function LifecycleTimeline({
                       boxShadow: `0 0 0 3px ${cfg.color}15`,
                     }}
                   >
-                    <IconComponent sx={{ fontSize: 16 }} />
+                    <IconComponent sx={{ fontSize: 14 }} />
                   </Box>
 
                   {/* Event Content Box */}
@@ -213,14 +220,14 @@ export function LifecycleTimeline({
                     sx={{
                       flex: 1,
                       p: 1.5,
-                      borderRadius: 1.5,
-                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : '#f8fafc',
-                      border: '1px solid',
-                      borderColor: 'divider',
+                      borderRadius: '8px',
+                      bgcolor: '#f8fafc',
+                      border: '1px solid #e2e8f0',
                       transition: 'all 0.15s ease',
                       '&:hover': {
-                        borderColor: `${cfg.color}40`,
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                        borderColor: `${cfg.color}50`,
+                        boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)',
+                        bgcolor: '#ffffff',
                       },
                     }}
                   >
@@ -242,16 +249,17 @@ export function LifecycleTimeline({
                           <Typography
                             variant="caption"
                             sx={{
-                              color: 'text.secondary',
+                              color: '#64748b',
                               fontFamily: 'monospace',
                               fontSize: '0.75rem',
+                              fontFeatureSettings: '"tnum"',
                             }}
                           >
                             {formatDateTime(evt.date)}
                           </Typography>
                         </Box>
 
-                        <Typography variant="subtitle2" fontWeight={700} sx={{ fontSize: '0.875rem' }}>
+                        <Typography variant="subtitle2" fontWeight={700} sx={{ fontSize: '0.8125rem', color: '#0f172a' }}>
                           {evt.title}
                         </Typography>
                       </Box>
@@ -263,6 +271,8 @@ export function LifecycleTimeline({
                           sx={{
                             transform: isExpanded ? 'rotate(180deg)' : 'none',
                             transition: 'transform 0.2s ease',
+                            p: 0.25,
+                            color: '#64748b',
                           }}
                           aria-label="Развернуть детали события"
                         >
@@ -273,16 +283,16 @@ export function LifecycleTimeline({
 
                     {/* Author / Performer info */}
                     {evt.author && (
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, fontSize: '0.75rem' }}>
-                        Исполнитель: <b>{evt.author}</b>
+                      <Typography variant="caption" sx={{ display: 'block', mt: 0.5, fontSize: '0.75rem', color: '#64748b' }}>
+                        Исполнитель: <b style={{ color: '#334155' }}>{evt.author}</b>
                       </Typography>
                     )}
 
                     {/* Collapsible Details */}
                     <Collapse in={isExpanded} timeout="auto" unmountOnExit>
-                      <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
+                      <Box sx={{ mt: 1.25, pt: 1.25, borderTop: '1px solid #e2e8f0' }}>
                         {evt.description && (
-                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem', mb: 1 }}>
+                          <Typography variant="body2" sx={{ fontSize: '0.8125rem', mb: 1, color: '#475569', lineHeight: 1.45 }}>
                             {evt.description}
                           </Typography>
                         )}
@@ -293,20 +303,19 @@ export function LifecycleTimeline({
                               display: 'grid',
                               gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
                               gap: 1,
-                              p: 1,
-                              bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.2)' : '#ffffff',
-                              borderRadius: 1,
-                              border: '1px solid',
-                              borderColor: 'divider',
+                              p: 1.25,
+                              bgcolor: '#ffffff',
+                              borderRadius: '6px',
+                              border: '1px solid #e2e8f0',
                               mb: 1,
                             }}
                           >
                             {Object.entries(evt.metadata).map(([k, v]) => (
                               <Box key={k}>
-                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6875rem' }}>
+                                <Typography variant="caption" sx={{ fontSize: '0.6875rem', color: '#64748b' }}>
                                   {k}
                                 </Typography>
-                                <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.75rem' }}>
+                                <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.75rem', color: '#0f172a' }}>
                                   {String(v)}
                                 </Typography>
                               </Box>
@@ -320,8 +329,8 @@ export function LifecycleTimeline({
                             href={evt.link.href}
                             size="small"
                             variant="text"
-                            endIcon={<ArrowForwardIcon />}
-                            sx={{ p: 0, fontSize: '0.75rem', fontWeight: 600 }}
+                            endIcon={<ArrowForwardIcon sx={{ fontSize: 14 }} />}
+                            sx={{ p: 0, fontSize: '0.75rem', fontWeight: 600, color: '#0284c7' }}
                           >
                             {evt.link.label}
                           </Button>
@@ -343,10 +352,10 @@ export function LifecycleTimeline({
       <Paper
         elevation={0}
         sx={{
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 2,
-          bgcolor: 'background.paper',
+          border: '1px solid #e2e8f0',
+          borderRadius: '12px',
+          bgcolor: '#ffffff',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
         }}
       >
         {Content}

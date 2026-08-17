@@ -208,10 +208,24 @@ export function DateRangePicker({
             <Button
               variant="outlined"
               size={size}
-              startIcon={<CalendarMonthIcon fontSize="small" />}
+              startIcon={<CalendarMonthIcon sx={{ fontSize: 16, color: '#0284c7' }} />}
               onClick={(e) => setAnchorEl(e.currentTarget)}
               disabled={disabled}
-              sx={{ whiteSpace: 'nowrap' }}
+              sx={{
+                whiteSpace: 'nowrap',
+                borderRadius: '8px',
+                borderColor: '#e2e8f0',
+                color: '#334155',
+                backgroundColor: '#ffffff',
+                fontWeight: 600,
+                px: 1.5,
+                py: 0.6,
+                minHeight: 36,
+                '&:hover': {
+                  borderColor: '#cbd5e1',
+                  backgroundColor: '#f8fafc',
+                },
+              }}
             >
               Период
             </Button>
@@ -221,15 +235,35 @@ export function DateRangePicker({
               anchorEl={anchorEl}
               onClose={() => setAnchorEl(null)}
               anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+              PaperProps={{
+                sx: {
+                  borderRadius: '10px',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.1)',
+                  mt: 0.5,
+                },
+              }}
             >
-              <Paper sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              <Paper sx={{ p: 1, display: 'flex', flexDirection: 'column', gap: 0.25 }}>
                 {defaultPresets.map((p) => (
                   <Button
                     key={p.label}
                     size="small"
                     variant="text"
                     onClick={() => handleApplyPreset(p)}
-                    sx={{ justifyContent: 'flex-start', px: 1.5 }}
+                    sx={{
+                      justifyContent: 'flex-start',
+                      px: 1.5,
+                      py: 0.6,
+                      fontSize: '0.8125rem',
+                      fontWeight: 500,
+                      color: '#334155',
+                      borderRadius: '6px',
+                      '&:hover': {
+                        backgroundColor: '#f1f5f9',
+                        color: '#0f172a',
+                      },
+                    }}
                   >
                     {p.label}
                   </Button>
@@ -240,8 +274,8 @@ export function DateRangePicker({
         )}
 
         {(value.startDate || value.endDate) && !disabled && (
-          <IconButton size="small" onClick={handleClear} title="Сбросить период">
-            <ClearIcon fontSize="small" />
+          <IconButton size="small" onClick={handleClear} title="Сбросить период" sx={{ color: '#94a3b8', '&:hover': { color: '#dc2626' } }}>
+            <ClearIcon sx={{ fontSize: 16 }} />
           </IconButton>
         )}
       </Box>

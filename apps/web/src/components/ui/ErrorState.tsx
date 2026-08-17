@@ -114,7 +114,15 @@ export function ErrorState({
             color="primary"
             startIcon={<RefreshIcon />}
             onClick={onRetry}
-            sx={{ fontWeight: 600, px: 2.5 }}
+            size="small"
+            sx={{
+              fontWeight: 600,
+              px: 2.5,
+              py: 0.75,
+              borderRadius: '8px',
+              backgroundColor: '#0284c7',
+              '&:hover': { backgroundColor: '#0369a1' },
+            }}
           >
             Повторить попытку
           </Button>
@@ -123,10 +131,19 @@ export function ErrorState({
         {onGoHome ? (
           <Button
             variant="outlined"
-            color="inherit"
+            size="small"
             startIcon={<HomeIcon />}
             onClick={onGoHome}
-            sx={{ px: 2.5 }}
+            sx={{
+              px: 2.5,
+              py: 0.75,
+              borderRadius: '8px',
+              borderColor: '#e2e8f0',
+              color: '#334155',
+              fontWeight: 600,
+              backgroundColor: '#ffffff',
+              '&:hover': { borderColor: '#cbd5e1', backgroundColor: '#f8fafc' },
+            }}
           >
             На главную
           </Button>
@@ -135,9 +152,18 @@ export function ErrorState({
             component={Link}
             href="/"
             variant="outlined"
-            color="inherit"
+            size="small"
             startIcon={<HomeIcon />}
-            sx={{ px: 2.5 }}
+            sx={{
+              px: 2.5,
+              py: 0.75,
+              borderRadius: '8px',
+              borderColor: '#e2e8f0',
+              color: '#334155',
+              fontWeight: 600,
+              backgroundColor: '#ffffff',
+              '&:hover': { borderColor: '#cbd5e1', backgroundColor: '#f8fafc' },
+            }}
           >
             На главную
           </Button>
@@ -154,9 +180,9 @@ export function ErrorState({
               justifyContent: 'center',
               gap: 0.5,
               cursor: 'pointer',
-              color: 'text.secondary',
+              color: '#64748b',
               userSelect: 'none',
-              '&:hover': { color: 'text.primary' },
+              '&:hover': { color: '#0f172a' },
             }}
           >
             <Typography variant="caption" fontWeight={600}>
@@ -182,7 +208,7 @@ export function ErrorState({
                 p: 2,
                 bgcolor: '#0f172a',
                 color: '#f87171',
-                borderRadius: 2,
+                borderRadius: '8px',
                 fontSize: '0.75rem',
                 fontFamily: 'monospace',
                 textAlign: 'left',
@@ -205,8 +231,13 @@ export function ErrorState({
     return (
       <Paper
         className={className}
-        variant="outlined"
-        sx={{ borderRadius: 2, overflow: 'hidden' }}
+        elevation={0}
+        sx={{
+          borderRadius: '12px',
+          border: '1px solid #e2e8f0',
+          backgroundColor: '#ffffff',
+          overflow: 'hidden',
+        }}
       >
         {content}
       </Paper>

@@ -25,10 +25,10 @@ export function EmptyState({
   onAction,
   actionIcon,
   paper = false,
-  minHeight = 240,
+  minHeight = 220,
   className,
 }: EmptyStateProps) {
-  const defaultIcon = <SearchOffOutlinedIcon sx={{ fontSize: 36, color: '#94a3b8' }} />;
+  const defaultIcon = <SearchOffOutlinedIcon sx={{ fontSize: 32, color: '#94a3b8' }} />;
 
   const content = (
     <Box
@@ -38,7 +38,7 @@ export function EmptyState({
         alignItems: 'center',
         justifyContent: 'center',
         textAlign: 'center',
-        p: 4,
+        p: { xs: 3, sm: 4 },
         minHeight,
       }}
     >
@@ -47,12 +47,13 @@ export function EmptyState({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          width: 64,
-          height: 64,
+          width: 56,
+          height: 56,
           borderRadius: '50%',
-          backgroundColor: '#f1f5f9',
+          backgroundColor: '#f8fafc',
           border: '1px solid #e2e8f0',
-          mb: 2,
+          mb: 1.75,
+          color: '#64748b',
         }}
       >
         {icon || defaultIcon}
@@ -62,8 +63,9 @@ export function EmptyState({
         variant="subtitle1"
         sx={{
           fontWeight: 700,
-          color: '#1e293b',
+          color: '#0f172a',
           fontSize: '0.9375rem',
+          letterSpacing: '-0.01em',
           mb: 0.5,
         }}
       >
@@ -75,9 +77,9 @@ export function EmptyState({
           variant="body2"
           sx={{
             color: '#64748b',
-            maxWidth: 380,
+            maxWidth: 400,
             fontSize: '0.8125rem',
-            lineHeight: 1.4,
+            lineHeight: 1.45,
             mb: actionText ? 2.5 : 0,
           }}
         >
@@ -94,8 +96,12 @@ export function EmptyState({
           sx={{
             fontWeight: 600,
             borderRadius: '8px',
-            px: 2,
+            px: 2.25,
             py: 0.75,
+            backgroundColor: '#0284c7',
+            '&:hover': {
+              backgroundColor: '#0369a1',
+            },
           }}
         >
           {actionText}
@@ -113,6 +119,7 @@ export function EmptyState({
           borderRadius: '12px',
           border: '1px solid #e2e8f0',
           backgroundColor: '#ffffff',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
         }}
       >
         {content}

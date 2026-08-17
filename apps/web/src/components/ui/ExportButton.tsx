@@ -9,10 +9,10 @@ import {
   ListItemText,
   CircularProgress,
 } from '@mui/material';
-import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import TableChartIcon from '@mui/icons-material/TableChart';
-import DescriptionIcon from '@mui/icons-material/Description';
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
+import TableChartOutlinedIcon from '@mui/icons-material/TableChartOutlined';
+import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
+import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 
 export type ExportFormat = 'xlsx' | 'csv' | 'pdf';
@@ -33,17 +33,17 @@ const FORMAT_CONFIG: Record<ExportFormat, { label: string; subLabel: string; ico
   xlsx: {
     label: 'Excel (.xlsx)',
     subLabel: 'Таблица с форматированием',
-    icon: <TableChartIcon fontSize="small" sx={{ color: '#16a34a' }} />,
+    icon: <TableChartOutlinedIcon fontSize="small" sx={{ color: '#16a34a' }} />,
   },
   csv: {
     label: 'CSV (.csv)',
     subLabel: 'Текстовый формат с разделителями',
-    icon: <DescriptionIcon fontSize="small" sx={{ color: '#0284c7' }} />,
+    icon: <DescriptionOutlinedIcon fontSize="small" sx={{ color: '#0284c7' }} />,
   },
   pdf: {
     label: 'PDF (.pdf)',
     subLabel: 'Печатный документ для отчёта',
-    icon: <PictureAsPdfIcon fontSize="small" sx={{ color: '#dc2626' }} />,
+    icon: <PictureAsPdfOutlinedIcon fontSize="small" sx={{ color: '#dc2626' }} />,
   },
 };
 
@@ -66,12 +66,23 @@ export function ExportButton({
       <Button
         className={className}
         variant={variant}
-        color={color}
         size={size}
         disabled={disabled || loading}
-        startIcon={loading ? <CircularProgress size={16} color="inherit" /> : <FileDownloadIcon />}
+        startIcon={loading ? <CircularProgress size={15} color="inherit" /> : <FileDownloadOutlinedIcon />}
         onClick={() => onExport(formats[0])}
-        sx={{ fontWeight: 600 }}
+        sx={{
+          fontWeight: 600,
+          borderRadius: '8px',
+          borderColor: '#e2e8f0',
+          color: '#334155',
+          backgroundColor: '#ffffff',
+          px: 1.75,
+          py: 0.6,
+          '&:hover': {
+            borderColor: '#cbd5e1',
+            backgroundColor: '#f8fafc',
+          },
+        }}
       >
         {label}
       </Button>
@@ -96,16 +107,27 @@ export function ExportButton({
       <Button
         className={className}
         variant={variant}
-        color={color}
         size={size}
         disabled={disabled || loading}
-        startIcon={loading ? <CircularProgress size={16} color="inherit" /> : <FileDownloadIcon />}
-        endIcon={<KeyboardArrowDownIcon fontSize="small" />}
+        startIcon={loading ? <CircularProgress size={15} color="inherit" /> : <FileDownloadOutlinedIcon />}
+        endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 18 }} />}
         onClick={handleClick}
         aria-controls={Boolean(anchorEl) ? 'export-menu' : undefined}
         aria-haspopup="true"
         aria-expanded={Boolean(anchorEl) ? 'true' : undefined}
-        sx={{ fontWeight: 600 }}
+        sx={{
+          fontWeight: 600,
+          borderRadius: '8px',
+          borderColor: '#e2e8f0',
+          color: '#334155',
+          backgroundColor: '#ffffff',
+          px: 1.75,
+          py: 0.6,
+          '&:hover': {
+            borderColor: '#cbd5e1',
+            backgroundColor: '#f8fafc',
+          },
+        }}
       >
         {label}
       </Button>
@@ -120,19 +142,25 @@ export function ExportButton({
           dense: true,
         }}
         PaperProps={{
-          sx: { minWidth: 200, borderRadius: 2, mt: 0.5 },
+          sx: {
+            minWidth: 220,
+            borderRadius: '10px',
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.1)',
+            mt: 0.5,
+          },
         }}
       >
         {formats.map((fmt) => {
           const cfg = FORMAT_CONFIG[fmt];
           return (
-            <MenuItem key={fmt} onClick={() => handleSelectFormat(fmt)}>
-              <ListItemIcon>{cfg.icon}</ListItemIcon>
+            <MenuItem key={fmt} onClick={() => handleSelectFormat(fmt)} sx={{ py: 1, px: 1.5 }}>
+              <ListItemIcon sx={{ minWidth: 32 }}>{cfg.icon}</ListItemIcon>
               <ListItemText
                 primary={cfg.label}
                 secondary={cfg.subLabel}
-                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.8125rem' }}
-                secondaryTypographyProps={{ fontSize: '0.7rem' }}
+                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.8125rem', color: '#0f172a' }}
+                secondaryTypographyProps={{ fontSize: '0.6875rem', color: '#64748b' }}
               />
             </MenuItem>
           );

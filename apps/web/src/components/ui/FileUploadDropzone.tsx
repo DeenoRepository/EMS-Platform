@@ -158,25 +158,25 @@ export function FileUploadDropzone({
       />
 
       <Paper
-        variant="outlined"
+        elevation={0}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={() => !disabled && inputRef.current?.click()}
         sx={{
-          p: compact ? 2 : { xs: 2.5, sm: 4 },
+          p: compact ? 2 : { xs: 2.5, sm: 3.5 },
           textAlign: 'center',
-          borderRadius: 2,
+          borderRadius: '12px',
           cursor: disabled ? 'not-allowed' : 'pointer',
           borderStyle: 'dashed',
           borderWidth: 2,
-          borderColor: isDragActive ? 'primary.main' : displayError ? 'error.main' : 'divider',
-          bgcolor: isDragActive ? 'primary.50' : 'background.paper',
+          borderColor: isDragActive ? '#0284c7' : displayError ? '#dc2626' : '#cbd5e1',
+          bgcolor: isDragActive ? 'rgba(2, 132, 199, 0.04)' : '#ffffff',
           transition: 'all 0.2s ease',
           opacity: disabled ? 0.6 : 1,
           '&:hover': {
-            borderColor: disabled ? 'divider' : 'primary.main',
-            bgcolor: disabled ? 'background.paper' : 'grey.50',
+            borderColor: disabled ? '#cbd5e1' : '#0284c7',
+            bgcolor: disabled ? '#ffffff' : '#f8fafc',
           },
         }}
       >
@@ -185,27 +185,27 @@ export function FileUploadDropzone({
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: compact ? 40 : 54,
-            height: compact ? 40 : 54,
+            width: compact ? 40 : 50,
+            height: compact ? 40 : 50,
             borderRadius: '50%',
-            bgcolor: isDragActive ? 'primary.100' : 'grey.100',
-            color: isDragActive ? 'primary.main' : 'text.secondary',
-            mb: compact ? 1 : 1.5,
+            bgcolor: isDragActive ? 'rgba(2, 132, 199, 0.12)' : '#f1f5f9',
+            color: isDragActive ? '#0284c7' : '#64748b',
+            mb: compact ? 1 : 1.25,
           }}
         >
-          <CloudUploadIcon sx={{ fontSize: compact ? 24 : 30 }} />
+          <CloudUploadIcon sx={{ fontSize: compact ? 22 : 26 }} />
         </Box>
 
         <Typography
           variant="body2"
           fontWeight={600}
-          color="text.primary"
-          sx={{ mb: 0.5, fontSize: compact ? '0.8125rem' : '0.9375rem' }}
+          color="#0f172a"
+          sx={{ mb: 0.5, fontSize: compact ? '0.8125rem' : '0.875rem' }}
         >
           {title}
         </Typography>
 
-        <Typography variant="caption" color="text.secondary" display="block">
+        <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.75rem' }} display="block">
           {description || `Поддерживаемые форматы: ${accept.replace(/\./g, '').toUpperCase()} (до ${maxSizeMb} МБ)`}
         </Typography>
 
@@ -213,23 +213,34 @@ export function FileUploadDropzone({
           variant="outlined"
           size="small"
           disabled={disabled}
-          sx={{ mt: compact ? 1 : 2, pointerEvents: 'none', fontWeight: 600 }}
+          sx={{
+            mt: compact ? 1 : 1.75,
+            pointerEvents: 'none',
+            fontWeight: 600,
+            borderRadius: '8px',
+            borderColor: '#e2e8f0',
+            color: '#334155',
+            backgroundColor: '#ffffff',
+            px: 2,
+            py: 0.5,
+          }}
         >
           Выбрать файл{multiple ? 'ы' : ''} на диске
         </Button>
       </Paper>
 
       {displayError && (
-        <Alert severity="error" sx={{ mt: 1.5, borderRadius: 1.5 }}>
+        <Alert severity="error" sx={{ mt: 1.5, borderRadius: '8px', fontSize: '0.8125rem' }}>
           {displayError}
         </Alert>
       )}
 
       {files.length > 0 && (
-        <List dense sx={{ mt: 1.5, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+        <List dense sx={{ mt: 1.5, bgcolor: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
           {files.map((file, idx) => (
             <ListItem
               key={idx}
+              sx={{ py: 1 }}
               secondaryAction={
                 !disabled && (
                   <IconButton
@@ -240,6 +251,7 @@ export function FileUploadDropzone({
                       e.stopPropagation();
                       handleRemoveFile(idx);
                     }}
+                    sx={{ color: '#94a3b8', '&:hover': { color: '#dc2626' } }}
                   >
                     <DeleteOutlineIcon fontSize="small" />
                   </IconButton>
@@ -249,16 +261,27 @@ export function FileUploadDropzone({
               <ListItemIcon sx={{ minWidth: 36 }}>{getFileIcon(file.name)}</ListItemIcon>
               <ListItemText
                 primary={
-                  <Typography variant="body2" fontWeight={600} noWrap>
+                  <Typography variant="body2" fontWeight={600} color="#0f172a" noWrap sx={{ fontSize: '0.8125rem' }}>
                     {file.name}
                   </Typography>
                 }
                 secondary={
-                  <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography component="span" variant="caption" color="text.secondary">
+                  <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.25 }}>
+                    <Typography component="span" variant="caption" sx={{ color: '#64748b', fontSize: '0.6875rem' }}>
                       {formatBytes(file.size)}
                     </Typography>
-                    <Chip label="Готов к отправке" size="small" color="success" sx={{ height: 16, fontSize: '0.65rem' }} />
+                    <Chip
+                      label="Готов к отправке"
+                      size="small"
+                      sx={{
+                        height: 18,
+                        fontSize: '0.625rem',
+                        fontWeight: 600,
+                        backgroundColor: '#ecfdf5',
+                        color: '#15803d',
+                        borderRadius: '4px',
+                      }}
+                    />
                   </Box>
                 }
               />

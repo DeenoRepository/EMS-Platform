@@ -69,8 +69,8 @@ export function ActivityFeed({
     <Box className={className} sx={{ p: paper ? { xs: 2, sm: 2.5 } : 0 }}>
       {title && (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-          <CommentIcon fontSize="small" color="primary" />
-          <Typography variant="subtitle1" fontWeight={700}>
+          <CommentIcon sx={{ fontSize: 18, color: '#0284c7' }} />
+          <Typography variant="subtitle1" fontWeight={700} sx={{ color: '#0f172a', letterSpacing: '-0.01em' }}>
             {title} ({items.length})
           </Typography>
         </Box>
@@ -88,17 +88,31 @@ export function ActivityFeed({
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
             disabled={submitting}
-            sx={{ bgcolor: 'background.paper', mb: 1 }}
+            sx={{
+              bgcolor: '#ffffff',
+              mb: 1,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '8px',
+                '& fieldset': { borderColor: '#e2e8f0' },
+                '&:hover fieldset': { borderColor: '#cbd5e1' },
+              },
+            }}
           />
           <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
             <Button
               variant="contained"
-              color="primary"
               size="small"
               disabled={!commentText.trim() || submitting}
-              startIcon={submitting ? <CircularProgress size={14} color="inherit" /> : <SendIcon />}
+              startIcon={submitting ? <CircularProgress size={14} color="inherit" /> : <SendIcon sx={{ fontSize: 15 }} />}
               onClick={handleSend}
-              sx={{ fontWeight: 600 }}
+              sx={{
+                fontWeight: 600,
+                borderRadius: '8px',
+                px: 2,
+                py: 0.6,
+                backgroundColor: '#0284c7',
+                '&:hover': { backgroundColor: '#0369a1' },
+              }}
             >
               {submitting ? 'Отправка...' : 'Отправить'}
             </Button>
@@ -106,19 +120,19 @@ export function ActivityFeed({
         </Box>
       )}
 
-      {onAddComment && items.length > 0 && <Divider sx={{ mb: 2.5 }} />}
+      {onAddComment && items.length > 0 && <Divider sx={{ mb: 2.5, borderColor: '#f1f5f9' }} />}
 
       {/* Items list */}
       {loading ? (
         <Box sx={{ p: 4, textAlign: 'center' }}>
-          <CircularProgress size={28} />
+          <CircularProgress size={28} sx={{ color: '#0284c7' }} />
         </Box>
       ) : items.length === 0 ? (
-        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>
+        <Typography variant="body2" sx={{ textAlign: 'center', py: 3, color: '#64748b', fontSize: '0.8125rem' }}>
           Комментариев и записей пока нет
         </Typography>
       ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           {items.map((item) => (
             <Box
               key={item.id}
@@ -126,10 +140,9 @@ export function ActivityFeed({
                 display: 'flex',
                 gap: 1.5,
                 p: 1.5,
-                borderRadius: 1.5,
-                bgcolor: item.type === 'system' ? 'grey.50' : 'background.paper',
-                border: '1px solid',
-                borderColor: 'divider',
+                borderRadius: '8px',
+                bgcolor: item.type === 'system' ? '#f8fafc' : '#ffffff',
+                border: '1px solid #e2e8f0',
               }}
             >
               <Avatar
@@ -139,7 +152,7 @@ export function ActivityFeed({
                   height: 32,
                   fontSize: '0.75rem',
                   fontWeight: 700,
-                  bgcolor: item.type === 'system' ? 'grey.400' : 'primary.main',
+                  bgcolor: item.type === 'system' ? '#94a3b8' : '#0284c7',
                 }}
               >
                 {getInitials(item.author.name)}
@@ -148,29 +161,39 @@ export function ActivityFeed({
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 0.5, flexWrap: 'wrap' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                    <Typography variant="body2" fontWeight={700}>
+                    <Typography variant="body2" fontWeight={700} sx={{ color: '#0f172a', fontSize: '0.8125rem' }}>
                       {item.author.name}
                     </Typography>
                     {item.author.login && (
-                      <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+                      <Typography variant="caption" sx={{ color: '#64748b', fontFamily: 'monospace', fontSize: '0.75rem' }}>
                         @{item.author.login}
                       </Typography>
                     )}
                     {item.author.role && (
-                      <Typography variant="caption" sx={{ bgcolor: 'grey.100', px: 0.75, py: 0.1, borderRadius: 1 }}>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          bgcolor: '#f1f5f9',
+                          color: '#475569',
+                          px: 0.75,
+                          py: 0.1,
+                          borderRadius: '4px',
+                          fontSize: '0.6875rem',
+                          fontWeight: 500,
+                        }}
+                      >
                         {item.author.role}
                       </Typography>
                     )}
                   </Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontFeatureSettings: '"tnum"' }}>
+                  <Typography variant="caption" sx={{ color: '#64748b', fontFeatureSettings: '"tnum"', fontSize: '0.75rem' }}>
                     {formatDateTime(item.createdAt)}
                   </Typography>
                 </Box>
 
                 <Typography
                   variant="body2"
-                  color="text.primary"
-                  sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.5, fontSize: '0.8125rem' }}
+                  sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.5, fontSize: '0.8125rem', color: '#334155' }}
                 >
                   {item.content}
                 </Typography>
@@ -184,7 +207,7 @@ export function ActivityFeed({
 
   if (paper) {
     return (
-      <Paper variant="outlined" sx={{ borderRadius: 2 }}>
+      <Paper elevation={0} sx={{ borderRadius: '12px', border: '1px solid #e2e8f0', backgroundColor: '#ffffff' }}>
         {content}
       </Paper>
     );

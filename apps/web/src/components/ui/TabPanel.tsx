@@ -50,17 +50,25 @@ export function NavTabsContainer({
       scrollButtons={scrollButtons}
       aria-label="Навигационные вкладки"
       sx={{
-        borderBottom: paper ? 'none' : '1px solid',
-        borderColor: 'divider',
-        minHeight: 44,
+        borderBottom: paper ? 'none' : '1px solid #e2e8f0',
+        minHeight: 42,
+        '& .MuiTabs-indicator': {
+          backgroundColor: '#0284c7',
+          height: 2.5,
+          borderRadius: '2px 2px 0 0',
+        },
         '& .MuiTab-root': {
-          minHeight: 44,
+          minHeight: 42,
           py: 1,
-          px: { xs: 1.5, sm: 2.25 },
+          px: { xs: 1.5, sm: 2 },
           fontWeight: 600,
           fontSize: '0.8125rem',
           textTransform: 'none',
           letterSpacing: 0,
+          color: '#64748b',
+          '&.Mui-selected': {
+            color: '#0284c7',
+          },
         },
       }}
     >
@@ -80,13 +88,15 @@ export function NavTabsContainer({
                 <Chip
                   label={t.badge}
                   size="small"
-                  color={t.badgeColor || (value === t.value ? 'primary' : 'default')}
                   sx={{
                     height: 18,
-                    fontSize: '0.6875rem',
+                    fontSize: '0.65rem',
                     fontWeight: 700,
                     px: 0.25,
                     fontFeatureSettings: '"tnum"',
+                    borderRadius: '20px',
+                    backgroundColor: value === t.value ? 'rgba(2, 132, 199, 0.1)' : '#f1f5f9',
+                    color: value === t.value ? '#0284c7' : '#64748b',
                   }}
                 />
               )}
@@ -101,11 +111,13 @@ export function NavTabsContainer({
     return (
       <Paper
         className={className}
-        variant="outlined"
+        elevation={0}
         sx={{
-          borderRadius: 2,
+          borderRadius: '12px',
+          border: '1px solid #e2e8f0',
           overflow: 'hidden',
-          bgcolor: 'background.paper',
+          bgcolor: '#ffffff',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
         }}
       >
         {tabsContent}

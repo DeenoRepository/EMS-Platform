@@ -91,13 +91,14 @@ export function FormDialog({
         component: onSubmit ? 'form' : 'div',
         onSubmit: onSubmit ? handleSubmit : undefined,
         sx: {
-          borderRadius: isFullScreen ? 0 : 2,
+          borderRadius: isFullScreen ? 0 : '12px',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
+          border: isFullScreen ? 'none' : '1px solid #e2e8f0',
           boxShadow: isFullScreen
             ? 'none'
-            : '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+            : '0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.05)',
         },
       }}
     >
@@ -122,9 +123,8 @@ export function FormDialog({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          bgcolor: 'background.paper',
+          borderBottom: '1px solid #f1f5f9',
+          bgcolor: '#ffffff',
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pr: 2, minWidth: 0 }}>
@@ -137,8 +137,8 @@ export function FormDialog({
                 width: 36,
                 height: 36,
                 borderRadius: '8px',
-                bgcolor: 'primary.50',
-                color: 'primary.main',
+                bgcolor: 'rgba(2, 132, 199, 0.08)',
+                color: '#0284c7',
                 flexShrink: 0,
               }}
             >
@@ -154,7 +154,8 @@ export function FormDialog({
                   fontWeight: 700,
                   fontSize: { xs: '1rem', sm: '1.125rem' },
                   lineHeight: 1.3,
-                  color: 'text.primary',
+                  color: '#0f172a',
+                  letterSpacing: '-0.015em',
                 }}
                 noWrap
               >
@@ -167,10 +168,11 @@ export function FormDialog({
               <Typography
                 variant="caption"
                 sx={{
-                  color: 'text.secondary',
+                  color: '#64748b',
                   display: 'block',
-                  lineHeight: 1.2,
+                  lineHeight: 1.25,
                   mt: 0.25,
+                  fontSize: '0.75rem',
                 }}
                 noWrap
               >
@@ -185,8 +187,10 @@ export function FormDialog({
           disabled={loading}
           size="small"
           sx={{
-            color: 'text.secondary',
-            '&:hover': { bgcolor: 'action.hover', color: 'text.primary' },
+            color: '#64748b',
+            borderRadius: '6px',
+            p: 0.5,
+            '&:hover': { bgcolor: '#f1f5f9', color: '#0f172a' },
           }}
         >
           <CloseIcon fontSize="small" />
@@ -196,12 +200,12 @@ export function FormDialog({
       <DialogContent
         dividers={dividers}
         sx={{
-          p: { xs: 2, sm: 3 },
+          p: { xs: 2.5, sm: 3 },
           flex: 1,
           overflowY: 'auto',
           '&::-webkit-scrollbar': { width: 6 },
           '&::-webkit-scrollbar-thumb': {
-            bgcolor: 'rgba(0,0,0,0.15)',
+            bgcolor: '#cbd5e1',
             borderRadius: 3,
           },
         }}
@@ -213,10 +217,9 @@ export function FormDialog({
         <DialogActions
           sx={{
             px: { xs: 2, sm: 3 },
-            py: 1.75,
-            borderTop: '1px solid',
-            borderColor: 'divider',
-            bgcolor: 'grey.50',
+            py: 1.5,
+            borderTop: '1px solid #f1f5f9',
+            bgcolor: '#ffffff',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
@@ -229,11 +232,22 @@ export function FormDialog({
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Button
               variant="outlined"
-              color="inherit"
               onClick={handleClose}
               disabled={loading}
-              size="medium"
-              sx={{ minWidth: 90 }}
+              size="small"
+              sx={{
+                borderRadius: '8px',
+                borderColor: '#e2e8f0',
+                color: '#334155',
+                fontWeight: 600,
+                px: 2,
+                py: 0.6,
+                minHeight: 34,
+                '&:hover': {
+                  borderColor: '#cbd5e1',
+                  backgroundColor: '#f8fafc',
+                },
+              }}
             >
               {cancelLabel}
             </Button>
@@ -245,13 +259,23 @@ export function FormDialog({
                 disabled={loading || submitDisabled}
                 startIcon={
                   loading ? (
-                    <CircularProgress size={16} color="inherit" />
+                    <CircularProgress size={15} color="inherit" />
                   ) : (
                     submitIcon
                   )
                 }
-                size="medium"
-                sx={{ minWidth: 110, fontWeight: 600 }}
+                size="small"
+                sx={{
+                  borderRadius: '8px',
+                  fontWeight: 600,
+                  px: 2.5,
+                  py: 0.6,
+                  minHeight: 34,
+                  backgroundColor: submitColor === 'primary' ? '#0284c7' : undefined,
+                  '&:hover': {
+                    backgroundColor: submitColor === 'primary' ? '#0369a1' : undefined,
+                  },
+                }}
               >
                 {loading ? 'Сохранение...' : submitLabel}
               </Button>
