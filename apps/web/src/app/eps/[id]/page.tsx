@@ -75,6 +75,7 @@ import {
   TrendSparkline,
   PageLoading,
   FormDialog,
+  DataTableWrapper,
   type LifecycleEvent,
 } from '@/components/ui';
 
@@ -1012,12 +1013,15 @@ export default function EquipmentPassportPage() {
           </Box>
 
           {equipment.documents.length === 0 ? (
-            <Box sx={{ p: 6, textAlign: 'center', color: 'text.secondary' }}>
-              <UploadFileIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
-              <Typography variant="body2">Документы не загружены</Typography>
-            </Box>
+            <EmptyState
+              title="Документы не загружены"
+              description="В паспорте оборудования пока нет прикрепленных руководств, чертежей и сертификатов."
+              actionText={canEdit ? "Прикрепить документ" : undefined}
+              onAction={canEdit ? () => setDocModalOpen(true) : undefined}
+              minHeight={180}
+            />
           ) : (
-            <TableContainer>
+            <DataTableWrapper>
               <Table>
                 <TableHead sx={{ backgroundColor: 'rgba(0,0,0,0.02)' }}>
                   <TableRow>
@@ -1078,7 +1082,7 @@ export default function EquipmentPassportPage() {
                   ))}
                 </TableBody>
               </Table>
-            </TableContainer>
+            </DataTableWrapper>
           )}
         </Card>
       )}
@@ -1107,12 +1111,15 @@ export default function EquipmentPassportPage() {
           </Box>
 
           {(!equipment.approvals || equipment.approvals.length === 0) ? (
-            <Box sx={{ p: 6, textAlign: 'center', color: 'text.secondary' }}>
-              <FactCheckOutlinedIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
-              <Typography variant="body2">Заявок на согласование по данному оборудованию не зарегистрировано</Typography>
-            </Box>
+            <EmptyState
+              title="Заявок на согласование нет"
+              description="По данному оборудованию еще не зарегистрировано заявок на списание, вывод из эксплуатации или модернизацию."
+              actionText={hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT) ? "Создать заявку" : undefined}
+              onAction={hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT) ? () => setCreateApprovalModalOpen(true) : undefined}
+              minHeight={180}
+            />
           ) : (
-            <TableContainer>
+            <DataTableWrapper>
               <Table>
                 <TableHead sx={{ backgroundColor: 'rgba(0,0,0,0.02)' }}>
                   <TableRow>
@@ -1183,7 +1190,7 @@ export default function EquipmentPassportPage() {
                   })}
                 </TableBody>
               </Table>
-            </TableContainer>
+            </DataTableWrapper>
           )}
         </Card>
       )}
@@ -1200,12 +1207,13 @@ export default function EquipmentPassportPage() {
           <Divider sx={{ mb: 2 }} />
 
           {equipment.spareParts.length === 0 ? (
-            <Box sx={{ p: 6, textAlign: 'center', color: 'text.secondary' }}>
-              <Inventory2Icon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
-              <Typography variant="body2">Нет привязанных запчастей из WMS</Typography>
-            </Box>
+            <EmptyState
+              title="Нет привязанных запчастей"
+              description="В номенклатурном справочнике WMS еще нет позиций, сопоставленных с данным типом оборудования."
+              minHeight={180}
+            />
           ) : (
-            <TableContainer>
+            <DataTableWrapper>
               <Table>
                 <TableHead sx={{ backgroundColor: 'rgba(0,0,0,0.02)' }}>
                   <TableRow>
@@ -1239,7 +1247,7 @@ export default function EquipmentPassportPage() {
                   ))}
                 </TableBody>
               </Table>
-            </TableContainer>
+            </DataTableWrapper>
           )}
         </Card>
       )}
@@ -1253,17 +1261,18 @@ export default function EquipmentPassportPage() {
           <Divider sx={{ mb: 2 }} />
 
           {equipment.maintenancePlans.length === 0 ? (
-            <Box sx={{ p: 6, textAlign: 'center', color: 'text.secondary' }}>
-              <BuildIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
-              <Typography variant="body2">Планы ТО для данного оборудования не назначены</Typography>
-            </Box>
+            <EmptyState
+              title="Планы ТО не назначены"
+              description="Для данного оборудования еще не сформированы регламентные планы периодического обслуживания."
+              minHeight={180}
+            />
           ) : (
             equipment.maintenancePlans.map((plan) => (
               <Box key={plan.id} sx={{ mb: 3 }}>
-                <Typography variant="subtitle1" fontWeight={700} color="primary.main">
+                <Typography variant="subtitle1" fontWeight={700} color="primary.main" sx={{ mb: 1 }}>
                   {plan.name} ({plan.frequency})
                 </Typography>
-                <TableContainer sx={{ mt: 1 }}>
+                <DataTableWrapper>
                   <Table size="small">
                     <TableHead sx={{ backgroundColor: 'rgba(0,0,0,0.02)' }}>
                       <TableRow>
@@ -1274,7 +1283,6 @@ export default function EquipmentPassportPage() {
                     </TableHead>
                     <TableBody>
                       {plan.schedules.map((sch) => {
-                        const mStatus = MAINTENANCE_STATUS_MAP[sch.status] || { label: sch.status, color: 'default' };
                         return (
                           <TableRow key={sch.id}>
                             <TableCell sx={{ fontWeight: 500 }}>{sch.title}</TableCell>
@@ -1287,7 +1295,7 @@ export default function EquipmentPassportPage() {
                       })}
                     </TableBody>
                   </Table>
-                </TableContainer>
+                </DataTableWrapper>
               </Box>
             ))
           )}
@@ -1306,12 +1314,13 @@ export default function EquipmentPassportPage() {
           <Divider sx={{ mb: 2 }} />
 
           {(!equipment.jiraIssues || equipment.jiraIssues.length === 0) ? (
-            <Box sx={{ p: 6, textAlign: 'center', color: 'text.secondary' }}>
-              <ConfirmationNumberIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
-              <Typography variant="body2">Связанных заявок в SRM не найдено</Typography>
-            </Box>
+            <EmptyState
+              title="Связанных заявок не найдено"
+              description="В системе SRM нет зарегистрированных обращений или инцидентов по данному оборудованию."
+              minHeight={180}
+            />
           ) : (
-            <TableContainer>
+            <DataTableWrapper>
               <Table>
                 <TableHead sx={{ backgroundColor: 'rgba(0,0,0,0.02)' }}>
                   <TableRow>
@@ -1342,7 +1351,7 @@ export default function EquipmentPassportPage() {
                   ))}
                 </TableBody>
               </Table>
-            </TableContainer>
+            </DataTableWrapper>
           )}
         </Card>
       )}
@@ -1373,7 +1382,7 @@ export default function EquipmentPassportPage() {
                 minHeight={180}
               />
             ) : (
-              <TableContainer>
+              <DataTableWrapper>
                 <Table size="small">
                   <TableHead sx={{ backgroundColor: 'rgba(0,0,0,0.02)' }}>
                     <TableRow>
@@ -1413,7 +1422,7 @@ export default function EquipmentPassportPage() {
                     })}
                   </TableBody>
                 </Table>
-              </TableContainer>
+              </DataTableWrapper>
             )}
           </Card>
         </Box>
