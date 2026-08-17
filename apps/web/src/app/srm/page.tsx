@@ -55,6 +55,11 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import PageHeader from '@/components/layout/PageHeader';
 import { useSnackbar } from 'notistack';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Cell, PieChart, Pie, Legend } from 'recharts';
+import {
+  StatCard,
+  EmptyState,
+  DataTableWrapper,
+} from '@/components/ui';
 
 const STATUS_COLORS: Record<string, string> = {
   Open: '#f44336',
@@ -457,81 +462,53 @@ export default function SrmOverviewPage() {
           {currentTab === 0 && (
             <>
               {/* KPI КАРТОЧКИ */}
-              <Grid container spacing={3} sx={{ mb: 4 }}>
+              <Grid container spacing={1.75} sx={{ mb: 3 }}>
                 <Grid item xs={12} sm={6} md={3}>
-                  <Card sx={{ height: '100%', borderLeft: '4px solid #1976d2' }}>
-                    <CardContent sx={{ p: 3 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                        <SpeedIcon color="primary" sx={{ fontSize: 32 }} />
-                        <Typography variant="subtitle1" fontWeight={700}>
-                          MTTR (Время восстановления)
-                        </Typography>
-                      </Box>
-                      <Typography variant="h4" fontWeight={800} color="primary.main">
-                        {stats?.mttrHours || '0'} ч
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                        Среднее время устранения неисправностей
-                      </Typography>
-                    </CardContent>
-                  </Card>
+                  <StatCard
+                    title="MTTR (Время восстановления)"
+                    value={`${stats?.mttrHours || '0'} ч`}
+                    subtitle="Среднее время устранения неисправностей"
+                    icon={<SpeedIcon sx={{ fontSize: 20 }} />}
+                    iconBgColor="rgba(2, 132, 199, 0.08)"
+                    iconColor="#0284c7"
+                    accentColor="#0284c7"
+                  />
                 </Grid>
 
                 <Grid item xs={12} sm={6} md={3}>
-                  <Card sx={{ height: '100%', borderLeft: '4px solid #009688' }}>
-                    <CardContent sx={{ p: 3 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                        <TimerIcon sx={{ color: '#009688', fontSize: 32 }} />
-                        <Typography variant="subtitle1" fontWeight={700}>
-                          MTBF (Наработка на отказ)
-                        </Typography>
-                      </Box>
-                      <Typography variant="h4" fontWeight={800} sx={{ color: '#009688' }}>
-                        {stats?.mtbfDays || '0'} дн
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                        Средний интервал между отказами
-                      </Typography>
-                    </CardContent>
-                  </Card>
+                  <StatCard
+                    title="MTBF (Наработка на отказ)"
+                    value={`${stats?.mtbfDays || '0'} дн`}
+                    subtitle="Средний интервал между отказами"
+                    icon={<TimerIcon sx={{ fontSize: 20 }} />}
+                    iconBgColor="rgba(15, 118, 110, 0.08)"
+                    iconColor="#0f766e"
+                    accentColor="#0f766e"
+                  />
                 </Grid>
 
                 <Grid item xs={12} sm={6} md={3}>
-                  <Card sx={{ height: '100%', borderLeft: '4px solid #4caf50' }}>
-                    <CardContent sx={{ p: 3 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                        <AssessmentIcon color="success" sx={{ fontSize: 32 }} />
-                        <Typography variant="subtitle1" fontWeight={700}>
-                          Соблюдение SLA
-                        </Typography>
-                      </Box>
-                      <Typography variant="h4" fontWeight={800} color="success.main">
-                        {stats?.slaComplianceRate || '100'}%
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                        Устранено в регламентный срок (&le; 48ч)
-                      </Typography>
-                    </CardContent>
-                  </Card>
+                  <StatCard
+                    title="Соблюдение SLA"
+                    value={`${stats?.slaComplianceRate || '100'}%`}
+                    subtitle="Устранено в регламентный срок (≤ 48ч)"
+                    icon={<AssessmentIcon sx={{ fontSize: 20 }} />}
+                    iconBgColor="rgba(22, 163, 74, 0.08)"
+                    iconColor="#16a34a"
+                    accentColor="#16a34a"
+                  />
                 </Grid>
 
                 <Grid item xs={12} sm={6} md={3}>
-                  <Card sx={{ height: '100%', borderLeft: '4px solid #ff9800' }}>
-                    <CardContent sx={{ p: 3 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                        <BugReportIcon color="warning" sx={{ fontSize: 32 }} />
-                        <Typography variant="subtitle1" fontWeight={700}>
-                          Всего заявок
-                        </Typography>
-                      </Box>
-                      <Typography variant="h4" fontWeight={800} color="warning.main">
-                        {stats?.totalIssues || '0'}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                        В работе: {stats?.inProgressIssues || 0} | Открыто: {stats?.openIssues || 0}
-                      </Typography>
-                    </CardContent>
-                  </Card>
+                  <StatCard
+                    title="Всего заявок в SRM"
+                    value={stats?.totalIssues || 0}
+                    subtitle={`В работе: ${stats?.inProgressIssues || 0} | Открыто: ${stats?.openIssues || 0}`}
+                    icon={<BugReportIcon sx={{ fontSize: 20 }} />}
+                    iconBgColor="rgba(217, 119, 6, 0.08)"
+                    iconColor="#d97706"
+                    accentColor="#d97706"
+                  />
                 </Grid>
               </Grid>
 
@@ -593,45 +570,51 @@ export default function SrmOverviewPage() {
 
           {/* ВКЛАДКА 1: РЕЕСТР ЗАЯВОК */}
           {(currentTab === 0 || currentTab === 1) && (
-            <Card sx={{ mb: 4 }}>
-              <CardContent sx={{ p: 0 }}>
-                <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="h6" fontWeight={700}>
-                    {currentTab === 0 ? 'Последние заявки из внешних систем' : 'Полный реестр инцидентов и заявок'}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Всего синхронизировано: {issues.length}
-                  </Typography>
-                </Box>
-                <Table>
-                  <TableHead sx={{ backgroundColor: 'action.hover' }}>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 700 }}>Ключ задачи</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Тема инцидента</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Источник</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Статус</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Приоритет</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Связанное оборудование</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Исполнитель</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Дата создания</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }} align="right">
-                        Действия
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {issues.length === 0 ? (
+            <Box sx={{ mb: 4 }}>
+              <Box sx={{ pb: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="h6" fontWeight={700}>
+                  {currentTab === 0 ? 'Последние заявки из внешних систем' : 'Полный реестр инцидентов и заявок'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Всего синхронизировано: <b>{issues.length}</b>
+                </Typography>
+              </Box>
+
+              {issues.length === 0 ? (
+                <EmptyState
+                  paper
+                  icon={<ListAltIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+                  title="Заявки не найдены"
+                  description="Заявки из внешних систем управления еще не синхронизированы. Нажмите «Синхронизировать все системы» для загрузки инцидентов."
+                  actionText="Синхронизировать сейчас"
+                  onAction={handleSync}
+                />
+              ) : (
+                <DataTableWrapper total={issues.length} stickyHeader>
+                  <Table size="small" aria-label="Реестр заявок SRM">
+                    <TableHead>
                       <TableRow>
-                        <TableCell colSpan={9} align="center" sx={{ py: 6, color: 'text.secondary' }}>
-                          Заявки не найдены. Нажмите «Синхронизировать все системы» для загрузки данных.
+                        <TableCell sx={{ fontWeight: 700, width: 130 }}>Ключ задачи</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Тема инцидента</TableCell>
+                        <TableCell sx={{ fontWeight: 700, width: 130 }}>Источник</TableCell>
+                        <TableCell sx={{ fontWeight: 700, width: 120 }}>Статус</TableCell>
+                        <TableCell sx={{ fontWeight: 700, width: 110 }}>Приоритет</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Связанное оборудование</TableCell>
+                        <TableCell sx={{ fontWeight: 700, width: 130 }}>Исполнитель</TableCell>
+                        <TableCell sx={{ fontWeight: 700, width: 120 }}>Дата создания</TableCell>
+                        <TableCell sx={{ fontWeight: 700, width: 90 }} align="right">
+                          Действия
                         </TableCell>
                       </TableRow>
-                    ) : (
-                      issues.map((issue) => (
+                    </TableHead>
+                    <TableBody>
+                      {issues.map((issue) => (
                         <TableRow key={issue.id} hover>
-                          <TableCell sx={{ fontWeight: 700, color: 'primary.main' }}>{issue.issueKey}</TableCell>
+                          <TableCell sx={{ fontWeight: 700, color: 'primary.main', fontFamily: 'monospace' }}>
+                            {issue.issueKey}
+                          </TableCell>
                           <TableCell sx={{ maxWidth: 320 }}>
-                            <Typography variant="body2" noWrap title={issue.summary} fontWeight={500}>
+                            <Typography variant="body2" noWrap title={issue.summary} fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
                               {issue.summary}
                             </Typography>
                             <Typography variant="caption" color="text.secondary">
@@ -644,6 +627,7 @@ export default function SrmOverviewPage() {
                               size="small"
                               variant="outlined"
                               color="primary"
+                              sx={{ borderRadius: '4px', height: 22 }}
                             />
                           </TableCell>
                           <TableCell>
@@ -654,6 +638,8 @@ export default function SrmOverviewPage() {
                                 backgroundColor: (STATUS_COLORS[issue.status] || '#757575') + '22',
                                 color: STATUS_COLORS[issue.status] || '#757575',
                                 fontWeight: 700,
+                                borderRadius: '4px',
+                                height: 22,
                               }}
                             />
                           </TableCell>
@@ -663,12 +649,13 @@ export default function SrmOverviewPage() {
                               size="small"
                               variant="outlined"
                               color={issue.priority === 'High' || issue.priority === 'Highest' ? 'error' : 'default'}
+                              sx={{ borderRadius: '4px', height: 22 }}
                             />
                           </TableCell>
                           <TableCell>
                             {issue.equipment ? (
                               <Box>
-                                <Typography variant="body2" fontWeight={600}>
+                                <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
                                   {issue.equipment.name}
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary">
@@ -681,8 +668,10 @@ export default function SrmOverviewPage() {
                               </Typography>
                             )}
                           </TableCell>
-                          <TableCell>{issue.assignee || '—'}</TableCell>
-                          <TableCell>{new Date(issue.createdDate).toLocaleDateString('ru-RU')}</TableCell>
+                          <TableCell sx={{ fontSize: '0.8125rem' }}>{issue.assignee || '—'}</TableCell>
+                          <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace' }}>
+                            {new Date(issue.createdDate).toLocaleDateString('ru-RU')}
+                          </TableCell>
                           <TableCell align="right">
                             <Button
                               size="small"
@@ -693,12 +682,12 @@ export default function SrmOverviewPage() {
                             </Button>
                           </TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </DataTableWrapper>
+              )}
+            </Box>
           )}
 
           {/* ВКЛАДКА 2: КОНСТРУКТОР СОПОСТАВЛЕНИЯ ПОЛЕЙ */}

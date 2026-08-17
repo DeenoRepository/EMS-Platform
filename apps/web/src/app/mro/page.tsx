@@ -42,6 +42,12 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import PageHeader from '@/components/layout/PageHeader';
 import { MAINTENANCE_STATUS_MAP } from '@ems/shared';
 import { useSnackbar } from 'notistack';
+import {
+  StatCard,
+  DataTableWrapper,
+  EmptyState,
+  StatusBadge,
+} from '@/components/ui';
 
 export default function MroOverviewPage() {
   const { enqueueSnackbar } = useSnackbar();
@@ -248,64 +254,56 @@ export default function MroOverviewPage() {
         }
       />
 
-      <Grid container spacing={3} sx={{ mb: 3 }}>
+      {/* KPI Metric Cards */}
+      <Grid container spacing={1.75} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={4}>
-          <Card>
-            <CardContent sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 2 }}>
-              <CalendarMonthIcon color="primary" sx={{ fontSize: 40 }} />
-              <Box>
-                <Typography variant="h5" fontWeight={700}>
-                  {schedules.length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Всего нарядов ТО в графике
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Всего нарядов ТО"
+            value={schedules.length}
+            subtitle="Запланировано в графике"
+            icon={<CalendarMonthIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(2, 132, 199, 0.08)"
+            iconColor="#0284c7"
+            accentColor="#0284c7"
+            loading={loading}
+          />
         </Grid>
         <Grid item xs={12} sm={4}>
-          <Card>
-            <CardContent sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 2 }}>
-              <AssignmentIcon color="secondary" sx={{ fontSize: 40 }} />
-              <Box>
-                <Typography variant="h5" fontWeight={700}>
-                  {plans.length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Действующих регламентных планов
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Регламентные планы"
+            value={plans.length}
+            subtitle="Действующих шаблонов ТО"
+            icon={<AssignmentIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(124, 58, 237, 0.08)"
+            iconColor="#7c3aed"
+            accentColor="#7c3aed"
+            loading={loading}
+          />
         </Grid>
         <Grid item xs={12} sm={4}>
-          <Card>
-            <CardContent sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 2 }}>
-              <ChecklistRtlIcon color="success" sx={{ fontSize: 40 }} />
-              <Box>
-                <Typography variant="h5" fontWeight={700}>
-                  {schedules.filter((s) => s.status === 'COMPLETED').length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Успешно выполненных регламентов
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Выполнено регламентов"
+            value={schedules.filter((s) => s.status === 'COMPLETED').length}
+            subtitle="Завершенные наряды ТО"
+            icon={<ChecklistRtlIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(22, 163, 74, 0.08)"
+            iconColor="#16a34a"
+            accentColor="#16a34a"
+            loading={loading}
+          />
         </Grid>
       </Grid>
 
-      <Card sx={{ mb: 4 }}>
+      <Card sx={{ mb: 4, borderRadius: 2 }}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}>
           <Tabs value={tab} onChange={(_, val) => setTab(val)}>
-            <Tab label="График нарядов ТО" />
-            <Tab label="Регламентные планы" />
-            <Tab label="Шаблоны чек-листов" />
+            <Tab label={`График нарядов ТО (${schedules.length})`} />
+            <Tab label={`Регламентные планы (${plans.length})`} />
+            <Tab label={`Шаблоны чек-листов (${checklists.length})`} />
           </Tabs>
         </Box>
 
-        <CardContent sx={{ p: 0 }}>
+        <Box sx={{ p: 2 }}>
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>
               <CircularProgress />
@@ -314,31 +312,33 @@ export default function MroOverviewPage() {
             <>
               {/* TAB 0: График нарядов ТО */}
               {tab === 0 && (
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Оборудование</TableCell>
-                      <TableCell>Название регламента</TableCell>
-                      <TableCell>Дата проведения</TableCell>
-                      <TableCell>Статус</TableCell>
-                      <TableCell>Исполнитель</TableCell>
-                      <TableCell align="right">Действия</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {schedules.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} align="center" sx={{ py: 4, color: 'text.secondary' }}>
-                          В графике пока нет запланированных работ
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      schedules.map((s) => {
-                        const statusConfig = MAINTENANCE_STATUS_MAP[s.status] || { label: s.status, color: 'default' };
-                        return (
+                schedules.length === 0 ? (
+                  <EmptyState
+                    paper
+                    icon={<CalendarMonthIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+                    title="В графике пока нет запланированных работ"
+                    description="Вы можете запланировать наряд на техническое обслуживание для единицы оборудования."
+                    actionText="Запланировать ТО"
+                    onAction={() => setOpenScheduleDialog(true)}
+                  />
+                ) : (
+                  <DataTableWrapper total={schedules.length} stickyHeader>
+                    <Table size="small" aria-label="График нарядов ТО">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 700 }}>Оборудование</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Название регламента</TableCell>
+                          <TableCell sx={{ fontWeight: 700, width: 140 }}>Дата проведения</TableCell>
+                          <TableCell sx={{ fontWeight: 700, width: 130 }}>Статус</TableCell>
+                          <TableCell sx={{ fontWeight: 700, width: 150 }}>Исполнитель</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 700, width: 120 }}>Действия</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {schedules.map((s) => (
                           <TableRow key={s.id} hover>
                             <TableCell>
-                              <Typography variant="body2" fontWeight={600}>
+                              <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
                                 {s.equipment?.name}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
@@ -346,27 +346,27 @@ export default function MroOverviewPage() {
                               </Typography>
                             </TableCell>
                             <TableCell>
-                              <Typography variant="body2">{s.title}</Typography>
+                              <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>{s.title}</Typography>
                               {s.plan?.name && (
-                                <Typography variant="caption" color="primary">
+                                <Typography variant="caption" color="primary" sx={{ display: 'block' }}>
                                   План: {s.plan.name}
                                 </Typography>
                               )}
                             </TableCell>
-                            <TableCell>
+                            <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace' }}>
                               {new Date(s.scheduledDate).toLocaleDateString('ru-RU')}
                             </TableCell>
                             <TableCell>
-                              <Chip size="small" label={statusConfig.label} color={statusConfig.color as any} />
+                              <StatusBadge status={s.status} />
                             </TableCell>
-                            <TableCell>
+                            <TableCell sx={{ fontSize: '0.8125rem' }}>
                               {s.completedBy?.displayName || '—'}
                             </TableCell>
                             <TableCell align="right">
                               {s.status !== 'COMPLETED' ? (
                                 <Button
                                   size="small"
-                                  variant="outlined"
+                                  variant="contained"
                                   color="success"
                                   startIcon={<PlayArrowIcon />}
                                   onClick={() => handleOpenExecute(s)}
@@ -374,109 +374,119 @@ export default function MroOverviewPage() {
                                   Выполнить
                                 </Button>
                               ) : (
-                                <Chip size="small" icon={<CheckCircleIcon />} label="Выполнено" color="success" variant="outlined" />
+                                <Chip size="small" icon={<CheckCircleIcon />} label="Выполнено" color="success" variant="outlined" sx={{ borderRadius: '4px', height: 22 }} />
                               )}
                             </TableCell>
                           </TableRow>
-                        );
-                      })
-                    )}
-                  </TableBody>
-                </Table>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </DataTableWrapper>
+                )
               )}
 
               {/* TAB 1: Регламентные планы */}
               {tab === 1 && (
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Оборудование</TableCell>
-                      <TableCell>Название плана</TableCell>
-                      <TableCell>Периодичность</TableCell>
-                      <TableCell>Чек-лист</TableCell>
-                      <TableCell>Нарядов в графике</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {plans.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} align="center" sx={{ py: 4, color: 'text.secondary' }}>
-                          Регламентные планы еще не созданы
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      plans.map((p) => (
-                        <TableRow key={p.id} hover>
-                          <TableCell>
-                            <Typography variant="body2" fontWeight={600}>
-                              {p.equipment?.name}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {p.equipment?.inventoryNumber}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Typography variant="body2">{p.name}</Typography>
-                            {p.description && (
-                              <Typography variant="caption" color="text.secondary">
-                                {p.description}
-                              </Typography>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Chip size="small" label={p.frequency} variant="outlined" />
-                          </TableCell>
-                          <TableCell>
-                            {p.checklist?.name || 'Без чек-листа'}
-                          </TableCell>
-                          <TableCell>{p._count?.schedules || 0}</TableCell>
+                plans.length === 0 ? (
+                  <EmptyState
+                    paper
+                    icon={<AssignmentIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+                    title="Регламентные планы еще не созданы"
+                    description="Создайте периодический регламентный план обслуживания с привязкой чек-листа."
+                    actionText="Новый план ТО"
+                    onAction={() => setOpenPlanDialog(true)}
+                  />
+                ) : (
+                  <DataTableWrapper total={plans.length} stickyHeader>
+                    <Table size="small" aria-label="Регламентные планы ТО">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 700 }}>Оборудование</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Название плана</TableCell>
+                          <TableCell sx={{ fontWeight: 700, width: 140 }}>Периодичность</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Чек-лист</TableCell>
+                          <TableCell sx={{ fontWeight: 700, width: 140 }}>Нарядов в графике</TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+                      </TableHead>
+                      <TableBody>
+                        {plans.map((p) => (
+                          <TableRow key={p.id} hover>
+                            <TableCell>
+                              <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
+                                {p.equipment?.name}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Инв. №: {p.equipment?.inventoryNumber}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>{p.name}</Typography>
+                              {p.description && (
+                                <Typography variant="caption" color="text.secondary">
+                                  {p.description}
+                                </Typography>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Chip size="small" label={p.frequency} variant="outlined" sx={{ borderRadius: '4px', height: 22 }} />
+                            </TableCell>
+                            <TableCell sx={{ fontSize: '0.8125rem' }}>
+                              {p.checklist?.name || 'Без чек-листа'}
+                            </TableCell>
+                            <TableCell sx={{ fontSize: '0.8125rem', fontWeight: 600 }}>{p._count?.schedules || 0}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </DataTableWrapper>
+                )
               )}
 
               {/* TAB 2: Шаблоны чек-листов */}
               {tab === 2 && (
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Название чек-листа</TableCell>
-                      <TableCell>Описание</TableCell>
-                      <TableCell>Количество пунктов</TableCell>
-                      <TableCell>Используется в планах</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {checklists.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={4} align="center" sx={{ py: 4, color: 'text.secondary' }}>
-                          Шаблоны чек-листов отсутствуют
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      checklists.map((c) => (
-                        <TableRow key={c.id} hover>
-                          <TableCell>
-                            <Typography variant="body2" fontWeight={600}>
-                              {c.name}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>{c.description || '—'}</TableCell>
-                          <TableCell>
-                            <Chip size="small" label={`${c.items?.length || 0} пунктов`} color="info" />
-                          </TableCell>
-                          <TableCell>{c._count?.plans || 0}</TableCell>
+                checklists.length === 0 ? (
+                  <EmptyState
+                    paper
+                    icon={<ChecklistRtlIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+                    title="Шаблоны чек-листов отсутствуют"
+                    description="Создайте структурированные опросные листы и регламенты проверки узлов оборудования."
+                    actionText="Новый чек-лист"
+                    onAction={() => setOpenChecklistDialog(true)}
+                  />
+                ) : (
+                  <DataTableWrapper total={checklists.length} stickyHeader>
+                    <Table size="small" aria-label="Шаблоны чек-листов ТО">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 700 }}>Название чек-листа</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Описание</TableCell>
+                          <TableCell sx={{ fontWeight: 700, width: 160 }}>Количество пунктов</TableCell>
+                          <TableCell sx={{ fontWeight: 700, width: 160 }}>Используется в планах</TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+                      </TableHead>
+                      <TableBody>
+                        {checklists.map((c) => (
+                          <TableRow key={c.id} hover>
+                            <TableCell>
+                              <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
+                                {c.name}
+                              </Typography>
+                            </TableCell>
+                            <TableCell sx={{ fontSize: '0.8125rem' }}>{c.description || '—'}</TableCell>
+                            <TableCell>
+                              <Chip size="small" label={`${c.items?.length || 0} пунктов`} color="info" sx={{ borderRadius: '4px', height: 22 }} />
+                            </TableCell>
+                            <TableCell sx={{ fontSize: '0.8125rem', fontWeight: 600 }}>{c._count?.plans || 0}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </DataTableWrapper>
+                )
               )}
             </>
           )}
-        </CardContent>
+        </Box>
       </Card>
 
       {/* Диалог создания наряда ТО */}
