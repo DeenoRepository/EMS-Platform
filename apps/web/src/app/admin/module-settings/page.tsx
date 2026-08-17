@@ -55,6 +55,7 @@ import {
   DataTableWrapper,
   EmptyState,
   ConfirmDialog,
+  PageLoading,
 } from '@/components/ui';
 
 interface CustomFieldItem {
@@ -642,11 +643,13 @@ function ModuleSettingsContent() {
                 <Divider sx={{ mb: 2.5 }} />
 
                 {loadingEps ? (
-                  <Box sx={{ p: 4, textAlign: 'center' }}><CircularProgress size={32} /></Box>
+                  <PageLoading text="Загрузка структуры разделов..." minHeight={160} size={28} />
                 ) : sections.length === 0 ? (
-                  <Box sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
-                    <Typography variant="body2">Кастомные разделы еще не созданы. Нажмите «Добавить раздел».</Typography>
-                  </Box>
+                  <EmptyState
+                    title="Разделы не созданы"
+                    description="Кастомные разделы еще не созданы. Нажмите «Добавить раздел» для группировки полей."
+                    minHeight={160}
+                  />
                 ) : (
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     {sections.map((sec) => (
@@ -762,7 +765,7 @@ function ModuleSettingsContent() {
                 <Divider sx={{ mb: 2 }} />
 
                 {loadingEps ? (
-                  <Box sx={{ p: 4, textAlign: 'center' }}><CircularProgress size={28} /></Box>
+                  <PageLoading text="Загрузка списка тегов..." minHeight={140} size={24} />
                 ) : (
                   <TableContainer>
                     <Table size="small">
@@ -1138,13 +1141,7 @@ function ModuleSettingsContent() {
 
 export default function ModuleSettingsPage() {
   return (
-    <Suspense
-      fallback={
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 8 }}>
-          <CircularProgress />
-        </Box>
-      }
-    >
+    <Suspense fallback={<PageLoading text="Загрузка настроек разделов и полей..." />}>
       <ModuleSettingsContent />
     </Suspense>
   );

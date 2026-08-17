@@ -1364,13 +1364,13 @@ export default function EquipmentPassportPage() {
             <Divider sx={{ mb: 2 }} />
 
             {loadingAudit ? (
-              <Box sx={{ p: 4, textAlign: 'center' }}>
-                <CircularProgress />
-              </Box>
+              <PageLoading text="Загрузка журнала аудита изменений..." minHeight={180} />
             ) : auditLogs.length === 0 ? (
-              <Typography variant="body2" color="text.secondary">
-                Записей аудита не найдено.
-              </Typography>
+              <EmptyState
+                title="Записей аудита не найдено"
+                description="История изменений для данного оборудования еще не содержит записей."
+                minHeight={180}
+              />
             ) : (
               <TableContainer>
                 <Table size="small">

@@ -39,7 +39,7 @@ import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS } from '@ems/shared';
-import { StatCard, StatusBadge, EmptyState } from '@/components/ui';
+import { StatCard, StatusBadge, EmptyState, PageLoading } from '@/components/ui';
 
 interface StorageCell {
   id: string;
@@ -571,9 +571,7 @@ export default function WmsWarehousesPage() {
         </DialogTitle>
         <DialogContent dividers>
           {isLoadingZones ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-              <CircularProgress size={32} />
-            </Box>
+            <PageLoading text="Загрузка зон и ячеек склада..." minHeight={180} size={28} />
           ) : (
             <Stack spacing={3}>
               {/* Форма быстрого добавления новой зоны */}
@@ -638,9 +636,11 @@ export default function WmsWarehousesPage() {
                 </Typography>
 
                 {zones.length === 0 ? (
-                  <Box sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
-                    <Typography variant="body2">В этом складе пока нет созданных зон хранения</Typography>
-                  </Box>
+                  <EmptyState
+                    title="Зоны хранения не созданы"
+                    description="В этом складе пока нет созданных зон хранения. Используйте форму выше для создания первой зоны."
+                    minHeight={160}
+                  />
                 ) : (
                   <Stack spacing={1.5}>
                     {zones.map((zone) => (

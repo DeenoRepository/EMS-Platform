@@ -52,6 +52,7 @@ import {
   DataTableWrapper,
   CriticalAlertBanner,
   BulkActionBar,
+  PageLoading,
 } from '@/components/ui';
 
 interface StockRow {
@@ -749,13 +750,7 @@ function WmsStockContent() {
 
 export default function WmsStockPage() {
   return (
-    <Suspense
-      fallback={
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 12 }}>
-          <CircularProgress />
-        </Box>
-      }
-    >
+    <Suspense fallback={<PageLoading text="Загрузка остатков ТМЦ на складах..." />}>
       <WmsStockContent />
     </Suspense>
   );

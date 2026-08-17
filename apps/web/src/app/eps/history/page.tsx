@@ -47,6 +47,7 @@ import {
   EmptyState,
   DataTableWrapper,
   StatusBadge,
+  PageLoading,
 } from '@/components/ui';
 
 interface AuditLogItem {
@@ -527,13 +528,7 @@ function HistoryListContent() {
 
 export default function HistoryPage() {
   return (
-    <Suspense
-      fallback={
-        <Box sx={{ p: 6, textAlign: 'center' }}>
-          <CircularProgress />
-        </Box>
-      }
-    >
+    <Suspense fallback={<PageLoading text="Загрузка журнала истории изменений..." />}>
       <HistoryListContent />
     </Suspense>
   );

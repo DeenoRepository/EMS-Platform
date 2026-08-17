@@ -34,6 +34,7 @@ import ShieldIcon from '@mui/icons-material/Shield';
 import StraightenIcon from '@mui/icons-material/Straighten';
 import SpeedIcon from '@mui/icons-material/Speed';
 import PageHeader from '@/components/layout/PageHeader';
+import { PageLoading } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import { EQUIPMENT_STATUS_MAP } from '@ems/shared';
 import { useSnackbar } from 'notistack';
@@ -301,9 +302,7 @@ export default function NewEquipmentPage() {
       />
 
       {loadingDefs ? (
-        <Card sx={{ p: 6, textAlign: 'center' }}>
-          <CircularProgress />
-        </Card>
+        <PageLoading text="Загрузка структуры полей паспорта оборудования..." />
       ) : (
         <Box component="form" onSubmit={handleSubmit}>
           <Grid container spacing={3}>

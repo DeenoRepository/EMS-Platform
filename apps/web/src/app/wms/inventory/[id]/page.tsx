@@ -42,6 +42,7 @@ import {
   StatusBadge,
   DataTableWrapper,
   ConfirmDialog,
+  PageLoading,
 } from '@/components/ui';
 
 interface InventoryDetail {
@@ -187,11 +188,7 @@ export default function WmsInventoryDetailPage() {
   };
 
   if (isLoading && !inventory) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 12 }}>
-        <CircularProgress />
-      </Box>
-    );
+    return <PageLoading text="Загрузка акта инвентаризации..." />;
   }
 
   if (!inventory) {

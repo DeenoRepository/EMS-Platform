@@ -52,6 +52,7 @@ import {
   EmptyState,
   DataTableWrapper,
   ConfirmDialog,
+  PageLoading,
 } from '@/components/ui';
 
 interface DocumentItem {
@@ -662,13 +663,7 @@ function DocumentsListContent() {
 
 export default function DocumentsPage() {
   return (
-    <Suspense
-      fallback={
-        <Box sx={{ p: 6, textAlign: 'center' }}>
-          <CircularProgress />
-        </Box>
-      }
-    >
+    <Suspense fallback={<PageLoading text="Загрузка архива документов оборудования..." />}>
       <DocumentsListContent />
     </Suspense>
   );

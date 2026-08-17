@@ -33,6 +33,7 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import LanIcon from '@mui/icons-material/Lan';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import { PageLoading } from '@/components/ui';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -234,7 +235,7 @@ export default function SetupWizardPage() {
   if (isCheckingStatus) {
     return (
       <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0f172a' }}>
-        <CircularProgress color="primary" />
+        <PageLoading text="Проверка статуса инициализации системы..." />
       </Box>
     );
   }

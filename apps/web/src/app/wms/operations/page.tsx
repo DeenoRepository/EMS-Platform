@@ -50,6 +50,7 @@ import {
   DataTableWrapper,
   EmptyState,
   StatusBadge,
+  PageLoading,
 } from '@/components/ui';
 
 interface StockOperation {
@@ -871,13 +872,7 @@ function WmsOperationsContent() {
 
 export default function WmsOperationsPage() {
   return (
-    <Suspense
-      fallback={
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 12 }}>
-          <CircularProgress />
-        </Box>
-      }
-    >
+    <Suspense fallback={<PageLoading text="Загрузка журнала складских операций..." />}>
       <WmsOperationsContent />
     </Suspense>
   );

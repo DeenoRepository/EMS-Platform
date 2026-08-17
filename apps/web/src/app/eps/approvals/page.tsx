@@ -59,6 +59,7 @@ import {
   FilterToolbar,
   EmptyState,
   DataTableWrapper,
+  PageLoading,
 } from '@/components/ui';
 
 interface ApprovalItem {
@@ -986,13 +987,7 @@ function ApprovalsListContent() {
 
 export default function ApprovalsPage() {
   return (
-    <Suspense
-      fallback={
-        <Box sx={{ p: 6, textAlign: 'center' }}>
-          <CircularProgress />
-        </Box>
-      }
-    >
+    <Suspense fallback={<PageLoading text="Загрузка реестра заявок на согласование..." />}>
       <ApprovalsListContent />
     </Suspense>
   );

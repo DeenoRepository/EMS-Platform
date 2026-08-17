@@ -2,8 +2,9 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Box, Button } from '@mui/material';
 import { useAuth } from '@/lib/auth-client';
-import { Box, CircularProgress, Typography, Button } from '@mui/material';
+import { PageLoading } from '@/components/ui';
 
 export default function HomePage() {
   const { user, isLoading } = useAuth();
@@ -41,13 +42,10 @@ export default function HomePage() {
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: '80vh',
-        gap: 2,
+        gap: 1,
       }}
     >
-      <CircularProgress size={44} thickness={4} />
-      <Typography variant="body2" color="text.secondary">
-        Загрузка системы EMS...
-      </Typography>
+      <PageLoading text="Загрузка системы EMS..." minHeight={120} />
       <Button
         variant="text"
         size="small"
