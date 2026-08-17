@@ -415,9 +415,9 @@ export default function SrmOverviewPage() {
   return (
     <Box>
       <PageHeader
-        title="SRM — Сервис-Деск и Управление заявками"
+        title="SRM — Система подачи и управления заявками"
         subtitle="Мониторинг инцидентов, контроль SLA, аналитика надежности оборудования и единый центр интеграций (Jira, Redmine, GitLab, 1C)"
-        breadcrumbs={[{ label: 'Главная', href: '/' }, { label: 'Управление заявками SRM' }]}
+        breadcrumbs={[{ label: 'Главная', href: '/' }, { label: 'Система подачи заявок' }]}
         actions={
           <Button
             variant="contained"

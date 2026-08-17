@@ -66,7 +66,7 @@ const STATIC_COMMANDS = [
     icon: <Inventory2Icon />,
   },
   {
-    title: 'Дашборд надежности Jira (SRM)',
+    title: 'Система подачи заявок (SRM)',
     path: '/srm',
     category: 'Навигация',
     icon: <AssessmentIcon />,

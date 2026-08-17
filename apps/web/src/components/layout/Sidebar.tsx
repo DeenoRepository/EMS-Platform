@@ -237,8 +237,8 @@ export default function Sidebar({
     },
     {
       id: 'srm',
-      label: 'Дашборд Jira (SRM)',
-      icon: <AnalyticsOutlinedIcon sx={{ fontSize: 18 }} />,
+      label: 'Система подачи заявок',
+      icon: <BugReportOutlinedIcon sx={{ fontSize: 18 }} />,
       permission: PERMISSIONS.SRM_DASHBOARD_VIEW,
       children: [
         { label: 'Инциденты и заявки', path: '/srm', icon: <TimelineIcon sx={{ fontSize: 15 }} /> },
@@ -276,7 +276,7 @@ export default function Sidebar({
       children: [
         { label: 'Паспортизация (EPS)', path: '/admin/module-settings?tab=eps', icon: <BadgeOutlinedIcon sx={{ fontSize: 15 }} /> },
         { label: 'Складской учёт (WMS)', path: '/admin/module-settings?tab=wms', icon: <WarehouseOutlinedIcon sx={{ fontSize: 15 }} /> },
-        { label: 'Интеграция Jira (SRM)', path: '/admin/module-settings?tab=srm', icon: <AnalyticsOutlinedIcon sx={{ fontSize: 15 }} /> },
+        { label: 'Подача заявок (SRM)', path: '/admin/module-settings?tab=srm', icon: <BugReportOutlinedIcon sx={{ fontSize: 15 }} /> },
         { label: 'ТО и Ремонт (MRO)', path: '/admin/module-settings?tab=mro', icon: <BuildOutlinedIcon sx={{ fontSize: 15 }} /> },
       ],
     },

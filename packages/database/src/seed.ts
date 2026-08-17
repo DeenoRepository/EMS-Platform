@@ -29,7 +29,7 @@ async function main() {
     { code: 'wms.inventory.manage', displayName: 'Инвентаризация', module: 'wms', description: 'Создание и закрытие актов инвентаризации' },
 
     // SRM
-    { code: 'srm.dashboard.view', displayName: 'Просмотр дашборда Jira', module: 'srm', description: 'Доступ к метрикам MTTR/MTBF, графикам и заявкам' },
+    { code: 'srm.dashboard.view', displayName: 'Просмотр системы подачи заявок', module: 'srm', description: 'Доступ к заявкам, инцидентам, графикам и метрикам MTTR/MTBF' },
     { code: 'srm.reports.export', displayName: 'Экспорт отчетов SRM', module: 'srm', description: 'Выгрузка аналитики в Excel и PDF' },
 
     // MRO

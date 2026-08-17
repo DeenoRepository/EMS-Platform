@@ -119,10 +119,10 @@ const MODULE_META: Record<string, { title: string; subtitle: string; breadcrumb:
     name: 'Складской учёт (WMS)',
   },
   srm: {
-    title: 'Настройки модуля — Интеграция Jira (SRM)',
-    subtitle: 'Управление параметрами синхронизации инцидентов и сервисных заявок',
-    breadcrumb: 'Интеграция Jira (SRM)',
-    name: 'Интеграция Jira (SRM)',
+    title: 'Настройки модуля — Система подачи заявок (SRM)',
+    subtitle: 'Управление параметрами синхронизации инцидентов и внешних интеграций ServiceDesk',
+    breadcrumb: 'Система подачи заявок (SRM)',
+    name: 'Система подачи заявок (SRM)',
   },
   mro: {
     title: 'Настройки модуля — ТО и Ремонт (MRO)',
@@ -469,9 +469,9 @@ function ModuleSettingsContent() {
       breadcrumb: 'Складской учёт (WMS)',
     },
     {
-      title: 'Настройки модуля: Интеграция Jira (SRM)',
-      subtitle: 'Настройки синхронизации с Jira, маппинг проектов, типов задач и SLA',
-      breadcrumb: 'Интеграция Jira (SRM)',
+      title: 'Настройки модуля: Система подачи заявок (SRM)',
+      subtitle: 'Настройки синхронизации с ServiceDesk (Jira, Redmine, 1C), маппинг полей и SLA',
+      breadcrumb: 'Система подачи заявок (SRM)',
     },
     {
       title: 'Настройки модуля: ТО и Ремонт (MRO)',
@@ -844,11 +844,11 @@ function ModuleSettingsContent() {
         </Card>
       )}
 
-      {/* TAB 2: SRM — Дашборд Jira */}
+      {/* TAB 2: SRM — Система подачи заявок */}
       {activeTab === 2 && (
         <Card sx={{ p: 4 }}>
           <Typography variant="h6" fontWeight={700} gutterBottom>
-            Конфигурация интеграции Jira (SRM)
+            Конфигурация системы подачи заявок и интеграций (SRM)
           </Typography>
           <Typography variant="body2" color="text.secondary" paragraph>
             Маппинг полей инцидентов, статусов завершения и правил расчета метрик MTTR / MTBF

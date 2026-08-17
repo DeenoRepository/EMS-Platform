@@ -1158,21 +1158,21 @@ export default function EquipmentPassportPage() {
         </Card>
       )}
 
-      {/* TAB 6: Заявки (SRM / Jira) */}
+      {/* TAB 6: Заявки (SRM) */}
       {activeTab === 6 && (
         <Card sx={{ p: 3 }}>
           <Typography variant="h6" fontWeight={700} gutterBottom>
-            Связанные заявки на ремонт из Jira (SRM)
+            Связанные заявки на ремонт и инциденты (SRM)
           </Typography>
           <Typography variant="caption" color="text.secondary" paragraph>
-            Заявки, сопоставленные с данным оборудованием по инвентарному номеру
+            Заявки, сопоставленные с данным оборудованием по инвентарному или серийному номеру
           </Typography>
           <Divider sx={{ mb: 2 }} />
 
           {(!equipment.jiraIssues || equipment.jiraIssues.length === 0) ? (
             <Box sx={{ p: 6, textAlign: 'center', color: 'text.secondary' }}>
               <ConfirmationNumberIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
-              <Typography variant="body2">Связанных заявок в Jira не найдено</Typography>
+              <Typography variant="body2">Связанных заявок в SRM не найдено</Typography>
             </Box>
           ) : (
             <TableContainer>

@@ -55,7 +55,7 @@ interface RoleItem {
 const MODULE_LABELS: Record<string, string> = {
   eps: 'EPS — Паспортизация оборудования',
   wms: 'WMS — Складской учёт',
-  srm: 'SRM — Дашборд Jira',
+  srm: 'SRM — Система подачи заявок',
   mro: 'MRO — Техническое обслуживание',
   admin: 'Администрирование системы',
 };

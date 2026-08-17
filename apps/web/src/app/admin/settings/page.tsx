@@ -146,8 +146,8 @@ export default function AdminSettingsPage() {
     },
     {
       id: 'srm',
-      name: 'Дашборд Jira (SRM)',
-      desc: 'Мониторинг инцидентов, синхронизация с Jira Service Desk, аналитика MTTR/MTBF и SLA.',
+      name: 'Система подачи заявок (SRM)',
+      desc: 'Мониторинг инцидентов, синхронизация с ServiceDesk (Jira, Redmine, 1C), аналитика MTTR/MTBF и SLA.',
       icon: <AnalyticsOutlinedIcon color="primary" sx={{ fontSize: 24 }} />,
     },
     {
