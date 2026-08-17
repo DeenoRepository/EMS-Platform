@@ -533,26 +533,68 @@ model InventoryItem {
 }
 
 // ==========================================
-// 5. SRM — ДАШБОРД JIRA
+// 5. SRM — СЕРВИС-ДЕСК И ИНТЕГРАЦИИ (JIRA, REDMINE, 1C, REST)
 // ==========================================
 
+model SrmIntegration {
+  id             String          @id @default(uuid())
+  name           String          // e.g. "Корпоративная Jira SRM", "Redmine IT-отдел", "1С:ТОиР ServiceDesk"
+  providerType   SrmProviderType @default(JIRA)
+  isActive       Boolean         @default(true)
+  isDefault      Boolean         @default(false)
+  baseUrl        String          // e.g. "https://jira.company.ru" or "https://redmine.corp.local"
+  authType       SrmAuthType     @default(BASIC)
+  authConfig     Json            // { username, apiToken, headerName, apiKey, etc. }
+  queryConfig    Json            // { endpoint, method, queryParams, defaultJqlOrFilter, headers }
+  mappingConfig  Json?           // Схема сопоставления полей (JiraFieldMappingConfig)
+  syncInterval   Int             @default(60) // интервал в минутах
+  lastSyncAt     DateTime?
+  lastSyncStatus String?         // SUCCESS, ERROR
+  lastSyncError  String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  issues         JiraIssueCache[]
+}
+
+enum SrmProviderType {
+  JIRA
+  REDMINE
+  GITLAB_ISSUES
+  REST_GENERIC
+  SERVICE_NOW
+  CUSTOM_WEBHOOK
+}
+
+enum SrmAuthType {
+  BASIC
+  BEARER
+  API_KEY
+  CUSTOM_HEADERS
+  NONE
+}
+
 model JiraIssueCache {
-  id           String    @id @default(uuid())
-  issueKey     String    @unique // e.g. EMS-104
-  summary      String
-  status       String
-  priority     String
-  issueType    String
-  assignee     String?
-  reporter     String?
-  createdDate  DateTime
-  resolvedDate DateTime?
-  equipmentId  String?   // Сопоставленное оборудование
-  rawData      Json      // Полный JSON из Jira
-  syncedAt     DateTime  @default(now())
+  id            String          @id @default(uuid())
+  issueKey      String          @unique // e.g. EMS-104 or REDMINE-12
+  summary       String
+  status        String
+  priority      String
+  issueType     String
+  assignee      String?
+  reporter      String?
+  createdDate   DateTime
+  resolvedDate  DateTime?
+  equipmentId   String?         // Сопоставленное оборудование
+  integrationId String?         // Ссылка на источник интеграции
+  rawData       Json            // Полный исходный JSON
+  syncedAt      DateTime        @default(now())
+
+  integration   SrmIntegration? @relation(fields: [integrationId], references: [id], onDelete: SetNull)
 
   @@index([status])
   @@index([equipmentId])
+  @@index([integrationId])
   @@index([createdDate])
 }
 

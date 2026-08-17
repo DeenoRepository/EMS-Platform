@@ -31,6 +31,8 @@ import {
   FormControl,
   InputLabel,
   Select,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import SpeedIcon from '@mui/icons-material/Speed';
 import TimerIcon from '@mui/icons-material/Timer';
@@ -46,6 +48,10 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import SaveIcon from '@mui/icons-material/Save';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import HubIcon from '@mui/icons-material/Hub';
+import CableIcon from '@mui/icons-material/Cable';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import PageHeader from '@/components/layout/PageHeader';
 import { useSnackbar } from 'notistack';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Cell, PieChart, Pie, Legend } from 'recharts';
@@ -67,6 +73,30 @@ export default function SrmOverviewPage() {
   const [stats, setStats] = useState<any>(null);
   const [issues, setIssues] = useState<any[]>([]);
 
+  // Интеграции с внешними системами
+  const [integrations, setIntegrations] = useState<any[]>([]);
+  const [providerTemplates, setProviderTemplates] = useState<any[]>([]);
+  const [openIntegrationDialog, setOpenIntegrationDialog] = useState(false);
+  const [testingIntegrationId, setTestingIntegrationId] = useState<string | null>(null);
+  const [integrationPingResult, setIntegrationPingResult] = useState<any>(null);
+
+  // Форма новой интеграции
+  const [integrationForm, setIntegrationForm] = useState({
+    name: '',
+    providerType: 'JIRA',
+    baseUrl: '',
+    authType: 'BASIC',
+    username: '',
+    apiToken: '',
+    apiKey: '',
+    headerName: '',
+    endpoint: '',
+    projectKeyOrId: '',
+    syncInterval: 60,
+    isActive: true,
+    isDefault: false,
+  });
+
   // Состояние конструктора сопоставления полей
   const [mappingConfig, setMappingConfig] = useState<any>(null);
   const [mappingDefaults, setMappingDefaults] = useState<any>(null);
@@ -81,10 +111,11 @@ export default function SrmOverviewPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [resStats, resIssues, resMapping] = await Promise.all([
+      const [resStats, resIssues, resMapping, resIntegrations] = await Promise.all([
         fetch('/api/srm/stats').then((r) => r.json()),
         fetch('/api/srm/issues').then((r) => r.json()),
         fetch('/api/srm/mapping').then((r) => r.json()),
+        fetch('/api/srm/integrations').then((r) => r.json()),
       ]);
 
       if (resStats.success) setStats(resStats.data);
@@ -93,6 +124,10 @@ export default function SrmOverviewPage() {
         setMappingConfig(resMapping.data.config);
         setMappingDefaults(resMapping.data.defaults);
         setSampleJsonText(JSON.stringify(resMapping.data.sampleIssue, null, 2));
+      }
+      if (resIntegrations.success) {
+        setIntegrations(resIntegrations.data.integrations || []);
+        setProviderTemplates(resIntegrations.data.providerTemplates || []);
       }
     } catch (err) {
       console.error('Ошибка загрузки данных SRM:', err);
@@ -121,6 +156,132 @@ export default function SrmOverviewPage() {
       enqueueSnackbar('Ошибка сервера при синхронизации', { variant: 'error' });
     } finally {
       setSyncing(false);
+    }
+  };
+
+  // Обработчики интеграций
+  const handleSelectTemplate = (template: any) => {
+    setIntegrationForm({
+      name: template.name,
+      providerType: template.type,
+      baseUrl: 'https://',
+      authType: template.defaultAuthType,
+      username: '',
+      apiToken: '',
+      apiKey: '',
+      headerName: '',
+      endpoint: template.defaultEndpoint,
+      projectKeyOrId: '',
+      syncInterval: 60,
+      isActive: true,
+      isDefault: integrations.length === 0,
+    });
+    setOpenIntegrationDialog(true);
+  };
+
+  const handleCreateIntegration = async () => {
+    if (!integrationForm.name || !integrationForm.baseUrl) {
+      enqueueSnackbar('Заполните название и URL подключения', { variant: 'error' });
+      return;
+    }
+
+    try {
+      const authConfig: any = {};
+      if (integrationForm.authType === 'BASIC') {
+        authConfig.username = integrationForm.username;
+        authConfig.apiToken = integrationForm.apiToken;
+      } else if (integrationForm.authType === 'BEARER') {
+        authConfig.token = integrationForm.apiToken;
+      } else if (integrationForm.authType === 'API_KEY') {
+        authConfig.apiKey = integrationForm.apiKey;
+        authConfig.headerName = integrationForm.headerName;
+      }
+
+      const queryConfig: any = {
+        endpoint: integrationForm.endpoint,
+      };
+      if (integrationForm.providerType === 'JIRA') {
+        queryConfig.projectKey = integrationForm.projectKeyOrId || 'EMS';
+      } else if (integrationForm.providerType === 'REDMINE' || integrationForm.providerType === 'GITLAB_ISSUES') {
+        queryConfig.projectId = integrationForm.projectKeyOrId;
+      }
+
+      const res = await fetch('/api/srm/integrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: integrationForm.name,
+          providerType: integrationForm.providerType,
+          baseUrl: integrationForm.baseUrl,
+          authType: integrationForm.authType,
+          authConfig,
+          queryConfig,
+          syncInterval: integrationForm.syncInterval,
+          isActive: integrationForm.isActive,
+          isDefault: integrationForm.isDefault,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        enqueueSnackbar('Подключение успешно добавлено', { variant: 'success' });
+        setOpenIntegrationDialog(false);
+        loadData();
+      } else {
+        enqueueSnackbar(data.error || 'Ошибка добавления подключения', { variant: 'error' });
+      }
+    } catch {
+      enqueueSnackbar('Ошибка сервера при создании интеграции', { variant: 'error' });
+    }
+  };
+
+  const handleDeleteIntegration = async (id: string) => {
+    if (!confirm('Вы уверены, что хотите удалить данное подключение?')) return;
+    try {
+      const res = await fetch(`/api/srm/integrations/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        enqueueSnackbar('Подключение удалено', { variant: 'success' });
+        loadData();
+      } else {
+        enqueueSnackbar(data.error || 'Ошибка удаления', { variant: 'error' });
+      }
+    } catch {
+      enqueueSnackbar('Ошибка сервера при удалении', { variant: 'error' });
+    }
+  };
+
+  const handleTestIntegrationConnection = async (id: string) => {
+    setTestingIntegrationId(id);
+    setIntegrationPingResult(null);
+    try {
+      const res = await fetch(`/api/srm/integrations/${id}/test`, { method: 'POST' });
+      const data = await res.json();
+      setIntegrationPingResult({ id, ...data });
+      if (data.success) {
+        enqueueSnackbar(data.data?.message || 'Соединение успешно проверено!', { variant: 'success' });
+      } else {
+        enqueueSnackbar(data.error || data.data?.message || 'Ошибка соединения с внешним API', { variant: 'error' });
+      }
+    } catch {
+      enqueueSnackbar('Ошибка сети при проверке подключения', { variant: 'error' });
+    } finally {
+      setTestingIntegrationId(null);
+    }
+  };
+
+  const handleSyncSingleIntegration = async (id: string) => {
+    try {
+      const res = await fetch(`/api/srm/integrations/${id}/sync`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        enqueueSnackbar(data.message || 'Синхронизация завершена', { variant: 'success' });
+        loadData();
+      } else {
+        enqueueSnackbar(data.error || 'Ошибка синхронизации', { variant: 'error' });
+      }
+    } catch {
+      enqueueSnackbar('Ошибка сервера при синхронизации', { variant: 'error' });
     }
   };
 
@@ -254,8 +415,8 @@ export default function SrmOverviewPage() {
   return (
     <Box>
       <PageHeader
-        title="SRM — Дашборд заявок и интеграция Jira"
-        subtitle="Мониторинг заявок на ремонт оборудования, контроль SLA, аналитика надежности и конструктор сопоставления полей"
+        title="SRM — Сервис-Деск и Управление заявками"
+        subtitle="Мониторинг инцидентов, контроль SLA, аналитика надежности оборудования и единый центр интеграций (Jira, Redmine, GitLab, 1C)"
         breadcrumbs={[{ label: 'Главная', href: '/' }, { label: 'Управление заявками SRM' }]}
         actions={
           <Button
@@ -265,7 +426,7 @@ export default function SrmOverviewPage() {
             onClick={handleSync}
             disabled={syncing}
           >
-            Синхронизировать с Jira
+            Синхронизировать все системы
           </Button>
         }
       />
@@ -280,8 +441,9 @@ export default function SrmOverviewPage() {
           scrollButtons="auto"
         >
           <Tab icon={<DashboardIcon />} iconPosition="start" label="Дашборд и Метрики" />
-          <Tab icon={<ListAltIcon />} iconPosition="start" label={`Реестр заявок Jira (${issues.length})`} />
+          <Tab icon={<ListAltIcon />} iconPosition="start" label={`Реестр заявок (${issues.length})`} />
           <Tab icon={<SettingsSuggestIcon />} iconPosition="start" label="Конструктор сопоставления полей" />
+          <Tab icon={<CableIcon />} iconPosition="start" label={`Внешние API и Интеграции (${integrations.length})`} />
         </Tabs>
       </Paper>
 
@@ -429,13 +591,13 @@ export default function SrmOverviewPage() {
             </>
           )}
 
-          {/* ВКЛАДКА 1: РЕЕСТР ЗАЯВОК JIRA */}
+          {/* ВКЛАДКА 1: РЕЕСТР ЗАЯВОК */}
           {(currentTab === 0 || currentTab === 1) && (
             <Card sx={{ mb: 4 }}>
               <CardContent sx={{ p: 0 }}>
                 <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Typography variant="h6" fontWeight={700}>
-                    {currentTab === 0 ? 'Последние заявки из Jira' : 'Полный реестр инцидентов и заявок'}
+                    {currentTab === 0 ? 'Последние заявки из внешних систем' : 'Полный реестр инцидентов и заявок'}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Всего синхронизировано: {issues.length}
@@ -446,6 +608,7 @@ export default function SrmOverviewPage() {
                     <TableRow>
                       <TableCell sx={{ fontWeight: 700 }}>Ключ задачи</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Тема инцидента</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Источник</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Статус</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Приоритет</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Связанное оборудование</TableCell>
@@ -459,8 +622,8 @@ export default function SrmOverviewPage() {
                   <TableBody>
                     {issues.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} align="center" sx={{ py: 6, color: 'text.secondary' }}>
-                          Заявки не найдены. Нажмите «Синхронизировать с Jira» для загрузки данных.
+                        <TableCell colSpan={9} align="center" sx={{ py: 6, color: 'text.secondary' }}>
+                          Заявки не найдены. Нажмите «Синхронизировать все системы» для загрузки данных.
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -474,6 +637,14 @@ export default function SrmOverviewPage() {
                             <Typography variant="caption" color="text.secondary">
                               Тип: {issue.issueType}
                             </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={issue.integration?.name || 'Jira Env'}
+                              size="small"
+                              variant="outlined"
+                              color="primary"
+                            />
                           </TableCell>
                           <TableCell>
                             <Chip
@@ -530,11 +701,11 @@ export default function SrmOverviewPage() {
             </Card>
           )}
 
-          {/* ВКЛАДКА 2: КОНСТРУКТОР СОПОСТАВЛЕНИЯ ПОЛЕЙ JIRA */}
+          {/* ВКЛАДКА 2: КОНСТРУКТОР СОПОСТАВЛЕНИЯ ПОЛЕЙ */}
           {currentTab === 2 && mappingConfig && (
             <Box>
               <Alert severity="info" sx={{ mb: 3 }}>
-                Здесь вы можете настраивать сопоставление (mapping) атрибутов, извлекаемых из Jira JSON, со структурой сущностей и аналитики SRM. Изменения применяются автоматически при каждой синхронизации.
+                Здесь вы можете настраивать сопоставление (mapping) атрибутов, извлекаемых из внешней системы (Jira, Redmine, 1С, REST), со структурой сущностей и аналитики SRM. Изменения применяются автоматически при каждой синхронизации.
               </Alert>
 
               {/* СЕКЦИЯ 1: СТАНДАРТНЫЕ ПОЛЯ SRM */}
@@ -544,14 +715,14 @@ export default function SrmOverviewPage() {
                     1. Сопоставление базовых полей SRM
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                    Укажите dot-нотацию пути к соответствующему свойству в структуре задачи Jira (например: <code>fields.summary</code>, <code>fields.status.name</code>).
+                    Укажите dot-нотацию пути к соответствующему свойству в структуре задачи (например: <code>fields.summary</code>, <code>fields.status.name</code>, <code>subject</code>, <code>title</code>).
                   </Typography>
 
                   <Table size="small">
                     <TableHead sx={{ backgroundColor: 'action.hover' }}>
                       <TableRow>
                         <TableCell sx={{ fontWeight: 700, width: '25%' }}>Поле в SRM</TableCell>
-                        <TableCell sx={{ fontWeight: 700, width: '35%' }}>Путь в JSON Jira</TableCell>
+                        <TableCell sx={{ fontWeight: 700, width: '35%' }}>Путь в JSON объекта</TableCell>
                         <TableCell sx={{ fontWeight: 700, width: '20%' }}>Тип данных</TableCell>
                         <TableCell sx={{ fontWeight: 700, width: '20%' }}>Значение по умолчанию</TableCell>
                       </TableRow>
@@ -573,7 +744,7 @@ export default function SrmOverviewPage() {
                               fullWidth
                               value={item.jiraPath}
                               onChange={(e) => handleStandardFieldChange(idx, 'jiraPath', e.target.value)}
-                              placeholder="fields.xxx"
+                              placeholder="fields.xxx или xxx"
                             />
                           </TableCell>
                           <TableCell>
@@ -613,7 +784,7 @@ export default function SrmOverviewPage() {
                     2. Автоматическое связывание оборудования
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                    Правило для поиска единицы оборудования в каталоге EMS на основе данных задачи Jira.
+                    Правило для поиска единицы оборудования в каталоге EMS на основе данных задачи из внешней системы.
                   </Typography>
 
                   <Grid container spacing={3}>
@@ -621,10 +792,10 @@ export default function SrmOverviewPage() {
                       <TextField
                         size="small"
                         fullWidth
-                        label="Поле-источник идентификатора в Jira"
+                        label="Поле-источник идентификатора в задаче"
                         value={mappingConfig.equipmentMatching?.sourcePath || ''}
                         onChange={(e) => handleEquipmentMatchingChange('sourcePath', e.target.value)}
-                        helperText="Например: fields.customfield_10100 или fields.summary"
+                        helperText="Например: fields.customfield_10100 или description или equipmentId"
                       />
                     </Grid>
                     <Grid item xs={12} md={4}>
@@ -666,7 +837,7 @@ export default function SrmOverviewPage() {
                         3. Конструктор дополнительных кастомных полей
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Добавление произвольных атрибутов (время простоя, поставщик, код отказа и др.), извлекаемых из Jira.
+                        Добавление произвольных атрибутов (время простоя, поставщик, код отказа и др.), извлекаемых из внешних API.
                       </Typography>
                     </div>
                     <Button
@@ -689,7 +860,7 @@ export default function SrmOverviewPage() {
                         <TableRow>
                           <TableCell sx={{ fontWeight: 700 }}>Ключ в SRM</TableCell>
                           <TableCell sx={{ fontWeight: 700 }}>Отображаемое название</TableCell>
-                          <TableCell sx={{ fontWeight: 700 }}>Путь в Jira JSON</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Путь в JSON</TableCell>
                           <TableCell sx={{ fontWeight: 700 }}>Тип</TableCell>
                           <TableCell sx={{ fontWeight: 700 }}>Дефолт</TableCell>
                           <TableCell sx={{ fontWeight: 700 }} align="center">
@@ -763,7 +934,7 @@ export default function SrmOverviewPage() {
                     🧪 Интерактивный тестер сопоставления (Live Tester)
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    Вставьте образец задачи из Jira в формате JSON и проверьте, как сформируются поля и привязка к оборудованию до сохранения настроек.
+                    Вставьте образец задачи в формате JSON и проверьте, как сформируются поля и привязка к оборудованию до сохранения настроек.
                   </Typography>
 
                   <Grid container spacing={3}>
@@ -775,7 +946,7 @@ export default function SrmOverviewPage() {
                         variant="outlined"
                         value={sampleJsonText}
                         onChange={(e) => setSampleJsonText(e.target.value)}
-                        placeholder="Вставьте JSON задачи Jira..."
+                        placeholder="Вставьте JSON задачи..."
                         sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}
                       />
                       <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
@@ -888,8 +1059,401 @@ export default function SrmOverviewPage() {
               </Box>
             </Box>
           )}
+
+          {/* ВКЛАДКА 3: ВНЕШНИЕ API И ИНТЕГРАЦИИ (CONNECTORS) */}
+          {currentTab === 3 && (
+            <Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <div>
+                  <Typography variant="h6" fontWeight={700}>
+                    🔌 Подключенные системы ServiceDesk и внешние API
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Подключайте Jira, Redmine, GitLab, 1С:ТОиР или любые кастомные REST эндпоинты через единую модель SRM.
+                  </Typography>
+                </div>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<AddCircleOutlineIcon />}
+                  onClick={() => {
+                    setIntegrationForm({
+                      name: 'Новое подключение API',
+                      providerType: 'JIRA',
+                      baseUrl: 'https://',
+                      authType: 'BASIC',
+                      username: '',
+                      apiToken: '',
+                      apiKey: '',
+                      headerName: '',
+                      endpoint: '/rest/api/2/search',
+                      projectKeyOrId: '',
+                      syncInterval: 60,
+                      isActive: true,
+                      isDefault: integrations.length === 0,
+                    });
+                    setOpenIntegrationDialog(true);
+                  }}
+                >
+                  Добавить подключение API
+                </Button>
+              </Box>
+
+              {/* БЫСТРЫЕ ШАБЛОНЫ ПРОВАЙДЕРОВ */}
+              <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5 }}>
+                Готовые шаблоны провайдеров:
+              </Typography>
+              <Grid container spacing={2} sx={{ mb: 4 }}>
+                {providerTemplates.map((template) => (
+                  <Grid item xs={12} sm={6} md={3} key={template.type}>
+                    <Card
+                      variant="outlined"
+                      sx={{
+                        p: 2,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        '&:hover': { borderColor: 'primary.main', transform: 'translateY(-2px)' },
+                      }}
+                      onClick={() => handleSelectTemplate(template)}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <HubIcon color="primary" />
+                        <Typography variant="subtitle2" fontWeight={700}>
+                          {template.name}
+                        </Typography>
+                      </Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                        {template.description}
+                      </Typography>
+                      <Chip label={`Тип: ${template.type}`} size="small" variant="outlined" />
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+
+              {/* СПИСОК АКТИВНЫХ ПОДКЛЮЧЕНИЙ */}
+              <Card>
+                <CardContent sx={{ p: 0 }}>
+                  <Table>
+                    <TableHead sx={{ backgroundColor: 'action.hover' }}>
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: 700 }}>Название подключения</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Тип провайдера</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Базовый URL</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Авторизация</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Синхронизировано задач</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Последняя синхронизация</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Статус</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }} align="right">
+                          Действия
+                        </TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {integrations.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={8} align="center" sx={{ py: 6, color: 'text.secondary' }}>
+                            Подключения не настроены. Добавьте подключение через шаблон выше или нажмите «Добавить подключение API».
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        integrations.map((item) => (
+                          <TableRow key={item.id} hover>
+                            <TableCell>
+                              <Typography variant="body2" fontWeight={700}>
+                                {item.name}
+                              </Typography>
+                              {item.isDefault && <Chip label="По умолчанию" size="small" color="primary" sx={{ mt: 0.5 }} />}
+                            </TableCell>
+                            <TableCell>
+                              <Chip label={item.providerType} size="small" variant="outlined" color="primary" />
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
+                                {item.baseUrl}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="caption" color="text.secondary">
+                                {item.authType}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" fontWeight={600}>
+                                {item._count?.issues || 0}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              {item.lastSyncAt ? new Date(item.lastSyncAt).toLocaleString('ru-RU') : 'Никогда'}
+                            </TableCell>
+                            <TableCell>
+                              {item.lastSyncStatus === 'SUCCESS' ? (
+                                <Chip icon={<CheckCircleIcon />} label="ОК" color="success" size="small" />
+                              ) : item.lastSyncStatus === 'ERROR' ? (
+                                <Tooltip title={item.lastSyncError || 'Ошибка'}>
+                                  <Chip icon={<ErrorOutlineIcon />} label="Ошибка" color="error" size="small" />
+                                </Tooltip>
+                              ) : (
+                                <Chip label="Ожидание" size="small" />
+                              )}
+                            </TableCell>
+                            <TableCell align="right">
+                              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  startIcon={testingIntegrationId === item.id ? <CircularProgress size={16} /> : <PlayArrowIcon />}
+                                  onClick={() => handleTestIntegrationConnection(item.id)}
+                                  disabled={testingIntegrationId === item.id}
+                                >
+                                  Проверить связь
+                                </Button>
+                                <Button
+                                  size="small"
+                                  variant="contained"
+                                  color="primary"
+                                  startIcon={<SyncIcon />}
+                                  onClick={() => handleSyncSingleIntegration(item.id)}
+                                >
+                                  Синхронизировать
+                                </Button>
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={() => handleDeleteIntegration(item.id)}
+                                >
+                                  <DeleteOutlineIcon fontSize="small" />
+                                </IconButton>
+                              </Box>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+
+              {/* РЕЗУЛЬТАТ ПРОВЕРКИ СВЯЗИ */}
+              {integrationPingResult && (
+                <Alert
+                  severity={integrationPingResult.success ? 'success' : 'error'}
+                  sx={{ mt: 3 }}
+                  onClose={() => setIntegrationPingResult(null)}
+                >
+                  <Typography variant="subtitle2" fontWeight={700}>
+                    {integrationPingResult.data?.message || integrationPingResult.message || 'Результат проверки связи'}
+                  </Typography>
+                  {integrationPingResult.data?.diagnostics && (
+                    <Box sx={{ mt: 1 }}>
+                      {integrationPingResult.data.diagnostics.map((d: string, i: number) => (
+                        <Typography key={i} variant="caption" display="block">
+                          • {d}
+                        </Typography>
+                      ))}
+                    </Box>
+                  )}
+                </Alert>
+              )}
+            </Box>
+          )}
         </>
       )}
+
+      {/* ДИАЛОГ ДОБАВЛЕНИЯ / РЕДАКТИРОВАНИЯ ИНТЕГРАЦИИ */}
+      <Dialog
+        open={openIntegrationDialog}
+        onClose={() => setOpenIntegrationDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Настройка подключения к внешней системе ServiceDesk / API</DialogTitle>
+        <DialogContent dividers>
+          <Grid container spacing={2.5}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Название подключения"
+                fullWidth
+                size="small"
+                value={integrationForm.name}
+                onChange={(e) => setIntegrationForm({ ...integrationForm, name: e.target.value })}
+                placeholder="например: Корпоративная Jira IT"
+                required
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Тип провайдера</InputLabel>
+                <Select
+                  value={integrationForm.providerType}
+                  label="Тип провайдера"
+                  onChange={(e) => setIntegrationForm({ ...integrationForm, providerType: e.target.value })}
+                >
+                  <MenuItem value="JIRA">Atlassian Jira REST API</MenuItem>
+                  <MenuItem value="REDMINE">Redmine Issue Tracker</MenuItem>
+                  <MenuItem value="GITLAB_ISSUES">GitLab Issues API</MenuItem>
+                  <MenuItem value="REST_GENERIC">Универсальный REST / 1C ServiceDesk</MenuItem>
+                  <MenuItem value="SERVICE_NOW">ServiceNow API</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12}>
+              <TextField
+                label="Базовый URL сервера (Base URL)"
+                fullWidth
+                size="small"
+                value={integrationForm.baseUrl}
+                onChange={(e) => setIntegrationForm({ ...integrationForm, baseUrl: e.target.value })}
+                placeholder="https://jira.company.ru или https://redmine.corp.local"
+                required
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Тип авторизации</InputLabel>
+                <Select
+                  value={integrationForm.authType}
+                  label="Тип авторизации"
+                  onChange={(e) => setIntegrationForm({ ...integrationForm, authType: e.target.value })}
+                >
+                  <MenuItem value="BASIC">Basic Auth (Логин + Пароль / API-токен)</MenuItem>
+                  <MenuItem value="BEARER">Bearer Token (Personal Access Token)</MenuItem>
+                  <MenuItem value="API_KEY">API Key в заголовке</MenuItem>
+                  <MenuItem value="NONE">Без авторизации (Public / Proxy)</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Ключ проекта / Project ID"
+                fullWidth
+                size="small"
+                value={integrationForm.projectKeyOrId}
+                onChange={(e) => setIntegrationForm({ ...integrationForm, projectKeyOrId: e.target.value })}
+                placeholder="EMS или 42"
+              />
+            </Grid>
+
+            {integrationForm.authType === 'BASIC' && (
+              <>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Имя пользователя / Email"
+                    fullWidth
+                    size="small"
+                    value={integrationForm.username}
+                    onChange={(e) => setIntegrationForm({ ...integrationForm, username: e.target.value })}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Пароль / API Токен"
+                    fullWidth
+                    size="small"
+                    type="password"
+                    value={integrationForm.apiToken}
+                    onChange={(e) => setIntegrationForm({ ...integrationForm, apiToken: e.target.value })}
+                  />
+                </Grid>
+              </>
+            )}
+
+            {integrationForm.authType === 'BEARER' && (
+              <Grid item xs={12}>
+                <TextField
+                  label="Bearer / Access Token"
+                  fullWidth
+                  size="small"
+                  type="password"
+                  value={integrationForm.apiToken}
+                  onChange={(e) => setIntegrationForm({ ...integrationForm, apiToken: e.target.value })}
+                />
+              </Grid>
+            )}
+
+            {integrationForm.authType === 'API_KEY' && (
+              <>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Имя заголовка (Header Name)"
+                    fullWidth
+                    size="small"
+                    value={integrationForm.headerName}
+                    onChange={(e) => setIntegrationForm({ ...integrationForm, headerName: e.target.value })}
+                    placeholder="X-API-Key или X-Redmine-API-Key"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Значение API-ключа"
+                    fullWidth
+                    size="small"
+                    type="password"
+                    value={integrationForm.apiKey}
+                    onChange={(e) => setIntegrationForm({ ...integrationForm, apiKey: e.target.value })}
+                  />
+                </Grid>
+              </>
+            )}
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Эндпоинт поиска / задач"
+                fullWidth
+                size="small"
+                value={integrationForm.endpoint}
+                onChange={(e) => setIntegrationForm({ ...integrationForm, endpoint: e.target.value })}
+                placeholder="/rest/api/2/search или /issues.json"
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Интервал авто-синхронизации (минуты)"
+                fullWidth
+                size="small"
+                type="number"
+                value={integrationForm.syncInterval}
+                onChange={(e) => setIntegrationForm({ ...integrationForm, syncInterval: parseInt(e.target.value) || 60 })}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={integrationForm.isActive}
+                    onChange={(e) => setIntegrationForm({ ...integrationForm, isActive: e.target.checked })}
+                  />
+                }
+                label="Подключение активно"
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={integrationForm.isDefault}
+                    onChange={(e) => setIntegrationForm({ ...integrationForm, isDefault: e.target.checked })}
+                  />
+                }
+                label="Основной источник SRM"
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenIntegrationDialog(false)}>Отмена</Button>
+          <Button variant="contained" color="primary" onClick={handleCreateIntegration}>
+            Сохранить подключение
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* ДИАЛОГ ПРОСМОТРА СЫРОГО JSON ЗАДАЧИ */}
       <Dialog

@@ -418,21 +418,105 @@ export async function testJiraFieldMapping(
 }
 
 /**
- * Основная функция синхронизации задач с использованием динамического сопоставления полей
+ * Унифицированная функция синхронизации задач с внешними системами (Jira, Redmine, GitLab, REST API)
  */
-export async function syncJiraIssues(): Promise<{ count: number; source: 'jira_api' | 'mock_cache' }> {
+export async function syncJiraIssues(targetIntegrationId?: string): Promise<{ count: number; source: string }> {
+  const allEquipment = await prisma.equipment.findMany({
+    select: { id: true, name: true, inventoryNumber: true, serialNumber: true },
+  });
+
+  const defaultGlobalMapping = await getJiraFieldMapping();
+
+  // 1. Проверяем наличие настроенных интеграций в базе данных
+  const integrationWhere: any = { isActive: true };
+  if (targetIntegrationId) {
+    integrationWhere.id = targetIntegrationId;
+  }
+
+  const integrations = await prisma.srmIntegration.findMany({
+    where: integrationWhere,
+  });
+
+  if (integrations.length > 0) {
+    const { getSrmAdapter } = await import('./srm-providers');
+    let totalImported = 0;
+
+    for (const integration of integrations) {
+      try {
+        const adapter = getSrmAdapter(integration.providerType);
+        const rawIssues = await adapter.fetchIssues(integration);
+
+        const mappingConfig = (integration.mappingConfig as unknown as JiraFieldMappingConfig) || defaultGlobalMapping;
+
+        for (const rawIssue of rawIssues) {
+          const mapped = await applyJiraFieldMapping(rawIssue, mappingConfig, allEquipment);
+
+          await prisma.jiraIssueCache.upsert({
+            where: { issueKey: mapped.issueKey },
+            create: {
+              issueKey: mapped.issueKey,
+              summary: mapped.summary,
+              status: mapped.status,
+              priority: mapped.priority,
+              issueType: mapped.issueType,
+              assignee: mapped.assignee,
+              reporter: mapped.reporter,
+              createdDate: mapped.createdDate,
+              resolvedDate: mapped.resolvedDate,
+              equipmentId: mapped.equipmentId,
+              integrationId: integration.id,
+              rawData: rawIssue,
+              syncedAt: new Date(),
+            },
+            update: {
+              summary: mapped.summary,
+              status: mapped.status,
+              priority: mapped.priority,
+              issueType: mapped.issueType,
+              assignee: mapped.assignee,
+              reporter: mapped.reporter,
+              createdDate: mapped.createdDate,
+              resolvedDate: mapped.resolvedDate,
+              equipmentId: mapped.equipmentId,
+              integrationId: integration.id,
+              rawData: rawIssue,
+              syncedAt: new Date(),
+            },
+          });
+          totalImported++;
+        }
+
+        await prisma.srmIntegration.update({
+          where: { id: integration.id },
+          data: {
+            lastSyncAt: new Date(),
+            lastSyncStatus: 'SUCCESS',
+            lastSyncError: null,
+          },
+        });
+      } catch (err: any) {
+        console.error(`Ошибка синхронизации интеграции [${integration.name}]:`, err);
+        await prisma.srmIntegration.update({
+          where: { id: integration.id },
+          data: {
+            lastSyncAt: new Date(),
+            lastSyncStatus: 'ERROR',
+            lastSyncError: err.message || String(err),
+          },
+        });
+      }
+    }
+
+    return { count: totalImported, source: 'srm_integrations' };
+  }
+
+  // 2. Fallback на переменные окружения .env (legacy Jira)
   const isJiraEnabled = process.env.JIRA_ENABLED === 'true';
   const baseUrl = process.env.JIRA_BASE_URL;
   const apiToken = process.env.JIRA_API_TOKEN;
   const userEmail = process.env.JIRA_USER_EMAIL;
   const projectKey = process.env.JIRA_PROJECT_KEY || 'EMS';
 
-  const mappingConfig = await getJiraFieldMapping();
-  const allEquipment = await prisma.equipment.findMany({
-    select: { id: true, name: true, inventoryNumber: true, serialNumber: true },
-  });
-
-  // 1. Попытка синхронизации с реальным Jira REST API
   if (isJiraEnabled && baseUrl && apiToken && userEmail) {
     try {
       const authHeader = `Basic ${Buffer.from(`${userEmail}:${apiToken}`).toString('base64')}`;
@@ -448,7 +532,7 @@ export async function syncJiraIssues(): Promise<{ count: number; source: 'jira_a
         const issues: any[] = data.issues || [];
 
         for (const issue of issues) {
-          const mapped = await applyJiraFieldMapping(issue, mappingConfig, allEquipment);
+          const mapped = await applyJiraFieldMapping(issue, defaultGlobalMapping, allEquipment);
 
           await prisma.jiraIssueCache.upsert({
             where: { issueKey: mapped.issueKey },
@@ -482,10 +566,10 @@ export async function syncJiraIssues(): Promise<{ count: number; source: 'jira_a
           });
         }
 
-        return { count: issues.length, source: 'jira_api' };
+        return { count: issues.length, source: 'jira_env_api' };
       }
     } catch (err) {
-      console.warn('Не удалось подключиться к Jira API, переход в локальный fallback режим:', err);
+      console.warn('Не удалось подключиться к Jira по .env, переход в локальный fallback:', err);
     }
   }
 
