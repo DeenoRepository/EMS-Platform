@@ -59,6 +59,7 @@ import {
   DataTableWrapper,
   StatusBadge,
   SearchInput,
+  FormDialog,
 } from '@/components/ui';
 
 interface ReportColumn {
@@ -872,63 +873,59 @@ export default function ReportBuilderPage() {
       </Grid>
 
       {/* Save Template Dialog */}
-      <Dialog open={saveModalOpen} onClose={() => setSaveModalOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Сохранение шаблона отчета</DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-            <TextField
-              label="Название шаблона *"
-              value={newTemplateName}
-              onChange={(e) => setNewTemplateName(e.target.value)}
-              fullWidth
-              size="small"
-              placeholder="Например: Инвентаризационная ведомость электроцеха"
-            />
-            <TextField
-              label="Описание шаблона"
-              value={newTemplateDesc}
-              onChange={(e) => setNewTemplateDesc(e.target.value)}
-              multiline
-              rows={2}
-              fullWidth
-              size="small"
-              placeholder="Краткое назначение отчета..."
-            />
-            <Paper variant="outlined" sx={{ p: 2, backgroundColor: '#f8fafc' }}>
-              <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
-                В шаблон будут сохранены:
-              </Typography>
-              <Typography variant="body2" fontWeight={600}>
-                • Выбранные колонки ({selectedColumnKeys.length} шт.)
-              </Typography>
-              <Typography variant="body2" fontWeight={600}>
-                • Текущие параметры фильтрации
-              </Typography>
-            </Paper>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={newTemplatePublic}
-                  onChange={(e) => setNewTemplatePublic(e.target.checked)}
-                />
-              }
-              label="Сделать шаблон общедоступным для всех инженеров"
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setSaveModalOpen(false)} color="inherit">
-            Отмена
-          </Button>
-          <Button
-            onClick={handleSaveTemplate}
-            variant="contained"
-            disabled={!newTemplateName.trim() || savingTemplate}
-          >
-            {savingTemplate ? <CircularProgress size={20} /> : 'Сохранить'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Save Template Modal Dialog */}
+      <FormDialog
+        open={saveModalOpen}
+        onClose={() => setSaveModalOpen(false)}
+        title="Сохранение шаблона отчета"
+        icon={<BookmarkAddOutlinedIcon color="primary" />}
+        maxWidth="sm"
+        loading={savingTemplate}
+        submitLabel={savingTemplate ? 'Сохранение...' : 'Сохранить шаблон'}
+        onSubmit={handleSaveTemplate}
+        submitDisabled={!newTemplateName.trim() || savingTemplate}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
+          <TextField
+            label="Название шаблона *"
+            value={newTemplateName}
+            onChange={(e) => setNewTemplateName(e.target.value)}
+            fullWidth
+            size="small"
+            placeholder="Например: Инвентаризационная ведомость электроцеха"
+          />
+          <TextField
+            label="Описание шаблона"
+            value={newTemplateDesc}
+            onChange={(e) => setNewTemplateDesc(e.target.value)}
+            multiline
+            rows={2}
+            fullWidth
+            size="small"
+            placeholder="Краткое назначение отчета..."
+          />
+          <Paper variant="outlined" sx={{ p: 2, backgroundColor: '#f8fafc' }}>
+            <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
+              В шаблон будут сохранены:
+            </Typography>
+            <Typography variant="body2" fontWeight={600}>
+              • Выбранные колонки ({selectedColumnKeys.length} шт.)
+            </Typography>
+            <Typography variant="body2" fontWeight={600}>
+              • Текущие параметры фильтрации
+            </Typography>
+          </Paper>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={newTemplatePublic}
+                onChange={(e) => setNewTemplatePublic(e.target.checked)}
+              />
+            }
+            label="Сделать шаблон общедоступным для всех инженеров"
+          />
+        </Box>
+      </FormDialog>
     </Box>
   );
 }

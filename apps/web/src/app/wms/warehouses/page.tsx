@@ -39,7 +39,7 @@ import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS } from '@ems/shared';
-import { StatCard, StatusBadge, EmptyState, PageLoading } from '@/components/ui';
+import { StatCard, StatusBadge, EmptyState, PageLoading, FormDialog } from '@/components/ui';
 
 interface StorageCell {
   id: string;
@@ -510,67 +510,61 @@ export default function WmsWarehousesPage() {
       )}
 
       {/* Модальное окно создания / редактирования склада */}
-      <Dialog open={isModalOpen} onClose={() => !isSubmitting && setIsModalOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700 }}>
-          {editingId ? 'Редактирование склада' : 'Создание нового склада'}
-        </DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={2.5} sx={{ mt: 1 }}>
-            <TextField
-              fullWidth
-              required
-              label="Наименование склада"
-              placeholder="например, Центральный склад запчастей"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
+      <FormDialog
+        open={isModalOpen}
+        onClose={() => !isSubmitting && setIsModalOpen(false)}
+        title={editingId ? 'Редактирование склада' : 'Создание нового склада'}
+        icon={<WarehouseOutlinedIcon color="primary" />}
+        maxWidth="sm"
+        loading={isSubmitting}
+        submitLabel={isSubmitting ? 'Сохранение...' : editingId ? 'Сохранить изменения' : 'Создать склад'}
+        onSubmit={handleSubmit}
+        submitDisabled={isSubmitting || !name.trim()}
+      >
+        <Stack spacing={2.5} sx={{ mt: 1 }}>
+          <TextField
+            fullWidth
+            required
+            label="Наименование склада"
+            placeholder="например, Центральный склад запчастей"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
 
-            <TextField
-              fullWidth
-              label="Складской код / Идентификатор"
-              placeholder="WH-MAIN"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              helperText="Оставьте пустым для автогенерации кода"
-            />
+          <TextField
+            fullWidth
+            label="Складской код / Идентификатор"
+            placeholder="WH-MAIN"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            helperText="Оставьте пустым для автогенерации кода"
+          />
 
-            <TextField
-              fullWidth
-              label="Местоположение / Локация"
-              placeholder="Корпус 4, цех №1..."
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-            />
+          <TextField
+            fullWidth
+            label="Местоположение / Локация"
+            placeholder="Корпус 4, цех №1..."
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+          />
 
-            <FormControlLabel
-              control={<Switch checked={isActive} onChange={(e) => setIsActive(e.target.checked)} color="primary" />}
-              label={<Typography variant="body2" fontWeight={600}>Склад активен для операций</Typography>}
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setIsModalOpen(false)} disabled={isSubmitting}>
-            Отмена
-          </Button>
-          <Button variant="contained" onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? 'Сохранение...' : editingId ? 'Сохранить изменения' : 'Создать склад'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+          <FormControlLabel
+            control={<Switch checked={isActive} onChange={(e) => setIsActive(e.target.checked)} color="primary" />}
+            label={<Typography variant="body2" fontWeight={600}>Склад активен для операций</Typography>}
+          />
+        </Stack>
+      </FormDialog>
 
       {/* Модальное окно управления адресным хранением (Зоны и Ячейки) */}
-      <Dialog
+      <FormDialog
         open={isZonesModalOpen}
         onClose={() => setIsZonesModalOpen(false)}
+        title={`Адресное хранение: ${selectedWarehouse?.name || ''} (${selectedWarehouse?.code || ''})`}
+        icon={<MeetingRoomOutlinedIcon color="primary" />}
         maxWidth="md"
-        fullWidth
+        hideActions
       >
-        <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <MeetingRoomOutlinedIcon color="primary" />
-          Адресное хранение: {selectedWarehouse?.name} ({selectedWarehouse?.code})
-        </DialogTitle>
-        <DialogContent dividers>
-          {isLoadingZones ? (
+        {isLoadingZones ? (
             <PageLoading text="Загрузка зон и ячеек склада..." minHeight={180} size={28} />
           ) : (
             <Stack spacing={3}>
@@ -755,12 +749,8 @@ export default function WmsWarehousesPage() {
                 )}
               </Box>
             </Stack>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setIsZonesModalOpen(false)}>Закрыть</Button>
-        </DialogActions>
-      </Dialog>
+        )}
+      </FormDialog>
     </Box>
   );
 }

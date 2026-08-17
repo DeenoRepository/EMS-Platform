@@ -40,6 +40,7 @@ import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import PendingActionsOutlinedIcon from '@mui/icons-material/PendingActionsOutlined';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import AssignmentTurnedInOutlinedIcon from '@mui/icons-material/AssignmentTurnedInOutlined';
+import AssignmentOutlinedIcon from '@mui/icons-material/AssignmentOutlined';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import PageHeader from '@/components/layout/PageHeader';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -60,6 +61,7 @@ import {
   EmptyState,
   DataTableWrapper,
   PageLoading,
+  FormDialog,
 } from '@/components/ui';
 
 interface ApprovalItem {
@@ -722,265 +724,268 @@ function ApprovalsListContent() {
       )}
 
       {/* Dialog 1: Create Approval Request */}
-      <Dialog open={createModalOpen} onClose={() => setCreateModalOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Новая заявка на согласование</DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-            {/* Equipment Picker */}
-            <Autocomplete
-              options={equipmentList}
-              getOptionLabel={(option) => `${option.inventoryNumber ? `[${option.inventoryNumber}] ` : ''}${option.name}`}
-              value={selectedEquipmentForCreate}
-              onChange={(_, val) => setSelectedEquipmentForCreate(val)}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Оборудование *"
-                  placeholder="Выберите единицу оборудования"
-                  size="small"
-                  fullWidth
-                />
-              )}
-            />
+      {/* Dialog 1: Create Approval Modal */}
+      <FormDialog
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        title="Новая заявка на согласование"
+        icon={<AssignmentOutlinedIcon color="primary" />}
+        maxWidth="sm"
+        loading={submittingCreate}
+        submitLabel={submittingCreate ? 'Отправка...' : 'Подать на согласование'}
+        onSubmit={handleCreateSubmit}
+        submitDisabled={!selectedEquipmentForCreate || !createTitle.trim() || submittingCreate}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
+          {/* Equipment Picker */}
+          <Autocomplete
+            options={equipmentList}
+            getOptionLabel={(option) => `${option.inventoryNumber ? `[${option.inventoryNumber}] ` : ''}${option.name}`}
+            value={selectedEquipmentForCreate}
+            onChange={(_, val) => setSelectedEquipmentForCreate(val)}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Оборудование *"
+                placeholder="Выберите единицу оборудования"
+                size="small"
+                fullWidth
+              />
+            )}
+          />
 
-            {/* Approval Type */}
+          {/* Approval Type */}
+          <TextField
+            select
+            size="small"
+            label="Тип согласования *"
+            value={createType}
+            onChange={(e) => setCreateType(e.target.value)}
+            fullWidth
+          >
+            {Object.entries(APPROVAL_TYPE_MAP).map(([k, label]) => (
+              <MenuItem key={k} value={k}>
+                {label}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          {/* Target Status (if status change) */}
+          {createType === 'STATUS_CHANGE' && (
             <TextField
               select
               size="small"
-              label="Тип согласования *"
-              value={createType}
-              onChange={(e) => setCreateType(e.target.value)}
+              label="Целевой рабочий статус *"
+              value={createTargetStatus}
+              onChange={(e) => setCreateTargetStatus(e.target.value)}
               fullWidth
             >
-              {Object.entries(APPROVAL_TYPE_MAP).map(([k, label]) => (
+              {Object.entries(EQUIPMENT_STATUS_MAP).map(([k, info]) => (
                 <MenuItem key={k} value={k}>
-                  {label}
+                  {info.label}
                 </MenuItem>
               ))}
             </TextField>
+          )}
 
-            {/* Target Status (if status change) */}
-            {createType === 'STATUS_CHANGE' && (
-              <TextField
-                select
-                size="small"
-                label="Целевой рабочий статус *"
-                value={createTargetStatus}
-                onChange={(e) => setCreateTargetStatus(e.target.value)}
-                fullWidth
-              >
-                {Object.entries(EQUIPMENT_STATUS_MAP).map(([k, info]) => (
-                  <MenuItem key={k} value={k}>
-                    {info.label}
-                  </MenuItem>
-                ))}
-              </TextField>
-            )}
+          {/* Title */}
+          <TextField
+            label="Тема заявки *"
+            value={createTitle}
+            onChange={(e) => setCreateTitle(e.target.value)}
+            size="small"
+            fullWidth
+            placeholder="Например: Согласование акта списания насосного агрегата"
+          />
 
-            {/* Title */}
+          {/* Description */}
+          <TextField
+            label="Обоснование / Описание"
+            value={createDescription}
+            onChange={(e) => setCreateDescription(e.target.value)}
+            multiline
+            rows={3}
+            size="small"
+            fullWidth
+            placeholder="Укажите причину (выработка ресурса, результаты дефектовки, номер приказа)..."
+          />
+        </Box>
+      </FormDialog>
+
+      {/* Dialog 2: Review Resolution Modal */}
+      <FormDialog
+        open={reviewModalOpen}
+        onClose={() => setReviewModalOpen(false)}
+        title="Рассмотрение заявки на согласование"
+        icon={<CheckCircleOutlineIcon color="primary" />}
+        maxWidth="sm"
+        hideActions
+      >
+        {selectedApprovalForReview && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
+            <Paper variant="outlined" sx={{ p: 2, backgroundColor: '#f8fafc' }}>
+              <Typography variant="caption" color="text.secondary" display="block">
+                Оборудование:
+              </Typography>
+              <Typography variant="subtitle2" fontWeight={700}>
+                {selectedApprovalForReview.equipment.name} (Инв. №: {selectedApprovalForReview.equipment.inventoryNumber || 'Б/Н'})
+              </Typography>
+
+              <Divider sx={{ my: 1.5 }} />
+
+              <Typography variant="caption" color="text.secondary" display="block">
+                Тип согласования:
+              </Typography>
+              <Box sx={{ mt: 0.5 }}>
+                <StatusBadge status={selectedApprovalForReview.type} />
+              </Box>
+
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1.5 }}>
+                Тема заявки:
+              </Typography>
+              <Typography variant="body2" fontWeight={600}>
+                {selectedApprovalForReview.title}
+              </Typography>
+
+              {selectedApprovalForReview.description && (
+                <>
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                    Обоснование инициатора ({selectedApprovalForReview.requester.displayName}):
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontStyle: 'italic' }}>
+                    «{selectedApprovalForReview.description}»
+                  </Typography>
+                </>
+              )}
+            </Paper>
+
+            <Alert severity="info">
+              При согласовании система <strong>автоматически обновит статус оборудования</strong> в базе данных и зафиксирует событие в Истории изменений.
+            </Alert>
+
             <TextField
-              label="Тема заявки *"
-              value={createTitle}
-              onChange={(e) => setCreateTitle(e.target.value)}
-              size="small"
-              fullWidth
-              placeholder="Например: Согласование акта списания насосного агрегата"
-            />
-
-            {/* Description */}
-            <TextField
-              label="Обоснование / Описание"
-              value={createDescription}
-              onChange={(e) => setCreateDescription(e.target.value)}
+              label="Резолюция / Комментарий согласующего лица"
+              value={resolutionComment}
+              onChange={(e) => setResolutionComment(e.target.value)}
               multiline
               rows={3}
               size="small"
               fullWidth
-              placeholder="Укажите причину (выработка ресурса, результаты дефектовки, номер приказа)..."
+              placeholder="Укажите комментарий, основание решения или номер служебной записки..."
             />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCreateModalOpen(false)} color="inherit">
-            Отмена
-          </Button>
-          <Button
-            onClick={handleCreateSubmit}
-            variant="contained"
-            disabled={!selectedEquipmentForCreate || !createTitle.trim() || submittingCreate}
-          >
-            {submittingCreate ? <CircularProgress size={20} /> : 'Подать на согласование'}
-          </Button>
-        </DialogActions>
-      </Dialog>
 
-      {/* Dialog 2: Review Resolution Modal */}
-      <Dialog open={reviewModalOpen} onClose={() => setReviewModalOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Рассмотрение заявки на согласование</DialogTitle>
-        <DialogContent dividers>
-          {selectedApprovalForReview && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-              <Paper variant="outlined" sx={{ p: 2, backgroundColor: '#f8fafc' }}>
-                <Typography variant="caption" color="text.secondary" display="block">
-                  Оборудование:
-                </Typography>
-                <Typography variant="subtitle2" fontWeight={700}>
-                  {selectedApprovalForReview.equipment.name} (Инв. №: {selectedApprovalForReview.equipment.inventoryNumber || 'Б/Н'})
-                </Typography>
-
-                <Divider sx={{ my: 1.5 }} />
-
-                <Typography variant="caption" color="text.secondary" display="block">
-                  Тип согласования:
-                </Typography>
-                <Box sx={{ mt: 0.5 }}>
-                  <StatusBadge status={selectedApprovalForReview.type} />
-                </Box>
-
-                <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1.5 }}>
-                  Тема заявки:
-                </Typography>
-                <Typography variant="body2" fontWeight={600}>
-                  {selectedApprovalForReview.title}
-                </Typography>
-
-                {selectedApprovalForReview.description && (
-                  <>
-                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-                      Обоснование инициатора ({selectedApprovalForReview.requester.displayName}):
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontStyle: 'italic' }}>
-                      «{selectedApprovalForReview.description}»
-                    </Typography>
-                  </>
-                )}
-              </Paper>
-
-              <Alert severity="info">
-                При согласовании система <strong>автоматически обновит статус оборудования</strong> в базе данных и зафиксирует событие в Истории изменений.
-              </Alert>
-
-              <TextField
-                label="Резолюция / Комментарий согласующего лица"
-                value={resolutionComment}
-                onChange={(e) => setResolutionComment(e.target.value)}
-                multiline
-                rows={3}
-                size="small"
-                fullWidth
-                placeholder="Укажите комментарий, основание решения или номер служебной записки..."
-              />
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1 }}>
+              <Button onClick={() => setReviewModalOpen(false)} color="inherit">
+                Закрыть
+              </Button>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  onClick={() => handleProcessReview('REJECTED')}
+                  disabled={submittingReview}
+                >
+                  Отклонить
+                </Button>
+                <Button
+                  variant="contained"
+                  color="success"
+                  onClick={() => handleProcessReview('APPROVED')}
+                  disabled={submittingReview}
+                >
+                  {submittingReview ? <CircularProgress size={20} /> : 'Согласовать'}
+                </Button>
+              </Box>
             </Box>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, justifyContent: 'space-between' }}>
-          <Button onClick={() => setReviewModalOpen(false)} color="inherit">
-            Закрыть
-          </Button>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button
-              variant="outlined"
-              color="error"
-              onClick={() => handleProcessReview('REJECTED')}
-              disabled={submittingReview}
-            >
-              Отклонить
-            </Button>
-            <Button
-              variant="contained"
-              color="success"
-              onClick={() => handleProcessReview('APPROVED')}
-              disabled={submittingReview}
-            >
-              {submittingReview ? <CircularProgress size={20} /> : 'Согласовать'}
-            </Button>
           </Box>
-        </DialogActions>
-      </Dialog>
+        )}
+      </FormDialog>
 
       {/* Dialog 3: Approval Details Modal */}
-      <Dialog open={detailsModalOpen} onClose={() => setDetailsModalOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Сведения о заявке на согласование</DialogTitle>
-        <DialogContent dividers>
-          {selectedApprovalForDetails && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <StatusBadge status={selectedApprovalForDetails.type} />
-                <StatusBadge status={selectedApprovalForDetails.status} />
-              </Box>
+      <FormDialog
+        open={detailsModalOpen}
+        onClose={() => setDetailsModalOpen(false)}
+        title="Сведения о заявке на согласование"
+        maxWidth="sm"
+        hideActions
+      >
+        {selectedApprovalForDetails && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <StatusBadge status={selectedApprovalForDetails.type} />
+              <StatusBadge status={selectedApprovalForDetails.status} />
+            </Box>
 
-              <Typography variant="h6" fontWeight={700}>
-                {selectedApprovalForDetails.title}
+            <Typography variant="h6" fontWeight={700}>
+              {selectedApprovalForDetails.title}
+            </Typography>
+
+            <Paper variant="outlined" sx={{ p: 2, backgroundColor: '#f8fafc' }}>
+              <Typography variant="caption" color="text.secondary" display="block">
+                Оборудование:
+              </Typography>
+              <Typography variant="subtitle2" fontWeight={700}>
+                {selectedApprovalForDetails.equipment.name} • Инв. №: {selectedApprovalForDetails.equipment.inventoryNumber || 'Б/Н'}
               </Typography>
 
-              <Paper variant="outlined" sx={{ p: 2, backgroundColor: '#f8fafc' }}>
-                <Typography variant="caption" color="text.secondary" display="block">
-                  Оборудование:
-                </Typography>
-                <Typography variant="subtitle2" fontWeight={700}>
-                  {selectedApprovalForDetails.equipment.name} • Инв. №: {selectedApprovalForDetails.equipment.inventoryNumber || 'Б/Н'}
-                </Typography>
+              <Divider sx={{ my: 1.5 }} />
 
-                <Divider sx={{ my: 1.5 }} />
+              <Typography variant="caption" color="text.secondary" display="block">
+                Инициатор заявки:
+              </Typography>
+              <Typography variant="body2" fontWeight={600}>
+                {selectedApprovalForDetails.requester.displayName} ({formatDateTime(selectedApprovalForDetails.createdAt)})
+              </Typography>
 
-                <Typography variant="caption" color="text.secondary" display="block">
-                  Инициатор заявки:
-                </Typography>
-                <Typography variant="body2" fontWeight={600}>
-                  {selectedApprovalForDetails.requester.displayName} ({formatDateTime(selectedApprovalForDetails.createdAt)})
-                </Typography>
+              {selectedApprovalForDetails.description && (
+                <>
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1.5 }}>
+                    Обоснование:
+                  </Typography>
+                  <Typography variant="body2">
+                    {selectedApprovalForDetails.description}
+                  </Typography>
+                </>
+              )}
 
-                {selectedApprovalForDetails.description && (
-                  <>
-                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1.5 }}>
-                      Обоснование:
-                    </Typography>
-                    <Typography variant="body2">
-                      {selectedApprovalForDetails.description}
-                    </Typography>
-                  </>
-                )}
+              {selectedApprovalForDetails.reviewer && (
+                <>
+                  <Divider sx={{ my: 1.5 }} />
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Решение принял:
+                  </Typography>
+                  <Typography variant="body2" fontWeight={600}>
+                    {selectedApprovalForDetails.reviewer.displayName} ({formatDateTime(selectedApprovalForDetails.reviewedAt)})
+                  </Typography>
 
-                {selectedApprovalForDetails.reviewer && (
-                  <>
-                    <Divider sx={{ my: 1.5 }} />
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      Решение принял:
-                    </Typography>
-                    <Typography variant="body2" fontWeight={600}>
-                      {selectedApprovalForDetails.reviewer.displayName} ({formatDateTime(selectedApprovalForDetails.reviewedAt)})
-                    </Typography>
+                  {selectedApprovalForDetails.resolutionComment && (
+                    <>
+                      <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                        Резолюция:
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontStyle: 'italic' }}>
+                        «{selectedApprovalForDetails.resolutionComment}»
+                      </Typography>
+                    </>
+                  )}
+                </>
+              )}
+            </Paper>
 
-                    {selectedApprovalForDetails.resolutionComment && (
-                      <>
-                        <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-                          Резолюция:
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontStyle: 'italic' }}>
-                          «{selectedApprovalForDetails.resolutionComment}»
-                        </Typography>
-                      </>
-                    )}
-                  </>
-                )}
-              </Paper>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1 }}>
+              <Button onClick={() => setDetailsModalOpen(false)} color="inherit">
+                Закрыть
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => router.push(`/eps/${selectedApprovalForDetails.equipment.id}`)}
+              >
+                Перейти в паспорт оборудования
+              </Button>
             </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDetailsModalOpen(false)} color="inherit">
-            Закрыть
-          </Button>
-          {selectedApprovalForDetails && (
-            <Button
-              variant="outlined"
-              onClick={() => router.push(`/eps/${selectedApprovalForDetails.equipment.id}`)}
-            >
-              Перейти в паспорт оборудования
-            </Button>
-          )}
-        </DialogActions>
-      </Dialog>
+          </Box>
+        )}
+      </FormDialog>
     </Box>
   );
 }

@@ -51,6 +51,7 @@ import {
   EmptyState,
   StatusBadge,
   PageLoading,
+  FormDialog,
 } from '@/components/ui';
 
 interface StockOperation {
@@ -645,220 +646,215 @@ function WmsOperationsContent() {
       )}
 
       {/* Модальное окно оформления складской операции */}
-      <Dialog
+      <FormDialog
         open={isCreateModalOpen}
         onClose={() => !isSubmitting && setIsCreateModalOpen(false)}
+        title={
+          opType === 'RECEIPT'
+            ? 'Оформление прихода ТМЦ (поступление на склад)'
+            : opType === 'ISSUE'
+            ? 'Оформление списания ТМЦ (установка на оборудование)'
+            : 'Межскладское перемещение ТМЦ'
+        }
         maxWidth="md"
-        fullWidth
+        loading={isSubmitting}
+        submitLabel={isSubmitting ? 'Проведение...' : 'Провести операцию'}
+        onSubmit={handleSubmit}
+        submitDisabled={isSubmitting}
       >
-        <DialogTitle sx={{ fontWeight: 700 }}>
-          {opType === 'RECEIPT' && 'Оформление прихода ТМЦ (поступление на склад)'}
-          {opType === 'ISSUE' && 'Оформление списания ТМЦ (установка на оборудование)'}
-          {opType === 'TRANSFER' && 'Межскладское перемещение ТМЦ'}
-        </DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={3} sx={{ mt: 1 }}>
-            {/* Склад и основные реквизиты */}
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={opType === 'TRANSFER' ? 6 : 12}>
+        <Stack spacing={3} sx={{ mt: 1 }}>
+          {/* Склад и основные реквизиты */}
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={opType === 'TRANSFER' ? 6 : 12}>
+              <TextField
+                select
+                fullWidth
+                required
+                label={opType === 'TRANSFER' ? 'Склад-отправитель' : 'Склад'}
+                value={opWarehouseId}
+                onChange={(e) => setOpWarehouseId(e.target.value)}
+              >
+                {warehouses.map((w) => (
+                  <MenuItem key={w.id} value={w.id}>
+                    {w.name} ({w.code})
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+
+            {opType === 'TRANSFER' && (
+              <Grid item xs={12} sm={6}>
                 <TextField
                   select
                   fullWidth
                   required
-                  label={opType === 'TRANSFER' ? 'Склад-отправитель' : 'Склад'}
-                  value={opWarehouseId}
-                  onChange={(e) => setOpWarehouseId(e.target.value)}
+                  label="Склад-получатель"
+                  value={opTargetWarehouseId}
+                  onChange={(e) => setOpTargetWarehouseId(e.target.value)}
                 >
-                  {warehouses.map((w) => (
-                    <MenuItem key={w.id} value={w.id}>
-                      {w.name} ({w.code})
-                    </MenuItem>
-                  ))}
+                  {warehouses
+                    .filter((w) => w.id !== opWarehouseId)
+                    .map((w) => (
+                      <MenuItem key={w.id} value={w.id}>
+                        {w.name} ({w.code})
+                      </MenuItem>
+                    ))}
                 </TextField>
               </Grid>
+            )}
 
-              {opType === 'TRANSFER' && (
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    select
-                    fullWidth
-                    required
-                    label="Склад-получатель"
-                    value={opTargetWarehouseId}
-                    onChange={(e) => setOpTargetWarehouseId(e.target.value)}
-                  >
-                    {warehouses
-                      .filter((w) => w.id !== opWarehouseId)
-                      .map((w) => (
-                        <MenuItem key={w.id} value={w.id}>
-                          {w.name} ({w.code})
-                        </MenuItem>
-                      ))}
-                  </TextField>
-                </Grid>
-              )}
-
-              {opType === 'RECEIPT' && (
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Контрагент / Поставщик"
-                    placeholder="ООО Снабкомплект..."
-                    value={opCounterparty}
-                    onChange={(e) => setOpCounterparty(e.target.value)}
-                  />
-                </Grid>
-              )}
-
-              <Grid item xs={12} sm={opType === 'RECEIPT' ? 6 : 12}>
+            {opType === 'RECEIPT' && (
+              <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Номер накладной / Документ-основание"
-                  placeholder="ТТН-0492 / Служебная записка..."
-                  value={opDocument}
-                  onChange={(e) => setOpDocument(e.target.value)}
+                  label="Контрагент / Поставщик"
+                  placeholder="ООО Снабкомплект..."
+                  value={opCounterparty}
+                  onChange={(e) => setOpCounterparty(e.target.value)}
                 />
               </Grid>
+            )}
+
+            <Grid item xs={12} sm={opType === 'RECEIPT' ? 6 : 12}>
+              <TextField
+                fullWidth
+                label="Номер накладной / Документ-основание"
+                placeholder="ТТН-0492 / Служебная записка..."
+                value={opDocument}
+                onChange={(e) => setOpDocument(e.target.value)}
+              />
             </Grid>
+          </Grid>
 
-            <Divider />
+          <Divider />
 
-            {/* Строки спецификации ТМЦ */}
-            <Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                <Typography variant="subtitle2" fontWeight={700}>
-                  Спецификация позиций ТМЦ
-                </Typography>
-                <Button size="small" startIcon={<AddIcon />} onClick={handleAddRow}>
-                  Добавить строку
-                </Button>
-              </Box>
+          {/* Строки спецификации ТМЦ */}
+          <Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+              <Typography variant="subtitle2" fontWeight={700}>
+                Спецификация позиций ТМЦ
+              </Typography>
+              <Button size="small" startIcon={<AddIcon />} onClick={handleAddRow}>
+                Добавить строку
+              </Button>
+            </Box>
 
-              <Stack spacing={2}>
-                {formRows.map((row, idx) => {
-                  const currentStock = row.nomenclature ? warehouseStockMap[row.nomenclature.id] ?? 0 : null;
-                  const isExceeded = opType !== 'RECEIPT' && currentStock !== null && Number(row.quantity) > currentStock;
+            <Stack spacing={2}>
+              {formRows.map((row, idx) => {
+                const currentStock = row.nomenclature ? warehouseStockMap[row.nomenclature.id] ?? 0 : null;
+                const isExceeded = opType !== 'RECEIPT' && currentStock !== null && Number(row.quantity) > currentStock;
 
-                  return (
-                    <Paper key={idx} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-                      <Grid container spacing={2} alignItems="center">
-                        <Grid item xs={12} sm={opType === 'ISSUE' ? 5 : 7}>
+                return (
+                  <Paper key={idx} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                    <Grid container spacing={2} alignItems="center">
+                      <Grid item xs={12} sm={opType === 'ISSUE' ? 5 : 7}>
+                        <Autocomplete
+                          options={nomenclatures}
+                          getOptionLabel={(opt) => `${opt.name}${opt.article ? ` (${opt.article})` : ''}`}
+                          value={row.nomenclature}
+                          onChange={(_, newVal) => handleRowChange(idx, 'nomenclature', newVal)}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              size="small"
+                              required
+                              label={`Позиция #${idx + 1}`}
+                              placeholder="Выберите номенклатуру..."
+                            />
+                          )}
+                        />
+                        {row.nomenclature && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                            <Typography variant="caption" color="text.secondary">
+                              Ед. изм.: <b>{row.nomenclature.unit}</b>
+                            </Typography>
+                            {opType !== 'RECEIPT' && (
+                              <Chip
+                                label={`На складе: ${currentStock} ${row.nomenclature.unit}`}
+                                size="small"
+                                color={isExceeded ? 'error' : 'default'}
+                                variant="outlined"
+                                sx={{ height: 20, fontSize: '0.7rem', fontWeight: 600 }}
+                              />
+                            )}
+                          </Box>
+                        )}
+                      </Grid>
+
+                      <Grid item xs={12} sm={2.5}>
+                        <TextField
+                          size="small"
+                          type="number"
+                          required
+                          label="Количество"
+                          value={row.quantity}
+                          onChange={(e) => handleRowChange(idx, 'quantity', e.target.value)}
+                          error={isExceeded}
+                          helperText={isExceeded ? 'Превышает остаток' : undefined}
+                          inputProps={{ min: 0.001, step: 1 }}
+                        />
+                      </Grid>
+
+                      {opType === 'ISSUE' && (
+                        <Grid item xs={12} sm={3.5}>
                           <Autocomplete
-                            options={nomenclatures}
-                            getOptionLabel={(opt) => `${opt.name}${opt.article ? ` (${opt.article})` : ''}`}
-                            value={row.nomenclature}
-                            onChange={(_, newVal) => handleRowChange(idx, 'nomenclature', newVal)}
+                            options={equipmentList}
+                            getOptionLabel={(eq) => `${eq.name} (${eq.inventoryNumber || 'б/н'})`}
+                            value={row.equipment}
+                            onChange={(_, newVal) => handleRowChange(idx, 'equipment', newVal)}
                             renderInput={(params) => (
                               <TextField
                                 {...params}
                                 size="small"
-                                required
-                                label={`Позиция #${idx + 1}`}
-                                placeholder="Выберите номенклатуру..."
+                                label="Оборудование"
+                                placeholder="Узел / Станок"
                               />
                             )}
                           />
-                          {row.nomenclature && (
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                              <Typography variant="caption" color="text.secondary">
-                                Ед. изм.: <b>{row.nomenclature.unit}</b>
-                              </Typography>
-                              {opType !== 'RECEIPT' && (
-                                <Chip
-                                  label={`На складе: ${currentStock} ${row.nomenclature.unit}`}
-                                  size="small"
-                                  color={isExceeded ? 'error' : 'default'}
-                                  variant="outlined"
-                                  sx={{ height: 20, fontSize: '0.7rem', fontWeight: 600 }}
-                                />
-                              )}
-                            </Box>
-                          )}
                         </Grid>
+                      )}
 
-                        <Grid item xs={12} sm={2.5}>
-                          <TextField
-                            size="small"
-                            type="number"
-                            required
-                            label="Количество"
-                            value={row.quantity}
-                            onChange={(e) => handleRowChange(idx, 'quantity', e.target.value)}
-                            error={isExceeded}
-                            helperText={isExceeded ? 'Превышает остаток' : undefined}
-                            inputProps={{ min: 0.001, step: 1 }}
-                          />
-                        </Grid>
-
-                        {opType === 'ISSUE' && (
-                          <Grid item xs={12} sm={3.5}>
-                            <Autocomplete
-                              options={equipmentList}
-                              getOptionLabel={(eq) => `${eq.name} (${eq.inventoryNumber || 'б/н'})`}
-                              value={row.equipment}
-                              onChange={(_, newVal) => handleRowChange(idx, 'equipment', newVal)}
-                              renderInput={(params) => (
-                                <TextField
-                                  {...params}
-                                  size="small"
-                                  label="Оборудование"
-                                  placeholder="Узел / Станок"
-                                />
-                              )}
-                            />
-                          </Grid>
-                        )}
-
-                        <Grid item xs={12} sm={1} sx={{ textAlign: 'right' }}>
-                          <IconButton
-                            size="small"
-                            color="error"
-                            disabled={formRows.length === 1}
-                            onClick={() => handleRemoveRow(idx)}
-                            aria-label={`Удалить строку #${idx + 1}`}
-                          >
-                            <DeleteOutlineIcon fontSize="small" />
-                          </IconButton>
-                        </Grid>
+                      <Grid item xs={12} sm={1} sx={{ textAlign: 'right' }}>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          disabled={formRows.length === 1}
+                          onClick={() => handleRemoveRow(idx)}
+                          aria-label={`Удалить строку #${idx + 1}`}
+                        >
+                          <DeleteOutlineIcon fontSize="small" />
+                        </IconButton>
                       </Grid>
-                    </Paper>
-                  );
-                })}
-              </Stack>
+                    </Grid>
+                  </Paper>
+                );
+              })}
+            </Stack>
 
-              <Button
-                size="small"
-                variant="text"
-                sx={{ mt: 1.5 }}
-                onClick={() => {
-                  setQuickNomRowIndex(formRows.length - 1);
-                  setIsQuickNomOpen(true);
-                }}
-              >
-                + Создать новую номенклатуру, если её нет в списке
-              </Button>
-            </Box>
+            <Button
+              size="small"
+              variant="text"
+              sx={{ mt: 1.5 }}
+              onClick={() => {
+                setQuickNomRowIndex(formRows.length - 1);
+                setIsQuickNomOpen(true);
+              }}
+            >
+              + Создать новую номенклатуру, если её нет в списке
+            </Button>
+          </Box>
 
-            <TextField
-              fullWidth
-              multiline
-              rows={2}
-              label="Комментарий к операции"
-              placeholder="Примечание, причина списания или особенности..."
-              value={opComment}
-              onChange={(e) => setOpComment(e.target.value)}
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setIsCreateModalOpen(false)} disabled={isSubmitting}>
-            Отмена
-          </Button>
-          <Button variant="contained" onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? 'Проведение...' : 'Провести операцию'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+          <TextField
+            fullWidth
+            multiline
+            rows={2}
+            label="Комментарий к операции"
+            placeholder="Примечание, причина списания или особенности..."
+            value={opComment}
+            onChange={(e) => setOpComment(e.target.value)}
+          />
+        </Stack>
+      </FormDialog>
 
       {/* Быстрое создание номенклатуры */}
       <CreateNomenclatureDialog

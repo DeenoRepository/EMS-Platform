@@ -74,6 +74,7 @@ import {
   LifecycleTimeline,
   TrendSparkline,
   PageLoading,
+  FormDialog,
   type LifecycleEvent,
 } from '@/components/ui';
 
@@ -1419,349 +1420,363 @@ export default function EquipmentPassportPage() {
       )}
 
       {/* Edit Equipment Dialog with Custom Sections */}
-      <Dialog open={editModalOpen} onClose={() => setEditModalOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Редактирование паспорта оборудования</DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 1 }}>
-            {/* Section 1: Basic specifications */}
-            <Box>
+      <FormDialog
+        open={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        title="Редактирование паспорта оборудования"
+        icon={<PrecisionManufacturingIcon color="primary" />}
+        maxWidth="md"
+        submitLabel="Сохранить изменения"
+        onSubmit={handleSaveEdit}
+        submitDisabled={!editForm.name}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 1 }}>
+          {/* Section 1: Basic specifications */}
+          <Box>
+            <Typography variant="subtitle1" fontWeight={700} color="primary.main" gutterBottom>
+              Основные параметры
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <TextField
+                  label="Наименование оборудования *"
+                  fullWidth
+                  size="small"
+                  value={editForm.name || ''}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Инвентарный номер"
+                  fullWidth
+                  size="small"
+                  value={editForm.inventoryNumber || ''}
+                  onChange={(e) => setEditForm({ ...editForm, inventoryNumber: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Заводской / Серийный номер"
+                  fullWidth
+                  size="small"
+                  value={editForm.serialNumber || ''}
+                  onChange={(e) => setEditForm({ ...editForm, serialNumber: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Производитель"
+                  fullWidth
+                  size="small"
+                  value={editForm.manufacturer || ''}
+                  onChange={(e) => setEditForm({ ...editForm, manufacturer: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Модель"
+                  fullWidth
+                  size="small"
+                  value={editForm.model || ''}
+                  onChange={(e) => setEditForm({ ...editForm, model: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Место установки (Локация)"
+                  fullWidth
+                  size="small"
+                  value={editForm.location || ''}
+                  onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Дата ввода в эксплуатацию"
+                  type="date"
+                  InputLabelProps={{ shrink: true }}
+                  fullWidth
+                  size="small"
+                  value={editForm.commissioningDate ? editForm.commissioningDate.substring(0, 10) : ''}
+                  onChange={(e) => setEditForm({ ...editForm, commissioningDate: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Критичность (A/B/C)"
+                  select
+                  fullWidth
+                  size="small"
+                  value={editForm.criticality || 'B'}
+                  onChange={(e) => setEditForm({ ...editForm, criticality: e.target.value })}
+                >
+                  <MenuItem value="A">Класс A (Критическое)</MenuItem>
+                  <MenuItem value="B">Класс B (Основное)</MenuItem>
+                  <MenuItem value="C">Класс C (Вспомогательное)</MenuItem>
+                </TextField>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Рабочий статус"
+                  select
+                  fullWidth
+                  size="small"
+                  value={editForm.status || 'OPERATIONAL'}
+                  onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                >
+                  {Object.entries(EQUIPMENT_STATUS_MAP).map(([key, info]) => (
+                    <MenuItem key={key} value={key}>
+                      {info.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+            </Grid>
+          </Box>
+
+          <Divider />
+
+          {/* Section 2: Custom Sections Inputs */}
+          {sections.map((sec) => (
+            <Box key={sec.id}>
               <Typography variant="subtitle1" fontWeight={700} color="primary.main" gutterBottom>
-                Основные параметры
+                {sec.name}
               </Typography>
               <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Наименование оборудования *"
-                    fullWidth
-                    size="small"
-                    value={editForm.name || ''}
-                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Инвентарный номер"
-                    fullWidth
-                    size="small"
-                    value={editForm.inventoryNumber || ''}
-                    onChange={(e) => setEditForm({ ...editForm, inventoryNumber: e.target.value })}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Заводской / Серийный номер"
-                    fullWidth
-                    size="small"
-                    value={editForm.serialNumber || ''}
-                    onChange={(e) => setEditForm({ ...editForm, serialNumber: e.target.value })}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Производитель"
-                    fullWidth
-                    size="small"
-                    value={editForm.manufacturer || ''}
-                    onChange={(e) => setEditForm({ ...editForm, manufacturer: e.target.value })}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Модель"
-                    fullWidth
-                    size="small"
-                    value={editForm.model || ''}
-                    onChange={(e) => setEditForm({ ...editForm, model: e.target.value })}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Место установки (Локация)"
-                    fullWidth
-                    size="small"
-                    value={editForm.location || ''}
-                    onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Дата ввода в эксплуатацию"
-                    type="date"
-                    InputLabelProps={{ shrink: true }}
-                    fullWidth
-                    size="small"
-                    value={editForm.commissionDate || ''}
-                    onChange={(e) => setEditForm({ ...editForm, commissionDate: e.target.value })}
-                  />
-                </Grid>
-              </Grid>
-            </Box>
-
-            <Divider />
-
-            {/* Section 2: Custom Sections Inputs */}
-            {sections.map((sec) => (
-              <Box key={sec.id}>
-                <Typography variant="subtitle1" fontWeight={700} color="primary.main" gutterBottom>
-                  {sec.name}
-                </Typography>
-                <Grid container spacing={2}>
-                  {sec.fields.map((f) => {
-                    if (f.fieldType === 'BOOLEAN') {
-                      return (
-                        <Grid item xs={12} sm={6} key={f.key}>
-                          <Paper variant="outlined" sx={{ p: 1.5, display: 'flex', alignItems: 'center' }}>
-                            <FormControlLabel
-                              control={
-                                <Switch
-                                  checked={Boolean(editCustomFields[f.key])}
-                                  onChange={(e) =>
-                                    setEditCustomFields({ ...editCustomFields, [f.key]: e.target.checked })
-                                  }
-                                  color="primary"
-                                />
-                              }
-                              label={<Typography variant="body2">{f.name}</Typography>}
-                            />
-                          </Paper>
-                        </Grid>
-                      );
-                    }
-
-                    if (f.fieldType === 'SELECT' && f.options && Array.isArray(f.options)) {
-                      return (
-                        <Grid item xs={12} sm={6} key={f.key}>
-                          <TextField
-                            select
-                            label={f.name}
-                            fullWidth
-                            size="small"
-                            value={editCustomFields[f.key] || ''}
-                            onChange={(e) =>
-                              setEditCustomFields({ ...editCustomFields, [f.key]: e.target.value })
+                {sec.fields.map((f) => {
+                  if (f.fieldType === 'BOOLEAN') {
+                    return (
+                      <Grid item xs={12} sm={6} key={f.key}>
+                        <Paper variant="outlined" sx={{ p: 1.5, display: 'flex', alignItems: 'center' }}>
+                          <FormControlLabel
+                            control={
+                              <Switch
+                                checked={Boolean(editCustomFields[f.key])}
+                                onChange={(e) =>
+                                  setEditCustomFields({ ...editCustomFields, [f.key]: e.target.checked })
+                                }
+                                color="primary"
+                              />
                             }
-                          >
-                            <MenuItem value="">— Не выбрано —</MenuItem>
-                            {f.options.map((opt: string) => (
-                              <MenuItem key={opt} value={opt}>
-                                {opt}
-                              </MenuItem>
-                            ))}
-                          </TextField>
-                        </Grid>
-                      );
-                    }
+                            label={<Typography variant="body2">{f.name}</Typography>}
+                          />
+                        </Paper>
+                      </Grid>
+                    );
+                  }
 
+                  if (f.fieldType === 'SELECT' && f.options && Array.isArray(f.options)) {
                     return (
                       <Grid item xs={12} sm={6} key={f.key}>
                         <TextField
+                          select
                           label={f.name}
-                          type={f.fieldType === 'NUMBER' ? 'number' : f.fieldType === 'DATE' ? 'date' : 'text'}
-                          InputLabelProps={f.fieldType === 'DATE' ? { shrink: true } : undefined}
-                          InputProps={
-                            f.unit
-                              ? {
-                                  endAdornment: (
-                                    <InputAdornment position="end">
-                                      <Chip label={f.unit} size="small" variant="outlined" sx={{ fontWeight: 700 }} />
-                                    </InputAdornment>
-                                  ),
-                                }
-                              : undefined
-                          }
                           fullWidth
                           size="small"
                           value={editCustomFields[f.key] || ''}
                           onChange={(e) =>
                             setEditCustomFields({ ...editCustomFields, [f.key]: e.target.value })
                           }
-                        />
+                        >
+                          <MenuItem value="">— Не выбрано —</MenuItem>
+                          {f.options.map((opt: string) => (
+                            <MenuItem key={opt} value={opt}>
+                              {opt}
+                            </MenuItem>
+                          ))}
+                        </TextField>
                       </Grid>
                     );
-                  })}
-                </Grid>
-              </Box>
-            ))}
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditModalOpen(false)} color="inherit">
-            Отмена
-          </Button>
-          <Button onClick={handleSaveEdit} variant="contained">
-            Сохранить изменения
-          </Button>
-        </DialogActions>
-      </Dialog>
+                  }
+
+                  return (
+                    <Grid item xs={12} sm={6} key={f.key}>
+                      <TextField
+                        label={f.name}
+                        type={f.fieldType === 'NUMBER' ? 'number' : f.fieldType === 'DATE' ? 'date' : 'text'}
+                        InputLabelProps={f.fieldType === 'DATE' ? { shrink: true } : undefined}
+                        fullWidth
+                        size="small"
+                        value={editCustomFields[f.key] || ''}
+                        onChange={(e) =>
+                          setEditCustomFields({ ...editCustomFields, [f.key]: e.target.value })
+                        }
+                      />
+                    </Grid>
+                  );
+                })}
+              </Grid>
+            </Box>
+          ))}
+        </Box>
+      </FormDialog>
 
       {/* Upload Photo Dialog */}
-      <Dialog open={photoModalOpen} onClose={() => setPhotoModalOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Загрузка фотографии оборудования</DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-            <Button variant="outlined" component="label" fullWidth sx={{ py: 1.5 }}>
-              {selectedFile ? selectedFile.name : 'Выбрать фото с диска'}
-              <input
-                type="file"
-                hidden
-                accept="image/*"
-                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-              />
-            </Button>
-            <TextField
-              select
-              size="small"
-              label="Сделать главным фото"
-              value={isPrimaryPhoto ? 'true' : 'false'}
-              onChange={(e) => setIsPrimaryPhoto(e.target.value === 'true')}
-            >
-              <MenuItem value="false">Нет</MenuItem>
-              <MenuItem value="true">Да, сделать главным</MenuItem>
-            </TextField>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setPhotoModalOpen(false)} color="inherit">
-            Отмена
+      <FormDialog
+        open={photoModalOpen}
+        onClose={() => setPhotoModalOpen(false)}
+        title="Загрузка фотографии оборудования"
+        maxWidth="xs"
+        loading={uploading}
+        submitLabel={uploading ? 'Загрузка...' : 'Загрузить фото'}
+        onSubmit={handleUploadPhoto}
+        submitDisabled={!selectedFile || uploading}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+          <Button variant="outlined" component="label" fullWidth sx={{ py: 1.5 }}>
+            {selectedFile ? selectedFile.name : 'Выбрать фото с диска'}
+            <input
+              type="file"
+              hidden
+              accept="image/*"
+              onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+            />
           </Button>
-          <Button onClick={handleUploadPhoto} variant="contained" disabled={!selectedFile || uploading}>
-            {uploading ? <CircularProgress size={20} /> : 'Загрузить'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+          <TextField
+            select
+            size="small"
+            label="Сделать главным фото"
+            value={isPrimaryPhoto ? 'true' : 'false'}
+            onChange={(e) => setIsPrimaryPhoto(e.target.value === 'true')}
+          >
+            <MenuItem value="false">Нет</MenuItem>
+            <MenuItem value="true">Да, сделать главным</MenuItem>
+          </TextField>
+        </Box>
+      </FormDialog>
 
       {/* Upload Document Dialog */}
-      <Dialog open={docModalOpen} onClose={() => setDocModalOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Прикрепление документа</DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-            <Button variant="outlined" component="label" fullWidth sx={{ py: 1.5 }}>
-              {selectedFile ? selectedFile.name : 'Выбрать файл (PDF, DOCX, XLSX, Схемы)'}
-              <input
-                type="file"
-                hidden
-                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-              />
-            </Button>
-
-            <TextField
-              select
-              size="small"
-              label="Тип документа"
-              value={docType}
-              onChange={(e) => setDocType(e.target.value)}
-            >
-              {Object.entries(DOCUMENT_TYPE_MAP).map(([k, label]) => (
-                <MenuItem key={k} value={k}>
-                  {label}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <TextField
-              size="small"
-              label="Примечание / Описание"
-              value={docDescription}
-              onChange={(e) => setDocDescription(e.target.value)}
-              multiline
-              rows={2}
+      <FormDialog
+        open={docModalOpen}
+        onClose={() => setDocModalOpen(false)}
+        title="Прикрепление документа"
+        maxWidth="xs"
+        loading={uploading}
+        submitLabel={uploading ? 'Прикрепление...' : 'Прикрепить документ'}
+        onSubmit={handleUploadDocument}
+        submitDisabled={!selectedFile || uploading}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+          <Button variant="outlined" component="label" fullWidth sx={{ py: 1.5 }}>
+            {selectedFile ? selectedFile.name : 'Выбрать файл (PDF, DOCX, XLSX, Схемы)'}
+            <input
+              type="file"
+              hidden
+              onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
             />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDocModalOpen(false)} color="inherit">
-            Отмена
           </Button>
-          <Button onClick={handleUploadDocument} variant="contained" disabled={!selectedFile || uploading}>
-            {uploading ? <CircularProgress size={20} /> : 'Прикрепить'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+
+          <TextField
+            select
+            size="small"
+            label="Тип документа"
+            value={docType}
+            onChange={(e) => setDocType(e.target.value)}
+          >
+            {Object.entries(DOCUMENT_TYPE_MAP).map(([k, label]) => (
+              <MenuItem key={k} value={k}>
+                {label}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <TextField
+            size="small"
+            label="Примечание / Описание"
+            value={docDescription}
+            onChange={(e) => setDocDescription(e.target.value)}
+            multiline
+            rows={2}
+          />
+        </Box>
+      </FormDialog>
 
       {/* Create Approval Request Dialog */}
-      <Dialog open={createApprovalModalOpen} onClose={() => setCreateApprovalModalOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Создание заявки на согласование</DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-            <Paper variant="outlined" sx={{ p: 1.5, backgroundColor: '#f8fafc' }}>
-              <Typography variant="caption" color="text.secondary" display="block">
-                Оборудование:
-              </Typography>
-              <Typography variant="subtitle2" fontWeight={700}>
-                {equipment.name} • Инв. №: {equipment.inventoryNumber || 'Б/Н'}
-              </Typography>
-            </Paper>
+      <FormDialog
+        open={createApprovalModalOpen}
+        onClose={() => setCreateApprovalModalOpen(false)}
+        title="Создание заявки на согласование"
+        icon={<FactCheckOutlinedIcon color="primary" />}
+        maxWidth="sm"
+        loading={submittingApproval}
+        submitLabel={submittingApproval ? 'Отправка...' : 'Подать заявку'}
+        onSubmit={handleCreateApproval}
+        submitDisabled={!createApprovalTitle.trim() || submittingApproval}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
+          <Paper variant="outlined" sx={{ p: 1.5, backgroundColor: '#f8fafc' }}>
+            <Typography variant="caption" color="text.secondary" display="block">
+              Оборудование:
+            </Typography>
+            <Typography variant="subtitle2" fontWeight={700}>
+              {equipment.name} • Инв. №: {equipment.inventoryNumber || 'Б/Н'}
+            </Typography>
+          </Paper>
 
+          <TextField
+            select
+            size="small"
+            label="Тип согласования *"
+            value={createApprovalType}
+            onChange={(e) => setCreateApprovalType(e.target.value)}
+            fullWidth
+          >
+            {Object.entries(APPROVAL_TYPE_MAP).map(([k, label]) => (
+              <MenuItem key={k} value={k}>
+                {label}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          {createApprovalType === 'STATUS_CHANGE' && (
             <TextField
               select
               size="small"
-              label="Тип согласования *"
-              value={createApprovalType}
-              onChange={(e) => setCreateApprovalType(e.target.value)}
+              label="Целевой рабочий статус *"
+              value={createApprovalTargetStatus}
+              onChange={(e) => setCreateApprovalTargetStatus(e.target.value)}
               fullWidth
             >
-              {Object.entries(APPROVAL_TYPE_MAP).map(([k, label]) => (
+              {Object.entries(EQUIPMENT_STATUS_MAP).map(([k, info]) => (
                 <MenuItem key={k} value={k}>
-                  {label}
+                  {info.label}
                 </MenuItem>
               ))}
             </TextField>
+          )}
 
-            {createApprovalType === 'STATUS_CHANGE' && (
-              <TextField
-                select
-                size="small"
-                label="Целевой рабочий статус *"
-                value={createApprovalTargetStatus}
-                onChange={(e) => setCreateApprovalTargetStatus(e.target.value)}
-                fullWidth
-              >
-                {Object.entries(EQUIPMENT_STATUS_MAP).map(([k, info]) => (
-                  <MenuItem key={k} value={k}>
-                    {info.label}
-                  </MenuItem>
-                ))}
-              </TextField>
-            )}
+          <TextField
+            label="Тема заявки *"
+            value={createApprovalTitle}
+            onChange={(e) => setCreateApprovalTitle(e.target.value)}
+            size="small"
+            fullWidth
+            placeholder="Например: Согласование акта списания в связи с износом"
+          />
 
-            <TextField
-              label="Тема заявки *"
-              value={createApprovalTitle}
-              onChange={(e) => setCreateApprovalTitle(e.target.value)}
-              size="small"
-              fullWidth
-              placeholder="Например: Согласование акта списания в связи с износом"
-            />
-
-            <TextField
-              label="Обоснование / Описание"
-              value={createApprovalDescription}
-              onChange={(e) => setCreateApprovalDescription(e.target.value)}
-              multiline
-              rows={3}
-              size="small"
-              fullWidth
-              placeholder="Укажите подробную причину, номер служебной записки или дефектной ведомости..."
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCreateApprovalModalOpen(false)} color="inherit">
-            Отмена
-          </Button>
-          <Button
-            onClick={handleCreateApproval}
-            variant="contained"
-            disabled={!createApprovalTitle.trim() || submittingApproval}
-          >
-            {submittingApproval ? <CircularProgress size={20} /> : 'Подать заявку'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+          <TextField
+            label="Обоснование / Описание"
+            value={createApprovalDescription}
+            onChange={(e) => setCreateApprovalDescription(e.target.value)}
+            multiline
+            rows={3}
+            size="small"
+            fullWidth
+            placeholder="Укажите подробную причину, номер служебной записки или дефектной ведомости..."
+          />
+        </Box>
+      </FormDialog>
 
       {/* Image Lightbox Preview Modal */}
-      <Dialog open={Boolean(previewDocUrl)} onClose={() => setPreviewDocUrl(null)} maxWidth="md">
-        <DialogContent sx={{ p: 0, backgroundColor: 'black', display: 'flex', justifyContent: 'center' }}>
+      <FormDialog
+        open={Boolean(previewDocUrl)}
+        onClose={() => setPreviewDocUrl(null)}
+        title="Просмотр документа"
+        maxWidth="md"
+        hideActions
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'center', bgcolor: 'black', borderRadius: 1, overflow: 'hidden' }}>
           {previewDocUrl && (
             <Box
               component="img"
@@ -1770,8 +1785,8 @@ export default function EquipmentPassportPage() {
               sx={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain' }}
             />
           )}
-        </DialogContent>
-      </Dialog>
+        </Box>
+      </FormDialog>
     </Box>
   );
 }

@@ -50,6 +50,7 @@ import {
   CriticalAlertBanner,
   TrendSparkline,
   PageLoading,
+  FormDialog,
 } from '@/components/ui';
 
 export default function MroOverviewPage() {
@@ -507,9 +508,17 @@ export default function MroOverviewPage() {
       </Card>
 
       {/* Диалог создания наряда ТО */}
-      <Dialog open={openScheduleDialog} onClose={() => setOpenScheduleDialog(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Запланировать проведение ТО</DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+      <FormDialog
+        open={openScheduleDialog}
+        onClose={() => setOpenScheduleDialog(false)}
+        title="Запланировать проведение ТО"
+        icon={<CalendarMonthIcon color="primary" />}
+        maxWidth="sm"
+        submitLabel="Запланировать"
+        onSubmit={handleCreateSchedule}
+        submitDisabled={!scheduleForm.equipmentId || !scheduleForm.title || !scheduleForm.scheduledDate}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
           <FormControl fullWidth size="small">
             <InputLabel>Оборудование</InputLabel>
             <Select
@@ -549,19 +558,21 @@ export default function MroOverviewPage() {
             value={scheduleForm.notes}
             onChange={(e) => setScheduleForm({ ...scheduleForm, notes: e.target.value })}
           />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenScheduleDialog(false)}>Отмена</Button>
-          <Button variant="contained" onClick={handleCreateSchedule}>
-            Запланировать
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </Box>
+      </FormDialog>
 
       {/* Диалог создания регламентного плана */}
-      <Dialog open={openPlanDialog} onClose={() => setOpenPlanDialog(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Создать регламентный план ТО</DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+      <FormDialog
+        open={openPlanDialog}
+        onClose={() => setOpenPlanDialog(false)}
+        title="Создать регламентный план ТО"
+        icon={<BuildCircleIcon color="primary" />}
+        maxWidth="sm"
+        submitLabel="Сохранить план"
+        onSubmit={handleCreatePlan}
+        submitDisabled={!planForm.equipmentId || !planForm.name}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
           <FormControl fullWidth size="small">
             <InputLabel>Оборудование</InputLabel>
             <Select
@@ -612,19 +623,21 @@ export default function MroOverviewPage() {
               ))}
             </Select>
           </FormControl>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenPlanDialog(false)}>Отмена</Button>
-          <Button variant="contained" onClick={handleCreatePlan}>
-            Сохранить план
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </Box>
+      </FormDialog>
 
       {/* Диалог создания шаблона чек-листа */}
-      <Dialog open={openChecklistDialog} onClose={() => setOpenChecklistDialog(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Создать шаблон чек-листа ТО</DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+      <FormDialog
+        open={openChecklistDialog}
+        onClose={() => setOpenChecklistDialog(false)}
+        title="Создать шаблон чек-листа ТО"
+        icon={<ChecklistRtlIcon color="primary" />}
+        maxWidth="sm"
+        submitLabel="Сохранить чек-лист"
+        onSubmit={handleCreateChecklist}
+        submitDisabled={!checklistForm.name}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
           <TextField
             fullWidth
             size="small"
@@ -669,21 +682,21 @@ export default function MroOverviewPage() {
           >
             Добавить пункт
           </Button>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenChecklistDialog(false)}>Отмена</Button>
-          <Button variant="contained" onClick={handleCreateChecklist}>
-            Сохранить чек-лист
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </Box>
+      </FormDialog>
 
       {/* Диалог выполнения регламента ТО с чек-листом и списанием запчастей */}
-      <Dialog open={openExecuteDialog} onClose={() => setOpenExecuteDialog(false)} fullWidth maxWidth="md">
-        <DialogTitle>
-          Выполнение ТО: {selectedSchedule?.title}
-        </DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+      <FormDialog
+        open={openExecuteDialog}
+        onClose={() => setOpenExecuteDialog(false)}
+        title={`Выполнение ТО: ${selectedSchedule?.title || ''}`}
+        icon={<AssignmentIcon color="primary" />}
+        maxWidth="md"
+        submitLabel="Завершить регламент и списать ТМЦ"
+        submitColor="success"
+        onSubmit={handleCompleteSchedule}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
           <Typography variant="body2" color="text.secondary">
             Оборудование: <strong>{selectedSchedule?.equipment?.name}</strong> (Инв: {selectedSchedule?.equipment?.inventoryNumber})
           </Typography>
@@ -799,14 +812,8 @@ export default function MroOverviewPage() {
             value={execNotes}
             onChange={(e) => setExecNotes(e.target.value)}
           />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenExecuteDialog(false)}>Отмена</Button>
-          <Button variant="contained" color="success" onClick={handleCompleteSchedule}>
-            Завершить регламент и списать ТМЦ
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </Box>
+      </FormDialog>
     </Box>
   );
 }

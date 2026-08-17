@@ -64,6 +64,7 @@ import {
   HealthScoreGauge,
   StatusBadge,
   PageLoading,
+  FormDialog,
 } from '@/components/ui';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -1254,111 +1255,99 @@ export default function SrmOverviewPage() {
       )}
 
       {/* ДИАЛОГ ДОБАВЛЕНИЯ / РЕДАКТИРОВАНИЯ ИНТЕГРАЦИИ */}
-      <Dialog
+      <FormDialog
         open={openIntegrationDialog}
         onClose={() => setOpenIntegrationDialog(false)}
+        title="Настройка подключения к внешней системе ServiceDesk / API"
+        icon={<CableIcon color="primary" />}
         maxWidth="md"
-        fullWidth
+        submitLabel="Сохранить подключение"
+        onSubmit={handleCreateIntegration}
+        submitDisabled={!integrationForm.name || !integrationForm.baseUrl}
       >
-        <DialogTitle>Настройка подключения к внешней системе ServiceDesk / API</DialogTitle>
-        <DialogContent dividers>
-          <Grid container spacing={2.5}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Название подключения"
-                fullWidth
-                size="small"
-                value={integrationForm.name}
-                onChange={(e) => setIntegrationForm({ ...integrationForm, name: e.target.value })}
-                placeholder="например: Корпоративная Jira IT"
-                required
-              />
-            </Grid>
+        <Grid container spacing={2.5} sx={{ pt: 1 }}>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Название подключения"
+              fullWidth
+              size="small"
+              value={integrationForm.name}
+              onChange={(e) => setIntegrationForm({ ...integrationForm, name: e.target.value })}
+              placeholder="например: Корпоративная Jira IT"
+              required
+            />
+          </Grid>
 
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Тип провайдера</InputLabel>
-                <Select
-                  value={integrationForm.providerType}
-                  label="Тип провайдера"
-                  onChange={(e) => setIntegrationForm({ ...integrationForm, providerType: e.target.value })}
-                >
-                  <MenuItem value="JIRA">Atlassian Jira REST API</MenuItem>
-                  <MenuItem value="REDMINE">Redmine Issue Tracker</MenuItem>
-                  <MenuItem value="GITLAB_ISSUES">GitLab Issues API</MenuItem>
-                  <MenuItem value="REST_GENERIC">Универсальный REST / 1C ServiceDesk</MenuItem>
-                  <MenuItem value="SERVICE_NOW">ServiceNow API</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Тип провайдера</InputLabel>
+              <Select
+                value={integrationForm.providerType}
+                label="Тип провайдера"
+                onChange={(e) => setIntegrationForm({ ...integrationForm, providerType: e.target.value })}
+              >
+                <MenuItem value="JIRA">Atlassian Jira REST API</MenuItem>
+                <MenuItem value="REDMINE">Redmine Issue Tracker</MenuItem>
+                <MenuItem value="GITLAB_ISSUES">GitLab Issues API</MenuItem>
+                <MenuItem value="REST_GENERIC">Универсальный REST / 1C ServiceDesk</MenuItem>
+                <MenuItem value="SERVICE_NOW">ServiceNow API</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
 
-            <Grid item xs={12}>
-              <TextField
-                label="Базовый URL сервера (Base URL)"
-                fullWidth
-                size="small"
-                value={integrationForm.baseUrl}
-                onChange={(e) => setIntegrationForm({ ...integrationForm, baseUrl: e.target.value })}
-                placeholder="https://jira.company.ru или https://redmine.corp.local"
-                required
-              />
-            </Grid>
+          <Grid item xs={12}>
+            <TextField
+              label="Базовый URL сервера (Base URL)"
+              fullWidth
+              size="small"
+              value={integrationForm.baseUrl}
+              onChange={(e) => setIntegrationForm({ ...integrationForm, baseUrl: e.target.value })}
+              placeholder="https://jira.company.ru или https://redmine.corp.local"
+              required
+            />
+          </Grid>
 
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Тип авторизации</InputLabel>
-                <Select
-                  value={integrationForm.authType}
-                  label="Тип авторизации"
-                  onChange={(e) => setIntegrationForm({ ...integrationForm, authType: e.target.value })}
-                >
-                  <MenuItem value="BASIC">Basic Auth (Логин + Пароль / API-токен)</MenuItem>
-                  <MenuItem value="BEARER">Bearer Token (Personal Access Token)</MenuItem>
-                  <MenuItem value="API_KEY">API Key в заголовке</MenuItem>
-                  <MenuItem value="NONE">Без авторизации (Public / Proxy)</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Тип авторизации</InputLabel>
+              <Select
+                value={integrationForm.authType}
+                label="Тип авторизации"
+                onChange={(e) => setIntegrationForm({ ...integrationForm, authType: e.target.value })}
+              >
+                <MenuItem value="BASIC">Basic Auth (Логин + Пароль / API-токен)</MenuItem>
+                <MenuItem value="BEARER">Bearer Token (Personal Access Token)</MenuItem>
+                <MenuItem value="API_KEY">API Key в заголовке</MenuItem>
+                <MenuItem value="NONE">Без авторизации (Public / Proxy)</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
 
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Ключ проекта / Project ID"
-                fullWidth
-                size="small"
-                value={integrationForm.projectKeyOrId}
-                onChange={(e) => setIntegrationForm({ ...integrationForm, projectKeyOrId: e.target.value })}
-                placeholder="EMS или 42"
-              />
-            </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Ключ проекта / Project ID"
+              fullWidth
+              size="small"
+              value={integrationForm.projectKeyOrId}
+              onChange={(e) => setIntegrationForm({ ...integrationForm, projectKeyOrId: e.target.value })}
+              placeholder="EMS или 42"
+            />
+          </Grid>
 
-            {integrationForm.authType === 'BASIC' && (
-              <>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Имя пользователя / Email"
-                    fullWidth
-                    size="small"
-                    value={integrationForm.username}
-                    onChange={(e) => setIntegrationForm({ ...integrationForm, username: e.target.value })}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Пароль / API Токен"
-                    fullWidth
-                    size="small"
-                    type="password"
-                    value={integrationForm.apiToken}
-                    onChange={(e) => setIntegrationForm({ ...integrationForm, apiToken: e.target.value })}
-                  />
-                </Grid>
-              </>
-            )}
-
-            {integrationForm.authType === 'BEARER' && (
-              <Grid item xs={12}>
+          {integrationForm.authType === 'BASIC' && (
+            <>
+              <Grid item xs={12} sm={6}>
                 <TextField
-                  label="Bearer / Access Token"
+                  label="Имя пользователя / Email"
+                  fullWidth
+                  size="small"
+                  value={integrationForm.username}
+                  onChange={(e) => setIntegrationForm({ ...integrationForm, username: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Пароль / API Токен"
                   fullWidth
                   size="small"
                   type="password"
@@ -1366,107 +1355,110 @@ export default function SrmOverviewPage() {
                   onChange={(e) => setIntegrationForm({ ...integrationForm, apiToken: e.target.value })}
                 />
               </Grid>
-            )}
+            </>
+          )}
 
-            {integrationForm.authType === 'API_KEY' && (
-              <>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Имя заголовка (Header Name)"
-                    fullWidth
-                    size="small"
-                    value={integrationForm.headerName}
-                    onChange={(e) => setIntegrationForm({ ...integrationForm, headerName: e.target.value })}
-                    placeholder="X-API-Key или X-Redmine-API-Key"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Значение API-ключа"
-                    fullWidth
-                    size="small"
-                    type="password"
-                    value={integrationForm.apiKey}
-                    onChange={(e) => setIntegrationForm({ ...integrationForm, apiKey: e.target.value })}
-                  />
-                </Grid>
-              </>
-            )}
-
-            <Grid item xs={12} sm={6}>
+          {integrationForm.authType === 'BEARER' && (
+            <Grid item xs={12}>
               <TextField
-                label="Эндпоинт поиска / задач"
+                label="Bearer / Access Token"
                 fullWidth
                 size="small"
-                value={integrationForm.endpoint}
-                onChange={(e) => setIntegrationForm({ ...integrationForm, endpoint: e.target.value })}
-                placeholder="/rest/api/2/search или /issues.json"
+                type="password"
+                value={integrationForm.apiToken}
+                onChange={(e) => setIntegrationForm({ ...integrationForm, apiToken: e.target.value })}
               />
             </Grid>
+          )}
 
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Интервал авто-синхронизации (минуты)"
-                fullWidth
-                size="small"
-                type="number"
-                value={integrationForm.syncInterval}
-                onChange={(e) => setIntegrationForm({ ...integrationForm, syncInterval: parseInt(e.target.value) || 60 })}
-              />
-            </Grid>
+          {integrationForm.authType === 'API_KEY' && (
+            <>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Имя заголовка (Header Name)"
+                  fullWidth
+                  size="small"
+                  value={integrationForm.headerName}
+                  onChange={(e) => setIntegrationForm({ ...integrationForm, headerName: e.target.value })}
+                  placeholder="X-API-Key или X-Redmine-API-Key"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Значение API-ключа"
+                  fullWidth
+                  size="small"
+                  type="password"
+                  value={integrationForm.apiKey}
+                  onChange={(e) => setIntegrationForm({ ...integrationForm, apiKey: e.target.value })}
+                />
+              </Grid>
+            </>
+          )}
 
-            <Grid item xs={12} sm={6}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={integrationForm.isActive}
-                    onChange={(e) => setIntegrationForm({ ...integrationForm, isActive: e.target.checked })}
-                  />
-                }
-                label="Подключение активно"
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={integrationForm.isDefault}
-                    onChange={(e) => setIntegrationForm({ ...integrationForm, isDefault: e.target.checked })}
-                  />
-                }
-                label="Основной источник SRM"
-              />
-            </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Эндпоинт поиска / задач"
+              fullWidth
+              size="small"
+              value={integrationForm.endpoint}
+              onChange={(e) => setIntegrationForm({ ...integrationForm, endpoint: e.target.value })}
+              placeholder="/rest/api/2/search или /issues.json"
+            />
           </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenIntegrationDialog(false)}>Отмена</Button>
-          <Button variant="contained" color="primary" onClick={handleCreateIntegration}>
-            Сохранить подключение
-          </Button>
-        </DialogActions>
-      </Dialog>
+
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Интервал авто-синхронизации (минуты)"
+              fullWidth
+              size="small"
+              type="number"
+              value={integrationForm.syncInterval}
+              onChange={(e) => setIntegrationForm({ ...integrationForm, syncInterval: parseInt(e.target.value) || 60 })}
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={integrationForm.isActive}
+                  onChange={(e) => setIntegrationForm({ ...integrationForm, isActive: e.target.checked })}
+                />
+              }
+              label="Подключение активно"
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={integrationForm.isDefault}
+                  onChange={(e) => setIntegrationForm({ ...integrationForm, isDefault: e.target.checked })}
+                />
+              }
+              label="Основной источник SRM"
+            />
+          </Grid>
+        </Grid>
+      </FormDialog>
 
       {/* ДИАЛОГ ПРОСМОТРА СЫРОГО JSON ЗАДАЧИ */}
-      <Dialog
+      <FormDialog
         open={Boolean(selectedRawIssue)}
         onClose={() => setSelectedRawIssue(null)}
+        title={`Исходный JSON задачи: ${selectedRawIssue?.issueKey || ''}`}
         maxWidth="md"
-        fullWidth
+        hideActions
       >
-        <DialogTitle>
-          Исходный JSON задачи: {selectedRawIssue?.issueKey}
-        </DialogTitle>
-        <DialogContent dividers>
-          <pre style={{ maxHeight: 400, overflow: 'auto', backgroundColor: '#f5f5f5', padding: 12, borderRadius: 4, fontSize: '0.8rem' }}>
-            {JSON.stringify(selectedRawIssue?.rawData || selectedRawIssue, null, 2)}
-          </pre>
-        </DialogContent>
-        <DialogActions>
+        <pre style={{ maxHeight: 400, overflow: 'auto', backgroundColor: '#f5f5f5', padding: 12, borderRadius: 4, fontSize: '0.8rem' }}>
+          {JSON.stringify(selectedRawIssue?.rawData || selectedRawIssue, null, 2)}
+        </pre>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 2 }}>
           <Button onClick={() => setSelectedRawIssue(null)}>Закрыть</Button>
-        </DialogActions>
-      </Dialog>
+        </Box>
+      </FormDialog>
     </Box>
   );
 }
