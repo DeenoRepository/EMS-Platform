@@ -20,3 +20,8 @@ export * from './FileUploadDropzone';
 export * from './DetailDrawer';
 export * from './DatePickerField';
 export * from './ExportButton';
+export * from './ApprovalStepper';
+export * from './ChartCard';
+export * from './ActivityFeed';
+export * from './CurrencyDisplay';
+export * from './PermissionGate';
