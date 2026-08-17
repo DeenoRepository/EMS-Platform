@@ -363,136 +363,143 @@ function WmsStockContent() {
       {/* Critical Stock Alerts */}
       <CriticalAlertBanner alerts={criticalAlerts} />
 
-      <FilterToolbar
-        activeFilterCount={activeFilterCount}
-        onResetFilters={handleResetFilters}
-        actions={
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={lowStockOnly}
-                  color="warning"
-                  size="small"
-                  onChange={(e) => {
-                    setLowStockOnly(e.target.checked);
-                    setPage(0);
-                  }}
+      <DataTableWrapper
+        loading={isLoading}
+        page={page}
+        pageSize={rowsPerPage}
+        total={totalCount}
+        onPageChange={(_, newPage) => setPage(newPage)}
+        onPageSizeChange={(e) => {
+          setRowsPerPage(parseInt(e.target.value, 10));
+          setPage(0);
+        }}
+        stickyHeader
+        showDensityToggle
+        onRefresh={fetchStock}
+        refreshing={isLoading}
+        selectedCount={selectedIds.length}
+        onClearSelection={() => setSelectedIds([])}
+        empty={items.length === 0 && !isLoading}
+        emptyState={
+          <EmptyState
+            icon={<Inventory2OutlinedIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+            title="Позиции ТМЦ не найдены"
+            description={
+              activeFilterCount > 0
+                ? 'По заданным критериям фильтрации позиции не найдены. Попробуйте сбросить фильтры.'
+                : 'Номенклатурные позиции еще не оприходованы на склады.'
+            }
+            actionText={activeFilterCount > 0 ? 'Сбросить фильтры' : undefined}
+            onAction={activeFilterCount > 0 ? handleResetFilters : undefined}
+          />
+        }
+        toolbar={
+          <FilterToolbar
+            variant="embedded"
+            activeFilterCount={activeFilterCount}
+            onResetFilters={handleResetFilters}
+            actions={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={lowStockOnly}
+                      color="warning"
+                      size="small"
+                      onChange={(e) => {
+                        setLowStockOnly(e.target.checked);
+                        setPage(0);
+                      }}
+                    />
+                  }
+                  label={
+                    <Typography variant="body2" fontWeight={600} color={lowStockOnly ? 'warning.dark' : 'text.primary'}>
+                      Только дефицит
+                    </Typography>
+                  }
+                  sx={{ m: 0 }}
                 />
-              }
-              label={
-                <Typography variant="body2" fontWeight={600} color={lowStockOnly ? 'warning.dark' : 'text.primary'}>
-                  Только дефицит
-                </Typography>
-              }
-              sx={{ m: 0 }}
-            />
-            <ExportButton
-              onExport={handleExport}
-              formats={['xlsx', 'csv']}
-              disabled={items.length === 0}
-            />
-          </Box>
+                <ExportButton
+                  onExport={handleExport}
+                  formats={['xlsx', 'csv']}
+                  disabled={items.length === 0}
+                />
+              </Box>
+            }
+          >
+            <Box sx={{ minWidth: { xs: '100%', sm: 260 } }}>
+              <SearchInput
+                value={search}
+                placeholder="Поиск по названию или артикулу..."
+                onSearch={(val) => {
+                  setSearch(val);
+                  setPage(0);
+                }}
+              />
+            </Box>
+
+            <TextField
+              select
+              size="small"
+              label="Склад"
+              value={selectedWarehouse}
+              onChange={(e) => {
+                setSelectedWarehouse(e.target.value);
+                setSelectedZone('');
+                setPage(0);
+              }}
+              sx={{ minWidth: 180 }}
+            >
+              <MenuItem value="">Все склады</MenuItem>
+              {warehouses.map((w) => (
+                <MenuItem key={w.id} value={w.id}>
+                  {w.name} ({w.code})
+                </MenuItem>
+              ))}
+            </TextField>
+
+            {selectedWarehouse && zones.length > 0 && (
+              <TextField
+                select
+                size="small"
+                label="Зона склада"
+                value={selectedZone}
+                onChange={(e) => {
+                  setSelectedZone(e.target.value);
+                  setPage(0);
+                }}
+                sx={{ minWidth: 160 }}
+              >
+                <MenuItem value="">Все зоны</MenuItem>
+                {zones.map((z) => (
+                  <MenuItem key={z.id} value={z.id}>
+                    {z.name} ({z.code})
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+
+            <TextField
+              select
+              size="small"
+              label="Категория"
+              value={selectedCategory}
+              onChange={(e) => {
+                setSelectedCategory(e.target.value);
+                setPage(0);
+              }}
+              sx={{ minWidth: 180 }}
+            >
+              <MenuItem value="">Все категории</MenuItem>
+              {categories.map((c) => (
+                <MenuItem key={c.id} value={c.id}>
+                  {c.name}
+                </MenuItem>
+              ))}
+            </TextField>
+          </FilterToolbar>
         }
       >
-        <Box sx={{ minWidth: { xs: '100%', sm: 260 } }}>
-          <SearchInput
-            value={search}
-            placeholder="Поиск по названию или артикулу..."
-            onSearch={(val) => {
-              setSearch(val);
-              setPage(0);
-            }}
-          />
-        </Box>
-
-        <TextField
-          select
-          size="small"
-          label="Склад"
-          value={selectedWarehouse}
-          onChange={(e) => {
-            setSelectedWarehouse(e.target.value);
-            setSelectedZone('');
-            setPage(0);
-          }}
-          sx={{ minWidth: 180 }}
-        >
-          <MenuItem value="">Все склады</MenuItem>
-          {warehouses.map((w) => (
-            <MenuItem key={w.id} value={w.id}>
-              {w.name} ({w.code})
-            </MenuItem>
-          ))}
-        </TextField>
-
-        {selectedWarehouse && zones.length > 0 && (
-          <TextField
-            select
-            size="small"
-            label="Зона склада"
-            value={selectedZone}
-            onChange={(e) => {
-              setSelectedZone(e.target.value);
-              setPage(0);
-            }}
-            sx={{ minWidth: 160 }}
-          >
-            <MenuItem value="">Все зоны</MenuItem>
-            {zones.map((z) => (
-              <MenuItem key={z.id} value={z.id}>
-                {z.name} ({z.code})
-              </MenuItem>
-            ))}
-          </TextField>
-        )}
-
-        <TextField
-          select
-          size="small"
-          label="Категория"
-          value={selectedCategory}
-          onChange={(e) => {
-            setSelectedCategory(e.target.value);
-            setPage(0);
-          }}
-          sx={{ minWidth: 180 }}
-        >
-          <MenuItem value="">Все категории</MenuItem>
-          {categories.map((c) => (
-            <MenuItem key={c.id} value={c.id}>
-              {c.name}
-            </MenuItem>
-          ))}
-        </TextField>
-      </FilterToolbar>
-
-      {items.length === 0 && !isLoading ? (
-        <EmptyState
-          paper
-          icon={<Inventory2OutlinedIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
-          title="Позиции ТМЦ не найдены"
-          description={
-            activeFilterCount > 0
-              ? 'По заданным критериям фильтрации позиции не найдены. Попробуйте сбросить фильтры.'
-              : 'Номенклатурные позиции еще не оприходованы на склады.'
-          }
-          actionText={activeFilterCount > 0 ? 'Сбросить фильтры' : undefined}
-          onAction={activeFilterCount > 0 ? handleResetFilters : undefined}
-        />
-      ) : (
-        <DataTableWrapper
-          loading={isLoading}
-          page={page}
-          pageSize={rowsPerPage}
-          total={totalCount}
-          onPageChange={(_, newPage) => setPage(newPage)}
-          onPageSizeChange={(e) => {
-            setRowsPerPage(parseInt(e.target.value, 10));
-            setPage(0);
-          }}
-          stickyHeader
-        >
           <Table size="small" aria-label="Реестр остатков складов и ТМЦ">
             <TableHead>
               <TableRow>
@@ -650,7 +657,6 @@ function WmsStockContent() {
             </TableBody>
           </Table>
         </DataTableWrapper>
-      )}
 
       {/* Диалог назначения места хранения (ячейки) */}
       <FormDialog

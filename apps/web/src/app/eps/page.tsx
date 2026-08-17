@@ -11,30 +11,23 @@ import {
   MenuItem,
   Button,
   Chip,
-  Pagination,
   IconButton,
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TableRow,
   ToggleButtonGroup,
   ToggleButton,
-  InputAdornment,
-  CircularProgress,
   Tooltip,
-  Drawer,
-  Divider,
   Paper,
+  Checkbox,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import SearchIcon from '@mui/icons-material/Search';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import CloseIcon from '@mui/icons-material/Close';
 import LaunchIcon from '@mui/icons-material/Launch';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import BuildCircleOutlinedIcon from '@mui/icons-material/BuildCircleOutlined';
@@ -44,7 +37,6 @@ import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import ConstructionOutlinedIcon from '@mui/icons-material/ConstructionOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
-import Checkbox from '@mui/material/Checkbox';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import PageHeader from '@/components/layout/PageHeader';
@@ -59,9 +51,11 @@ import {
   FilterToolbar,
   EmptyState,
   DataTableWrapper,
+  DetailDrawer,
   CriticalAlertBanner,
   BulkActionBar,
   PageLoading,
+  type TableDensity,
 } from '@/components/ui';
 
 interface EquipmentItem {
@@ -100,6 +94,7 @@ function EquipmentListContent() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [loading, setLoading] = useState(true);
+  const [density, setDensity] = useState<TableDensity>('standard');
 
   // View mode: 'table' or 'grid'
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
@@ -150,19 +145,16 @@ function EquipmentListContent() {
       if (res.ok) {
         const json = await res.json();
         if (json.success) {
-          const fetchedItems: EquipmentItem[] = json.data.items || [];
-          setItems(fetchedItems);
-          setTotal(json.data.total || 0);
-          setTotalPages(json.data.totalPages || 1);
-
-          // Update Status Counts summary from API (global database count)
-          if (json.data.statusCounts) {
-            setStatusCounts(json.data.statusCounts);
+          setItems(json.data);
+          setTotal(json.meta.total);
+          setTotalPages(json.meta.totalPages);
+          if (json.meta.statusCounts) {
+            setStatusCounts(json.meta.statusCounts);
           }
         }
       }
-    } catch {
-      enqueueSnackbar('Ошибка загрузки каталога оборудования', { variant: 'error' });
+    } catch (e) {
+      enqueueSnackbar('Ошибка при загрузке реестра оборудования', { variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -176,24 +168,58 @@ function EquipmentListContent() {
     fetchEquipment();
   }, [fetchEquipment]);
 
-  const handleRowClick = async (item: EquipmentItem) => {
-    setSelectedEquipment(item);
-    setLoadingDetails(true);
-    try {
-      const res = await fetch(`/api/eps/equipment/${item.id}`);
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success) {
-          setQuickViewDetails(json.data);
-        }
-      }
-    } catch {
-      // ignore
-    } finally {
-      setLoadingDetails(false);
+  // Load Full Details when equipment selected for Quick View Side Drawer
+  useEffect(() => {
+    if (!selectedEquipment) {
+      setQuickViewDetails(null);
+      return;
     }
+
+    let isMounted = true;
+    setLoadingDetails(true);
+
+    fetch(`/api/eps/equipment/${selectedEquipment.id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (isMounted && data.success) {
+          setQuickViewDetails(data.data);
+        }
+      })
+      .catch(() => {
+        // ignore
+      })
+      .finally(() => {
+        if (isMounted) setLoadingDetails(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedEquipment]);
+
+  // Reset Filters
+  const handleResetFilters = () => {
+    setSearch('');
+    setStatusFilter('');
+    setTagFilter('');
+    setPage(1);
   };
 
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (search) count++;
+    if (statusFilter) count++;
+    if (tagFilter) count++;
+    return count;
+  }, [search, statusFilter, tagFilter]);
+
+  // Quick filter by clicking KPI card
+  const handleKpiFilter = (status: string | null) => {
+    setStatusFilter((prev) => (prev === status ? '' : status || ''));
+    setPage(1);
+  };
+
+  // Quick status update from Master-Detail Drawer
   const handleQuickStatusUpdate = async (newStatus: string) => {
     if (!selectedEquipment) return;
     try {
@@ -204,134 +230,127 @@ function EquipmentListContent() {
       });
       const data = await res.json();
       if (data.success) {
-        enqueueSnackbar('Статус оборудования обновлен', { variant: 'success' });
+        enqueueSnackbar('Статус оборудования успешно обновлен', { variant: 'success' });
         setSelectedEquipment((prev) => (prev ? { ...prev, status: newStatus } : null));
-        setQuickViewDetails((prev: any) => (prev ? { ...prev, status: newStatus } : null));
         fetchEquipment();
+      } else {
+        enqueueSnackbar(data.error || 'Не удалось обновить статус', { variant: 'error' });
       }
     } catch {
-      enqueueSnackbar('Ошибка обновления статуса', { variant: 'error' });
+      enqueueSnackbar('Сетевая ошибка при обновлении статуса', { variant: 'error' });
     }
   };
 
-  const handleKpiFilter = (status: string) => {
-    if (statusFilter === status) {
-      setStatusFilter('');
-    } else {
-      setStatusFilter(status);
-    }
-    setPage(1);
-  };
-
-  const handleResetFilters = () => {
-    setSearch('');
-    setStatusFilter('');
-    setTagFilter('');
-    setPage(1);
-  };
-
-  const activeFilterCount = (search ? 1 : 0) + (statusFilter ? 1 : 0) + (tagFilter ? 1 : 0);
   const canCreate = hasPermission(PERMISSIONS.EPS_EQUIPMENT_CREATE);
   const canEdit = hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT);
+  const canImport = hasPermission(PERMISSIONS.EPS_IMPORT_EXECUTE);
 
-  // Selection state for bulk operations
+  // Bulk Selection State
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
+  const handleRowClick = (eq: EquipmentItem) => {
+    setSelectedEquipment(eq);
+  };
+
+  // Bulk Export Handlers
   const handleBulkExport = () => {
-    const selectedItems = items.filter((i) => selectedIds.includes(i.id));
-    const csvContent =
-      'data:text/csv;charset=utf-8,' +
-      ['Инвентарный №,Наименование,Модель,Локация,Статус']
-        .concat(
-          selectedItems.map(
-            (i) => `"${i.inventoryNumber || ''}","${i.name}","${i.model || ''}","${i.location || ''}","${i.status}"`
-          )
-        )
-        .join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `equipment_export_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    enqueueSnackbar(`Экспортировано записей: ${selectedItems.length}`, { variant: 'success' });
+    const idsToExport = selectedIds.length > 0 ? selectedIds : items.map((i) => i.id);
+    if (idsToExport.length === 0) {
+      enqueueSnackbar('Нет оборудования для экспорта', { variant: 'warning' });
+      return;
+    }
+    const url = `/api/eps/reports/export?format=csv&ids=${idsToExport.join(',')}`;
+    window.open(url, '_blank');
+    enqueueSnackbar(`Экспорт ${idsToExport.length} записей запущен`, { variant: 'info' });
   };
 
   const handleBulkPrint = () => {
-    enqueueSnackbar(`Сформирован пакет для печати (${selectedIds.length} паспортов)`, { variant: 'info' });
+    window.print();
   };
 
-  const criticalAlerts = useMemo(() => {
-    const list = [];
-    if (statusCounts.underRepair > 0) {
-      list.push({
-        id: 'repair-alert',
-        severity: 'WARNING' as const,
-        title: 'Оборудование требует завершения ремонта',
-        description: `В статусе «В ремонте» находится ${statusCounts.underRepair} ед. оборудования. Проверьте регламенты и наряды ТО.`,
-        count: statusCounts.underRepair,
-        actionLabel: 'Показать список',
-        onAction: () => handleKpiFilter('UNDER_REPAIR'),
-      });
-    }
-    return list;
-  }, [statusCounts.underRepair]);
-
   return (
-    <Box sx={{ maxWidth: 1920, mx: 'auto', pb: selectedIds.length > 0 ? 8 : 2 }}>
+    <Box sx={{ pb: 6 }}>
+      {/* Page Header */}
       <PageHeader
-        title="EPS — Паспортизация оборудования"
-        subtitle="Единый реестр технологического оборудования предприятия, документации и технических характеристик"
-        breadcrumbs={[{ label: 'Главная', href: '/' }, { label: 'Оборудование' }]}
+        title="Реестр оборудования (EPS)"
+        subtitle="Централизованный учет, паспортизация и жизненный цикл производственных активов"
+        breadcrumbs={[
+          { label: 'Главная', href: '/' },
+          { label: 'Паспортизация EPS', href: '/eps' },
+          { label: 'Реестр оборудования' },
+        ]}
         actions={
           <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
             <Button
               variant="outlined"
+              size="small"
               startIcon={<AssessmentOutlinedIcon />}
               onClick={() => router.push('/eps/reports')}
-              sx={{ px: 2, py: 0.75, fontWeight: 600 }}
+              sx={{ borderRadius: '8px' }}
             >
-              Конструктор отчетов
+              Отчеты
             </Button>
-            <Button
-              variant="outlined"
-              startIcon={<FileUploadOutlinedIcon />}
-              onClick={() => router.push('/eps/import')}
-              sx={{ px: 2, py: 0.75, fontWeight: 600 }}
-            >
-              Импорт данных
-            </Button>
+            {canImport && (
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<FileUploadOutlinedIcon />}
+                onClick={() => router.push('/eps/import')}
+                sx={{ borderRadius: '8px' }}
+              >
+                Импорт Excel / CSV
+              </Button>
+            )}
             {canCreate && (
               <Button
                 variant="contained"
+                size="small"
                 startIcon={<AddIcon />}
                 onClick={() => router.push('/eps/new')}
-                sx={{ px: 2.25, py: 0.75, fontWeight: 600 }}
+                sx={{
+                  borderRadius: '8px',
+                  fontWeight: 600,
+                  boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)',
+                }}
               >
-                Добавить оборудование
+                Новое оборудование
               </Button>
             )}
           </Box>
         }
       />
 
-      {/* Critical Alerts Banner */}
-      <CriticalAlertBanner alerts={criticalAlerts} />
+      {/* Critical Equipment Alert Banner (for equipment in repair) */}
+      {statusCounts.underRepair > 0 && (
+        <CriticalAlertBanner
+          alerts={[
+            {
+              id: 'under-repair-alert',
+              severity: 'WARNING',
+              title: `Внимание: ${statusCounts.underRepair} ед. оборудования находятся в статусе «В ремонте»`,
+              description:
+                'Требуется оперативный контроль проведения восстановительных работ и наличия необходимых запасных частей на складе.',
+              actionLabel: 'Показать требующие ремонта',
+              onAction: () => handleKpiFilter('UNDER_REPAIR'),
+              count: statusCounts.underRepair,
+            },
+          ]}
+        />
+      )}
 
-      {/* Top KPI Metric Cards Bar with StatCard */}
-      <Grid container spacing={1.75} sx={{ mb: 2.5 }}>
+      {/* Top Interactive KPI Metric Cards */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={2.4}>
           <StatCard
-            title="Всего оборудования"
+            title="Всего активов"
             value={statusCounts.total}
-            subtitle="Единиц в реестре предприятия"
+            subtitle="Зарегистрировано в базе"
             icon={<PrecisionManufacturingIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(2, 132, 199, 0.08)"
             iconColor="#0284c7"
             accentColor="#0284c7"
-            active={statusFilter === ''}
-            onClick={() => handleKpiFilter('')}
+            active={!statusFilter}
+            onClick={() => handleKpiFilter(null)}
             loading={loading && statusCounts.total === 0}
           />
         </Grid>
@@ -340,7 +359,7 @@ function EquipmentListContent() {
           <StatCard
             title="В работе"
             value={statusCounts.active}
-            subtitle="В штатной эксплуатации"
+            subtitle="Штатная эксплуатация"
             icon={<CheckCircleOutlineIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(22, 163, 74, 0.08)"
             iconColor="#16a34a"
@@ -355,7 +374,7 @@ function EquipmentListContent() {
           <StatCard
             title="В ремонте"
             value={statusCounts.underRepair}
-            subtitle="ТО или аварийные работы"
+            subtitle="ТО или восстановление"
             icon={<BuildCircleOutlinedIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(217, 119, 6, 0.08)"
             iconColor="#d97706"
@@ -368,9 +387,9 @@ function EquipmentListContent() {
 
         <Grid item xs={12} sm={6} md={2.4}>
           <StatCard
-            title="На складе"
+            title="На хранении"
             value={statusCounts.inStorage}
-            subtitle="Резерв и консервация"
+            subtitle="Резерв на складе"
             icon={<InventoryIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(100, 116, 139, 0.08)"
             iconColor="#64748b"
@@ -397,254 +416,118 @@ function EquipmentListContent() {
         </Grid>
       </Grid>
 
-      {/* Modern Filter and Search Toolbar */}
-      <FilterToolbar
-        activeFilterCount={activeFilterCount}
-        onResetFilters={handleResetFilters}
-        actions={
-          <ToggleButtonGroup
-            value={viewMode}
-            exclusive
-            onChange={(_, mode) => mode && setViewMode(mode)}
-            size="small"
-          >
-            <ToggleButton value="table" aria-label="table view" sx={{ px: 1, py: 0.5 }}>
-              <Tooltip title="Табличный вид">
-                <ViewListIcon fontSize="small" />
-              </Tooltip>
-            </ToggleButton>
-            <ToggleButton value="grid" aria-label="grid view" sx={{ px: 1, py: 0.5 }}>
-              <Tooltip title="Сетка карточек">
-                <ViewModuleIcon fontSize="small" />
-              </Tooltip>
-            </ToggleButton>
-          </ToggleButtonGroup>
-        }
-      >
-        <Box sx={{ minWidth: { xs: '100%', sm: 300, md: 360 } }}>
-          <SearchInput
-            value={search}
-            placeholder="Поиск по наименованию, инвентарному или зав. номеру..."
-            onSearch={(val) => {
-              setSearch(val);
-              setPage(1);
-            }}
+      {/* Unified Enterprise Data Grid: Filter Toolbar + Table/Grid + Pagination */}
+      <DataTableWrapper
+        loading={loading}
+        page={page - 1}
+        pageSize={pageSize}
+        total={total}
+        onPageChange={(_, newPage) => setPage(newPage + 1)}
+        onPageSizeChange={(e) => {
+          setPageSize(parseInt(e.target.value, 10));
+          setPage(1);
+        }}
+        stickyHeader
+        showDensityToggle
+        density={density}
+        onDensityChange={setDensity}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        onRefresh={fetchEquipment}
+        refreshing={loading}
+        selectedCount={selectedIds.length}
+        onClearSelection={() => setSelectedIds([])}
+        empty={items.length === 0 && !loading}
+        emptyState={
+          <EmptyState
+            icon={<PrecisionManufacturingIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+            title="Оборудование не найдено"
+            description={
+              activeFilterCount > 0
+                ? 'По заданным критериям фильтрации ничего не найдено. Попробуйте сбросить фильтры.'
+                : 'В реестре пока нет зарегистрированного оборудования.'
+            }
+            actionText={activeFilterCount > 0 ? 'Сбросить фильтры' : (canCreate ? 'Добавить оборудование' : undefined)}
+            onAction={activeFilterCount > 0 ? handleResetFilters : (canCreate ? () => router.push('/eps/new') : undefined)}
           />
-        </Box>
+        }
+        toolbar={
+          <FilterToolbar
+            variant="embedded"
+            activeFilterCount={activeFilterCount}
+            onResetFilters={handleResetFilters}
+            actions={
+              <ToggleButtonGroup
+                value={viewMode}
+                exclusive
+                onChange={(_, mode) => mode && setViewMode(mode)}
+                size="small"
+                sx={{ height: 36 }}
+              >
+                <ToggleButton value="table" aria-label="табличный вид" sx={{ px: 1.25, py: 0.5 }}>
+                  <Tooltip title="Табличный вид">
+                    <ViewListIcon fontSize="small" />
+                  </Tooltip>
+                </ToggleButton>
+                <ToggleButton value="grid" aria-label="сетка карточек" sx={{ px: 1.25, py: 0.5 }}>
+                  <Tooltip title="Сетка карточек">
+                    <ViewModuleIcon fontSize="small" />
+                  </Tooltip>
+                </ToggleButton>
+              </ToggleButtonGroup>
+            }
+          >
+            <Box sx={{ minWidth: { xs: '100%', sm: 280, md: 340 }, flexGrow: 1 }}>
+              <SearchInput
+                value={search}
+                placeholder="Поиск по наименованию, инвентарному или зав. номеру..."
+                onSearch={(val) => {
+                  setSearch(val);
+                  setPage(1);
+                }}
+              />
+            </Box>
 
-        <TextField
-          select
-          size="small"
-          label="Статус"
-          value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value);
-            setPage(1);
-          }}
-          sx={{ minWidth: 160 }}
-        >
-          <MenuItem value="">Все статусы</MenuItem>
-          {Object.entries(EQUIPMENT_STATUS_MAP).map(([key, info]) => (
-            <MenuItem key={key} value={key}>
-              {info.label}
-            </MenuItem>
-          ))}
-        </TextField>
+            <TextField
+              select
+              size="small"
+              label="Статус"
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1);
+              }}
+              sx={{ minWidth: 150 }}
+            >
+              <MenuItem value="">Все статусы</MenuItem>
+              {Object.entries(EQUIPMENT_STATUS_MAP).map(([key, info]) => (
+                <MenuItem key={key} value={key}>
+                  {info.label}
+                </MenuItem>
+              ))}
+            </TextField>
 
-        <TextField
-          select
-          size="small"
-          label="Тег / Классификатор"
-          value={tagFilter}
-          onChange={(e) => {
-            setTagFilter(e.target.value);
-            setPage(1);
-          }}
-          sx={{ minWidth: 180 }}
-        >
-          <MenuItem value="">Все теги</MenuItem>
-          {tags.map((t) => (
-            <MenuItem key={t.id} value={t.id}>
-              {t.name}
-            </MenuItem>
-          ))}
-        </TextField>
-      </FilterToolbar>
-
-      {/* Main Table / Grid Container */}
-      {items.length === 0 && !loading ? (
-        <EmptyState
-          paper
-          icon={<PrecisionManufacturingIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
-          title="Оборудование не найдено"
-          description={
-            activeFilterCount > 0
-              ? 'По заданным критериям фильтрации ничего не найдено. Попробуйте сбросить фильтры.'
-              : 'В реестре пока нет зарегистрированного оборудования.'
-          }
-          actionText={activeFilterCount > 0 ? 'Сбросить фильтры' : (canCreate ? 'Добавить оборудование' : undefined)}
-          onAction={activeFilterCount > 0 ? handleResetFilters : (canCreate ? () => router.push('/eps/new') : undefined)}
-        />
-      ) : viewMode === 'table' ? (
-        <DataTableWrapper
-          loading={loading}
-          page={page - 1}
-          pageSize={pageSize}
-          total={total}
-          onPageChange={(_, newPage) => setPage(newPage + 1)}
-          onPageSizeChange={(e) => {
-            setPageSize(parseInt(e.target.value, 10));
-            setPage(1);
-          }}
-          stickyHeader
-        >
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell padding="checkbox" sx={{ width: 48 }}>
-                  <Checkbox
-                    size="small"
-                    indeterminate={selectedIds.length > 0 && selectedIds.length < items.length}
-                    checked={items.length > 0 && selectedIds.length === items.length}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedIds(items.map((i) => i.id));
-                      } else {
-                        setSelectedIds([]);
-                      }
-                    }}
-                  />
-                </TableCell>
-                <TableCell sx={{ width: 140 }}>Инв. номер</TableCell>
-                <TableCell>Наименование оборудования</TableCell>
-                <TableCell>Производитель / Модель</TableCell>
-                <TableCell>Локация / Место</TableCell>
-                <TableCell sx={{ width: 140 }}>Статус</TableCell>
-                <TableCell>Теги</TableCell>
-                <TableCell sx={{ width: 140 }}>Связи</TableCell>
-                <TableCell sx={{ width: 120 }}>Ввод в экспл.</TableCell>
-                <TableCell align="right" sx={{ width: 80 }}>Действия</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {items.map((eq) => {
-                const isSelected = selectedEquipment?.id === eq.id;
-                const isChecked = selectedIds.includes(eq.id);
-                return (
-                  <TableRow
-                    key={eq.id}
-                    hover
-                    selected={isSelected}
-                    sx={{
-                      cursor: 'pointer',
-                      '&.Mui-selected': {
-                        backgroundColor: 'rgba(2, 132, 199, 0.08) !important',
-                      },
-                    }}
-                    onClick={() => handleRowClick(eq)}
-                    onDoubleClick={() => router.push(`/eps/${eq.id}`)}
-                  >
-                    <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
-                      <Checkbox
-                        size="small"
-                        checked={isChecked}
-                        onChange={() => {
-                          setSelectedIds((prev) =>
-                            prev.includes(eq.id) ? prev.filter((id) => id !== eq.id) : [...prev, eq.id]
-                          );
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={eq.inventoryNumber || 'Б/Н'}
-                        size="small"
-                        variant="outlined"
-                        sx={{ fontWeight: 700, fontFamily: 'monospace', borderRadius: '4px' }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="subtitle2" fontWeight={600} color="primary.main">
-                        {eq.name}
-                      </Typography>
-                      {eq.serialNumber && (
-                        <Typography variant="caption" color="text.secondary" display="block">
-                          Зав. №: {eq.serialNumber}
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" fontWeight={500}>{eq.manufacturer || '—'}</Typography>
-                      {eq.model && (
-                        <Typography variant="caption" color="text.secondary" display="block">
-                          {eq.model}
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell sx={{ fontSize: '0.8125rem' }}>{eq.location || '—'}</TableCell>
-                    <TableCell>
-                      <StatusBadge status={eq.status} />
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                        {eq.tags.map((t) => (
-                          <Chip
-                            key={t.id}
-                            label={t.name}
-                            size="small"
-                            sx={{
-                              fontSize: '0.6875rem',
-                              height: 20,
-                              backgroundColor: t.color ? `${t.color}15` : undefined,
-                              color: t.color || 'text.primary',
-                              borderColor: t.color || undefined,
-                              borderRadius: '4px',
-                            }}
-                            variant="outlined"
-                          />
-                        ))}
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', gap: 1.5, color: 'text.secondary', fontSize: '0.75rem' }}>
-                        <Tooltip title="Документов прикреплено">
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-                            <DescriptionOutlinedIcon sx={{ fontSize: 15 }} />
-                            <span>{eq.counts.documents}</span>
-                          </Box>
-                        </Tooltip>
-                        <Tooltip title="Планов ТО">
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-                            <ConstructionOutlinedIcon sx={{ fontSize: 15 }} />
-                            <span>{eq.counts.maintenancePlans}</span>
-                          </Box>
-                        </Tooltip>
-                      </Box>
-                    </TableCell>
-                    <TableCell sx={{ fontSize: '0.8125rem' }}>{formatDate(eq.commissionDate)}</TableCell>
-                    <TableCell align="right">
-                      <Tooltip title="Открыть полный паспорт">
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/eps/${eq.id}`);
-                          }}
-                        >
-                          <ArrowForwardIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </DataTableWrapper>
-      ) : (
-        /* Grid Card View */
-        <Box>
+            <TextField
+              select
+              size="small"
+              label="Тег / Классификатор"
+              value={tagFilter}
+              onChange={(e) => {
+                setTagFilter(e.target.value);
+                setPage(1);
+              }}
+              sx={{ minWidth: 170 }}
+            >
+              <MenuItem value="">Все теги</MenuItem>
+              {tags.map((t) => (
+                <MenuItem key={t.id} value={t.id}>
+                  {t.name}
+                </MenuItem>
+              ))}
+            </TextField>
+          </FilterToolbar>
+        }
+        gridContent={
           <Grid container spacing={2.5}>
             {items.map((eq) => (
               <Grid item xs={12} sm={6} md={4} lg={3} key={eq.id}>
@@ -698,7 +581,7 @@ function EquipmentListContent() {
                         label={eq.inventoryNumber || 'Б/Н'}
                         size="small"
                         variant="outlined"
-                        sx={{ fontWeight: 700, fontSize: '0.7rem', height: 20, borderRadius: '4px' }}
+                        sx={{ fontWeight: 700, fontSize: '0.7rem', height: 20, borderRadius: '4px', fontFamily: 'monospace' }}
                       />
                       <Typography variant="caption" color="text.secondary">
                         {eq.location || '—'}
@@ -763,122 +646,250 @@ function EquipmentListContent() {
               </Grid>
             ))}
           </Grid>
+        }
+      >
+        <Table size="small" aria-label="Реестр оборудования">
+          <TableHead>
+            <TableRow>
+              <TableCell padding="checkbox" sx={{ width: 48 }}>
+                <Checkbox
+                  size="small"
+                  indeterminate={selectedIds.length > 0 && selectedIds.length < items.length}
+                  checked={items.length > 0 && selectedIds.length === items.length}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedIds(items.map((i) => i.id));
+                    } else {
+                      setSelectedIds([]);
+                    }
+                  }}
+                  inputProps={{ 'aria-label': 'Выбрать все записи' }}
+                />
+              </TableCell>
+              <TableCell sx={{ width: 140, fontWeight: 700 }}>Инв. номер</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Наименование оборудования</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Производитель / Модель</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Локация / Место</TableCell>
+              <TableCell sx={{ width: 140, fontWeight: 700 }}>Статус</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Теги</TableCell>
+              <TableCell sx={{ width: 130, fontWeight: 700 }}>Связи</TableCell>
+              <TableCell sx={{ width: 120, fontWeight: 700 }}>Ввод в экспл.</TableCell>
+              <TableCell align="right" sx={{ width: 80, fontWeight: 700 }}>Действия</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {items.map((eq) => {
+              const isSelected = selectedEquipment?.id === eq.id;
+              const isChecked = selectedIds.includes(eq.id);
+              return (
+                <TableRow
+                  key={eq.id}
+                  hover
+                  selected={isSelected}
+                  sx={{
+                    cursor: 'pointer',
+                    '&.Mui-selected': {
+                      backgroundColor: 'rgba(2, 132, 199, 0.08) !important',
+                    },
+                  }}
+                  onClick={() => handleRowClick(eq)}
+                  onDoubleClick={() => router.push(`/eps/${eq.id}`)}
+                >
+                  <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      size="small"
+                      checked={isChecked}
+                      onChange={() => {
+                        setSelectedIds((prev) =>
+                          prev.includes(eq.id) ? prev.filter((id) => id !== eq.id) : [...prev, eq.id]
+                        );
+                      }}
+                      inputProps={{ 'aria-label': `Выбрать ${eq.name}` }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={eq.inventoryNumber || 'Б/Н'}
+                      size="small"
+                      variant="outlined"
+                      sx={{ fontWeight: 700, fontFamily: 'monospace', borderRadius: '4px', height: 22 }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="subtitle2" fontWeight={600} color="primary.main">
+                      {eq.name}
+                    </Typography>
+                    {eq.serialNumber && (
+                      <Typography variant="caption" color="text.secondary" display="block">
+                        Зав. №: {eq.serialNumber}
+                      </Typography>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" fontWeight={500}>{eq.manufacturer || '—'}</Typography>
+                    {eq.model && (
+                      <Typography variant="caption" color="text.secondary" display="block">
+                        {eq.model}
+                      </Typography>
+                    )}
+                  </TableCell>
+                  <TableCell sx={{ fontSize: '0.8125rem' }}>{eq.location || '—'}</TableCell>
+                  <TableCell>
+                    <StatusBadge status={eq.status} />
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                      {eq.tags.map((t) => (
+                        <Chip
+                          key={t.id}
+                          label={t.name}
+                          size="small"
+                          sx={{
+                            fontSize: '0.6875rem',
+                            height: 20,
+                            backgroundColor: t.color ? `${t.color}15` : undefined,
+                            color: t.color || 'text.primary',
+                            borderColor: t.color || undefined,
+                            borderRadius: '4px',
+                          }}
+                          variant="outlined"
+                        />
+                      ))}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', gap: 1.5, color: 'text.secondary', fontSize: '0.75rem' }}>
+                      <Tooltip title="Документов прикреплено">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+                          <DescriptionOutlinedIcon sx={{ fontSize: 15 }} />
+                          <span>{eq.counts.documents}</span>
+                        </Box>
+                      </Tooltip>
+                      <Tooltip title="Планов ТО">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+                          <ConstructionOutlinedIcon sx={{ fontSize: 15 }} />
+                          <span>{eq.counts.maintenancePlans}</span>
+                        </Box>
+                      </Tooltip>
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ fontSize: '0.8125rem' }}>{formatDate(eq.commissionDate)}</TableCell>
+                  <TableCell align="right">
+                    <Tooltip title="Открыть полный паспорт">
+                      <IconButton
+                        size="small"
+                        color="primary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/eps/${eq.id}`);
+                        }}
+                        aria-label={`Открыть паспорт ${eq.name}`}
+                      >
+                        <ArrowForwardIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </DataTableWrapper>
 
-          {/* Grid View Pagination */}
-          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
-            <Pagination
-              count={totalPages}
-              page={page}
-              onChange={(_, val) => setPage(val)}
-              color="primary"
-              shape="rounded"
-            />
-          </Box>
-        </Box>
-      )}
-
-      {/* Master-Detail Quick View Side Drawer (480px width on FHD 1920x1080) */}
-      <Drawer
-        anchor="right"
+      {/* Master-Detail Quick View Side Drawer using shared DetailDrawer */}
+      <DetailDrawer
         open={Boolean(selectedEquipment)}
         onClose={() => setSelectedEquipment(null)}
-        PaperProps={{
-          sx: {
-            width: { xs: '100%', sm: 480 },
-            boxSizing: 'border-box',
-            p: 0,
-            display: 'flex',
-            flexDirection: 'column',
-          },
-        }}
+        width={480}
+        loading={loadingDetails}
+        title={
+          selectedEquipment ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Chip
+                label={selectedEquipment.inventoryNumber || 'Б/Н'}
+                size="small"
+                variant="outlined"
+                sx={{ fontWeight: 700, fontFamily: 'monospace' }}
+              />
+              <Typography variant="subtitle1" fontWeight={700}>
+                Быстрый просмотр
+              </Typography>
+            </Box>
+          ) : (
+            'Быстрый просмотр'
+          )
+        }
+        footerActions={
+          selectedEquipment ? (
+            <Button
+              variant="contained"
+              fullWidth
+              size="large"
+              endIcon={<ArrowForwardIcon />}
+              onClick={() => router.push(`/eps/${selectedEquipment.id}`)}
+              sx={{ py: 1.25, fontWeight: 600 }}
+            >
+              Перейти в полный паспорт
+            </Button>
+          ) : undefined
+        }
       >
         {selectedEquipment && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            {/* Drawer Header */}
-            <Box
-              sx={{
-                p: 2.5,
-                backgroundColor: '#f8fafc',
-                borderBottom: '1px solid #e2e8f0',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              <Box>
-                <Chip
-                  label={selectedEquipment.inventoryNumber || 'Б/Н'}
-                  size="small"
-                  variant="outlined"
-                  sx={{ fontWeight: 700, mb: 0.5 }}
-                />
-                <Typography variant="subtitle1" fontWeight={700} lineHeight={1.2}>
-                  Быстрый просмотр
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+            {loadingDetails ? (
+              <PageLoading text="Загрузка сведений..." minHeight={200} size={28} />
+            ) : (
+              <>
+                <Typography variant="h6" fontWeight={700} color="primary.main">
+                  {selectedEquipment.name}
                 </Typography>
-              </Box>
-              <IconButton size="small" onClick={() => setSelectedEquipment(null)}>
-                <CloseIcon fontSize="small" />
-              </IconButton>
-            </Box>
 
-            {/* Drawer Body */}
-            <Box sx={{ p: 3, flexGrow: 1, overflowY: 'auto' }}>
-              {loadingDetails ? (
-                <PageLoading text="Загрузка сведений..." minHeight={200} size={28} />
-              ) : (
-                <>
-                  <Typography variant="h6" fontWeight={700} color="primary.main" gutterBottom>
-                    {selectedEquipment.name}
+                {/* Photo Preview if available */}
+                {selectedEquipment.primaryPhoto && (
+                  <Box
+                    component="img"
+                    src={`/api/files/${selectedEquipment.primaryPhoto}`}
+                    alt={selectedEquipment.name}
+                    sx={{
+                      width: '100%',
+                      height: 200,
+                      objectFit: 'cover',
+                      borderRadius: 2,
+                      border: '1px solid #e2e8f0',
+                    }}
+                  />
+                )}
+
+                {/* Status Quick Updater */}
+                <Card sx={{ p: 2, backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', elevation: 0 }}>
+                  <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" gutterBottom>
+                    ТЕКУЩИЙ СТАТУС
                   </Typography>
-
-                  {/* Photo Preview if available */}
-                  {selectedEquipment.primaryPhoto && (
-                    <Box
-                      component="img"
-                      src={`/api/files/${selectedEquipment.primaryPhoto}`}
-                      alt={selectedEquipment.name}
-                      sx={{
-                        width: '100%',
-                        height: 200,
-                        objectFit: 'cover',
-                        borderRadius: 2,
-                        mb: 2.5,
-                        border: '1px solid #e2e8f0',
-                      }}
-                    />
+                  {canEdit ? (
+                    <TextField
+                      select
+                      size="small"
+                      fullWidth
+                      value={selectedEquipment.status}
+                      onChange={(e) => handleQuickStatusUpdate(e.target.value)}
+                    >
+                      {Object.entries(EQUIPMENT_STATUS_MAP).map(([key, info]) => (
+                        <MenuItem key={key} value={key}>
+                          {info.label}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  ) : (
+                    <StatusBadge status={selectedEquipment.status} />
                   )}
+                </Card>
 
-                  {/* Status Quick Updater */}
-                  <Card sx={{ p: 2, mb: 2.5, backgroundColor: '#f8fafc' }}>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" gutterBottom>
-                      ТЕКУЩИЙ СТАТУС
-                    </Typography>
-                    {canEdit ? (
-                      <TextField
-                        select
-                        size="small"
-                        fullWidth
-                        value={selectedEquipment.status}
-                        onChange={(e) => handleQuickStatusUpdate(e.target.value)}
-                      >
-                        {Object.entries(EQUIPMENT_STATUS_MAP).map(([key, info]) => (
-                          <MenuItem key={key} value={key}>
-                            {info.label}
-                          </MenuItem>
-                        ))}
-                      </TextField>
-                    ) : (
-                      <StatusBadge
-                        status={selectedEquipment.status}
-                      />
-                    )}
-                  </Card>
-
-                  {/* Specifications */}
+                {/* Specifications */}
+                <Box>
                   <Typography variant="subtitle2" fontWeight={700} gutterBottom>
                     Паспортные параметры:
                   </Typography>
-                  <Table size="small" sx={{ mb: 2.5 }}>
+                  <Table size="small">
                     <TableBody>
                       <TableRow>
                         <TableCell sx={{ color: 'text.secondary', width: '45%' }}>Заводской номер</TableCell>
@@ -902,73 +913,59 @@ function EquipmentListContent() {
                       </TableRow>
                     </TableBody>
                   </Table>
+                </Box>
 
-                  {/* Custom Fields Summary */}
-                  {quickViewDetails?.customFields && Object.keys(quickViewDetails.customFields).length > 0 && (
-                    <>
-                      <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                        Дополнительные характеристики:
-                      </Typography>
-                      <Table size="small" sx={{ mb: 2.5 }}>
-                        <TableBody>
-                          {Object.entries(quickViewDetails.customFields).map(([k, v]) => (
-                            <TableRow key={k}>
-                              <TableCell sx={{ color: 'text.secondary', width: '45%' }}>{k.replace(/_/g, ' ')}</TableCell>
-                              <TableCell sx={{ fontWeight: 600 }}>
-                                {typeof v === 'boolean' ? (v ? 'Да' : 'Нет') : String(v)}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </>
-                  )}
-
-                  {/* Attached Documents List */}
-                  {quickViewDetails?.documents && quickViewDetails.documents.length > 0 && (
-                    <>
-                      <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                        Прикрепленные документы ({quickViewDetails.documents.length}):
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2.5 }}>
-                        {quickViewDetails.documents.slice(0, 3).map((d: any) => (
-                          <Paper key={d.id} variant="outlined" sx={{ p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Box sx={{ overflow: 'hidden' }}>
-                              <Typography variant="body2" fontWeight={600} noWrap>
-                                {d.originalName}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {d.docType}
-                              </Typography>
-                            </Box>
-                            <IconButton size="small" component="a" href={`/api/files/${d.filePath}`} target="_blank">
-                              <LaunchIcon fontSize="small" />
-                            </IconButton>
-                          </Paper>
+                {/* Custom Fields Summary */}
+                {quickViewDetails?.customFields && Object.keys(quickViewDetails.customFields).length > 0 && (
+                  <Box>
+                    <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+                      Дополнительные характеристики:
+                    </Typography>
+                    <Table size="small">
+                      <TableBody>
+                        {Object.entries(quickViewDetails.customFields).map(([k, v]) => (
+                          <TableRow key={k}>
+                            <TableCell sx={{ color: 'text.secondary', width: '45%' }}>{k.replace(/_/g, ' ')}</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }}>
+                              {typeof v === 'boolean' ? (v ? 'Да' : 'Нет') : String(v)}
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </Box>
-                    </>
-                  )}
-                </>
-              )}
-            </Box>
+                      </TableBody>
+                    </Table>
+                  </Box>
+                )}
 
-            {/* Drawer Footer Action */}
-            <Box sx={{ p: 2.5, borderTop: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
-              <Button
-                variant="contained"
-                fullWidth
-                size="large"
-                endIcon={<ArrowForwardIcon />}
-                onClick={() => router.push(`/eps/${selectedEquipment.id}`)}
-                sx={{ py: 1.25, fontWeight: 600 }}
-              >
-                Перейти в полный паспорт
-              </Button>
-            </Box>
+                {/* Attached Documents List */}
+                {quickViewDetails?.documents && quickViewDetails.documents.length > 0 && (
+                  <Box>
+                    <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+                      Прикрепленные документы ({quickViewDetails.documents.length}):
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      {quickViewDetails.documents.slice(0, 3).map((d: any) => (
+                        <Paper key={d.id} variant="outlined" sx={{ p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Box sx={{ overflow: 'hidden' }}>
+                            <Typography variant="body2" fontWeight={600} noWrap>
+                              {d.originalName}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {d.docType}
+                            </Typography>
+                          </Box>
+                          <IconButton size="small" component="a" href={`/api/files/${d.filePath}`} target="_blank" aria-label="Открыть документ">
+                            <LaunchIcon fontSize="small" />
+                          </IconButton>
+                        </Paper>
+                      ))}
+                    </Box>
+                  </Box>
+                )}
+              </>
+            )}
           </Box>
         )}
-      </Drawer>
+      </DetailDrawer>
 
       {/* Floating Bulk Action Bar */}
       <BulkActionBar
