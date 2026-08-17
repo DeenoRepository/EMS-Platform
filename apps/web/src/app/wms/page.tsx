@@ -35,7 +35,7 @@ import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { OPERATION_TYPE_MAP, formatDateTime } from '@ems/shared';
-import { StatCard, StatusBadge, EmptyState, DataTableWrapper } from '@/components/ui';
+import { StatCard, StatusBadge, EmptyState, DataTableWrapper, CriticalAlertBanner } from '@/components/ui';
 
 interface WmsStats {
   warehousesCount: number;
@@ -116,28 +116,19 @@ export default function WmsDashboardPage() {
 
       {/* Предупреждение о дефиците ТМЦ */}
       {stats && stats.lowStockCount > 0 && (
-        <Alert
-          severity="warning"
-          icon={<WarningAmberOutlinedIcon fontSize="inherit" />}
-          sx={{ mb: 3, borderRadius: '10px', border: '1px solid #fde68a' }}
-          action={
-            <Button
-              color="inherit"
-              size="small"
-              onClick={() => router.push('/wms/stock?lowStockOnly=true')}
-              endIcon={<ArrowForwardIcon />}
-              aria-label="Перейти к дефицитным позициям"
-              sx={{ fontWeight: 700 }}
-            >
-              Смотреть все ({stats.lowStockCount})
-            </Button>
-          }
-        >
-          <AlertTitle sx={{ fontWeight: 700 }}>
-            Обнаружен дефицит ТМЦ по {stats.lowStockCount} позициям
-          </AlertTitle>
-          Текущий остаток некоторых номенклатурных позиций на складах упал ниже установленного минимального порога.
-        </Alert>
+        <CriticalAlertBanner
+          alerts={[
+            {
+              id: 'wms-low-stock-critical',
+              severity: 'WARNING',
+              title: `Обнаружен дефицит ТМЦ по ${stats.lowStockCount} позициям`,
+              description: 'Текущий остаток некоторых номенклатурных позиций на складах упал ниже установленного неснижаемого порога.',
+              actionLabel: `Показать дефицит (${stats.lowStockCount})`,
+              onAction: () => router.push('/wms/stock?lowStockOnly=true'),
+              count: stats.lowStockCount,
+            },
+          ]}
+        />
       )}
 
       {/* KPI Карточки со StatCard */}
@@ -166,7 +157,7 @@ export default function WmsDashboardPage() {
             iconColor="#0f766e"
             accentColor="#0f766e"
             loading={isLoading && !stats}
-            onClick={() => router.push('/wms/nomenclature')}
+            onClick={() => router.push('/wms/stock')}
           />
         </Grid>
 
@@ -200,8 +191,8 @@ export default function WmsDashboardPage() {
       </Grid>
 
       {/* Быстрые действия */}
-      <Card sx={{ mb: 3.5, p: 2.5, borderRadius: 2 }}>
-        <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
+      <Card sx={{ mb: 3.5, p: 2.5, borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+        <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2, color: '#0f172a' }}>
           Быстрые действия
         </Typography>
         <Grid container spacing={2}>
@@ -211,8 +202,8 @@ export default function WmsDashboardPage() {
               variant="contained"
               color="success"
               startIcon={<MoveToInboxIcon />}
-              onClick={() => router.push('/wms/operations?action=RECEIPT')}
-              sx={{ py: 1.2, fontWeight: 600 }}
+              onClick={() => router.push('/wms/operations?create=RECEIPT')}
+              sx={{ py: 1.2, fontWeight: 600, borderRadius: '8px' }}
               aria-label="Оформить приход ТМЦ"
             >
               Оформить приход ТМЦ
@@ -224,8 +215,8 @@ export default function WmsDashboardPage() {
               variant="contained"
               color="warning"
               startIcon={<OutboxIcon />}
-              onClick={() => router.push('/wms/operations?action=ISSUE')}
-              sx={{ py: 1.2, fontWeight: 600 }}
+              onClick={() => router.push('/wms/operations?create=ISSUE')}
+              sx={{ py: 1.2, fontWeight: 600, borderRadius: '8px' }}
               aria-label="Списать на оборудование"
             >
               Списать на оборудование
@@ -237,8 +228,8 @@ export default function WmsDashboardPage() {
               variant="contained"
               color="info"
               startIcon={<SwapHorizIcon />}
-              onClick={() => router.push('/wms/operations?action=TRANSFER')}
-              sx={{ py: 1.2, fontWeight: 600 }}
+              onClick={() => router.push('/wms/operations?create=TRANSFER')}
+              sx={{ py: 1.2, fontWeight: 600, borderRadius: '8px' }}
               aria-label="Перемещение между складами"
             >
               Перемещение между складами
@@ -251,7 +242,7 @@ export default function WmsDashboardPage() {
               color="secondary"
               startIcon={<FactCheckOutlinedIcon />}
               onClick={() => router.push('/wms/inventory')}
-              sx={{ py: 1.2, fontWeight: 600 }}
+              sx={{ py: 1.2, fontWeight: 600, borderRadius: '8px' }}
               aria-label="Инвентаризация склада"
             >
               Инвентаризация склада

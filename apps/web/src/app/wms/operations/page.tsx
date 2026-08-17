@@ -16,6 +16,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TableSortLabel,
   Paper,
   TablePagination,
   Chip,
@@ -46,7 +47,18 @@ import {
   StatusBadge,
   PageLoading,
   FormDialog,
+  type TableColumnOption,
 } from '@/components/ui';
+
+const OPERATIONS_COLUMNS: TableColumnOption[] = [
+  { id: 'date', label: 'Дата / Время', defaultVisible: true },
+  { id: 'type', label: 'Тип операции', defaultVisible: true },
+  { id: 'warehouse', label: 'Склад', defaultVisible: true },
+  { id: 'items', label: 'Позиции и количество', defaultVisible: true, required: true },
+  { id: 'recipient', label: 'Оборудование / Получатель', defaultVisible: true },
+  { id: 'document', label: 'Документ / Основание', defaultVisible: true },
+  { id: 'executor', label: 'Исполнитель', defaultVisible: true },
+];
 
 interface StockOperation {
   id: string;
@@ -378,8 +390,70 @@ function WmsOperationsContent() {
 
   const activeFilterCount = (selectedWarehouse ? 1 : 0) + (selectedType ? 1 : 0);
 
+  // Sorting & Column Visibility
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(() =>
+    OPERATIONS_COLUMNS.map((c) => c.id)
+  );
+  const [sortField, setSortField] = useState<string>('date');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+
+  // Auto-open modal if create query parameter is present
+  useEffect(() => {
+    const createParam = searchParams.get('create');
+    if (createParam && ['RECEIPT', 'ISSUE', 'TRANSFER'].includes(createParam)) {
+      setOpType(createParam as 'RECEIPT' | 'ISSUE' | 'TRANSFER');
+      setIsCreateModalOpen(true);
+    }
+  }, [searchParams]);
+
+  const handleRequestSort = (property: string) => {
+    const isAsc = sortField === property && sortDirection === 'asc';
+    setSortDirection(isAsc ? 'desc' : 'asc');
+    setSortField(property);
+  };
+
+  const sortedOperations = useMemo(() => {
+    if (!sortField) return operations;
+    return [...operations].sort((a, b) => {
+      let aVal: any = '';
+      let bVal: any = '';
+      switch (sortField) {
+        case 'date':
+          aVal = new Date(a.date).getTime();
+          bVal = new Date(b.date).getTime();
+          break;
+        case 'type':
+          aVal = a.type || '';
+          bVal = b.type || '';
+          break;
+        case 'warehouse':
+          aVal = a.warehouse.name || '';
+          bVal = b.warehouse.name || '';
+          break;
+        case 'executor':
+          aVal = a.createdBy?.displayName || '';
+          bVal = b.createdBy?.displayName || '';
+          break;
+        case 'document':
+          aVal = a.document || '';
+          bVal = b.document || '';
+          break;
+        default:
+          aVal = (a as any)[sortField] || '';
+          bVal = (b as any)[sortField] || '';
+      }
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      return sortDirection === 'asc'
+        ? String(aVal).localeCompare(String(bVal), 'ru')
+        : String(bVal).localeCompare(String(aVal), 'ru');
+    });
+  }, [operations, sortField, sortDirection]);
+
   return (
-    <Box sx={{ maxWidth: 1920, mx: 'auto', pb: 4 }}>
+    <Box sx={{ pb: 4 }}>
       <PageHeader
         title="Складские операции и журнал перемещений"
         subtitle="Регистрация прихода ТМЦ от поставщиков, списания на оборудование и межскладских перемещений"
@@ -390,35 +464,15 @@ function WmsOperationsContent() {
         ]}
         actions={
           hasPermission(PERMISSIONS.WMS_OPERATIONS_CREATE) && (
-            <Stack direction="row" spacing={1.5}>
-              <Button
-                variant="contained"
-                color="success"
-                startIcon={<MoveToInboxIcon />}
-                onClick={() => handleOpenCreate('RECEIPT')}
-                aria-label="Оформить приход ТМЦ"
-              >
-                Приход
-              </Button>
-              <Button
-                variant="contained"
-                color="warning"
-                startIcon={<OutboxIcon />}
-                onClick={() => handleOpenCreate('ISSUE')}
-                aria-label="Оформить списание на оборудование"
-              >
-                Списание
-              </Button>
-              <Button
-                variant="outlined"
-                color="primary"
-                startIcon={<SwapHorizIcon />}
-                onClick={() => handleOpenCreate('TRANSFER')}
-                aria-label="Оформить перемещение"
-              >
-                Перемещение
-              </Button>
-            </Stack>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => handleOpenCreate('RECEIPT')}
+              aria-label="Оформить складскую операцию"
+              sx={{ px: 2.25, py: 0.75, fontWeight: 600 }}
+            >
+              Новая операция
+            </Button>
           )
         }
       />
@@ -483,160 +537,287 @@ function WmsOperationsContent() {
         </Grid>
       </Grid>
 
-      {/* Filter Toolbar */}
-      <FilterToolbar
-        activeFilterCount={activeFilterCount}
-        onResetFilters={handleResetFilters}
-      >
-        <TextField
-          select
-          size="small"
-          label="Склад"
-          value={selectedWarehouse}
-          onChange={(e) => {
-            setSelectedWarehouse(e.target.value);
-            setPage(0);
-          }}
-          sx={{ minWidth: 200 }}
-        >
-          <MenuItem value="">Все склады</MenuItem>
-          {warehouses.map((w) => (
-            <MenuItem key={w.id} value={w.id}>
-              {w.name} ({w.code})
-            </MenuItem>
-          ))}
-        </TextField>
-
-        <TextField
-          select
-          size="small"
-          label="Тип операции"
-          value={selectedType}
-          onChange={(e) => {
-            setSelectedType(e.target.value);
-            setPage(0);
-          }}
-          sx={{ minWidth: 220 }}
-        >
-          <MenuItem value="">Все типы операций</MenuItem>
-          <MenuItem value="RECEIPT">Приход (поступление от поставщика)</MenuItem>
-          <MenuItem value="ISSUE">Списание (установка на оборудование)</MenuItem>
-          <MenuItem value="TRANSFER">Перемещение между складами</MenuItem>
-          <MenuItem value="ADJUSTMENT">Корректировка инвентаризации</MenuItem>
-        </TextField>
-      </FilterToolbar>
-
       {/* Main Operations Registry Table */}
-      {operations.length === 0 && !isLoading ? (
-        <EmptyState
-          paper
-          icon={<SwapHorizIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
-          title="Складские операции не найдены"
-          description={
-            activeFilterCount > 0
-              ? 'По выбранным критериям фильтрации операции не найдены. Попробуйте сбросить фильтры.'
-              : 'В журнале пока нет зарегистрированных операций движения ТМЦ.'
-          }
-          actionText={activeFilterCount > 0 ? 'Сбросить фильтры' : undefined}
-          onAction={activeFilterCount > 0 ? handleResetFilters : undefined}
-        />
-      ) : (
-        <DataTableWrapper
-          loading={isLoading}
-          page={page}
-          pageSize={rowsPerPage}
-          total={totalCount}
-          onPageChange={(_, newPage) => setPage(newPage)}
-          onPageSizeChange={(e) => {
-            setRowsPerPage(parseInt(e.target.value, 10));
-            setPage(0);
-          }}
-          stickyHeader
-        >
-          <Table size="small" aria-label="Журнал складских операций">
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 700, width: 140 }}>Дата / Время</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 130 }}>Тип</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 160 }}>Склад</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Позиции и количество</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Оборудование / Получатель</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Документ / Основание</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 140 }}>Исполнитель</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {operations.map((op) => (
-                <TableRow key={op.id} hover>
-                  <TableCell sx={{ whiteSpace: 'nowrap', fontFamily: 'monospace', fontSize: '0.8125rem' }}>
+      <DataTableWrapper
+        loading={isLoading}
+        page={page}
+        pageSize={rowsPerPage}
+        total={totalCount}
+        onPageChange={(_, newPage) => setPage(newPage)}
+        onPageSizeChange={(e) => {
+          setRowsPerPage(parseInt(e.target.value, 10));
+          setPage(0);
+        }}
+        stickyHeader
+        columns={OPERATIONS_COLUMNS}
+        visibleColumns={visibleColumns}
+        onVisibleColumnsChange={setVisibleColumns}
+        empty={operations.length === 0 && !isLoading}
+        emptyState={
+          <EmptyState
+            icon={<SwapHorizIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+            title="Складские операции не найдены"
+            description={
+              activeFilterCount > 0
+                ? 'По выбранным критериям фильтрации операции не найдены. Попробуйте сбросить фильтры.'
+                : 'В журнале пока нет зарегистрированных операций движения ТМЦ.'
+            }
+            actionText={activeFilterCount > 0 ? 'Сбросить фильтры' : undefined}
+            onAction={activeFilterCount > 0 ? handleResetFilters : undefined}
+          />
+        }
+        toolbar={
+          <FilterToolbar
+            variant="embedded"
+            activeFilterCount={activeFilterCount}
+            onResetFilters={handleResetFilters}
+          >
+            <TextField
+              select
+              size="small"
+              value={selectedWarehouse}
+              onChange={(e) => {
+                setSelectedWarehouse(e.target.value);
+                setPage(0);
+              }}
+              sx={{
+                minWidth: 180,
+                backgroundColor: '#ffffff',
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  fontSize: '0.8125rem',
+                  height: 36,
+                  '& fieldset': { borderColor: '#e2e8f0' },
+                  '&:hover fieldset': { borderColor: '#cbd5e1' },
+                },
+              }}
+            >
+              <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все склады</MenuItem>
+              {warehouses.map((w) => (
+                <MenuItem key={w.id} value={w.id} sx={{ fontSize: '0.8125rem' }}>
+                  {w.name} ({w.code})
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              select
+              size="small"
+              value={selectedType}
+              onChange={(e) => {
+                setSelectedType(e.target.value);
+                setPage(0);
+              }}
+              sx={{
+                minWidth: 200,
+                backgroundColor: '#ffffff',
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  fontSize: '0.8125rem',
+                  height: 36,
+                  '& fieldset': { borderColor: '#e2e8f0' },
+                  '&:hover fieldset': { borderColor: '#cbd5e1' },
+                },
+              }}
+            >
+              <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все типы операций</MenuItem>
+              <MenuItem value="RECEIPT" sx={{ fontSize: '0.8125rem' }}>Приход (поступление)</MenuItem>
+              <MenuItem value="ISSUE" sx={{ fontSize: '0.8125rem' }}>Списание на оборудование</MenuItem>
+              <MenuItem value="TRANSFER" sx={{ fontSize: '0.8125rem' }}>Межскладское перемещение</MenuItem>
+              <MenuItem value="ADJUSTMENT" sx={{ fontSize: '0.8125rem' }}>Корректировка</MenuItem>
+            </TextField>
+          </FilterToolbar>
+        }
+      >
+        <Table size="small" aria-label="Журнал складских операций">
+          <TableHead>
+            <TableRow sx={{ backgroundColor: '#ffffff' }}>
+              {visibleColumns.includes('date') && (
+                <TableCell sx={{ width: 140, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'date'}
+                    direction={sortField === 'date' ? sortDirection : 'desc'}
+                    onClick={() => handleRequestSort('date')}
+                  >
+                    ДАТА / ВРЕМЯ
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('type') && (
+                <TableCell sx={{ width: 130, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'type'}
+                    direction={sortField === 'type' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('type')}
+                  >
+                    ТИП ОПЕРАЦИИ
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('warehouse') && (
+                <TableCell sx={{ width: 160, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'warehouse'}
+                    direction={sortField === 'warehouse' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('warehouse')}
+                  >
+                    СКЛАД
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('items') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  ПОЗИЦИИ И КОЛИЧЕСТВО
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('recipient') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  ОБОРУДОВАНИЕ / ПОЛУЧАТЕЛЬ
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('document') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'document'}
+                    direction={sortField === 'document' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('document')}
+                  >
+                    ДОКУМЕНТ / ОСНОВАНИЕ
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('executor') && (
+                <TableCell sx={{ width: 150, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'executor'}
+                    direction={sortField === 'executor' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('executor')}
+                  >
+                    ИСПОЛНИТЕЛЬ
+                  </TableSortLabel>
+                </TableCell>
+              )}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {sortedOperations.map((op) => (
+              <TableRow key={op.id} hover>
+                {visibleColumns.includes('date') && (
+                  <TableCell sx={{ whiteSpace: 'nowrap', fontFamily: 'monospace', fontSize: '0.8125rem', color: '#475569' }}>
                     {formatDateTime(op.date)}
                   </TableCell>
-                  <TableCell>{getTypeChip(op.type)}</TableCell>
+                )}
+
+                {visibleColumns.includes('type') && (
                   <TableCell>
-                    <Chip label={op.warehouse.code} size="small" variant="outlined" sx={{ fontWeight: 700, borderRadius: '4px', height: 20 }} />
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
+                    <StatusBadge status={op.type} />
+                  </TableCell>
+                )}
+
+                {visibleColumns.includes('warehouse') && (
+                  <TableCell>
+                    <Chip
+                      label={op.warehouse.code}
+                      size="small"
+                      sx={{
+                        fontWeight: 600,
+                        borderRadius: '4px',
+                        fontSize: '0.6875rem',
+                        backgroundColor: '#ffffff',
+                        color: '#475569',
+                        border: '1px solid #e2e8f0',
+                        height: 20,
+                      }}
+                    />
+                    <Typography variant="caption" sx={{ display: 'block', mt: 0.25, color: '#64748b', fontSize: '0.75rem' }}>
                       {op.warehouse.name}
                     </Typography>
                   </TableCell>
+                )}
+
+                {visibleColumns.includes('items') && (
                   <TableCell>
                     <Stack spacing={0.5}>
                       {op.items.map((it) => (
-                        <Typography key={it.id} variant="body2" sx={{ fontSize: '0.8125rem' }}>
+                        <Typography key={it.id} variant="body2" sx={{ fontSize: '0.8125rem', color: '#0f172a' }}>
                           <b>{it.nomenclature.name}</b>: {it.quantity} {it.nomenclature.unit}
                         </Typography>
                       ))}
                     </Stack>
                   </TableCell>
+                )}
+
+                {visibleColumns.includes('recipient') && (
                   <TableCell>
                     {op.items.some((i) => i.equipment) ? (
                       <Stack spacing={0.5}>
                         {op.items
                           .filter((i) => i.equipment)
                           .map((i) => (
-                            <StatusBadge
+                            <Chip
                               key={i.id}
-                              status="EQUIPMENT"
                               label={`${i.equipment?.name} (${i.equipment?.inventoryNumber})`}
                               size="small"
-                              variant="outlined"
+                              sx={{
+                                fontSize: '0.75rem',
+                                backgroundColor: '#f0fdf4',
+                                color: '#16a34a',
+                                border: '1px solid #bbf7d0',
+                                fontWeight: 500,
+                                borderRadius: '4px',
+                              }}
                             />
                           ))}
                       </Stack>
                     ) : op.counterparty ? (
-                      <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>{op.counterparty}</Typography>
+                      <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: '#334155' }}>
+                        {op.counterparty}
+                      </Typography>
                     ) : (
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" sx={{ color: '#94a3b8' }}>
                         —
                       </Typography>
                     )}
                   </TableCell>
+                )}
+
+                {visibleColumns.includes('document') && (
                   <TableCell>
                     {op.document ? (
-                      <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
+                      <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem', color: '#0f172a' }}>
                         {op.document}
                       </Typography>
                     ) : (
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" sx={{ color: '#94a3b8' }}>
                         —
                       </Typography>
                     )}
                     {op.comment && (
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                      <Typography variant="caption" sx={{ display: 'block', color: '#64748b', mt: 0.25 }}>
                         {op.comment}
                       </Typography>
                     )}
                   </TableCell>
+                )}
+
+                {visibleColumns.includes('executor') && (
                   <TableCell sx={{ fontSize: '0.8125rem' }}>
-                    <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
+                    <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8125rem', color: '#334155' }}>
                       {op.createdBy?.displayName}
                     </Typography>
                   </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </DataTableWrapper>
-      )}
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </DataTableWrapper>
 
       {/* Модальное окно оформления складской операции */}
       <FormDialog
