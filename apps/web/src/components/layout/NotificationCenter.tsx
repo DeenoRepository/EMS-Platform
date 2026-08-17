@@ -22,6 +22,7 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import { formatDateTime } from '@ems/shared';
+import { useRouter } from 'next/navigation';
 
 interface NotificationItem {
   id: string;
@@ -34,6 +35,7 @@ interface NotificationItem {
 }
 
 export default function NotificationCenter() {
+  const router = useRouter();
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -88,7 +90,8 @@ export default function NotificationCenter() {
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
       setUnreadCount((prev) => Math.max(0, prev - 1));
       if (link) {
-        window.location.href = link;
+        handleClose();
+        router.push(link);
       }
     } catch {
       // ignore

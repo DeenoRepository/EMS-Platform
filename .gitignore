@@ -33,6 +33,7 @@ Thumbs.db
 # Build artifacts
 dist
 build
+*.tsbuildinfo
 
 # Uploaded Files
 uploads/

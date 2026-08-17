@@ -37,7 +37,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   // If on login or setup page, don't show Shell sidebar/header
-  if (pathname === '/login' || pathname === '/setup') {
+  if (pathname.startsWith('/login') || pathname.startsWith('/setup')) {
     return <Box component="main">{children}</Box>;
   }
 

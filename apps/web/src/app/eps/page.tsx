@@ -140,22 +140,9 @@ function EquipmentListContent() {
           setTotal(json.data.total || 0);
           setTotalPages(json.data.totalPages || 1);
 
-          // Update Status Counts summary if not filtered
-          if (!statusFilter && !search && !tagFilter) {
-            let active = 0, underRepair = 0, inStorage = 0, decommissioned = 0;
-            fetchedItems.forEach((it) => {
-              if (it.status === 'ACTIVE') active++;
-              else if (it.status === 'UNDER_REPAIR') underRepair++;
-              else if (it.status === 'IN_STORAGE') inStorage++;
-              else if (it.status === 'DECOMMISSIONED') decommissioned++;
-            });
-            setStatusCounts({
-              total: json.data.total || 0,
-              active,
-              underRepair,
-              inStorage,
-              decommissioned,
-            });
+          // Update Status Counts summary from API (global database count)
+          if (json.data.statusCounts) {
+            setStatusCounts(json.data.statusCounts);
           }
         }
       }

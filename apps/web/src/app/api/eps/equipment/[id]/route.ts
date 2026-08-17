@@ -114,32 +114,34 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: 'Оборудование не найдено' }, { status: 404 });
     }
 
-    // Обновляем теги если переданы
-    if (Array.isArray(tagIds)) {
-      await prisma.equipmentTag.deleteMany({ where: { equipmentId: id } });
-      if (tagIds.length > 0) {
-        await prisma.equipmentTag.createMany({
-          data: tagIds.map((tagId: string) => ({ equipmentId: id, tagId })),
-        });
+    const updated = await prisma.$transaction(async (tx) => {
+      // Обновляем теги если переданы
+      if (Array.isArray(tagIds)) {
+        await tx.equipmentTag.deleteMany({ where: { equipmentId: id } });
+        if (tagIds.length > 0) {
+          await tx.equipmentTag.createMany({
+            data: tagIds.map((tagId: string) => ({ equipmentId: id, tagId })),
+          });
+        }
       }
-    }
 
-    const updated = await prisma.equipment.update({
-      where: { id },
-      data: {
-        name: name !== undefined ? name.trim() : undefined,
-        inventoryNumber: inventoryNumber !== undefined ? (inventoryNumber?.trim() || null) : undefined,
-        serialNumber: serialNumber !== undefined ? (serialNumber?.trim() || null) : undefined,
-        manufacturer: manufacturer !== undefined ? (manufacturer?.trim() || null) : undefined,
-        model: model !== undefined ? (model?.trim() || null) : undefined,
-        location: location !== undefined ? (location?.trim() || null) : undefined,
-        status: status as EquipmentStatus | undefined,
-        commissionDate: commissionDate !== undefined ? (commissionDate ? new Date(commissionDate) : null) : undefined,
-        customFields: customFields !== undefined ? customFields : undefined,
-      },
-      include: {
-        tags: { include: { tag: true } },
-      },
+      return tx.equipment.update({
+        where: { id },
+        data: {
+          name: name !== undefined ? name.trim() : undefined,
+          inventoryNumber: inventoryNumber !== undefined ? (inventoryNumber?.trim() || null) : undefined,
+          serialNumber: serialNumber !== undefined ? (serialNumber?.trim() || null) : undefined,
+          manufacturer: manufacturer !== undefined ? (manufacturer?.trim() || null) : undefined,
+          model: model !== undefined ? (model?.trim() || null) : undefined,
+          location: location !== undefined ? (location?.trim() || null) : undefined,
+          status: status as EquipmentStatus | undefined,
+          commissionDate: commissionDate !== undefined ? (commissionDate ? new Date(commissionDate) : null) : undefined,
+          customFields: customFields !== undefined ? customFields : undefined,
+        },
+        include: {
+          tags: { include: { tag: true } },
+        },
+      });
     });
 
     // Логирование аудита изменений

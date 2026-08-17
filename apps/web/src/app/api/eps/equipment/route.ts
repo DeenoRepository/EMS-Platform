@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
       ];
     }
 
-    const [total, items] = await Promise.all([
+    const [total, items, statusGroup] = await Promise.all([
       prisma.equipment.count({ where }),
       prisma.equipment.findMany({
         where,
@@ -70,7 +70,28 @@ export async function GET(req: NextRequest) {
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
+      prisma.equipment.groupBy({
+        by: ['status'],
+        _count: { status: true },
+      }),
     ]);
+
+    const statusCounts = {
+      total: 0,
+      active: 0,
+      underRepair: 0,
+      inStorage: 0,
+      decommissioned: 0,
+    };
+
+    statusGroup.forEach((g) => {
+      const count = g._count.status;
+      statusCounts.total += count;
+      if (g.status === 'ACTIVE') statusCounts.active = count;
+      else if (g.status === 'UNDER_REPAIR') statusCounts.underRepair = count;
+      else if (g.status === 'IN_STORAGE') statusCounts.inStorage = count;
+      else if (g.status === 'DECOMMISSIONED') statusCounts.decommissioned = count;
+    });
 
     const formatted = items.map((item) => ({
       id: item.id,
@@ -97,6 +118,7 @@ export async function GET(req: NextRequest) {
         page,
         pageSize,
         totalPages: Math.ceil(total / pageSize),
+        statusCounts,
       },
     });
   } catch (error: any) {

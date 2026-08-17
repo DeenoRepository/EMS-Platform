@@ -88,41 +88,43 @@ export async function PATCH(
       items?: UpdateItemInput[];
     };
 
-    // 1. Обновляем строки факта если переданы
-    if (Array.isArray(items)) {
-      for (const item of items) {
-        const existingItem = currentInventory.items.find((i) => i.id === item.id);
-        if (existingItem) {
-          const actual = Number(item.actualQty);
-          const expected = Number(existingItem.expectedQty);
-          const diff = actual - expected;
-
-          await prisma.inventoryItem.update({
-            where: { id: item.id },
-            data: {
-              actualQty: actual,
-              diffQty: diff,
-              comment: item.comment !== undefined ? item.comment : undefined,
-            },
-          });
-        }
-      }
-    }
-
-    // 2. Если статус переводится в COMPLETED — проводим автоматическую корректировку остатков
     if (status === 'COMPLETED') {
-      // Перечитываем актуальные позиции инвентаризации
-      const refreshedItems = await prisma.inventoryItem.findMany({
-        where: { inventoryId: id },
-        include: { nomenclature: true },
-      });
-
-      const discrepancyItems = refreshedItems.filter((i) => i.diffQty !== null && Number(i.diffQty) !== 0);
+      let discrepanciesCount = 0;
 
       await prisma.$transaction(async (tx) => {
+        // 1. Обновляем строки факта если переданы
+        if (Array.isArray(items)) {
+          for (const item of items) {
+            const existingItem = currentInventory.items.find((i) => i.id === item.id);
+            if (existingItem) {
+              const actual = Number(item.actualQty);
+              const expected = Number(existingItem.expectedQty);
+              const diff = actual - expected;
+
+              await tx.inventoryItem.update({
+                where: { id: item.id },
+                data: {
+                  actualQty: actual,
+                  diffQty: diff,
+                  comment: item.comment !== undefined ? item.comment : undefined,
+                },
+              });
+            }
+          }
+        }
+
+        // 2. Перечитываем актуальные позиции инвентаризации в рамках транзакции
+        const refreshedItems = await tx.inventoryItem.findMany({
+          where: { inventoryId: id },
+          include: { nomenclature: true },
+        });
+
+        const discrepancyItems = refreshedItems.filter((i) => i.diffQty !== null && Number(i.diffQty) !== 0);
+        discrepanciesCount = discrepancyItems.length;
+
         // Если есть расхождения — создаем операцию корректировки
         if (discrepancyItems.length > 0) {
-          const adjustmentOp = await tx.stockOperation.create({
+          await tx.stockOperation.create({
             data: {
               warehouseId: currentInventory.warehouseId,
               type: 'ADJUSTMENT',
@@ -179,23 +181,45 @@ export async function PATCH(
         entityId: id,
         changes: {
           status: 'COMPLETED',
-          discrepanciesCount: discrepancyItems.length,
+          discrepanciesCount,
         },
       });
 
       return NextResponse.json({
         success: true,
-        message: `Инвентаризация завершена. Скорректировано позиций с расхождениями: ${discrepancyItems.length}`,
+        message: `Инвентаризация завершена. Скорректировано позиций с расхождениями: ${discrepanciesCount}`,
       });
     }
 
-    // Простое обновление комментария / статуса черновика
-    const updated = await prisma.inventory.update({
-      where: { id },
-      data: {
-        comment: comment !== undefined ? comment : undefined,
-        status: status || undefined,
-      },
+    // Сохранение черновика / обновления позиций
+    const updated = await prisma.$transaction(async (tx) => {
+      if (Array.isArray(items)) {
+        for (const item of items) {
+          const existingItem = currentInventory.items.find((i) => i.id === item.id);
+          if (existingItem) {
+            const actual = Number(item.actualQty);
+            const expected = Number(existingItem.expectedQty);
+            const diff = actual - expected;
+
+            await tx.inventoryItem.update({
+              where: { id: item.id },
+              data: {
+                actualQty: actual,
+                diffQty: diff,
+                comment: item.comment !== undefined ? item.comment : undefined,
+              },
+            });
+          }
+        }
+      }
+
+      return tx.inventory.update({
+        where: { id },
+        data: {
+          comment: comment !== undefined ? comment : undefined,
+          status: status || undefined,
+        },
+      });
     });
 
     return NextResponse.json({ success: true, data: updated });
