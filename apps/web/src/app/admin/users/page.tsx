@@ -185,7 +185,7 @@ export default function AdminUsersPage() {
         subtitle="Синхронизированные учетные записи LDAP и назначение ролей"
         breadcrumbs={[
           { label: 'Главная', href: '/' },
-          { label: 'Администрирование' },
+          { label: 'Администрирование', href: '/admin/settings' },
           { label: 'Пользователи' },
         ]}
       />

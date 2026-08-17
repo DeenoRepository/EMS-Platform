@@ -238,7 +238,7 @@ export default function AdminRolesPage() {
         subtitle="Настройка матриц прав доступа и создание кастомных ролей"
         breadcrumbs={[
           { label: 'Главная', href: '/' },
-          { label: 'Администрирование' },
+          { label: 'Администрирование', href: '/admin/settings' },
           { label: 'Роли и права' },
         ]}
         actions={

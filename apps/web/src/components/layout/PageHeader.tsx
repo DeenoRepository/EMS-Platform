@@ -49,11 +49,14 @@ export default function PageHeader({ title, subtitle, breadcrumbs, actions }: Pa
                 href={b.href}
                 underline="hover"
                 sx={{
-                  color: '#64748b',
+                  color: '#0284c7',
                   fontSize: '0.75rem',
                   fontWeight: 500,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
                   transition: 'color 0.15s ease',
-                  '&:hover': { color: '#0284c7' },
+                  '&:hover': { color: '#0369a1', textDecoration: 'underline' },
                 }}
               >
                 {b.label}

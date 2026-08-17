@@ -120,7 +120,7 @@ export default function AdminAuditLogPage() {
         subtitle="Неизменяемый реестр всех операций создания, изменения и удаления данных"
         breadcrumbs={[
           { label: 'Главная', href: '/' },
-          { label: 'Администрирование' },
+          { label: 'Администрирование', href: '/admin/settings' },
           { label: 'Журнал аудита' },
         ]}
       />

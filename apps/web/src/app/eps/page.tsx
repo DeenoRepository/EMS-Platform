@@ -285,7 +285,6 @@ function EquipmentListContent() {
         subtitle="Реестр и управление основными средствами предприятия"
         breadcrumbs={[
           { label: 'Главная', href: '/' },
-          { label: 'Портфолио (EPS)', href: '/eps' },
           { label: 'Оборудование' },
         ]}
         actions={

@@ -571,8 +571,8 @@ function ModuleSettingsContent() {
         subtitle={currentMeta.subtitle}
         breadcrumbs={[
           { label: 'Главная', href: '/' },
-          { label: 'Администрирование', href: '/admin/users' },
-          { label: 'Настройки модулей' },
+          { label: 'Администрирование', href: '/admin/settings' },
+          { label: 'Настройки модулей', href: '/admin/module-settings' },
           { label: currentMeta.breadcrumb },
         ]}
       />
