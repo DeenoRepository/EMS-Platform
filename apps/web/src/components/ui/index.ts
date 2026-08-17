@@ -5,3 +5,8 @@ export * from './FilterToolbar';
 export * from './EmptyState';
 export * from './ConfirmDialog';
 export * from './DataTableWrapper';
+export * from './HealthScoreGauge';
+export * from './TrendSparkline';
+export * from './LifecycleTimeline';
+export * from './CriticalAlertBanner';
+export * from './BulkActionBar';
