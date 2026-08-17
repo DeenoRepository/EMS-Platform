@@ -17,15 +17,10 @@ import {
   Chip,
   Switch,
   IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
   FormGroup,
   FormControlLabel,
   Checkbox,
-  CircularProgress,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';

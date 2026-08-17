@@ -46,6 +46,7 @@ import BugReportOutlinedIcon from '@mui/icons-material/BugReportOutlined';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS } from '@ems/shared';
+import { StatusBadge } from '@/components/ui';
 
 export const SIDEBAR_WIDTH_EXPANDED = 284;
 export const SIDEBAR_WIDTH_COLLAPSED = 72;
@@ -930,7 +931,7 @@ export default function Sidebar({
           </Typography>
           <Box sx={{ mt: 0.75, display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
             {user?.roles.map((r) => (
-              <Chip key={r} label={r} size="small" variant="outlined" color="primary" />
+              <StatusBadge key={r} status={r} label={r} size="small" variant="outlined" />
             ))}
           </Box>
         </Box>
