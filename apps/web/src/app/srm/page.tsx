@@ -847,9 +847,11 @@ export default function SrmOverviewPage() {
                   </Box>
 
                   {(!mappingConfig.customMappings || mappingConfig.customMappings.length === 0) ? (
-                    <Typography variant="body2" color="text.secondary" sx={{ py: 3, textAlign: 'center' }}>
-                      Дополнительные кастомные поля не настроены.
-                    </Typography>
+                    <EmptyState
+                      title="Кастомные поля не настроены"
+                      description="Дополнительные правила извлечения полей из JSON ServiceDesk не настроены. Нажмите «Добавить кастомное поле»."
+                      minHeight={140}
+                    />
                   ) : (
                     <Table size="small">
                       <TableHead sx={{ backgroundColor: 'action.hover' }}>
@@ -1129,31 +1131,31 @@ export default function SrmOverviewPage() {
 
               {/* СПИСОК АКТИВНЫХ ПОДКЛЮЧЕНИЙ */}
               <Card>
-                <CardContent sx={{ p: 0 }}>
-                  <Table>
-                    <TableHead sx={{ backgroundColor: 'action.hover' }}>
-                      <TableRow>
-                        <TableCell sx={{ fontWeight: 700 }}>Название подключения</TableCell>
-                        <TableCell sx={{ fontWeight: 700 }}>Тип провайдера</TableCell>
-                        <TableCell sx={{ fontWeight: 700 }}>Базовый URL</TableCell>
-                        <TableCell sx={{ fontWeight: 700 }}>Авторизация</TableCell>
-                        <TableCell sx={{ fontWeight: 700 }}>Синхронизировано задач</TableCell>
-                        <TableCell sx={{ fontWeight: 700 }}>Последняя синхронизация</TableCell>
-                        <TableCell sx={{ fontWeight: 700 }}>Статус</TableCell>
-                        <TableCell sx={{ fontWeight: 700 }} align="right">
-                          Действия
-                        </TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {integrations.length === 0 ? (
+                <CardContent sx={{ p: integrations.length === 0 ? 3 : 0 }}>
+                  {integrations.length === 0 ? (
+                    <EmptyState
+                      title="Подключения не настроены"
+                      description="Подключения к внешним ServiceDesk не настроены. Добавьте подключение через шаблон выше или нажмите «Добавить подключение API»."
+                      minHeight={180}
+                    />
+                  ) : (
+                    <Table>
+                      <TableHead sx={{ backgroundColor: 'action.hover' }}>
                         <TableRow>
-                          <TableCell colSpan={8} align="center" sx={{ py: 6, color: 'text.secondary' }}>
-                            Подключения не настроены. Добавьте подключение через шаблон выше или нажмите «Добавить подключение API».
+                          <TableCell sx={{ fontWeight: 700 }}>Название подключения</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Тип провайдера</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Базовый URL</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Авторизация</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Синхронизировано задач</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Последняя синхронизация</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Статус</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }} align="right">
+                            Действия
                           </TableCell>
                         </TableRow>
-                      ) : (
-                        integrations.map((item) => (
+                      </TableHead>
+                      <TableBody>
+                        {integrations.map((item) => (
                           <TableRow key={item.id} hover>
                             <TableCell>
                               <Typography variant="body2" fontWeight={700}>
@@ -1218,10 +1220,10 @@ export default function SrmOverviewPage() {
                               </Box>
                             </TableCell>
                           </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
                 </CardContent>
               </Card>
 

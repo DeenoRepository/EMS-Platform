@@ -54,7 +54,12 @@ import PageHeader from '@/components/layout/PageHeader';
 import { useSnackbar } from 'notistack';
 import { EQUIPMENT_STATUS_MAP } from '@ems/shared';
 import * as XLSX from 'xlsx';
-import { EmptyState, DataTableWrapper, StatusBadge } from '@/components/ui';
+import {
+  EmptyState,
+  DataTableWrapper,
+  StatusBadge,
+  SearchInput,
+} from '@/components/ui';
 
 interface ReportColumn {
   key: string;
@@ -578,28 +583,16 @@ export default function ReportBuilderPage() {
               </Box>
 
               {/* Instant Column Search Filter */}
-              <TextField
-                size="small"
-                fullWidth
-                placeholder="Поиск по колонкам и параметрам..."
-                value={searchQueryColumn}
-                onChange={(e) => setSearchQueryColumn(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-                    </InputAdornment>
-                  ),
-                  endAdornment: searchQueryColumn ? (
-                    <InputAdornment position="end">
-                      <IconButton size="small" onClick={() => setSearchQueryColumn('')}>
-                        <CloseIcon sx={{ fontSize: 16 }} />
-                      </IconButton>
-                    </InputAdornment>
-                  ) : null,
-                }}
-                sx={{ mb: 2 }}
-              />
+              <Box sx={{ mb: 2 }}>
+                <SearchInput
+                  size="small"
+                  fullWidth
+                  placeholder="Поиск по колонкам и параметрам..."
+                  value={searchQueryColumn}
+                  onSearch={(val) => setSearchQueryColumn(val)}
+                  delay={100}
+                />
+              </Box>
 
               <Typography variant="caption" color="text.secondary" paragraph>
                 Отметьте необходимые поля и разделы характеристик для включения в отчет
@@ -686,13 +679,12 @@ export default function ReportBuilderPage() {
               </Box>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <TextField
-                  label="Поиск по названию / номерам"
+                <SearchInput
+                  placeholder="Поиск по названию / номерам (INV, SN)..."
+                  value={searchQuery}
+                  onSearch={(val) => setSearchQuery(val)}
                   size="small"
                   fullWidth
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Насос, INV-..., SN-..."
                 />
 
                 <TextField
