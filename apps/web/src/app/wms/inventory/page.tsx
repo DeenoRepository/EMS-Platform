@@ -35,6 +35,12 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS, INVENTORY_STATUS_MAP, formatDateTime } from '@ems/shared';
+import {
+  StatCard,
+  DataTableWrapper,
+  EmptyState,
+  StatusBadge,
+} from '@/components/ui';
 
 interface InventoryItemSummary {
   id: string;
@@ -136,8 +142,12 @@ export default function WmsInventoryListPage() {
     }
   };
 
+  const totalInventories = inventories.length;
+  const inProgressCount = inventories.filter((i) => i.status === 'IN_PROGRESS' || i.status === 'DRAFT').length;
+  const completedCount = inventories.filter((i) => i.status === 'COMPLETED').length;
+
   return (
-    <Box sx={{ pb: 4 }}>
+    <Box sx={{ maxWidth: 1920, mx: 'auto', pb: 4 }}>
       <PageHeader
         title="Инвентаризация складов"
         subtitle="Сверка фактического наличия ТМЦ с учетными остатками и автоматическая корректировка"
@@ -163,95 +173,134 @@ export default function WmsInventoryListPage() {
         }
       />
 
-      <Card sx={{ borderRadius: 2 }}>
-        <TableContainer>
+      {/* KPI Metric Cards */}
+      <Grid container spacing={1.75} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={4}>
+          <StatCard
+            title="Всего актов"
+            value={totalInventories}
+            subtitle="За все периоды учета"
+            icon={<FactCheckOutlinedIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(2, 132, 199, 0.08)"
+            iconColor="#0284c7"
+            accentColor="#0284c7"
+            loading={isLoading}
+          />
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <StatCard
+            title="В процессе сверки"
+            value={inProgressCount}
+            subtitle="Открытые акты инвентаризации"
+            icon={<FactCheckOutlinedIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(217, 119, 6, 0.08)"
+            iconColor="#d97706"
+            accentColor="#d97706"
+            loading={isLoading}
+          />
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <StatCard
+            title="Завершенные акты"
+            value={completedCount}
+            subtitle="Успешно сверенные и закрытые"
+            icon={<FactCheckOutlinedIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(22, 163, 74, 0.08)"
+            iconColor="#16a34a"
+            accentColor="#16a34a"
+            loading={isLoading}
+          />
+        </Grid>
+      </Grid>
+
+      {/* Main Inventory Acts Registry Table */}
+      {inventories.length === 0 && !isLoading ? (
+        <EmptyState
+          paper
+          icon={<FactCheckOutlinedIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+          title="Акты инвентаризации ещё не создавались"
+          description="Вы можете инициировать сверку фактических складских остатков по выбранному складу с автоматическим расчетом расхождений."
+          actionText={hasPermission(PERMISSIONS.WMS_INVENTORY_MANAGE) ? 'Создать акт инвентаризации' : undefined}
+          onAction={
+            hasPermission(PERMISSIONS.WMS_INVENTORY_MANAGE)
+              ? () => {
+                  setSelectedWarehouseId(warehouses[0]?.id || '');
+                  setComment('');
+                  setIsModalOpen(true);
+                }
+              : undefined
+          }
+        />
+      ) : (
+        <DataTableWrapper
+          loading={isLoading}
+          total={inventories.length}
+          stickyHeader
+        >
           <Table size="small" aria-label="Реестр актов инвентаризации">
-            <TableHead sx={{ bgcolor: 'grey.50' }}>
+            <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 700 }}>Номер / Акт</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 140 }}>Номер / Акт</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Склад</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Статус</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 130 }}>Статус</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Позиций в акте</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Дата создания</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 160 }}>Дата создания</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Ответственный</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700 }}>
+                <TableCell align="right" sx={{ fontWeight: 700, width: 140 }}>
                   Действия
                 </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, idx) => (
-                  <TableRow key={idx}>
-                    <TableCell><Skeleton variant="text" width={90} /></TableCell>
-                    <TableCell><Skeleton variant="text" width={130} /></TableCell>
-                    <TableCell><Skeleton variant="rounded" width={80} height={20} /></TableCell>
-                    <TableCell><Skeleton variant="text" width={70} /></TableCell>
-                    <TableCell><Skeleton variant="text" width={110} /></TableCell>
-                    <TableCell><Skeleton variant="text" width={100} /></TableCell>
-                    <TableCell align="right"><Skeleton variant="rounded" width={90} height={24} sx={{ ml: 'auto' }} /></TableCell>
-                  </TableRow>
-                ))
-              ) : inventories.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 6, color: 'text.secondary' }}>
-                    Акты инвентаризации ещё не создавались
+              {inventories.map((inv) => (
+                <TableRow
+                  key={inv.id}
+                  hover
+                  sx={{ cursor: 'pointer' }}
+                  onClick={() => router.push(`/wms/inventory/${inv.id}`)}
+                >
+                  <TableCell sx={{ fontWeight: 700, fontFamily: 'monospace' }}>
+                    INV-{inv.id.slice(-6).toUpperCase()}
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" fontWeight={600}>
+                      {inv.warehouse.name}
+                    </Typography>
+                    <Chip label={inv.warehouse.code} size="small" variant="outlined" sx={{ mt: 0.2, borderRadius: '4px' }} />
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={inv.status} />
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" fontWeight={600}>
+                      {inv._count.items} позиций
+                    </Typography>
+                  </TableCell>
+                  <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace' }}>
+                    {formatDateTime(inv.createdAt)}
+                  </TableCell>
+                  <TableCell sx={{ fontSize: '0.8125rem', fontWeight: 600 }}>
+                    {inv.createdBy.displayName}
+                  </TableCell>
+                  <TableCell align="right">
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      endIcon={<ArrowForwardIcon />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/wms/inventory/${inv.id}`);
+                      }}
+                    >
+                      Открыть акт
+                    </Button>
                   </TableCell>
                 </TableRow>
-              ) : (
-                inventories.map((inv) => {
-                  const statusInfo = INVENTORY_STATUS_MAP[inv.status] || { label: inv.status, color: 'default' };
-                  return (
-                    <TableRow
-                      key={inv.id}
-                      hover
-                      sx={{ cursor: 'pointer' }}
-                      onClick={() => router.push(`/wms/inventory/${inv.id}`)}
-                    >
-                      <TableCell sx={{ fontWeight: 700, fontFamily: 'monospace' }}>
-                        INV-{inv.id.slice(-6).toUpperCase()}
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight={600}>
-                          {inv.warehouse.name}
-                        </Typography>
-                        <Chip label={inv.warehouse.code} size="small" variant="outlined" sx={{ mt: 0.2 }} />
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={statusInfo.label}
-                          size="small"
-                          color={statusInfo.color as any}
-                          sx={{ fontWeight: 700 }}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight={600}>
-                          {inv._count.items} позиций
-                        </Typography>
-                      </TableCell>
-                      <TableCell>{formatDateTime(inv.createdAt)}</TableCell>
-                      <TableCell>{inv.createdBy.displayName}</TableCell>
-                      <TableCell align="right">
-                        <Button
-                          size="small"
-                          endIcon={<ArrowForwardIcon />}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/wms/inventory/${inv.id}`);
-                          }}
-                        >
-                          Открыть акт
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
+              ))}
             </TableBody>
           </Table>
-        </TableContainer>
-      </Card>
+        </DataTableWrapper>
+      )}
 
       {/* Модальное окно запуска инвентаризации */}
       <Dialog open={isModalOpen} onClose={() => !isSubmitting && setIsModalOpen(false)} maxWidth="sm" fullWidth>

@@ -37,6 +37,12 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS, INVENTORY_STATUS_MAP, formatDateTime } from '@ems/shared';
+import {
+  StatCard,
+  StatusBadge,
+  DataTableWrapper,
+  ConfirmDialog,
+} from '@/components/ui';
 
 interface InventoryDetail {
   id: string;
@@ -253,61 +259,53 @@ export default function WmsInventoryDetailPage() {
       />
 
       {/* Статус и сводные карточки */}
-      <Grid container spacing={2.5} sx={{ mb: 3 }}>
+      <Grid container spacing={1.75} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2.5, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-            <Typography variant="caption" color="text.secondary" fontWeight={600}>
-              Статус акта
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-              <Chip label={statusInfo.label} color={statusInfo.color as any} sx={{ fontWeight: 700 }} />
-            </Box>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-              Ответственный: {inventory.createdBy.displayName}
-            </Typography>
-          </Card>
+          <StatCard
+            title="Статус акта"
+            value={statusInfo.label}
+            subtitle={`Ответственный: ${inventory.createdBy.displayName}`}
+            icon={<CheckCircleIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(2, 132, 199, 0.08)"
+            iconColor="#0284c7"
+            accentColor="#0284c7"
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2.5, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-            <Typography variant="caption" color="text.secondary" fontWeight={600}>
-              Всего позиций
-            </Typography>
-            <Typography variant="h4" fontWeight={800} sx={{ mt: 0.5 }}>
-              {totalItems}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Совпадают: {matchCount}
-            </Typography>
-          </Card>
+          <StatCard
+            title="Всего позиций"
+            value={totalItems}
+            subtitle={`Совпадают: ${matchCount}`}
+            icon={<CheckCircleIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(15, 23, 42, 0.06)"
+            iconColor="#475569"
+            accentColor="#0284c7"
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2.5, borderRadius: 2, border: '1px solid', borderColor: 'divider', bgcolor: surplusCount > 0 ? 'rgba(46, 125, 50, 0.05)' : undefined }}>
-            <Typography variant="caption" color="success.main" fontWeight={700}>
-              Выявлено излишков (+)
-            </Typography>
-            <Typography variant="h4" fontWeight={800} color="success.main" sx={{ mt: 0.5 }}>
-              {surplusCount}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Фактическое количество выше учетного
-            </Typography>
-          </Card>
+          <StatCard
+            title="Выявлено излишков (+)"
+            value={surplusCount}
+            subtitle="Факт выше учетного"
+            icon={<CheckCircleIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(22, 163, 74, 0.08)"
+            iconColor="#16a34a"
+            accentColor="#16a34a"
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2.5, borderRadius: 2, border: '1px solid', borderColor: 'divider', bgcolor: deficitCount > 0 ? 'rgba(211, 47, 47, 0.05)' : undefined }}>
-            <Typography variant="caption" color="error.main" fontWeight={700}>
-              Выявлено недостач (-)
-            </Typography>
-            <Typography variant="h4" fontWeight={800} color="error.main" sx={{ mt: 0.5 }}>
-              {deficitCount}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Фактическое количество ниже учетного
-            </Typography>
-          </Card>
+          <StatCard
+            title="Выявлено недостач (-)"
+            value={deficitCount}
+            subtitle="Факт ниже учетного"
+            icon={<WarningAmberIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(220, 38, 38, 0.08)"
+            iconColor="#dc2626"
+            accentColor="#dc2626"
+          />
         </Grid>
       </Grid>
 
@@ -319,152 +317,144 @@ export default function WmsInventoryDetailPage() {
       )}
 
       {/* Таблица инвентаризации */}
-      <Card sx={{ borderRadius: 2 }}>
-        <TableContainer component={Paper} elevation={0}>
-          <Table size="small" aria-label="Ведомость инвентаризации остатков">
-            <TableHead sx={{ bgcolor: 'grey.50' }}>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 700 }}>Артикул</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Наименование номенклатуры</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Категория</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700 }}>
-                  Учетный остаток
-                </TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700, width: 180 }}>
-                  Фактический остаток
-                </TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700 }}>
-                  Расхождение (Дифф)
-                </TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Примечание / Причина</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {inventory.items.map((item) => {
-                const state = itemsState.find((s) => s.id === item.id) || {
-                  actualQty: Number(item.expectedQty),
-                  expectedQty: Number(item.expectedQty),
-                  comment: '',
-                };
+      <DataTableWrapper total={inventory.items.length} stickyHeader>
+        <Table size="small" aria-label="Ведомость инвентаризации остатков">
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 700, width: 120 }}>Артикул</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Наименование номенклатуры</TableCell>
+              <TableCell sx={{ fontWeight: 700, width: 160 }}>Категория</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 700, width: 140 }}>
+                Учетный остаток
+              </TableCell>
+              <TableCell align="center" sx={{ fontWeight: 700, width: 180 }}>
+                Фактический остаток
+              </TableCell>
+              <TableCell align="center" sx={{ fontWeight: 700, width: 160 }}>
+                Расхождение (Дифф)
+              </TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Примечание / Причина</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {inventory.items.map((item) => {
+              const state = itemsState.find((s) => s.id === item.id) || {
+                actualQty: Number(item.expectedQty),
+                expectedQty: Number(item.expectedQty),
+                comment: '',
+              };
 
-                const diff = state.actualQty - state.expectedQty;
+              const diff = state.actualQty - state.expectedQty;
 
-                return (
-                  <TableRow
-                    key={item.id}
-                    hover
-                    sx={{
-                      bgcolor:
-                        diff > 0
-                          ? 'rgba(46, 125, 50, 0.04)'
-                          : diff < 0
-                          ? 'rgba(211, 47, 47, 0.04)'
-                          : undefined,
-                    }}
-                  >
-                    <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                      {item.nomenclature.article || '—'}
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>{item.nomenclature.name}</TableCell>
-                    <TableCell>{item.nomenclature.category?.name || '—'}</TableCell>
-                    <TableCell align="center">
+              return (
+                <TableRow
+                  key={item.id}
+                  hover
+                  sx={{
+                    bgcolor:
+                      diff > 0
+                        ? 'rgba(46, 125, 50, 0.04)'
+                        : diff < 0
+                        ? 'rgba(211, 47, 47, 0.04)'
+                        : undefined,
+                  }}
+                >
+                  <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                    {item.nomenclature.article || '—'}
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{item.nomenclature.name}</TableCell>
+                  <TableCell>{item.nomenclature.category?.name || '—'}</TableCell>
+                  <TableCell align="center">
+                    <Typography variant="body2" fontWeight={700}>
+                      {item.expectedQty} {item.nomenclature.unit}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="center">
+                    {isCompleted ? (
                       <Typography variant="body2" fontWeight={700}>
-                        {item.expectedQty} {item.nomenclature.unit}
+                        {item.actualQty} {item.nomenclature.unit}
                       </Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      {isCompleted ? (
-                        <Typography variant="body2" fontWeight={700}>
-                          {item.actualQty} {item.nomenclature.unit}
-                        </Typography>
-                      ) : (
-                        <TextField
-                          type="number"
-                          size="small"
-                          value={state.actualQty}
-                          onChange={(e) => handleActualQtyChange(item.id, e.target.value)}
-                          InputProps={{
-                            endAdornment: (
-                              <Typography variant="caption" color="text.secondary">
-                                {item.nomenclature.unit}
-                              </Typography>
-                            ),
-                          }}
-                          sx={{ width: 130 }}
-                        />
-                      )}
-                    </TableCell>
-                    <TableCell align="center">
-                      {diff === 0 ? (
-                        <Typography variant="body2" color="text.secondary">
-                          0
-                        </Typography>
-                      ) : diff > 0 ? (
-                        <Chip
-                          label={`+${diff} ${item.nomenclature.unit}`}
-                          size="small"
-                          color="success"
-                          sx={{ fontWeight: 700 }}
-                        />
-                      ) : (
-                        <Chip
-                          label={`${diff} ${item.nomenclature.unit}`}
-                          size="small"
-                          color="error"
-                          sx={{ fontWeight: 700 }}
-                        />
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {isCompleted ? (
-                        <Typography variant="body2" color="text.secondary">
-                          {item.comment || '—'}
-                        </Typography>
-                      ) : (
-                        <TextField
-                          size="small"
-                          fullWidth
-                          placeholder="Причина расхождения..."
-                          value={state.comment}
-                          onChange={(e) => handleCommentChange(item.id, e.target.value)}
-                        />
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Card>
+                    ) : (
+                      <TextField
+                        type="number"
+                        size="small"
+                        value={state.actualQty}
+                        onChange={(e) => handleActualQtyChange(item.id, e.target.value)}
+                        InputProps={{
+                          endAdornment: (
+                            <Typography variant="caption" color="text.secondary">
+                              {item.nomenclature.unit}
+                            </Typography>
+                          ),
+                        }}
+                        sx={{ width: 130 }}
+                      />
+                    )}
+                  </TableCell>
+                  <TableCell align="center">
+                    {diff === 0 ? (
+                      <Typography variant="body2" color="text.secondary">
+                        0
+                      </Typography>
+                    ) : diff > 0 ? (
+                      <Chip
+                        label={`+${diff} ${item.nomenclature.unit}`}
+                        size="small"
+                        color="success"
+                        sx={{ fontWeight: 700, borderRadius: '4px' }}
+                      />
+                    ) : (
+                      <Chip
+                        label={`${diff} ${item.nomenclature.unit}`}
+                        size="small"
+                        color="error"
+                        sx={{ fontWeight: 700, borderRadius: '4px' }}
+                      />
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {isCompleted ? (
+                      <Typography variant="body2" color="text.secondary">
+                        {item.comment || '—'}
+                      </Typography>
+                    ) : (
+                      <TextField
+                        size="small"
+                        fullWidth
+                        placeholder="Причина расхождения..."
+                        value={state.comment}
+                        onChange={(e) => handleCommentChange(item.id, e.target.value)}
+                      />
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </DataTableWrapper>
 
       {/* Диалог подтверждения завершения инвентаризации */}
-      <Dialog open={isConfirmCompleteOpen} onClose={() => setIsConfirmCompleteOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700 }}>Завершение инвентаризации и корректировка</DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={2}>
-            <Typography variant="body1">
+      <ConfirmDialog
+        open={isConfirmCompleteOpen}
+        title="Завершение инвентаризации и корректировка"
+        message={
+          <Stack spacing={1.5}>
+            <Typography variant="body2">
               Вы уверены, что хотите завершить инвентаризацию по складу <b>{inventory.warehouse.name}</b>?
             </Typography>
             <Alert severity="warning" icon={<WarningAmberIcon />}>
               По всем строкам с расхождениями ({surplusCount + deficitCount} поз.) будет автоматически сформирована
-              складская операция <b>ADJUSTMENT (Корректировка)</b>, а остатки в базе данных будут приведены к фактическим
-              значениям.
+              складская операция <b>ADJUSTMENT (Корректировка)</b>, а остатки в базе данных приведены к фактическим значениям.
             </Alert>
           </Stack>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setIsConfirmCompleteOpen(false)}>Отмена</Button>
-          <Button
-            variant="contained"
-            color="success"
-            onClick={handleCompleteInventory}
-            disabled={isSaving}
-          >
-            {isSaving ? 'Применение...' : 'Подтвердить и закрыть акт'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        }
+        confirmText="Подтвердить и закрыть акт"
+        variant="warning"
+        loading={isSaving}
+        onConfirm={handleCompleteInventory}
+        onClose={() => setIsConfirmCompleteOpen(false)}
+      />
     </Box>
   );
 }

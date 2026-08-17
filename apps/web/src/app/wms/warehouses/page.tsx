@@ -39,6 +39,7 @@ import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS } from '@ems/shared';
+import { StatCard, StatusBadge, EmptyState } from '@/components/ui';
 
 interface StorageCell {
   id: string;
@@ -313,8 +314,13 @@ export default function WmsWarehousesPage() {
     }
   };
 
+  const totalWarehouses = warehouses.length;
+  const activeWarehouses = warehouses.filter((w) => w.isActive).length;
+  const totalStockItems = warehouses.reduce((acc, w) => acc + (w._count?.stockItems || 0), 0);
+  const totalOperations = warehouses.reduce((acc, w) => acc + (w._count?.operations || 0), 0);
+
   return (
-    <Box sx={{ pb: 4 }}>
+    <Box sx={{ maxWidth: 1920, mx: 'auto', pb: 4 }}>
       <PageHeader
         title="Склады и зоны хранения"
         subtitle="Справочник складских комплексов, топология зон и ячеек адресного хранения ТМЦ"
@@ -337,6 +343,58 @@ export default function WmsWarehousesPage() {
         }
       />
 
+      {/* Summary KPI Cards Bar */}
+      <Grid container spacing={1.75} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Всего складов"
+            value={totalWarehouses}
+            subtitle="Зарегистрировано комплексов"
+            icon={<WarehouseOutlinedIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(2, 132, 199, 0.08)"
+            iconColor="#0284c7"
+            accentColor="#0284c7"
+            loading={isLoading}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Активные склады"
+            value={activeWarehouses}
+            subtitle="Готовы к операциям"
+            icon={<WarehouseOutlinedIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(22, 163, 74, 0.08)"
+            iconColor="#16a34a"
+            accentColor="#16a34a"
+            loading={isLoading}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Учетных остатков"
+            value={totalStockItems}
+            subtitle="Позиций на складах"
+            icon={<GridViewIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(217, 119, 6, 0.08)"
+            iconColor="#d97706"
+            accentColor="#d97706"
+            loading={isLoading}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Проведено операций"
+            value={totalOperations}
+            subtitle="Приход, расход, перемещения"
+            icon={<MeetingRoomOutlinedIcon sx={{ fontSize: 20 }} />}
+            iconBgColor="rgba(124, 58, 237, 0.08)"
+            iconColor="#7c3aed"
+            accentColor="#7c3aed"
+            loading={isLoading}
+          />
+        </Grid>
+      </Grid>
+
       {isLoading ? (
         <Grid container spacing={3}>
           {Array.from({ length: 3 }).map((_, idx) => (
@@ -357,11 +415,14 @@ export default function WmsWarehousesPage() {
           ))}
         </Grid>
       ) : warehouses.length === 0 ? (
-        <Card sx={{ p: 6, textAlign: 'center', borderRadius: 2 }}>
-          <Typography variant="body1" color="text.secondary">
-            Склады еще не зарегистрированы
-          </Typography>
-        </Card>
+        <EmptyState
+          paper
+          icon={<WarehouseOutlinedIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+          title="Склады еще не зарегистрированы"
+          description="Создайте первый складской комплекс для учета товарно-материальных ценностей и настройки адресного хранения."
+          actionText={hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) ? 'Создать склад' : undefined}
+          onAction={hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) ? handleOpenCreate : undefined}
+        />
       ) : (
         <Grid container spacing={3}>
           {warehouses.map((w) => (
@@ -399,13 +460,8 @@ export default function WmsWarehousesPage() {
                   </Box>
 
                   <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-                    <Chip label={`Код: ${w.code}`} size="small" variant="outlined" sx={{ fontWeight: 700 }} />
-                    <Chip
-                      label={w.isActive ? 'Активен' : 'Отключен'}
-                      size="small"
-                      color={w.isActive ? 'success' : 'default'}
-                      variant={w.isActive ? 'filled' : 'outlined'}
-                    />
+                    <Chip label={`Код: ${w.code}`} size="small" variant="outlined" sx={{ fontWeight: 700, borderRadius: '4px' }} />
+                    <StatusBadge status={w.isActive ? 'ACTIVE' : 'DRAFT'} />
                   </Stack>
 
                   {w.location && (
