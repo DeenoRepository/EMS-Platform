@@ -30,8 +30,6 @@ import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import AddIcon from '@mui/icons-material/Add';
-import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
-import ListAltOutlinedIcon from '@mui/icons-material/ListAltOutlined';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { OPERATION_TYPE_MAP, formatDateTime, PERMISSIONS } from '@ems/shared';
 import {
@@ -40,7 +38,6 @@ import {
   EmptyState,
   DataTableWrapper,
   CriticalAlertBanner,
-  NavTabsContainer,
 } from '@/components/ui';
 import { useAuth } from '@/lib/auth-client';
 
@@ -321,25 +318,6 @@ export default function WmsDashboardPage() {
     (action) => !action.permission || hasPermission(action.permission)
   );
 
-  const navTabs = [
-    { label: 'Обзор', value: 'overview', icon: <DashboardOutlinedIcon sx={{ fontSize: 18 }} /> },
-    { label: 'Склады', value: 'warehouses', badge: stats?.warehousesCount },
-    { label: 'Остатки ТМЦ', value: 'stock', badge: stats?.nomenclatureCount },
-    { label: 'Операции', value: 'operations', icon: <ListAltOutlinedIcon sx={{ fontSize: 18 }} /> },
-    {
-      label: 'Инвентаризация',
-      value: 'inventory',
-      badge: stats?.activeInventoriesCount || undefined,
-      badgeColor: (stats?.activeInventoriesCount ?? 0) > 0 ? ('warning' as const) : undefined,
-    },
-  ];
-
-  const handleTabChange = (value: string | number) => {
-    const tab = String(value);
-    if (tab === 'overview') return;
-    router.push(`/wms/${tab}`);
-  };
-
   return (
     <Box sx={{ pb: 4 }}>
       <PageHeader
@@ -396,15 +374,6 @@ export default function WmsDashboardPage() {
           ]}
         />
       )}
-
-      {/* Навигационные вкладки WMS */}
-      <Box sx={{ mb: 3 }}>
-        <NavTabsContainer
-          tabs={navTabs}
-          value="overview"
-          onChange={handleTabChange}
-        />
-      </Box>
 
       {/* KPI Карточки */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
