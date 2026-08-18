@@ -325,7 +325,7 @@ export default function WmsWarehousesPage() {
           { label: 'Склады' },
         ]}
         actions={
-          hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) && (
+          hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE) && (
             <Button
               variant="contained"
               startIcon={<AddIcon />}
@@ -415,8 +415,8 @@ export default function WmsWarehousesPage() {
           icon={<WarehouseOutlinedIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
           title="Склады еще не зарегистрированы"
           description="Создайте первый складской комплекс для учета товарно-материальных ценностей и настройки адресного хранения."
-          actionText={hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) ? 'Создать склад' : undefined}
-          onAction={hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) ? handleOpenCreate : undefined}
+          actionText={hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE) ? 'Создать склад' : undefined}
+          onAction={hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE) ? handleOpenCreate : undefined}
         />
       ) : (
         <Grid container spacing={3}>
@@ -564,7 +564,7 @@ export default function WmsWarehousesPage() {
           ) : (
             <Stack spacing={3}>
               {/* Форма быстрого добавления новой зоны */}
-              {hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) && (
+              {hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE) && (
                 <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, bgcolor: 'grey.50' }}>
                   <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5 }}>
                     + Создать новую зону хранения
@@ -654,7 +654,7 @@ export default function WmsWarehousesPage() {
                                 variant="outlined"
                                 sx={{ borderRadius: '4px', height: 22 }}
                               />
-                              {hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) && (
+                              {hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE) && (
                                 <IconButton
                                   size="small"
                                   color="error"
@@ -691,7 +691,7 @@ export default function WmsWarehousesPage() {
                                     size="small"
                                     variant="outlined"
                                     onDelete={
-                                      hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE)
+                                      hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE)
                                         ? () => handleDeleteCell(zone.id, cell.id)
                                         : undefined
                                     }
@@ -703,7 +703,7 @@ export default function WmsWarehousesPage() {
                           </Box>
 
                           {/* Форма добавления ячейки в зону */}
-                          {hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) && (
+                          {hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE) && (
                             <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 1.5 }}>
                               <TextField
                                 size="small"

@@ -62,6 +62,8 @@ import {
   ConfirmDialog,
   NavTabsContainer,
 } from '@/components/ui';
+import { useAuth } from '@/lib/auth-client';
+import { PERMISSIONS } from '@ems/shared';
 
 const STATUS_COLORS: Record<string, string> = {
   Open: '#f44336',
@@ -74,6 +76,7 @@ const PIE_COLORS = ['#3f51b5', '#00bcd4', '#4caf50', '#ff9800', '#f44336'];
 
 export default function SrmOverviewPage() {
   const { enqueueSnackbar } = useSnackbar();
+  const { user, hasPermission } = useAuth();
   const [currentTab, setCurrentTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -433,15 +436,17 @@ export default function SrmOverviewPage() {
         subtitle="Мониторинг инцидентов, контроль SLA, аналитика надежности оборудования и единый центр интеграций (Jira, Redmine, GitLab, 1C)"
         breadcrumbs={[{ label: 'Главная', href: '/' }, { label: 'Система подачи заявок' }]}
         actions={
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={syncing ? <CircularProgress size={20} color="inherit" /> : <SyncIcon />}
-            onClick={handleSync}
-            disabled={syncing}
-          >
-            Синхронизировать все системы
-          </Button>
+          (hasPermission(PERMISSIONS.SRM_SYNC_TRIGGER) || hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) || user?.roles.includes('admin')) && (
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={syncing ? <CircularProgress size={20} color="inherit" /> : <SyncIcon />}
+              onClick={handleSync}
+              disabled={syncing}
+            >
+              Синхронизировать все системы
+            </Button>
+          )
         }
       />
 
@@ -453,8 +458,12 @@ export default function SrmOverviewPage() {
           tabs={[
             { label: 'Дашборд и Метрики', value: 0, icon: <DashboardIcon /> },
             { label: 'Реестр заявок', value: 1, icon: <ListAltIcon />, badge: issues.length },
-            { label: 'Конструктор сопоставления полей', value: 2, icon: <SettingsSuggestIcon /> },
-            { label: 'Внешние API и Интеграции', value: 3, icon: <CableIcon />, badge: integrations.length },
+            ...(hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) || user?.roles.includes('admin')
+              ? [
+                  { label: 'Конструктор сопоставления полей', value: 2, icon: <SettingsSuggestIcon /> },
+                  { label: 'Внешние API и Интеграции', value: 3, icon: <CableIcon />, badge: integrations.length },
+                ]
+              : []),
           ]}
         />
       </Box>

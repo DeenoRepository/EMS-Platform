@@ -33,7 +33,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import PageHeader from '@/components/layout/PageHeader';
-import { MAINTENANCE_STATUS_MAP } from '@ems/shared';
+import { MAINTENANCE_STATUS_MAP, PERMISSIONS } from '@ems/shared';
 import { useSnackbar } from 'notistack';
 import {
   StatCard,
@@ -46,9 +46,11 @@ import {
   FormDialog,
   NavTabsContainer,
 } from '@/components/ui';
+import { useAuth } from '@/lib/auth-client';
 
 export default function MroOverviewPage() {
   const { enqueueSnackbar } = useSnackbar();
+  const { hasPermission } = useAuth();
   const [tab, setTab] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -232,23 +234,25 @@ export default function MroOverviewPage() {
         subtitle="Календарные графики планово-предупредительного ремонта (ППР), электронные чек-листы и списание запчастей"
         breadcrumbs={[{ label: 'Главная', href: '/' }, { label: 'ТО и Ремонт' }]}
         actions={
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            {tab === 0 && (
-              <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenScheduleDialog(true)}>
-                Запланировать ТО
-              </Button>
-            )}
-            {tab === 1 && (
-              <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenPlanDialog(true)}>
-                Новый план ТО
-              </Button>
-            )}
-            {tab === 2 && (
-              <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenChecklistDialog(true)}>
-                Новый чек-лист
-              </Button>
-            )}
-          </Box>
+          hasPermission(PERMISSIONS.MRO_SCHEDULE_MANAGE) && (
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              {tab === 0 && (
+                <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenScheduleDialog(true)}>
+                  Запланировать ТО
+                </Button>
+              )}
+              {tab === 1 && (
+                <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenPlanDialog(true)}>
+                  Новый план ТО
+                </Button>
+              )}
+              {tab === 2 && (
+                <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenChecklistDialog(true)}>
+                  Новый чек-лист
+                </Button>
+              )}
+            </Box>
+          )
         }
       />
 
@@ -335,8 +339,8 @@ export default function MroOverviewPage() {
                     icon={<CalendarMonthIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
                     title="В графике пока нет запланированных работ"
                     description="Вы можете запланировать наряд на техническое обслуживание для единицы оборудования."
-                    actionText="Запланировать ТО"
-                    onAction={() => setOpenScheduleDialog(true)}
+                    actionText={hasPermission(PERMISSIONS.MRO_SCHEDULE_MANAGE) ? "Запланировать ТО" : undefined}
+                    onAction={hasPermission(PERMISSIONS.MRO_SCHEDULE_MANAGE) ? () => setOpenScheduleDialog(true) : undefined}
                   />
                 ) : (
                   <DataTableWrapper total={schedules.length} stickyHeader>
@@ -381,15 +385,19 @@ export default function MroOverviewPage() {
                             </TableCell>
                             <TableCell align="right">
                               {s.status !== 'COMPLETED' ? (
-                                <Button
-                                  size="small"
-                                  variant="contained"
-                                  color="success"
-                                  startIcon={<PlayArrowIcon />}
-                                  onClick={() => handleOpenExecute(s)}
-                                >
-                                  Выполнить
-                                </Button>
+                                hasPermission(PERMISSIONS.MRO_EXECUTION_COMPLETE) ? (
+                                  <Button
+                                    size="small"
+                                    variant="contained"
+                                    color="success"
+                                    startIcon={<PlayArrowIcon />}
+                                    onClick={() => handleOpenExecute(s)}
+                                  >
+                                    Выполнить
+                                  </Button>
+                                ) : (
+                                  <Chip label="В ожидании" size="small" variant="outlined" sx={{ borderRadius: '4px' }} />
+                                )
                               ) : (
                                 <StatusBadge status="COMPLETED" size="small" />
                               )}
@@ -410,8 +418,8 @@ export default function MroOverviewPage() {
                     icon={<AssignmentIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
                     title="Регламентные планы еще не созданы"
                     description="Создайте периодический регламентный план обслуживания с привязкой чек-листа."
-                    actionText="Новый план ТО"
-                    onAction={() => setOpenPlanDialog(true)}
+                    actionText={hasPermission(PERMISSIONS.MRO_SCHEDULE_MANAGE) ? "Новый план ТО" : undefined}
+                    onAction={hasPermission(PERMISSIONS.MRO_SCHEDULE_MANAGE) ? () => setOpenPlanDialog(true) : undefined}
                   />
                 ) : (
                   <DataTableWrapper total={plans.length} stickyHeader>
@@ -467,8 +475,8 @@ export default function MroOverviewPage() {
                     icon={<ChecklistRtlIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
                     title="Шаблоны чек-листов отсутствуют"
                     description="Создайте структурированные опросные листы и регламенты проверки узлов оборудования."
-                    actionText="Новый чек-лист"
-                    onAction={() => setOpenChecklistDialog(true)}
+                    actionText={hasPermission(PERMISSIONS.MRO_SCHEDULE_MANAGE) ? "Новый чек-лист" : undefined}
+                    onAction={hasPermission(PERMISSIONS.MRO_SCHEDULE_MANAGE) ? () => setOpenChecklistDialog(true) : undefined}
                   />
                 ) : (
                   <DataTableWrapper total={checklists.length} stickyHeader>

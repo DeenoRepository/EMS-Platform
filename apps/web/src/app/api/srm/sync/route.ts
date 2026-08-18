@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 // POST /api/srm/sync - Принудительная синхронизация с Jira API
 export async function POST(req: NextRequest) {
-  const auth = await requireAuth(req, PERMISSIONS.SRM_DASHBOARD_VIEW);
+  const auth = await requireAuth(req, [PERMISSIONS.SRM_SYNC_TRIGGER, PERMISSIONS.ADMIN_SETTINGS_MANAGE]);
   if (auth.errorResponse) return auth.errorResponse;
 
   try {

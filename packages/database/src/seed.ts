@@ -19,17 +19,27 @@ async function main() {
     { code: 'eps.equipment.create', displayName: 'Создание оборудования', module: 'eps', description: 'Возможность создавать новые единицы оборудования' },
     { code: 'eps.equipment.edit', displayName: 'Редактирование оборудования', module: 'eps', description: 'Изменение данных паспорта оборудования' },
     { code: 'eps.equipment.delete', displayName: 'Удаление оборудования', module: 'eps', description: 'Удаление единиц оборудования' },
+    { code: 'eps.documents.view', displayName: 'Просмотр документов', module: 'eps', description: 'Просмотр чертежей, схем и документов оборудования' },
     { code: 'eps.documents.upload', displayName: 'Загрузка документов', module: 'eps', description: 'Прикрепление файлов и схем к оборудованию' },
     { code: 'eps.custom_fields.manage', displayName: 'Управление кастомными полями', module: 'eps', description: 'Создание и редактирование структуры полей' },
+    { code: 'eps.approvals.view', displayName: 'Просмотр согласований', module: 'eps', description: 'Просмотр заявок на ввод, списание и изменение статуса' },
+    { code: 'eps.approvals.create', displayName: 'Подача заявок на согласование', module: 'eps', description: 'Создание заявок на ввод в эксплуатацию и списание' },
+    { code: 'eps.approvals.manage', displayName: 'Утверждение согласований', module: 'eps', description: 'Рассмотрение, утверждение и отклонение заявок' },
+    { code: 'eps.history.view', displayName: 'Просмотр истории изменений', module: 'eps', description: 'Просмотр журнала аудита изменений оборудования' },
+    { code: 'eps.reports.view', displayName: 'Просмотр отчетов EPS', module: 'eps', description: 'Формирование и выгрузка отчетов по оборудованию' },
+    { code: 'eps.reports.manage', displayName: 'Управление шаблонами отчетов', module: 'eps', description: 'Создание и редактирование шаблонов отчетов' },
+    { code: 'eps.import.execute', displayName: 'Импорт оборудования', module: 'eps', description: 'Пакетный импорт оборудования из файлов Excel' },
 
     // WMS
     { code: 'wms.stock.view', displayName: 'Просмотр остатков и складов', module: 'wms', description: 'Просмотр наличия ТМЦ и складов' },
     { code: 'wms.operations.create', displayName: 'Проведение складских операций', module: 'wms', description: 'Приход, расход, перемещение ТМЦ' },
     { code: 'wms.nomenclature.manage', displayName: 'Управление номенклатурой', module: 'wms', description: 'Создание и редактирование ТМЦ' },
+    { code: 'wms.warehouses.manage', displayName: 'Управление складами и ячейками', module: 'wms', description: 'Создание складов, зон и ячеек адресного хранения' },
     { code: 'wms.inventory.manage', displayName: 'Инвентаризация', module: 'wms', description: 'Создание и закрытие актов инвентаризации' },
 
     // SRM
     { code: 'srm.dashboard.view', displayName: 'Просмотр системы подачи заявок', module: 'srm', description: 'Доступ к заявкам, инцидентам, графикам и метрикам MTTR/MTBF' },
+    { code: 'srm.sync.trigger', displayName: 'Синхронизация инцидентов', module: 'srm', description: 'Ручной запуск синхронизации с внешними Helpdesk/Jira' },
     { code: 'srm.reports.export', displayName: 'Экспорт отчетов SRM', module: 'srm', description: 'Выгрузка аналитики в Excel и PDF' },
 
     // MRO
@@ -87,6 +97,17 @@ async function main() {
     },
   });
 
+  const warehouseRole = await prisma.role.upsert({
+    where: { name: 'warehouse_manager' },
+    update: { displayName: 'Заведующий складом / Кладовщик' },
+    create: {
+      name: 'warehouse_manager',
+      displayName: 'Заведующий складом / Кладовщик',
+      description: 'Управление складами, остатками ТМЦ, операциями прихода/расхода и инвентаризацией',
+      isSystem: false,
+    },
+  });
+
   // Назначение всех прав администратору
   const allPermissions = await prisma.permission.findMany();
   for (const perm of allPermissions) {
@@ -120,6 +141,21 @@ async function main() {
       where: { roleId_permissionId: { roleId: engineerRole.id, permissionId: perm.id } },
       update: {},
       create: { roleId: engineerRole.id, permissionId: perm.id },
+    });
+  }
+
+  // Назначение прав кладовщику
+  const warehousePermissions = allPermissions.filter(
+    (p) =>
+      p.module === 'wms' ||
+      p.code === 'eps.equipment.view' ||
+      p.code === 'srm.dashboard.view'
+  );
+  for (const perm of warehousePermissions) {
+    await prisma.rolePermission.upsert({
+      where: { roleId_permissionId: { roleId: warehouseRole.id, permissionId: perm.id } },
+      update: {},
+      create: { roleId: warehouseRole.id, permissionId: perm.id },
     });
   }
 

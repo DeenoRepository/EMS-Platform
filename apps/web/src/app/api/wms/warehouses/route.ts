@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE) && !user.roles.includes('admin')) {
+    if (!hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE) && !user.roles.includes('admin')) {
       return forbiddenResponse();
     }
 

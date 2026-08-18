@@ -28,8 +28,9 @@ import HistoryIcon from '@mui/icons-material/History';
 import PeopleIcon from '@mui/icons-material/People';
 import KeyboardReturnIcon from '@mui/icons-material/KeyboardReturn';
 import { useRouter } from 'next/navigation';
-import { EQUIPMENT_STATUS_MAP } from '@ems/shared';
+import { EQUIPMENT_STATUS_MAP, PERMISSIONS } from '@ems/shared';
 import { StatusBadge, EmptyState } from '@/components/ui';
+import { useAuth } from '@/lib/auth-client';
 
 interface CommandPaletteProps {
   open: boolean;
@@ -47,59 +48,79 @@ interface EquipmentSearchResult {
   status: string;
 }
 
-const STATIC_COMMANDS = [
+interface StaticCommandItem {
+  title: string;
+  path: string;
+  category: string;
+  icon: React.ReactNode;
+  permission?: string;
+  adminOnly?: boolean;
+}
+
+const STATIC_COMMANDS: StaticCommandItem[] = [
   {
     title: 'Добавить единицу оборудования',
     path: '/eps/new',
     category: 'Действия',
     icon: <AddCircleOutlineIcon color="primary" />,
+    permission: PERMISSIONS.EPS_EQUIPMENT_CREATE,
   },
   {
     title: 'Паспортизация оборудования (EPS)',
     path: '/eps',
     category: 'Навигация',
     icon: <PrecisionManufacturingIcon />,
+    permission: PERMISSIONS.EPS_EQUIPMENT_VIEW,
   },
   {
     title: 'Складской учёт и остатки (WMS)',
     path: '/wms',
     category: 'Навигация',
     icon: <Inventory2Icon />,
+    permission: PERMISSIONS.WMS_STOCK_VIEW,
   },
   {
     title: 'Система подачи заявок (SRM)',
     path: '/srm',
     category: 'Навигация',
     icon: <AssessmentIcon />,
+    permission: PERMISSIONS.SRM_DASHBOARD_VIEW,
   },
   {
     title: 'График ППР и ТО (MRO)',
     path: '/mro',
     category: 'Навигация',
     icon: <BuildCircleIcon />,
+    permission: PERMISSIONS.MRO_SCHEDULE_VIEW,
   },
   {
     title: 'Настройки модулей (EPS, WMS, SRM, MRO)',
     path: '/admin/module-settings',
     category: 'Администрирование',
     icon: <TuneIcon />,
+    adminOnly: true,
   },
   {
     title: 'Пользователи системы',
     path: '/admin/users',
     category: 'Администрирование',
     icon: <PeopleIcon />,
+    permission: PERMISSIONS.ADMIN_USERS_MANAGE,
+    adminOnly: true,
   },
   {
     title: 'Журнал аудита операций',
     path: '/admin/audit-log',
     category: 'Администрирование',
     icon: <HistoryIcon />,
+    permission: PERMISSIONS.ADMIN_AUDIT_VIEW,
+    adminOnly: true,
   },
 ];
 
 export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const router = useRouter();
+  const { user, hasPermission } = useAuth();
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [equipmentResults, setEquipmentResults] = useState<EquipmentSearchResult[]>([]);
@@ -134,10 +155,14 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
     return () => clearTimeout(timer);
   }, [query]);
 
-  // Filter static commands by query
-  const filteredCommands = STATIC_COMMANDS.filter((cmd) =>
-    cmd.title.toLowerCase().includes(query.toLowerCase())
-  );
+  // Filter static commands by user permissions and search query
+  const canAccessAdmin = user?.roles.includes('admin') || hasPermission(PERMISSIONS.ADMIN_USERS_MANAGE);
+
+  const filteredCommands = STATIC_COMMANDS.filter((cmd) => {
+    if (cmd.adminOnly && !canAccessAdmin) return false;
+    if (cmd.permission && !hasPermission(cmd.permission)) return false;
+    return cmd.title.toLowerCase().includes(query.toLowerCase());
+  });
 
   const totalItems = equipmentResults.length + filteredCommands.length;
 

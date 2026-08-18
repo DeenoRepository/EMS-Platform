@@ -44,7 +44,7 @@ export async function POST(
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE)) return forbiddenResponse();
+    if (!hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE)) return forbiddenResponse();
 
     const body = await req.json();
     const { code, name, bulkCodes } = body;
@@ -148,7 +148,7 @@ export async function DELETE(
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE)) return forbiddenResponse();
+    if (!hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE)) return forbiddenResponse();
 
     const { searchParams } = new URL(req.url);
     const cellId = searchParams.get('cellId');

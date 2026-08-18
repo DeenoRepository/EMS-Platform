@@ -14,7 +14,7 @@ export async function PATCH(
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE)) return forbiddenResponse();
+    if (!hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE)) return forbiddenResponse();
 
     const body = await req.json();
     const { name, code, description } = body;
@@ -48,7 +48,7 @@ export async function DELETE(
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE)) return forbiddenResponse();
+    if (!hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE)) return forbiddenResponse();
 
     await prisma.storageZone.delete({
       where: { id: params.id },

@@ -23,10 +23,12 @@ export const PERMISSIONS = {
   WMS_STOCK_VIEW: 'wms.stock.view',
   WMS_OPERATIONS_CREATE: 'wms.operations.create',
   WMS_NOMENCLATURE_MANAGE: 'wms.nomenclature.manage',
+  WMS_WAREHOUSES_MANAGE: 'wms.warehouses.manage',
   WMS_INVENTORY_MANAGE: 'wms.inventory.manage',
 
   // SRM
   SRM_DASHBOARD_VIEW: 'srm.dashboard.view',
+  SRM_SYNC_TRIGGER: 'srm.sync.trigger',
   SRM_REPORTS_EXPORT: 'srm.reports.export',
 
   // MRO

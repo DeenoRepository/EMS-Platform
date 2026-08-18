@@ -33,7 +33,7 @@ import AddIcon from '@mui/icons-material/Add';
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import ListAltOutlinedIcon from '@mui/icons-material/ListAltOutlined';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { OPERATION_TYPE_MAP, formatDateTime } from '@ems/shared';
+import { OPERATION_TYPE_MAP, formatDateTime, PERMISSIONS } from '@ems/shared';
 import {
   StatCard,
   StatusBadge,
@@ -42,6 +42,7 @@ import {
   CriticalAlertBanner,
   NavTabsContainer,
 } from '@/components/ui';
+import { useAuth } from '@/lib/auth-client';
 
 interface WmsStats {
   warehousesCount: number;
@@ -252,6 +253,7 @@ function DeficitItem({
 /* ─── WMS Dashboard Page ─── */
 export default function WmsDashboardPage() {
   const router = useRouter();
+  const { hasPermission } = useAuth();
   const [stats, setStats] = useState<WmsStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -276,7 +278,7 @@ export default function WmsDashboardPage() {
     fetchStats();
   }, []);
 
-  const quickActions: QuickAction[] = [
+  const quickActions: (QuickAction & { permission?: string })[] = [
     {
       label: 'Оформить приход ТМЦ',
       description: 'Регистрация поступления',
@@ -284,6 +286,7 @@ export default function WmsDashboardPage() {
       href: '/wms/operations?create=RECEIPT',
       accentColor: '#16a34a',
       accentBg: 'rgba(22, 163, 74, 0.08)',
+      permission: PERMISSIONS.WMS_OPERATIONS_CREATE,
     },
     {
       label: 'Списать на оборудование',
@@ -292,6 +295,7 @@ export default function WmsDashboardPage() {
       href: '/wms/operations?create=ISSUE',
       accentColor: '#d97706',
       accentBg: 'rgba(217, 119, 6, 0.08)',
+      permission: PERMISSIONS.WMS_OPERATIONS_CREATE,
     },
     {
       label: 'Перемещение',
@@ -300,6 +304,7 @@ export default function WmsDashboardPage() {
       href: '/wms/operations?create=TRANSFER',
       accentColor: '#0284c7',
       accentBg: 'rgba(2, 132, 199, 0.08)',
+      permission: PERMISSIONS.WMS_OPERATIONS_CREATE,
     },
     {
       label: 'Инвентаризация',
@@ -308,8 +313,13 @@ export default function WmsDashboardPage() {
       href: '/wms/inventory',
       accentColor: '#7c3aed',
       accentBg: 'rgba(124, 58, 237, 0.08)',
+      permission: PERMISSIONS.WMS_INVENTORY_MANAGE,
     },
   ];
+
+  const availableQuickActions = quickActions.filter(
+    (action) => !action.permission || hasPermission(action.permission)
+  );
 
   const navTabs = [
     { label: 'Обзор', value: 'overview', icon: <DashboardOutlinedIcon sx={{ fontSize: 18 }} /> },
@@ -349,21 +359,23 @@ export default function WmsDashboardPage() {
             >
               Обновить
             </Button>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => router.push('/wms/operations?create=RECEIPT')}
-              size="small"
-              aria-label="Оформить приход ТМЦ"
-              sx={{
-                fontWeight: 600,
-                borderRadius: '8px',
-                backgroundColor: '#16a34a',
-                '&:hover': { backgroundColor: '#15803d' },
-              }}
-            >
-              Приход ТМЦ
-            </Button>
+            {hasPermission(PERMISSIONS.WMS_OPERATIONS_CREATE) && (
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => router.push('/wms/operations?create=RECEIPT')}
+                size="small"
+                aria-label="Оформить приход ТМЦ"
+                sx={{
+                  fontWeight: 600,
+                  borderRadius: '8px',
+                  backgroundColor: '#16a34a',
+                  '&:hover': { backgroundColor: '#15803d' },
+                }}
+              >
+                Приход ТМЦ
+              </Button>
+            )}
           </Stack>
         }
       />
@@ -687,13 +699,19 @@ export default function WmsDashboardPage() {
                   Быстрые действия
                 </Typography>
                 <Stack spacing={1}>
-                  {quickActions.map((action) => (
-                    <QuickActionCard
-                      key={action.href}
-                      action={action}
-                      onClick={() => router.push(action.href)}
-                    />
-                  ))}
+                  {availableQuickActions.length > 0 ? (
+                    availableQuickActions.map((action) => (
+                      <QuickActionCard
+                        key={action.href}
+                        action={action}
+                        onClick={() => router.push(action.href)}
+                      />
+                    ))
+                  ) : (
+                    <Typography variant="caption" sx={{ color: '#94a3b8', fontStyle: 'italic' }}>
+                      Нет доступных действий для текущей роли
+                    </Typography>
+                  )}
                 </Stack>
               </CardContent>
             </Card>
