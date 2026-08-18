@@ -464,7 +464,8 @@ export default function Sidebar({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            px: 1.5,
+            pl: 1.25,
+            pr: 0.75,
             py: 0.75,
             borderRadius: '6px',
             cursor: 'pointer',
@@ -493,7 +494,7 @@ export default function Sidebar({
           )}
 
           {/* Left: Icon & Label */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, overflow: 'hidden', minWidth: 0, flexGrow: 1, mr: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, overflow: 'hidden', minWidth: 0, flexGrow: 1, mr: 0.75 }}>
             <Box sx={{ color: active ? '#38bdf8' : '#94a3b8', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
               {item.icon}
             </Box>
@@ -510,14 +511,14 @@ export default function Sidebar({
             </Typography>
           </Box>
 
-          {/* Right: Chevron & Badge (arrow stays in a fixed column, badge at right edge) */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexShrink: 0, ml: 'auto' }}>
+          {/* Right: Chevron & Badge (arrow stays in a fixed column, compact badge at right edge) */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, flexShrink: 0, ml: 'auto' }}>
             {hasChildren && (
               <Box
                 sx={{
                   color: '#64748b',
-                  width: 18,
-                  height: 18,
+                  width: 16,
+                  height: 16,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -525,9 +526,9 @@ export default function Sidebar({
                 }}
               >
                 {isExpanded ? (
-                  <KeyboardArrowDownIcon sx={{ fontSize: 16 }} />
+                  <KeyboardArrowDownIcon sx={{ fontSize: 15 }} />
                 ) : (
-                  <KeyboardArrowRightIcon sx={{ fontSize: 16 }} />
+                  <KeyboardArrowRightIcon sx={{ fontSize: 15 }} />
                 )}
               </Box>
             )}
@@ -536,7 +537,7 @@ export default function Sidebar({
             {(hasChildren || hasBadge) && (
               <Box
                 sx={{
-                  minWidth: hasChildren ? 22 : 'auto',
+                  minWidth: hasChildren ? 18 : 'auto',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'flex-end',
@@ -546,14 +547,14 @@ export default function Sidebar({
                 {(!hasChildren || !isExpanded) && hasBadge && (
                   <Box
                     sx={{
-                      px: 0.75,
-                      height: 18,
-                      minWidth: 18,
-                      borderRadius: '9px',
+                      px: 0.5,
+                      height: 17,
+                      minWidth: 17,
+                      borderRadius: '8.5px',
                       backgroundColor: badgeColors.bg,
                       color: badgeColors.text,
                       border: `1px solid ${badgeColors.border}`,
-                      fontSize: '0.6875rem',
+                      fontSize: '0.65rem',
                       fontWeight: 700,
                       fontFamily: 'monospace',
                       display: 'flex',
