@@ -510,10 +510,20 @@ export default function Sidebar({
             </Typography>
           </Box>
 
-          {/* Right: Chevron & Badge (badge strictly at the right edge after the arrow) */}
+          {/* Right: Chevron & Badge (arrow stays in a fixed column, badge at right edge) */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexShrink: 0, ml: 'auto' }}>
             {hasChildren && (
-              <Box sx={{ color: '#64748b', display: 'flex', alignItems: 'center' }}>
+              <Box
+                sx={{
+                  color: '#64748b',
+                  width: 18,
+                  height: 18,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
                 {isExpanded ? (
                   <KeyboardArrowDownIcon sx={{ fontSize: 16 }} />
                 ) : (
@@ -522,27 +532,39 @@ export default function Sidebar({
               </Box>
             )}
 
-            {/* Show badge on parent only when section is collapsed or item has no children */}
-            {(!hasChildren || !isExpanded) && hasBadge && (
+            {/* Badge Slot: reserved minWidth when expandable to keep arrows perfectly aligned across rows */}
+            {(hasChildren || hasBadge) && (
               <Box
                 sx={{
-                  px: 0.75,
-                  height: 18,
-                  minWidth: 18,
-                  borderRadius: '9px',
-                  backgroundColor: badgeColors.bg,
-                  color: badgeColors.text,
-                  border: `1px solid ${badgeColors.border}`,
-                  fontSize: '0.6875rem',
-                  fontWeight: 700,
-                  fontFamily: 'monospace',
+                  minWidth: hasChildren ? 22 : 'auto',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  lineHeight: 1,
+                  justifyContent: 'flex-end',
+                  flexShrink: 0,
                 }}
               >
-                {parentBadgeCount}
+                {(!hasChildren || !isExpanded) && hasBadge && (
+                  <Box
+                    sx={{
+                      px: 0.75,
+                      height: 18,
+                      minWidth: 18,
+                      borderRadius: '9px',
+                      backgroundColor: badgeColors.bg,
+                      color: badgeColors.text,
+                      border: `1px solid ${badgeColors.border}`,
+                      fontSize: '0.6875rem',
+                      fontWeight: 700,
+                      fontFamily: 'monospace',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      lineHeight: 1,
+                    }}
+                  >
+                    {parentBadgeCount}
+                  </Box>
+                )}
               </Box>
             )}
           </Box>
