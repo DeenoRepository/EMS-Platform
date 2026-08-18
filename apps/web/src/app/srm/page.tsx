@@ -456,7 +456,7 @@ export default function SrmOverviewPage() {
           onChange={(val) => setCurrentTab(val)}
           paper
           tabs={[
-            { label: 'Дашборд и Метрики', value: 0, icon: <DashboardIcon /> },
+            { label: 'Обзор и метрики', value: 0, icon: <DashboardIcon /> },
             { label: 'Реестр заявок', value: 1, icon: <ListAltIcon />, badge: issues.length },
             ...(hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) || user?.roles.includes('admin')
               ? [

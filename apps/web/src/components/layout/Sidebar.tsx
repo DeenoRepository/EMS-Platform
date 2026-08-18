@@ -230,7 +230,7 @@ export default function Sidebar({
       badgeColor: 'warning',
       permission: PERMISSIONS.WMS_STOCK_VIEW,
       children: [
-        { label: 'Сводный дашборд', path: '/wms', icon: <AnalyticsOutlinedIcon sx={{ fontSize: 15 }} /> },
+        { label: 'Обзор и аналитика', path: '/wms', icon: <AnalyticsOutlinedIcon sx={{ fontSize: 15 }} /> },
         { label: 'Остатки и ТМЦ', path: '/wms/stock', icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} /> },
         { label: 'Складские операции', path: '/wms/operations', icon: <MoveToInboxIcon sx={{ fontSize: 15 }} /> },
         { label: 'Склады', path: '/wms/warehouses', icon: <WarehouseOutlinedIcon sx={{ fontSize: 15 }} /> },
