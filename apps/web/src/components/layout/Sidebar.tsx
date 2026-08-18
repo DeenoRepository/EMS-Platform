@@ -465,7 +465,7 @@ export default function Sidebar({
             alignItems: 'center',
             justifyContent: 'space-between',
             pl: 1.25,
-            pr: 0.25,
+            pr: 0.5,
             py: 0.75,
             borderRadius: '6px',
             cursor: 'pointer',
@@ -511,8 +511,8 @@ export default function Sidebar({
             </Typography>
           </Box>
 
-          {/* Right: Chevron & Badge (arrow stays in a fixed column, badge tight against right edge) */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, flexShrink: 0, ml: 'auto' }}>
+          {/* Right: Chevron & Badge (arrow and badge on standardized vertical lines) */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0, ml: 'auto' }}>
             {hasChildren && (
               <Box
                 sx={{
@@ -533,14 +533,15 @@ export default function Sidebar({
               </Box>
             )}
 
-            {/* Badge Slot: reserved minWidth when expandable to keep arrows perfectly aligned across rows */}
+            {/* Badge Slot: Standardized 20px width for pixel-perfect vertical alignment */}
             {(hasChildren || hasBadge) && (
               <Box
                 sx={{
-                  minWidth: hasChildren ? 17 : 'auto',
+                  width: 20,
+                  minWidth: 20,
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'flex-end',
+                  justifyContent: 'center',
                   flexShrink: 0,
                 }}
               >
@@ -561,6 +562,7 @@ export default function Sidebar({
                       alignItems: 'center',
                       justifyContent: 'center',
                       lineHeight: 1,
+                      boxSizing: 'border-box',
                     }}
                   >
                     {parentBadgeCount}
@@ -596,7 +598,7 @@ export default function Sidebar({
                     onClick={() => handleNavigate(child.path)}
                     sx={{
                       pl: 1.25,
-                      pr: 0.25,
+                      pr: 0.5,
                       py: 0.5,
                       borderRadius: '5px',
                       cursor: 'pointer',
@@ -615,7 +617,7 @@ export default function Sidebar({
                       },
                     }}
                   >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, overflow: 'hidden', minWidth: 0, flexGrow: 1, mr: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, overflow: 'hidden', minWidth: 0, flexGrow: 1, mr: 0.5 }}>
                       {child.icon}
                       <Typography variant="inherit" noWrap sx={{ fontSize: '0.75rem' }}>
                         {child.label}
@@ -625,25 +627,36 @@ export default function Sidebar({
                     {childHasBadge && (
                       <Box
                         sx={{
-                          px: 0.6,
-                          height: 17,
-                          minWidth: 17,
-                          borderRadius: '8.5px',
-                          backgroundColor: childBadgeColors.bg,
-                          color: childBadgeColors.text,
-                          border: `1px solid ${childBadgeColors.border}`,
-                          fontSize: '0.65rem',
-                          fontWeight: 700,
-                          fontFamily: 'monospace',
+                          width: 20,
+                          minWidth: 20,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          lineHeight: 1,
                           flexShrink: 0,
                           ml: 'auto',
                         }}
                       >
-                        {child.badge}
+                        <Box
+                          sx={{
+                            px: 0.4,
+                            height: 17,
+                            minWidth: 17,
+                            borderRadius: '8.5px',
+                            backgroundColor: childBadgeColors.bg,
+                            color: childBadgeColors.text,
+                            border: `1px solid ${childBadgeColors.border}`,
+                            fontSize: '0.65rem',
+                            fontWeight: 700,
+                            fontFamily: 'monospace',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            lineHeight: 1,
+                            boxSizing: 'border-box',
+                          }}
+                        >
+                          {child.badge}
+                        </Box>
                       </Box>
                     )}
                   </Box>
