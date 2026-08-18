@@ -23,8 +23,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   const refreshUser = useCallback(async () => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     try {
-      const res = await fetch('/api/auth/me');
+      const res = await fetch('/api/auth/me', { signal: controller.signal });
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.data) {
@@ -38,6 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       setUser(null);
     } finally {
+      clearTimeout(timeoutId);
       setIsLoading(false);
     }
   }, []);
@@ -46,10 +50,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshUser();
   }, [refreshUser]);
 
-  // Редирект на логин если не авторизован (кроме /login)
+  // Редирект на логин если не авторизован (кроме /login и /setup)
   useEffect(() => {
     if (!isLoading) {
-      if (!user && pathname !== '/login') {
+      if (!user && !pathname.startsWith('/login') && !pathname.startsWith('/setup')) {
         router.push('/login');
       } else if (user && pathname === '/login') {
         router.push('/eps');
