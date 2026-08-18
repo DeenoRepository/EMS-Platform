@@ -48,8 +48,8 @@ import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS } from '@ems/shared';
 import { StatusBadge } from '@/components/ui';
 
-export const SIDEBAR_WIDTH_EXPANDED = 284;
-export const SIDEBAR_WIDTH_COLLAPSED = 72;
+export const SIDEBAR_WIDTH_EXPANDED = 248;
+export const SIDEBAR_WIDTH_COLLAPSED = 68;
 
 interface NavChild {
   label: string;
@@ -688,7 +688,7 @@ export default function Sidebar({
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
-        p: collapsed ? 1 : 1.5,
+        p: 1,
         zIndex: 100,
       }}
     >
