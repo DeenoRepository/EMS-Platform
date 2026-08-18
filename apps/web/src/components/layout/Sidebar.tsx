@@ -465,7 +465,7 @@ export default function Sidebar({
             alignItems: 'center',
             justifyContent: 'space-between',
             pl: 1.25,
-            pr: 0.75,
+            pr: 0.25,
             py: 0.75,
             borderRadius: '6px',
             cursor: 'pointer',
@@ -494,7 +494,7 @@ export default function Sidebar({
           )}
 
           {/* Left: Icon & Label */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, overflow: 'hidden', minWidth: 0, flexGrow: 1, mr: 0.75 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, overflow: 'hidden', minWidth: 0, flexGrow: 1, mr: 0.5 }}>
             <Box sx={{ color: active ? '#38bdf8' : '#94a3b8', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
               {item.icon}
             </Box>
@@ -511,7 +511,7 @@ export default function Sidebar({
             </Typography>
           </Box>
 
-          {/* Right: Chevron & Badge (arrow stays in a fixed column, compact badge at right edge) */}
+          {/* Right: Chevron & Badge (arrow stays in a fixed column, badge tight against right edge) */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, flexShrink: 0, ml: 'auto' }}>
             {hasChildren && (
               <Box
@@ -537,7 +537,7 @@ export default function Sidebar({
             {(hasChildren || hasBadge) && (
               <Box
                 sx={{
-                  minWidth: hasChildren ? 18 : 'auto',
+                  minWidth: hasChildren ? 17 : 'auto',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'flex-end',
@@ -547,7 +547,7 @@ export default function Sidebar({
                 {(!hasChildren || !isExpanded) && hasBadge && (
                   <Box
                     sx={{
-                      px: 0.5,
+                      px: 0.4,
                       height: 17,
                       minWidth: 17,
                       borderRadius: '8.5px',
@@ -595,7 +595,8 @@ export default function Sidebar({
                     key={child.path + child.label}
                     onClick={() => handleNavigate(child.path)}
                     sx={{
-                      px: 1.25,
+                      pl: 1.25,
+                      pr: 0.25,
                       py: 0.5,
                       borderRadius: '5px',
                       cursor: 'pointer',
