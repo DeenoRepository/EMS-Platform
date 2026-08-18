@@ -12,16 +12,11 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  Alert,
-  AlertTitle,
   Skeleton,
   Stack,
-  IconButton,
-  Tooltip,
+  Paper,
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import PageHeader from '@/components/layout/PageHeader';
@@ -34,8 +29,19 @@ import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import AddIcon from '@mui/icons-material/Add';
+import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
+import ListAltOutlinedIcon from '@mui/icons-material/ListAltOutlined';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { OPERATION_TYPE_MAP, formatDateTime } from '@ems/shared';
-import { StatCard, StatusBadge, EmptyState, DataTableWrapper, CriticalAlertBanner } from '@/components/ui';
+import {
+  StatCard,
+  StatusBadge,
+  EmptyState,
+  DataTableWrapper,
+  CriticalAlertBanner,
+  NavTabsContainer,
+} from '@/components/ui';
 
 interface WmsStats {
   warehousesCount: number;
@@ -67,6 +73,183 @@ interface WmsStats {
   }>;
 }
 
+/* ─── Quick Action Item ─── */
+interface QuickAction {
+  label: string;
+  description: string;
+  icon: React.ReactNode;
+  href: string;
+  accentColor: string;
+  accentBg: string;
+}
+
+function QuickActionCard({ action, onClick }: { action: QuickAction; onClick: () => void }) {
+  return (
+    <Paper
+      elevation={0}
+      onClick={onClick}
+      sx={{
+        p: 1.75,
+        borderRadius: '10px',
+        border: '1px solid #e2e8f0',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1.5,
+        transition: 'all 0.18s cubic-bezier(0.4, 0, 0.2, 1)',
+        backgroundColor: '#ffffff',
+        '&:hover': {
+          transform: 'translateY(-1px)',
+          boxShadow: '0 4px 12px -2px rgba(15, 23, 42, 0.06)',
+          borderColor: action.accentColor,
+          '& .qa-arrow': {
+            opacity: 1,
+            transform: 'translateX(2px)',
+          },
+        },
+        '&:active': {
+          transform: 'translateY(0)',
+        },
+      }}
+    >
+      <Box
+        sx={{
+          width: 36,
+          height: 36,
+          borderRadius: '8px',
+          backgroundColor: action.accentBg,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          color: action.accentColor,
+          '& svg': { fontSize: 18 },
+        }}
+      >
+        {action.icon}
+      </Box>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            fontWeight: 600,
+            fontSize: '0.8125rem',
+            color: '#0f172a',
+            lineHeight: 1.3,
+          }}
+        >
+          {action.label}
+        </Typography>
+        <Typography
+          variant="caption"
+          sx={{
+            color: '#94a3b8',
+            fontSize: '0.6875rem',
+            lineHeight: 1.3,
+            display: 'block',
+          }}
+        >
+          {action.description}
+        </Typography>
+      </Box>
+      <ChevronRightIcon
+        className="qa-arrow"
+        sx={{
+          fontSize: 18,
+          color: '#94a3b8',
+          opacity: 0,
+          flexShrink: 0,
+          transition: 'all 0.18s ease',
+        }}
+      />
+    </Paper>
+  );
+}
+
+/* ─── Compact Deficit Item ─── */
+function DeficitItem({
+  item,
+}: {
+  item: { id: string; name: string; warehouseCode: string; quantity: number; minStock: number; unit: string };
+}) {
+  const fillPercent = item.minStock > 0 ? Math.min((item.quantity / item.minStock) * 100, 100) : 0;
+  const isCritical = fillPercent < 30;
+
+  return (
+    <Box
+      sx={{
+        py: 1.25,
+        px: 0,
+        borderBottom: '1px solid #f1f5f9',
+        '&:last-child': { borderBottom: 'none' },
+      }}
+    >
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+        <Typography
+          variant="body2"
+          noWrap
+          sx={{
+            fontWeight: 600,
+            fontSize: '0.8125rem',
+            color: '#0f172a',
+            flex: 1,
+            mr: 1,
+          }}
+        >
+          {item.name}
+        </Typography>
+        <Chip
+          label={item.warehouseCode}
+          size="small"
+          sx={{
+            height: 18,
+            fontSize: '0.625rem',
+            fontWeight: 600,
+            borderRadius: '4px',
+            bgcolor: '#f1f5f9',
+            color: '#475569',
+          }}
+        />
+      </Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        {/* Progress bar */}
+        <Box
+          sx={{
+            flex: 1,
+            height: 4,
+            borderRadius: 2,
+            bgcolor: '#f1f5f9',
+            overflow: 'hidden',
+          }}
+        >
+          <Box
+            sx={{
+              width: `${fillPercent}%`,
+              height: '100%',
+              borderRadius: 2,
+              bgcolor: isCritical ? '#ef4444' : '#f59e0b',
+              transition: 'width 0.4s ease',
+            }}
+          />
+        </Box>
+        <Typography
+          variant="caption"
+          sx={{
+            fontWeight: 700,
+            fontFeatureSettings: '"tnum"',
+            color: isCritical ? '#dc2626' : '#d97706',
+            fontSize: '0.6875rem',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {item.quantity}/{item.minStock} {item.unit}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
+/* ─── WMS Dashboard Page ─── */
 export default function WmsDashboardPage() {
   const router = useRouter();
   const [stats, setStats] = useState<WmsStats | null>(null);
@@ -93,24 +276,95 @@ export default function WmsDashboardPage() {
     fetchStats();
   }, []);
 
+  const quickActions: QuickAction[] = [
+    {
+      label: 'Оформить приход ТМЦ',
+      description: 'Регистрация поступления',
+      icon: <MoveToInboxIcon />,
+      href: '/wms/operations?create=RECEIPT',
+      accentColor: '#16a34a',
+      accentBg: 'rgba(22, 163, 74, 0.08)',
+    },
+    {
+      label: 'Списать на оборудование',
+      description: 'Расход со склада',
+      icon: <OutboxIcon />,
+      href: '/wms/operations?create=ISSUE',
+      accentColor: '#d97706',
+      accentBg: 'rgba(217, 119, 6, 0.08)',
+    },
+    {
+      label: 'Перемещение',
+      description: 'Между складами',
+      icon: <SwapHorizIcon />,
+      href: '/wms/operations?create=TRANSFER',
+      accentColor: '#0284c7',
+      accentBg: 'rgba(2, 132, 199, 0.08)',
+    },
+    {
+      label: 'Инвентаризация',
+      description: 'Сверка остатков',
+      icon: <FactCheckOutlinedIcon />,
+      href: '/wms/inventory',
+      accentColor: '#7c3aed',
+      accentBg: 'rgba(124, 58, 237, 0.08)',
+    },
+  ];
+
+  const navTabs = [
+    { label: 'Обзор', value: 'overview', icon: <DashboardOutlinedIcon sx={{ fontSize: 18 }} /> },
+    { label: 'Склады', value: 'warehouses', badge: stats?.warehousesCount },
+    { label: 'Остатки ТМЦ', value: 'stock', badge: stats?.nomenclatureCount },
+    { label: 'Операции', value: 'operations', icon: <ListAltOutlinedIcon sx={{ fontSize: 18 }} /> },
+    {
+      label: 'Инвентаризация',
+      value: 'inventory',
+      badge: stats?.activeInventoriesCount || undefined,
+      badgeColor: (stats?.activeInventoriesCount ?? 0) > 0 ? ('warning' as const) : undefined,
+    },
+  ];
+
+  const handleTabChange = (value: string | number) => {
+    const tab = String(value);
+    if (tab === 'overview') return;
+    router.push(`/wms/${tab}`);
+  };
+
   return (
     <Box sx={{ pb: 4 }}>
       <PageHeader
         title="Складской учёт (WMS)"
-        subtitle="Сводный мониторинг остатков, дефицита ТМЦ, прихода, списания на оборудование и инвентаризаций"
+        subtitle="Мониторинг остатков, дефицита ТМЦ, операций прихода, списания и инвентаризаций"
         breadcrumbs={[{ label: 'Главная', href: '/' }, { label: 'Складской учёт' }]}
         actions={
-          <Button
-            variant="outlined"
-            startIcon={<RefreshIcon />}
-            onClick={fetchStats}
-            disabled={isLoading}
-            size="small"
-            aria-label="Обновить аналитику склада"
-            sx={{ fontWeight: 600, borderRadius: '8px' }}
-          >
-            Обновить данные
-          </Button>
+          <Stack direction="row" spacing={1.5}>
+            <Button
+              variant="outlined"
+              startIcon={<RefreshIcon />}
+              onClick={fetchStats}
+              disabled={isLoading}
+              size="small"
+              aria-label="Обновить аналитику склада"
+              sx={{ fontWeight: 600, borderRadius: '8px' }}
+            >
+              Обновить
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => router.push('/wms/operations?create=RECEIPT')}
+              size="small"
+              aria-label="Оформить приход ТМЦ"
+              sx={{
+                fontWeight: 600,
+                borderRadius: '8px',
+                backgroundColor: '#16a34a',
+                '&:hover': { backgroundColor: '#15803d' },
+              }}
+            >
+              Приход ТМЦ
+            </Button>
+          </Stack>
         }
       />
 
@@ -131,8 +385,17 @@ export default function WmsDashboardPage() {
         />
       )}
 
-      {/* KPI Карточки со StatCard */}
-      <Grid container spacing={2} sx={{ mb: 3.5 }}>
+      {/* Навигационные вкладки WMS */}
+      <Box sx={{ mb: 3 }}>
+        <NavTabsContainer
+          tabs={navTabs}
+          value="overview"
+          onChange={handleTabChange}
+        />
+      </Box>
+
+      {/* KPI Карточки */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Склады предприятия"
@@ -190,217 +453,333 @@ export default function WmsDashboardPage() {
         </Grid>
       </Grid>
 
-      {/* Быстрые действия */}
-      <Card sx={{ mb: 3.5, p: 2.5, borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-        <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2, color: '#0f172a' }}>
-          Быстрые действия
-        </Typography>
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Button
-              fullWidth
-              variant="contained"
-              color="success"
-              startIcon={<MoveToInboxIcon />}
-              onClick={() => router.push('/wms/operations?create=RECEIPT')}
-              sx={{ py: 1.2, fontWeight: 600, borderRadius: '8px' }}
-              aria-label="Оформить приход ТМЦ"
-            >
-              Оформить приход ТМЦ
-            </Button>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Button
-              fullWidth
-              variant="contained"
-              color="warning"
-              startIcon={<OutboxIcon />}
-              onClick={() => router.push('/wms/operations?create=ISSUE')}
-              sx={{ py: 1.2, fontWeight: 600, borderRadius: '8px' }}
-              aria-label="Списать на оборудование"
-            >
-              Списать на оборудование
-            </Button>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Button
-              fullWidth
-              variant="contained"
-              color="info"
-              startIcon={<SwapHorizIcon />}
-              onClick={() => router.push('/wms/operations?create=TRANSFER')}
-              sx={{ py: 1.2, fontWeight: 600, borderRadius: '8px' }}
-              aria-label="Перемещение между складами"
-            >
-              Перемещение между складами
-            </Button>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Button
-              fullWidth
-              variant="outlined"
-              color="secondary"
-              startIcon={<FactCheckOutlinedIcon />}
-              onClick={() => router.push('/wms/inventory')}
-              sx={{ py: 1.2, fontWeight: 600, borderRadius: '8px' }}
-              aria-label="Инвентаризация склада"
-            >
-              Инвентаризация склада
-            </Button>
-          </Grid>
-        </Grid>
-      </Card>
-
-      {/* Сетка: Дефицит и Последние операции */}
-      <Grid container spacing={3}>
-        {/* Таблица дефицита */}
-        <Grid item xs={12} lg={6}>
-          <Card sx={{ height: '100%', borderRadius: 2, display: 'flex', flexDirection: 'column' }}>
-            <CardContent sx={{ p: 2.5, flexGrow: 1 }}>
+      {/* Двухколоночный layout: Операции + Sidebar */}
+      <Grid container spacing={2.5}>
+        {/* ── Левая колонка: Последние операции ── */}
+        <Grid item xs={12} lg={8}>
+          <Card
+            sx={{
+              height: '100%',
+              borderRadius: '12px',
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <CardContent sx={{ p: 2.5, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h6" fontWeight={700}>
-                  Позиции с дефицитом остатка
-                </Typography>
-                <Button
-                  size="small"
-                  onClick={() => router.push('/wms/stock?lowStockOnly=true')}
-                  endIcon={<ArrowForwardIcon />}
-                  aria-label="Посмотреть все остатки номенклатуры"
-                >
-                  Все остатки
-                </Button>
-              </Box>
-
-              {isLoading && !stats ? (
-                <Stack spacing={1.5}>
-                  <Skeleton variant="rounded" height={36} />
-                  <Skeleton variant="rounded" height={36} />
-                  <Skeleton variant="rounded" height={36} />
-                </Stack>
-              ) : stats && stats.lowStockItems.length > 0 ? (
-                <DataTableWrapper total={stats.lowStockItems.length}>
-                  <Table size="small" aria-label="Таблица дефицита ТМЦ">
-                    <TableHead sx={{ bgcolor: 'grey.50' }}>
-                      <TableRow>
-                        <TableCell sx={{ fontWeight: 700 }}>ТМЦ / Запчасть</TableCell>
-                        <TableCell sx={{ fontWeight: 700 }}>Склад</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700 }}>
-                          Факт
-                        </TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700 }}>
-                          Мин.
-                        </TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {stats.lowStockItems.map((item) => (
-                        <TableRow key={item.id} hover>
-                          <TableCell sx={{ fontWeight: 600 }}>{item.name}</TableCell>
-                          <TableCell>
-                            <Chip label={item.warehouseCode} size="small" variant="outlined" sx={{ borderRadius: '4px' }} />
-                          </TableCell>
-                          <TableCell align="right" sx={{ color: 'error.main', fontWeight: 700, fontFeatureSettings: '"tnum"' }}>
-                            {item.quantity} {item.unit}
-                          </TableCell>
-                          <TableCell align="right" sx={{ color: 'text.secondary', fontFeatureSettings: '"tnum"' }}>
-                            {item.minStock} {item.unit}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </DataTableWrapper>
-              ) : (
-                <EmptyState
-                  icon={<Inventory2OutlinedIcon sx={{ fontSize: 32, color: '#16a34a' }} />}
-                  title="Дефицит отсутствует"
-                  description="Все складские позиции находятся в пределах нормативных остатков"
-                  minHeight={160}
-                />
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Последние операции */}
-        <Grid item xs={12} lg={6}>
-          <Card sx={{ height: '100%', borderRadius: 2, display: 'flex', flexDirection: 'column' }}>
-            <CardContent sx={{ p: 2.5, flexGrow: 1 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h6" fontWeight={700}>
-                  Последние складские операции
-                </Typography>
+                <Box>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 700,
+                      fontSize: '1rem',
+                      color: '#0f172a',
+                      letterSpacing: '-0.015em',
+                    }}
+                  >
+                    Последние складские операции
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '0.75rem' }}>
+                    Движение ТМЦ за последний период
+                  </Typography>
+                </Box>
                 <Button
                   size="small"
                   onClick={() => router.push('/wms/operations')}
-                  endIcon={<ArrowForwardIcon />}
+                  endIcon={<ArrowForwardIcon sx={{ fontSize: '14px !important' }} />}
                   aria-label="Перейти в журнал операций"
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: '0.75rem',
+                    borderRadius: '6px',
+                    color: '#0284c7',
+                    '&:hover': { bgcolor: 'rgba(2, 132, 199, 0.06)' },
+                  }}
                 >
                   Журнал операций
                 </Button>
               </Box>
 
-              {isLoading && !stats ? (
-                <Stack spacing={1.5}>
-                  <Skeleton variant="rounded" height={64} />
-                  <Skeleton variant="rounded" height={64} />
-                  <Skeleton variant="rounded" height={64} />
-                </Stack>
-              ) : stats && stats.recentOperations.length > 0 ? (
-                <Stack spacing={1.5}>
-                  {stats.recentOperations.map((op) => {
-                    const typeInfo = OPERATION_TYPE_MAP[op.type] || { label: op.type, color: 'default' };
-                    return (
-                      <Paper
-                        key={op.id}
-                        variant="outlined"
-                        sx={{
-                          p: 1.5,
-                          borderRadius: '10px',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          transition: 'all 0.15s ease',
-                          '&:hover': {
-                            bgcolor: '#f8fafc',
-                            borderColor: '#cbd5e1',
-                          },
-                        }}
-                      >
-                        <Box sx={{ minWidth: 0, pr: 2 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                            <StatusBadge status={op.type} />
-                            <Typography variant="caption" color="text.secondary">
-                              {formatDateTime(op.date)} • Склад: {op.warehouse.name}
-                            </Typography>
-                          </Box>
-                          <Typography variant="body2" noWrap fontWeight={500}>
-                            {op.items.map((i) => `${i.nomenclature.name} (${i.quantity} ${i.nomenclature.unit})`).join(', ')}
-                          </Typography>
-                          {op.items.some((i) => i.equipment) && (
-                            <Typography variant="caption" color="primary" sx={{ display: 'block', mt: 0.2 }}>
-                              Оборудование: {op.items.find((i) => i.equipment)?.equipment?.name} (
-                              {op.items.find((i) => i.equipment)?.equipment?.inventoryNumber})
-                            </Typography>
-                          )}
-                        </Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
-                          {op.createdBy.displayName}
-                        </Typography>
-                      </Paper>
-                    );
-                  })}
-                </Stack>
-              ) : (
-                <EmptyState
-                  icon={<SwapHorizIcon sx={{ fontSize: 32, color: '#94a3b8' }} />}
-                  title="Операции не проводились"
-                  description="В системе пока нет записей о движении ТМЦ"
-                  minHeight={160}
-                />
-              )}
+              <Box sx={{ flex: 1 }}>
+                {isLoading && !stats ? (
+                  <Stack spacing={1}>
+                    {[...Array(5)].map((_, i) => (
+                      <Skeleton key={i} variant="rounded" height={44} sx={{ borderRadius: '8px' }} />
+                    ))}
+                  </Stack>
+                ) : stats && stats.recentOperations.length > 0 ? (
+                  <DataTableWrapper total={stats.recentOperations.length}>
+                    <Table size="small" aria-label="Таблица последних складских операций">
+                      <TableHead sx={{ bgcolor: '#f8fafc' }}>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#475569', py: 1 }}>
+                            Тип
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#475569', py: 1 }}>
+                            Дата
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#475569', py: 1 }}>
+                            Склад
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#475569', py: 1 }}>
+                            Номенклатура
+                          </TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#475569', py: 1 }}>
+                            Кол-во
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#475569', py: 1 }}>
+                            Исполнитель
+                          </TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {stats.recentOperations.map((op) => {
+                          const firstItem = op.items[0];
+                          const otherCount = op.items.length - 1;
+                          return (
+                            <TableRow
+                              key={op.id}
+                              hover
+                              sx={{
+                                '&:hover': { bgcolor: '#f8fafc' },
+                                '& td': { py: 1.25, borderColor: '#f1f5f9' },
+                              }}
+                            >
+                              <TableCell>
+                                <StatusBadge status={op.type} />
+                              </TableCell>
+                              <TableCell>
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    fontFeatureSettings: '"tnum"',
+                                    color: '#475569',
+                                    fontSize: '0.75rem',
+                                  }}
+                                >
+                                  {formatDateTime(op.date)}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Chip
+                                  label={op.warehouse.code}
+                                  size="small"
+                                  sx={{
+                                    height: 20,
+                                    fontSize: '0.6875rem',
+                                    fontWeight: 600,
+                                    borderRadius: '4px',
+                                    bgcolor: '#f1f5f9',
+                                    color: '#334155',
+                                  }}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Box>
+                                  <Typography
+                                    variant="body2"
+                                    noWrap
+                                    sx={{
+                                      fontWeight: 500,
+                                      fontSize: '0.8125rem',
+                                      color: '#0f172a',
+                                      maxWidth: 200,
+                                    }}
+                                  >
+                                    {firstItem?.nomenclature.name || '—'}
+                                  </Typography>
+                                  {otherCount > 0 && (
+                                    <Typography
+                                      variant="caption"
+                                      sx={{ color: '#64748b', fontSize: '0.6875rem' }}
+                                    >
+                                      и ещё {otherCount} поз.
+                                    </Typography>
+                                  )}
+                                  {firstItem?.equipment && (
+                                    <Typography
+                                      variant="caption"
+                                      sx={{
+                                        display: 'block',
+                                        color: '#0284c7',
+                                        fontSize: '0.6875rem',
+                                        fontWeight: 500,
+                                      }}
+                                    >
+                                      → {firstItem.equipment.name}
+                                    </Typography>
+                                  )}
+                                </Box>
+                              </TableCell>
+                              <TableCell align="right">
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    fontWeight: 700,
+                                    fontSize: '0.8125rem',
+                                    fontFeatureSettings: '"tnum"',
+                                    color: '#0f172a',
+                                  }}
+                                >
+                                  {firstItem ? `${firstItem.quantity} ${firstItem.nomenclature.unit}` : '—'}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Typography
+                                  variant="caption"
+                                  noWrap
+                                  sx={{
+                                    color: '#64748b',
+                                    fontSize: '0.75rem',
+                                    maxWidth: 120,
+                                    display: 'block',
+                                  }}
+                                >
+                                  {op.createdBy.displayName}
+                                </Typography>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </DataTableWrapper>
+                ) : (
+                  <EmptyState
+                    icon={<SwapHorizIcon sx={{ fontSize: 32, color: '#94a3b8' }} />}
+                    title="Операции не проводились"
+                    description="В системе пока нет записей о движении ТМЦ"
+                    actionText="Оформить приход"
+                    actionIcon={<MoveToInboxIcon />}
+                    onAction={() => router.push('/wms/operations?create=RECEIPT')}
+                    minHeight={260}
+                  />
+                )}
+              </Box>
             </CardContent>
           </Card>
+        </Grid>
+
+        {/* ── Правая колонка: Быстрые действия + Дефицит ── */}
+        <Grid item xs={12} lg={4}>
+          <Stack spacing={2.5}>
+            {/* Быстрые действия */}
+            <Card
+              sx={{
+                borderRadius: '12px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
+              }}
+            >
+              <CardContent sx={{ p: 2.5 }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: '0.875rem',
+                    color: '#0f172a',
+                    letterSpacing: '-0.01em',
+                    mb: 2,
+                  }}
+                >
+                  Быстрые действия
+                </Typography>
+                <Stack spacing={1}>
+                  {quickActions.map((action) => (
+                    <QuickActionCard
+                      key={action.href}
+                      action={action}
+                      onClick={() => router.push(action.href)}
+                    />
+                  ))}
+                </Stack>
+              </CardContent>
+            </Card>
+
+            {/* Позиции с дефицитом */}
+            <Card
+              sx={{
+                borderRadius: '12px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
+              }}
+            >
+              <CardContent sx={{ p: 2.5 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      fontWeight: 700,
+                      fontSize: '0.875rem',
+                      color: '#0f172a',
+                      letterSpacing: '-0.01em',
+                    }}
+                  >
+                    Позиции с дефицитом
+                  </Typography>
+                  <Button
+                    size="small"
+                    onClick={() => router.push('/wms/stock?lowStockOnly=true')}
+                    endIcon={<ArrowForwardIcon sx={{ fontSize: '13px !important' }} />}
+                    aria-label="Посмотреть все остатки номенклатуры"
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: '0.6875rem',
+                      borderRadius: '6px',
+                      color: '#0284c7',
+                      px: 1,
+                      py: 0.25,
+                      minWidth: 'auto',
+                      '&:hover': { bgcolor: 'rgba(2, 132, 199, 0.06)' },
+                    }}
+                  >
+                    Все остатки
+                  </Button>
+                </Box>
+
+                {isLoading && !stats ? (
+                  <Stack spacing={1}>
+                    <Skeleton variant="rounded" height={44} sx={{ borderRadius: '6px' }} />
+                    <Skeleton variant="rounded" height={44} sx={{ borderRadius: '6px' }} />
+                    <Skeleton variant="rounded" height={44} sx={{ borderRadius: '6px' }} />
+                  </Stack>
+                ) : stats && stats.lowStockItems.length > 0 ? (
+                  <Box>
+                    {stats.lowStockItems.slice(0, 5).map((item) => (
+                      <DeficitItem key={item.id} item={item} />
+                    ))}
+                    {stats.lowStockItems.length > 5 && (
+                      <Button
+                        fullWidth
+                        size="small"
+                        onClick={() => router.push('/wms/stock?lowStockOnly=true')}
+                        sx={{
+                          mt: 1.5,
+                          fontWeight: 600,
+                          fontSize: '0.75rem',
+                          borderRadius: '8px',
+                          color: '#0284c7',
+                          bgcolor: 'rgba(2, 132, 199, 0.04)',
+                          '&:hover': { bgcolor: 'rgba(2, 132, 199, 0.08)' },
+                        }}
+                      >
+                        Показать все ({stats.lowStockItems.length})
+                      </Button>
+                    )}
+                  </Box>
+                ) : (
+                  <EmptyState
+                    icon={<Inventory2OutlinedIcon sx={{ fontSize: 28, color: '#16a34a' }} />}
+                    title="Дефицит отсутствует"
+                    description="Все позиции в пределах нормативных остатков"
+                    minHeight={120}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </Stack>
         </Grid>
       </Grid>
     </Box>
