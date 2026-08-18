@@ -81,6 +81,8 @@ interface WarehouseOption {
   id: string;
   name: string;
   code: string;
+  responsibleUserId?: string | null;
+  responsibleUser?: { id: string; displayName: string; ldapLogin: string } | null;
 }
 
 interface NomenclatureOption {
@@ -106,7 +108,7 @@ interface FormRow {
 function WmsOperationsContent() {
   const searchParams = useSearchParams();
   const { enqueueSnackbar } = useSnackbar();
-  const { hasPermission } = useAuth();
+  const { user, hasPermission } = useAuth();
 
   const [operations, setOperations] = useState<StockOperation[]>([]);
   const [warehouses, setWarehouses] = useState<WarehouseOption[]>([]);
@@ -848,11 +850,30 @@ function WmsOperationsContent() {
                 value={opWarehouseId}
                 onChange={(e) => setOpWarehouseId(e.target.value)}
               >
-                {warehouses.map((w) => (
-                  <MenuItem key={w.id} value={w.id}>
-                    {w.name} ({w.code})
-                  </MenuItem>
-                ))}
+                {warehouses.map((w) => {
+                  const isMine = w.responsibleUserId === user?.userId;
+                  const isLocked =
+                    !user?.roles.includes('admin') &&
+                    !hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) &&
+                    !hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE) &&
+                    Boolean(w.responsibleUserId) &&
+                    !isMine;
+
+                  return (
+                    <MenuItem key={w.id} value={w.id} disabled={isLocked}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                        <span>{w.name} ({w.code})</span>
+                        {isMine ? (
+                          <Chip label="Мой склад" size="small" color="primary" sx={{ height: 20, fontSize: '0.6875rem', fontWeight: 700 }} />
+                        ) : w.responsibleUser ? (
+                          <Typography variant="caption" sx={{ color: isLocked ? 'text.disabled' : 'text.secondary' }}>
+                            Отв: {w.responsibleUser.displayName}
+                          </Typography>
+                        ) : null}
+                      </Box>
+                    </MenuItem>
+                  );
+                })}
               </TextField>
             </Grid>
 

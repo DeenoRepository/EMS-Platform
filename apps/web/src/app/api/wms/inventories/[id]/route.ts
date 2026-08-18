@@ -77,6 +77,15 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: 'Акт инвентаризации не найден' }, { status: 404 });
     }
 
+    const isAdmin =
+      user.roles.includes('admin') ||
+      user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
+      user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+
+    if (!isAdmin && currentInventory.warehouse.responsibleUserId && currentInventory.warehouse.responsibleUserId !== user.userId) {
+      return forbiddenResponse(`Вы не являетесь ответственным лицом за склад "${currentInventory.warehouse.name}". Корректировка инвентаризации запрещена.`);
+    }
+
     if (currentInventory.status === 'COMPLETED') {
       return NextResponse.json({ success: false, error: 'Данная инвентаризация уже завершена и закрыта для изменений' }, { status: 400 });
     }

@@ -21,6 +21,11 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Avatar,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import PageHeader from '@/components/layout/PageHeader';
 import AddIcon from '@mui/icons-material/Add';
@@ -31,6 +36,7 @@ import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined';
 import GridViewIcon from '@mui/icons-material/GridView';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS } from '@ems/shared';
@@ -60,6 +66,13 @@ interface WarehouseItem {
   name: string;
   code: string;
   location?: string | null;
+  responsibleUserId?: string | null;
+  responsibleUser?: {
+    id: string;
+    displayName: string;
+    ldapLogin: string;
+    email?: string | null;
+  } | null;
   isActive: boolean;
   createdAt: string;
   _count: {
@@ -71,9 +84,10 @@ interface WarehouseItem {
 
 export default function WmsWarehousesPage() {
   const { enqueueSnackbar } = useSnackbar();
-  const { hasPermission } = useAuth();
+  const { user, hasPermission } = useAuth();
 
   const [warehouses, setWarehouses] = useState<WarehouseItem[]>([]);
+  const [users, setUsers] = useState<{ id: string; displayName: string; ldapLogin: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Modal: Add / Edit Warehouse
@@ -82,6 +96,7 @@ export default function WmsWarehousesPage() {
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [location, setLocation] = useState('');
+  const [responsibleUserId, setResponsibleUserId] = useState<string>('');
   const [isActive, setIsActive] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -106,16 +121,25 @@ export default function WmsWarehousesPage() {
   const fetchWarehouses = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/wms/warehouses');
-      if (res.ok) {
-        const json = await res.json();
+      const [whRes, usersRes] = await Promise.all([
+        fetch('/api/wms/warehouses'),
+        fetch('/api/users'),
+      ]);
+
+      if (whRes.ok) {
+        const json = await whRes.json();
         if (json.success) {
           setWarehouses(json.data);
         }
       }
+      if (usersRes.ok) {
+        const json = await usersRes.json();
+        if (json.success) {
+          setUsers(json.data);
+        }
+      }
     } catch (err) {
-      console.error('Ошибка загрузки складов:', err);
-      enqueueSnackbar('Ошибка загрузки списка складов', { variant: 'error' });
+      enqueueSnackbar('Ошибка при загрузке складов', { variant: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -130,6 +154,7 @@ export default function WmsWarehousesPage() {
     setName('');
     setCode('');
     setLocation('');
+    setResponsibleUserId('');
     setIsActive(true);
     setIsModalOpen(true);
   };
@@ -139,6 +164,7 @@ export default function WmsWarehousesPage() {
     setName(w.name);
     setCode(w.code);
     setLocation(w.location || '');
+    setResponsibleUserId(w.responsibleUserId || '');
     setIsActive(w.isActive);
     setIsModalOpen(true);
   };
@@ -161,6 +187,7 @@ export default function WmsWarehousesPage() {
           name: name.trim(),
           code: code.trim() || undefined,
           location: location.trim() || undefined,
+          responsibleUserId: responsibleUserId ? responsibleUserId.trim() : null,
           isActive,
         }),
       });
@@ -445,22 +472,77 @@ export default function WmsWarehousesPage() {
                         {w.name}
                       </Typography>
                     </Box>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleOpenEdit(w)}
-                      aria-label={`Редактировать ${w.name}`}
-                    >
-                      <EditOutlinedIcon fontSize="small" />
-                    </IconButton>
+                    {(user?.roles.includes('admin') ||
+                      hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE) ||
+                      w.responsibleUserId === user?.userId) && (
+                      <IconButton
+                        size="small"
+                        onClick={() => handleOpenEdit(w)}
+                        aria-label={`Редактировать ${w.name}`}
+                      >
+                        <EditOutlinedIcon fontSize="small" />
+                      </IconButton>
+                    )}
                   </Box>
 
-                  <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                  <Stack direction="row" spacing={1} sx={{ mb: 1.5 }}>
                     <Chip label={`Код: ${w.code}`} size="small" variant="outlined" sx={{ fontWeight: 700, borderRadius: '4px' }} />
                     <StatusBadge status={w.isActive ? 'ACTIVE' : 'DRAFT'} />
                   </Stack>
 
+                  {/* Responsible Person Widget */}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1.25,
+                      p: 1.25,
+                      mb: 1.5,
+                      bgcolor: w.responsibleUserId === user?.userId ? 'primary.50' : '#f8fafc',
+                      borderRadius: 1.5,
+                      border: '1px solid',
+                      borderColor: w.responsibleUserId === user?.userId ? 'primary.200' : '#e2e8f0',
+                    }}
+                  >
+                    <Avatar
+                      sx={{
+                        width: 28,
+                        height: 28,
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        bgcolor: w.responsibleUser ? '#0284c7' : '#94a3b8',
+                      }}
+                    >
+                      {w.responsibleUser ? w.responsibleUser.displayName.charAt(0) : '?'}
+                    </Avatar>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography variant="caption" sx={{ color: '#64748b', display: 'block', lineHeight: 1.1 }}>
+                        Ответственное лицо:
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        noWrap
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: '0.8125rem',
+                          color: w.responsibleUser ? '#0f172a' : '#94a3b8',
+                        }}
+                      >
+                        {w.responsibleUser ? w.responsibleUser.displayName : 'Не назначен'}
+                      </Typography>
+                    </Box>
+                    {w.responsibleUserId === user?.userId && (
+                      <Chip
+                        label="Мой склад"
+                        size="small"
+                        color="primary"
+                        sx={{ height: 20, fontSize: '0.6875rem', fontWeight: 700 }}
+                      />
+                    )}
+                  </Box>
+
                   {w.location && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, color: 'text.secondary' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5, color: 'text.secondary' }}>
                       <LocationOnOutlinedIcon sx={{ fontSize: 18 }} />
                       <Typography variant="body2">{w.location}</Typography>
                     </Box>
@@ -542,6 +624,25 @@ export default function WmsWarehousesPage() {
             value={location}
             onChange={(e) => setLocation(e.target.value)}
           />
+
+          <FormControl fullWidth>
+            <InputLabel id="responsible-user-label">Ответственное лицо (Кладовщик)</InputLabel>
+            <Select
+              labelId="responsible-user-label"
+              value={responsibleUserId}
+              label="Ответственное лицо (Кладовщик)"
+              onChange={(e) => setResponsibleUserId(e.target.value)}
+            >
+              <MenuItem value="">
+                <em>— Не назначен —</em>
+              </MenuItem>
+              {users.map((u) => (
+                <MenuItem key={u.id} value={u.id}>
+                  {u.displayName} ({u.ldapLogin})
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
           <FormControlLabel
             control={<Switch checked={isActive} onChange={(e) => setIsActive(e.target.checked)} color="primary" />}

@@ -19,6 +19,14 @@ export async function GET(
     const warehouse = await prisma.warehouse.findUnique({
       where: { id },
       include: {
+        responsibleUser: {
+          select: {
+            id: true,
+            displayName: true,
+            ldapLogin: true,
+            email: true,
+          },
+        },
         stockItems: {
           include: {
             nomenclature: {
@@ -67,7 +75,7 @@ export async function PATCH(
     }
 
     const body = await req.json();
-    const { name, code, location, isActive } = body;
+    const { name, code, location, responsibleUserId, isActive } = body;
 
     const updated = await prisma.warehouse.update({
       where: { id },
@@ -75,7 +83,18 @@ export async function PATCH(
         name: name !== undefined ? name.trim() : undefined,
         code: code !== undefined ? code.trim().toUpperCase() : undefined,
         location: location !== undefined ? (location?.trim() || null) : undefined,
+        responsibleUserId: responsibleUserId !== undefined ? (responsibleUserId ? responsibleUserId.trim() : null) : undefined,
         isActive: typeof isActive === 'boolean' ? isActive : undefined,
+      },
+      include: {
+        responsibleUser: {
+          select: {
+            id: true,
+            displayName: true,
+            ldapLogin: true,
+            email: true,
+          },
+        },
       },
     });
 

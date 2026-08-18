@@ -120,6 +120,25 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Проверка прав на склад (ответственное лицо или администратор)
+    const warehouse = await prisma.warehouse.findUnique({
+      where: { id: warehouseId },
+      select: { id: true, name: true, responsibleUserId: true },
+    });
+
+    if (!warehouse) {
+      return NextResponse.json({ success: false, error: 'Склад не найден' }, { status: 404 });
+    }
+
+    const isAdmin =
+      user.roles.includes('admin') ||
+      user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
+      user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+
+    if (!isAdmin && warehouse.responsibleUserId && warehouse.responsibleUserId !== user.userId) {
+      return forbiddenResponse(`Вы не являетесь ответственным лицом за склад "${warehouse.name}". Выполнение операций запрещено.`);
+    }
+
     // Выполняем транзакцию изменения остатков с жестким контролем
     const lowStockAlerts: { nomenclatureName: string; currentQty: number; minStock: number }[] = [];
 

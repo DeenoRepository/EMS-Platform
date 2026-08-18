@@ -205,7 +205,29 @@ async function main() {
     create: { userId: engineerUser.id, roleId: engineerRole.id },
   });
 
-  console.log('✅ Пользователи созданы (admin: admin123, engineer: engineer123)');
+  // Создание тестового кладовщика
+  const keeperUser = await prisma.user.upsert({
+    where: { ldapLogin: 'keeper' },
+    update: {
+      displayName: 'Сергей Смирнов (Кладовщик)',
+      email: 'smirnov@ems.local',
+      passwordHash: hashPassword('keeper123'),
+    },
+    create: {
+      ldapLogin: 'keeper',
+      displayName: 'Сергей Смирнов (Кладовщик)',
+      email: 'smirnov@ems.local',
+      passwordHash: hashPassword('keeper123'),
+    },
+  });
+
+  await prisma.userRole.upsert({
+    where: { userId_roleId: { userId: keeperUser.id, roleId: warehouseRole.id } },
+    update: {},
+    create: { userId: keeperUser.id, roleId: warehouseRole.id },
+  });
+
+  console.log('✅ Пользователи созданы (admin: admin123, engineer: engineer123, keeper: keeper123)');
 
   // 4. Теги оборудования
   const tagsData = [
@@ -443,21 +465,23 @@ async function main() {
   // 7. Склады и номенклатура (WMS)
   const mainWarehouse = await prisma.warehouse.upsert({
     where: { code: 'WH-MAIN' },
-    update: {},
+    update: { responsibleUserId: keeperUser.id },
     create: {
       name: 'Центральный склад запчастей и материалов',
       code: 'WH-MAIN',
       location: 'Корпус 4, складской комплекс',
+      responsibleUserId: keeperUser.id,
     },
   });
 
   const shopWarehouse = await prisma.warehouse.upsert({
     where: { code: 'WH-SHOP1' },
-    update: {},
+    update: { responsibleUserId: engineerUser.id },
     create: {
       name: 'Цеховой склад оперативного запаса (Цех №1)',
       code: 'WH-SHOP1',
       location: 'Цех №1, комната мастера',
+      responsibleUserId: engineerUser.id,
     },
   });
 

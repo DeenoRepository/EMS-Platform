@@ -19,6 +19,24 @@ export async function PATCH(
     const body = await req.json();
     const { cellId } = body;
 
+    const stockItem = await prisma.stockItem.findUnique({
+      where: { id: params.id },
+      include: { warehouse: true },
+    });
+
+    if (!stockItem) {
+      return NextResponse.json({ success: false, error: 'Позиция остатка не найдена' }, { status: 404 });
+    }
+
+    const isAdmin =
+      user.roles.includes('admin') ||
+      user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
+      user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+
+    if (!isAdmin && stockItem.warehouse.responsibleUserId && stockItem.warehouse.responsibleUserId !== user.userId) {
+      return forbiddenResponse(`Вы не являетесь ответственным лицом за склад "${stockItem.warehouse.name}". Назначение ячейки запрещено.`);
+    }
+
     // Verify cell if provided
     if (cellId) {
       const cell = await prisma.storageCell.findUnique({

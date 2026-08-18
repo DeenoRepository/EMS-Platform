@@ -34,6 +34,7 @@ model User {
   requestedApprovals EquipmentApproval[]   @relation("ApprovalRequester")
   reviewedApprovals  EquipmentApproval[]   @relation("ApprovalReviewer")
   createdReportTemplates ReportTemplate[]  @relation("CreatedReportTemplates")
+  managedWarehouses Warehouse[]           @relation("WarehouseResponsible")
 }
 
 model Role {
@@ -354,18 +355,22 @@ enum ApprovalStatus {
 // ==========================================
 
 model Warehouse {
-  id        String   @id @default(uuid())
-  name      String
-  code      String   @unique
-  location  String?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String    @id @default(uuid())
+  name              String
+  code              String    @unique
+  location          String?
+  responsibleUserId String?
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  stockItems  StockItem[]
-  operations  StockOperation[]
-  inventories Inventory[]
-  zones       StorageZone[]
+  responsibleUser   User?     @relation("WarehouseResponsible", fields: [responsibleUserId], references: [id], onDelete: SetNull)
+  stockItems        StockItem[]
+  operations        StockOperation[]
+  inventories       Inventory[]
+  zones             StorageZone[]
+
+  @@index([responsibleUserId])
 }
 
 model StorageZone {

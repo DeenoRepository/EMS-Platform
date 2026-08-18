@@ -44,18 +44,30 @@ export async function POST(
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE)) return forbiddenResponse();
+    if (!hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE) && !hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE)) {
+      return forbiddenResponse();
+    }
 
     const body = await req.json();
     const { code, name, bulkCodes } = body;
 
-    // Check if zone exists
+    // Check if zone exists with warehouse
     const zone = await prisma.storageZone.findUnique({
       where: { id: params.id },
+      include: { warehouse: true },
     });
 
     if (!zone) {
       return NextResponse.json({ success: false, error: 'Зона не найдена' }, { status: 404 });
+    }
+
+    const isAdmin =
+      user.roles.includes('admin') ||
+      user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
+      user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+
+    if (!isAdmin && zone.warehouse.responsibleUserId && zone.warehouse.responsibleUserId !== user.userId) {
+      return forbiddenResponse(`Вы не являетесь ответственным лицом за склад "${zone.warehouse.name}". Создание ячеек запрещено.`);
     }
 
     // Bulk creation mode
@@ -92,32 +104,29 @@ export async function POST(
       return NextResponse.json({
         success: true,
         data: createdCells,
-        message: `Создано/обновлено ${createdCells.length} ячеек`,
+        message: `Создано/обновлено ячеек: ${createdCells.length}`,
       });
     }
 
-    // Single creation mode
-    if (!code) {
-      return NextResponse.json(
-        { success: false, error: 'Укажите код/номер ячейки' },
-        { status: 400 }
-      );
+    // Single cell creation mode
+    if (!code || typeof code !== 'string') {
+      return NextResponse.json({ success: false, error: 'Код ячейки обязателен' }, { status: 400 });
     }
 
-    const cleanCode = String(code).trim();
+    const formattedCode = code.trim();
 
     const existing = await prisma.storageCell.findUnique({
       where: {
         zoneId_code: {
           zoneId: params.id,
-          code: cleanCode,
+          code: formattedCode,
         },
       },
     });
 
     if (existing) {
       return NextResponse.json(
-        { success: false, error: `Ячейка с кодом "${cleanCode}" уже существует в этой зоне` },
+        { success: false, error: `Ячейка с кодом "${formattedCode}" уже существует в этой зоне` },
         { status: 400 }
       );
     }
@@ -125,7 +134,7 @@ export async function POST(
     const cell = await prisma.storageCell.create({
       data: {
         zoneId: params.id,
-        code: cleanCode,
+        code: formattedCode,
         name: name ? String(name).trim() : null,
       },
     });
@@ -148,7 +157,27 @@ export async function DELETE(
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE)) return forbiddenResponse();
+    if (!hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE) && !hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE)) {
+      return forbiddenResponse();
+    }
+
+    const zone = await prisma.storageZone.findUnique({
+      where: { id: params.id },
+      include: { warehouse: true },
+    });
+
+    if (!zone) {
+      return NextResponse.json({ success: false, error: 'Зона не найдена' }, { status: 404 });
+    }
+
+    const isAdmin =
+      user.roles.includes('admin') ||
+      user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
+      user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+
+    if (!isAdmin && zone.warehouse.responsibleUserId && zone.warehouse.responsibleUserId !== user.userId) {
+      return forbiddenResponse(`Вы не являетесь ответственным лицом за склад "${zone.warehouse.name}". Удаление ячейки запрещено.`);
+    }
 
     const { searchParams } = new URL(req.url);
     const cellId = searchParams.get('cellId');

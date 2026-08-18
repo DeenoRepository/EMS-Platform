@@ -15,6 +15,14 @@ export async function GET(req: NextRequest) {
     const warehouses = await prisma.warehouse.findMany({
       orderBy: { createdAt: 'asc' },
       include: {
+        responsibleUser: {
+          select: {
+            id: true,
+            displayName: true,
+            ldapLogin: true,
+            email: true,
+          },
+        },
         _count: {
           select: {
             stockItems: true,
@@ -44,7 +52,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { name, code, location, isActive } = body;
+    const { name, code, location, responsibleUserId, isActive } = body;
 
     if (!name || typeof name !== 'string' || !name.trim()) {
       return NextResponse.json({ success: false, error: 'Наименование склада обязательно' }, { status: 400 });
@@ -63,7 +71,18 @@ export async function POST(req: NextRequest) {
         name: name.trim(),
         code: formattedCode,
         location: location?.trim() || null,
+        responsibleUserId: responsibleUserId?.trim() || null,
         isActive: typeof isActive === 'boolean' ? isActive : true,
+      },
+      include: {
+        responsibleUser: {
+          select: {
+            id: true,
+            displayName: true,
+            ldapLogin: true,
+            email: true,
+          },
+        },
       },
     });
 
