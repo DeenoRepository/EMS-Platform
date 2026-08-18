@@ -8,16 +8,12 @@ import {
   Box,
   Typography,
   Chip,
-  Tooltip,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
-import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import NotificationCenter from './NotificationCenter';
 import CommandPalette from './CommandPalette';
-import { useAuth } from '@/lib/auth-client';
 import { useRouter } from 'next/navigation';
-import { PERMISSIONS } from '@ems/shared';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -25,7 +21,6 @@ interface HeaderProps {
 }
 
 export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProps) {
-  const { user, hasPermission } = useAuth();
   const router = useRouter();
 
   // Command Palette State
@@ -42,8 +37,6 @@ export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProp
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
-
-  const canAccessSettings = user?.roles.includes('admin') || hasPermission(PERMISSIONS.ADMIN_USERS_MANAGE);
 
   return (
     <>
@@ -196,28 +189,10 @@ export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProp
             </Box>
           </Box>
 
-          {/* Right: Notifications & Settings */}
+          {/* Right: Notifications */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             {/* Notification Center */}
             <NotificationCenter />
-
-            {/* Settings Quick Link */}
-            {canAccessSettings && (
-              <Tooltip title="Настройки модулей">
-                <IconButton
-                  size="small"
-                  onClick={() => router.push('/admin/module-settings')}
-                  sx={{
-                    color: '#64748b',
-                    p: 1,
-                    borderRadius: '10px',
-                    '&:hover': { backgroundColor: '#f1f5f9', color: '#0f172a' },
-                  }}
-                >
-                  <SettingsOutlinedIcon sx={{ fontSize: 22 }} />
-                </IconButton>
-              </Tooltip>
-            )}
           </Box>
         </Toolbar>
       </AppBar>
