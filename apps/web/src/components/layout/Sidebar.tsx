@@ -55,6 +55,8 @@ interface NavChild {
   label: string;
   path: string;
   icon?: React.ReactNode;
+  badge?: number | null;
+  badgeColor?: 'warning' | 'error' | 'primary' | 'default';
 }
 
 interface NavItemDef {
@@ -91,6 +93,8 @@ export default function Sidebar({
   const [repairCount, setRepairCount] = useState<number | null>(null);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number | null>(null);
   const [wmsLowStockCount, setWmsLowStockCount] = useState<number | null>(null);
+  const [srmOpenCount, setSrmOpenCount] = useState<number | null>(null);
+  const [mroOverdueCount, setMroOverdueCount] = useState<number | null>(null);
 
   // Expanded items in expanded sidebar mode
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
@@ -118,34 +122,48 @@ export default function Sidebar({
   useEffect(() => {
     async function loadData() {
       try {
-        const [eqRes, modRes, appRes, wmsRes] = await Promise.all([
+        const [eqRes, modRes, appRes, wmsRes, srmRes, mroRes] = await Promise.allSettled([
           fetch('/api/eps/equipment?pageSize=1'),
           fetch('/api/modules/status'),
           fetch('/api/eps/approvals?pageSize=1'),
           fetch('/api/wms/stats'),
+          fetch('/api/srm/stats'),
+          fetch('/api/mro/schedules?status=OVERDUE'),
         ]);
-        if (eqRes.ok) {
-          const json = await eqRes.json();
+        if (eqRes.status === 'fulfilled' && eqRes.value.ok) {
+          const json = await eqRes.value.json();
           if (json.success && json.data?.statusCounts) {
             setRepairCount(json.data.statusCounts.underRepair || null);
           }
         }
-        if (modRes.ok) {
-          const modJson = await modRes.json();
+        if (modRes.status === 'fulfilled' && modRes.value.ok) {
+          const modJson = await modRes.value.json();
           if (modJson.success && modJson.data) {
             setModuleStatus(modJson.data);
           }
         }
-        if (appRes.ok) {
-          const appJson = await appRes.json();
+        if (appRes.status === 'fulfilled' && appRes.value.ok) {
+          const appJson = await appRes.value.json();
           if (appJson.success && appJson.data?.stats?.pending) {
             setPendingApprovalsCount(appJson.data.stats.pending || null);
           }
         }
-        if (wmsRes.ok) {
-          const wmsJson = await wmsRes.json();
+        if (wmsRes.status === 'fulfilled' && wmsRes.value.ok) {
+          const wmsJson = await wmsRes.value.json();
           if (wmsJson.success && wmsJson.data?.lowStockCount) {
             setWmsLowStockCount(wmsJson.data.lowStockCount || null);
+          }
+        }
+        if (srmRes.status === 'fulfilled' && srmRes.value.ok) {
+          const srmJson = await srmRes.value.json();
+          if (srmJson.success && srmJson.data?.openIssues) {
+            setSrmOpenCount(srmJson.data.openIssues || null);
+          }
+        }
+        if (mroRes.status === 'fulfilled' && mroRes.value.ok) {
+          const mroJson = await mroRes.value.json();
+          if (mroJson.success && Array.isArray(mroJson.data)) {
+            setMroOverdueCount(mroJson.data.length || null);
           }
         }
       } catch {
@@ -205,18 +223,23 @@ export default function Sidebar({
       id: 'eps',
       label: 'Паспортизация (EPS)',
       icon: <BadgeOutlinedIcon sx={{ fontSize: 18 }} />,
-      badge:
-        pendingApprovalsCount && pendingApprovalsCount > 0
-          ? pendingApprovalsCount
-          : repairCount && repairCount > 0
-          ? repairCount
-          : null,
-      badgeColor: pendingApprovalsCount && pendingApprovalsCount > 0 ? 'warning' : 'default',
       permission: PERMISSIONS.EPS_EQUIPMENT_VIEW,
       children: [
-        { label: 'Реестр оборудования', path: '/eps', icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} /> },
+        {
+          label: 'Реестр оборудования',
+          path: '/eps',
+          icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} />,
+          badge: repairCount && repairCount > 0 ? repairCount : null,
+          badgeColor: 'default',
+        },
         { label: 'Документы', path: '/eps/documents', icon: <ArticleOutlinedIcon sx={{ fontSize: 15 }} /> },
-        { label: 'Согласования', path: '/eps/approvals', icon: <FactCheckOutlinedIcon sx={{ fontSize: 15 }} /> },
+        {
+          label: 'Согласования',
+          path: '/eps/approvals',
+          icon: <FactCheckOutlinedIcon sx={{ fontSize: 15 }} />,
+          badge: pendingApprovalsCount && pendingApprovalsCount > 0 ? pendingApprovalsCount : null,
+          badgeColor: 'warning',
+        },
         { label: 'История изменений', path: '/eps/history', icon: <HistoryOutlinedIcon sx={{ fontSize: 15 }} /> },
         { label: 'Конструктор отчетов', path: '/eps/reports', icon: <AssessmentOutlinedIcon sx={{ fontSize: 15 }} /> },
         { label: 'Импорт оборудования', path: '/eps/import', icon: <FileUploadOutlinedIcon sx={{ fontSize: 15 }} /> },
@@ -226,12 +249,16 @@ export default function Sidebar({
       id: 'wms',
       label: 'Складской учёт (WMS)',
       icon: <WarehouseOutlinedIcon sx={{ fontSize: 18 }} />,
-      badge: wmsLowStockCount && wmsLowStockCount > 0 ? wmsLowStockCount : null,
-      badgeColor: 'warning',
       permission: PERMISSIONS.WMS_STOCK_VIEW,
       children: [
         { label: 'Обзор и аналитика', path: '/wms', icon: <AnalyticsOutlinedIcon sx={{ fontSize: 15 }} /> },
-        { label: 'Остатки и ТМЦ', path: '/wms/stock', icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} /> },
+        {
+          label: 'Остатки и ТМЦ',
+          path: '/wms/stock',
+          icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} />,
+          badge: wmsLowStockCount && wmsLowStockCount > 0 ? wmsLowStockCount : null,
+          badgeColor: 'warning',
+        },
         { label: 'Складские операции', path: '/wms/operations', icon: <MoveToInboxIcon sx={{ fontSize: 15 }} /> },
         { label: 'Склады', path: '/wms/warehouses', icon: <WarehouseOutlinedIcon sx={{ fontSize: 15 }} /> },
         { label: 'Инвентаризация', path: '/wms/inventory', icon: <FactCheckOutlinedIcon sx={{ fontSize: 15 }} /> },
@@ -243,7 +270,13 @@ export default function Sidebar({
       icon: <BugReportOutlinedIcon sx={{ fontSize: 18 }} />,
       permission: PERMISSIONS.SRM_DASHBOARD_VIEW,
       children: [
-        { label: 'Инциденты и заявки', path: '/srm', icon: <TimelineIcon sx={{ fontSize: 15 }} /> },
+        {
+          label: 'Инциденты и заявки',
+          path: '/srm',
+          icon: <TimelineIcon sx={{ fontSize: 15 }} />,
+          badge: srmOpenCount && srmOpenCount > 0 ? srmOpenCount : null,
+          badgeColor: 'warning',
+        },
         { label: 'Метрики MTTR / MTBF', path: '/srm?tab=metrics', icon: <SpeedIcon sx={{ fontSize: 15 }} /> },
       ],
     },
@@ -253,7 +286,13 @@ export default function Sidebar({
       icon: <BuildOutlinedIcon sx={{ fontSize: 18 }} />,
       permission: PERMISSIONS.MRO_SCHEDULE_VIEW,
       children: [
-        { label: 'Графики ППР', path: '/mro', icon: <CalendarMonthIcon sx={{ fontSize: 15 }} /> },
+        {
+          label: 'Графики ППР',
+          path: '/mro',
+          icon: <CalendarMonthIcon sx={{ fontSize: 15 }} />,
+          badge: mroOverdueCount && mroOverdueCount > 0 ? mroOverdueCount : null,
+          badgeColor: 'error',
+        },
         { label: 'Журнал регламентов', path: '/mro?tab=logs', icon: <AssignmentTurnedInIcon sx={{ fontSize: 15 }} /> },
         { label: 'Технологические карты', path: '/mro?tab=checklists', icon: <ChecklistIcon sx={{ fontSize: 15 }} /> },
       ],
@@ -318,8 +357,26 @@ export default function Sidebar({
     const active = isItemActive(item);
     const hasChildren = item.children && item.children.length > 0;
     const isExpanded = expandedItems[item.id] || false;
-    const badgeColors = getBadgeColors(item.badgeColor);
-    const hasBadge = item.badge !== null && item.badge !== undefined && item.badge > 0;
+
+    // Aggregate badge count from children or item
+    const parentBadgeCount =
+      hasChildren && item.children
+        ? item.children.reduce((acc, c) => acc + (c.badge && c.badge > 0 ? c.badge : 0), 0) || item.badge
+        : item.badge;
+
+    // Derive badge color
+    const effectiveBadgeColor = (() => {
+      if (hasChildren && item.children) {
+        if (item.children.some((c) => c.badge && c.badge > 0 && c.badgeColor === 'error')) return 'error';
+        if (item.children.some((c) => c.badge && c.badge > 0 && c.badgeColor === 'warning')) return 'warning';
+        const firstWithBadge = item.children.find((c) => c.badge && c.badge > 0);
+        if (firstWithBadge?.badgeColor) return firstWithBadge.badgeColor;
+      }
+      return item.badgeColor || 'default';
+    })();
+
+    const badgeColors = getBadgeColors(effectiveBadgeColor);
+    const hasBadge = parentBadgeCount !== null && parentBadgeCount !== undefined && parentBadgeCount > 0;
 
     if (collapsed) {
       return (
@@ -383,7 +440,7 @@ export default function Sidebar({
                   fontFamily: 'monospace',
                 }}
               >
-                {item.badge}
+                {parentBadgeCount}
               </Box>
             )}
           </Box>
@@ -436,7 +493,7 @@ export default function Sidebar({
           )}
 
           {/* Left: Icon & Label */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, overflow: 'hidden', minWidth: 0, flexGrow: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, overflow: 'hidden', minWidth: 0, flexGrow: 1, mr: 1 }}>
             <Box sx={{ color: active ? '#38bdf8' : '#94a3b8', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
               {item.icon}
             </Box>
@@ -453,13 +510,25 @@ export default function Sidebar({
             </Typography>
           </Box>
 
-          {/* Right: Badge (strictly right-aligned) & Chevron */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexShrink: 0, ml: 'auto', pl: 1 }}>
-            {hasBadge && (
+          {/* Right: Chevron & Badge (badge strictly at the right edge after the arrow) */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexShrink: 0, ml: 'auto' }}>
+            {hasChildren && (
+              <Box sx={{ color: '#64748b', display: 'flex', alignItems: 'center' }}>
+                {isExpanded ? (
+                  <KeyboardArrowDownIcon sx={{ fontSize: 16 }} />
+                ) : (
+                  <KeyboardArrowRightIcon sx={{ fontSize: 16 }} />
+                )}
+              </Box>
+            )}
+
+            {/* Show badge on parent only when section is collapsed or item has no children */}
+            {(!hasChildren || !isExpanded) && hasBadge && (
               <Box
                 sx={{
                   px: 0.75,
                   height: 18,
+                  minWidth: 18,
                   borderRadius: '9px',
                   backgroundColor: badgeColors.bg,
                   color: badgeColors.text,
@@ -473,23 +542,13 @@ export default function Sidebar({
                   lineHeight: 1,
                 }}
               >
-                {item.badge}
-              </Box>
-            )}
-
-            {hasChildren && (
-              <Box sx={{ color: '#64748b', display: 'flex', alignItems: 'center' }}>
-                {isExpanded ? (
-                  <KeyboardArrowDownIcon sx={{ fontSize: 16 }} />
-                ) : (
-                  <KeyboardArrowRightIcon sx={{ fontSize: 16 }} />
-                )}
+                {parentBadgeCount}
               </Box>
             )}
           </Box>
         </Box>
 
-        {/* Children Sub-links (Accordion) with Centered Vertical Line */}
+        {/* Children Sub-links (Accordion) with Right-Aligned Badges per Sub-section */}
         {hasChildren && (
           <Collapse in={isExpanded} timeout="auto" unmountOnExit>
             <Box
@@ -505,6 +564,9 @@ export default function Sidebar({
             >
               {item.children?.map((child) => {
                 const isChildActive = pathname === child.path;
+                const childHasBadge = child.badge !== null && child.badge !== undefined && child.badge > 0;
+                const childBadgeColors = getBadgeColors(child.badgeColor);
+
                 return (
                   <Box
                     key={child.path + child.label}
@@ -520,6 +582,7 @@ export default function Sidebar({
                       backgroundColor: isChildActive ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
                       display: 'flex',
                       alignItems: 'center',
+                      justifyContent: 'space-between',
                       gap: 1,
                       transition: 'all 0.12s ease',
                       '&:hover': {
@@ -528,8 +591,37 @@ export default function Sidebar({
                       },
                     }}
                   >
-                    {child.icon}
-                    {child.label}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, overflow: 'hidden', minWidth: 0, flexGrow: 1, mr: 1 }}>
+                      {child.icon}
+                      <Typography variant="inherit" noWrap sx={{ fontSize: '0.75rem' }}>
+                        {child.label}
+                      </Typography>
+                    </Box>
+
+                    {childHasBadge && (
+                      <Box
+                        sx={{
+                          px: 0.6,
+                          height: 17,
+                          minWidth: 17,
+                          borderRadius: '8.5px',
+                          backgroundColor: childBadgeColors.bg,
+                          color: childBadgeColors.text,
+                          border: `1px solid ${childBadgeColors.border}`,
+                          fontSize: '0.65rem',
+                          fontWeight: 700,
+                          fontFamily: 'monospace',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          lineHeight: 1,
+                          flexShrink: 0,
+                          ml: 'auto',
+                        }}
+                      >
+                        {child.badge}
+                      </Box>
+                    )}
                   </Box>
                 );
               })}
@@ -872,33 +964,69 @@ export default function Sidebar({
 
             {/* Flyout Children List */}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-              {activeFlyoutItem.children?.map((child) => (
-                <Box
-                  key={child.path + child.label}
-                  onClick={() => handleNavigate(child.path)}
-                  sx={{
-                    px: 1.25,
-                    py: 0.6,
-                    borderRadius: '5px',
-                    cursor: 'pointer',
-                    fontSize: '0.78125rem',
-                    color: pathname === child.path ? '#38bdf8' : '#94a3b8',
-                    fontWeight: pathname === child.path ? 600 : 500,
-                    backgroundColor: pathname === child.path ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    transition: 'all 0.12s ease',
-                    '&:hover': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                      color: '#ffffff',
-                    },
-                  }}
-                >
-                  {child.icon}
-                  {child.label}
-                </Box>
-              ))}
+              {activeFlyoutItem.children?.map((child) => {
+                const isChildActive = pathname === child.path;
+                const childHasBadge = child.badge !== null && child.badge !== undefined && child.badge > 0;
+                const childBadgeColors = getBadgeColors(child.badgeColor);
+
+                return (
+                  <Box
+                    key={child.path + child.label}
+                    onClick={() => handleNavigate(child.path)}
+                    sx={{
+                      px: 1.25,
+                      py: 0.6,
+                      borderRadius: '5px',
+                      cursor: 'pointer',
+                      fontSize: '0.78125rem',
+                      color: isChildActive ? '#38bdf8' : '#94a3b8',
+                      fontWeight: isChildActive ? 600 : 500,
+                      backgroundColor: isChildActive ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 1,
+                      transition: 'all 0.12s ease',
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                        color: '#ffffff',
+                      },
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, overflow: 'hidden', minWidth: 0, flexGrow: 1, mr: 1 }}>
+                      {child.icon}
+                      <Typography variant="inherit" noWrap sx={{ fontSize: '0.78125rem' }}>
+                        {child.label}
+                      </Typography>
+                    </Box>
+
+                    {childHasBadge && (
+                      <Box
+                        sx={{
+                          px: 0.6,
+                          height: 17,
+                          minWidth: 17,
+                          borderRadius: '8.5px',
+                          backgroundColor: childBadgeColors.bg,
+                          color: childBadgeColors.text,
+                          border: `1px solid ${childBadgeColors.border}`,
+                          fontSize: '0.65rem',
+                          fontWeight: 700,
+                          fontFamily: 'monospace',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          lineHeight: 1,
+                          flexShrink: 0,
+                          ml: 'auto',
+                        }}
+                      >
+                        {child.badge}
+                      </Box>
+                    )}
+                  </Box>
+                );
+              })}
             </Box>
           </Box>
         )}
