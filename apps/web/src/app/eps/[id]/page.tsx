@@ -498,11 +498,6 @@ export default function EquipmentPassportPage() {
     });
   };
 
-  if (loading || !equipment) {
-    return <PageLoading text="Загрузка электронного паспорта оборудования..." />;
-  }
-
-  const statusInfo = EQUIPMENT_STATUS_MAP[equipment.status] || { label: equipment.status, color: 'default' };
   const canEdit = hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT);
   const canDelete = hasPermission(PERMISSIONS.EPS_EQUIPMENT_DELETE);
 
@@ -598,6 +593,12 @@ export default function EquipmentPassportPage() {
     // Sort descending by date
     return evts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [equipment, auditLogs]);
+
+  if (loading || !equipment) {
+    return <PageLoading text="Загрузка электронного паспорта оборудования..." />;
+  }
+
+  const statusInfo = EQUIPMENT_STATUS_MAP[equipment.status] || { label: equipment.status, color: 'default' };
 
   return (
     <Box sx={{ maxWidth: 1920, mx: 'auto' }}>
