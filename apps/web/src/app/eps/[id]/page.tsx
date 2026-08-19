@@ -26,10 +26,8 @@ import {
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import DownloadIcon from '@mui/icons-material/Download';
-import StarIcon from '@mui/icons-material/Star';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import BuildIcon from '@mui/icons-material/Build';
 import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
@@ -190,7 +188,6 @@ export default function EquipmentPassportPage() {
   const [editForm, setEditForm] = useState<any>({});
   const [editCustomFields, setEditCustomFields] = useState<Record<string, any>>({});
 
-  const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [docModalOpen, setDocModalOpen] = useState(false);
   const [previewDocUrl, setPreviewDocUrl] = useState<string | null>(null);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
@@ -208,7 +205,6 @@ export default function EquipmentPassportPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [docType, setDocType] = useState('SCHEMA');
   const [docDescription, setDocDescription] = useState('');
-  const [isPrimaryPhoto, setIsPrimaryPhoto] = useState(false);
   const [uploading, setUploading] = useState(false);
 
   // Confirm State
@@ -398,35 +394,6 @@ export default function EquipmentPassportPage() {
     });
   };
 
-  // Upload Photo
-  const handleUploadPhoto = async () => {
-    if (!selectedFile) return;
-    setUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append('file', selectedFile);
-      fd.append('isPrimary', String(isPrimaryPhoto));
-
-      const res = await fetch(`/api/eps/equipment/${id}/photos`, {
-        method: 'POST',
-        body: fd,
-      });
-      const data = await res.json();
-      if (data.success) {
-        enqueueSnackbar('Фотография успешно добавлена', { variant: 'success' });
-        setPhotoModalOpen(false);
-        setSelectedFile(null);
-        fetchEquipmentAndMeta();
-      } else {
-        enqueueSnackbar(data.error || 'Ошибка загрузки фото', { variant: 'error' });
-      }
-    } catch {
-      enqueueSnackbar('Ошибка сети при загрузке фото', { variant: 'error' });
-    } finally {
-      setUploading(false);
-    }
-  };
-
   // Upload Document
   const handleUploadDocument = async () => {
     if (!selectedFile) return;
@@ -456,26 +423,6 @@ export default function EquipmentPassportPage() {
     } finally {
       setUploading(false);
     }
-  };
-
-  // Delete Photo
-  const handleDeletePhoto = (photoId: string) => {
-    setConfirmState({
-      open: true,
-      title: 'Удаление фотографии',
-      message: 'Удалить эту фотографию оборудования?',
-      onConfirm: async () => {
-        try {
-          await fetch(`/api/eps/equipment/${id}/photos?photoId=${photoId}`, { method: 'DELETE' });
-          enqueueSnackbar('Фотография удалена', { variant: 'info' });
-          fetchEquipmentAndMeta();
-        } catch {
-          enqueueSnackbar('Ошибка удаления', { variant: 'error' });
-        } finally {
-          setConfirmState((prev) => ({ ...prev, open: false }));
-        }
-      },
-    });
   };
 
   // Delete Document
@@ -755,17 +702,19 @@ export default function EquipmentPassportPage() {
       <Box sx={{ mb: 3 }}>
         <NavTabsContainer
           value={activeTab}
-          onChange={(val) => setActiveTab(val)}
+          onChange={(val) => {
+            setActiveTab(val);
+            if (val === 6) fetchAudit();
+          }}
           paper
           tabs={[
             { label: 'Паспорт (Общие сведения и разделы)', value: 0 },
-            { label: 'Фотогалерея', value: 1, badge: equipment.photos.length },
-            { label: 'Документация', value: 2, badge: equipment.documents.length },
-            { label: 'Согласования', value: 3, badge: equipment.approvals?.length || 0 },
-            { label: 'Запчасти WMS', value: 4, badge: equipment.spareParts.length },
-            { label: 'ТО и Ремонт MRO', value: 5, badge: equipment.maintenancePlans.length },
-            { label: 'Заявки Jira', value: 6, badge: equipment.jiraIssues?.length || 0 },
-            { label: 'История изменений (Аудит)', value: 7 },
+            { label: 'Документация', value: 1, badge: equipment.documents.length },
+            { label: 'Согласования', value: 2, badge: equipment.approvals?.length || 0 },
+            { label: 'Запчасти WMS', value: 3, badge: equipment.spareParts.length },
+            { label: 'ТО и Ремонт MRO', value: 4, badge: equipment.maintenancePlans.length },
+            { label: 'Заявки Jira', value: 5, badge: equipment.jiraIssues?.length || 0 },
+            { label: 'История изменений (Аудит)', value: 6 },
           ]}
         />
       </Box>
@@ -938,91 +887,8 @@ export default function EquipmentPassportPage() {
         </Grid>
       )}
 
-      {/* TAB 1: Фотогалерея */}
+      {/* TAB 1: Документация */}
       {activeTab === 1 && (
-        <Card sx={{ p: 3 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h6" fontWeight={700}>
-              Фотографии оборудования ({equipment.photos.length})
-            </Typography>
-            {canEdit && (
-              <Button
-                variant="contained"
-                startIcon={<AddPhotoAlternateIcon />}
-                onClick={() => setPhotoModalOpen(true)}
-              >
-                Добавить фото
-              </Button>
-            )}
-          </Box>
-
-          {equipment.photos.length === 0 ? (
-            <Box sx={{ p: 6, textAlign: 'center', color: 'text.secondary' }}>
-              <AddPhotoAlternateIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
-              <Typography variant="body2">Фотографии отсутствуют</Typography>
-            </Box>
-          ) : (
-            <Grid container spacing={3}>
-              {equipment.photos.map((photo) => (
-                <Grid item xs={12} sm={6} md={4} key={photo.id}>
-                  <Card sx={{ position: 'relative', overflow: 'hidden' }}>
-                    <Box
-                      component="img"
-                      src={`/api/files/${photo.filePath}`}
-                      alt={photo.originalName}
-                      sx={{
-                        width: '100%',
-                        height: 220,
-                        objectFit: 'cover',
-                        display: 'block',
-                        cursor: 'pointer',
-                      }}
-                      onClick={() => setPreviewDocUrl(`/api/files/${photo.filePath}`)}
-                    />
-                    <Box
-                      sx={{
-                        p: 1.5,
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        backgroundColor: '#ffffff',
-                      }}
-                    >
-                      <Box>
-                        <Typography variant="caption" fontWeight={600} noWrap sx={{ display: 'block', maxWidth: 160 }}>
-                          {photo.originalName}
-                        </Typography>
-                        {photo.isPrimary && (
-                          <Chip
-                            icon={<StarIcon fontSize="small" />}
-                            label="Главное фото"
-                            size="small"
-                            color="primary"
-                            sx={{ height: 20, fontSize: '0.65rem' }}
-                          />
-                        )}
-                      </Box>
-                      {canEdit && (
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleDeletePhoto(photo.id)}
-                          title="Удалить фото"
-                        >
-                          <DeleteOutlineIcon fontSize="small" />
-                        </IconButton>
-                      )}
-                    </Box>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-          )}
-        </Card>
-      )}
-
-      {/* TAB 2: Документация */}
-      {activeTab === 2 && (
         <Card sx={{ p: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
             <Typography variant="h6" fontWeight={700}>
@@ -1115,8 +981,8 @@ export default function EquipmentPassportPage() {
         </Card>
       )}
 
-      {/* TAB 3: Согласования */}
-      {activeTab === 3 && (
+      {/* TAB 2: Согласования */}
+      {activeTab === 2 && (
         <Card sx={{ p: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
             <Box>
@@ -1222,8 +1088,8 @@ export default function EquipmentPassportPage() {
         </Card>
       )}
 
-      {/* TAB 4: Запчасти (WMS) */}
-      {activeTab === 4 && (
+      {/* TAB 3: Запчасти (WMS) */}
+      {activeTab === 3 && (
         <Card sx={{ p: 3 }}>
           <Typography variant="h6" fontWeight={700} gutterBottom>
             Совместимые запасные части и расходные материалы (WMS)
@@ -1280,8 +1146,8 @@ export default function EquipmentPassportPage() {
         </Card>
       )}
 
-      {/* TAB 5: ТО и Ремонт (MRO) */}
-      {activeTab === 5 && (
+      {/* TAB 4: ТО и Ремонт (MRO) */}
+      {activeTab === 4 && (
         <Card sx={{ p: 3 }}>
           <Typography variant="h6" fontWeight={700} gutterBottom>
             Планы технического обслуживания и график ППР (MRO)
@@ -1330,8 +1196,8 @@ export default function EquipmentPassportPage() {
         </Card>
       )}
 
-      {/* TAB 6: Заявки (SRM) */}
-      {activeTab === 6 && (
+      {/* TAB 5: Заявки (SRM) */}
+      {activeTab === 5 && (
         <Card sx={{ p: 3 }}>
           <Typography variant="h6" fontWeight={700} gutterBottom>
             Связанные заявки на ремонт и инциденты (SRM)
@@ -1384,8 +1250,8 @@ export default function EquipmentPassportPage() {
         </Card>
       )}
 
-      {/* TAB 7: История изменений (Жизненный цикл и Аудит) */}
-      {activeTab === 7 && (
+      {/* TAB 6: История изменений (Жизненный цикл и Аудит) */}
+      {activeTab === 6 && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           {/* Visual Lifecycle Timeline */}
           <LifecycleTimeline
@@ -1647,38 +1513,6 @@ export default function EquipmentPassportPage() {
         </Box>
       </FormDialog>
 
-      {/* Upload Photo Dialog */}
-      <FormDialog
-        open={photoModalOpen}
-        onClose={() => setPhotoModalOpen(false)}
-        title="Загрузка фотографии оборудования"
-        maxWidth="xs"
-        loading={uploading}
-        submitLabel={uploading ? 'Загрузка...' : 'Загрузить фото'}
-        onSubmit={handleUploadPhoto}
-        submitDisabled={!selectedFile || uploading}
-      >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-          <FileUploadDropzone
-            accept="image/*"
-            files={selectedFile ? [selectedFile] : []}
-            onChange={(files) => setSelectedFile(files[0] || null)}
-            compact
-            title="Перетащите фото или выберите с диска"
-            description="JPG, PNG, WebP (до 15 МБ)"
-          />
-          <TextField
-            select
-            size="small"
-            label="Сделать главным фото"
-            value={isPrimaryPhoto ? 'true' : 'false'}
-            onChange={(e) => setIsPrimaryPhoto(e.target.value === 'true')}
-          >
-            <MenuItem value="false">Нет</MenuItem>
-            <MenuItem value="true">Да, сделать главным</MenuItem>
-          </TextField>
-        </Box>
-      </FormDialog>
 
       {/* Upload Document Dialog */}
       <FormDialog
