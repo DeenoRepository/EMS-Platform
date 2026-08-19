@@ -18,7 +18,14 @@ export async function GET(req: NextRequest) {
 
     const where: any = {};
     if (equipmentId) where.equipmentId = equipmentId;
-    if (status) where.status = status;
+    if (status === 'OVERDUE') {
+      where.OR = [
+        { status: 'MISSED' },
+        { status: 'PLANNED', scheduledDate: { lt: new Date() } },
+      ];
+    } else if (status) {
+      where.status = status;
+    }
     if (planId) where.planId = planId;
 
     const schedules = await prisma.maintenanceSchedule.findMany({
