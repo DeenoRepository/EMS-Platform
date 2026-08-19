@@ -267,7 +267,7 @@ function EquipmentListContent() {
   }, [equipmentList, sortField, sortDirection]);
 
   const handleRowClick = (eq: EquipmentItem) => {
-    setSelectedEquipment(eq);
+    router.push(`/eps/${eq.id}`);
   };
 
   // Bulk Export Handlers
