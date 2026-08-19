@@ -25,3 +25,6 @@ export * from './ChartCard';
 export * from './ActivityFeed';
 export * from './CurrencyDisplay';
 export * from './PermissionGate';
+export * from './ConfirmProvider';
+export * from './CommandPalette';
+export * from './DocumentPreviewDialog';

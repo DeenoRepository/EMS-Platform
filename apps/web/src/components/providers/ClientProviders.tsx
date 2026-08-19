@@ -3,6 +3,7 @@
 import React from 'react';
 import { SnackbarProvider } from 'notistack';
 import { AuthProvider } from '@/lib/auth-client';
+import { ConfirmProvider, CommandPalette } from '@/components/ui';
 import AppLayout from '@/components/layout/AppLayout';
 
 export default function ClientProviders({ children }: { children: React.ReactNode }) {
@@ -13,8 +14,12 @@ export default function ClientProviders({ children }: { children: React.ReactNod
       anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
     >
       <AuthProvider>
-        <AppLayout>{children}</AppLayout>
+        <ConfirmProvider>
+          <AppLayout>{children}</AppLayout>
+          <CommandPalette />
+        </ConfirmProvider>
       </AuthProvider>
     </SnackbarProvider>
   );
 }
+
