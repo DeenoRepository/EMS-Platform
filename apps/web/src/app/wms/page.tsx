@@ -26,6 +26,8 @@ import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined';
 import MoveToInboxIcon from '@mui/icons-material/MoveToInbox';
 import OutboxIcon from '@mui/icons-material/Outbox';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import PersonIcon from '@mui/icons-material/Person';
+import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -278,7 +280,7 @@ export default function WmsDashboardPage() {
   const quickActions: (QuickAction & { permission?: string })[] = [
     {
       label: 'Оформить приход ТМЦ',
-      description: 'Регистрация поступления',
+      description: 'Поступление на свой склад',
       icon: <MoveToInboxIcon />,
       href: '/wms/operations?create=RECEIPT',
       accentColor: '#16a34a',
@@ -286,10 +288,19 @@ export default function WmsDashboardPage() {
       permission: PERMISSIONS.WMS_OPERATIONS_CREATE,
     },
     {
-      label: 'Списать на оборудование',
-      description: 'Расход со склада',
-      icon: <OutboxIcon />,
-      href: '/wms/operations?create=ISSUE',
+      label: 'Выдать сотруднику',
+      description: 'Выдача ТМЦ в подотчет',
+      icon: <PersonIcon />,
+      href: '/wms/operations?create=ISSUE_EMPLOYEE',
+      accentColor: '#1d4ed8',
+      accentBg: 'rgba(29, 78, 216, 0.08)',
+      permission: PERMISSIONS.WMS_OPERATIONS_CREATE,
+    },
+    {
+      label: 'Списать ТМЦ',
+      description: 'На станок или в неликвид',
+      icon: <DeleteSweepIcon />,
+      href: '/wms/operations?create=ISSUE_WRITE_OFF',
       accentColor: '#d97706',
       accentBg: 'rgba(217, 119, 6, 0.08)',
       permission: PERMISSIONS.WMS_OPERATIONS_CREATE,
@@ -299,8 +310,8 @@ export default function WmsDashboardPage() {
       description: 'Между складами',
       icon: <SwapHorizIcon />,
       href: '/wms/operations?create=TRANSFER',
-      accentColor: '#0284c7',
-      accentBg: 'rgba(2, 132, 199, 0.08)',
+      accentColor: '#7c3aed',
+      accentBg: 'rgba(124, 58, 237, 0.08)',
       permission: PERMISSIONS.WMS_OPERATIONS_CREATE,
     },
     {
@@ -308,8 +319,8 @@ export default function WmsDashboardPage() {
       description: 'Сверка остатков',
       icon: <FactCheckOutlinedIcon />,
       href: '/wms/inventory',
-      accentColor: '#7c3aed',
-      accentBg: 'rgba(124, 58, 237, 0.08)',
+      accentColor: '#0284c7',
+      accentBg: 'rgba(2, 132, 199, 0.08)',
       permission: PERMISSIONS.WMS_INVENTORY_MANAGE,
     },
   ];

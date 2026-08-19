@@ -111,6 +111,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Добавьте хотя бы одну позицию ТМЦ' }, { status: 400 });
     }
 
+    let targetWarehouseName = '';
     if (type === 'TRANSFER') {
       if (!targetWarehouseId) {
         return NextResponse.json({ success: false, error: 'Для перемещения необходимо указать склад-получатель' }, { status: 400 });
@@ -118,6 +119,14 @@ export async function POST(req: NextRequest) {
       if (warehouseId === targetWarehouseId) {
         return NextResponse.json({ success: false, error: 'Склад-отправитель и склад-получатель не могут совпадать' }, { status: 400 });
       }
+      const targetWarehouse = await prisma.warehouse.findUnique({
+        where: { id: targetWarehouseId },
+        select: { id: true, name: true, isActive: true },
+      });
+      if (!targetWarehouse || !targetWarehouse.isActive) {
+        return NextResponse.json({ success: false, error: 'Склад-получатель не найден или неактивен' }, { status: 400 });
+      }
+      targetWarehouseName = targetWarehouse.name;
     }
 
     // Проверка прав на склад (ответственное лицо или администратор)
@@ -135,8 +144,8 @@ export async function POST(req: NextRequest) {
       user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
       user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
 
-    if (!isAdmin && warehouse.responsibleUserId && warehouse.responsibleUserId !== user.userId) {
-      return forbiddenResponse(`Вы не являетесь ответственным лицом за склад "${warehouse.name}". Выполнение операций запрещено.`);
+    if (!isAdmin && warehouse.responsibleUserId !== user.userId) {
+      return forbiddenResponse(`Вы не являетесь ответственным лицом за склад "${warehouse.name}". Выполнение операций разрешено только назначенному материально ответственному лицу.`);
     }
 
     // Выполняем транзакцию изменения остатков с жестким контролем
@@ -175,7 +184,7 @@ export async function POST(req: NextRequest) {
           type,
           counterparty: counterparty?.trim() || null,
           document: document?.trim() || null,
-          comment: comment?.trim() || (type === 'TRANSFER' ? `Перемещение на склад ID ${targetWarehouseId}` : null),
+          comment: comment?.trim() || (type === 'TRANSFER' ? (targetWarehouseName ? `Перемещение на склад "${targetWarehouseName}"` : `Перемещение на склад ID ${targetWarehouseId}`) : null),
           createdById: user.userId,
           items: {
             create: items.map((i) => ({
