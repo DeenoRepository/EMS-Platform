@@ -28,8 +28,6 @@ import AddIcon from '@mui/icons-material/Add';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import LaunchIcon from '@mui/icons-material/Launch';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import BuildCircleOutlinedIcon from '@mui/icons-material/BuildCircleOutlined';
 import InventoryIcon from '@mui/icons-material/Inventory';
@@ -53,7 +51,6 @@ import {
   FilterToolbar,
   EmptyState,
   DataTableWrapper,
-  DetailDrawer,
   CriticalAlertBanner,
   BulkActionBar,
   PageLoading,
@@ -116,11 +113,6 @@ function EquipmentListContent() {
   const [search, setSearch] = useState(searchParams?.get('search') || '');
   const [statusFilter, setStatusFilter] = useState(searchParams?.get('status') || '');
   const [tagFilter, setTagFilter] = useState(searchParams?.get('tagId') || '');
-
-  // Master-Detail Quick View Drawer State
-  const [selectedEquipment, setSelectedEquipment] = useState<EquipmentItem | null>(null);
-  const [quickViewDetails, setQuickViewDetails] = useState<any | null>(null);
-  const [loadingDetails, setLoadingDetails] = useState(false);
 
   // Status Counts for KPI
   const [statusCounts, setStatusCounts] = useState({
@@ -187,35 +179,6 @@ function EquipmentListContent() {
     fetchEquipment();
   }, [fetchEquipment]);
 
-  // Load Full Details when equipment selected for Quick View Side Drawer
-  useEffect(() => {
-    if (!selectedEquipment) {
-      setQuickViewDetails(null);
-      return;
-    }
-
-    let isMounted = true;
-    setLoadingDetails(true);
-
-    fetch(`/api/eps/equipment/${selectedEquipment.id}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (isMounted && data.success) {
-          setQuickViewDetails(data.data);
-        }
-      })
-      .catch(() => {
-        // ignore
-      })
-      .finally(() => {
-        if (isMounted) setLoadingDetails(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [selectedEquipment]);
-
   // Reset Filters
   const handleResetFilters = () => {
     setSearch('');
@@ -238,30 +201,7 @@ function EquipmentListContent() {
     setPage(1);
   };
 
-  // Quick status update from Master-Detail Drawer
-  const handleQuickStatusUpdate = async (newStatus: string) => {
-    if (!selectedEquipment) return;
-    try {
-      const res = await fetch(`/api/eps/equipment/${selectedEquipment.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        enqueueSnackbar('Статус оборудования успешно обновлен', { variant: 'success' });
-        setSelectedEquipment((prev) => (prev ? { ...prev, status: newStatus } : null));
-        fetchEquipment();
-      } else {
-        enqueueSnackbar(data.error || 'Не удалось обновить статус', { variant: 'error' });
-      }
-    } catch {
-      enqueueSnackbar('Сетевая ошибка при обновлении статуса', { variant: 'error' });
-    }
-  };
-
   const canCreate = hasPermission(PERMISSIONS.EPS_EQUIPMENT_CREATE);
-  const canEdit = hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT);
   const canImport = hasPermission(PERMISSIONS.EPS_IMPORT_EXECUTE);
 
   // Bulk Selection State
@@ -584,7 +524,6 @@ function EquipmentListContent() {
                     </MenuItem>
                   ))}
                 </TextField>
-
                 <ToggleButtonGroup
                   value={viewMode}
                   exclusive
@@ -659,22 +598,25 @@ function EquipmentListContent() {
                         sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />
                     ) : (
-                      <PrecisionManufacturingIcon sx={{ fontSize: 44, color: '#94a3b8' }} />
+                      <PrecisionManufacturingIcon sx={{ fontSize: 54, color: '#cbd5e1' }} />
                     )}
-                    <Box sx={{ position: 'absolute', top: 10, right: 10 }}>
+                    <Box sx={{ position: 'absolute', top: 8, right: 8 }}>
                       <StatusBadge status={eq.status} />
                     </Box>
                   </Box>
 
                   <CardContent sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.75 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                       <Typography
                         variant="caption"
                         sx={{
-                          fontWeight: 600,
-                          fontSize: '0.75rem',
                           fontFamily: 'monospace',
-                          color: '#64748b',
+                          fontWeight: 700,
+                          color: '#0284c7',
+                          backgroundColor: 'rgba(2, 132, 199, 0.08)',
+                          px: 0.75,
+                          py: 0.25,
+                          borderRadius: '4px',
                         }}
                       >
                         {eq.inventoryNumber || '—'}
@@ -844,27 +786,20 @@ function EquipmentListContent() {
           </TableHead>
           <TableBody>
             {sortedEquipmentList.map((eq) => {
-              const isSelected = selectedEquipment?.id === eq.id;
               const isChecked = selectedIds.includes(eq.id);
               return (
                 <TableRow
                   key={eq.id}
                   hover
-                  selected={isSelected}
-                  sx={{
-                    cursor: 'pointer',
-                    '&.Mui-selected': {
-                      backgroundColor: 'rgba(2, 132, 199, 0.06) !important',
-                    },
-                  }}
+                  sx={{ cursor: 'pointer' }}
                   onClick={() => handleRowClick(eq)}
-                  onDoubleClick={() => router.push(`/eps/${eq.id}`)}
                 >
                   <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()} sx={{ pl: 2 }}>
                     <Checkbox
                       size="small"
                       checked={isChecked}
-                      onChange={() => {
+                      onChange={(e) => {
+                        e.stopPropagation();
                         setSelectedIds((prev) =>
                           prev.includes(eq.id) ? prev.filter((id) => id !== eq.id) : [...prev, eq.id]
                         );
@@ -972,176 +907,6 @@ function EquipmentListContent() {
         </Table>
       </DataTableWrapper>
 
-      {/* Master-Detail Quick View Side Drawer using shared DetailDrawer */}
-      <DetailDrawer
-        open={Boolean(selectedEquipment)}
-        onClose={() => setSelectedEquipment(null)}
-        width={480}
-        loading={loadingDetails}
-        title={
-          selectedEquipment ? (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Chip
-                label={selectedEquipment.inventoryNumber || 'Б/Н'}
-                size="small"
-                variant="outlined"
-                sx={{ fontWeight: 700, fontFamily: 'monospace' }}
-              />
-              <Typography variant="subtitle1" fontWeight={700}>
-                Быстрый просмотр
-              </Typography>
-            </Box>
-          ) : (
-            'Быстрый просмотр'
-          )
-        }
-        footerActions={
-          selectedEquipment ? (
-            <Button
-              variant="contained"
-              fullWidth
-              size="large"
-              endIcon={<ArrowForwardIcon />}
-              onClick={() => router.push(`/eps/${selectedEquipment.id}`)}
-              sx={{ py: 1.25, fontWeight: 600 }}
-            >
-              Перейти в полный паспорт
-            </Button>
-          ) : undefined
-        }
-      >
-        {selectedEquipment && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-            {loadingDetails ? (
-              <PageLoading text="Загрузка сведений..." minHeight={200} size={28} />
-            ) : (
-              <>
-                <Typography variant="h6" fontWeight={700} color="primary.main">
-                  {selectedEquipment.name}
-                </Typography>
-
-                {/* Photo Preview if available */}
-                {selectedEquipment.primaryPhoto && (
-                  <Box
-                    component="img"
-                    src={`/api/files/${selectedEquipment.primaryPhoto}`}
-                    alt={selectedEquipment.name}
-                    sx={{
-                      width: '100%',
-                      height: 200,
-                      objectFit: 'cover',
-                      borderRadius: 2,
-                      border: '1px solid #e2e8f0',
-                    }}
-                  />
-                )}
-
-                {/* Status Quick Updater */}
-                <Card sx={{ p: 2, backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', elevation: 0 }}>
-                  <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" gutterBottom>
-                    ТЕКУЩИЙ СТАТУС
-                  </Typography>
-                  {canEdit ? (
-                    <TextField
-                      select
-                      size="small"
-                      fullWidth
-                      value={selectedEquipment.status}
-                      onChange={(e) => handleQuickStatusUpdate(e.target.value)}
-                    >
-                      {Object.entries(EQUIPMENT_STATUS_MAP).map(([key, info]) => (
-                        <MenuItem key={key} value={key}>
-                          {info.label}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                  ) : (
-                    <StatusBadge status={selectedEquipment.status} />
-                  )}
-                </Card>
-
-                {/* Specifications */}
-                <Box>
-                  <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                    Паспортные параметры:
-                  </Typography>
-                  <Table size="small">
-                    <TableBody>
-                      <TableRow>
-                        <TableCell sx={{ color: 'text.secondary', width: '45%' }}>Заводской номер</TableCell>
-                        <TableCell sx={{ fontWeight: 600 }}>{selectedEquipment.serialNumber || '—'}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell sx={{ color: 'text.secondary' }}>Производитель</TableCell>
-                        <TableCell>{selectedEquipment.manufacturer || '—'}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell sx={{ color: 'text.secondary' }}>Модель</TableCell>
-                        <TableCell>{selectedEquipment.model || '—'}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell sx={{ color: 'text.secondary' }}>Локация установки</TableCell>
-                        <TableCell>{selectedEquipment.location || '—'}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell sx={{ color: 'text.secondary' }}>Ввод в эксплуатацию</TableCell>
-                        <TableCell>{formatDate(selectedEquipment.commissionDate)}</TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </Box>
-
-                {/* Custom Fields Summary */}
-                {quickViewDetails?.customFields && Object.keys(quickViewDetails.customFields).length > 0 && (
-                  <Box>
-                    <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                      Дополнительные характеристики:
-                    </Typography>
-                    <Table size="small">
-                      <TableBody>
-                        {Object.entries(quickViewDetails.customFields).map(([k, v]) => (
-                          <TableRow key={k}>
-                            <TableCell sx={{ color: 'text.secondary', width: '45%' }}>{k.replace(/_/g, ' ')}</TableCell>
-                            <TableCell sx={{ fontWeight: 600 }}>
-                              {typeof v === 'boolean' ? (v ? 'Да' : 'Нет') : String(v)}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </Box>
-                )}
-
-                {/* Attached Documents List */}
-                {quickViewDetails?.documents && quickViewDetails.documents.length > 0 && (
-                  <Box>
-                    <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                      Прикрепленные документы ({quickViewDetails.documents.length}):
-                    </Typography>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      {quickViewDetails.documents.slice(0, 3).map((d: any) => (
-                        <Paper key={d.id} variant="outlined" sx={{ p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Box sx={{ overflow: 'hidden' }}>
-                            <Typography variant="body2" fontWeight={600} noWrap>
-                              {d.originalName}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {d.docType}
-                            </Typography>
-                          </Box>
-                          <IconButton size="small" component="a" href={`/api/files/${d.filePath}`} target="_blank" aria-label="Открыть документ">
-                            <LaunchIcon fontSize="small" />
-                          </IconButton>
-                        </Paper>
-                      ))}
-                    </Box>
-                  </Box>
-                )}
-              </>
-            )}
-          </Box>
-        )}
-      </DetailDrawer>
 
       {/* Floating Bulk Action Bar */}
       <BulkActionBar
