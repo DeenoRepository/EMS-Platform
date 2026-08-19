@@ -35,8 +35,9 @@ import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturi
 import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
-import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 import CreateNomenclatureDialog from '@/components/wms/CreateNomenclatureDialog';
+import { StockDetailDrawer, PrintBarcodeModal, type PrintableLabelItem } from '@/components/wms';
+import PrintIcon from '@mui/icons-material/Print';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS } from '@ems/shared';
@@ -54,6 +55,7 @@ import {
   type ExportFormat,
   type TableColumnOption,
 } from '@/components/ui';
+
 
 interface StockRow {
   id: string;
@@ -161,6 +163,14 @@ function WmsStockContent() {
   const [warehouseZonesForLoc, setWarehouseZonesForLoc] = useState<ZoneOption[]>([]);
   const [selectedCellId, setSelectedCellId] = useState<string>('');
   const [isSavingLoc, setIsSavingLoc] = useState(false);
+
+  // Slide-over Drawer: Stock Item Detail
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [selectedDrawerItem, setSelectedDrawerItem] = useState<StockRow | null>(null);
+
+  // Modal: Print Barcode / Label
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [printItems, setPrintItems] = useState<PrintableLabelItem[]>([]);
 
   // Load dictionaries once on mount
   useEffect(() => {
@@ -339,9 +349,50 @@ function WmsStockContent() {
     }
   };
 
+  const handleOpenDrawer = (item: StockRow) => {
+    setSelectedDrawerItem(item);
+    setIsDrawerOpen(true);
+  };
+
+  const handleOpenPrintSingle = (item: StockRow) => {
+    setPrintItems([
+      {
+        id: item.id,
+        name: item.name,
+        article: item.article,
+        unit: item.unit,
+        warehouseCode: item.warehouseCode,
+        cellCode: item.cellCode,
+        quantity: item.quantity,
+      },
+    ]);
+    setIsPrintModalOpen(true);
+  };
+
+  const handleOpenPrintBulk = () => {
+    const targetItems = items.filter((i) => selectedIds.includes(i.id));
+    if (targetItems.length === 0) {
+      enqueueSnackbar('Выберите позиции для печати этикеток', { variant: 'warning' });
+      return;
+    }
+    setPrintItems(
+      targetItems.map((i) => ({
+        id: i.id,
+        name: i.name,
+        article: i.article,
+        unit: i.unit,
+        warehouseCode: i.warehouseCode,
+        cellCode: i.cellCode,
+        quantity: i.quantity,
+      }))
+    );
+    setIsPrintModalOpen(true);
+  };
+
   const handleBulkIssue = () => {
     enqueueSnackbar(`Сформирован черновик акта списания на ${selectedIds.length} позиций`, { variant: 'info' });
   };
+
 
   const lowStockCount = items.filter((i) => i.isLowStock).length;
   const criticalAlerts = useMemo(() => {
@@ -830,10 +881,20 @@ function WmsStockContent() {
                   )}
 
                   {visibleColumns.includes('name') && (
-                    <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#0f172a' }}>
+                    <TableCell
+                      onClick={() => handleOpenDrawer(row)}
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: '0.8125rem',
+                        color: '#0284c7',
+                        cursor: 'pointer',
+                        '&:hover': { textDecoration: 'underline' },
+                      }}
+                    >
                       {row.name}
                     </TableCell>
                   )}
+
 
                   {visibleColumns.includes('category') && (
                     <TableCell sx={{ fontSize: '0.8125rem', color: '#334155' }}>
@@ -1012,6 +1073,12 @@ function WmsStockContent() {
         onClearSelection={() => setSelectedIds([])}
         actions={[
           {
+            label: 'Печать этикеток',
+            icon: <PrintIcon fontSize="small" />,
+            onClick: handleOpenPrintBulk,
+            color: 'primary',
+          },
+          {
             label: 'Экспорт в CSV',
             icon: <FileDownloadOutlinedIcon fontSize="small" />,
             onClick: () => handleExport('csv'),
@@ -1019,12 +1086,29 @@ function WmsStockContent() {
           },
           {
             label: 'Сформировать списание',
-            icon: <SendOutlinedIcon fontSize="small" />,
+            icon: <PrintIcon fontSize="small" />,
             onClick: handleBulkIssue,
             color: 'warning',
           },
         ]}
       />
+
+      {/* Slide-over Drawer для детального просмотра ТМЦ */}
+      <StockDetailDrawer
+        open={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        stockItem={selectedDrawerItem}
+        onChangeLocation={(item) => handleOpenLocationModal(item)}
+        onPrintLabel={(item) => handleOpenPrintSingle(item)}
+      />
+
+      {/* Модальное окно печати термоэтикеток и штрихкодов */}
+      <PrintBarcodeModal
+        open={isPrintModalOpen}
+        onClose={() => setIsPrintModalOpen(false)}
+        items={printItems}
+      />
     </Box>
   );
 }
+

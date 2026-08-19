@@ -43,9 +43,12 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import BusinessIcon from '@mui/icons-material/Business';
 import TuneIcon from '@mui/icons-material/Tune';
 import PlaceIcon from '@mui/icons-material/Place';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CreateNomenclatureDialog from '@/components/wms/CreateNomenclatureDialog';
+import { WmsOperationWizardDialog } from '@/components/wms';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
+
 import { PERMISSIONS, formatDateTime } from '@ems/shared';
 import {
   StatCard,
@@ -167,7 +170,9 @@ function WmsOperationsContent() {
 
   // Create Operation Modal State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [opMode, setOpMode] = useState<OperationMode>('RECEIPT');
+
   const [opWarehouseId, setOpWarehouseId] = useState('');
   const [opTargetWarehouseId, setOpTargetWarehouseId] = useState('');
   const [opCounterparty, setOpCounterparty] = useState('');
@@ -709,7 +714,23 @@ function WmsOperationsContent() {
         ]}
         actions={
           hasPermission(PERMISSIONS.WMS_OPERATIONS_CREATE) && (
-            <Stack direction="row" spacing={1}>
+            <Stack direction="row" spacing={1.5}>
+              <Button
+                variant="outlined"
+                startIcon={<AutoAwesomeIcon sx={{ color: '#7c3aed' }} />}
+                onClick={() => setIsWizardOpen(true)}
+                sx={{
+                  px: 2,
+                  py: 0.75,
+                  fontWeight: 600,
+                  borderColor: '#ddd6fe',
+                  color: '#6d28d9',
+                  bgcolor: '#f5f3ff',
+                  '&:hover': { bgcolor: '#ede9fe', borderColor: '#c4b5fd' },
+                }}
+              >
+                Пошаговый мастер
+              </Button>
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
@@ -722,6 +743,7 @@ function WmsOperationsContent() {
             </Stack>
           )
         }
+
       />
 
       {/* KPI Metric Cards */}
@@ -1477,15 +1499,18 @@ function WmsOperationsContent() {
         </Stack>
       </FormDialog>
 
-      {/* Быстрое создание номенклатуры */}
-      <CreateNomenclatureDialog
-        open={isQuickNomOpen}
-        onClose={() => setIsQuickNomOpen(false)}
-        onCreated={handleNomenclatureCreated}
+      {/* Пошаговый мастер оформления складских операций */}
+      <WmsOperationWizardDialog
+        open={isWizardOpen}
+        onClose={() => setIsWizardOpen(false)}
+        onSuccess={() => {
+          fetchOperations();
+        }}
       />
     </Box>
   );
 }
+
 
 export default function WmsOperationsPage() {
   return (

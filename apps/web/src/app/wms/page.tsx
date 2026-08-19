@@ -33,6 +33,8 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import AddIcon from '@mui/icons-material/Add';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+
 import { OPERATION_TYPE_MAP, formatDateTime, PERMISSIONS } from '@ems/shared';
 import {
   StatCard,
@@ -41,7 +43,9 @@ import {
   DataTableWrapper,
   CriticalAlertBanner,
 } from '@/components/ui';
+import { WmsOperationWizardDialog, type OperationType } from '@/components/wms';
 import { useAuth } from '@/lib/auth-client';
+
 
 interface WmsStats {
   warehousesCount: number;
@@ -255,6 +259,14 @@ export default function WmsDashboardPage() {
   const { hasPermission } = useAuth();
   const [stats, setStats] = useState<WmsStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [wizardType, setWizardType] = useState<OperationType>('RECEIPT');
+
+  const handleOpenWizard = (type: OperationType = 'RECEIPT') => {
+    setWizardType(type);
+    setIsWizardOpen(true);
+  };
+
 
   const fetchStats = async () => {
     setIsLoading(true);
@@ -351,22 +363,23 @@ export default function WmsDashboardPage() {
             {hasPermission(PERMISSIONS.WMS_OPERATIONS_CREATE) && (
               <Button
                 variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => router.push('/wms/operations?create=RECEIPT')}
+                startIcon={<AutoAwesomeIcon sx={{ color: '#ffffff' }} />}
+                onClick={() => handleOpenWizard('RECEIPT')}
                 size="small"
-                aria-label="Оформить приход ТМЦ"
+                aria-label="Оформить операцию через мастер"
                 sx={{
                   fontWeight: 600,
                   borderRadius: '8px',
-                  backgroundColor: '#16a34a',
-                  '&:hover': { backgroundColor: '#15803d' },
+                  bgcolor: '#0284c7',
+                  '&:hover': { bgcolor: '#0369a1' },
                 }}
               >
-                Приход ТМЦ
+                Мастер операций
               </Button>
             )}
           </Stack>
         }
+
       />
 
       {/* Предупреждение о дефиците ТМЦ */}
@@ -780,6 +793,17 @@ export default function WmsDashboardPage() {
           </Stack>
         </Grid>
       </Grid>
+
+      {/* Пошаговый мастер складских операций */}
+      <WmsOperationWizardDialog
+        open={isWizardOpen}
+        onClose={() => setIsWizardOpen(false)}
+        initialType={wizardType}
+        onSuccess={() => {
+          fetchStats();
+        }}
+      />
     </Box>
   );
 }
+

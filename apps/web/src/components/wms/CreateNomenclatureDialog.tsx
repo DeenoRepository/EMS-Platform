@@ -6,8 +6,20 @@ import {
   Grid,
   MenuItem,
   Stack,
+  Box,
+  Typography,
+  Paper,
+  InputAdornment,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
+import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
+import BuildOutlinedIcon from '@mui/icons-material/BuildOutlined';
+import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
+import SecurityOutlinedIcon from '@mui/icons-material/SecurityOutlined';
+import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { useSnackbar } from 'notistack';
 import { FormDialog } from '@/components/ui';
 
@@ -23,6 +35,14 @@ interface CreateNomenclatureDialogProps {
   categories?: CategoryOption[];
 }
 
+const NOMENCLATURE_TYPES = [
+  { id: 'SPARE_PART', label: 'Запчасть', icon: <PrecisionManufacturingIcon sx={{ fontSize: 18 }} />, prefix: 'SP' },
+  { id: 'CONSUMABLE', label: 'Расходник', icon: <Inventory2OutlinedIcon sx={{ fontSize: 18 }} />, prefix: 'CS' },
+  { id: 'TOOL', label: 'Инструмент', icon: <BuildOutlinedIcon sx={{ fontSize: 18 }} />, prefix: 'TL' },
+  { id: 'LUBRICANT', label: 'Масла/ГСМ', icon: <ScienceOutlinedIcon sx={{ fontSize: 18 }} />, prefix: 'LB' },
+  { id: 'PPE', label: 'СИЗ', icon: <SecurityOutlinedIcon sx={{ fontSize: 18 }} />, prefix: 'PPE' },
+];
+
 export default function CreateNomenclatureDialog({
   open,
   onClose,
@@ -31,6 +51,7 @@ export default function CreateNomenclatureDialog({
 }: CreateNomenclatureDialogProps) {
   const { enqueueSnackbar } = useSnackbar();
 
+  const [selectedType, setSelectedType] = useState('SPARE_PART');
   const [name, setName] = useState('');
   const [article, setArticle] = useState('');
   const [unit, setUnit] = useState('шт');
@@ -54,12 +75,20 @@ export default function CreateNomenclatureDialog({
   }, [open, initialCategories]);
 
   const handleReset = () => {
+    setSelectedType('SPARE_PART');
     setName('');
     setArticle('');
     setUnit('шт');
     setCategoryId('');
     setMinStock('');
     setDescription('');
+  };
+
+  const handleGenerateSku = () => {
+    const typeObj = NOMENCLATURE_TYPES.find((t) => t.id === selectedType) || NOMENCLATURE_TYPES[0];
+    const rand = Math.floor(1000 + Math.random() * 9000);
+    const sku = `${typeObj.prefix}-${rand}`;
+    setArticle(sku);
   };
 
   const handleSubmit = async () => {
@@ -92,7 +121,7 @@ export default function CreateNomenclatureDialog({
       } else {
         enqueueSnackbar(json.error || 'Ошибка создания номенклатуры', { variant: 'error' });
       }
-    } catch (err) {
+    } catch {
       enqueueSnackbar('Ошибка сети при создании номенклатуры', { variant: 'error' });
     } finally {
       setIsSubmitting(false);
@@ -104,8 +133,8 @@ export default function CreateNomenclatureDialog({
       open={open}
       onClose={() => !isSubmitting && onClose()}
       title="Создание позиции номенклатуры (ТМЦ)"
-      subtitle="Добавление новой позиции в каталог запасных частей и материалов"
-      icon={<Inventory2OutlinedIcon />}
+      subtitle="Регистрация новой позиции в справочнике запасных частей и материалов"
+      icon={<Inventory2OutlinedIcon color="primary" />}
       maxWidth="sm"
       loading={isSubmitting}
       submitLabel={isSubmitting ? 'Сохранение...' : 'Создать номенклатуру'}
@@ -113,6 +142,57 @@ export default function CreateNomenclatureDialog({
       submitDisabled={isSubmitting || !name.trim()}
     >
       <Stack spacing={2.5} sx={{ mt: 1 }}>
+        {/* Type Selector Pills */}
+        <Box>
+          <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, display: 'block', mb: 1 }}>
+            Тип товарно-материальной ценности:
+          </Typography>
+          <Grid container spacing={1}>
+            {NOMENCLATURE_TYPES.map((t) => {
+              const isSelected = selectedType === t.id;
+              return (
+                <Grid item xs={6} sm={2.4} key={t.id}>
+                  <Paper
+                    elevation={0}
+                    onClick={() => setSelectedType(t.id)}
+                    sx={{
+                      p: 1,
+                      borderRadius: '8px',
+                      border: '1px solid',
+                      borderColor: isSelected ? '#0284c7' : '#e2e8f0',
+                      bgcolor: isSelected ? 'rgba(2, 132, 199, 0.08)' : '#ffffff',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      transition: 'all 0.15s ease',
+                      '&:hover': {
+                        borderColor: '#0284c7',
+                        transform: 'translateY(-1px)',
+                      },
+                    }}
+                  >
+                    <Box sx={{ color: isSelected ? '#0284c7' : '#64748b', display: 'flex', justifyContent: 'center', mb: 0.5 }}>
+                      {t.icon}
+                    </Box>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontWeight: isSelected ? 700 : 500,
+                        color: isSelected ? '#0284c7' : '#334155',
+                        display: 'block',
+                        fontSize: '0.6875rem',
+                      }}
+                      noWrap
+                    >
+                      {t.label}
+                    </Typography>
+                  </Paper>
+                </Grid>
+              );
+            })}
+          </Grid>
+        </Box>
+
+        {/* Nomenclature Name */}
         <TextField
           fullWidth
           required
@@ -122,26 +202,40 @@ export default function CreateNomenclatureDialog({
           onChange={(e) => setName(e.target.value)}
         />
 
+        {/* SKU & Unit */}
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={7}>
             <TextField
               fullWidth
               label="Артикул / Заводской код"
               placeholder="BRG-6204-2RS"
               value={article}
               onChange={(e) => setArticle(e.target.value)}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Tooltip title="Сгенерировать артикул автоматически">
+                      <IconButton size="small" onClick={handleGenerateSku} sx={{ color: '#7c3aed' }}>
+                        <AutoAwesomeIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </InputAdornment>
+                ),
+              }}
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={5}>
             <TextField
               fullWidth
-              label="Единица измерения"
+              label="Ед. измерения"
               value={unit}
               onChange={(e) => setUnit(e.target.value)}
+              placeholder="шт, м, л, кг"
             />
           </Grid>
         </Grid>
 
+        {/* Category & Min Stock */}
         <Grid container spacing={2}>
           <Grid item xs={12} sm={6}>
             <TextField
@@ -151,7 +245,9 @@ export default function CreateNomenclatureDialog({
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
             >
-              <MenuItem value="">Без категории</MenuItem>
+              <MenuItem value="">
+                <em>— Без категории —</em>
+              </MenuItem>
               {categories.map((c) => (
                 <MenuItem key={c.id} value={c.id}>
                   {c.name}
@@ -163,20 +259,22 @@ export default function CreateNomenclatureDialog({
             <TextField
               fullWidth
               type="number"
-              label="Минимальный остаток"
-              placeholder="для контроля дефицита"
+              label="Неснижаемый остаток"
+              placeholder="Контроль дефицита"
               value={minStock}
               onChange={(e) => setMinStock(e.target.value)}
+              inputProps={{ min: 0 }}
             />
           </Grid>
         </Grid>
 
+        {/* Description */}
         <TextField
           fullWidth
           multiline
-          rows={3}
-          label="Описание / Применение"
-          placeholder="Характеристики, область применения к узлам оборудования..."
+          rows={2.5}
+          label="Описание / Область применения"
+          placeholder="Технические характеристики, совместимые узлы оборудования..."
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />

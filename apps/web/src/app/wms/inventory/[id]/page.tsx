@@ -39,6 +39,8 @@ import {
   PageLoading,
   CriticalAlertBanner,
 } from '@/components/ui';
+import { InventoryCompleteModal } from '@/components/wms';
+
 
 interface InventoryDetail {
   id: string;
@@ -151,7 +153,7 @@ export default function WmsInventoryDetailPage() {
     }
   };
 
-  const handleCompleteInventory = async () => {
+  const handleCompleteInventory = async (finalComment?: string) => {
     setIsSaving(true);
     try {
       const res = await fetch(`/api/wms/inventories/${id}`, {
@@ -159,6 +161,7 @@ export default function WmsInventoryDetailPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           status: 'COMPLETED',
+          comment: finalComment || inventory?.comment || undefined,
           items: itemsState.map((i) => ({
             id: i.id,
             actualQty: i.actualQty,
@@ -175,12 +178,13 @@ export default function WmsInventoryDetailPage() {
       } else {
         enqueueSnackbar(json.error || 'Ошибка завершения инвентаризации', { variant: 'error' });
       }
-    } catch (err) {
+    } catch {
       enqueueSnackbar('Ошибка сети при завершении инвентаризации', { variant: 'error' });
     } finally {
       setIsSaving(false);
     }
   };
+
 
   if (isLoading && !inventory) {
     return <PageLoading text="Загрузка акта инвентаризации..." />;
@@ -432,27 +436,26 @@ export default function WmsInventoryDetailPage() {
         </Table>
       </DataTableWrapper>
 
-      {/* Диалог подтверждения завершения инвентаризации */}
-      <ConfirmDialog
+      {/* Модальное окно подтверждения и аналитики завершения инвентаризации */}
+      <InventoryCompleteModal
         open={isConfirmCompleteOpen}
-        title="Завершение инвентаризации и корректировка"
-        message={
-          <Stack spacing={1.5}>
-            <Typography variant="body2">
-              Вы уверены, что хотите завершить инвентаризацию по складу <b>{inventory.warehouse.name}</b>?
-            </Typography>
-            <Alert severity="warning" icon={<WarningAmberIcon />}>
-              По всем строкам с расхождениями ({surplusCount + deficitCount} поз.) будет автоматически сформирована
-              складская операция <b>ADJUSTMENT (Корректировка)</b>, а остатки в базе данных приведены к фактическим значениям.
-            </Alert>
-          </Stack>
-        }
-        confirmText="Подтвердить и закрыть акт"
-        variant="warning"
-        loading={isSaving}
-        onConfirm={handleCompleteInventory}
         onClose={() => setIsConfirmCompleteOpen(false)}
+        onConfirm={handleCompleteInventory}
+        warehouseName={inventory.warehouse.name}
+        inventoryNumber={`INV-${inventory.id.slice(-6).toUpperCase()}`}
+        items={inventory.items.map((item) => {
+          const stateItem = itemsState.find((s) => s.id === item.id);
+          return {
+            id: item.id,
+            expectedQty: item.expectedQty,
+            actualQty: stateItem ? stateItem.actualQty : Number(item.expectedQty),
+            comment: stateItem?.comment,
+            nomenclature: item.nomenclature,
+          };
+        })}
+        isSubmitting={isSaving}
       />
     </Box>
   );
 }
+
