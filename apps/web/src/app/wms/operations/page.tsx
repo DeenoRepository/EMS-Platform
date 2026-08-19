@@ -795,47 +795,82 @@ function WmsOperationsContent() {
           setRowsPerPage(parseInt(e.target.value, 10));
           setPage(0);
         }}
+        columns={OPERATIONS_COLUMNS}
+        visibleColumns={visibleColumns}
+        onVisibleColumnsChange={setVisibleColumns}
         toolbar={
           <FilterToolbar
+            variant="embedded"
             activeFilterCount={activeFilterCount}
             onResetFilters={handleResetFilters}
-            columns={OPERATIONS_COLUMNS}
-            visibleColumns={visibleColumns}
-            onColumnVisibilityChange={setVisibleColumns}
-            filters={[
-              {
-                id: 'warehouse',
-                label: 'Склад',
-                value: selectedWarehouse,
-                onChange: (v) => {
-                  setSelectedWarehouse(v);
-                  setPage(0);
+          >
+            <TextField
+              select
+              size="small"
+              value={selectedWarehouse}
+              onChange={(e) => {
+                setSelectedWarehouse(e.target.value);
+                setPage(0);
+              }}
+              sx={{
+                minWidth: 200,
+                backgroundColor: '#ffffff',
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  fontSize: '0.8125rem',
+                  height: 36,
+                  '& fieldset': { borderColor: '#e2e8f0' },
+                  '&:hover fieldset': { borderColor: '#cbd5e1' },
                 },
-                options: [
-                  { label: 'Все склады', value: '' },
-                  ...warehouses.map((w) => ({
-                    label: `${w.name} (${w.code})`,
-                    value: w.id,
-                  })),
-                ],
-              },
-              {
-                id: 'type',
-                label: 'Тип операции',
-                value: selectedType,
-                onChange: (v) => {
-                  setSelectedType(v);
-                  setPage(0);
+              }}
+            >
+              <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>
+                Все склады
+              </MenuItem>
+              {warehouses.map((w) => (
+                <MenuItem key={w.id} value={w.id} sx={{ fontSize: '0.8125rem' }}>
+                  {w.name} ({w.code})
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              select
+              size="small"
+              value={selectedType}
+              onChange={(e) => {
+                setSelectedType(e.target.value);
+                setPage(0);
+              }}
+              sx={{
+                minWidth: 200,
+                backgroundColor: '#ffffff',
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  fontSize: '0.8125rem',
+                  height: 36,
+                  '& fieldset': { borderColor: '#e2e8f0' },
+                  '&:hover fieldset': { borderColor: '#cbd5e1' },
                 },
-                options: [
-                  { label: 'Все типы', value: '' },
-                  { label: 'Приход', value: 'RECEIPT' },
-                  { label: 'Расход / Выдача / Списание', value: 'ISSUE' },
-                  { label: 'Перемещение', value: 'TRANSFER' },
-                ],
-              },
-            ]}
-          />
+              }}
+            >
+              <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>
+                Все типы операций
+              </MenuItem>
+              <MenuItem value="RECEIPT" sx={{ fontSize: '0.8125rem' }}>
+                Приход
+              </MenuItem>
+              <MenuItem value="ISSUE" sx={{ fontSize: '0.8125rem' }}>
+                Расход / Списание
+              </MenuItem>
+              <MenuItem value="TRANSFER" sx={{ fontSize: '0.8125rem' }}>
+                Перемещение
+              </MenuItem>
+              <MenuItem value="ADJUSTMENT" sx={{ fontSize: '0.8125rem' }}>
+                Корректировка
+              </MenuItem>
+            </TextField>
+          </FilterToolbar>
         }
       >
         <Table size="small" stickyHeader aria-label="Журнал складских операций">
