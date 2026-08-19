@@ -23,6 +23,14 @@ export async function GET(req: NextRequest) {
             email: true,
           },
         },
+        zones: {
+          include: {
+            cells: {
+              orderBy: { code: 'asc' },
+            },
+          },
+          orderBy: { code: 'asc' },
+        },
         _count: {
           select: {
             stockItems: true,

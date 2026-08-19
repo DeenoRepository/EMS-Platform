@@ -72,6 +72,9 @@ interface OperationItemInput {
   nomenclatureId: string;
   quantity: number;
   equipmentId?: string | null;
+  cellId?: string | null;
+  price?: number | null;
+  batchNumber?: string | null;
 }
 
 export async function POST(req: NextRequest) {
@@ -177,7 +180,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // 2. Создаем запись операции
+      // 2. Создаем запись операции (документ опционален)
       const op = await tx.stockOperation.create({
         data: {
           warehouseId,
@@ -190,7 +193,7 @@ export async function POST(req: NextRequest) {
             create: items.map((i) => ({
               nomenclatureId: i.nomenclatureId,
               quantity: i.quantity,
-              equipmentId: type === 'ISSUE' ? i.equipmentId || null : null,
+              equipmentId: i.equipmentId || null,
             })),
           },
         },
@@ -215,13 +218,32 @@ export async function POST(req: NextRequest) {
             },
             update: {
               quantity: { increment: qtyNum },
+              ...(item.cellId ? { cellId: item.cellId } : {}),
             },
             create: {
               warehouseId,
               nomenclatureId: item.nomenclatureId,
               quantity: qtyNum,
+              cellId: item.cellId || null,
             },
           });
+
+          // Связь запчасти с оборудованием (EPS) при указании
+          if (item.equipmentId) {
+            await tx.equipmentSparePart.upsert({
+              where: {
+                equipmentId_nomenclatureId: {
+                  equipmentId: item.equipmentId,
+                  nomenclatureId: item.nomenclatureId,
+                },
+              },
+              update: {},
+              create: {
+                equipmentId: item.equipmentId,
+                nomenclatureId: item.nomenclatureId,
+              },
+            });
+          }
         } else if (type === 'ISSUE') {
           const updatedStock = await tx.stockItem.update({
             where: {
