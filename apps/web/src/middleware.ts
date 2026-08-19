@@ -9,14 +9,16 @@ function getJwtSecret(): Uint8Array {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // 1. Исключаем статические ресурсы, favicon, внутренние роуты Next.js
+  // 1. Исключаем статические ресурсы, favicon, внутренние роуты Next.js, картинки и шрифты
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/setup') ||
     pathname.startsWith('/setup') ||
     pathname === '/favicon.ico' ||
+    pathname === '/logo.png' ||
     pathname === '/api/auth/login' ||
-    pathname.startsWith('/api/files')
+    pathname.startsWith('/api/files') ||
+    /\.(png|jpg|jpeg|svg|webp|ico|gif|woff|woff2|ttf|eot|css|js)$/.test(pathname)
   ) {
     return NextResponse.next();
   }
@@ -83,7 +85,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - public assets (.png, .jpg, etc.)
      */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|eot)$).*)',
   ],
 };

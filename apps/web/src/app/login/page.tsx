@@ -20,6 +20,8 @@ import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import SecurityIcon from '@mui/icons-material/Security';
+import Inventory2Icon from '@mui/icons-material/Inventory2';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useAuth } from '@/lib/auth-client';
 
 export default function LoginPage() {
@@ -28,11 +30,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [activeDemo, setActiveDemo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!username.trim()) {
+  const performLogin = async (user: string, pass: string) => {
+    if (!user.trim()) {
       setError('Пожалуйста, введите ваш корпоративный логин (LDAP)');
       return;
     }
@@ -40,17 +42,24 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    const res = await login(username.trim(), password);
+    const res = await login(user.trim(), pass);
     if (!res.success) {
       setError(res.error || 'Ошибка входа');
       setLoading(false);
+      setActiveDemo(null);
     }
   };
 
-  const handleDemoLogin = (user: string, pass: string) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await performLogin(username, password);
+  };
+
+  const handleDemoLogin = async (user: string, pass: string, demoKey: string) => {
     setUsername(user);
     setPassword(pass);
-    setError(null);
+    setActiveDemo(demoKey);
+    await performLogin(user, pass);
   };
 
   return (
@@ -177,7 +186,7 @@ export default function LoginPage() {
                 fontSize: '0.95rem',
               }}
             >
-              {loading ? <CircularProgress size={24} color="inherit" /> : 'Войти'}
+              {loading && !activeDemo ? <CircularProgress size={24} color="inherit" /> : 'Войти'}
             </Button>
           </Box>
 
@@ -189,39 +198,84 @@ export default function LoginPage() {
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             <Button
+              type="button"
               variant="outlined"
               size="small"
               fullWidth
-              onClick={() => handleDemoLogin('admin', 'admin123')}
-              sx={{ justifyContent: 'flex-start', px: 2, py: 1 }}
+              disabled={loading}
+              onClick={() => handleDemoLogin('admin', 'admin123', 'admin')}
+              sx={{ justifyContent: 'space-between', px: 2, py: 1 }}
             >
-              <SecurityIcon fontSize="small" sx={{ mr: 1, color: 'primary.main' }} />
-              <Box sx={{ textAlign: 'left' }}>
-                <Typography variant="body2" fontWeight={600} lineHeight={1.2}>
-                  Администратор
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  admin / admin123 (Полные права)
-                </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <SecurityIcon fontSize="small" sx={{ mr: 1.5, color: 'primary.main' }} />
+                <Box sx={{ textAlign: 'left' }}>
+                  <Typography variant="body2" fontWeight={600} lineHeight={1.2}>
+                    Администратор
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    admin / admin123 (Полные права)
+                  </Typography>
+                </Box>
               </Box>
+              {loading && activeDemo === 'admin' ? (
+                <CircularProgress size={18} color="primary" />
+              ) : (
+                <ArrowForwardIcon fontSize="small" sx={{ color: 'text.secondary', opacity: 0.6 }} />
+              )}
             </Button>
 
             <Button
+              type="button"
               variant="outlined"
               size="small"
               fullWidth
-              onClick={() => handleDemoLogin('engineer', 'engineer123')}
-              sx={{ justifyContent: 'flex-start', px: 2, py: 1 }}
+              disabled={loading}
+              onClick={() => handleDemoLogin('engineer', 'engineer123', 'engineer')}
+              sx={{ justifyContent: 'space-between', px: 2, py: 1 }}
             >
-              <PrecisionManufacturingIcon fontSize="small" sx={{ mr: 1, color: 'secondary.main' }} />
-              <Box sx={{ textAlign: 'left' }}>
-                <Typography variant="body2" fontWeight={600} lineHeight={1.2}>
-                  Инженер
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  engineer / engineer123 (Паспорта + ТО)
-                </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <PrecisionManufacturingIcon fontSize="small" sx={{ mr: 1.5, color: 'info.main' }} />
+                <Box sx={{ textAlign: 'left' }}>
+                  <Typography variant="body2" fontWeight={600} lineHeight={1.2}>
+                    Инженер
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    engineer / engineer123 (Паспорта + ТО)
+                  </Typography>
+                </Box>
               </Box>
+              {loading && activeDemo === 'engineer' ? (
+                <CircularProgress size={18} color="primary" />
+              ) : (
+                <ArrowForwardIcon fontSize="small" sx={{ color: 'text.secondary', opacity: 0.6 }} />
+              )}
+            </Button>
+
+            <Button
+              type="button"
+              variant="outlined"
+              size="small"
+              fullWidth
+              disabled={loading}
+              onClick={() => handleDemoLogin('keeper', 'keeper123', 'keeper')}
+              sx={{ justifyContent: 'space-between', px: 2, py: 1 }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Inventory2Icon fontSize="small" sx={{ mr: 1.5, color: 'success.main' }} />
+                <Box sx={{ textAlign: 'left' }}>
+                  <Typography variant="body2" fontWeight={600} lineHeight={1.2}>
+                    Кладовщик
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    keeper / keeper123 (Склад WMS)
+                  </Typography>
+                </Box>
+              </Box>
+              {loading && activeDemo === 'keeper' ? (
+                <CircularProgress size={18} color="primary" />
+              ) : (
+                <ArrowForwardIcon fontSize="small" sx={{ color: 'text.secondary', opacity: 0.6 }} />
+              )}
             </Button>
           </Box>
         </CardContent>
