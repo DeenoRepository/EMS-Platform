@@ -64,7 +64,7 @@ const OPERATIONS_COLUMNS: TableColumnOption[] = [
   { id: 'warehouse', label: 'Склад', defaultVisible: true },
   { id: 'items', label: 'Позиции и количество', defaultVisible: true, required: true },
   { id: 'recipient', label: 'Получатель / Назначение / Причина', defaultVisible: true },
-  { id: 'document', label: 'Документ / Основание', defaultVisible: true },
+  { id: 'comment', label: 'Примечание / Комментарий', defaultVisible: true },
   { id: 'executor', label: 'Исполнитель', defaultVisible: true },
 ];
 
@@ -171,7 +171,6 @@ function WmsOperationsContent() {
   const [opWarehouseId, setOpWarehouseId] = useState('');
   const [opTargetWarehouseId, setOpTargetWarehouseId] = useState('');
   const [opCounterparty, setOpCounterparty] = useState('');
-  const [opDocument, setOpDocument] = useState('');
   const [opComment, setOpComment] = useState('');
 
   // Mode Specific Form States
@@ -358,7 +357,6 @@ function WmsOperationsContent() {
     setOpMode(mode);
     setFormRows([{ nomenclature: null, quantity: 1, equipment: null, cellId: '', price: '', batchNumber: '', showExtended: mode === 'RECEIPT' }]);
     setOpCounterparty('');
-    setOpDocument('');
     setOpComment('');
     setSelectedEmployee(null);
     setSelectedEquipment(null);
@@ -500,7 +498,6 @@ function WmsOperationsContent() {
           warehouseId: opWarehouseId,
           targetWarehouseId: opMode === 'TRANSFER' ? opTargetWarehouseId : undefined,
           counterparty: counterpartyPayload,
-          document: opDocument.trim() || undefined,
           comment: opComment.trim() || undefined,
           items: validItems,
         }),
@@ -581,9 +578,9 @@ function WmsOperationsContent() {
           aVal = a.createdBy?.displayName || '';
           bVal = b.createdBy?.displayName || '';
           break;
-        case 'document':
-          aVal = a.document || '';
-          bVal = b.document || '';
+        case 'comment':
+          aVal = a.comment || '';
+          bVal = b.comment || '';
           break;
         default:
           aVal = (a as any)[sortField] || '';
@@ -892,14 +889,14 @@ function WmsOperationsContent() {
                 </TableCell>
               )}
 
-              {visibleColumns.includes('document') && (
+              {visibleColumns.includes('comment') && (
                 <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
                   <TableSortLabel
-                    active={sortField === 'document'}
-                    direction={sortField === 'document' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('document')}
+                    active={sortField === 'comment'}
+                    direction={sortField === 'comment' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('comment')}
                   >
-                    ДОКУМЕНТ / ОСНОВАНИЕ
+                    ПРИМЕЧАНИЕ / КОММЕНТАРИЙ
                   </TableSortLabel>
                 </TableCell>
               )}
@@ -985,22 +982,11 @@ function WmsOperationsContent() {
                     </TableCell>
                   )}
 
-                  {visibleColumns.includes('document') && (
+                  {visibleColumns.includes('comment') && (
                     <TableCell>
-                      {op.document ? (
-                        <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem', color: '#0f172a' }}>
-                          {op.document}
-                        </Typography>
-                      ) : (
-                        <Typography variant="caption" sx={{ color: '#94a3b8' }}>
-                          —
-                        </Typography>
-                      )}
-                      {op.comment && (
-                        <Typography variant="caption" sx={{ display: 'block', color: '#64748b', mt: 0.25 }}>
-                          {op.comment}
-                        </Typography>
-                      )}
+                      <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: '#475569' }}>
+                        {op.comment || '—'}
+                      </Typography>
                     </TableCell>
                   )}
 
@@ -1216,7 +1202,7 @@ function WmsOperationsContent() {
 
             {/* Поставщик для прихода */}
             {opMode === 'RECEIPT' && (
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12}>
                 <TextField
                   fullWidth
                   label="Контрагент / Поставщик (необязательно)"
@@ -1226,17 +1212,6 @@ function WmsOperationsContent() {
                 />
               </Grid>
             )}
-
-            {/* Номер накладной / документ-основание (полностью НЕОБЯЗАТЕЛЬНО) */}
-            <Grid item xs={12} sm={opMode === 'RECEIPT' ? 6 : 12}>
-              <TextField
-                fullWidth
-                label="Документ-основание / Накладная (необязательно)"
-                placeholder="Номер накладной, акта или оставьте пустым"
-                value={opDocument}
-                onChange={(e) => setOpDocument(e.target.value)}
-              />
-            </Grid>
           </Grid>
 
           <Divider />
