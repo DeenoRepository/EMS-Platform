@@ -517,21 +517,6 @@ function WmsStockContent() {
           { label: 'Складской учёт', href: '/wms' },
           { label: 'Остатки' },
         ]}
-        actions={
-          <Stack direction="row" spacing={1.5}>
-            {hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) && (
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setIsNomenclatureModalOpen(true)}
-                aria-label="Создать новую номенклатуру"
-                sx={{ px: 2.25, py: 0.75, fontWeight: 600 }}
-              >
-                Новая номенклатура
-              </Button>
-            )}
-          </Stack>
-        }
       />
 
       {/* Critical Stock Alerts */}
