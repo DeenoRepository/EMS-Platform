@@ -392,10 +392,11 @@ export default function EquipmentPassportPage() {
     try {
       const fd = new FormData();
       fd.append('file', selectedFile);
+      fd.append('equipmentId', id);
       fd.append('docType', docType);
       fd.append('description', docDescription);
 
-      const res = await fetch(`/api/eps/equipment/${id}/documents`, {
+      const res = await fetch('/api/eps/documents', {
         method: 'POST',
         body: fd,
       });
@@ -424,9 +425,14 @@ export default function EquipmentPassportPage() {
       message: 'Удалить этот прикрепленный документ?',
       onConfirm: async () => {
         try {
-          await fetch(`/api/eps/equipment/${id}/documents?documentId=${documentId}`, { method: 'DELETE' });
-          enqueueSnackbar('Документ удален', { variant: 'info' });
-          fetchEquipmentAndMeta();
+          const res = await fetch(`/api/eps/documents/${documentId}`, { method: 'DELETE' });
+          const data = await res.json();
+          if (data.success) {
+            enqueueSnackbar('Документ успешно удален', { variant: 'info' });
+            fetchEquipmentAndMeta();
+          } else {
+            enqueueSnackbar(data.error || 'Ошибка удаления', { variant: 'error' });
+          }
         } catch {
           enqueueSnackbar('Ошибка удаления', { variant: 'error' });
         } finally {
