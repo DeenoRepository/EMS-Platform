@@ -143,24 +143,14 @@ export default function TransferReceiveDialog({
       onClose={() => !isSubmitting && onClose()}
       title="Подтверждение приемки ТМЦ"
       subtitle={`Перемещение № ${transfer.transferNumber}`}
+      icon={<CheckCircleIcon color="success" />}
       maxWidth="md"
-      actions={
-        <Stack direction="row" spacing={1.5} justifyContent="flex-end" sx={{ width: '100%' }}>
-          <Button onClick={onClose} disabled={isSubmitting} sx={{ fontWeight: 600 }}>
-            Отмена
-          </Button>
-          <Button
-            variant="contained"
-            color="success"
-            startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : <CheckCircleIcon />}
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            sx={{ fontWeight: 600, borderRadius: '8px', px: 3 }}
-          >
-            Подтвердить приемку ТМЦ
-          </Button>
-        </Stack>
-      }
+      loading={isSubmitting}
+      submitLabel="Подтвердить приемку ТМЦ"
+      submitColor="success"
+      submitIcon={<CheckCircleIcon />}
+      onSubmit={handleSubmit}
+      submitDisabled={isSubmitting}
     >
       <Stack spacing={2.5}>
         <Alert severity="info" icon={<WarehouseIcon />} sx={{ borderRadius: '8px' }}>

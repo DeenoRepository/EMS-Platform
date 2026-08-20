@@ -231,23 +231,13 @@ export default function TransferRequestDialog({
       onClose={() => !isSubmitting && onClose()}
       title="Запрос на перемещение ТМЦ"
       subtitle="Заявка на перевод позиций с другого склада предприятия на ваш склад"
+      icon={<MoveToInboxIcon color="primary" />}
       maxWidth="md"
-      actions={
-        <Stack direction="row" spacing={1.5} justifyContent="flex-end" sx={{ width: '100%' }}>
-          <Button onClick={onClose} disabled={isSubmitting} sx={{ fontWeight: 600 }}>
-            Отмена
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : <SendIcon />}
-            onClick={handleSubmit}
-            disabled={isSubmitting || !sourceWarehouseId || lineItems.length === 0}
-            sx={{ fontWeight: 600, borderRadius: '8px', px: 3 }}
-          >
-            Направить запрос кладовщику
-          </Button>
-        </Stack>
-      }
+      loading={isSubmitting}
+      submitLabel="Направить запрос кладовщику"
+      submitIcon={<SendIcon />}
+      onSubmit={handleSubmit}
+      submitDisabled={isSubmitting || !sourceWarehouseId || lineItems.length === 0}
     >
       <Stack spacing={2.5}>
         <Alert severity="info" icon={<MoveToInboxIcon />} sx={{ borderRadius: '8px' }}>

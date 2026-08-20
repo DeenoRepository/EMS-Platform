@@ -38,6 +38,7 @@ export interface FormDialogProps {
   submitColor?: 'primary' | 'secondary' | 'success' | 'error' | 'info' | 'warning';
   submitIcon?: React.ReactNode;
   hideActions?: boolean;
+  actions?: React.ReactNode;
   extraActions?: React.ReactNode;
   dividers?: boolean;
   /** Флаг наличия несохраненных изменений в форме */
@@ -69,6 +70,7 @@ export function FormDialog({
   submitColor = 'primary',
   submitIcon,
   hideActions = false,
+  actions,
   extraActions,
   dividers = false,
   isDirty = false,
@@ -307,66 +309,72 @@ export function FormDialog({
               borderTop: '1px solid #f1f5f9',
               bgcolor: '#ffffff',
               display: 'flex',
-              justifyContent: 'space-between',
+              justifyContent: actions ? 'flex-end' : 'space-between',
               alignItems: 'center',
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>{extraActions}</Box>
+            {actions ? (
+              actions
+            ) : (
+              <>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>{extraActions}</Box>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-              <Button
-                variant="outlined"
-                onClick={handleRequestClose}
-                disabled={loading}
-                size="medium"
-                sx={{
-                  borderRadius: '8px',
-                  borderColor: '#e2e8f0',
-                  color: '#334155',
-                  fontWeight: 600,
-                  px: 2,
-                  py: 0.7,
-                  fontSize: '0.8125rem',
-                  minHeight: 36,
-                  '&:hover': {
-                    borderColor: '#cbd5e1',
-                    backgroundColor: '#f8fafc',
-                  },
-                }}
-              >
-                {cancelLabel}
-              </Button>
-              {onSubmit && (
-                <Button
-                  type="submit"
-                  variant="contained"
-                  color={submitColor}
-                  disabled={loading || submitDisabled}
-                  startIcon={
-                    loading ? (
-                      <CircularProgress size={15} color="inherit" />
-                    ) : (
-                      submitIcon
-                    )
-                  }
-                  size="medium"
-                  sx={{
-                    borderRadius: '8px',
-                    fontWeight: 600,
-                    px: 2.5,
-                    py: 0.7,
-                    fontSize: '0.8125rem',
-                    minHeight: 36,
-                    backgroundColor: submitColor === 'primary' ? '#0284c7' : undefined,
-                    '&:hover': {
-                      backgroundColor: submitColor === 'primary' ? '#0369a1' : undefined,
-                    },
-                  }}
-                >
-                  {loading ? 'Сохранение...' : submitLabel}
-                </Button>
-              )}
-            </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                  <Button
+                    variant="outlined"
+                    onClick={handleRequestClose}
+                    disabled={loading}
+                    size="medium"
+                    sx={{
+                      borderRadius: '8px',
+                      borderColor: '#e2e8f0',
+                      color: '#334155',
+                      fontWeight: 600,
+                      px: 2,
+                      py: 0.7,
+                      fontSize: '0.8125rem',
+                      minHeight: 36,
+                      '&:hover': {
+                        borderColor: '#cbd5e1',
+                        backgroundColor: '#f8fafc',
+                      },
+                    }}
+                  >
+                    {cancelLabel}
+                  </Button>
+                  {onSubmit && (
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      color={submitColor}
+                      disabled={loading || submitDisabled}
+                      startIcon={
+                        loading ? (
+                          <CircularProgress size={15} color="inherit" />
+                        ) : (
+                          submitIcon
+                        )
+                      }
+                      size="medium"
+                      sx={{
+                        borderRadius: '8px',
+                        fontWeight: 600,
+                        px: 2.5,
+                        py: 0.7,
+                        fontSize: '0.8125rem',
+                        minHeight: 36,
+                        backgroundColor: submitColor === 'primary' ? '#0284c7' : undefined,
+                        '&:hover': {
+                          backgroundColor: submitColor === 'primary' ? '#0369a1' : undefined,
+                        },
+                      }}
+                    >
+                      {loading ? 'Сохранение...' : submitLabel}
+                    </Button>
+                  )}
+                </Box>
+              </>
+            )}
           </DialogActions>
         )}
       </Dialog>

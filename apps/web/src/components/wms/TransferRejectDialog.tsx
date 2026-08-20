@@ -81,24 +81,14 @@ export default function TransferRejectDialog({
       onClose={() => !isSubmitting && onClose()}
       title={isInTransit ? 'Отклонение приемки ТМЦ' : 'Отклонение запроса на перемещение'}
       subtitle={`Перемещение № ${transfer.transferNumber}`}
+      icon={<BlockIcon color="error" />}
       maxWidth="sm"
-      actions={
-        <Stack direction="row" spacing={1.5} justifyContent="flex-end" sx={{ width: '100%' }}>
-          <Button onClick={onClose} disabled={isSubmitting} sx={{ fontWeight: 600 }}>
-            Отмена
-          </Button>
-          <Button
-            variant="contained"
-            color="error"
-            startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : <BlockIcon />}
-            onClick={handleSubmit}
-            disabled={isSubmitting || reason.trim().length < 3}
-            sx={{ fontWeight: 600, borderRadius: '8px' }}
-          >
-            {isInTransit ? 'Отклонить приемку и вернуть ТМЦ' : 'Отклонить запрос'}
-          </Button>
-        </Stack>
-      }
+      loading={isSubmitting}
+      submitLabel={isInTransit ? 'Отклонить приемку и вернуть ТМЦ' : 'Отклонить запрос'}
+      submitColor="error"
+      submitIcon={<BlockIcon />}
+      onSubmit={handleSubmit}
+      submitDisabled={isSubmitting || reason.trim().length < 3}
     >
       <Stack spacing={2.5}>
         <Alert severity="warning" sx={{ borderRadius: '8px' }}>
