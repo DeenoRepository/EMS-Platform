@@ -729,16 +729,6 @@ export function WmsOperationWizardDialog({
               />
             )}
 
-            <TextField
-              fullWidth
-              multiline
-              rows={2}
-              label="Основание / Примечание к операции"
-              placeholder="Номер накладной, заявка ТОиР, приказ..."
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-            />
-
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 1 }}>
               <Button
                 variant="contained"
