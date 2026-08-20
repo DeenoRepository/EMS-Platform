@@ -38,6 +38,7 @@ import {
   SearchInput,
   type TableColumnOption,
 } from '@/components/ui';
+import { InventoryCountSheetDialog } from '@/components/wms';
 import { TableSortLabel } from '@mui/material';
 
 const INVENTORY_COLUMNS: TableColumnOption[] = [
@@ -95,6 +96,10 @@ export default function WmsInventoryListPage() {
   const [selectedWarehouseId, setSelectedWarehouseId] = useState('');
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Count Sheet Modal
+  const [isCountSheetOpen, setIsCountSheetOpen] = useState(false);
+  const [selectedSheetInventory, setSelectedSheetInventory] = useState<any | null>(null);
 
   const fetchInventories = useCallback(async () => {
     setIsLoading(true);
@@ -566,23 +571,63 @@ export default function WmsInventoryListPage() {
 
                 {visibleColumns.includes('actions') && (
                   <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      endIcon={<ArrowForwardIcon sx={{ fontSize: '14px !important' }} />}
-                      onClick={() => router.push(`/wms/inventory/${inv.id}`)}
-                      sx={{
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        borderRadius: '6px',
-                        py: 0.3,
-                        px: 1.25,
-                        borderColor: '#e2e8f0',
-                        color: '#334155',
-                      }}
-                    >
-                      {inv.status === 'COMPLETED' ? 'Просмотр' : 'Сверка'}
-                    </Button>
+                    <Stack direction="row" spacing={1} justifyContent="flex-end">
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<FactCheckOutlinedIcon sx={{ fontSize: '14px !important', color: '#0284c7' }} />}
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            const res = await fetch(`/api/wms/inventories/${inv.id}`);
+                            if (res.ok) {
+                              const json = await res.json();
+                              if (json.success && json.data) {
+                                setSelectedSheetInventory(json.data);
+                                setIsCountSheetOpen(true);
+                              }
+                            } else {
+                              enqueueSnackbar('Не удалось загрузить данные бланка', { variant: 'error' });
+                            }
+                          } catch {
+                            enqueueSnackbar('Ошибка сети при открытии бланка', { variant: 'error' });
+                          }
+                        }}
+                        sx={{
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          borderRadius: '6px',
+                          py: 0.3,
+                          px: 1,
+                          borderColor: '#bae6fd',
+                          color: '#0284c7',
+                          backgroundColor: '#f0f9ff',
+                          '&:hover': {
+                            backgroundColor: '#e0f2fe',
+                            borderColor: '#7dd3fc',
+                          },
+                        }}
+                      >
+                        Бланк
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        endIcon={<ArrowForwardIcon sx={{ fontSize: '14px !important' }} />}
+                        onClick={() => router.push(`/wms/inventory/${inv.id}`)}
+                        sx={{
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          borderRadius: '6px',
+                          py: 0.3,
+                          px: 1.25,
+                          borderColor: '#e2e8f0',
+                          color: '#334155',
+                        }}
+                      >
+                        {inv.status === 'COMPLETED' ? 'Просмотр' : 'Сверка'}
+                      </Button>
+                    </Stack>
                   </TableCell>
                 )}
               </TableRow>
@@ -651,6 +696,18 @@ export default function WmsInventoryListPage() {
           />
         </Stack>
       </FormDialog>
+
+      {/* Бланк инвентаризационной описи ТМЦ */}
+      {selectedSheetInventory && (
+        <InventoryCountSheetDialog
+          open={isCountSheetOpen}
+          onClose={() => {
+            setIsCountSheetOpen(false);
+            setSelectedSheetInventory(null);
+          }}
+          inventory={selectedSheetInventory}
+        />
+      )}
     </Box>
   );
 }

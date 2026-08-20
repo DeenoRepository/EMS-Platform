@@ -21,14 +21,29 @@ export async function GET(
     const inventory = await prisma.inventory.findUnique({
       where: { id },
       include: {
-        warehouse: true,
+        warehouse: {
+          include: {
+            responsibleUser: {
+              select: { id: true, displayName: true, email: true },
+            },
+          },
+        },
         createdBy: {
           select: { id: true, displayName: true, ldapLogin: true },
         },
         items: {
           include: {
             nomenclature: {
-              include: { category: true },
+              include: {
+                category: true,
+                stockItems: {
+                  include: {
+                    cell: {
+                      include: { zone: true },
+                    },
+                  },
+                },
+              },
             },
           },
           orderBy: { nomenclature: { name: 'asc' } },

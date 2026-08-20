@@ -28,6 +28,7 @@ import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS, INVENTORY_STATUS_MAP, formatDateTime } from '@ems/shared';
@@ -39,7 +40,7 @@ import {
   PageLoading,
   CriticalAlertBanner,
 } from '@/components/ui';
-import { InventoryCompleteModal } from '@/components/wms';
+import { InventoryCompleteModal, InventoryCountSheetDialog } from '@/components/wms';
 
 
 interface InventoryDetail {
@@ -80,6 +81,7 @@ export default function WmsInventoryDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isConfirmCompleteOpen, setIsConfirmCompleteOpen] = useState(false);
+  const [isCountSheetOpen, setIsCountSheetOpen] = useState(false);
 
   const fetchInventory = useCallback(async () => {
     setIsLoading(true);
@@ -228,6 +230,22 @@ export default function WmsInventoryDetailPage() {
               onClick={() => router.push('/wms/inventory')}
             >
               К списку
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<FactCheckOutlinedIcon sx={{ color: '#0284c7' }} />}
+              onClick={() => setIsCountSheetOpen(true)}
+              sx={{
+                fontWeight: 600,
+                borderColor: '#0284c7',
+                color: '#0284c7',
+                '&:hover': {
+                  borderColor: '#0369a1',
+                  backgroundColor: 'rgba(2, 132, 199, 0.04)',
+                },
+              }}
+            >
+              Бланк пересчета ТМЦ
             </Button>
             {!isCompleted && hasPermission(PERMISSIONS.WMS_INVENTORY_MANAGE) && (
               <>
@@ -454,6 +472,13 @@ export default function WmsInventoryDetailPage() {
           };
         })}
         isSubmitting={isSaving}
+      />
+
+      {/* Бланк инвентаризационной описи и ведомость пересчета ТМЦ */}
+      <InventoryCountSheetDialog
+        open={isCountSheetOpen}
+        onClose={() => setIsCountSheetOpen(false)}
+        inventory={inventory as any}
       />
     </Box>
   );
