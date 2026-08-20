@@ -896,8 +896,6 @@ export function WmsOperationWizardDialog({
                       popper: {
                         placement: 'bottom-start',
                         sx: {
-                          minWidth: { xs: '100%', sm: 480, md: 540 },
-                          width: 'max(540px, 100%) !important',
                           zIndex: 1400,
                           boxShadow: '0 12px 28px rgba(0,0,0,0.18)',
                           borderRadius: '10px',
