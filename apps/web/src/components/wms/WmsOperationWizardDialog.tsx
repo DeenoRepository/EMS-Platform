@@ -20,6 +20,10 @@ import {
   Divider,
   Alert,
   Autocomplete,
+  Collapse,
+  InputAdornment,
+  Tooltip,
+  CircularProgress,
 } from '@mui/material';
 import MoveToInboxIcon from '@mui/icons-material/MoveToInbox';
 import PersonIcon from '@mui/icons-material/Person';
@@ -29,6 +33,12 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
+import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import BuildOutlinedIcon from '@mui/icons-material/BuildOutlined';
+import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
+import SecurityOutlinedIcon from '@mui/icons-material/SecurityOutlined';
+import CloseIcon from '@mui/icons-material/Close';
 import { useSnackbar } from 'notistack';
 import { FormDialog, StatusBadge } from '@/components/ui';
 
@@ -52,6 +62,12 @@ interface NomenclatureOption {
   article?: string | null;
   unit: string;
   category?: { name: string } | null;
+  isNewAction?: boolean;
+}
+
+interface CategoryOption {
+  id: string;
+  name: string;
 }
 
 interface OperationLineItem {
@@ -71,6 +87,14 @@ interface WmsOperationWizardDialogProps {
   initialType?: OperationType;
   initialNomenclatureId?: string;
 }
+
+const NOMENCLATURE_TYPES = [
+  { id: 'SPARE_PART', label: 'Запчасть', icon: <PrecisionManufacturingIcon sx={{ fontSize: 16 }} />, prefix: 'SP' },
+  { id: 'CONSUMABLE', label: 'Расходник', icon: <Inventory2OutlinedIcon sx={{ fontSize: 16 }} />, prefix: 'CS' },
+  { id: 'TOOL', label: 'Инструмент', icon: <BuildOutlinedIcon sx={{ fontSize: 16 }} />, prefix: 'TL' },
+  { id: 'LUBRICANT', label: 'Масла/ГСМ', icon: <ScienceOutlinedIcon sx={{ fontSize: 16 }} />, prefix: 'LB' },
+  { id: 'PPE', label: 'СИЗ', icon: <SecurityOutlinedIcon sx={{ fontSize: 16 }} />, prefix: 'PPE' },
+];
 
 const OPERATION_TYPES = [
   {
@@ -99,15 +123,15 @@ const OPERATION_TYPES = [
   },
   {
     type: 'TRANSFER' as OperationType,
-    title: 'Перемещение',
-    description: 'Перемещение ТМЦ между складами предприятия',
+    title: 'Межскладское перемещение',
+    description: 'Трансфер позиций между складами или участками',
     icon: <SwapHorizIcon />,
     color: '#7c3aed',
     bgcolor: 'rgba(124, 58, 237, 0.08)',
   },
 ];
 
-export default function WmsOperationWizardDialog({
+export function WmsOperationWizardDialog({
   open,
   onClose,
   onSuccess,
@@ -116,42 +140,64 @@ export default function WmsOperationWizardDialog({
 }: WmsOperationWizardDialogProps) {
   const { enqueueSnackbar } = useSnackbar();
 
-  // Stepper state (0: Параметры, 1: Подбор позиций, 2: Проведение)
   const [activeStep, setActiveStep] = useState(0);
-
-  // Form Fields
   const [operationType, setOperationType] = useState<OperationType>(initialType);
+
+  // Step 1 Form: Details & Warehouses
   const [warehouseId, setWarehouseId] = useState('');
   const [targetWarehouseId, setTargetWarehouseId] = useState('');
-  const [equipmentId, setEquipmentId] = useState('');
   const [recipientName, setRecipientName] = useState('');
+  const [equipmentId, setEquipmentId] = useState('');
   const [comment, setComment] = useState('');
 
-  // Line Items
+  // Step 2 Form: Items
   const [lineItems, setLineItems] = useState<OperationLineItem[]>([]);
+  const [selectedNomenclature, setSelectedNomenclature] = useState<NomenclatureOption | null>(null);
+  const [searchInputValue, setSearchInputValue] = useState('');
+  const [itemQty, setItemQty] = useState('1');
+  const [itemEquipmentId, setItemEquipmentId] = useState('');
 
-  // Dictionaries
+  // Expanded In-Place Menu for Creating New Nomenclature
+  const [isCreatingNewNom, setIsCreatingNewNom] = useState(false);
+  const [isSubmittingNewNom, setIsSubmittingNewNom] = useState(false);
+  const [newNomType, setNewNomType] = useState('SPARE_PART');
+  const [newNomName, setNewNomName] = useState('');
+  const [newNomArticle, setNewNomArticle] = useState('');
+  const [newNomUnit, setNewNomUnit] = useState('шт');
+  const [newNomCategoryId, setNewNomCategoryId] = useState('');
+  const [newNomMinStock, setNewNomMinStock] = useState('');
+  const [newNomDescription, setNewNomDescription] = useState('');
+  const [newNomQty, setNewNomQty] = useState('1');
+
+  // Metadata dictionaries
   const [warehouses, setWarehouses] = useState<WarehouseOption[]>([]);
   const [equipmentList, setEquipmentList] = useState<EquipmentOption[]>([]);
   const [nomenclatures, setNomenclatures] = useState<NomenclatureOption[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Item Selector in Step 2
-  const [selectedNomenclature, setSelectedNomenclature] = useState<NomenclatureOption | null>(null);
-  const [itemQty, setItemQty] = useState('1');
-  const [itemEquipmentId, setItemEquipmentId] = useState('');
 
   useEffect(() => {
     if (open) {
       setActiveStep(0);
       setOperationType(initialType);
+      setLineItems([]);
+      setSelectedNomenclature(null);
+      setSearchInputValue('');
+      setItemQty('1');
+      setItemEquipmentId('');
+      setRecipientName('');
+      setEquipmentId('');
+      setComment('');
+      setIsCreatingNewNom(false);
+
       // Load dictionaries
       Promise.all([
         fetch('/api/wms/warehouses').then((r) => r.json()),
         fetch('/api/equipment?limit=200').then((r) => r.json()),
         fetch('/api/wms/nomenclature?limit=500').then((r) => r.json()),
+        fetch('/api/wms/categories').then((r) => r.json()).catch(() => ({ success: false })),
       ])
-        .then(([whData, eqData, nomData]) => {
+        .then(([whData, eqData, nomData, catData]) => {
           if (whData.success) {
             setWarehouses(whData.data);
             if (whData.data.length > 0 && !warehouseId) {
@@ -162,16 +208,112 @@ export default function WmsOperationWizardDialog({
             setEquipmentList(eqData.data.items || eqData.data || []);
           }
           if (nomData.success) {
-            setNomenclatures(nomData.data.items || nomData.data || []);
+            const nomList = nomData.data.items || nomData.data || [];
+            setNomenclatures(nomList);
+
+            if (initialNomenclatureId) {
+              const matched = nomList.find((n: NomenclatureOption) => n.id === initialNomenclatureId);
+              if (matched) {
+                setSelectedNomenclature(matched);
+              }
+            }
+          }
+          if (catData.success && catData.data) {
+            setCategories(catData.data);
           }
         })
         .catch(console.error);
     }
-  }, [open, initialType]);
+  }, [open, initialType, initialNomenclatureId]);
+
+  const handleGenerateSku = () => {
+    const typeObj = NOMENCLATURE_TYPES.find((t) => t.id === newNomType) || NOMENCLATURE_TYPES[0];
+    const rand = Math.floor(1000 + Math.random() * 9000);
+    setNewNomArticle(`${typeObj.prefix}-${rand}`);
+  };
+
+  const handleOpenNewNomExpandedMenu = (suggestedName?: string) => {
+    const nameToSet = (suggestedName || searchInputValue || '').trim();
+    setNewNomName(nameToSet);
+    setNewNomType('SPARE_PART');
+    const rand = Math.floor(1000 + Math.random() * 9000);
+    setNewNomArticle(`SP-${rand}`);
+    setNewNomUnit('шт');
+    setNewNomCategoryId(categories.length > 0 ? categories[0].id : '');
+    setNewNomMinStock('');
+    setNewNomDescription('');
+    setNewNomQty(itemQty || '1');
+    setIsCreatingNewNom(true);
+  };
+
+  const handleSaveAndAddNewNom = async () => {
+    if (!newNomName.trim()) {
+      enqueueSnackbar('Укажите наименование новой номенклатуры', { variant: 'warning' });
+      return;
+    }
+    const qty = parseFloat(newNomQty);
+    if (isNaN(qty) || qty <= 0) {
+      enqueueSnackbar('Укажите корректное количество (> 0)', { variant: 'warning' });
+      return;
+    }
+
+    setIsSubmittingNewNom(true);
+    try {
+      const res = await fetch('/api/wms/nomenclature', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newNomName.trim(),
+          article: newNomArticle.trim() || undefined,
+          unit: newNomUnit.trim() || 'шт',
+          categoryId: newNomCategoryId || undefined,
+          description: newNomDescription.trim() || undefined,
+          minStock: newNomMinStock ? parseFloat(newNomMinStock) : undefined,
+        }),
+      });
+
+      const json = await res.json();
+      if (res.ok && json.success && json.data) {
+        const createdNom: NomenclatureOption = {
+          id: json.data.id,
+          name: json.data.name,
+          article: json.data.article,
+          unit: json.data.unit,
+          category: json.data.category,
+        };
+
+        // Add to local nomenclatures options
+        setNomenclatures((prev) => [createdNom, ...prev]);
+
+        // Directly add to operation line items
+        setLineItems((prev) => [
+          ...prev,
+          {
+            nomenclatureId: createdNom.id,
+            nomenclatureName: createdNom.name,
+            nomenclatureArticle: createdNom.article || undefined,
+            unit: createdNom.unit,
+            quantity: qty,
+          },
+        ]);
+
+        enqueueSnackbar(`Позиция «${createdNom.name}» зарегистрирована и добавлена в приход`, { variant: 'success' });
+        setIsCreatingNewNom(false);
+        setSearchInputValue('');
+        setSelectedNomenclature(null);
+      } else {
+        enqueueSnackbar(json.error || 'Ошибка создания номенклатуры', { variant: 'error' });
+      }
+    } catch {
+      enqueueSnackbar('Ошибка сети при регистрации номенклатуры', { variant: 'error' });
+    } finally {
+      setIsSubmittingNewNom(false);
+    }
+  };
 
   const handleAddItem = () => {
     if (!selectedNomenclature) {
-      enqueueSnackbar('Выберите номенклатурную позицию', { variant: 'warning' });
+      enqueueSnackbar('Выберите номенклатурную позицию или создайте новую', { variant: 'warning' });
       return;
     }
     const qty = parseFloat(itemQty);
@@ -196,6 +338,7 @@ export default function WmsOperationWizardDialog({
     ]);
 
     setSelectedNomenclature(null);
+    setSearchInputValue('');
     setItemQty('1');
     setItemEquipmentId('');
   };
@@ -299,23 +442,23 @@ export default function WmsOperationWizardDialog({
                           borderColor: isSelected ? op.color : '#e2e8f0',
                           bgcolor: isSelected ? op.bgcolor : '#ffffff',
                           cursor: 'pointer',
+                          transition: 'all 0.15s ease',
                           display: 'flex',
-                          alignItems: 'center',
+                          alignItems: 'flex-start',
                           gap: 1.5,
-                          transition: 'all 0.18s ease',
                           '&:hover': {
                             borderColor: op.color,
-                            transform: 'translateY(-1px)',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
                           },
                         }}
                       >
                         <Box
                           sx={{
-                            width: 40,
-                            height: 40,
+                            width: 38,
+                            height: 38,
                             borderRadius: '8px',
-                            bgcolor: isSelected ? op.color : '#f1f5f9',
-                            color: isSelected ? '#ffffff' : op.color,
+                            bgcolor: isSelected ? '#ffffff' : op.bgcolor,
+                            color: op.color,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -324,11 +467,11 @@ export default function WmsOperationWizardDialog({
                         >
                           {op.icon}
                         </Box>
-                        <Box sx={{ minWidth: 0 }}>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0f172a' }}>
+                        <Box>
+                          <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#0f172a' }}>
                             {op.title}
                           </Typography>
-                          <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.6875rem' }} noWrap>
+                          <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mt: 0.25 }}>
                             {op.description}
                           </Typography>
                         </Box>
@@ -339,6 +482,8 @@ export default function WmsOperationWizardDialog({
               </Grid>
             </Box>
 
+            <Divider />
+
             {/* Warehouse Selectors */}
             <Grid container spacing={2}>
               <Grid item xs={12} sm={operationType === 'TRANSFER' ? 6 : 12}>
@@ -346,7 +491,7 @@ export default function WmsOperationWizardDialog({
                   select
                   fullWidth
                   required
-                  label={operationType === 'TRANSFER' ? 'Исходный склад (Списание)' : 'Склад проведения'}
+                  label={operationType === 'TRANSFER' ? 'Исходный склад (Списание)' : 'Основной склад операции'}
                   value={warehouseId}
                   onChange={(e) => setWarehouseId(e.target.value)}
                 >
@@ -364,9 +509,11 @@ export default function WmsOperationWizardDialog({
                     select
                     fullWidth
                     required
-                    label="Целевой склад (Поступление)"
+                    label="Склад-получатель (Зачисление)"
                     value={targetWarehouseId}
                     onChange={(e) => setTargetWarehouseId(e.target.value)}
+                    error={Boolean(targetWarehouseId && targetWarehouseId === warehouseId)}
+                    helperText={targetWarehouseId === warehouseId ? 'Склад-получатель должен отличаться от исходного' : undefined}
                   >
                     {warehouses
                       .filter((w) => w.id !== warehouseId)
@@ -380,22 +527,20 @@ export default function WmsOperationWizardDialog({
               )}
             </Grid>
 
-            {/* Additional Fields per Type */}
+            {/* Optional Mode-specific parameters */}
             {operationType === 'ISSUE_WRITE_OFF' && (
               <TextField
                 select
                 fullWidth
-                label="Целевой станок / Оборудование (опционально)"
+                label="Целевое оборудование (необязательно)"
                 value={equipmentId}
                 onChange={(e) => setEquipmentId(e.target.value)}
-                helperText="Для автоматической привязки списанных ТМЦ к паспорту станка"
+                helperText="Выберите станок, если деталь устанавливается на конкретное оборудование"
               >
-                <MenuItem value="">
-                  <em>— Без привязки к конкретному станку —</em>
-                </MenuItem>
+                <MenuItem value="">— Не привязано к станку (Общее списание) —</MenuItem>
                 {equipmentList.map((eq) => (
                   <MenuItem key={eq.id} value={eq.id}>
-                    {eq.name} (Инв. №: {eq.inventoryNumber})
+                    {eq.name} ({eq.inventoryNumber})
                   </MenuItem>
                 ))}
               </TextField>
@@ -434,14 +579,26 @@ export default function WmsOperationWizardDialog({
           </Stack>
         )}
 
-        {/* STEP 1: Подбор позиций ТМЦ */}
+        {/* STEP 1: Подбор позиций ТМЦ + Расширенное меню создания новой номенклатуры */}
         {activeStep === 1 && (
           <Stack spacing={2.5}>
-            {/* Quick Item Add Card */}
-            <Paper elevation={0} sx={{ p: 2, borderRadius: '10px', bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0f172a', mb: 1.5 }}>
-                Добавить позицию ТМЦ:
-              </Typography>
+            {/* Quick Item Add / Search Card */}
+            <Paper elevation={0} sx={{ p: 2.5, borderRadius: '10px', bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0f172a' }}>
+                  Поиск и добавление позиций ТМЦ:
+                </Typography>
+                {!isCreatingNewNom && (
+                  <Button
+                    size="small"
+                    startIcon={<AddIcon />}
+                    onClick={() => handleOpenNewNomExpandedMenu('')}
+                    sx={{ fontWeight: 600, textTransform: 'none', color: '#0284c7' }}
+                  >
+                    + Новая номенклатура
+                  </Button>
+                )}
+              </Box>
 
               <Grid container spacing={1.5} alignItems="center">
                 <Grid item xs={12} sm={6}>
@@ -450,8 +607,60 @@ export default function WmsOperationWizardDialog({
                     options={nomenclatures}
                     getOptionLabel={(option) => `${option.name} (${option.article || option.unit})`}
                     value={selectedNomenclature}
-                    onChange={(_, val) => setSelectedNomenclature(val)}
-                    renderInput={(params) => <TextField {...params} label="Поиск номенклатуры..." placeholder="Название или артикул..." />}
+                    inputValue={searchInputValue}
+                    onInputChange={(_, newInputValue) => setSearchInputValue(newInputValue)}
+                    onChange={(_, val) => {
+                      if (val && val.isNewAction) {
+                        handleOpenNewNomExpandedMenu(searchInputValue);
+                      } else {
+                        setSelectedNomenclature(val);
+                      }
+                    }}
+                    filterOptions={(options, params) => {
+                      const filterVal = params.inputValue.toLowerCase().trim();
+                      const filtered = options.filter(
+                        (o) =>
+                          o.name.toLowerCase().includes(filterVal) ||
+                          (o.article && o.article.toLowerCase().includes(filterVal))
+                      );
+
+                      if (
+                        filterVal !== '' &&
+                        !options.some((o) => o.name.toLowerCase() === filterVal || (o.article && o.article.toLowerCase() === filterVal))
+                      ) {
+                        filtered.push({
+                          id: '__NEW__',
+                          name: `+ Создать новую позицию «${params.inputValue}»`,
+                          unit: 'шт',
+                          isNewAction: true,
+                        });
+                      }
+
+                      return filtered;
+                    }}
+                    noOptionsText={
+                      <Box sx={{ py: 0.5 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                          Позиция не найдена в справочнике
+                        </Typography>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          startIcon={<AddIcon />}
+                          onClick={() => handleOpenNewNomExpandedMenu(searchInputValue)}
+                          sx={{ fontWeight: 600, fontSize: '0.75rem' }}
+                        >
+                          Создать «{searchInputValue}»
+                        </Button>
+                      </Box>
+                    }
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Поиск номенклатуры..."
+                        placeholder="Название или артикул..."
+                      />
+                    )}
                   />
                 </Grid>
 
@@ -473,12 +682,233 @@ export default function WmsOperationWizardDialog({
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={handleAddItem}
+                    disabled={!selectedNomenclature}
                     sx={{ height: 40, borderRadius: '8px', fontWeight: 600 }}
                   >
                     Добавить
                   </Button>
                 </Grid>
               </Grid>
+
+              {/* Banner when user typed a name that does not exist */}
+              {!isCreatingNewNom && searchInputValue.trim() !== '' && !nomenclatures.some((n) => n.name.toLowerCase().includes(searchInputValue.toLowerCase()) || (n.article && n.article.toLowerCase().includes(searchInputValue.toLowerCase()))) && (
+                <Alert
+                  severity="info"
+                  action={
+                    <Button
+                      color="primary"
+                      size="small"
+                      variant="contained"
+                      onClick={() => handleOpenNewNomExpandedMenu(searchInputValue)}
+                      sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'none' }}
+                    >
+                      Создать и заполнить данные
+                    </Button>
+                  }
+                  sx={{ mt: 2, borderRadius: '8px', alignItems: 'center' }}
+                >
+                  Позиции <b>«{searchInputValue}»</b> нет в справочнике ТМЦ. Создать её автоматически при приходе?
+                </Alert>
+              )}
+
+              {/* ─── РАСШИРЕННОЕ МЕНЮ: Создание новой номенклатуры при приходе ─── */}
+              <Collapse in={isCreatingNewNom}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    mt: 2,
+                    p: 2.5,
+                    borderRadius: '10px',
+                    border: '2px dashed #38bdf8',
+                    bgcolor: '#f0f9ff',
+                  }}
+                >
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <AutoAwesomeIcon sx={{ color: '#0284c7' }} />
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0369a1' }}>
+                        Карточка регистрации новой номенклатуры
+                      </Typography>
+                      <Chip label="Новая позиция" size="small" color="primary" sx={{ height: 22, fontWeight: 700 }} />
+                    </Box>
+                    <IconButton size="small" onClick={() => setIsCreatingNewNom(false)}>
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+
+                  <Grid container spacing={2}>
+                    {/* Вид номенклатуры */}
+                    <Grid item xs={12}>
+                      <Typography variant="caption" sx={{ fontWeight: 600, color: '#475569', display: 'block', mb: 0.75 }}>
+                        Тип ТМЦ:
+                      </Typography>
+                      <Stack direction="row" spacing={1} flexWrap="wrap">
+                        {NOMENCLATURE_TYPES.map((t) => (
+                          <Chip
+                            key={t.id}
+                            icon={t.icon}
+                            label={t.label}
+                            clickable
+                            onClick={() => {
+                              setNewNomType(t.id);
+                              const rand = Math.floor(1000 + Math.random() * 9000);
+                              setNewNomArticle(`${t.prefix}-${rand}`);
+                            }}
+                            variant={newNomType === t.id ? 'filled' : 'outlined'}
+                            color={newNomType === t.id ? 'primary' : 'default'}
+                            sx={{ fontWeight: 600, mb: 0.5 }}
+                          />
+                        ))}
+                      </Stack>
+                    </Grid>
+
+                    {/* Наименование */}
+                    <Grid item xs={12} sm={8}>
+                      <TextField
+                        size="small"
+                        fullWidth
+                        required
+                        label="Наименование ТМЦ *"
+                        placeholder="например: Подшипник радиальный 6204-2RS"
+                        value={newNomName}
+                        onChange={(e) => setNewNomName(e.target.value)}
+                        sx={{ bgcolor: '#ffffff' }}
+                      />
+                    </Grid>
+
+                    {/* Артикул с автогенерацией */}
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        size="small"
+                        fullWidth
+                        label="Артикул / Код"
+                        value={newNomArticle}
+                        onChange={(e) => setNewNomArticle(e.target.value)}
+                        sx={{ bgcolor: '#ffffff' }}
+                        InputProps={{
+                          endAdornment: (
+                            <InputAdornment position="end">
+                              <Tooltip title="Сгенерировать код">
+                                <IconButton size="small" onClick={handleGenerateSku} edge="end">
+                                  <AutoAwesomeIcon fontSize="small" color="primary" />
+                                </IconButton>
+                              </Tooltip>
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                    </Grid>
+
+                    {/* Категория */}
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        select
+                        size="small"
+                        fullWidth
+                        label="Категория ТМЦ"
+                        value={newNomCategoryId}
+                        onChange={(e) => setNewNomCategoryId(e.target.value)}
+                        sx={{ bgcolor: '#ffffff' }}
+                      >
+                        <MenuItem value="">— Без категории —</MenuItem>
+                        {categories.map((c) => (
+                          <MenuItem key={c.id} value={c.id}>
+                            {c.name}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    </Grid>
+
+                    {/* Ед. изм. */}
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        select
+                        size="small"
+                        fullWidth
+                        label="Единица измерения"
+                        value={newNomUnit}
+                        onChange={(e) => setNewNomUnit(e.target.value)}
+                        sx={{ bgcolor: '#ffffff' }}
+                      >
+                        {['шт', 'компл', 'кг', 'л', 'м', 'пог. м', 'уп', 'м²'].map((u) => (
+                          <MenuItem key={u} value={u}>
+                            {u}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    </Grid>
+
+                    {/* Мин. остаток */}
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        size="small"
+                        fullWidth
+                        type="number"
+                        label="Мин. остаток (для дефицита)"
+                        placeholder="например: 5"
+                        value={newNomMinStock}
+                        onChange={(e) => setNewNomMinStock(e.target.value)}
+                        sx={{ bgcolor: '#ffffff' }}
+                      />
+                    </Grid>
+
+                    {/* Количество в текущий приход */}
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        size="small"
+                        fullWidth
+                        type="number"
+                        label={`Количество в приход (${newNomUnit})`}
+                        value={newNomQty}
+                        onChange={(e) => setNewNomQty(e.target.value)}
+                        sx={{ bgcolor: '#ffffff' }}
+                        inputProps={{ min: 0.01, step: 1 }}
+                      />
+                    </Grid>
+
+                    {/* Описание */}
+                    <Grid item xs={12} sm={8}>
+                      <TextField
+                        size="small"
+                        fullWidth
+                        label="Описание / Назначение (необязательно)"
+                        placeholder="Краткие характеристики, поставщик или марка..."
+                        value={newNomDescription}
+                        onChange={(e) => setNewNomDescription(e.target.value)}
+                        sx={{ bgcolor: '#ffffff' }}
+                      />
+                    </Grid>
+
+                    {/* Кнопки сохранения номенклатуры */}
+                    <Grid item xs={12}>
+                      <Stack direction="row" spacing={1.5} justifyContent="flex-end" sx={{ pt: 1 }}>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => setIsCreatingNewNom(false)}
+                          disabled={isSubmittingNewNom}
+                        >
+                          Отмена
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          startIcon={isSubmittingNewNom ? <CircularProgress size={16} color="inherit" /> : <AddIcon />}
+                          onClick={handleSaveAndAddNewNom}
+                          disabled={isSubmittingNewNom || !newNomName.trim()}
+                          sx={{
+                            fontWeight: 700,
+                            bgcolor: '#0284c7',
+                            '&:hover': { bgcolor: '#0369a1' },
+                          }}
+                        >
+                          {isSubmittingNewNom ? 'Сохранение...' : 'Зарегистрировать и добавить в операцию'}
+                        </Button>
+                      </Stack>
+                    </Grid>
+                  </Grid>
+                </Paper>
+              </Collapse>
             </Paper>
 
             {/* List of Added Line Items */}
@@ -550,11 +980,11 @@ export default function WmsOperationWizardDialog({
               Все параметры операции заполнены. Проверьте сводные данные перед проведением в базе данных.
             </Alert>
 
-            {/* Summary Paper */}
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: '10px', border: '1px solid #e2e8f0', bgcolor: '#f8fafc' }}>
+            {/* Summary Review Card */}
+            <Paper elevation={0} sx={{ p: 2.5, borderRadius: '10px', bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
               <Grid container spacing={2}>
-                <Grid item xs={6} sm={3}>
-                  <Typography variant="caption" sx={{ color: '#64748b' }}>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
                     Тип операции:
                   </Typography>
                   <Box sx={{ mt: 0.5 }}>
@@ -562,48 +992,101 @@ export default function WmsOperationWizardDialog({
                   </Box>
                 </Grid>
 
-                <Grid item xs={6} sm={3}>
-                  <Typography variant="caption" sx={{ color: '#64748b' }}>
-                    Склад:
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
+                    Склад проведения:
                   </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 700, color: '#0f172a', mt: 0.5 }}>
+                  <Typography variant="body2" fontWeight={600} sx={{ mt: 0.5, color: '#0f172a' }}>
                     {warehouses.find((w) => w.id === warehouseId)?.name || '—'}
                   </Typography>
                 </Grid>
 
-                <Grid item xs={6} sm={3}>
-                  <Typography variant="caption" sx={{ color: '#64748b' }}>
-                    Позиций ТМЦ:
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 700, color: '#0f172a', mt: 0.5 }}>
-                    {lineItems.length} наим.
-                  </Typography>
-                </Grid>
+                {operationType === 'TRANSFER' && (
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
+                      Склад назначения:
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600} sx={{ mt: 0.5, color: '#0f172a' }}>
+                      {warehouses.find((w) => w.id === targetWarehouseId)?.name || '—'}
+                    </Typography>
+                  </Grid>
+                )}
 
-                <Grid item xs={6} sm={3}>
-                  <Typography variant="caption" sx={{ color: '#64748b' }}>
-                    Общее кол-во:
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 700, color: '#0f172a', mt: 0.5 }}>
-                    {lineItems.reduce((sum, i) => sum + i.quantity, 0)} ед.
-                  </Typography>
-                </Grid>
+                {operationType === 'ISSUE_EMPLOYEE' && recipientName && (
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
+                      Получатель:
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600} sx={{ mt: 0.5, color: '#0f172a' }}>
+                      {recipientName}
+                    </Typography>
+                  </Grid>
+                )}
+
+                {comment && (
+                  <Grid item xs={12}>
+                    <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
+                      Примечание:
+                    </Typography>
+                    <Typography variant="body2" sx={{ mt: 0.25, color: '#334155' }}>
+                      {comment}
+                    </Typography>
+                  </Grid>
+                )}
               </Grid>
             </Paper>
 
+            {/* Line Items Review Table */}
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0f172a', mb: 1 }}>
+                Итоговый перечень позиций ({lineItems.length}):
+              </Typography>
+              <Paper elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                <Table size="small">
+                  <TableHead sx={{ bgcolor: '#f8fafc' }}>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Номенклатура</TableCell>
+                      <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Артикул</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Количество</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {lineItems.map((item, idx) => (
+                      <TableRow key={idx} hover>
+                        <TableCell sx={{ py: 1, fontWeight: 600, fontSize: '0.8125rem' }}>
+                          {item.nomenclatureName}
+                        </TableCell>
+                        <TableCell sx={{ py: 1, color: '#64748b', fontSize: '0.75rem' }}>
+                          {item.nomenclatureArticle || '—'}
+                        </TableCell>
+                        <TableCell align="right" sx={{ py: 1, fontWeight: 700, fontFeatureSettings: '"tnum"' }}>
+                          {item.quantity} {item.unit}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Paper>
+            </Box>
+
             <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1 }}>
               <Button onClick={() => setActiveStep(1)} sx={{ fontWeight: 600 }}>
-                ← Назад к подбору
+                ← Назад к позициям
               </Button>
               <Button
                 variant="contained"
-                color="success"
-                startIcon={<CheckCircleIcon />}
                 onClick={handleSubmit}
-                disabled={isSubmitting}
-                sx={{ borderRadius: '8px', px: 4, fontWeight: 700 }}
+                disabled={isSubmitting || lineItems.length === 0}
+                sx={{
+                  borderRadius: '8px',
+                  px: 3,
+                  py: 1,
+                  fontWeight: 700,
+                  bgcolor: '#16a34a',
+                  '&:hover': { bgcolor: '#15803d' },
+                }}
               >
-                {isSubmitting ? 'Проведение...' : 'Провести операцию'}
+                {isSubmitting ? 'Проведение в БД...' : 'Подтвердить и провести операцию'}
               </Button>
             </Box>
           </Stack>
@@ -612,3 +1095,5 @@ export default function WmsOperationWizardDialog({
     </FormDialog>
   );
 }
+
+export default WmsOperationWizardDialog;
