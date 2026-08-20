@@ -331,24 +331,6 @@ export default function EquipmentPassportPage() {
     }
   };
 
-  // Status Quick Update
-  const handleStatusChange = async (newStatus: string) => {
-    try {
-      const res = await fetch(`/api/eps/equipment/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        enqueueSnackbar('Статус оборудования обновлен', { variant: 'success' });
-        fetchEquipmentAndMeta();
-      }
-    } catch {
-      enqueueSnackbar('Ошибка обновления статуса', { variant: 'error' });
-    }
-  };
-
   // Edit Submit
   const handleSaveEdit = async (submitForApproval = false) => {
     try {
@@ -675,23 +657,6 @@ export default function EquipmentPassportPage() {
                   </Typography>
                   <StatusBadge status={equipment.status} />
                 </Box>
-
-                {canEdit && (
-                  <TextField
-                    select
-                    size="small"
-                    label="Сменить статус"
-                    value={equipment.status}
-                    onChange={(e) => handleStatusChange(e.target.value)}
-                    sx={{ minWidth: 170 }}
-                  >
-                    {Object.entries(EQUIPMENT_STATUS_MAP).map(([key, info]) => (
-                      <MenuItem key={key} value={key}>
-                        {info.label}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                )}
 
                 <Box>
                   <Typography variant="caption" color="text.secondary" display="block">
