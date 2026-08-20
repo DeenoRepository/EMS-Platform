@@ -229,11 +229,10 @@ export function FormDialog({
                   sx={{
                     color: '#64748b',
                     display: 'block',
-                    lineHeight: 1.25,
-                    mt: 0.25,
+                    lineHeight: 1.35,
+                    mt: 0.35,
                     fontSize: '0.75rem',
                   }}
-                  noWrap
                 >
                   {subtitle}
                 </Typography>
@@ -289,6 +288,7 @@ export function FormDialog({
           dividers={dividers}
           sx={{
             p: { xs: 2.5, sm: 3 },
+            pt: { xs: '20px !important', sm: '22px !important' },
             flex: 1,
             overflowY: 'auto',
             '&::-webkit-scrollbar': { width: 6 },

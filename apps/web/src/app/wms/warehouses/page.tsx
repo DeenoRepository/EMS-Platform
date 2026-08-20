@@ -30,6 +30,7 @@ import {
   TableBody,
   TableRow,
   TableCell,
+  InputAdornment,
 } from '@mui/material';
 import PageHeader from '@/components/layout/PageHeader';
 import AddIcon from '@mui/icons-material/Add';
@@ -604,7 +605,7 @@ export default function WmsWarehousesPage() {
         onSubmit={handleSubmit}
         submitDisabled={isSubmitting || !name.trim()}
       >
-        <Stack spacing={2.5} sx={{ mt: 1 }}>
+        <Stack spacing={2.25}>
           <TextField
             fullWidth
             required
@@ -614,29 +615,43 @@ export default function WmsWarehousesPage() {
             onChange={(e) => setName(e.target.value)}
           />
 
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={8}>
-              <TextField
-                fullWidth
-                label="Складской код / Идентификатор"
-                placeholder="WH-MAIN"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                helperText="Используется в накладных и адресах ячеек"
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <Button
-                variant="outlined"
-                fullWidth
-                startIcon={<AutoAwesomeIcon sx={{ color: '#7c3aed' }} />}
-                onClick={handleGenerateWarehouseCode}
-                sx={{ height: 54, borderRadius: '8px', textTransform: 'none', fontWeight: 600 }}
-              >
-                Автокод
-              </Button>
-            </Grid>
-          </Grid>
+          <TextField
+            fullWidth
+            label="Складской код / Идентификатор"
+            placeholder="WH-MAIN"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            helperText="Используется в накладных и адресах ячеек"
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<AutoAwesomeIcon sx={{ fontSize: 16, color: '#7c3aed' }} />}
+                    onClick={handleGenerateWarehouseCode}
+                    sx={{
+                      height: 36,
+                      borderRadius: '6px',
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      fontSize: '0.8125rem',
+                      borderColor: '#e2e8f0',
+                      color: '#475569',
+                      whiteSpace: 'nowrap',
+                      '&:hover': {
+                        borderColor: '#7c3aed',
+                        color: '#7c3aed',
+                        bgcolor: 'rgba(124, 58, 237, 0.04)',
+                      },
+                    }}
+                  >
+                    Автокод
+                  </Button>
+                </InputAdornment>
+              ),
+            }}
+          />
 
           <TextField
             fullWidth
@@ -665,10 +680,12 @@ export default function WmsWarehousesPage() {
             </Select>
           </FormControl>
 
-          <FormControlLabel
-            control={<Switch checked={isActive} onChange={(e) => setIsActive(e.target.checked)} color="primary" />}
-            label={<Typography variant="body2" fontWeight={600}>Склад активен для проведения операций</Typography>}
-          />
+          <Box sx={{ pt: 0.5 }}>
+            <FormControlLabel
+              control={<Switch checked={isActive} onChange={(e) => setIsActive(e.target.checked)} color="primary" />}
+              label={<Typography variant="body2" fontWeight={600} color="#1e293b">Склад активен для проведения операций</Typography>}
+            />
+          </Box>
         </Stack>
       </FormDialog>
 
