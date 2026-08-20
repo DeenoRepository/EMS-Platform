@@ -148,7 +148,7 @@ export async function PATCH(
       const approval = await prisma.equipmentApproval.create({
         data: {
           equipmentId: id,
-          type: 'EQUIPMENT_UPDATE' as any,
+          type: 'PARAMETER_CHANGE',
           status: 'PENDING',
           title: submitForApproval
             ? `Изменение параметров: ${currentEquipment.name}`
@@ -176,7 +176,7 @@ export async function PATCH(
       });
     }
 
-    // Случай 2: Редактирование черновика оборудования с отправкой на согласование (EQUIPMENT_CREATE)
+    // Случай 2: Редактирование черновика оборудования с отправкой на согласование (COMMISSIONING)
     if (submitForApproval && isDraft) {
       const updated = await prisma.$transaction(async (tx) => {
         if (Array.isArray(tagIds)) {
@@ -207,7 +207,7 @@ export async function PATCH(
       const approval = await prisma.equipmentApproval.create({
         data: {
           equipmentId: id,
-          type: 'EQUIPMENT_CREATE' as any,
+          type: 'COMMISSIONING',
           status: 'PENDING',
           title: `Регистрация оборудования: ${updated.name}`,
           description: approvalComment?.trim() || 'Черновик направлен на согласование',

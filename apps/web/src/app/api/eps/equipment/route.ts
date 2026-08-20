@@ -233,7 +233,7 @@ export async function POST(req: NextRequest) {
       approvalRecord = await prisma.equipmentApproval.create({
         data: {
           equipmentId: newEquipment.id,
-          type: 'EQUIPMENT_CREATE' as any,
+          type: 'COMMISSIONING',
           status: 'PENDING',
           title: `Регистрация оборудования: ${newEquipment.name}`,
           description: approvalComment?.trim() || 'Первичная регистрация нового паспорта оборудования',
