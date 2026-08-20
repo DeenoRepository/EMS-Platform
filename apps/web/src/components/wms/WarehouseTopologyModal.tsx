@@ -69,8 +69,13 @@ export default function WarehouseTopologyModal({
   onRefreshParent,
 }: WarehouseTopologyModalProps) {
   const { enqueueSnackbar } = useSnackbar();
-  const { hasPermission } = useAuth();
+  const { hasPermission, user } = useAuth();
   const confirm = useConfirm();
+
+  const canManageZones =
+    hasPermission(PERMISSIONS.WMS_ZONES_MANAGE) ||
+    hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE) ||
+    Boolean(user?.roles?.includes('admin'));
 
   const [zones, setZones] = useState<StorageZone[]>([]);
   const [selectedZoneIndex, setSelectedZoneIndex] = useState(0);
@@ -408,7 +413,7 @@ export default function WarehouseTopologyModal({
                 icon={<GridViewIcon sx={{ fontSize: 44, color: '#94a3b8' }} />}
                 title="Зоны хранения не созданы"
                 description="Разделите склад на зоны (Стеллажи, Напольное хранение, Буферная зона) и добавьте ячейки для точного учета местоположения ТМЦ."
-                actionText={hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE) ? 'Создать первую зону' : undefined}
+                actionText={canManageZones ? 'Создать первую зону' : undefined}
                 onAction={() => setIsCreateZoneOpen(true)}
               />
             </Box>
@@ -482,7 +487,7 @@ export default function WarehouseTopologyModal({
                   ))}
                 </Tabs>
 
-                {hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE) && (
+                {canManageZones && (
                   <Button
                     variant="outlined"
                     size="small"
@@ -573,7 +578,7 @@ export default function WarehouseTopologyModal({
                         }}
                       />
 
-                      {hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE) && (
+                      {canManageZones && (
                         <>
                           <Button
                             variant="outlined"
@@ -636,7 +641,7 @@ export default function WarehouseTopologyModal({
                       <Typography variant="body2" sx={{ color: '#64748b' }}>
                         {searchQuery ? 'Ячейки по запросу не найдены' : 'В этой зоне пока нет созданных ячеек.'}
                       </Typography>
-                      {!searchQuery && hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE) && (
+                      {!searchQuery && canManageZones && (
                         <Button
                           variant="outlined"
                           size="small"
@@ -702,7 +707,7 @@ export default function WarehouseTopologyModal({
                                     )}
                                   </Box>
 
-                                  {hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE) && (
+                                  {canManageZones && (
                                     <IconButton
                                       className="cell-del-btn"
                                       size="small"

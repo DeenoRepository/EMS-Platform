@@ -24,6 +24,7 @@ export const PERMISSIONS = {
   WMS_OPERATIONS_CREATE: 'wms.operations.create',
   WMS_NOMENCLATURE_MANAGE: 'wms.nomenclature.manage',
   WMS_WAREHOUSES_MANAGE: 'wms.warehouses.manage',
+  WMS_ZONES_MANAGE: 'wms.zones.manage',
   WMS_INVENTORY_MANAGE: 'wms.inventory.manage',
 
   // SRM

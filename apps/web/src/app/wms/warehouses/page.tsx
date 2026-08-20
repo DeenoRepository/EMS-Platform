@@ -405,8 +405,7 @@ export default function WmsWarehousesPage() {
                       </Typography>
                     </Box>
                     {(user?.roles.includes('admin') ||
-                      hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE) ||
-                      w.responsibleUserId === user?.userId) && (
+                      hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE)) && (
                       <IconButton
                         size="small"
                         onClick={() => handleOpenEdit(w)}
@@ -568,9 +567,12 @@ export default function WmsWarehousesPage() {
                       >
                         Топология
                       </Button>
-                      <IconButton size="small" onClick={() => handleOpenEdit(w)}>
-                        <EditOutlinedIcon fontSize="small" />
-                      </IconButton>
+                      {(user?.roles.includes('admin') ||
+                        hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE)) && (
+                        <IconButton size="small" onClick={() => handleOpenEdit(w)} aria-label="Редактировать склад">
+                          <EditOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      )}
                     </Stack>
                   </TableCell>
                 </TableRow>

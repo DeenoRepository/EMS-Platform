@@ -44,7 +44,11 @@ export async function POST(
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE) && !hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE)) {
+    if (
+      !hasPermission(user, PERMISSIONS.WMS_ZONES_MANAGE) &&
+      !hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE) &&
+      !user.roles.includes('admin')
+    ) {
       return forbiddenResponse();
     }
 
@@ -157,7 +161,11 @@ export async function DELETE(
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE) && !hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE)) {
+    if (
+      !hasPermission(user, PERMISSIONS.WMS_ZONES_MANAGE) &&
+      !hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE) &&
+      !user.roles.includes('admin')
+    ) {
       return forbiddenResponse();
     }
 

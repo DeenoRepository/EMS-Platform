@@ -34,7 +34,8 @@ async function main() {
     { code: 'wms.stock.view', displayName: 'Просмотр остатков и складов', module: 'wms', description: 'Просмотр наличия ТМЦ и складов' },
     { code: 'wms.operations.create', displayName: 'Проведение складских операций', module: 'wms', description: 'Приход, расход, перемещение ТМЦ' },
     { code: 'wms.nomenclature.manage', displayName: 'Управление номенклатурой', module: 'wms', description: 'Создание и редактирование ТМЦ' },
-    { code: 'wms.warehouses.manage', displayName: 'Управление складами и ячейками', module: 'wms', description: 'Создание складов, зон и ячеек адресного хранения' },
+    { code: 'wms.warehouses.manage', displayName: 'Управление складами', module: 'wms', description: 'Создание складов, редактирование реквизитов и назначение МОЛ' },
+    { code: 'wms.zones.manage', displayName: 'Конфигурация зон и ячеек', module: 'wms', description: 'Создание и редактирование зон и ячеек адресного хранения' },
     { code: 'wms.inventory.manage', displayName: 'Инвентаризация', module: 'wms', description: 'Создание и закрытие актов инвентаризации' },
 
     // SRM
@@ -144,10 +145,10 @@ async function main() {
     });
   }
 
-  // Назначение прав кладовщику
+  // Назначение прав кладовщику (все wms права, кроме создания новых складов wms.warehouses.manage)
   const warehousePermissions = allPermissions.filter(
     (p) =>
-      p.module === 'wms' ||
+      (p.module === 'wms' && p.code !== 'wms.warehouses.manage') ||
       p.code === 'eps.equipment.view' ||
       p.code === 'srm.dashboard.view'
   );
