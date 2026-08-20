@@ -125,7 +125,7 @@ const OPERATION_TYPES = [
   },
   {
     type: 'ISSUE_WRITE_OFF' as OperationType,
-    title: 'Списание на оборудование',
+    title: 'Списание ТМЦ',
     description: 'Монтаж на оборудование (ТОиР), списание в брак, неликвид или утилизация',
     icon: <DeleteSweepIcon />,
     color: '#d97706',
@@ -558,7 +558,7 @@ export function WmsOperationWizardDialog({
       if (itemWriteOffType === 'DEFECT') return 'Списание ТМЦ (Брак / Дефект)';
       if (itemWriteOffType === 'SCRAP') return 'Списание ТМЦ (Неликвид)';
       if (itemWriteOffType === 'OTHER') return 'Списание ТМЦ (Утилизация / Износ)';
-      return 'Списание на оборудование (ТОиР)';
+      return 'Списание ТМЦ (Установка на оборудование)';
     }
     return currentOpMeta.title;
   };

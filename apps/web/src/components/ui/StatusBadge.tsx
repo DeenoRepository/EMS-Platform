@@ -162,7 +162,7 @@ const STATUS_CONFIG_MAP: Record<string, StatusTheme> = {
     icon: <OutboxIcon sx={{ fontSize: 13 }} />,
   },
   ISSUE_WRITE_OFF: {
-    label: 'Списание на оборудование',
+    label: 'Списание ТМЦ',
     color: '#d97706',
     bg: '#fffbeb',
     border: '#fde68a',
