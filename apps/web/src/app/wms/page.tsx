@@ -524,48 +524,9 @@ export default function WmsDashboardPage() {
           </Card>
         </Grid>
 
-        {/* ── Правая колонка: Мастер операций + Дефицит ── */}
+        {/* ── Правая колонка: Дефицит и быстрый доступ ── */}
         <Grid item xs={12} lg={4}>
           <Stack spacing={2.5}>
-            {/* Карточка запуска мастера складских операций */}
-            <Card
-              sx={{
-                borderRadius: '12px',
-                border: '1px solid #bae6fd',
-                background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-                boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
-              }}
-            >
-              <CardContent sx={{ p: 2.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                  <AutoAwesomeIcon sx={{ color: '#0284c7' }} />
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.875rem', color: '#0f172a' }}>
-                    Мастер складских операций
-                  </Typography>
-                </Box>
-                <Typography variant="body2" sx={{ color: '#475569', fontSize: '0.8125rem', mb: 2 }}>
-                  Пошаговое проведение прихода от поставщиков, перемещения между складами, выдачи сотрудникам и списания ТМЦ на оборудование.
-                </Typography>
-                {hasPermission(PERMISSIONS.WMS_OPERATIONS_CREATE) && (
-                  <Button
-                    variant="contained"
-                    fullWidth
-                    startIcon={<AutoAwesomeIcon />}
-                    onClick={() => handleOpenWizard('RECEIPT')}
-                    sx={{
-                      fontWeight: 700,
-                      borderRadius: '8px',
-                      bgcolor: '#0284c7',
-                      py: 1,
-                      '&:hover': { bgcolor: '#0369a1' },
-                    }}
-                  >
-                    Запустить мастер операций
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-
             {/* Позиции с дефицитом */}
             <Card
               sx={{
