@@ -523,15 +523,25 @@ function WmsStockContent() {
           { label: 'Остатки' },
         ]}
         actions={
-          <Stack direction="row" spacing={1.5}>
+          <Stack direction="row" spacing={1.5} alignItems="center">
             {hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) && (
               <Button
                 variant="outlined"
                 startIcon={<AddIcon />}
                 onClick={() => setIsNomenclatureModalOpen(true)}
-                sx={{ borderRadius: '8px', fontWeight: 600 }}
+                sx={{
+                  height: 36,
+                  px: 2,
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
+                  borderRadius: '8px',
+                  textTransform: 'none',
+                  borderColor: '#cbd5e1',
+                  color: '#334155',
+                  '&:hover': { borderColor: '#94a3b8', bgcolor: '#f8fafc' },
+                }}
               >
-                + Номенклатура
+                Новая номенклатура
               </Button>
             )}
             {hasPermission(PERMISSIONS.WMS_OPERATIONS_CREATE) && (
@@ -543,8 +553,12 @@ function WmsStockContent() {
                   setIsWizardOpen(true);
                 }}
                 sx={{
+                  height: 36,
+                  px: 2,
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
                   borderRadius: '8px',
-                  fontWeight: 700,
+                  textTransform: 'none',
                   bgcolor: '#0284c7',
                   '&:hover': { bgcolor: '#0369a1' },
                 }}

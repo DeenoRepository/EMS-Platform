@@ -271,7 +271,16 @@ export default function WmsInventoryListPage() {
                 setComment('');
                 setIsModalOpen(true);
               }}
-              sx={{ px: 2.25, py: 0.75, fontWeight: 600 }}
+              sx={{
+                height: 36,
+                px: 2,
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+                borderRadius: '8px',
+                textTransform: 'none',
+                bgcolor: '#0284c7',
+                '&:hover': { bgcolor: '#0369a1' },
+              }}
             >
               Новая инвентаризация
             </Button>

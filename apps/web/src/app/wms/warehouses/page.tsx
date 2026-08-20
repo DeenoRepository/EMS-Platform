@@ -235,7 +235,16 @@ export default function WmsWarehousesPage() {
               startIcon={<AddIcon />}
               onClick={handleOpenCreate}
               aria-label="Создать новый склад"
-              sx={{ borderRadius: '8px', fontWeight: 600 }}
+              sx={{
+                height: 36,
+                px: 2,
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+                borderRadius: '8px',
+                textTransform: 'none',
+                bgcolor: '#0284c7',
+                '&:hover': { bgcolor: '#0369a1' },
+              }}
             >
               Создать склад
             </Button>

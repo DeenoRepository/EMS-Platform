@@ -407,12 +407,22 @@ function WmsOperationsContent() {
           { label: activeMainTab === 'operations' ? 'Операции' : 'Перемещения' },
         ]}
         actions={
-          <Stack direction="row" spacing={1.5}>
+          <Stack direction="row" spacing={1.5} alignItems="center">
             <Button
               variant="outlined"
               startIcon={<SendIcon />}
               onClick={() => setIsRequestDialogOpen(true)}
-              sx={{ fontWeight: 600, borderRadius: '8px' }}
+              sx={{
+                height: 36,
+                px: 2,
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+                borderRadius: '8px',
+                textTransform: 'none',
+                borderColor: '#cbd5e1',
+                color: '#334155',
+                '&:hover': { borderColor: '#94a3b8', bgcolor: '#f8fafc' },
+              }}
             >
               Запросить перевод ТМЦ
             </Button>
@@ -425,13 +435,17 @@ function WmsOperationsContent() {
                   setIsWizardOpen(true);
                 }}
                 sx={{
-                  fontWeight: 700,
+                  height: 36,
+                  px: 2,
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
                   borderRadius: '8px',
+                  textTransform: 'none',
                   bgcolor: '#0284c7',
                   '&:hover': { bgcolor: '#0369a1' },
                 }}
               >
-                Мастер складских операций
+                Мастер операций
               </Button>
             )}
           </Stack>

@@ -205,28 +205,40 @@ export default function WmsDashboardPage() {
         subtitle="Мониторинг остатков, дефицита ТМЦ, операций прихода, списания и инвентаризаций"
         breadcrumbs={[{ label: 'Главная', href: '/' }, { label: 'Складской учёт' }]}
         actions={
-          <Stack direction="row" spacing={1.5}>
+          <Stack direction="row" spacing={1.5} alignItems="center">
             <Button
               variant="outlined"
               startIcon={<RefreshIcon />}
               onClick={fetchStats}
               disabled={isLoading}
-              size="small"
               aria-label="Обновить аналитику склада"
-              sx={{ fontWeight: 600, borderRadius: '8px' }}
+              sx={{
+                height: 36,
+                px: 2,
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+                borderRadius: '8px',
+                textTransform: 'none',
+                borderColor: '#cbd5e1',
+                color: '#334155',
+                '&:hover': { borderColor: '#94a3b8', bgcolor: '#f8fafc' },
+              }}
             >
               Обновить
             </Button>
             {hasPermission(PERMISSIONS.WMS_OPERATIONS_CREATE) && (
               <Button
                 variant="contained"
-                startIcon={<AutoAwesomeIcon sx={{ color: '#ffffff' }} />}
+                startIcon={<AutoAwesomeIcon />}
                 onClick={() => handleOpenWizard('RECEIPT')}
-                size="small"
                 aria-label="Оформить операцию через мастер"
                 sx={{
+                  height: 36,
+                  px: 2,
+                  fontSize: '0.8125rem',
                   fontWeight: 600,
                   borderRadius: '8px',
+                  textTransform: 'none',
                   bgcolor: '#0284c7',
                   '&:hover': { bgcolor: '#0369a1' },
                 }}
