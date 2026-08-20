@@ -41,6 +41,8 @@ import WaterDropIcon from '@mui/icons-material/WaterDrop';
 import ShieldIcon from '@mui/icons-material/Shield';
 import StraightenIcon from '@mui/icons-material/Straighten';
 import SpeedIcon from '@mui/icons-material/Speed';
+import CategoryIcon from '@mui/icons-material/Category';
+import EngineeringIcon from '@mui/icons-material/Engineering';
 import TuneIcon from '@mui/icons-material/Tune';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
@@ -100,11 +102,14 @@ interface CustomSectionDef {
 }
 
 const SECTION_ICONS: Record<string, React.ReactNode> = {
-  Bolt: <BoltIcon color="warning" />,
-  WaterDrop: <WaterDropIcon color="primary" />,
-  Shield: <ShieldIcon color="success" />,
-  Straighten: <StraightenIcon color="secondary" />,
+  Category: <CategoryIcon color="primary" />,
   Speed: <SpeedIcon color="error" />,
+  Shield: <ShieldIcon color="success" />,
+  Engineering: <EngineeringIcon color="warning" />,
+  Bolt: <BoltIcon color="warning" />,
+  WaterDrop: <WaterDropIcon color="info" />,
+  Straighten: <StraightenIcon color="secondary" />,
+  Tune: <TuneIcon color="primary" />,
 };
 
 interface EquipmentDetails {

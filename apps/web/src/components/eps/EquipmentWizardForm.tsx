@@ -33,6 +33,7 @@ import WaterDropIcon from '@mui/icons-material/WaterDrop';
 import ShieldIcon from '@mui/icons-material/Shield';
 import StraightenIcon from '@mui/icons-material/Straighten';
 import SpeedIcon from '@mui/icons-material/Speed';
+import EngineeringIcon from '@mui/icons-material/Engineering';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import SaveIcon from '@mui/icons-material/Save';
@@ -70,11 +71,14 @@ export interface CustomSectionDef {
 }
 
 const SECTION_ICONS: Record<string, React.ReactNode> = {
-  Bolt: <BoltIcon color="warning" />,
-  WaterDrop: <WaterDropIcon color="primary" />,
-  Shield: <ShieldIcon color="success" />,
-  Straighten: <StraightenIcon color="secondary" />,
+  Category: <CategoryIcon color="primary" />,
   Speed: <SpeedIcon color="error" />,
+  Shield: <ShieldIcon color="success" />,
+  Engineering: <EngineeringIcon color="warning" />,
+  Bolt: <BoltIcon color="warning" />,
+  WaterDrop: <WaterDropIcon color="info" />,
+  Straighten: <StraightenIcon color="secondary" />,
+  Tune: <TuneIcon color="primary" />,
 };
 
 export const WIZARD_STEPS = [
@@ -577,7 +581,7 @@ export function EquipmentWizardForm({
         {activeStep === 3 && (
           <Stack spacing={2.5}>
             <Alert severity="success" sx={{ borderRadius: '8px' }}>
-              Все параметры заполнены. Выберите режим сохранения паспорта оборудования:
+              Все параметры заполнены. Проверьте сводные данные паспорта оборудования перед сохранением:
             </Alert>
 
             <Paper variant="outlined" sx={{ p: 2.5, borderRadius: '10px' }}>
@@ -611,6 +615,57 @@ export function EquipmentWizardForm({
                 </Grid>
               </Grid>
             </Paper>
+
+            {/* Custom Sections Review Cards */}
+            {sections.map((sec) => {
+              const secFilledFields = sec.fields.filter((f) => {
+                const val = customFieldValues[f.key];
+                return val !== undefined && val !== null && val !== '';
+              });
+
+              if (secFilledFields.length === 0) return null;
+
+              return (
+                <Paper key={sec.id} variant="outlined" sx={{ p: 2, borderRadius: '10px' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                    {sec.icon && SECTION_ICONS[sec.icon] ? (
+                      SECTION_ICONS[sec.icon]
+                    ) : (
+                      <TuneIcon color="primary" sx={{ fontSize: 18 }} />
+                    )}
+                    <Typography variant="subtitle2" fontWeight={700} color="#0f172a">
+                      {sec.name}
+                    </Typography>
+                  </Box>
+                  <Grid container spacing={1.5}>
+                    {secFilledFields.map((f) => {
+                      const val = customFieldValues[f.key];
+                      const displayVal = typeof val === 'boolean' ? (val ? 'Да' : 'Нет') : String(val);
+                      return (
+                        <Grid item xs={12} sm={6} key={f.key}>
+                          <Typography variant="caption" color="text.secondary">
+                            {f.name}:
+                          </Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Typography variant="body2" fontWeight={600}>
+                              {displayVal}
+                            </Typography>
+                            {f.unit && (
+                              <Chip
+                                label={f.unit}
+                                size="small"
+                                variant="outlined"
+                                sx={{ height: 18, fontSize: '0.65rem', fontWeight: 700 }}
+                              />
+                            )}
+                          </Box>
+                        </Grid>
+                      );
+                    })}
+                  </Grid>
+                </Paper>
+              );
+            })}
           </Stack>
         )}
       </Box>

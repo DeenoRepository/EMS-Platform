@@ -37,6 +37,8 @@ import WaterDropIcon from '@mui/icons-material/WaterDrop';
 import ShieldIcon from '@mui/icons-material/Shield';
 import StraightenIcon from '@mui/icons-material/Straighten';
 import SpeedIcon from '@mui/icons-material/Speed';
+import CategoryIcon from '@mui/icons-material/Category';
+import EngineeringIcon from '@mui/icons-material/Engineering';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import Inventory2Icon from '@mui/icons-material/Inventory2';
 import AssessmentIcon from '@mui/icons-material/Assessment';
@@ -58,7 +60,7 @@ interface CustomFieldItem {
   sectionId: string | null;
   key: string;
   name: string;
-  fieldType: 'TEXT' | 'TEXTAREA' | 'NUMBER' | 'DATE' | 'SELECT' | 'BOOLEAN';
+  fieldType: string;
   unit: string | null;
   isRequired: boolean;
   defaultValue: string | null;
@@ -93,11 +95,13 @@ const FIELD_TYPE_LABELS: Record<string, string> = {
 };
 
 const SECTION_ICONS: Record<string, React.ReactNode> = {
-  Bolt: <BoltIcon color="warning" />,
-  WaterDrop: <WaterDropIcon color="primary" />,
-  Shield: <ShieldIcon color="success" />,
-  Straighten: <StraightenIcon color="secondary" />,
+  Category: <CategoryIcon color="primary" />,
   Speed: <SpeedIcon color="error" />,
+  Shield: <ShieldIcon color="success" />,
+  Engineering: <EngineeringIcon color="warning" />,
+  Bolt: <BoltIcon color="warning" />,
+  WaterDrop: <WaterDropIcon color="info" />,
+  Straighten: <StraightenIcon color="secondary" />,
 };
 
 import { useSearchParams } from 'next/navigation';
@@ -962,11 +966,13 @@ function ModuleSettingsContent() {
             size="small"
             SelectProps={{ displayEmpty: true }}
           >
+            <MenuItem value="Category">Классификаторы / ОКОФ (Категория)</MenuItem>
+            <MenuItem value="Speed">Состояние / Износ (Спидометр)</MenuItem>
+            <MenuItem value="Shield">Регламент / Надежность (Щит)</MenuItem>
+            <MenuItem value="Engineering">ТОиР / Инженерия (Инструменты)</MenuItem>
             <MenuItem value="Bolt">Электричество (Молния)</MenuItem>
-            <MenuItem value="WaterDrop">Гидравлика (Капля)</MenuItem>
-            <MenuItem value="Shield">Безопасность / Надежность (Щит)</MenuItem>
+            <MenuItem value="WaterDrop">Гидравлика / Среда (Капля)</MenuItem>
             <MenuItem value="Straighten">Габариты / Размеры (Линейка)</MenuItem>
-            <MenuItem value="Speed">Скорость / Давление (Спидометр)</MenuItem>
           </TextField>
           <TextField
             label="Порядковый номер сортировки"
