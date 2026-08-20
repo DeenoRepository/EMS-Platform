@@ -118,7 +118,7 @@ export async function PATCH(
         }
 
         await prisma.equipment.update({
-          where: { id: approval.equipmentId },
+          where: { id: approval.equipment.id },
           data: updateData,
         });
 
@@ -126,7 +126,7 @@ export async function PATCH(
           userId: user.userId,
           action: 'UPDATE',
           entityType: 'Equipment',
-          entityId: approval.equipmentId,
+          entityId: approval.equipment.id,
           changes: {
             status: { old: prevStatus, new: newEquipmentStatus },
             approvalId: approval.id,
@@ -141,7 +141,7 @@ export async function PATCH(
         const mergedCustomFields = { ...currentCustomFields, ...proposed.customFields };
 
         await prisma.equipment.update({
-          where: { id: approval.equipmentId },
+          where: { id: approval.equipment.id },
           data: { customFields: mergedCustomFields },
         });
 
@@ -149,7 +149,7 @@ export async function PATCH(
           userId: user.userId,
           action: 'UPDATE',
           entityType: 'Equipment',
-          entityId: approval.equipmentId,
+          entityId: approval.equipment.id,
           changes: {
             customFields: { old: currentCustomFields, new: mergedCustomFields },
             approvalId: approval.id,
