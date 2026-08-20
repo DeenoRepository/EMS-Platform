@@ -250,9 +250,11 @@ export default function AdminUsersPage() {
           <TextField
             select
             size="small"
-            label="Фильтр по роли"
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
+            SelectProps={{
+              displayEmpty: true,
+            }}
             sx={{ minWidth: 200 }}
           >
             <MenuItem value="">Все роли</MenuItem>

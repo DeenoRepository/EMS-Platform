@@ -960,6 +960,7 @@ function ModuleSettingsContent() {
             onChange={(e) => setSectionIcon(e.target.value)}
             fullWidth
             size="small"
+            SelectProps={{ displayEmpty: true }}
           >
             <MenuItem value="Bolt">Электричество (Молния)</MenuItem>
             <MenuItem value="WaterDrop">Гидравлика (Капля)</MenuItem>
@@ -997,6 +998,7 @@ function ModuleSettingsContent() {
             onChange={(e) => setFieldTargetSectionId(e.target.value)}
             fullWidth
             size="small"
+            SelectProps={{ displayEmpty: true }}
           >
             <MenuItem value="">— Общий (без раздела) —</MenuItem>
             {sections.map((s) => (
@@ -1036,6 +1038,7 @@ function ModuleSettingsContent() {
                 onChange={(e) => setFieldType(e.target.value)}
                 fullWidth
                 size="small"
+                SelectProps={{ displayEmpty: true }}
               >
                 {Object.entries(FIELD_TYPE_LABELS).map(([k, label]) => (
                   <MenuItem key={k} value={k}>

@@ -438,6 +438,9 @@ function DocumentsListContent() {
                 setDocTypeFilter(e.target.value);
                 setPage(1);
               }}
+              SelectProps={{
+                displayEmpty: true,
+              }}
               sx={{
                 minWidth: 160,
                 backgroundColor: '#ffffff',
@@ -465,6 +468,9 @@ function DocumentsListContent() {
               onChange={(e) => {
                 setEquipmentFilter(e.target.value);
                 setPage(1);
+              }}
+              SelectProps={{
+                displayEmpty: true,
               }}
               sx={{
                 minWidth: 200,

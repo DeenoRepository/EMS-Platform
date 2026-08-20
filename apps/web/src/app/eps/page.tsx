@@ -478,6 +478,7 @@ function EquipmentListContent() {
                     setStatusFilter(e.target.value);
                     setPage(1);
                   }}
+                  SelectProps={{ displayEmpty: true }}
                   sx={{
                     minWidth: 140,
                     backgroundColor: '#ffffff',

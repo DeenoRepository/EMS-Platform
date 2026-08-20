@@ -530,6 +530,9 @@ function ApprovalsListContent() {
                 setTypeFilter(e.target.value);
                 setPage(1);
               }}
+              SelectProps={{
+                displayEmpty: true,
+              }}
               sx={{
                 minWidth: 170,
                 backgroundColor: '#ffffff',
@@ -557,6 +560,9 @@ function ApprovalsListContent() {
               onChange={(e) => {
                 setStatusFilter(e.target.value);
                 setPage(1);
+              }}
+              SelectProps={{
+                displayEmpty: true,
               }}
               sx={{
                 minWidth: 150,

@@ -365,6 +365,9 @@ export default function WmsInventoryListPage() {
               size="small"
               value={selectedWarehouse}
               onChange={(e) => setSelectedWarehouse(e.target.value)}
+              SelectProps={{
+                displayEmpty: true,
+              }}
               sx={{
                 minWidth: 160,
                 backgroundColor: '#ffffff',
@@ -390,6 +393,9 @@ export default function WmsInventoryListPage() {
               size="small"
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
+              SelectProps={{
+                displayEmpty: true,
+              }}
               sx={{
                 minWidth: 160,
                 backgroundColor: '#ffffff',

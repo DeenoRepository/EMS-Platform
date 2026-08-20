@@ -621,6 +621,9 @@ function WmsStockContent() {
                 setSelectedZone('');
                 setPage(0);
               }}
+              SelectProps={{
+                displayEmpty: true,
+              }}
               sx={{
                 minWidth: 160,
                 backgroundColor: '#ffffff',
@@ -650,6 +653,9 @@ function WmsStockContent() {
                   setSelectedZone(e.target.value);
                   setPage(0);
                 }}
+                SelectProps={{
+                  displayEmpty: true,
+                }}
                 sx={{
                   minWidth: 140,
                   backgroundColor: '#ffffff',
@@ -678,6 +684,9 @@ function WmsStockContent() {
               onChange={(e) => {
                 setSelectedCategory(e.target.value);
                 setPage(0);
+              }}
+              SelectProps={{
+                displayEmpty: true,
               }}
               sx={{
                 minWidth: 160,

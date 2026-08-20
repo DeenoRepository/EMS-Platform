@@ -400,6 +400,9 @@ function HistoryListContent() {
                 setActionFilter(e.target.value);
                 setPage(1);
               }}
+              SelectProps={{
+                displayEmpty: true,
+              }}
               sx={{
                 minWidth: 160,
                 backgroundColor: '#ffffff',
@@ -427,6 +430,9 @@ function HistoryListContent() {
               onChange={(e) => {
                 setEquipmentFilter(e.target.value);
                 setPage(1);
+              }}
+              SelectProps={{
+                displayEmpty: true,
               }}
               sx={{
                 minWidth: 200,

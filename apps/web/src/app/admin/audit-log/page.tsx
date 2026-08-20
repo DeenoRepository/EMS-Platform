@@ -263,6 +263,9 @@ export default function AdminAuditLogPage() {
                 setActionFilter(e.target.value);
                 setPage(1);
               }}
+              SelectProps={{
+                displayEmpty: true,
+              }}
               sx={{
                 minWidth: 150,
                 backgroundColor: '#ffffff',
@@ -290,6 +293,9 @@ export default function AdminAuditLogPage() {
               onChange={(e) => {
                 setEntityTypeFilter(e.target.value);
                 setPage(1);
+              }}
+              SelectProps={{
+                displayEmpty: true,
               }}
               sx={{
                 minWidth: 160,
