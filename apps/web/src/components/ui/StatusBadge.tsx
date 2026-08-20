@@ -21,6 +21,7 @@ import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
+import PersonIcon from '@mui/icons-material/Person';
 
 export type StatusVariant = 'subtle' | 'dot' | 'outlined' | 'solid';
 
