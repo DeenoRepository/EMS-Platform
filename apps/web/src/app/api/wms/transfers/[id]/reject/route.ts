@@ -133,7 +133,26 @@ export async function POST(
       },
     });
 
+    // Отправляем уведомление инициатору
     const isStockRestored = transfer.status === StockTransferStatus.IN_TRANSIT;
+    const notifyUserId = isStockRestored
+      ? (transfer.dispatchedById || transfer.sourceWarehouse.responsibleUserId)
+      : (transfer.createdById || transfer.targetWarehouse.responsibleUserId);
+
+    if (notifyUserId && notifyUserId !== user.userId) {
+      await prisma.notification.create({
+        data: {
+          userId: notifyUserId,
+          title: isStockRestored ? 'Приемка перемещения ТМЦ отклонена' : 'Запрос на перемещение ТМЦ отклонен',
+          message: isStockRestored
+            ? `Склад «${transfer.targetWarehouse.name}» отклонил приемку перемещения № ${transfer.transferNumber}. ТМЦ возвращены на ваш склад. Причина: ${reason}`
+            : `Склад «${transfer.sourceWarehouse.name}» отклонил заявку на перевод № ${transfer.transferNumber}. Причина: ${reason}`,
+          type: 'SYSTEM',
+          link: isStockRestored ? '/wms/transfers?mode=outbound' : '/wms/transfers?mode=my_requests',
+        },
+      }).catch(console.error);
+    }
+
     return NextResponse.json({
       success: true,
       data: updatedTransfer,

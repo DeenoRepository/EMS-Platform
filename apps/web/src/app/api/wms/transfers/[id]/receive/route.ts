@@ -155,6 +155,20 @@ export async function POST(
       },
     });
 
+    // Отправляем уведомление МОЛ склада-отправителя
+    const senderUserId = transfer.sourceWarehouse.responsibleUserId || transfer.dispatchedById;
+    if (senderUserId && senderUserId !== user.userId) {
+      await prisma.notification.create({
+        data: {
+          userId: senderUserId,
+          title: 'Перемещение ТМЦ успешно принято',
+          message: `Склад «${transfer.targetWarehouse.name}» подтвердил приемку ТМЦ по перемещению № ${transfer.transferNumber}.`,
+          type: 'SYSTEM',
+          link: '/wms/transfers?mode=outbound',
+        },
+      }).catch(console.error);
+    }
+
     return NextResponse.json({
       success: true,
       data: updatedTransfer,

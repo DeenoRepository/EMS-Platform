@@ -383,6 +383,19 @@ export async function POST(req: NextRequest) {
         },
       });
 
+      // Отправляем уведомление МОЛ склада-получателя об отгрузке
+      if (targetWh.responsibleUserId && targetWh.responsibleUserId !== user.userId) {
+        await prisma.notification.create({
+          data: {
+            userId: targetWh.responsibleUserId,
+            title: 'Отгружено перемещение ТМЦ',
+            message: `Со склада «${sourceWh.name}» в ваш адрес отгружено ${items.length} поз. ТМЦ (Перемещение № ${transferNumber}). Ожидается приемка.`,
+            type: 'SYSTEM',
+            link: '/wms/transfers?mode=inbound',
+          },
+        }).catch(console.error);
+      }
+
       return NextResponse.json({
         success: true,
         data: result,
@@ -426,6 +439,19 @@ export async function POST(req: NextRequest) {
           itemsCount: items.length,
         },
       });
+
+      // Отправляем уведомление МОЛ склада-донора о новом запросе
+      if (sourceWh.responsibleUserId && sourceWh.responsibleUserId !== user.userId) {
+        await prisma.notification.create({
+          data: {
+            userId: sourceWh.responsibleUserId,
+            title: 'Новый запрос на перемещение ТМЦ',
+            message: `Склад «${targetWh.name}» запросил ${items.length} поз. ТМЦ (Заявка № ${transferNumber}). Требуется согласование отгрузки.`,
+            type: 'SYSTEM',
+            link: '/wms/transfers?mode=requests',
+          },
+        }).catch(console.error);
+      }
 
       return NextResponse.json({
         success: true,
