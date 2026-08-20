@@ -69,11 +69,11 @@ export default function ApprovalWizardDialog({
       setApprovalType('COMMISSIONING');
       setTargetStatus('ACTIVE');
 
-      fetch('/api/equipment?limit=300')
+      fetch('/api/eps/equipment?pageSize=300')
         .then((r) => r.json())
         .then((json) => {
           if (json.success) {
-            const list: EquipmentOption[] = json.data?.items || json.data || [];
+            const list: EquipmentOption[] = json.data?.items || (Array.isArray(json.data) ? json.data : []);
             setEquipmentList(list);
             if (initialEquipmentId) {
               const eq = list.find((e) => e.id === initialEquipmentId);

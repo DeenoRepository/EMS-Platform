@@ -298,11 +298,11 @@ function ApprovalsListContent() {
     }
     setSubmittingReview(true);
     try {
-      const res = await fetch(`/api/eps/approvals/${selectedApprovalForReview.id}/resolution`, {
-        method: 'POST',
+      const res = await fetch(`/api/eps/approvals/${selectedApprovalForReview.id}`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          decision,
+          status: decision,
           resolutionComment: resolutionComment.trim() || undefined,
         }),
       });

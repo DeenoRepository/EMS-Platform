@@ -42,6 +42,7 @@ import QrCode2Icon from '@mui/icons-material/QrCode2';
 import PageHeader from '@/components/layout/PageHeader';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { EQUIPMENT_STATUS_MAP, formatDate, PERMISSIONS } from '@ems/shared';
+import * as XLSX from 'xlsx';
 import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
 import {
@@ -274,14 +275,36 @@ function EquipmentListContent() {
 
   // Bulk Export Handlers
   const handleBulkExport = () => {
-    const idsToExport = selectedIds.length > 0 ? selectedIds : equipmentList.map((i) => i.id);
-    if (idsToExport.length === 0) {
+    const listToExport =
+      selectedIds.length > 0
+        ? equipmentList.filter((i) => selectedIds.includes(i.id))
+        : sortedEquipmentList;
+
+    if (listToExport.length === 0) {
       enqueueSnackbar('Нет оборудования для экспорта', { variant: 'warning' });
       return;
     }
-    const url = `/api/eps/reports/export?format=csv&ids=${idsToExport.join(',')}`;
-    window.open(url, '_blank');
-    enqueueSnackbar(`Экспорт ${idsToExport.length} записей запущен`, { variant: 'info' });
+
+    const exportRows = listToExport.map((eq, idx) => ({
+      '№ п/п': idx + 1,
+      'Инвентарный номер': eq.inventoryNumber || '—',
+      'Серийный номер': eq.serialNumber || '—',
+      'Наименование оборудования': eq.name,
+      'Производитель': eq.manufacturer || '—',
+      'Модель': eq.model || '—',
+      'Место установки': eq.location || '—',
+      'Статус': EQUIPMENT_STATUS_MAP[eq.status]?.label || eq.status,
+      'Теги': eq.tags.map((t) => t.name).join(', ') || '—',
+      'Ввод в эксплуатацию': formatDate(eq.commissionDate),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportRows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Оборудование');
+
+    const fileName = `equipment_registry_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+    enqueueSnackbar(`Выгружено ${listToExport.length} записей в файл ${fileName}`, { variant: 'success' });
   };
 
   const handleBulkPrint = () => {
