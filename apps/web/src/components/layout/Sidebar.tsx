@@ -49,7 +49,7 @@ import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS } from '@ems/shared';
 import { StatusBadge } from '@/components/ui';
 
-export const SIDEBAR_WIDTH_EXPANDED = 248;
+export const SIDEBAR_WIDTH_EXPANDED = 280;
 export const SIDEBAR_WIDTH_COLLAPSED = 68;
 
 interface NavChild {
