@@ -20,6 +20,7 @@ import {
   TableBody,
   TableRow,
   TableCell,
+  Tooltip,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
