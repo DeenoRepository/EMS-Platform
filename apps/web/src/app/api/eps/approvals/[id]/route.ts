@@ -98,7 +98,7 @@ export async function PATCH(
     }
 
     // Execute automatic equipment status update if APPROVED
-    if (status === 'APPROVED') {
+    if (status === 'APPROVED' && approval.equipment) {
       const prevStatus = approval.equipment.status;
       let newEquipmentStatus: EquipmentStatus | null = null;
       const proposed = (approval.proposedData as any) || {};
@@ -153,6 +153,7 @@ export async function PATCH(
           changes: {
             customFields: { old: currentCustomFields, new: mergedCustomFields },
             approvalId: approval.id,
+            reason: `Автоматическое применение изменений параметров: ${approval.title}`,
           },
         });
       }
