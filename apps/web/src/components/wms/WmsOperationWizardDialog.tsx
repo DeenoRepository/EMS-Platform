@@ -506,13 +506,40 @@ export function WmsOperationWizardDialog({
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
+      if (operationType === 'TRANSFER') {
+        const res = await fetch('/api/wms/transfers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sourceWarehouseId: warehouseId,
+            targetWarehouseId,
+            isRequest: false,
+            requestReason: comment.trim() || undefined,
+            items: lineItems.map((item) => ({
+              nomenclatureId: item.nomenclatureId,
+              quantity: item.quantity,
+            })),
+          }),
+        });
+
+        const json = await res.json();
+        if (res.ok && json.success) {
+          enqueueSnackbar(json.message || 'Перемещение успешно оформлено и ожидает приемки получателем', { variant: 'success' });
+          onSuccess(json.data.id);
+          onClose();
+        } else {
+          enqueueSnackbar(json.error || 'Ошибка оформления перемещения', { variant: 'error' });
+        }
+        return;
+      }
+
       const res = await fetch('/api/wms/operations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: operationType,
           warehouseId,
-          targetWarehouseId: operationType === 'TRANSFER' ? targetWarehouseId : undefined,
+          targetWarehouseId: undefined,
           equipmentId: operationType === 'ISSUE_WRITE_OFF' && equipmentId ? equipmentId : undefined,
           recipientName: operationType === 'ISSUE_EMPLOYEE' ? recipientName.trim() : undefined,
           comment: comment.trim() || undefined,

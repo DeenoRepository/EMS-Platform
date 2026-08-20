@@ -22,6 +22,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
 import PersonIcon from '@mui/icons-material/Person';
+import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
 
 export type StatusVariant = 'subtle' | 'dot' | 'outlined' | 'solid';
 
@@ -181,6 +182,20 @@ const STATUS_CONFIG_MAP: Record<string, StatusTheme> = {
     bg: '#f5f3ff',
     border: '#ddd6fe',
     icon: <SwapHorizIcon sx={{ fontSize: 13 }} />,
+  },
+  REQUESTED: {
+    label: 'Запрошено (Ожидает отгрузки)',
+    color: '#d97706',
+    bg: '#fffbeb',
+    border: '#fde68a',
+    icon: <HourglassEmptyIcon sx={{ fontSize: 13 }} />,
+  },
+  IN_TRANSIT: {
+    label: 'В пути (Ожидает приемки)',
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+    icon: <LocalShippingOutlinedIcon sx={{ fontSize: 13 }} />,
   },
   ADJUSTMENT: {
     label: 'Корректировка',

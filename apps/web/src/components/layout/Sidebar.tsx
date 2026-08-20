@@ -43,6 +43,7 @@ import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
 import BugReportOutlinedIcon from '@mui/icons-material/BugReportOutlined';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS } from '@ems/shared';
@@ -260,6 +261,7 @@ export default function Sidebar({
           badgeColor: 'warning',
         },
         { label: 'Складские операции', path: '/wms/operations', icon: <MoveToInboxIcon sx={{ fontSize: 15 }} /> },
+        { label: 'Перемещения ТМЦ', path: '/wms/transfers', icon: <SwapHorizIcon sx={{ fontSize: 15 }} /> },
         { label: 'Склады', path: '/wms/warehouses', icon: <WarehouseOutlinedIcon sx={{ fontSize: 15 }} /> },
         { label: 'Инвентаризация', path: '/wms/inventory', icon: <FactCheckOutlinedIcon sx={{ fontSize: 15 }} /> },
       ],

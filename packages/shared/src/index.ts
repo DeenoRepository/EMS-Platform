@@ -87,6 +87,14 @@ export const OPERATION_TYPE_MAP: Record<string, { label: string; color: 'success
   ADJUSTMENT: { label: 'Корректировка', color: 'default' },
 };
 
+export const STOCK_TRANSFER_STATUS_MAP: Record<string, { label: string; color: 'warning' | 'info' | 'success' | 'error' | 'default' }> = {
+  REQUESTED: { label: 'Запрошено (Ожидает отгрузки)', color: 'warning' },
+  IN_TRANSIT: { label: 'В пути (Ожидает приемки)', color: 'info' },
+  COMPLETED: { label: 'Принято', color: 'success' },
+  REJECTED: { label: 'Отклонено', color: 'error' },
+  CANCELLED: { label: 'Отозвано', color: 'default' },
+};
+
 export const INVENTORY_STATUS_MAP: Record<string, { label: string; color: 'warning' | 'info' | 'success' | 'default' }> = {
   DRAFT: { label: 'Черновик', color: 'default' },
   IN_PROGRESS: { label: 'В процессе', color: 'warning' },

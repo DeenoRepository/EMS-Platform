@@ -34,7 +34,11 @@ model User {
   requestedApprovals EquipmentApproval[]   @relation("ApprovalRequester")
   reviewedApprovals  EquipmentApproval[]   @relation("ApprovalReviewer")
   createdReportTemplates ReportTemplate[]  @relation("CreatedReportTemplates")
-  managedWarehouses Warehouse[]           @relation("WarehouseResponsible")
+  managedWarehouses      Warehouse[]           @relation("WarehouseResponsible")
+  createdTransfers       StockTransfer[]       @relation("TransferCreatedBy")
+  dispatchedTransfers    StockTransfer[]       @relation("TransferDispatchedBy")
+  receivedTransfers      StockTransfer[]       @relation("TransferReceivedBy")
+  rejectedTransfers      StockTransfer[]       @relation("TransferRejectedBy")
 }
 
 model Role {
@@ -366,11 +370,13 @@ model Warehouse {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  responsibleUser   User?     @relation("WarehouseResponsible", fields: [responsibleUserId], references: [id], onDelete: SetNull)
-  stockItems        StockItem[]
-  operations        StockOperation[]
-  inventories       Inventory[]
-  zones             StorageZone[]
+  responsibleUser     User?               @relation("WarehouseResponsible", fields: [responsibleUserId], references: [id], onDelete: SetNull)
+  stockItems          StockItem[]
+  operations          StockOperation[]
+  inventories         Inventory[]
+  zones               StorageZone[]
+  dispatchedTransfers StockTransfer[]     @relation("TransfersDispatched")
+  receivedTransfers   StockTransfer[]     @relation("TransfersReceived")
 
   @@index([responsibleUserId])
 }
@@ -392,15 +398,16 @@ model StorageZone {
 }
 
 model StorageCell {
-  id        String   @id @default(uuid())
-  zoneId    String
-  code      String   // e.g. "A-01", "Стеллаж 1 / Полка 2"
-  name      String?  // Описание / наименование ячейки
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String              @id @default(uuid())
+  zoneId        String
+  code          String              // e.g. "A-01", "Стеллаж 1 / Полка 2"
+  name          String?             // Описание / наименование ячейки
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
 
-  zone       StorageZone @relation(fields: [zoneId], references: [id], onDelete: Cascade)
-  stockItems StockItem[]
+  zone          StorageZone         @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  stockItems    StockItem[]
+  transferItems StockTransferItem[]
 
   @@unique([zoneId, code])
   @@index([zoneId])
@@ -433,6 +440,7 @@ model Nomenclature {
   operationItems StockOperationItem[]
   equipmentLinks EquipmentSparePart[]
   inventoryItems InventoryItem[]
+  transferItems  StockTransferItem[]
 
   @@index([name])
   @@index([article])
@@ -539,6 +547,75 @@ model InventoryItem {
   nomenclature Nomenclature @relation(fields: [nomenclatureId], references: [id], onDelete: Cascade)
 
   @@unique([inventoryId, nomenclatureId])
+}
+
+// ==========================================
+// 4.1. МЕЖСКЛАДСКИЕ ПЕРЕМЕЩЕНИЯ И ЗАПРОСЫ ТМЦ
+// ==========================================
+
+model StockTransfer {
+  id                String              @id @default(uuid())
+  transferNumber    String              @unique // TR-2026-0001
+  sourceWarehouseId String
+  targetWarehouseId String
+  status            StockTransferStatus @default(IN_TRANSIT)
+
+  // Инициатор создания (отправитель при отгрузке или получатель при заявке)
+  createdById       String
+  requestReason     String?             @db.Text
+
+  // Отправка (согласование / отгрузка со склада-отправителя)
+  dispatchedAt      DateTime?
+  dispatchedById    String?
+
+  // Приемка (подтверждение приемки на складе-получателе)
+  receivedAt        DateTime?
+  receivedById      String?
+
+  // Отклонение (с фиксацией обязательной причины отказа)
+  rejectedAt        DateTime?
+  rejectedById      String?
+  rejectionReason   String?             @db.Text
+
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  sourceWarehouse   Warehouse           @relation("TransfersDispatched", fields: [sourceWarehouseId], references: [id], onDelete: Cascade)
+  targetWarehouse   Warehouse           @relation("TransfersReceived", fields: [targetWarehouseId], references: [id], onDelete: Cascade)
+  createdBy         User                @relation("TransferCreatedBy", fields: [createdById], references: [id])
+  dispatchedBy      User?               @relation("TransferDispatchedBy", fields: [dispatchedById], references: [id], onDelete: SetNull)
+  receivedBy        User?               @relation("TransferReceivedBy", fields: [receivedById], references: [id], onDelete: SetNull)
+  rejectedBy        User?               @relation("TransferRejectedBy", fields: [rejectedById], references: [id], onDelete: SetNull)
+
+  items             StockTransferItem[]
+
+  @@index([sourceWarehouseId])
+  @@index([targetWarehouseId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum StockTransferStatus {
+  REQUESTED    // Запрос от получателя, ожидает согласования и отгрузки
+  IN_TRANSIT   // Отправлено, ожидает подтверждения приемки получателем
+  COMPLETED    // Принято получателем (проведено на склад)
+  REJECTED     // Отклонено с указанием причины
+  CANCELLED    // Отозвано инициатором
+}
+
+model StockTransferItem {
+  id             String        @id @default(uuid())
+  transferId     String
+  nomenclatureId String
+  quantity       Decimal
+  targetCellId   String?       // Ячейка зачисления на складе-получателе
+
+  transfer       StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  nomenclature   Nomenclature  @relation(fields: [nomenclatureId], references: [id], onDelete: Cascade)
+  targetCell     StorageCell?  @relation(fields: [targetCellId], references: [id], onDelete: SetNull)
+
+  @@index([transferId])
+  @@index([nomenclatureId])
 }
 
 // ==========================================
