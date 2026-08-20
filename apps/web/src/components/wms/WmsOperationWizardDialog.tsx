@@ -578,12 +578,16 @@ export function WmsOperationWizardDialog({
                 {OPERATION_TYPES.map((op) => {
                   const isSelected = operationType === op.type;
                   return (
-                    <Grid item xs={12} sm={6} key={op.type}>
+                    <Grid item xs={12} sm={6} key={op.type} sx={{ display: 'flex' }}>
                       <Paper
                         elevation={0}
                         onClick={() => setOperationType(op.type)}
                         sx={{
                           p: 2,
+                          width: '100%',
+                          height: '100%',
+                          minHeight: 86,
+                          boxSizing: 'border-box',
                           borderRadius: '10px',
                           border: '2px solid',
                           borderColor: isSelected ? op.color : '#e2e8f0',
@@ -591,7 +595,7 @@ export function WmsOperationWizardDialog({
                           cursor: 'pointer',
                           transition: 'all 0.15s ease',
                           display: 'flex',
-                          alignItems: 'flex-start',
+                          alignItems: 'center',
                           gap: 1.5,
                           '&:hover': {
                             borderColor: op.color,
@@ -601,8 +605,8 @@ export function WmsOperationWizardDialog({
                       >
                         <Box
                           sx={{
-                            width: 38,
-                            height: 38,
+                            width: 40,
+                            height: 40,
                             borderRadius: '8px',
                             bgcolor: isSelected ? '#ffffff' : op.bgcolor,
                             color: op.color,
@@ -614,11 +618,11 @@ export function WmsOperationWizardDialog({
                         >
                           {op.icon}
                         </Box>
-                        <Box>
-                          <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#0f172a' }}>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#0f172a', lineHeight: 1.25 }}>
                             {op.title}
                           </Typography>
-                          <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mt: 0.25 }}>
+                          <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mt: 0.5, lineHeight: 1.3 }}>
                             {op.description}
                           </Typography>
                         </Box>
