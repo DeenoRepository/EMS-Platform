@@ -532,6 +532,37 @@ export function WmsOperationWizardDialog({
 
   const currentOpMeta = OPERATION_TYPES.find((o) => o.type === operationType) || OPERATION_TYPES[0];
 
+  const getOperationSummaryLabel = () => {
+    if (operationType === 'ISSUE_WRITE_OFF') {
+      const reasons = new Set(lineItems.map((i) => i.writeOffReason).filter(Boolean));
+      const hasEq = lineItems.some((i) => i.equipmentName);
+      if (hasEq) {
+        return 'Списание на оборудование';
+      }
+      if (reasons.has('Списание в брак / дефект')) {
+        return 'Списание в брак / дефект';
+      }
+      if (reasons.has('Списание в неликвид')) {
+        return 'Списание в неликвид';
+      }
+      if (reasons.has('Утилизация / износ')) {
+        return 'Списание на утилизацию';
+      }
+      return 'Списание ТМЦ';
+    }
+    return currentOpMeta.title;
+  };
+
+  const getCurrentOpBannerTitle = () => {
+    if (operationType === 'ISSUE_WRITE_OFF') {
+      if (itemWriteOffType === 'DEFECT') return 'Списание ТМЦ (Брак / Дефект)';
+      if (itemWriteOffType === 'SCRAP') return 'Списание ТМЦ (Неликвид)';
+      if (itemWriteOffType === 'OTHER') return 'Списание ТМЦ (Утилизация / Износ)';
+      return 'Списание на оборудование (ТОиР)';
+    }
+    return currentOpMeta.title;
+  };
+
   return (
     <FormDialog
       open={open}
@@ -757,7 +788,7 @@ export function WmsOperationWizardDialog({
                         Проводимая операция:
                       </Typography>
                       <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9375rem' }}>
-                        {currentOpMeta.title}
+                        {getCurrentOpBannerTitle()}
                       </Typography>
                     </Box>
                   </Box>
@@ -1414,7 +1445,7 @@ export function WmsOperationWizardDialog({
                     Тип операции:
                   </Typography>
                   <Box sx={{ mt: 0.5 }}>
-                    <StatusBadge status={operationType} />
+                    <StatusBadge status={operationType} label={getOperationSummaryLabel()} />
                   </Box>
                 </Grid>
 
