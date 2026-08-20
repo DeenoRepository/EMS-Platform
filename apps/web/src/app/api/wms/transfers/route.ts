@@ -26,14 +26,16 @@ export async function GET(req: NextRequest) {
       user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
       user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
 
-    // Находим склад пользователя, если он не админ
-    let userWarehouseId: string | null = warehouseId || null;
-    if (!userWarehouseId && !isAdmin) {
-      const userWh = await prisma.warehouse.findFirst({
+    // Находим склады пользователя, если он не админ
+    let userWarehouseIds: string[] = [];
+    if (warehouseId) {
+      userWarehouseIds = [warehouseId];
+    } else if (!isAdmin) {
+      const userWhs = await prisma.warehouse.findMany({
         where: { responsibleUserId: user.userId },
         select: { id: true },
       });
-      userWarehouseId = userWh?.id || null;
+      userWarehouseIds = userWhs.map((w) => w.id);
     }
 
     const where: any = {};
@@ -42,29 +44,42 @@ export async function GET(req: NextRequest) {
       where.status = status;
     }
 
-    if (!isAdmin && userWarehouseId) {
-      if (mode === 'inbound') {
-        // Входящие на приемку: я получатель, статус В пути
-        where.targetWarehouseId = userWarehouseId;
-        where.status = StockTransferStatus.IN_TRANSIT;
-      } else if (mode === 'requests') {
-        // Входящие запросы ко мне: я отправитель, статус Запрошено
-        where.sourceWarehouseId = userWarehouseId;
-        where.status = StockTransferStatus.REQUESTED;
-      } else if (mode === 'outbound') {
-        // Исходящие отправления от меня: я отправитель, статус В пути
-        where.sourceWarehouseId = userWarehouseId;
-        where.status = StockTransferStatus.IN_TRANSIT;
-      } else if (mode === 'my_requests') {
-        // Мои запросы к другим: я получатель, статус Запрошено
-        where.targetWarehouseId = userWarehouseId;
-        where.status = StockTransferStatus.REQUESTED;
+    if (!isAdmin) {
+      if (userWarehouseIds.length > 0) {
+        if (mode === 'inbound') {
+          // Входящие на приемку: я получатель, статус В пути
+          where.targetWarehouseId = { in: userWarehouseIds };
+          where.status = StockTransferStatus.IN_TRANSIT;
+        } else if (mode === 'requests') {
+          // Входящие запросы ко мне: я отправитель, статус Запрошено
+          where.sourceWarehouseId = { in: userWarehouseIds };
+          where.status = StockTransferStatus.REQUESTED;
+        } else if (mode === 'outbound') {
+          // Исходящие отправления от меня: я отправитель, статус В пути
+          where.sourceWarehouseId = { in: userWarehouseIds };
+          where.status = StockTransferStatus.IN_TRANSIT;
+        } else if (mode === 'my_requests') {
+          // Мои запросы к другим: я получатель (или я автор), статус Запрошено
+          where.OR = [
+            { targetWarehouseId: { in: userWarehouseIds }, status: StockTransferStatus.REQUESTED },
+            { createdById: user.userId, status: StockTransferStatus.REQUESTED },
+          ];
+        } else {
+          // Все операции моих складов
+          where.OR = [
+            { sourceWarehouseId: { in: userWarehouseIds } },
+            { targetWarehouseId: { in: userWarehouseIds } },
+            { createdById: user.userId },
+          ];
+        }
       } else {
-        // Все операции моего склада
-        where.OR = [
-          { sourceWarehouseId: userWarehouseId },
-          { targetWarehouseId: userWarehouseId },
-        ];
+        // У пользователя нет привязанных складов: показываем его личные заявки
+        if (mode === 'my_requests') {
+          where.createdById = user.userId;
+          where.status = StockTransferStatus.REQUESTED;
+        } else {
+          where.createdById = user.userId;
+        }
       }
     } else if (warehouseId) {
       where.OR = [
@@ -150,23 +165,23 @@ export async function GET(req: NextRequest) {
 
     // Подсчет счетчиков для вкладок
     let counts = { inbound: 0, requests: 0, outbound: 0, total };
-    if (userWarehouseId) {
+    if (userWarehouseIds.length > 0) {
       const [inboundCount, requestsCount, outboundCount] = await Promise.all([
         prisma.stockTransfer.count({
           where: {
-            targetWarehouseId: userWarehouseId,
+            targetWarehouseId: { in: userWarehouseIds },
             status: StockTransferStatus.IN_TRANSIT,
           },
         }),
         prisma.stockTransfer.count({
           where: {
-            sourceWarehouseId: userWarehouseId,
+            sourceWarehouseId: { in: userWarehouseIds },
             status: StockTransferStatus.REQUESTED,
           },
         }),
         prisma.stockTransfer.count({
           where: {
-            sourceWarehouseId: userWarehouseId,
+            sourceWarehouseId: { in: userWarehouseIds },
             status: StockTransferStatus.IN_TRANSIT,
           },
         }),
