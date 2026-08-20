@@ -12,7 +12,21 @@ export async function GET(req: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!hasPermission(user, PERMISSIONS.WMS_STOCK_VIEW)) return forbiddenResponse();
 
+    const { searchParams } = new URL(req.url);
+    const forTransfer = searchParams.get('forTransfer') === 'true';
+
+    const isAdmin =
+      user.roles.includes('admin') ||
+      user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
+      user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+
+    const where: any = {};
+    if (!isAdmin && !forTransfer) {
+      where.responsibleUserId = user.userId;
+    }
+
     const warehouses = await prisma.warehouse.findMany({
+      where,
       orderBy: { createdAt: 'asc' },
       include: {
         responsibleUser: {

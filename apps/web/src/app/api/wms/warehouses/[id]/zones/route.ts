@@ -49,7 +49,21 @@ export async function POST(
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE)) return forbiddenResponse();
+    if (!hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE) && !hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE)) return forbiddenResponse();
+
+    const warehouse = await prisma.warehouse.findUnique({ where: { id: params.id } });
+    if (!warehouse) {
+      return NextResponse.json({ success: false, error: 'Склад не найден' }, { status: 404 });
+    }
+
+    const isAdmin =
+      user.roles.includes('admin') ||
+      user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
+      user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+
+    if (!isAdmin && warehouse.responsibleUserId && warehouse.responsibleUserId !== user.userId) {
+      return forbiddenResponse(`Вы не являетесь ответственным лицом за склад "${warehouse.name}". Создание зон разрешено только назначенному МОЛ.`);
+    }
 
     const body = await req.json();
     const { name, code, description } = body;
