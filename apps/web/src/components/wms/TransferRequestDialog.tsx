@@ -353,7 +353,7 @@ export default function TransferRequestDialog({
                 label={`Кол-во (${selectedNomenclature?.unit || 'ед'})`}
                 value={itemQty}
                 onChange={(e) => setItemQty(e.target.value)}
-                inputProps={{ min: 0.01, step: 1 }}
+                inputProps={{ min: 0.01, step: 'any' }}
               />
             </Grid>
 

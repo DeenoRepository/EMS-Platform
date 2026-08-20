@@ -1116,7 +1116,7 @@ export function WmsOperationWizardDialog({
                           : `Доступно: ${getAvailableStock(selectedNomenclature.id)}`
                         : undefined
                     }
-                    inputProps={{ min: 0.01, step: 1 }}
+                    inputProps={{ min: 0.01, step: 'any' }}
                     InputProps={{
                       endAdornment: isOutflow && selectedNomenclature && getAvailableStock(selectedNomenclature.id) > 0 ? (
                         <InputAdornment position="end">
@@ -1323,7 +1323,7 @@ export function WmsOperationWizardDialog({
                         value={newNomQty}
                         onChange={(e) => setNewNomQty(e.target.value)}
                         sx={{ bgcolor: '#ffffff' }}
-                        inputProps={{ min: 0.01, step: 1 }}
+                        inputProps={{ min: 0.01, step: 'any' }}
                       />
                     </Grid>
 

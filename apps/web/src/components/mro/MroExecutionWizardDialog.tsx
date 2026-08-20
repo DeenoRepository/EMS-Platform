@@ -495,7 +495,7 @@ export default function MroExecutionWizardDialog({
                     label="Кол-во"
                     value={partQty}
                     onChange={(e) => setPartQty(e.target.value)}
-                    inputProps={{ min: 0.01, step: 1 }}
+                    inputProps={{ min: 0.01, step: 'any' }}
                   />
                 </Grid>
                 <Grid item xs={6} sm={1.5}>

@@ -141,6 +141,7 @@ export function FormDialog({
         }}
         PaperProps={{
           component: onSubmit ? 'form' : 'div',
+          noValidate: true,
           onSubmit: onSubmit ? handleSubmit : undefined,
           sx: {
             borderRadius: isFullScreen ? 0 : '14px',
