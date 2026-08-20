@@ -190,13 +190,24 @@ function WmsOperationsContent() {
     setPage(0);
   };
 
+  const defaultWarehouse = useMemo(() => {
+    if (!isAdmin && availableWarehouses.length === 1) {
+      return availableWarehouses[0].id;
+    }
+    return '';
+  }, [isAdmin, availableWarehouses]);
+
   const handleResetFilters = () => {
-    setSelectedWarehouse('');
+    setSelectedWarehouse(defaultWarehouse);
     setSelectedType('');
     setPage(0);
   };
 
-  const activeFilterCount = (selectedWarehouse ? 1 : 0) + (selectedType ? 1 : 0);
+  const isCustomWarehouseSelected = isAdmin
+    ? Boolean(selectedWarehouse)
+    : availableWarehouses.length > 1 && Boolean(selectedWarehouse);
+
+  const activeFilterCount = (isCustomWarehouseSelected ? 1 : 0) + (selectedType ? 1 : 0);
 
   const renderRecipientBadge = (op: StockOperation) => {
     if (op.type === 'RECEIPT') {
@@ -384,12 +395,13 @@ function WmsOperationsContent() {
               select
               size="small"
               value={selectedWarehouse}
+              disabled={!isAdmin && availableWarehouses.length <= 1}
               onChange={(e) => {
                 setSelectedWarehouse(e.target.value);
                 setPage(0);
               }}
               sx={{
-                minWidth: 200,
+                minWidth: 220,
                 backgroundColor: '#ffffff',
                 '& .MuiOutlinedInput-root': {
                   borderRadius: '8px',
@@ -400,9 +412,16 @@ function WmsOperationsContent() {
                 },
               }}
             >
-              <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>
-                {isAdmin ? 'Все склады предприятия' : availableWarehouses.length > 1 ? 'Все мои склады' : 'Мой склад'}
-              </MenuItem>
+              {isAdmin && (
+                <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>
+                  Все склады предприятия
+                </MenuItem>
+              )}
+              {!isAdmin && availableWarehouses.length > 1 && (
+                <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>
+                  Все мои склады ({availableWarehouses.length})
+                </MenuItem>
+              )}
               {availableWarehouses.map((w) => (
                 <MenuItem key={w.id} value={w.id} sx={{ fontSize: '0.8125rem' }}>
                   {w.name} ({w.code})
