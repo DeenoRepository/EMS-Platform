@@ -28,6 +28,8 @@ export interface TableColumnOption {
 
 export interface DataTableWrapperProps {
   children?: React.ReactNode;
+  /** Встроенные навигационные вкладки в шапке реестра/таблицы */
+  tabs?: React.ReactNode;
   /** Встроенный слот тулбара поиска и фильтров в шапке таблицы */
   toolbar?: React.ReactNode;
   /** Заголовок таблицы/реестра */
@@ -97,6 +99,7 @@ import {
 
 export function DataTableWrapper({
   children,
+  tabs,
   toolbar,
   title,
   subtitle,
@@ -382,6 +385,23 @@ export function DataTableWrapper({
         flexDirection: 'column',
       }}
     >
+      {/* 0. Integrated Navigation Tabs Header */}
+      {tabs && (
+        <Box
+          sx={{
+            px: { xs: 1, sm: 1.5 },
+            backgroundColor: '#ffffff',
+            borderBottom: '1px solid #f1f5f9',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+          }}
+        >
+          {tabs}
+        </Box>
+      )}
+
       {/* 1. Header Row (if explicit title provided) */}
       {hasHeader && (
         <Box

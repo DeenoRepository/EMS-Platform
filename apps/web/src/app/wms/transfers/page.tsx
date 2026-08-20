@@ -6,10 +6,6 @@ import {
   Typography,
   Grid,
   Button,
-  Tabs,
-  Tab,
-  Badge,
-  Paper,
   Table,
   TableHead,
   TableBody,
@@ -28,6 +24,8 @@ import MoveToInboxIcon from '@mui/icons-material/MoveToInbox';
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
+import AssignmentOutlinedIcon from '@mui/icons-material/AssignmentOutlined';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import SendIcon from '@mui/icons-material/Send';
 import BlockIcon from '@mui/icons-material/Block';
 import CheckIcon from '@mui/icons-material/Check';
@@ -42,6 +40,9 @@ import {
   SearchInput,
   DataTableWrapper,
   EmptyState,
+  NavTabsContainer,
+  FilterToolbar,
+  type TabItem,
 } from '@/components/ui';
 import {
   TransferReceiveDialog,
@@ -168,6 +169,42 @@ function WmsTransfersContent() {
     }
   };
 
+  const transferTabs: TabItem[] = useMemo(
+    () => [
+      {
+        value: 'inbound',
+        label: 'Входящие на приемку',
+        icon: <MoveToInboxIcon sx={{ fontSize: 18 }} />,
+        badge: counts.inbound || undefined,
+        badgeColor: 'error',
+      },
+      {
+        value: 'requests',
+        label: 'Запросы на мой склад',
+        icon: <HourglassEmptyIcon sx={{ fontSize: 18 }} />,
+        badge: counts.requests || undefined,
+        badgeColor: 'warning',
+      },
+      {
+        value: 'outbound',
+        label: 'Мои отправления',
+        icon: <LocalShippingOutlinedIcon sx={{ fontSize: 18 }} />,
+        badge: counts.outbound || undefined,
+      },
+      {
+        value: 'my_requests',
+        label: 'Мои заявки',
+        icon: <AssignmentOutlinedIcon sx={{ fontSize: 18 }} />,
+      },
+      {
+        value: 'all',
+        label: 'Все перемещения',
+        icon: <SwapHorizIcon sx={{ fontSize: 18 }} />,
+      },
+    ],
+    [counts]
+  );
+
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1600, margin: '0 auto' }}>
       <PageHeader
@@ -255,62 +292,36 @@ function WmsTransfersContent() {
         </Grid>
       </Grid>
 
-      {/* Tabs & Search Toolbar */}
-      <Paper elevation={0} sx={{ p: 1.5, mb: 2.5, borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="space-between" alignItems="center">
-          <Tabs
+      {/* Transfers Data Table with Integrated Navigation Tabs & Toolbar */}
+      <DataTableWrapper
+        tabs={
+          <NavTabsContainer
+            tabs={transferTabs}
             value={activeTab}
-            onChange={(_, val) => {
+            onChange={(val) => {
               setActiveTab(val);
               setPage(1);
             }}
-            variant="scrollable"
-            scrollButtons="auto"
-            sx={{
-              '& .MuiTab-root': {
-                fontWeight: 600,
-                textTransform: 'none',
-                minHeight: 44,
-                fontSize: '0.875rem',
-              },
-            }}
+          />
+        }
+        toolbar={
+          <FilterToolbar
+            variant="embedded"
+            activeFilterCount={search ? 1 : 0}
+            onResetFilters={() => setSearch('')}
           >
-            <Tab
-              value="inbound"
-              label={
-                <Badge badgeContent={counts.inbound} color="error" sx={{ '& .MuiBadge-badge': { right: -12, top: 4 } }}>
-                  📥 Входящие на приемку
-                </Badge>
-              }
-            />
-            <Tab
-              value="requests"
-              label={
-                <Badge badgeContent={counts.requests} color="warning" sx={{ '& .MuiBadge-badge': { right: -12, top: 4 } }}>
-                  📨 Запросы на мой склад
-                </Badge>
-              }
-            />
-            <Tab value="outbound" label="📤 Мои отправления" />
-            <Tab value="my_requests" label="📑 Мои заявки" />
-            <Tab value="all" label="📋 Все перемещения" />
-          </Tabs>
-
-          <Box sx={{ width: { xs: '100%', sm: 300 } }}>
-            <SearchInput
-              placeholder="Поиск по номеру, складу, ТМЦ..."
-              value={search}
-              onSearch={(v: string) => {
-                setSearch(v);
-                setPage(1);
-              }}
-            />
-          </Box>
-        </Stack>
-      </Paper>
-
-      {/* Transfers Data Table */}
-      <DataTableWrapper
+            <Box sx={{ minWidth: { xs: '100%', sm: 320 } }}>
+              <SearchInput
+                placeholder="Поиск по номеру, складу, ТМЦ..."
+                value={search}
+                onSearch={(v: string) => {
+                  setSearch(v);
+                  setPage(1);
+                }}
+              />
+            </Box>
+          </FilterToolbar>
+        }
         title={
           activeTab === 'inbound'
             ? 'Входящие перемещения (Требуют подтверждения приемки)'

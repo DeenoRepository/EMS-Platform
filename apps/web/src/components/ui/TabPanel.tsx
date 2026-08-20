@@ -35,7 +35,7 @@ export function NavTabsContainer({
   onChange,
   variant = 'scrollable',
   scrollButtons = 'auto',
-  paper = true,
+  paper = false,
   className,
 }: NavTabsContainerProps) {
   const handleChange = (_: React.SyntheticEvent, newValue: any) => {
@@ -50,15 +50,15 @@ export function NavTabsContainer({
       scrollButtons={scrollButtons}
       aria-label="Навигационные вкладки"
       sx={{
-        borderBottom: paper ? 'none' : '1px solid #e2e8f0',
-        minHeight: 42,
+        borderBottom: paper ? 'none' : 'none',
+        minHeight: 44,
         '& .MuiTabs-indicator': {
           backgroundColor: '#0284c7',
           height: 2.5,
           borderRadius: '2px 2px 0 0',
         },
         '& .MuiTab-root': {
-          minHeight: 42,
+          minHeight: 44,
           py: 1,
           px: { xs: 1.5, sm: 2 },
           fontWeight: 600,
@@ -66,44 +66,68 @@ export function NavTabsContainer({
           textTransform: 'none',
           letterSpacing: 0,
           color: '#64748b',
+          transition: 'color 0.15s ease',
+          '&:hover': {
+            color: '#0f172a',
+          },
           '&.Mui-selected': {
             color: '#0284c7',
           },
         },
       }}
     >
-      {tabs.map((t) => (
-        <Tab
-          key={String(t.value)}
-          value={t.value}
-          icon={t.icon}
-          iconPosition="start"
-          disabled={t.disabled}
-          label={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography component="span" variant="inherit">
-                {t.label}
-              </Typography>
-              {t.badge !== undefined && t.badge !== null && (
-                <Chip
-                  label={t.badge}
-                  size="small"
-                  sx={{
-                    height: 18,
-                    fontSize: '0.65rem',
-                    fontWeight: 700,
-                    px: 0.25,
-                    fontFeatureSettings: '"tnum"',
-                    borderRadius: '20px',
-                    backgroundColor: value === t.value ? 'rgba(2, 132, 199, 0.1)' : '#f1f5f9',
-                    color: value === t.value ? '#0284c7' : '#64748b',
-                  }}
-                />
-              )}
-            </Box>
-          }
-        />
-      ))}
+      {tabs.map((t) => {
+        const isSelected = value === t.value;
+        const badgeBg =
+          t.badgeColor === 'error'
+            ? isSelected ? '#fee2e2' : '#fef2f2'
+            : t.badgeColor === 'warning'
+            ? isSelected ? '#fef3c7' : '#fffbeb'
+            : t.badgeColor === 'success'
+            ? isSelected ? '#dcfce7' : '#f0fdf4'
+            : isSelected ? 'rgba(2, 132, 199, 0.1)' : '#f1f5f9';
+        const badgeTextColor =
+          t.badgeColor === 'error'
+            ? '#dc2626'
+            : t.badgeColor === 'warning'
+            ? '#d97706'
+            : t.badgeColor === 'success'
+            ? '#16a34a'
+            : isSelected ? '#0284c7' : '#64748b';
+
+        return (
+          <Tab
+            key={String(t.value)}
+            value={t.value}
+            icon={t.icon}
+            iconPosition="start"
+            disabled={t.disabled}
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography component="span" variant="inherit">
+                  {t.label}
+                </Typography>
+                {t.badge !== undefined && t.badge !== null && (
+                  <Chip
+                    label={t.badge}
+                    size="small"
+                    sx={{
+                      height: 19,
+                      fontSize: '0.6875rem',
+                      fontWeight: 700,
+                      px: 0.35,
+                      fontFeatureSettings: '"tnum"',
+                      borderRadius: '20px',
+                      backgroundColor: badgeBg,
+                      color: badgeTextColor,
+                    }}
+                  />
+                )}
+              </Box>
+            }
+          />
+        );
+      })}
     </Tabs>
   );
 
