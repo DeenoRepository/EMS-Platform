@@ -18,10 +18,41 @@ export async function GET(req: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
     const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '25', 10)));
 
+    const isAdmin =
+      user.roles.includes('admin') ||
+      user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
+      user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+
+    let userWarehouseIds: string[] = [];
+    if (!isAdmin) {
+      const userWhs = await prisma.warehouse.findMany({
+        where: { responsibleUserId: user.userId },
+        select: { id: true },
+      });
+      userWarehouseIds = userWhs.map((w) => w.id);
+    }
+
     const where: any = {};
-    if (warehouseId) {
+    if (!isAdmin) {
+      if (userWarehouseIds.length > 0) {
+        if (warehouseId) {
+          if (!userWarehouseIds.includes(warehouseId)) {
+            return forbiddenResponse('Вы можете просматривать операции только по закрепленным за вами складам.');
+          }
+          where.warehouseId = warehouseId;
+        } else {
+          where.OR = [
+            { warehouseId: { in: userWarehouseIds } },
+            { createdById: user.userId },
+          ];
+        }
+      } else {
+        where.createdById = user.userId;
+      }
+    } else if (warehouseId) {
       where.warehouseId = warehouseId;
     }
+
     if (type && type in OperationType) {
       where.type = type;
     }

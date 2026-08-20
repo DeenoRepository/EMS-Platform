@@ -101,6 +101,19 @@ function WmsOperationsContent() {
     OPERATIONS_COLUMNS.filter((c) => c.defaultVisible).map((c) => c.id)
   );
 
+  const isAdmin = useMemo(() => {
+    return Boolean(
+      user?.roles?.includes('admin') ||
+      hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
+      hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE)
+    );
+  }, [user, hasPermission]);
+
+  const availableWarehouses = useMemo(() => {
+    if (isAdmin) return warehouses;
+    return warehouses.filter((w) => w.responsibleUserId === user?.userId);
+  }, [warehouses, isAdmin, user?.userId]);
+
   // Load Warehouses for filter dropdown
   useEffect(() => {
     async function loadWarehouses() {
@@ -110,9 +123,9 @@ function WmsOperationsContent() {
           const json = await res.json();
           if (json.success && json.data) {
             setWarehouses(json.data);
-            const userWh = json.data.find((w: WarehouseOption) => w.responsibleUserId === user?.userId);
-            if (userWh && !user?.roles?.includes('admin')) {
-              setSelectedWarehouse(userWh.id);
+            const userWhs = json.data.filter((w: WarehouseOption) => w.responsibleUserId === user?.userId);
+            if (userWhs.length === 1 && !isAdmin) {
+              setSelectedWarehouse(userWhs[0].id);
             }
           }
         }
@@ -121,7 +134,7 @@ function WmsOperationsContent() {
       }
     }
     loadWarehouses();
-  }, [user?.userId, user?.roles]);
+  }, [user?.userId, isAdmin]);
 
   // Open Wizard if query parameter passed
   useEffect(() => {
@@ -388,9 +401,9 @@ function WmsOperationsContent() {
               }}
             >
               <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>
-                Все склады
+                {isAdmin ? 'Все склады предприятия' : availableWarehouses.length > 1 ? 'Все мои склады' : 'Мой склад'}
               </MenuItem>
-              {warehouses.map((w) => (
+              {availableWarehouses.map((w) => (
                 <MenuItem key={w.id} value={w.id} sx={{ fontSize: '0.8125rem' }}>
                   {w.name} ({w.code})
                 </MenuItem>
