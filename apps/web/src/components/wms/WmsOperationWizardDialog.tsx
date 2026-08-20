@@ -539,8 +539,7 @@ export function WmsOperationWizardDialog({
       title="Мастер оформления складской операции"
       subtitle="Пошаговое проведение прихода, перемещения или списания ТМЦ"
       icon={currentOpMeta.icon}
-      maxWidth="lg"
-      fullWidth
+      maxWidth="md"
       steps={['1. Параметры операции', '2. Подбор позиций ТМЦ', '3. Проведение и акт']}
       activeStep={activeStep}
       onStepChange={(step) => setActiveStep(step)}
@@ -872,7 +871,7 @@ export function WmsOperationWizardDialog({
                   </Grid>
                 )}
 
-                <Grid item xs={12} sm={7} md={7.5}>
+                <Grid item xs={12} sm={7.5} md={8}>
                   <Autocomplete
                     size="small"
                     options={nomenclatures}
@@ -897,14 +896,14 @@ export function WmsOperationWizardDialog({
                       popper: {
                         placement: 'bottom-start',
                         sx: {
-                          minWidth: { xs: '100%', sm: 540, md: 620 },
-                          width: 'max(620px, 100%) !important',
+                          minWidth: { xs: '100%', sm: 480, md: 540 },
+                          width: 'max(540px, 100%) !important',
                           zIndex: 1400,
                           boxShadow: '0 12px 28px rgba(0,0,0,0.18)',
                           borderRadius: '10px',
                           '& .MuiAutocomplete-listbox': {
                             p: 1,
-                            maxHeight: 340,
+                            maxHeight: 320,
                           },
                         },
                       },
@@ -1023,7 +1022,7 @@ export function WmsOperationWizardDialog({
                   />
                 </Grid>
 
-                <Grid item xs={6} sm={2.5} md={2.5}>
+                <Grid item xs={6} sm={2.25} md={2}>
                   <TextField
                     size="small"
                     fullWidth
@@ -1035,10 +1034,10 @@ export function WmsOperationWizardDialog({
                     helperText={
                       selectedNomenclature && isOutflow
                         ? getAvailableStock(selectedNomenclature.id) <= 0
-                          ? `Нет в наличии (0 ${selectedNomenclature.unit})`
+                          ? `0 ${selectedNomenclature.unit}`
                           : parseFloat(itemQty) > getAvailableStock(selectedNomenclature.id)
-                          ? `Превышает (${getAvailableStock(selectedNomenclature.id)} ${selectedNomenclature.unit})`
-                          : `Доступно: ${getAvailableStock(selectedNomenclature.id)} ${selectedNomenclature.unit}`
+                          ? `Превышает (${getAvailableStock(selectedNomenclature.id)})`
+                          : `Доступно: ${getAvailableStock(selectedNomenclature.id)}`
                         : undefined
                     }
                     inputProps={{ min: 0.01, step: 1 }}
@@ -1049,9 +1048,9 @@ export function WmsOperationWizardDialog({
                             size="small"
                             variant="text"
                             onClick={() => setItemQty(String(getAvailableStock(selectedNomenclature.id)))}
-                            sx={{ minWidth: 'auto', p: '2px 6px', fontSize: '0.7rem', fontWeight: 700, color: '#0284c7' }}
+                            sx={{ minWidth: 'auto', p: '2px 4px', fontSize: '0.7rem', fontWeight: 700, color: '#0284c7' }}
                           >
-                            Макс.
+                            Макс
                           </Button>
                         </InputAdornment>
                       ) : undefined,
@@ -1059,7 +1058,7 @@ export function WmsOperationWizardDialog({
                   />
                 </Grid>
 
-                <Grid item xs={6} sm={2.5} md={2}>
+                <Grid item xs={6} sm={2.25} md={2}>
                   <Button
                     fullWidth
                     variant="contained"
