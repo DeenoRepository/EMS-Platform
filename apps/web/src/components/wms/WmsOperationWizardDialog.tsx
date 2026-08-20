@@ -87,6 +87,7 @@ interface OperationLineItem {
   quantity: number;
   equipmentId?: string;
   equipmentName?: string;
+  writeOffReason?: string;
 }
 
 interface WmsOperationWizardDialogProps {
@@ -124,8 +125,8 @@ const OPERATION_TYPES = [
   },
   {
     type: 'ISSUE_WRITE_OFF' as OperationType,
-    title: 'Списание на станок',
-    description: 'Установка детали на оборудование или утилизация',
+    title: 'Списание на оборудование',
+    description: 'Монтаж на оборудование (ТОиР), списание в брак, неликвид или утилизация',
     icon: <DeleteSweepIcon />,
     color: '#d97706',
     bgcolor: 'rgba(217, 119, 6, 0.08)',
@@ -166,6 +167,7 @@ export function WmsOperationWizardDialog({
   const [searchInputValue, setSearchInputValue] = useState('');
   const [itemQty, setItemQty] = useState('1');
   const [itemEquipmentId, setItemEquipmentId] = useState('');
+  const [itemWriteOffType, setItemWriteOffType] = useState<'EQUIPMENT' | 'DEFECT' | 'SCRAP' | 'OTHER'>('EQUIPMENT');
 
   // Expanded In-Place Menu for Creating New Nomenclature
   const [isCreatingNewNom, setIsCreatingNewNom] = useState(false);
@@ -414,6 +416,27 @@ export function WmsOperationWizardDialog({
     }
 
     const eqObj = equipmentList.find((e) => e.id === itemEquipmentId);
+    let finalEquipmentName: string | undefined = undefined;
+    let finalEquipmentId: string | undefined = undefined;
+    let finalWriteOffReason: string | undefined = undefined;
+
+    if (operationType === 'ISSUE_WRITE_OFF') {
+      if (itemWriteOffType === 'EQUIPMENT') {
+        if (eqObj) {
+          finalEquipmentId = eqObj.id;
+          finalEquipmentName = `${eqObj.name} (${eqObj.inventoryNumber})`;
+          finalWriteOffReason = `Станок: ${eqObj.name} (${eqObj.inventoryNumber})`;
+        } else {
+          finalWriteOffReason = 'Общее списание на оборудование';
+        }
+      } else if (itemWriteOffType === 'DEFECT') {
+        finalWriteOffReason = 'Списание в брак / дефект';
+      } else if (itemWriteOffType === 'SCRAP') {
+        finalWriteOffReason = 'Списание в неликвид';
+      } else {
+        finalWriteOffReason = 'Утилизация / износ';
+      }
+    }
 
     setLineItems((prev) => [
       ...prev,
@@ -423,8 +446,9 @@ export function WmsOperationWizardDialog({
         nomenclatureArticle: selectedNomenclature.article || undefined,
         unit: selectedNomenclature.unit,
         quantity: qty,
-        equipmentId: itemEquipmentId || undefined,
-        equipmentName: eqObj?.name,
+        equipmentId: finalEquipmentId,
+        equipmentName: finalEquipmentName,
+        writeOffReason: finalWriteOffReason,
       },
     ]);
 
@@ -782,23 +806,68 @@ export function WmsOperationWizardDialog({
               <Grid container spacing={1.5} alignItems="center">
                 {operationType === 'ISSUE_WRITE_OFF' && (
                   <Grid item xs={12}>
-                    <TextField
-                      select
-                      size="small"
-                      fullWidth
-                      label="Целевое оборудование / станок для списания детали (необязательно)"
-                      value={itemEquipmentId}
-                      onChange={(e) => setItemEquipmentId(e.target.value)}
-                      helperText="Укажите конкретный станок при монтаже детали или оставьте пустым для общего списания / утилизации"
-                      sx={{ bgcolor: '#ffffff', mb: 0.5 }}
-                    >
-                      <MenuItem value="">— Общее списание / Не привязано к станку —</MenuItem>
-                      {equipmentList.map((eq) => (
-                        <MenuItem key={eq.id} value={eq.id}>
-                          {eq.name} ({eq.inventoryNumber})
-                        </MenuItem>
-                      ))}
-                    </TextField>
+                    <Stack spacing={1.5} sx={{ mb: 1, p: 1.5, bgcolor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <Box>
+                        <Typography variant="caption" sx={{ fontWeight: 700, color: '#475569', display: 'block', mb: 0.75 }}>
+                          Причина / основание списания:
+                        </Typography>
+                        <Stack direction="row" spacing={1} flexWrap="wrap">
+                          <Chip
+                            icon={<PrecisionManufacturingIcon sx={{ fontSize: 16 }} />}
+                            label="Установка на оборудование (ТОиР)"
+                            clickable
+                            color={itemWriteOffType === 'EQUIPMENT' ? 'primary' : 'default'}
+                            variant={itemWriteOffType === 'EQUIPMENT' ? 'filled' : 'outlined'}
+                            onClick={() => setItemWriteOffType('EQUIPMENT')}
+                            sx={{ fontWeight: 600, mb: 0.5 }}
+                          />
+                          <Chip
+                            label="Брак / Дефект"
+                            clickable
+                            color={itemWriteOffType === 'DEFECT' ? 'error' : 'default'}
+                            variant={itemWriteOffType === 'DEFECT' ? 'filled' : 'outlined'}
+                            onClick={() => setItemWriteOffType('DEFECT')}
+                            sx={{ fontWeight: 600, mb: 0.5 }}
+                          />
+                          <Chip
+                            label="Неликвид / Истек срок"
+                            clickable
+                            color={itemWriteOffType === 'SCRAP' ? 'warning' : 'default'}
+                            variant={itemWriteOffType === 'SCRAP' ? 'filled' : 'outlined'}
+                            onClick={() => setItemWriteOffType('SCRAP')}
+                            sx={{ fontWeight: 600, mb: 0.5 }}
+                          />
+                          <Chip
+                            label="Утилизация / Износ"
+                            clickable
+                            color={itemWriteOffType === 'OTHER' ? 'default' : 'default'}
+                            variant={itemWriteOffType === 'OTHER' ? 'filled' : 'outlined'}
+                            onClick={() => setItemWriteOffType('OTHER')}
+                            sx={{ fontWeight: 600, mb: 0.5 }}
+                          />
+                        </Stack>
+                      </Box>
+
+                      {itemWriteOffType === 'EQUIPMENT' && (
+                        <TextField
+                          select
+                          size="small"
+                          fullWidth
+                          label="Целевое оборудование / станок (из реестра EPS)"
+                          value={itemEquipmentId}
+                          onChange={(e) => setItemEquipmentId(e.target.value)}
+                          helperText="Укажите станок, на который монтируется деталь, или оставьте пустым для общего списания"
+                          sx={{ bgcolor: '#ffffff' }}
+                        >
+                          <MenuItem value="">— Не привязано к конкретному станку (Общий монтаж) —</MenuItem>
+                          {equipmentList.map((eq) => (
+                            <MenuItem key={eq.id} value={eq.id}>
+                              {eq.name} ({eq.inventoryNumber})
+                            </MenuItem>
+                          ))}
+                        </TextField>
+                      )}
+                    </Stack>
                   </Grid>
                 )}
                 <Grid item xs={12} sm={6}>
@@ -1207,6 +1276,9 @@ export function WmsOperationWizardDialog({
                       <TableRow>
                         <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Номенклатура</TableCell>
                         <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Артикул</TableCell>
+                        {operationType === 'ISSUE_WRITE_OFF' && (
+                          <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Назначение / Оборудование</TableCell>
+                        )}
                         <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Остаток на складе</TableCell>
                         <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Количество в операции</TableCell>
                         <TableCell align="center" sx={{ width: 50 }} />
@@ -1220,15 +1292,31 @@ export function WmsOperationWizardDialog({
                           <TableRow key={idx} hover sx={hasDeficit ? { bgcolor: '#fef2f2' } : {}}>
                             <TableCell sx={{ py: 1, fontWeight: 600, fontSize: '0.8125rem' }}>
                               {item.nomenclatureName}
-                              {item.equipmentName && (
-                                <Typography variant="caption" sx={{ display: 'block', color: '#b45309', fontWeight: 600 }}>
-                                  Оборудование: {item.equipmentName}
-                                </Typography>
-                              )}
                             </TableCell>
                             <TableCell sx={{ py: 1, color: '#64748b', fontSize: '0.75rem' }}>
                               {item.nomenclatureArticle || '—'}
                             </TableCell>
+                            {operationType === 'ISSUE_WRITE_OFF' && (
+                              <TableCell sx={{ py: 1 }}>
+                                {item.equipmentName ? (
+                                  <Chip
+                                    size="small"
+                                    icon={<PrecisionManufacturingIcon sx={{ fontSize: '14px !important' }} />}
+                                    label={item.equipmentName}
+                                    color="warning"
+                                    variant="outlined"
+                                    sx={{ fontWeight: 600, fontSize: '0.75rem', height: 24, maxWidth: 220 }}
+                                  />
+                                ) : (
+                                  <Chip
+                                    size="small"
+                                    label={item.writeOffReason || 'Списание в неликвид/брак'}
+                                    variant="outlined"
+                                    sx={{ fontWeight: 500, fontSize: '0.75rem', height: 24, color: '#64748b' }}
+                                  />
+                                )}
+                              </TableCell>
+                            )}
                             <TableCell align="right" sx={{ py: 1 }}>
                               <Chip
                                 size="small"
@@ -1350,6 +1438,9 @@ export function WmsOperationWizardDialog({
                     <TableRow>
                       <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Номенклатура</TableCell>
                       <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Артикул</TableCell>
+                      {operationType === 'ISSUE_WRITE_OFF' && (
+                        <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Назначение / Оборудование</TableCell>
+                      )}
                       <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Остаток на складе</TableCell>
                       <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Количество к проведению</TableCell>
                     </TableRow>
@@ -1361,15 +1452,31 @@ export function WmsOperationWizardDialog({
                         <TableRow key={idx} hover>
                           <TableCell sx={{ py: 1, fontWeight: 600, fontSize: '0.8125rem' }}>
                             {item.nomenclatureName}
-                            {item.equipmentName && (
-                              <Typography variant="caption" sx={{ display: 'block', color: '#b45309', fontWeight: 600 }}>
-                                Оборудование: {item.equipmentName}
-                              </Typography>
-                            )}
                           </TableCell>
                           <TableCell sx={{ py: 1, color: '#64748b', fontSize: '0.75rem' }}>
                             {item.nomenclatureArticle || '—'}
                           </TableCell>
+                          {operationType === 'ISSUE_WRITE_OFF' && (
+                            <TableCell sx={{ py: 1 }}>
+                              {item.equipmentName ? (
+                                <Chip
+                                  size="small"
+                                  icon={<PrecisionManufacturingIcon sx={{ fontSize: '14px !important' }} />}
+                                  label={item.equipmentName}
+                                  color="warning"
+                                  variant="outlined"
+                                  sx={{ fontWeight: 600, fontSize: '0.75rem', height: 24, maxWidth: 220 }}
+                                />
+                              ) : (
+                                <Chip
+                                  size="small"
+                                  label={item.writeOffReason || 'Списание в неликвид/брак'}
+                                  variant="outlined"
+                                  sx={{ fontWeight: 500, fontSize: '0.75rem', height: 24, color: '#64748b' }}
+                                />
+                              )}
+                            </TableCell>
+                          )}
                           <TableCell align="right" sx={{ py: 1 }}>
                             <Chip
                               size="small"

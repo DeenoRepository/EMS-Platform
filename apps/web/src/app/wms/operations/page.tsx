@@ -427,7 +427,7 @@ function WmsOperationsContent() {
                 Выдача сотруднику
               </MenuItem>
               <MenuItem value="ISSUE_WRITE_OFF" sx={{ fontSize: '0.8125rem' }}>
-                Списание (на станок / брак)
+                Списание на оборудование (ТОиР / брак)
               </MenuItem>
               <MenuItem value="TRANSFER" sx={{ fontSize: '0.8125rem' }}>
                 Перемещение (Трансфер)
