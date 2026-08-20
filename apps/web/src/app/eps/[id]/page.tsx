@@ -1371,12 +1371,41 @@ export default function EquipmentPassportPage() {
         title="Редактирование паспорта оборудования"
         icon={<PrecisionManufacturingIcon color="primary" />}
         maxWidth="md"
-        hideActions
+        actions={
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+            <Button
+              variant="text"
+              onClick={() => setEditModalOpen(false)}
+              sx={{ color: 'text.secondary', fontWeight: 600 }}
+            >
+              Отмена
+            </Button>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button
+                variant="outlined"
+                onClick={() => handleSaveEdit(false)}
+                disabled={!editForm.name}
+                sx={{ borderRadius: '8px', fontWeight: 600 }}
+              >
+                Сохранить в черновик
+              </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => handleSaveEdit(true)}
+                disabled={!editForm.name}
+                sx={{ borderRadius: '8px', fontWeight: 700 }}
+              >
+                Отправить на согласование
+              </Button>
+            </Box>
+          </Box>
+        }
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 1 }}>
           {/* Section 1: Basic specifications */}
           <Box>
-            <Typography variant="subtitle1" fontWeight={700} color="primary.main" gutterBottom>
+            <Typography variant="subtitle1" fontWeight={700} color="primary.main" sx={{ mb: 2 }}>
               Основные параметры
             </Typography>
             <Grid container spacing={2}>
@@ -1437,8 +1466,8 @@ export default function EquipmentPassportPage() {
               <Grid item xs={12} sm={6}>
                 <DatePickerField
                   label="Дата ввода в эксплуатацию"
-                  value={editForm.commissioningDate ? editForm.commissioningDate.substring(0, 10) : ''}
-                  onChange={(val) => setEditForm({ ...editForm, commissioningDate: val })}
+                  value={editForm.commissionDate ? editForm.commissionDate.substring(0, 10) : ''}
+                  onChange={(val) => setEditForm({ ...editForm, commissionDate: val })}
                   size="small"
                   fullWidth
                 />
@@ -1484,7 +1513,7 @@ export default function EquipmentPassportPage() {
           {/* Section 2: Custom Sections Inputs */}
           {sections.map((sec) => (
             <Box key={sec.id}>
-              <Typography variant="subtitle1" fontWeight={700} color="primary.main" gutterBottom>
+              <Typography variant="subtitle1" fontWeight={700} color="primary.main" sx={{ mb: 2 }}>
                 {sec.name}
               </Typography>
               <Grid container spacing={2}>
@@ -1553,32 +1582,6 @@ export default function EquipmentPassportPage() {
               </Grid>
             </Box>
           ))}
-
-          {/* Action Buttons */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 2, borderTop: '1px solid #e2e8f0', mt: 1 }}>
-            <Button onClick={() => setEditModalOpen(false)} color="inherit">
-              Отмена
-            </Button>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button
-                variant="outlined"
-                onClick={() => handleSaveEdit(false)}
-                disabled={!editForm.name}
-                sx={{ fontWeight: 600 }}
-              >
-                Сохранить в черновик
-              </Button>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => handleSaveEdit(true)}
-                disabled={!editForm.name}
-                sx={{ fontWeight: 700 }}
-              >
-                Отправить на согласование
-              </Button>
-            </Box>
-          </Box>
         </Box>
       </FormDialog>
 

@@ -117,12 +117,21 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: 'Оборудование не найдено' }, { status: 404 });
     }
 
+    function parseDateSafe(val: any): Date | null {
+      if (!val || typeof val !== 'string' || !val.trim()) return null;
+      const d = new Date(val);
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    const rawDate = commissionDate !== undefined ? commissionDate : (body as any).commissioningDate;
+    const parsedCommissionDate = parseDateSafe(rawDate);
+
     const canManageDirectly = hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) || user.roles.includes('admin');
     const isOwner = currentEquipment.createdById === user.userId;
     const isDraft = currentEquipment.status === 'DRAFT';
 
-    // Случай 1: Запрошена отправка на согласование для утвержденного оборудования (EQUIPMENT_UPDATE)
-    if (submitForApproval && !isDraft) {
+    // Случай 1: Отправка на согласование или сохранение черновика изменений для утвержденного оборудования
+    if (!isDraft && (!canManageDirectly || submitForApproval)) {
       const proposedData: Record<string, any> = {
         name: name !== undefined ? name.trim() : currentEquipment.name,
         inventoryNumber: inventoryNumber !== undefined ? (inventoryNumber?.trim() || null) : currentEquipment.inventoryNumber,
@@ -131,7 +140,7 @@ export async function PATCH(
         model: model !== undefined ? (model?.trim() || null) : currentEquipment.model,
         location: location !== undefined ? (location?.trim() || null) : currentEquipment.location,
         status: status !== undefined ? status : currentEquipment.status,
-        commissionDate: commissionDate !== undefined ? (commissionDate ? new Date(commissionDate).toISOString() : null) : (currentEquipment.commissionDate ? currentEquipment.commissionDate.toISOString() : null),
+        commissionDate: parsedCommissionDate ? parsedCommissionDate.toISOString() : (currentEquipment.commissionDate ? currentEquipment.commissionDate.toISOString() : null),
         customFields: customFields !== undefined ? customFields : currentEquipment.customFields,
         tagIds: Array.isArray(tagIds) ? tagIds : currentEquipment.tags.map((t) => t.tagId),
       };
@@ -141,8 +150,10 @@ export async function PATCH(
           equipmentId: id,
           type: 'EQUIPMENT_UPDATE' as any,
           status: 'PENDING',
-          title: `Изменение параметров: ${currentEquipment.name}`,
-          description: approvalComment?.trim() || 'Предложены изменения в паспорте оборудования',
+          title: submitForApproval
+            ? `Изменение параметров: ${currentEquipment.name}`
+            : `Черновик изменений: ${currentEquipment.name}`,
+          description: approvalComment?.trim() || (submitForApproval ? 'Предложены изменения в паспорте оборудования' : 'Черновик изменений сохранен автором'),
           proposedData,
           requesterId: user.userId,
         },
@@ -158,12 +169,14 @@ export async function PATCH(
 
       return NextResponse.json({
         success: true,
-        message: 'Заявка на изменение параметров оборудования отправлена на согласование',
+        message: submitForApproval
+          ? 'Заявка на изменение параметров оборудования отправлена на согласование'
+          : 'Черновик изменений сохранен',
         data: { ...currentEquipment, approval },
       });
     }
 
-    // Случай 2: Редактирование черновика с отправкой на согласование (EQUIPMENT_CREATE)
+    // Случай 2: Редактирование черновика оборудования с отправкой на согласование (EQUIPMENT_CREATE)
     if (submitForApproval && isDraft) {
       const updated = await prisma.$transaction(async (tx) => {
         if (Array.isArray(tagIds)) {
@@ -184,7 +197,7 @@ export async function PATCH(
             manufacturer: manufacturer !== undefined ? (manufacturer?.trim() || null) : undefined,
             model: model !== undefined ? (model?.trim() || null) : undefined,
             location: location !== undefined ? (location?.trim() || null) : undefined,
-            commissionDate: commissionDate !== undefined ? (commissionDate ? new Date(commissionDate) : null) : undefined,
+            commissionDate: rawDate !== undefined ? parsedCommissionDate : undefined,
             customFields: customFields !== undefined ? customFields : undefined,
           },
           include: { tags: { include: { tag: true } } },
@@ -220,17 +233,7 @@ export async function PATCH(
       });
     }
 
-    // Случай 3: Прямое сохранение (в черновик либо админом)
-    if (!isDraft && !canManageDirectly && !directSave) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Для изменения действующего оборудования отправьте заявку на согласование',
-        },
-        { status: 403 }
-      );
-    }
-
+    // Случай 3: Прямое обновление черновика или прямое сохранение администратором
     const updated = await prisma.$transaction(async (tx) => {
       if (Array.isArray(tagIds)) {
         await tx.equipmentTag.deleteMany({ where: { equipmentId: id } });
@@ -251,7 +254,7 @@ export async function PATCH(
           model: model !== undefined ? (model?.trim() || null) : undefined,
           location: location !== undefined ? (location?.trim() || null) : undefined,
           status: status as EquipmentStatus | undefined,
-          commissionDate: commissionDate !== undefined ? (commissionDate ? new Date(commissionDate) : null) : undefined,
+          commissionDate: rawDate !== undefined ? parsedCommissionDate : undefined,
           customFields: customFields !== undefined ? customFields : undefined,
         },
         include: {
@@ -279,7 +282,10 @@ export async function PATCH(
     return NextResponse.json({ success: true, data: updated });
   } catch (error: any) {
     console.error('Ошибка обновления оборудования:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка обновления' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error?.message || 'Ошибка обновления оборудования' },
+      { status: 500 }
+    );
   }
 }
 
