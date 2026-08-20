@@ -197,6 +197,8 @@ model Equipment {
   @@index([status])
   @@index([name])
   @@index([manufacturer])
+  @@index([createdById])
+  @@index([createdAt])
 }
 
 enum EquipmentStatus {
@@ -286,6 +288,9 @@ model Document {
   uploadedBy User      @relation("UploadedDocs", fields: [uploadedById], references: [id])
 
   @@index([equipmentId])
+  @@index([docType])
+  @@index([uploadedById])
+  @@index([createdAt])
 }
 
 enum DocumentType {
