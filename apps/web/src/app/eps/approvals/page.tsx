@@ -60,6 +60,7 @@ import {
   NavTabsContainer,
   type TableColumnOption,
 } from '@/components/ui';
+import { ApprovalWizardDialog } from '@/components/eps';
 
 interface ApprovalItem {
   id: string;
@@ -802,93 +803,12 @@ function ApprovalsListContent() {
         </Table>
       </DataTableWrapper>
 
-      {/* Dialog 1: Create Approval Modal */}
-      <FormDialog
+      {/* Мастер создания заявки на согласование */}
+      <ApprovalWizardDialog
         open={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
-        title="Новая заявка на согласование"
-        icon={<AssignmentOutlinedIcon color="primary" />}
-        maxWidth="sm"
-        loading={submittingCreate}
-        submitLabel={submittingCreate ? 'Отправка...' : 'Подать на согласование'}
-        onSubmit={handleCreateSubmit}
-        submitDisabled={!selectedEquipmentForCreate || !createTitle.trim() || submittingCreate}
-      >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-          {/* Equipment Picker */}
-          <Autocomplete
-            options={equipmentList}
-            getOptionLabel={(option) => `${option.inventoryNumber ? `[${option.inventoryNumber}] ` : ''}${option.name}`}
-            value={selectedEquipmentForCreate}
-            onChange={(_, val) => setSelectedEquipmentForCreate(val)}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Оборудование *"
-                placeholder="Выберите единицу оборудования"
-                size="small"
-                fullWidth
-              />
-            )}
-          />
-
-          {/* Approval Type */}
-          <TextField
-            select
-            size="small"
-            label="Тип согласования *"
-            value={createType}
-            onChange={(e) => setCreateType(e.target.value)}
-            fullWidth
-          >
-            {Object.entries(APPROVAL_TYPE_MAP).map(([k, label]) => (
-              <MenuItem key={k} value={k}>
-                {label}
-              </MenuItem>
-            ))}
-          </TextField>
-
-          {/* Target Status (if status change) */}
-          {createType === 'STATUS_CHANGE' && (
-            <TextField
-              select
-              size="small"
-              label="Целевой рабочий статус *"
-              value={createTargetStatus}
-              onChange={(e) => setCreateTargetStatus(e.target.value)}
-              fullWidth
-            >
-              {Object.entries(EQUIPMENT_STATUS_MAP).map(([k, info]) => (
-                <MenuItem key={k} value={k}>
-                  {info.label}
-                </MenuItem>
-              ))}
-            </TextField>
-          )}
-
-          {/* Title */}
-          <TextField
-            label="Тема заявки *"
-            value={createTitle}
-            onChange={(e) => setCreateTitle(e.target.value)}
-            size="small"
-            fullWidth
-            placeholder="Например: Согласование акта списания насосного агрегата"
-          />
-
-          {/* Description */}
-          <TextField
-            label="Обоснование / Описание"
-            value={createDescription}
-            onChange={(e) => setCreateDescription(e.target.value)}
-            multiline
-            rows={3}
-            size="small"
-            fullWidth
-            placeholder="Укажите причину (выработка ресурса, результаты дефектовки, номер приказа)..."
-          />
-        </Box>
-      </FormDialog>
+        onSuccess={fetchApprovals}
+      />
 
       {/* Dialog 2: Review Resolution Modal */}
       <FormDialog

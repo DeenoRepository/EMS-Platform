@@ -57,6 +57,7 @@ import {
   type TableDensity,
   type TableColumnOption,
 } from '@/components/ui';
+import { EquipmentWizardDialog } from '@/components/eps';
 
 interface EquipmentItem {
   id: string;
@@ -108,6 +109,7 @@ function EquipmentListContent() {
 
   // View mode: 'table' or 'grid'
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+  const [openCreateWizard, setOpenCreateWizard] = useState(false);
 
   // Filters
   const [search, setSearch] = useState(searchParams?.get('search') || '');
@@ -324,7 +326,7 @@ function EquipmentListContent() {
                 variant="contained"
                 size="small"
                 startIcon={<AddIcon />}
-                onClick={() => router.push('/eps/new')}
+                onClick={() => setOpenCreateWizard(true)}
                 sx={{
                   borderRadius: '8px',
                   fontWeight: 600,
@@ -927,6 +929,16 @@ function EquipmentListContent() {
             color: 'info',
           },
         ]}
+      />
+
+      {/* Мастер создания паспорта оборудования */}
+      <EquipmentWizardDialog
+        open={openCreateWizard}
+        onClose={() => setOpenCreateWizard(false)}
+        onSuccess={(newId) => {
+          fetchEquipment();
+          router.push(`/eps/${newId}`);
+        }}
       />
     </Box>
   );

@@ -46,6 +46,7 @@ import {
   FormDialog,
   NavTabsContainer,
 } from '@/components/ui';
+import { MroExecutionWizardDialog } from '@/components/mro';
 import { useAuth } from '@/lib/auth-client';
 
 export default function MroOverviewPage() {
@@ -692,135 +693,13 @@ export default function MroOverviewPage() {
         </Box>
       </FormDialog>
 
-      {/* Диалог выполнения регламента ТО с чек-листом и списанием запчастей */}
-      <FormDialog
+      {/* Мастер выполнения регламента ТО с чек-листом и списанием запчастей */}
+      <MroExecutionWizardDialog
         open={openExecuteDialog}
         onClose={() => setOpenExecuteDialog(false)}
-        title={`Выполнение ТО: ${selectedSchedule?.title || ''}`}
-        icon={<AssignmentIcon color="primary" />}
-        maxWidth="md"
-        submitLabel="Завершить регламент и списать ТМЦ"
-        submitColor="success"
-        onSubmit={handleCompleteSchedule}
-      >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-          <Typography variant="body2" color="text.secondary">
-            Оборудование: <strong>{selectedSchedule?.equipment?.name}</strong> (Инв: {selectedSchedule?.equipment?.inventoryNumber})
-          </Typography>
-
-          <Divider sx={{ my: 1 }} />
-          <Typography variant="subtitle1" fontWeight={700}>
-            1. Электронный чек-лист проверки
-          </Typography>
-          {selectedSchedule?.plan?.checklist?.items?.map((item: any) => (
-            <Box key={item.id} sx={{ p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={!!checklistAnswers[item.id]}
-                    onChange={(e) =>
-                      setChecklistAnswers({ ...checklistAnswers, [item.id]: e.target.checked })
-                    }
-                  />
-                }
-                label={
-                  <Typography variant="body2">
-                    {item.description} {item.isRequired && <span style={{ color: 'red' }}>*</span>}
-                  </Typography>
-                }
-              />
-            </Box>
-          )) || (
-            <Typography variant="body2" color="text.secondary">
-              Чек-лист для данного наряда не задан.
-            </Typography>
-          )}
-
-          <Divider sx={{ my: 1 }} />
-          <Typography variant="subtitle1" fontWeight={700}>
-            2. Использованные запчасти (списание со склада WMS)
-          </Typography>
-          {usedParts.map((p, idx) => (
-            <Box key={idx} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-              <FormControl size="small" sx={{ minWidth: 200 }}>
-                <InputLabel>Запчасть</InputLabel>
-                <Select
-                  value={p.nomenclatureId}
-                  label="Запчасть"
-                  onChange={(e) => {
-                    const next = [...usedParts];
-                    next[idx].nomenclatureId = e.target.value;
-                    setUsedParts(next);
-                  }}
-                >
-                  {nomenclatureList.map((nom) => (
-                    <MenuItem key={nom.id} value={nom.id}>
-                      {nom.name} ({nom.sku})
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <FormControl size="small" sx={{ minWidth: 160 }}>
-                <InputLabel>Склад списания</InputLabel>
-                <Select
-                  value={p.warehouseId}
-                  label="Склад списания"
-                  onChange={(e) => {
-                    const next = [...usedParts];
-                    next[idx].warehouseId = e.target.value;
-                    setUsedParts(next);
-                  }}
-                >
-                  {warehouses.map((wh) => (
-                    <MenuItem key={wh.id} value={wh.id}>
-                      {wh.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <TextField
-                size="small"
-                type="number"
-                label="Кол-во"
-                sx={{ width: 100 }}
-                value={p.quantity}
-                onChange={(e) => {
-                  const next = [...usedParts];
-                  next[idx].quantity = parseFloat(e.target.value) || 1;
-                  setUsedParts(next);
-                }}
-              />
-            </Box>
-          ))}
-          <Button
-            size="small"
-            startIcon={<AddIcon />}
-            onClick={() =>
-              setUsedParts([
-                ...usedParts,
-                {
-                  nomenclatureId: nomenclatureList[0]?.id || '',
-                  warehouseId: warehouses[0]?.id || '',
-                  quantity: 1,
-                },
-              ])
-            }
-          >
-            Добавить запчасть для списания
-          </Button>
-
-          <Divider sx={{ my: 1 }} />
-          <TextField
-            fullWidth
-            size="small"
-            multiline
-            rows={2}
-            label="Заключение / Результаты осмотра"
-            value={execNotes}
-            onChange={(e) => setExecNotes(e.target.value)}
-          />
-        </Box>
-      </FormDialog>
+        onSuccess={loadData}
+        schedule={selectedSchedule}
+      />
     </Box>
   );
 }
