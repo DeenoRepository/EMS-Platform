@@ -80,11 +80,11 @@ interface ApprovalItem {
     id: string;
     name: string;
     inventoryNumber: string | null;
-    manufacturer: string | null;
-    model: string | null;
-    location: string | null;
-    status: string;
-  };
+    manufacturer?: string | null;
+    model?: string | null;
+    location?: string | null;
+    status?: string;
+  } | null;
   requester: {
     id: string;
     displayName: string;
@@ -692,29 +692,37 @@ function ApprovalsListContent() {
 
                   {visibleColumns.includes('equipment') && (
                     <TableCell>
-                      <Box
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/eps/${app.equipment.id}`);
-                        }}
-                        sx={{
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 0.75,
-                          '&:hover': { color: 'primary.main', textDecoration: 'underline' },
-                        }}
-                      >
-                        <Chip
-                          label={app.equipment.inventoryNumber || 'Б/Н'}
-                          size="small"
-                          variant="outlined"
-                          sx={{ fontWeight: 700, fontFamily: 'monospace', height: 20, borderRadius: '4px' }}
-                        />
-                        <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8125rem' }}>
-                          {app.equipment.name}
+                      {app.equipment ? (
+                        <Box
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (app.equipment?.id) {
+                              router.push(`/eps/${app.equipment.id}`);
+                            }
+                          }}
+                          sx={{
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 0.75,
+                            '&:hover': { color: 'primary.main', textDecoration: 'underline' },
+                          }}
+                        >
+                          <Chip
+                            label={app.equipment.inventoryNumber || 'Б/Н'}
+                            size="small"
+                            variant="outlined"
+                            sx={{ fontWeight: 700, fontFamily: 'monospace', height: 20, borderRadius: '4px' }}
+                          />
+                          <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8125rem' }}>
+                            {app.equipment.name}
+                          </Typography>
+                        </Box>
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">
+                          —
                         </Typography>
-                      </Box>
+                      )}
                     </TableCell>
                   )}
 
@@ -732,7 +740,7 @@ function ApprovalsListContent() {
 
                   {visibleColumns.includes('requester') && (
                     <TableCell sx={{ fontSize: '0.8125rem' }}>
-                      {app.requester.displayName}
+                      {app.requester?.displayName || '—'}
                     </TableCell>
                   )}
 
@@ -832,7 +840,9 @@ function ApprovalsListContent() {
                 Оборудование:
               </Typography>
               <Typography variant="subtitle2" fontWeight={700}>
-                {selectedApprovalForReview.equipment.name} (Инв. №: {selectedApprovalForReview.equipment.inventoryNumber || 'Б/Н'})
+                {selectedApprovalForReview.equipment
+                  ? `${selectedApprovalForReview.equipment.name} (Инв. №: ${selectedApprovalForReview.equipment.inventoryNumber || 'Б/Н'})`
+                  : 'Оборудование удалено / не привязано'}
               </Typography>
 
               <Divider sx={{ my: 1.5 }} />
@@ -854,7 +864,7 @@ function ApprovalsListContent() {
               {selectedApprovalForReview.description && (
                 <>
                   <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-                    Обоснование инициатора ({selectedApprovalForReview.requester.displayName}):
+                    Обоснование инициатора ({selectedApprovalForReview.requester?.displayName || 'Инициатор'}):
                   </Typography>
                   <Typography variant="body2" sx={{ fontStyle: 'italic' }}>
                     «{selectedApprovalForReview.description}»
@@ -929,7 +939,9 @@ function ApprovalsListContent() {
                 Оборудование:
               </Typography>
               <Typography variant="subtitle2" fontWeight={700}>
-                {selectedApprovalForDetails.equipment.name} • Инв. №: {selectedApprovalForDetails.equipment.inventoryNumber || 'Б/Н'}
+                {selectedApprovalForDetails.equipment
+                  ? `${selectedApprovalForDetails.equipment.name} • Инв. №: ${selectedApprovalForDetails.equipment.inventoryNumber || 'Б/Н'}`
+                  : 'Оборудование удалено / не привязано'}
               </Typography>
 
               <Divider sx={{ my: 1.5 }} />
@@ -938,7 +950,7 @@ function ApprovalsListContent() {
                 Инициатор заявки:
               </Typography>
               <Typography variant="body2" fontWeight={600}>
-                {selectedApprovalForDetails.requester.displayName} ({formatDateTime(selectedApprovalForDetails.createdAt)})
+                {selectedApprovalForDetails.requester?.displayName || 'Инициатор'} ({formatDateTime(selectedApprovalForDetails.createdAt)})
               </Typography>
 
               {selectedApprovalForDetails.description && (
@@ -980,12 +992,14 @@ function ApprovalsListContent() {
               <Button onClick={() => setDetailsModalOpen(false)} color="inherit">
                 Закрыть
               </Button>
-              <Button
-                variant="outlined"
-                onClick={() => router.push(`/eps/${selectedApprovalForDetails.equipment.id}`)}
-              >
-                Перейти в паспорт оборудования
-              </Button>
+              {selectedApprovalForDetails.equipment && (
+                <Button
+                  variant="outlined"
+                  onClick={() => router.push(`/eps/${selectedApprovalForDetails.equipment?.id}`)}
+                >
+                  Перейти в паспорт оборудования
+                </Button>
+              )}
             </Box>
           </Box>
         )}
