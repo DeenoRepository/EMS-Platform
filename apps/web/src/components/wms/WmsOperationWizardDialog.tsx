@@ -200,6 +200,10 @@ export function WmsOperationWizardDialog({
     return warehouses[0];
   }, [warehouses, user?.userId]);
 
+  const currentWarehouse = useMemo(() => {
+    return warehouses.find((w) => w.id === warehouseId) || assignedWarehouse;
+  }, [warehouses, warehouseId, assignedWarehouse]);
+
   const isOutflow = operationType === 'ISSUE_EMPLOYEE' || operationType === 'ISSUE_WRITE_OFF' || operationType === 'TRANSFER';
 
   const fetchStock = React.useCallback(async (whId: string) => {
@@ -302,12 +306,7 @@ export function WmsOperationWizardDialog({
     }
   }, [open, initialType, initialNomenclatureId, user?.userId]);
 
-  // Ensure warehouseId stays synchronized with assignedWarehouse
-  useEffect(() => {
-    if (assignedWarehouse && (!warehouseId || warehouseId !== assignedWarehouse.id)) {
-      setWarehouseId(assignedWarehouse.id);
-    }
-  }, [assignedWarehouse, warehouseId]);
+
 
   const handleGenerateSku = () => {
     const typeObj = NOMENCLATURE_TYPES.find((t) => t.id === newNomType) || NOMENCLATURE_TYPES[0];
@@ -642,58 +641,23 @@ export function WmsOperationWizardDialog({
 
             <Divider />
 
-            {/* Автоматически закрепленный склад сотрудника (Без выбора из списка) */}
+            {/* Выбор склада проведения / списания */}
             <Box>
-              <Typography variant="caption" sx={{ color: '#475569', fontWeight: 700, display: 'block', mb: 1, textTransform: 'uppercase' }}>
-                {operationType === 'TRANSFER' ? 'Исходный склад списания (Закреплен за вами):' : 'Склад проведения операции (МОЛ):'}
-              </Typography>
-              <Paper
-                variant="outlined"
-                sx={{
-                  p: 2,
-                  borderRadius: '10px',
-                  bgcolor: '#f8fafc',
-                  border: '1.5px solid #cbd5e1',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 2,
-                }}
+              <TextField
+                select
+                fullWidth
+                required
+                label={operationType === 'TRANSFER' ? 'Исходный склад списания (МОЛ)' : 'Склад проведения операции (МОЛ)'}
+                value={warehouseId}
+                onChange={(e) => setWarehouseId(e.target.value)}
+                helperText="Выберите склад, с которого списываются или куда приходуются ТМЦ"
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75 }}>
-                  <Box
-                    sx={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: '8px',
-                      bgcolor: '#e0f2fe',
-                      color: '#0284c7',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <BusinessIcon />
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle1" fontWeight={700} color="#0f172a" sx={{ lineHeight: 1.2 }}>
-                      {assignedWarehouse ? `${assignedWarehouse.name} (${assignedWarehouse.code})` : 'Определение закрепленного склада...'}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
-                      Материально ответственное лицо:{' '}
-                      <b>{user?.displayName || assignedWarehouse?.responsibleUser?.displayName || 'Текущий сотрудник'}</b>
-                    </Typography>
-                  </Box>
-                </Box>
-                <Chip
-                  icon={<LockOutlinedIcon sx={{ fontSize: '14px !important' }} />}
-                  label="Закреплен за МОЛ"
-                  size="small"
-                  color="info"
-                  variant="outlined"
-                  sx={{ fontWeight: 700, fontSize: '0.75rem', px: 0.5 }}
-                />
-              </Paper>
+                {warehouses.map((w) => (
+                  <MenuItem key={w.id} value={w.id}>
+                    {w.name} ({w.code}) {w.responsibleUser?.displayName ? `— МОЛ: ${w.responsibleUser.displayName}` : ''}
+                  </MenuItem>
+                ))}
+              </TextField>
             </Box>
 
             {/* Выбор склада-получателя только для операции Перемещения */}
@@ -789,7 +753,7 @@ export function WmsOperationWizardDialog({
                       {operationType === 'TRANSFER' ? 'Склад списания (МОЛ):' : 'Склад операции (МОЛ):'}
                     </Typography>
                     <Typography variant="body2" sx={{ fontWeight: 700, color: '#0f172a' }}>
-                      {assignedWarehouse ? `${assignedWarehouse.name} (${assignedWarehouse.code})` : '—'}
+                      {currentWarehouse ? `${currentWarehouse.name} (${currentWarehouse.code})` : '—'}
                     </Typography>
                     {operationType === 'TRANSFER' && targetWarehouseId && (
                       <Typography variant="caption" sx={{ display: 'block', color: '#7c3aed', fontWeight: 700, mt: 0.25 }}>
@@ -1444,7 +1408,7 @@ export function WmsOperationWizardDialog({
                     Закрепленный склад:
                   </Typography>
                   <Typography variant="body2" fontWeight={600} sx={{ mt: 0.5, color: '#0f172a' }}>
-                    {assignedWarehouse ? `${assignedWarehouse.name} (${assignedWarehouse.code})` : '—'}
+                    {currentWarehouse ? `${currentWarehouse.name} (${currentWarehouse.code})` : '—'}
                   </Typography>
                 </Grid>
 
