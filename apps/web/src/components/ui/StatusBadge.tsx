@@ -147,24 +147,38 @@ const STATUS_CONFIG_MAP: Record<string, StatusTheme> = {
 
   // WMS Operations Types
   RECEIPT: {
-    label: 'Приход',
+    label: 'Приход ТМЦ',
     color: '#16a34a',
     bg: '#f0fdf4',
     border: '#bbf7d0',
     icon: <MoveToInboxIcon sx={{ fontSize: 13 }} />,
   },
   ISSUE: {
-    label: 'Списание',
+    label: 'Списание ТМЦ',
     color: '#d97706',
     bg: '#fffbeb',
     border: '#fde68a',
     icon: <OutboxIcon sx={{ fontSize: 13 }} />,
   },
+  ISSUE_WRITE_OFF: {
+    label: 'Списание на станок / ТОиР',
+    color: '#d97706',
+    bg: '#fffbeb',
+    border: '#fde68a',
+    icon: <DeleteOutlineIcon sx={{ fontSize: 13 }} />,
+  },
+  ISSUE_EMPLOYEE: {
+    label: 'Выдача сотруднику',
+    color: '#1d4ed8',
+    bg: '#eff6ff',
+    border: '#bfdbfe',
+    icon: <PersonIcon sx={{ fontSize: 13 }} />,
+  },
   TRANSFER: {
-    label: 'Перемещение',
-    color: '#0284c7',
-    bg: '#f0f9ff',
-    border: '#bae6fd',
+    label: 'Перемещение ТМЦ',
+    color: '#7c3aed',
+    bg: '#f5f3ff',
+    border: '#ddd6fe',
     icon: <SwapHorizIcon sx={{ fontSize: 13 }} />,
   },
   ADJUSTMENT: {

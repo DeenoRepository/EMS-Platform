@@ -663,25 +663,6 @@ export function WmsOperationWizardDialog({
               </TextField>
             )}
 
-            {/* Optional Mode-specific parameters */}
-            {operationType === 'ISSUE_WRITE_OFF' && (
-              <TextField
-                select
-                fullWidth
-                label="Целевое оборудование (необязательно)"
-                value={equipmentId}
-                onChange={(e) => setEquipmentId(e.target.value)}
-                helperText="Выберите станок, если деталь устанавливается на конкретное оборудование"
-              >
-                <MenuItem value="">— Не привязано к станку (Общее списание) —</MenuItem>
-                {equipmentList.map((eq) => (
-                  <MenuItem key={eq.id} value={eq.id}>
-                    {eq.name} ({eq.inventoryNumber})
-                  </MenuItem>
-                ))}
-              </TextField>
-            )}
-
             {operationType === 'ISSUE_EMPLOYEE' && (
               <TextField
                 fullWidth
@@ -718,6 +699,68 @@ export function WmsOperationWizardDialog({
         {/* STEP 1: Подбор позиций ТМЦ + Расширенное меню создания новой номенклатуры */}
         {activeStep === 1 && (
           <Stack spacing={2.5}>
+            {/* Top Operation Context & Warehouse Info Banner */}
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 2,
+                borderRadius: '10px',
+                bgcolor: currentOpMeta.bgcolor,
+                borderColor: currentOpMeta.color,
+                borderWidth: '1.5px',
+              }}
+            >
+              <Grid container spacing={2} alignItems="center">
+                <Grid item xs={12} sm={6}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: '8px',
+                        bgcolor: '#ffffff',
+                        color: currentOpMeta.color,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                      }}
+                    >
+                      {currentOpMeta.icon}
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, display: 'block', textTransform: 'uppercase', fontSize: '0.6875rem' }}>
+                        Проводимая операция:
+                      </Typography>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9375rem' }}>
+                        {currentOpMeta.title}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
+                    <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, display: 'block' }}>
+                      {operationType === 'TRANSFER' ? 'Склад списания (МОЛ):' : 'Склад операции (МОЛ):'}
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#0f172a' }}>
+                      {assignedWarehouse ? `${assignedWarehouse.name} (${assignedWarehouse.code})` : '—'}
+                    </Typography>
+                    {operationType === 'TRANSFER' && targetWarehouseId && (
+                      <Typography variant="caption" sx={{ display: 'block', color: '#7c3aed', fontWeight: 700, mt: 0.25 }}>
+                        → Склад назначения: {warehouses.find((w) => w.id === targetWarehouseId)?.name}
+                      </Typography>
+                    )}
+                    {operationType === 'ISSUE_EMPLOYEE' && recipientName && (
+                      <Typography variant="caption" sx={{ display: 'block', color: '#1d4ed8', fontWeight: 700, mt: 0.25 }}>
+                        Получатель: {recipientName}
+                      </Typography>
+                    )}
+                  </Box>
+                </Grid>
+              </Grid>
+            </Paper>
+
             {/* Quick Item Add / Search Card */}
             <Paper elevation={0} sx={{ p: 2.5, borderRadius: '10px', bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
@@ -737,6 +780,27 @@ export function WmsOperationWizardDialog({
               </Box>
 
               <Grid container spacing={1.5} alignItems="center">
+                {operationType === 'ISSUE_WRITE_OFF' && (
+                  <Grid item xs={12}>
+                    <TextField
+                      select
+                      size="small"
+                      fullWidth
+                      label="Целевое оборудование / станок для списания детали (необязательно)"
+                      value={itemEquipmentId}
+                      onChange={(e) => setItemEquipmentId(e.target.value)}
+                      helperText="Укажите конкретный станок при монтаже детали или оставьте пустым для общего списания / утилизации"
+                      sx={{ bgcolor: '#ffffff', mb: 0.5 }}
+                    >
+                      <MenuItem value="">— Общее списание / Не привязано к станку —</MenuItem>
+                      {equipmentList.map((eq) => (
+                        <MenuItem key={eq.id} value={eq.id}>
+                          {eq.name} ({eq.inventoryNumber})
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </Grid>
+                )}
                 <Grid item xs={12} sm={6}>
                   <Autocomplete
                     size="small"
