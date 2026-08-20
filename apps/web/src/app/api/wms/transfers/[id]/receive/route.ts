@@ -27,6 +27,8 @@ export async function POST(
       include: {
         sourceWarehouse: true,
         targetWarehouse: true,
+        createdBy: { select: { id: true, displayName: true } },
+        dispatchedBy: { select: { id: true, displayName: true } },
         items: { include: { nomenclature: true } },
       },
     });
@@ -116,7 +118,7 @@ export async function POST(
           date: new Date(),
           counterparty: `Склад-отправитель: ${transfer.sourceWarehouse.name} (${transfer.sourceWarehouse.code})`,
           document: `Перемещение № ${transfer.transferNumber}`,
-          comment: `Принято по межскладскому перемещению. Инициатор: ${transfer.requestReason || 'Плановое перемещение'}`,
+          comment: `Принято по межскладскому перемещению. Инициатор: ${transfer.createdBy?.displayName || 'Инициатор перемещения'}${transfer.requestReason ? `. Основание: ${transfer.requestReason}` : ''}`,
           createdById: user.userId,
           items: {
             create: transfer.items.map((it) => ({

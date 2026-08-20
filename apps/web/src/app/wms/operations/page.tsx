@@ -215,7 +215,7 @@ function WmsOperationsContent() {
           <Stack direction="row" spacing={0.75} alignItems="center">
             <PrecisionManufacturingIcon sx={{ fontSize: 16, color: '#b45309' }} />
             <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: '#b45309', fontWeight: 600 }}>
-              Станок: {firstItemWithEq.equipment.name} ({firstItemWithEq.equipment.inventoryNumber})
+              Оборудование: {firstItemWithEq.equipment.name} ({firstItemWithEq.equipment.inventoryNumber})
             </Typography>
           </Stack>
         );
@@ -461,7 +461,7 @@ function WmsOperationsContent() {
               )}
               {visibleColumns.includes('recipient') && (
                 <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#475569' }}>
-                  Назначение / Получатель / Станок
+                  Назначение / Получатель / Оборудование
                 </TableCell>
               )}
               {visibleColumns.includes('comment') && (

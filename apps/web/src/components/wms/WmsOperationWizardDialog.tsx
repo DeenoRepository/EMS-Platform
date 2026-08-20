@@ -434,7 +434,7 @@ export function WmsOperationWizardDialog({
         if (eqObj) {
           finalEquipmentId = eqObj.id;
           finalEquipmentName = `${eqObj.name} (${eqObj.inventoryNumber})`;
-          finalWriteOffReason = `Станок: ${eqObj.name} (${eqObj.inventoryNumber})`;
+          finalWriteOffReason = `Оборудование: ${eqObj.name} (${eqObj.inventoryNumber})`;
         } else {
           finalWriteOffReason = 'Общее списание на оборудование';
         }
@@ -928,13 +928,13 @@ export function WmsOperationWizardDialog({
                           select
                           size="small"
                           fullWidth
-                          label="Целевое оборудование / станок (из реестра EPS)"
+                          label="Целевое оборудование (из реестра EPS)"
                           value={itemEquipmentId}
                           onChange={(e) => setItemEquipmentId(e.target.value)}
-                          helperText="Укажите станок, на который монтируется деталь, или оставьте пустым для общего списания"
+                          helperText="Укажите единицу оборудования, на которую монтируется деталь, или оставьте пустым для общего списания"
                           sx={{ bgcolor: '#ffffff' }}
                         >
-                          <MenuItem value="">— Не привязано к конкретному станку (Общий монтаж) —</MenuItem>
+                          <MenuItem value="">— Не привязано к конкретному оборудованию (Общий монтаж) —</MenuItem>
                           {equipmentList.map((eq) => (
                             <MenuItem key={eq.id} value={eq.id}>
                               {eq.name} ({eq.inventoryNumber})
