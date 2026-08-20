@@ -322,17 +322,6 @@ function WmsTransfersContent() {
             </Box>
           </FilterToolbar>
         }
-        title={
-          activeTab === 'inbound'
-            ? 'Входящие перемещения (Требуют подтверждения приемки)'
-            : activeTab === 'requests'
-            ? 'Запросы на перемещение с вашего склада'
-            : activeTab === 'outbound'
-            ? 'Исходящие перемещения в пути'
-            : activeTab === 'my_requests'
-            ? 'Мои отправленные запросы на перемещение'
-            : 'Журнал межскладских перемещений'
-        }
         total={total}
         page={page - 1}
         pageSize={pageSize}
