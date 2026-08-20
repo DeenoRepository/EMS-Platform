@@ -539,7 +539,8 @@ export function WmsOperationWizardDialog({
       title="Мастер оформления складской операции"
       subtitle="Пошаговое проведение прихода, перемещения или списания ТМЦ"
       icon={currentOpMeta.icon}
-      maxWidth="md"
+      maxWidth="lg"
+      fullWidth
       steps={['1. Параметры операции', '2. Подбор позиций ТМЦ', '3. Проведение и акт']}
       activeStep={activeStep}
       onStepChange={(step) => setActiveStep(step)}
@@ -803,7 +804,7 @@ export function WmsOperationWizardDialog({
                 )}
               </Box>
 
-              <Grid container spacing={1.5} alignItems="center">
+              <Grid container spacing={1.5} alignItems="flex-start">
                 {operationType === 'ISSUE_WRITE_OFF' && (
                   <Grid item xs={12}>
                     <Stack spacing={1.5} sx={{ mb: 1, p: 1.5, bgcolor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
@@ -870,7 +871,8 @@ export function WmsOperationWizardDialog({
                     </Stack>
                   </Grid>
                 )}
-                <Grid item xs={12} sm={6}>
+
+                <Grid item xs={12} sm={7} md={7.5}>
                   <Autocomplete
                     size="small"
                     options={nomenclatures}
@@ -891,11 +893,27 @@ export function WmsOperationWizardDialog({
                         }
                       }
                     }}
+                    slotProps={{
+                      popper: {
+                        placement: 'bottom-start',
+                        sx: {
+                          minWidth: { xs: '100%', sm: 540, md: 620 },
+                          width: 'max(620px, 100%) !important',
+                          zIndex: 1400,
+                          boxShadow: '0 12px 28px rgba(0,0,0,0.18)',
+                          borderRadius: '10px',
+                          '& .MuiAutocomplete-listbox': {
+                            p: 1,
+                            maxHeight: 340,
+                          },
+                        },
+                      },
+                    }}
                     renderOption={(props, option) => {
                       if (option.isNewAction) {
                         return (
                           <li {...props} key={option.id}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.5, color: '#0284c7', fontWeight: 600 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.75, px: 1, color: '#0284c7', fontWeight: 600 }}>
                               <AddIcon fontSize="small" />
                               <Typography variant="body2">{option.name}</Typography>
                             </Box>
@@ -905,14 +923,33 @@ export function WmsOperationWizardDialog({
                       const stock = getWarehouseStock(option.id);
                       const isAvailable = stock > 0;
                       return (
-                        <li {...props} key={option.id}>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', py: 0.5 }}>
-                            <Box sx={{ mr: 1, minWidth: 0 }}>
-                              <Typography variant="body2" sx={{ fontWeight: 600, color: '#0f172a' }}>
+                        <li {...props} key={option.id} style={{ ...props.style, padding: 0 }}>
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              width: '100%',
+                              py: 1,
+                              px: 1.5,
+                              borderRadius: '6px',
+                              gap: 2,
+                            }}
+                          >
+                            <Box sx={{ minWidth: 0, flex: 1 }}>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  fontWeight: 600,
+                                  color: '#0f172a',
+                                  lineHeight: 1.35,
+                                  wordBreak: 'break-word',
+                                }}
+                              >
                                 {option.name}
                               </Typography>
-                              <Typography variant="caption" sx={{ color: '#64748b' }}>
-                                {option.article ? `Арт: ${option.article}` : 'Без артикула'} • {option.category?.name || 'Без категории'}
+                              <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mt: 0.25 }}>
+                                {option.article ? `Арт: ${option.article}` : 'Без артикула'} • {option.category?.name || 'Без категории'} • {option.unit}
                               </Typography>
                             </Box>
                             <Chip
@@ -928,9 +965,10 @@ export function WmsOperationWizardDialog({
                               variant={isOutflow && !isAvailable ? 'filled' : 'outlined'}
                               sx={{
                                 fontWeight: 700,
-                                fontSize: '0.7rem',
-                                height: 22,
+                                fontSize: '0.725rem',
+                                height: 24,
                                 flexShrink: 0,
+                                whiteSpace: 'nowrap',
                               }}
                             />
                           </Box>
@@ -985,7 +1023,7 @@ export function WmsOperationWizardDialog({
                   />
                 </Grid>
 
-                <Grid item xs={12} sm={3}>
+                <Grid item xs={6} sm={2.5} md={2.5}>
                   <TextField
                     size="small"
                     fullWidth
@@ -999,7 +1037,7 @@ export function WmsOperationWizardDialog({
                         ? getAvailableStock(selectedNomenclature.id) <= 0
                           ? `Нет в наличии (0 ${selectedNomenclature.unit})`
                           : parseFloat(itemQty) > getAvailableStock(selectedNomenclature.id)
-                          ? `Превышает доступно (${getAvailableStock(selectedNomenclature.id)} ${selectedNomenclature.unit})`
+                          ? `Превышает (${getAvailableStock(selectedNomenclature.id)} ${selectedNomenclature.unit})`
                           : `Доступно: ${getAvailableStock(selectedNomenclature.id)} ${selectedNomenclature.unit}`
                         : undefined
                     }
@@ -1021,7 +1059,7 @@ export function WmsOperationWizardDialog({
                   />
                 </Grid>
 
-                <Grid item xs={12} sm={3}>
+                <Grid item xs={6} sm={2.5} md={2}>
                   <Button
                     fullWidth
                     variant="contained"
@@ -1031,7 +1069,7 @@ export function WmsOperationWizardDialog({
                       !selectedNomenclature ||
                       (isOutflow && (getAvailableStock(selectedNomenclature.id) <= 0 || parseFloat(itemQty) > getAvailableStock(selectedNomenclature.id) || isNaN(parseFloat(itemQty)) || parseFloat(itemQty) <= 0))
                     }
-                    sx={{ height: 40, borderRadius: '8px', fontWeight: 600 }}
+                    sx={{ height: 40, borderRadius: '8px', fontWeight: 600, whiteSpace: 'nowrap' }}
                   >
                     Добавить
                   </Button>
