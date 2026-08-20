@@ -67,16 +67,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Склад не найден' }, { status: 404 });
     }
 
-    const isAdmin =
-      user.roles.includes('admin') ||
-      user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-      user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
-
-    if (!isAdmin && warehouse.responsibleUserId && warehouse.responsibleUserId !== user.userId) {
-      return forbiddenResponse(`Вы не являетесь ответственным лицом за склад "${warehouse.name}". Проведение инвентаризации запрещено.`);
-    }
-
-    // Создаем акт инвентаризации и фиксируем учетные остатки
+    // Пользователь с правом WMS_INVENTORY_MANAGE может проводить инвентаризацию на любом складе
     const inventory = await prisma.inventory.create({
       data: {
         warehouseId,

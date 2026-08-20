@@ -121,14 +121,20 @@ export default function WmsInventoryListPage() {
         const res = await fetch('/api/wms/warehouses');
         if (res.ok) {
           const json = await res.json();
-          if (json.success) setWarehouses(json.data);
+          if (json.success && Array.isArray(json.data)) {
+            setWarehouses(json.data);
+            const myWh = json.data.find((w: any) => w.responsibleUserId === user?.userId) || json.data[0];
+            if (myWh) {
+              setSelectedWarehouseId(myWh.id);
+            }
+          }
         }
       } catch (err) {
         console.error('Ошибка загрузки складов:', err);
       }
     }
     loadWarehouses();
-  }, [fetchInventories]);
+  }, [fetchInventories, user?.userId]);
 
   const handleCreateInventory = async () => {
     if (!selectedWarehouseId) {
@@ -609,25 +615,23 @@ export default function WmsInventoryListPage() {
             label="Склад для инвентаризации"
             value={selectedWarehouseId}
             onChange={(e) => setSelectedWarehouseId(e.target.value)}
+            SelectProps={{ displayEmpty: true }}
           >
+            <MenuItem value="">
+              <em>— Выберите склад для инвентаризации —</em>
+            </MenuItem>
             {warehouses.map((w) => {
               const isMine = w.responsibleUserId === user?.userId;
-              const isLocked =
-                !user?.roles.includes('admin') &&
-                !hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) &&
-                !hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE) &&
-                Boolean(w.responsibleUserId) &&
-                !isMine;
 
               return (
-                <MenuItem key={w.id} value={w.id} disabled={isLocked}>
+                <MenuItem key={w.id} value={w.id}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
                     <span>{w.name} ({w.code})</span>
                     {isMine ? (
                       <Chip label="Мой склад" size="small" color="primary" sx={{ height: 20, fontSize: '0.6875rem', fontWeight: 700 }} />
                     ) : w.responsibleUser ? (
-                      <Typography variant="caption" sx={{ color: isLocked ? 'text.disabled' : 'text.secondary' }}>
-                        Отв: {w.responsibleUser.displayName}
+                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                        МОЛ: {w.responsibleUser.displayName}
                       </Typography>
                     ) : null}
                   </Box>
