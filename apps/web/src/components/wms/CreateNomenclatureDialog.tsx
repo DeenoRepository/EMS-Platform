@@ -31,8 +31,10 @@ interface CategoryOption {
 interface CreateNomenclatureDialogProps {
   open: boolean;
   onClose: () => void;
-  onCreated: (createdItem: { id: string; name: string; article?: string | null; unit: string }) => void;
+  onCreated: (createdItem: { id: string; name: string; article?: string | null; unit: string; category?: { name: string } | null }) => void;
   categories?: CategoryOption[];
+  initialName?: string;
+  initialType?: string;
 }
 
 const NOMENCLATURE_TYPES = [
@@ -48,11 +50,13 @@ export default function CreateNomenclatureDialog({
   onClose,
   onCreated,
   categories: initialCategories,
+  initialName = '',
+  initialType = 'SPARE_PART',
 }: CreateNomenclatureDialogProps) {
   const { enqueueSnackbar } = useSnackbar();
 
-  const [selectedType, setSelectedType] = useState('SPARE_PART');
-  const [name, setName] = useState('');
+  const [selectedType, setSelectedType] = useState(initialType);
+  const [name, setName] = useState(initialName);
   const [article, setArticle] = useState('');
   const [unit, setUnit] = useState('шт');
   const [categoryId, setCategoryId] = useState('');
@@ -60,6 +64,13 @@ export default function CreateNomenclatureDialog({
   const [description, setDescription] = useState('');
   const [categories, setCategories] = useState<CategoryOption[]>(initialCategories || []);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      if (initialName) setName(initialName);
+      if (initialType) setSelectedType(initialType);
+    }
+  }, [open, initialName, initialType]);
 
   useEffect(() => {
     if (initialCategories && initialCategories.length > 0) {

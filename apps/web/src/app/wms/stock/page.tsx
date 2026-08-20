@@ -36,7 +36,8 @@ import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import CreateNomenclatureDialog from '@/components/wms/CreateNomenclatureDialog';
-import { StockDetailDrawer, PrintBarcodeModal, type PrintableLabelItem } from '@/components/wms';
+import { StockDetailDrawer, PrintBarcodeModal, WarehouseSelect, WmsOperationWizardDialog, type PrintableLabelItem, type OperationType } from '@/components/wms';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import PrintIcon from '@mui/icons-material/Print';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
@@ -172,6 +173,10 @@ function WmsStockContent() {
   // Modal: Print Barcode / Label
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [printItems, setPrintItems] = useState<PrintableLabelItem[]>([]);
+
+  // Modal: Operation Wizard
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [wizardType, setWizardType] = useState<OperationType>('RECEIPT');
 
   // Load dictionaries once on mount
   useEffect(() => {
@@ -517,6 +522,38 @@ function WmsStockContent() {
           { label: 'Складской учёт', href: '/wms' },
           { label: 'Остатки' },
         ]}
+        actions={
+          <Stack direction="row" spacing={1.5}>
+            {hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) && (
+              <Button
+                variant="outlined"
+                startIcon={<AddIcon />}
+                onClick={() => setIsNomenclatureModalOpen(true)}
+                sx={{ borderRadius: '8px', fontWeight: 600 }}
+              >
+                + Номенклатура
+              </Button>
+            )}
+            {hasPermission(PERMISSIONS.WMS_OPERATIONS_CREATE) && (
+              <Button
+                variant="contained"
+                startIcon={<AutoAwesomeIcon />}
+                onClick={() => {
+                  setWizardType('RECEIPT');
+                  setIsWizardOpen(true);
+                }}
+                sx={{
+                  borderRadius: '8px',
+                  fontWeight: 700,
+                  bgcolor: '#0284c7',
+                  '&:hover': { bgcolor: '#0369a1' },
+                }}
+              >
+                Мастер операций
+              </Button>
+            )}
+          </Stack>
+        }
       />
 
       {/* Critical Stock Alerts */}
@@ -597,37 +634,17 @@ function WmsStockContent() {
               />
             </Box>
 
-            <TextField
-              select
-              size="small"
+            <WarehouseSelect
               value={selectedWarehouse}
-              onChange={(e) => {
-                setSelectedWarehouse(e.target.value);
+              onChange={(val) => {
+                setSelectedWarehouse(val);
                 setSelectedZone('');
                 setPage(0);
               }}
-              SelectProps={{
-                displayEmpty: true,
-              }}
-              sx={{
-                minWidth: 160,
-                backgroundColor: '#ffffff',
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '8px',
-                  fontSize: '0.8125rem',
-                  height: 36,
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#cbd5e1' },
-                },
-              }}
-            >
-              <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все склады</MenuItem>
-              {warehouses.map((w) => (
-                <MenuItem key={w.id} value={w.id} sx={{ fontSize: '0.8125rem' }}>
-                  {w.name} ({w.code})
-                </MenuItem>
-              ))}
-            </TextField>
+              warehouses={warehouses}
+              isAdmin={hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) || user?.roles?.includes('admin')}
+              currentUserId={user?.userId}
+            />
 
             {selectedWarehouse && zones.length > 0 && (
               <TextField
@@ -1175,6 +1192,14 @@ function WmsStockContent() {
         open={isPrintModalOpen}
         onClose={() => setIsPrintModalOpen(false)}
         items={printItems}
+      />
+
+      {/* Мастер складских операций */}
+      <WmsOperationWizardDialog
+        open={isWizardOpen}
+        onClose={() => setIsWizardOpen(false)}
+        initialType={wizardType}
+        onSuccess={() => fetchStock()}
       />
     </Box>
   );

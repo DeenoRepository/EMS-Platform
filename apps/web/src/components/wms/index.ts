@@ -16,4 +16,5 @@ export * from './WmsOperationWizardDialog';
 export * from './TransferReceiveDialog';
 export * from './TransferRejectDialog';
 export * from './TransferRequestDialog';
-export * from './InventoryCountSheetDialog';
+export { default as WarehouseSelect } from './WarehouseSelect';
+export * from './WarehouseSelect';

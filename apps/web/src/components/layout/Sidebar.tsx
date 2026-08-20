@@ -260,10 +260,9 @@ export default function Sidebar({
           badge: wmsLowStockCount && wmsLowStockCount > 0 ? wmsLowStockCount : null,
           badgeColor: 'warning',
         },
-        { label: 'Складские операции', path: '/wms/operations', icon: <MoveToInboxIcon sx={{ fontSize: 15 }} /> },
-        { label: 'Перемещения ТМЦ', path: '/wms/transfers', icon: <SwapHorizIcon sx={{ fontSize: 15 }} /> },
-        { label: 'Склады', path: '/wms/warehouses', icon: <WarehouseOutlinedIcon sx={{ fontSize: 15 }} /> },
+        { label: 'Движение ТМЦ (Операции)', path: '/wms/operations', icon: <SwapHorizIcon sx={{ fontSize: 15 }} /> },
         { label: 'Инвентаризация', path: '/wms/inventory', icon: <FactCheckOutlinedIcon sx={{ fontSize: 15 }} /> },
+        { label: 'Склады и зоны', path: '/wms/warehouses', icon: <WarehouseOutlinedIcon sx={{ fontSize: 15 }} /> },
       ],
     },
     {
