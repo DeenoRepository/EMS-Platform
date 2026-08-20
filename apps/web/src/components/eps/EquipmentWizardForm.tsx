@@ -331,28 +331,43 @@ export function EquipmentWizardForm({
 
   return (
     <Box sx={{ width: '100%' }}>
-      {/* Stepper Navigation for Page Mode */}
-      {mode === 'page' && (
-        <Paper elevation={0} sx={{ p: 2.5, mb: 3, borderRadius: '12px', border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
-          <Stepper activeStep={activeStep} alternativeLabel>
-            {WIZARD_STEPS.map((label, index) => (
-              <Step key={label} onClick={() => setActiveStep(index)} sx={{ cursor: 'pointer' }}>
-                <StepLabel
-                  sx={{
-                    '& .MuiStepLabel-label': {
-                      fontSize: '0.8125rem',
-                      fontWeight: activeStep === index ? 700 : 500,
-                      color: activeStep === index ? '#0284c7' : '#64748b',
-                    },
-                  }}
-                >
-                  {label}
-                </StepLabel>
-              </Step>
-            ))}
-          </Stepper>
-        </Paper>
-      )}
+      {/* Stepper Navigation (Visible in both Dialog and Page modes) */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: mode === 'dialog' ? 1.75 : 2.5,
+          mb: 2.5,
+          borderRadius: '10px',
+          border: '1px solid #e2e8f0',
+          bgcolor: '#f8fafc',
+        }}
+      >
+        <Stepper activeStep={activeStep} alternativeLabel>
+          {WIZARD_STEPS.map((label, index) => (
+            <Step
+              key={label}
+              onClick={() => {
+                if (index < activeStep || (index === 1 && name.trim())) {
+                  setActiveStep(index);
+                }
+              }}
+              sx={{ cursor: 'pointer' }}
+            >
+              <StepLabel
+                sx={{
+                  '& .MuiStepLabel-label': {
+                    fontSize: mode === 'dialog' ? '0.75rem' : '0.8125rem',
+                    fontWeight: activeStep === index ? 700 : 500,
+                    color: activeStep === index ? '#0284c7' : '#64748b',
+                  },
+                }}
+              >
+                {label}
+              </StepLabel>
+            </Step>
+          ))}
+        </Stepper>
+      </Paper>
 
       {/* Step Contents */}
       <Box sx={{ minHeight: 340 }}>
