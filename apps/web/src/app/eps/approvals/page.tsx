@@ -359,24 +359,12 @@ function ApprovalsListContent() {
     <Box sx={{ pb: 4 }}>
       <PageHeader
         title="Согласование изменений оборудования"
-        subtitle="Процедура рассмотрения, утверждения и отклонения запросов на вывод из эксплуатации, консервацию, списание и смену статусов"
+        subtitle="Процедура рассмотрения, утверждения и отклонения запросов на регистрацию, изменение реквизитов, списание и документы"
         breadcrumbs={[
           { label: 'Главная', href: '/' },
           { label: 'Оборудование', href: '/eps' },
           { label: 'Согласования' },
         ]}
-        actions={
-          canCreate && (
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => setCreateModalOpen(true)}
-              sx={{ px: 2.25, py: 0.75, fontWeight: 600 }}
-            >
-              Создать заявку
-            </Button>
-          )
-        }
       />
 
       <Grid container spacing={1.75} sx={{ mb: 2.5 }}>
@@ -871,6 +859,43 @@ function ApprovalsListContent() {
                   </Typography>
                 </>
               )}
+
+              {selectedApprovalForReview.proposedData && typeof selectedApprovalForReview.proposedData === 'object' && (
+                <Box sx={{ mt: 1.5, p: 1.5, bgcolor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                  <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" sx={{ mb: 0.75 }}>
+                    Предложенные данные / характеристики:
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    {Object.entries(selectedApprovalForReview.proposedData).map(([key, val]) => {
+                      if (val === null || val === undefined || val === '') return null;
+                      if (key === 'customFields' && typeof val === 'object') {
+                        return Object.entries(val).map(([cfKey, cfVal]) => (
+                          <Box key={cfKey} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', py: 0.25, borderBottom: '1px dashed #f1f5f9' }}>
+                            <Typography variant="caption" color="text.secondary">{cfKey}:</Typography>
+                            <Typography variant="caption" fontWeight={600}>{String(cfVal)}</Typography>
+                          </Box>
+                        ));
+                      }
+                      const labels: Record<string, string> = {
+                        name: 'Наименование',
+                        inventoryNumber: 'Инвентарный №',
+                        serialNumber: 'Заводской №',
+                        manufacturer: 'Производитель',
+                        model: 'Модель',
+                        location: 'Локация',
+                        status: 'Целевой статус',
+                        targetStatus: 'Целевой статус',
+                      };
+                      return (
+                        <Box key={key} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', py: 0.25, borderBottom: '1px dashed #f1f5f9' }}>
+                          <Typography variant="caption" color="text.secondary">{labels[key] || key}:</Typography>
+                          <Typography variant="caption" fontWeight={600}>{String(val)}</Typography>
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                </Box>
+              )}
             </Paper>
 
             <Alert severity="info">
@@ -962,6 +987,43 @@ function ApprovalsListContent() {
                     {selectedApprovalForDetails.description}
                   </Typography>
                 </>
+              )}
+
+              {selectedApprovalForDetails.proposedData && typeof selectedApprovalForDetails.proposedData === 'object' && (
+                <Box sx={{ mt: 1.5, p: 1.5, bgcolor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                  <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" sx={{ mb: 0.75 }}>
+                    Предложенные данные / характеристики:
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    {Object.entries(selectedApprovalForDetails.proposedData).map(([key, val]) => {
+                      if (val === null || val === undefined || val === '') return null;
+                      if (key === 'customFields' && typeof val === 'object') {
+                        return Object.entries(val).map(([cfKey, cfVal]) => (
+                          <Box key={cfKey} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', py: 0.25, borderBottom: '1px dashed #f1f5f9' }}>
+                            <Typography variant="caption" color="text.secondary">{cfKey}:</Typography>
+                            <Typography variant="caption" fontWeight={600}>{String(cfVal)}</Typography>
+                          </Box>
+                        ));
+                      }
+                      const labels: Record<string, string> = {
+                        name: 'Наименование',
+                        inventoryNumber: 'Инвентарный №',
+                        serialNumber: 'Заводской №',
+                        manufacturer: 'Производитель',
+                        model: 'Модель',
+                        location: 'Локация',
+                        status: 'Целевой статус',
+                        targetStatus: 'Целевой статус',
+                      };
+                      return (
+                        <Box key={key} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', py: 0.25, borderBottom: '1px dashed #f1f5f9' }}>
+                          <Typography variant="caption" color="text.secondary">{labels[key] || key}:</Typography>
+                          <Typography variant="caption" fontWeight={600}>{String(val)}</Typography>
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                </Box>
               )}
 
               {selectedApprovalForDetails.reviewer && (

@@ -97,52 +97,89 @@ export async function PATCH(
       }
     }
 
-    // Execute automatic equipment status update if APPROVED
+    // Execute automatic equipment update if APPROVED
     if (status === 'APPROVED' && approval.equipment) {
       const prevStatus = approval.equipment.status;
-      let newEquipmentStatus: EquipmentStatus | null = null;
       const proposed = (approval.proposedData as any) || {};
 
-      if (approval.type === 'DECOMMISSIONING') {
-        newEquipmentStatus = 'DECOMMISSIONED';
-      } else if (approval.type === 'COMMISSIONING') {
-        newEquipmentStatus = 'ACTIVE';
-      } else if (approval.type === 'STATUS_CHANGE' && proposed.targetStatus && proposed.targetStatus in EquipmentStatus) {
-        newEquipmentStatus = proposed.targetStatus as EquipmentStatus;
-      }
-
-      if (newEquipmentStatus) {
-        const updateData: any = { status: newEquipmentStatus };
-        if (approval.type === 'COMMISSIONING' && !approval.equipment.commissionDate) {
-          updateData.commissionDate = new Date();
-        }
+      if (approval.type === 'EQUIPMENT_CREATE' || approval.type === 'COMMISSIONING') {
+        const targetStatus = (proposed.targetStatus && proposed.targetStatus in EquipmentStatus)
+          ? (proposed.targetStatus as EquipmentStatus)
+          : 'ACTIVE';
 
         await prisma.equipment.update({
           where: { id: approval.equipment.id },
-          data: updateData,
-        });
-
-        await logAuditEvent({
-          userId: user.userId,
-          action: 'UPDATE',
-          entityType: 'Equipment',
-          entityId: approval.equipment.id,
-          changes: {
-            status: { old: prevStatus, new: newEquipmentStatus },
-            approvalId: approval.id,
-            reason: `Автоматическое применение решения согласования: ${approval.title}`,
+          data: {
+            status: targetStatus,
+            commissionDate: approval.equipment.commissionDate || (proposed.commissionDate ? new Date(proposed.commissionDate) : new Date()),
+            name: proposed.name ? proposed.name.trim() : undefined,
+            inventoryNumber: proposed.inventoryNumber !== undefined ? (proposed.inventoryNumber?.trim() || null) : undefined,
+            serialNumber: proposed.serialNumber !== undefined ? (proposed.serialNumber?.trim() || null) : undefined,
+            manufacturer: proposed.manufacturer !== undefined ? (proposed.manufacturer?.trim() || null) : undefined,
+            model: proposed.model !== undefined ? (proposed.model?.trim() || null) : undefined,
+            location: proposed.location !== undefined ? (proposed.location?.trim() || null) : undefined,
+            customFields: proposed.customFields !== undefined ? proposed.customFields : undefined,
           },
         });
-      }
 
-      // If PARAMETER_CHANGE proposed custom fields
-      if (approval.type === 'PARAMETER_CHANGE' && proposed.customFields) {
-        const currentCustomFields = (approval.equipment.customFields as any) || {};
-        const mergedCustomFields = { ...currentCustomFields, ...proposed.customFields };
+        await logAuditEvent({
+          userId: user.userId,
+          action: 'UPDATE',
+          entityType: 'Equipment',
+          entityId: approval.equipment.id,
+          changes: {
+            status: { old: prevStatus, new: targetStatus },
+            approvalId: approval.id,
+            reason: `Утверждена регистрация оборудования: ${approval.title}`,
+          },
+        });
+      } else if (approval.type === 'EQUIPMENT_UPDATE' || approval.type === 'PARAMETER_CHANGE') {
+        const eqId = approval.equipment.id;
+        const updatePayload: any = {};
+        if (proposed.name) updatePayload.name = proposed.name.trim();
+        if (proposed.inventoryNumber !== undefined) updatePayload.inventoryNumber = proposed.inventoryNumber?.trim() || null;
+        if (proposed.serialNumber !== undefined) updatePayload.serialNumber = proposed.serialNumber?.trim() || null;
+        if (proposed.manufacturer !== undefined) updatePayload.manufacturer = proposed.manufacturer?.trim() || null;
+        if (proposed.model !== undefined) updatePayload.model = proposed.model?.trim() || null;
+        if (proposed.location !== undefined) updatePayload.location = proposed.location?.trim() || null;
+        if (proposed.status && proposed.status in EquipmentStatus) updatePayload.status = proposed.status;
+        if (proposed.commissionDate) updatePayload.commissionDate = new Date(proposed.commissionDate);
+        if (proposed.customFields) {
+          const currentCustomFields = (approval.equipment.customFields as any) || {};
+          updatePayload.customFields = { ...currentCustomFields, ...proposed.customFields };
+        }
 
+        if (Array.isArray(proposed.tagIds)) {
+          await prisma.equipmentTag.deleteMany({ where: { equipmentId: eqId } });
+          if (proposed.tagIds.length > 0) {
+            await prisma.equipmentTag.createMany({
+              data: proposed.tagIds.map((tagId: string) => ({ equipmentId: eqId, tagId })),
+            });
+          }
+        }
+
+        if (Object.keys(updatePayload).length > 0) {
+          await prisma.equipment.update({
+            where: { id: eqId },
+            data: updatePayload,
+          });
+        }
+
+        await logAuditEvent({
+          userId: user.userId,
+          action: 'UPDATE',
+          entityType: 'Equipment',
+          entityId: approval.equipment.id,
+          changes: {
+            updatedFields: updatePayload,
+            approvalId: approval.id,
+            reason: `Утверждены изменения паспорта: ${approval.title}`,
+          },
+        });
+      } else if (approval.type === 'DECOMMISSIONING' || approval.type === 'EQUIPMENT_DELETE') {
         await prisma.equipment.update({
           where: { id: approval.equipment.id },
-          data: { customFields: mergedCustomFields },
+          data: { status: 'DECOMMISSIONED' },
         });
 
         await logAuditEvent({
@@ -151,9 +188,26 @@ export async function PATCH(
           entityType: 'Equipment',
           entityId: approval.equipment.id,
           changes: {
-            customFields: { old: currentCustomFields, new: mergedCustomFields },
+            status: { old: prevStatus, new: 'DECOMMISSIONED' },
             approvalId: approval.id,
-            reason: `Автоматическое применение изменений параметров: ${approval.title}`,
+            reason: `Утверждено списание/вывод из эксплуатации: ${approval.title}`,
+          },
+        });
+      } else if (approval.type === 'STATUS_CHANGE' && proposed.targetStatus && proposed.targetStatus in EquipmentStatus) {
+        await prisma.equipment.update({
+          where: { id: approval.equipment.id },
+          data: { status: proposed.targetStatus as EquipmentStatus },
+        });
+
+        await logAuditEvent({
+          userId: user.userId,
+          action: 'UPDATE',
+          entityType: 'Equipment',
+          entityId: approval.equipment.id,
+          changes: {
+            status: { old: prevStatus, new: proposed.targetStatus },
+            approvalId: approval.id,
+            reason: `Утверждена смена рабочего статуса: ${approval.title}`,
           },
         });
       }
@@ -180,6 +234,28 @@ export async function PATCH(
         },
       },
     });
+
+    // Отправка системного уведомления автору заявки
+    try {
+      if (approval.requesterId && (status === 'APPROVED' || status === 'REJECTED')) {
+        const eqName = approval.equipment?.name || approval.title;
+        const isApproved = status === 'APPROVED';
+
+        await prisma.notification.create({
+          data: {
+            userId: approval.requesterId,
+            title: isApproved ? 'Паспорт оборудования согласован' : 'Заявка на согласование отклонена',
+            message: isApproved
+              ? `Заявка по оборудованию «${eqName}» успешно утверждена и опубликована в реестре.`
+              : `Заявка по оборудованию «${eqName}» отклонена. Причина: "${resolutionComment || 'Замечания проверяющего'}".`,
+            type: 'EQUIPMENT_CHANGED',
+            link: approval.equipmentId ? `/eps/${approval.equipmentId}` : '/eps/approvals',
+          },
+        });
+      }
+    } catch (notifErr) {
+      console.error('Ошибка отправки уведомления:', notifErr);
+    }
 
     await logAuditEvent({
       userId: user.userId,

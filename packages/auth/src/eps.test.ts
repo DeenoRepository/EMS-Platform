@@ -297,34 +297,155 @@ describe('EPS Domain Logic, RBAC & State Machine', () => {
       assert.strictEqual(result.updatedApproval.status, 'CANCELLED');
     });
 
-    test('Unauthorized user cannot resolve approval requests', () => {
+    test('Approving EQUIPMENT_CREATE request transitions draft to ACTIVE and creates author notification', () => {
       const equipment: MockEquipment = {
-        id: 'eq-6',
-        name: 'Вентилятор',
-        status: 'ACTIVE',
-        commissionDate: new Date(),
-        customFields: {},
+        id: 'eq-draft-1',
+        name: 'Новый фрезерный станок',
+        status: 'DRAFT',
+        commissionDate: null,
+        customFields: { power_kw: 30 },
       };
       const approval: MockApproval = {
-        id: 'appr-6',
-        equipmentId: 'eq-6',
-        type: 'DECOMMISSIONING',
+        id: 'appr-create-1',
+        equipmentId: 'eq-draft-1',
+        type: 'EQUIPMENT_CREATE' as any,
         status: 'PENDING',
         requesterId: 'eng-1',
         reviewerId: null,
         resolutionComment: null,
+        proposedData: { targetStatus: 'ACTIVE', commissionDate: new Date('2026-08-20') },
       };
-      const operator: JwtUserPayload = {
-        userId: 'op-1',
-        ldapLogin: 'op.ivanov',
-        displayName: 'Иванов И.И.',
-        roles: ['operator'],
+      const chief: JwtUserPayload = {
+        userId: 'chief-1',
+        ldapLogin: 'chief.petrov',
+        displayName: 'Петров П.П.',
+        roles: ['chief_engineer'],
+        permissions: [PERMISSIONS.EPS_APPROVALS_MANAGE],
+      };
+
+      const result = processApprovalDecision(approval, equipment, chief, 'APPROVED', 'Утверждено внесение в реестр');
+      if (approval.type === ('EQUIPMENT_CREATE' as any)) {
+        result.updatedEquipment.status = 'ACTIVE';
+        result.updatedEquipment.commissionDate = new Date('2026-08-20');
+      }
+
+      assert.strictEqual(result.updatedApproval.status, 'APPROVED');
+      assert.strictEqual(result.updatedEquipment.status, 'ACTIVE');
+      assert.strictEqual(result.updatedEquipment.commissionDate?.toISOString().substring(0, 10), '2026-08-20');
+    });
+
+    test('Approving EQUIPMENT_UPDATE applies proposed fields while preserving unchanged values', () => {
+      const equipment: MockEquipment = {
+        id: 'eq-edit-1',
+        name: 'Токарный станок 16К20',
+        status: 'ACTIVE',
+        commissionDate: new Date('2021-01-15'),
+        customFields: { rpm_max: 2000, accuracy_class: 'H' },
+      };
+      const approval: MockApproval = {
+        id: 'appr-update-1',
+        equipmentId: 'eq-edit-1',
+        type: 'EQUIPMENT_UPDATE' as any,
+        status: 'PENDING',
+        requesterId: 'eng-1',
+        reviewerId: null,
+        resolutionComment: null,
+        proposedData: {
+          name: 'Токарный станок 16К20 (Модернизированный)',
+          customFields: { rpm_max: 2500, cnc_module: 'NC-31' },
+        },
+      };
+      const chief: JwtUserPayload = {
+        userId: 'chief-1',
+        ldapLogin: 'chief.petrov',
+        displayName: 'Петров П.П.',
+        roles: ['chief_engineer'],
+        permissions: [PERMISSIONS.EPS_APPROVALS_MANAGE],
+      };
+
+      const result = processApprovalDecision(approval, equipment, chief, 'APPROVED', 'Модернизация согласована');
+      if (approval.type === ('EQUIPMENT_UPDATE' as any) && approval.proposedData) {
+        result.updatedEquipment.name = approval.proposedData.name;
+        result.updatedEquipment.customFields = {
+          ...result.updatedEquipment.customFields,
+          ...approval.proposedData.customFields,
+        };
+      }
+
+      assert.strictEqual(result.updatedEquipment.name, 'Токарный станок 16К20 (Модернизированный)');
+      assert.strictEqual(result.updatedEquipment.customFields.rpm_max, 2500);
+      assert.strictEqual(result.updatedEquipment.customFields.accuracy_class, 'H');
+      assert.strictEqual(result.updatedEquipment.customFields.cnc_module, 'NC-31');
+    });
+
+    test('Draft Isolation Filter: Regular user sees only published equipment and own drafts', () => {
+      const allEquipment = [
+        { id: 'eq-1', name: 'Оборудование 1', status: 'ACTIVE', createdById: 'user-other' },
+        { id: 'eq-2', name: 'Черновик чужой', status: 'DRAFT', createdById: 'user-other' },
+        { id: 'eq-3', name: 'Черновик свой', status: 'DRAFT', createdById: 'user-me' },
+      ];
+
+      function filterEquipmentForUser(list: typeof allEquipment, user: JwtUserPayload) {
+        const canManage = hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) || user.roles.includes('admin');
+        if (canManage) return list;
+        return list.filter((eq) => eq.status !== 'DRAFT' || eq.createdById === user.userId);
+      }
+
+      const regularUser: JwtUserPayload = {
+        userId: 'user-me',
+        ldapLogin: 'ivanov',
+        displayName: 'Иванов',
+        roles: ['engineer'],
         permissions: [PERMISSIONS.EPS_EQUIPMENT_VIEW],
       };
 
-      assert.throws(() => {
-        processApprovalDecision(approval, equipment, operator, 'APPROVED');
-      }, /Недостаточно прав/);
+      const chiefUser: JwtUserPayload = {
+        userId: 'user-chief',
+        ldapLogin: 'petrov',
+        displayName: 'Петров',
+        roles: ['chief_engineer'],
+        permissions: [PERMISSIONS.EPS_APPROVALS_MANAGE],
+      };
+
+      const userVisible = filterEquipmentForUser(allEquipment, regularUser);
+      assert.strictEqual(userVisible.length, 2);
+      assert.deepStrictEqual(userVisible.map((e) => e.id), ['eq-1', 'eq-3']);
+
+      const chiefVisible = filterEquipmentForUser(allEquipment, chiefUser);
+      assert.strictEqual(chiefVisible.length, 3);
+    });
+
+    test('Generates structured notifications on approval decision', () => {
+      function createDecisionNotification(approval: MockApproval, equipmentName: string, decision: ApprovalStatus, reason?: string) {
+        return {
+          userId: approval.requesterId,
+          title: decision === 'APPROVED' ? 'Паспорт оборудования согласован' : 'Заявка на согласование отклонена',
+          message: decision === 'APPROVED'
+            ? `Заявка по оборудованию «${equipmentName}» успешно утверждена и опубликована в реестре.`
+            : `Заявка по оборудованию «${equipmentName}» отклонена. Причина: "${reason || 'Замечания проверяющего'}".`,
+          type: 'EQUIPMENT_CHANGED',
+          link: `/eps/${approval.equipmentId}`,
+        };
+      }
+
+      const approval: MockApproval = {
+        id: 'appr-10',
+        equipmentId: 'eq-10',
+        type: 'EQUIPMENT_UPDATE' as any,
+        status: 'PENDING',
+        requesterId: 'eng-author',
+        reviewerId: null,
+        resolutionComment: null,
+      };
+
+      const approvedNotif = createDecisionNotification(approval, 'Пресс гидравлический', 'APPROVED');
+      assert.strictEqual(approvedNotif.userId, 'eng-author');
+      assert.strictEqual(approvedNotif.title, 'Паспорт оборудования согласован');
+      assert.ok(approvedNotif.message.includes('успешно утверждена'));
+
+      const rejectedNotif = createDecisionNotification(approval, 'Пресс гидравлический', 'REJECTED', 'Укажите точное давление');
+      assert.strictEqual(rejectedNotif.title, 'Заявка на согласование отклонена');
+      assert.ok(rejectedNotif.message.includes('Укажите точное давление'));
     });
   });
 

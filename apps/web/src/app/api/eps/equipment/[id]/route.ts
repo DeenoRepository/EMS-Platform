@@ -103,6 +103,9 @@ export async function PATCH(
       commissionDate,
       customFields,
       tagIds,
+      submitForApproval,
+      approvalComment,
+      directSave,
     } = body;
 
     const currentEquipment = await prisma.equipment.findUnique({
@@ -114,8 +117,121 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: 'Оборудование не найдено' }, { status: 404 });
     }
 
+    const canManageDirectly = hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) || user.roles.includes('admin');
+    const isOwner = currentEquipment.createdById === user.userId;
+    const isDraft = currentEquipment.status === 'DRAFT';
+
+    // Случай 1: Запрошена отправка на согласование для утвержденного оборудования (EQUIPMENT_UPDATE)
+    if (submitForApproval && !isDraft) {
+      const proposedData: Record<string, any> = {
+        name: name !== undefined ? name.trim() : currentEquipment.name,
+        inventoryNumber: inventoryNumber !== undefined ? (inventoryNumber?.trim() || null) : currentEquipment.inventoryNumber,
+        serialNumber: serialNumber !== undefined ? (serialNumber?.trim() || null) : currentEquipment.serialNumber,
+        manufacturer: manufacturer !== undefined ? (manufacturer?.trim() || null) : currentEquipment.manufacturer,
+        model: model !== undefined ? (model?.trim() || null) : currentEquipment.model,
+        location: location !== undefined ? (location?.trim() || null) : currentEquipment.location,
+        status: status !== undefined ? status : currentEquipment.status,
+        commissionDate: commissionDate !== undefined ? (commissionDate ? new Date(commissionDate).toISOString() : null) : (currentEquipment.commissionDate ? currentEquipment.commissionDate.toISOString() : null),
+        customFields: customFields !== undefined ? customFields : currentEquipment.customFields,
+        tagIds: Array.isArray(tagIds) ? tagIds : currentEquipment.tags.map((t) => t.tagId),
+      };
+
+      const approval = await prisma.equipmentApproval.create({
+        data: {
+          equipmentId: id,
+          type: 'EQUIPMENT_UPDATE' as any,
+          status: 'PENDING',
+          title: `Изменение параметров: ${currentEquipment.name}`,
+          description: approvalComment?.trim() || 'Предложены изменения в паспорте оборудования',
+          proposedData,
+          requesterId: user.userId,
+        },
+      });
+
+      await logAuditEvent({
+        userId: user.userId,
+        action: 'UPDATE',
+        entityType: 'EquipmentApproval',
+        entityId: approval.id,
+        changes: { equipmentId: id, proposedData },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: 'Заявка на изменение параметров оборудования отправлена на согласование',
+        data: { ...currentEquipment, approval },
+      });
+    }
+
+    // Случай 2: Редактирование черновика с отправкой на согласование (EQUIPMENT_CREATE)
+    if (submitForApproval && isDraft) {
+      const updated = await prisma.$transaction(async (tx) => {
+        if (Array.isArray(tagIds)) {
+          await tx.equipmentTag.deleteMany({ where: { equipmentId: id } });
+          if (tagIds.length > 0) {
+            await tx.equipmentTag.createMany({
+              data: tagIds.map((tagId: string) => ({ equipmentId: id, tagId })),
+            });
+          }
+        }
+
+        return tx.equipment.update({
+          where: { id },
+          data: {
+            name: name !== undefined ? name.trim() : undefined,
+            inventoryNumber: inventoryNumber !== undefined ? (inventoryNumber?.trim() || null) : undefined,
+            serialNumber: serialNumber !== undefined ? (serialNumber?.trim() || null) : undefined,
+            manufacturer: manufacturer !== undefined ? (manufacturer?.trim() || null) : undefined,
+            model: model !== undefined ? (model?.trim() || null) : undefined,
+            location: location !== undefined ? (location?.trim() || null) : undefined,
+            commissionDate: commissionDate !== undefined ? (commissionDate ? new Date(commissionDate) : null) : undefined,
+            customFields: customFields !== undefined ? customFields : undefined,
+          },
+          include: { tags: { include: { tag: true } } },
+        });
+      });
+
+      const approval = await prisma.equipmentApproval.create({
+        data: {
+          equipmentId: id,
+          type: 'EQUIPMENT_CREATE' as any,
+          status: 'PENDING',
+          title: `Регистрация оборудования: ${updated.name}`,
+          description: approvalComment?.trim() || 'Черновик направлен на согласование',
+          proposedData: {
+            targetStatus: status || 'ACTIVE',
+            name: updated.name,
+            inventoryNumber: updated.inventoryNumber,
+            serialNumber: updated.serialNumber,
+            manufacturer: updated.manufacturer,
+            model: updated.model,
+            location: updated.location,
+            commissionDate: updated.commissionDate ? updated.commissionDate.toISOString() : null,
+            customFields: updated.customFields,
+          },
+          requesterId: user.userId,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: 'Паспорт оборудования отправлен на согласование',
+        data: { ...updated, approval },
+      });
+    }
+
+    // Случай 3: Прямое сохранение (в черновик либо админом)
+    if (!isDraft && !canManageDirectly && !directSave) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Для изменения действующего оборудования отправьте заявку на согласование',
+        },
+        { status: 403 }
+      );
+    }
+
     const updated = await prisma.$transaction(async (tx) => {
-      // Обновляем теги если переданы
       if (Array.isArray(tagIds)) {
         await tx.equipmentTag.deleteMany({ where: { equipmentId: id } });
         if (tagIds.length > 0) {

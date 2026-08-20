@@ -45,6 +45,24 @@ export async function GET(req: NextRequest) {
       ];
     }
 
+    const canManageApprovals = hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) || user.roles.includes('admin');
+
+    if (!canManageApprovals) {
+      if (!status) {
+        where.AND = [
+          ...(where.AND || []),
+          {
+            OR: [
+              { status: { not: 'DRAFT' } },
+              { status: 'DRAFT', createdById: user.userId },
+            ],
+          },
+        ];
+      } else if (status === 'DRAFT') {
+        where.createdById = user.userId;
+      }
+    }
+
     const [total, items, statusGroup] = await Promise.all([
       prisma.equipment.count({ where }),
       prisma.equipment.findMany({
@@ -73,6 +91,14 @@ export async function GET(req: NextRequest) {
       prisma.equipment.groupBy({
         by: ['status'],
         _count: { status: true },
+        where: !canManageApprovals
+          ? {
+              OR: [
+                { status: { not: 'DRAFT' } },
+                { status: 'DRAFT', createdById: user.userId },
+              ],
+            }
+          : undefined,
       }),
     ]);
 
@@ -82,6 +108,7 @@ export async function GET(req: NextRequest) {
       underRepair: 0,
       inStorage: 0,
       decommissioned: 0,
+      draft: 0,
     };
 
     statusGroup.forEach((g) => {
@@ -91,6 +118,7 @@ export async function GET(req: NextRequest) {
       else if (g.status === 'UNDER_REPAIR') statusCounts.underRepair = count;
       else if (g.status === 'IN_STORAGE') statusCounts.inStorage = count;
       else if (g.status === 'DECOMMISSIONED') statusCounts.decommissioned = count;
+      else if (g.status === 'DRAFT') statusCounts.draft = count;
     });
 
     const formatted = items.map((item) => ({
@@ -108,6 +136,7 @@ export async function GET(req: NextRequest) {
       counts: item._count,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
+      isOwner: item.createdById === user.userId,
     }));
 
     return NextResponse.json({
@@ -117,7 +146,7 @@ export async function GET(req: NextRequest) {
         total,
         page,
         pageSize,
-        totalPages: Math.ceil(total / pageSize),
+        totalPages: Math.ceil(total / pageSize) || 1,
         statusCounts,
       },
     });
@@ -145,6 +174,9 @@ export async function POST(req: NextRequest) {
       commissionDate,
       customFields,
       tagIds,
+      asDraft,
+      submitForApproval,
+      approvalComment,
     } = body;
 
     if (!name || typeof name !== 'string') {
@@ -164,6 +196,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const canManageDirectly = hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) || user.roles.includes('admin');
+    
+    // Если пользователь запросил черновик или отправку на согласование, либо у него нет прав прямого утверждения
+    const initialStatus: EquipmentStatus = (asDraft || submitForApproval || !canManageDirectly)
+      ? 'DRAFT'
+      : (status || 'ACTIVE');
+
     const newEquipment = await prisma.equipment.create({
       data: {
         name: name.trim(),
@@ -172,7 +211,7 @@ export async function POST(req: NextRequest) {
         manufacturer: manufacturer?.trim() || null,
         model: model?.trim() || null,
         location: location?.trim() || null,
-        status: status || 'ACTIVE',
+        status: initialStatus,
         commissionDate: commissionDate ? new Date(commissionDate) : null,
         customFields: customFields || {},
         createdById: user.userId,
@@ -187,6 +226,33 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    let approvalRecord: any = null;
+
+    // Если запрошена отправка на согласование
+    if (submitForApproval || (!canManageDirectly && !asDraft)) {
+      approvalRecord = await prisma.equipmentApproval.create({
+        data: {
+          equipmentId: newEquipment.id,
+          type: 'EQUIPMENT_CREATE' as any,
+          status: 'PENDING',
+          title: `Регистрация оборудования: ${newEquipment.name}`,
+          description: approvalComment?.trim() || 'Первичная регистрация нового паспорта оборудования',
+          proposedData: {
+            targetStatus: status || 'ACTIVE',
+            name: newEquipment.name,
+            inventoryNumber: newEquipment.inventoryNumber,
+            serialNumber: newEquipment.serialNumber,
+            manufacturer: newEquipment.manufacturer,
+            model: newEquipment.model,
+            location: newEquipment.location,
+            commissionDate: newEquipment.commissionDate ? newEquipment.commissionDate.toISOString() : null,
+            customFields: newEquipment.customFields,
+          },
+          requesterId: user.userId,
+        },
+      });
+    }
+
     // Аудит события
     await logAuditEvent({
       userId: user.userId,
@@ -197,10 +263,17 @@ export async function POST(req: NextRequest) {
         name: newEquipment.name,
         inventoryNumber: newEquipment.inventoryNumber,
         status: newEquipment.status,
+        approvalId: approvalRecord?.id || null,
       },
     });
 
-    return NextResponse.json({ success: true, data: newEquipment });
+    return NextResponse.json({
+      success: true,
+      data: {
+        ...newEquipment,
+        approval: approvalRecord,
+      },
+    });
   } catch (error: any) {
     console.error('Ошибка создания оборудования:', error);
     return NextResponse.json({ success: false, error: 'Ошибка сохранения оборудования' }, { status: 500 });

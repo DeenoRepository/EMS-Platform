@@ -255,7 +255,7 @@ export default function EquipmentWizardDialog({
     setActiveStep((prev) => Math.min(prev + 1, 2));
   };
 
-  const handleSubmit = async () => {
+  const handleSave = async (submitForApproval: boolean) => {
     if (!name.trim()) return;
 
     setIsSubmitting(true);
@@ -271,6 +271,8 @@ export default function EquipmentWizardDialog({
         commissionDate,
         tagIds: selectedTagIds,
         customFields: customFieldValues,
+        asDraft: !submitForApproval,
+        submitForApproval,
       };
 
       const res = await fetch('/api/eps/equipment', {
@@ -281,14 +283,18 @@ export default function EquipmentWizardDialog({
 
       const data = await res.json();
       if (res.ok && data.success && data.data) {
-        enqueueSnackbar('Паспорт оборудования успешно зарегистрирован в EPS', { variant: 'success' });
+        if (submitForApproval) {
+          enqueueSnackbar('Паспорт сохранен и отправлен на согласование', { variant: 'success' });
+        } else {
+          enqueueSnackbar('Паспорт сохранен в черновик (виден только вам)', { variant: 'info' });
+        }
         onSuccess(data.data.id);
         onClose();
       } else {
         enqueueSnackbar(data.error || 'Ошибка при сохранении оборудования', { variant: 'error' });
       }
     } catch {
-      enqueueSnackbar('Ошибка сети при регистрации оборудования', { variant: 'error' });
+      enqueueSnackbar('Ошибка сети при отправке данных', { variant: 'error' });
     } finally {
       setIsSubmitting(false);
     }
@@ -593,20 +599,30 @@ export default function EquipmentWizardDialog({
               </Grid>
             </Paper>
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1, gap: 1 }}>
               <Button onClick={() => setActiveStep(1)} sx={{ fontWeight: 600 }}>
                 ← Назад к параметрам
               </Button>
-              <Button
-                variant="contained"
-                color="success"
-                startIcon={<CheckCircleIcon />}
-                onClick={handleSubmit}
-                disabled={isSubmitting || !name.trim()}
-                sx={{ borderRadius: '8px', px: 4, fontWeight: 700 }}
-              >
-                {isSubmitting ? 'Регистрация...' : 'Зарегистрировать оборудование'}
-              </Button>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  variant="outlined"
+                  onClick={() => handleSave(false)}
+                  disabled={isSubmitting || !name.trim()}
+                  sx={{ borderRadius: '8px', fontWeight: 600 }}
+                >
+                  В черновик
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<CheckCircleIcon />}
+                  onClick={() => handleSave(true)}
+                  disabled={isSubmitting || !name.trim()}
+                  sx={{ borderRadius: '8px', px: 3, fontWeight: 700 }}
+                >
+                  {isSubmitting ? 'Отправка...' : 'Отправить на согласование'}
+                </Button>
+              </Box>
             </Box>
           </Stack>
         )}

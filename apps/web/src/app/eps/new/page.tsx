@@ -274,8 +274,7 @@ export default function NewEquipmentPage() {
     );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = async (submitForApproval: boolean) => {
     if (!formData.name.trim()) {
       enqueueSnackbar('Укажите наименование оборудования', { variant: 'warning' });
       return;
@@ -287,6 +286,8 @@ export default function NewEquipmentPage() {
         ...formData,
         tagIds: selectedTagIds,
         customFields: customFieldValues,
+        asDraft: !submitForApproval,
+        submitForApproval,
       };
 
       const res = await fetch('/api/eps/equipment', {
@@ -297,7 +298,11 @@ export default function NewEquipmentPage() {
 
       const data = await res.json();
       if (data.success && data.data) {
-        enqueueSnackbar('Оборудование успешно зарегистрировано в системе', { variant: 'success' });
+        if (submitForApproval) {
+          enqueueSnackbar('Паспорт оборудования создан и отправлен на согласование', { variant: 'success' });
+        } else {
+          enqueueSnackbar('Паспорт сохранен как черновик (виден только вам)', { variant: 'info' });
+        }
         router.push(`/eps/${data.data.id}`);
       } else {
         enqueueSnackbar(data.error || 'Ошибка создания', { variant: 'error' });
@@ -333,7 +338,7 @@ export default function NewEquipmentPage() {
       {loadingDefs ? (
         <PageLoading text="Загрузка структуры полей паспорта оборудования..." />
       ) : (
-        <Box component="form" onSubmit={handleSubmit}>
+        <Box component="form" onSubmit={(e) => { e.preventDefault(); handleSave(true); }}>
           {/* Stepper Header */}
           <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: '12px', border: '1px solid #e2e8f0' }}>
             <Stepper activeStep={activeStep} alternativeLabel>
@@ -720,17 +725,28 @@ export default function NewEquipmentPage() {
 
                     <Stack spacing={1.5}>
                       <Button
-                        type="submit"
+                        type="button"
                         variant="contained"
                         size="large"
                         fullWidth
                         startIcon={saving ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+                        onClick={() => handleSave(true)}
                         disabled={saving || !formData.name.trim()}
-                        sx={{ py: 1.5, fontWeight: 700, fontSize: '1rem', backgroundColor: '#16a34a', '&:hover': { backgroundColor: '#15803d' } }}
+                        sx={{ py: 1.5, fontWeight: 700, fontSize: '0.9375rem' }}
                       >
-                        {saving ? 'Сохранение...' : 'Зарегистрировать оборудование'}
+                        {saving ? 'Отправка...' : 'Отправить на согласование'}
                       </Button>
-                      <Button variant="outlined" fullWidth onClick={handlePrevStep}>
+                      <Button
+                        type="button"
+                        variant="outlined"
+                        fullWidth
+                        onClick={() => handleSave(false)}
+                        disabled={saving || !formData.name.trim()}
+                        sx={{ py: 1, fontWeight: 600 }}
+                      >
+                        Сохранить в черновик
+                      </Button>
+                      <Button variant="text" color="inherit" fullWidth onClick={handlePrevStep}>
                         ← Назад к характеристикам
                       </Button>
                     </Stack>

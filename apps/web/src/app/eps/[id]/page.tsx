@@ -23,6 +23,10 @@ import {
   InputAdornment,
   Switch,
   FormControlLabel,
+  Alert,
+  FormControl,
+  InputLabel,
+  Select,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -346,7 +350,7 @@ export default function EquipmentPassportPage() {
   };
 
   // Edit Submit
-  const handleSaveEdit = async () => {
+  const handleSaveEdit = async (submitForApproval = false) => {
     try {
       const res = await fetch(`/api/eps/equipment/${id}`, {
         method: 'PATCH',
@@ -354,11 +358,16 @@ export default function EquipmentPassportPage() {
         body: JSON.stringify({
           ...editForm,
           customFields: editCustomFields,
+          submitForApproval,
         }),
       });
       const data = await res.json();
       if (data.success) {
-        enqueueSnackbar('Паспорт оборудования сохранен', { variant: 'success' });
+        if (submitForApproval) {
+          enqueueSnackbar('Изменения паспорта отправлены на согласование', { variant: 'success' });
+        } else {
+          enqueueSnackbar('Паспорт оборудования сохранен', { variant: 'success' });
+        }
         setEditModalOpen(false);
         fetchEquipmentAndMeta();
       } else {
@@ -583,6 +592,39 @@ export default function EquipmentPassportPage() {
           </Box>
         }
       />
+
+      {equipment.status === 'DRAFT' && (
+        <Alert
+          severity="warning"
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              variant="outlined"
+              onClick={async () => {
+                const res = await fetch(`/api/eps/equipment/${id}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ submitForApproval: true }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                  enqueueSnackbar('Паспорт оборудования отправлен на согласование', { variant: 'success' });
+                  fetchEquipmentAndMeta();
+                } else {
+                  enqueueSnackbar(data.error || 'Ошибка', { variant: 'error' });
+                }
+              }}
+              sx={{ fontWeight: 700 }}
+            >
+              Отправить на согласование
+            </Button>
+          }
+          sx={{ mb: 3, borderRadius: '8px' }}
+        >
+          <strong>Черновик паспорта:</strong> этот паспорт виден только вам. Чтобы он появился в общем реестре оборудования, отправьте его на согласование ответственным лицам.
+        </Alert>
+      )}
 
       {/* Top Overview & Reliability Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
@@ -1329,9 +1371,7 @@ export default function EquipmentPassportPage() {
         title="Редактирование паспорта оборудования"
         icon={<PrecisionManufacturingIcon color="primary" />}
         maxWidth="md"
-        submitLabel="Сохранить изменения"
-        onSubmit={handleSaveEdit}
-        submitDisabled={!editForm.name}
+        hideActions
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 1 }}>
           {/* Section 1: Basic specifications */}
@@ -1418,20 +1458,23 @@ export default function EquipmentPassportPage() {
                 </TextField>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Рабочий статус"
-                  select
-                  fullWidth
-                  size="small"
-                  value={editForm.status || 'OPERATIONAL'}
-                  onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-                >
-                  {Object.entries(EQUIPMENT_STATUS_MAP).map(([key, info]) => (
-                    <MenuItem key={key} value={key}>
-                      {info.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                <FormControl fullWidth size="small">
+                  <InputLabel id="edit-status-label">Статус оборудования</InputLabel>
+                  <Select
+                    labelId="edit-status-label"
+                    label="Статус оборудования"
+                    value={editForm.status || 'ACTIVE'}
+                    onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                  >
+                    {Object.entries(EQUIPMENT_STATUS_MAP).map(([k]) => (
+                      <MenuItem key={k} value={k}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <StatusBadge status={k} />
+                        </Box>
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
               </Grid>
             </Grid>
           </Box>
@@ -1510,6 +1553,32 @@ export default function EquipmentPassportPage() {
               </Grid>
             </Box>
           ))}
+
+          {/* Action Buttons */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 2, borderTop: '1px solid #e2e8f0', mt: 1 }}>
+            <Button onClick={() => setEditModalOpen(false)} color="inherit">
+              Отмена
+            </Button>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button
+                variant="outlined"
+                onClick={() => handleSaveEdit(false)}
+                disabled={!editForm.name}
+                sx={{ fontWeight: 600 }}
+              >
+                Сохранить в черновик
+              </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => handleSaveEdit(true)}
+                disabled={!editForm.name}
+                sx={{ fontWeight: 700 }}
+              >
+                Отправить на согласование
+              </Button>
+            </Box>
+          </Box>
         </Box>
       </FormDialog>
 

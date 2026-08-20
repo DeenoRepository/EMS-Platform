@@ -55,6 +55,7 @@ export const EQUIPMENT_STATUS_MAP: Record<string, { label: string; color: 'succe
   UNDER_REPAIR: { label: 'На ремонте', color: 'warning' },
   DECOMMISSIONED: { label: 'Списано', color: 'error' },
   IN_STORAGE: { label: 'На складе', color: 'default' },
+  DRAFT: { label: 'Черновик', color: 'default' },
 };
 
 export const DOCUMENT_TYPE_MAP: Record<string, string> = {
@@ -67,6 +68,11 @@ export const DOCUMENT_TYPE_MAP: Record<string, string> = {
 };
 
 export const APPROVAL_TYPE_MAP: Record<string, string> = {
+  EQUIPMENT_CREATE: 'Создание оборудования',
+  EQUIPMENT_UPDATE: 'Изменение характеристик',
+  EQUIPMENT_DELETE: 'Удаление оборудования',
+  DOCUMENT_CREATE: 'Загрузка документа',
+  DOCUMENT_DELETE: 'Удаление документа',
   COMMISSIONING: 'Ввод в эксплуатацию',
   DECOMMISSIONING: 'Списание оборудования',
   STATUS_CHANGE: 'Смена рабочего статуса',
