@@ -201,7 +201,7 @@ export default function StockDetailDrawer({
         }}
       >
         <Tab icon={<Inventory2OutlinedIcon sx={{ fontSize: 16 }} />} iconPosition="start" label="Остаток" />
-        <Tab icon={<PrecisionManufacturingIcon sx={{ fontSize: 16 }} />} iconPosition="start" label={`Станки (${stockItem.compatibleEquipmentCount})`} />
+        <Tab icon={<PrecisionManufacturingIcon sx={{ fontSize: 16 }} />} iconPosition="start" label={`Оборудование (${stockItem.compatibleEquipmentCount})`} />
         <Tab icon={<HistoryIcon sx={{ fontSize: 16 }} />} iconPosition="start" label="Движение" />
         <Tab icon={<QrCode2Icon sx={{ fontSize: 16 }} />} iconPosition="start" label="Этикетка" />
       </Tabs>
@@ -421,14 +421,14 @@ export default function StockDetailDrawer({
         {tabIndex === 1 && (
           <Stack spacing={1.5}>
             <Typography variant="caption" sx={{ color: '#64748b' }}>
-              Станки и производственные линии, где устанавливается данная деталь:
+              Оборудование и технологические линии, где устанавливается данная деталь:
             </Typography>
 
             {stockItem.compatibleEquipment.length === 0 ? (
               <EmptyState
                 icon={<PrecisionManufacturingIcon sx={{ fontSize: 32, color: '#94a3b8' }} />}
                 title="Оборудование не привязано"
-                description="В каталоге ТМЦ нет привязки к конкретным станкам"
+                description="В каталоге ТМЦ нет привязки к конкретному оборудованию"
                 minHeight={160}
               />
             ) : (

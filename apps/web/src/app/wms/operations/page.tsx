@@ -501,7 +501,7 @@ function WmsOperationsContent() {
               <StatCard
                 title="Выдачи и Списания"
                 value={operations.filter((o) => o.type === 'ISSUE_EMPLOYEE' || o.type === 'ISSUE_WRITE_OFF').length}
-                subtitle="В подотчет и на станки ТОиР"
+                subtitle="В подотчет и на оборудование ТОиР"
                 icon={<OutboxIcon sx={{ fontSize: 20 }} />}
                 iconBgColor="rgba(217, 119, 6, 0.08)"
                 iconColor="#d97706"
