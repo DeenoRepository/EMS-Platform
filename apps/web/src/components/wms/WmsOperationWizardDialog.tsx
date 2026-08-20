@@ -776,7 +776,7 @@ export function WmsOperationWizardDialog({
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0f172a' }}>
                   Поиск и добавление позиций ТМЦ:
                 </Typography>
-                {!isCreatingNewNom && (
+                {!isCreatingNewNom && operationType === 'RECEIPT' && (
                   <Button
                     size="small"
                     startIcon={<AddIcon />}
@@ -966,6 +966,7 @@ export function WmsOperationWizardDialog({
                       );
 
                       if (
+                        operationType === 'RECEIPT' &&
                         filterVal !== '' &&
                         !options.some((o) => o.name.toLowerCase() === filterVal || (o.article && o.article.toLowerCase() === filterVal))
                       ) {
@@ -981,18 +982,20 @@ export function WmsOperationWizardDialog({
                     }}
                     noOptionsText={
                       <Box sx={{ py: 0.5 }}>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                          Позиция не найдена в справочнике
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: operationType === 'RECEIPT' ? 1 : 0 }}>
+                          Позиция не найдена в справочнике ТМЦ
                         </Typography>
-                        <Button
-                          size="small"
-                          variant="contained"
-                          startIcon={<AddIcon />}
-                          onClick={() => handleOpenNewNomExpandedMenu(searchInputValue)}
-                          sx={{ fontWeight: 600, fontSize: '0.75rem' }}
-                        >
-                          Создать «{searchInputValue}»
-                        </Button>
+                        {operationType === 'RECEIPT' && (
+                          <Button
+                            size="small"
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={() => handleOpenNewNomExpandedMenu(searchInputValue)}
+                            sx={{ fontWeight: 600, fontSize: '0.75rem' }}
+                          >
+                            Создать «{searchInputValue}»
+                          </Button>
+                        )}
                       </Box>
                     }
                     renderInput={(params) => (
@@ -1058,8 +1061,8 @@ export function WmsOperationWizardDialog({
                 </Grid>
               </Grid>
 
-              {/* Banner when user typed a name that does not exist */}
-              {!isCreatingNewNom && searchInputValue.trim() !== '' && !nomenclatures.some((n) => n.name.toLowerCase().includes(searchInputValue.toLowerCase()) || (n.article && n.article.toLowerCase().includes(searchInputValue.toLowerCase()))) && (
+              {/* Banner when user typed a name that does not exist (ONLY for RECEIPT) */}
+              {!isCreatingNewNom && operationType === 'RECEIPT' && searchInputValue.trim() !== '' && !nomenclatures.some((n) => n.name.toLowerCase().includes(searchInputValue.toLowerCase()) || (n.article && n.article.toLowerCase().includes(searchInputValue.toLowerCase()))) && (
                 <Alert
                   severity="info"
                   action={
