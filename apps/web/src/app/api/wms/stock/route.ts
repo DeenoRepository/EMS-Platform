@@ -94,6 +94,7 @@ export async function GET(req: NextRequest) {
         warehouseId: item.warehouseId,
         warehouseName: item.warehouse.name,
         warehouseCode: item.warehouse.code,
+        warehouseResponsibleUserId: item.warehouse.responsibleUserId || null,
         nomenclatureId: item.nomenclatureId,
         name: item.nomenclature.name,
         article: item.nomenclature.article || '—',

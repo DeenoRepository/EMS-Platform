@@ -32,7 +32,8 @@ import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import EditLocationAltIcon from '@mui/icons-material/EditLocationAlt';
 import { StatusBadge, EmptyState } from '@/components/ui';
-import { formatDateTime } from '@ems/shared';
+import { formatDateTime, PERMISSIONS } from '@ems/shared';
+import { useAuth } from '@/lib/auth-client';
 import { useRouter } from 'next/navigation';
 
 export interface StockDetailData {
@@ -40,6 +41,7 @@ export interface StockDetailData {
   warehouseId: string;
   warehouseName: string;
   warehouseCode: string;
+  warehouseResponsibleUserId?: string | null;
   nomenclatureId: string;
   name: string;
   article: string;
@@ -75,9 +77,20 @@ export default function StockDetailDrawer({
   onPrintLabel,
 }: StockDetailDrawerProps) {
   const router = useRouter();
+  const { user, hasPermission } = useAuth();
   const [tabIndex, setTabIndex] = useState(0);
   const [operations, setOperations] = useState<any[]>([]);
   const [isLoadingOps, setIsLoadingOps] = useState(false);
+
+  const canEditLocation = Boolean(
+    stockItem &&
+    hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) && (
+      user?.roles?.includes('admin') ||
+      hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
+      hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE) ||
+      (Boolean(user?.userId) && stockItem.warehouseResponsibleUserId === user?.userId)
+    )
+  );
 
   useEffect(() => {
     if (open && stockItem) {
@@ -336,16 +349,36 @@ export default function StockDetailDrawer({
               </Stack>
 
               {onChangeLocation && (
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  size="small"
-                  startIcon={<EditLocationAltIcon />}
-                  onClick={() => onChangeLocation(stockItem)}
-                  sx={{ mt: 2, borderRadius: '8px', textTransform: 'none', fontWeight: 600 }}
+                <Tooltip
+                  title={
+                    !canEditLocation
+                      ? 'Чужой склад: смена ячейки разрешена только назначенному МОЛ склада или администратору'
+                      : ''
+                  }
                 >
-                  {stockItem.cellCode ? 'Изменить ячейку хранения' : 'Назначить ячейку хранения'}
-                </Button>
+                  <span>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      size="small"
+                      disabled={!canEditLocation}
+                      startIcon={<EditLocationAltIcon />}
+                      onClick={() => onChangeLocation(stockItem)}
+                      sx={{
+                        mt: 2,
+                        borderRadius: '8px',
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        ...(!canEditLocation && {
+                          borderColor: '#e2e8f0',
+                          color: '#94a3b8',
+                        }),
+                      }}
+                    >
+                      {stockItem.cellCode ? 'Изменить ячейку хранения' : 'Назначить ячейку хранения'}
+                    </Button>
+                  </span>
+                </Tooltip>
               )}
             </Paper>
 

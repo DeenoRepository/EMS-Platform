@@ -62,6 +62,7 @@ interface StockRow {
   warehouseId: string;
   warehouseName: string;
   warehouseCode: string;
+  warehouseResponsibleUserId?: string | null;
   nomenclatureId: string;
   name: string;
   article: string;
@@ -121,7 +122,7 @@ export default function WmsStockPage() {
 
 function WmsStockContent() {
   const { enqueueSnackbar } = useSnackbar();
-  const { hasPermission } = useAuth();
+  const { user, hasPermission } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -250,8 +251,33 @@ function WmsStockContent() {
     fetchStock();
   }, [fetchStock]);
 
+  // Проверка права на редактирование ячеек ТМЦ конкретного склада
+  const canEditStockLocation = useCallback(
+    (row?: StockRow | null) => {
+      if (!row) return false;
+      if (!hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE)) return false;
+      if (
+        user?.roles?.includes('admin') ||
+        hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
+        hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE)
+      ) {
+        return true;
+      }
+      return Boolean(user?.userId && row.warehouseResponsibleUserId === user.userId);
+    },
+    [user, hasPermission]
+  );
+
   // Open location assignment dialog
   const handleOpenLocationModal = async (row: StockRow) => {
+    if (!canEditStockLocation(row)) {
+      enqueueSnackbar(
+        `Вы не являетесь ответственным лицом за склад "${row.warehouseName}". Установка и изменение ячеек чужих складов запрещены.`,
+        { variant: 'warning' }
+      );
+      return;
+    }
+
     setLocStockItem(row);
     setSelectedCellId(row.cellId || '');
     setIsLocationModalOpen(true);
@@ -271,6 +297,14 @@ function WmsStockContent() {
 
   const handleSaveLocation = async () => {
     if (!locStockItem) return;
+    if (!canEditStockLocation(locStockItem)) {
+      enqueueSnackbar(
+        `Вы не являетесь ответственным лицом за склад "${locStockItem.warehouseName}". Изменение ячеек чужих складов запрещено.`,
+        { variant: 'error' }
+      );
+      return;
+    }
+
     setIsSavingLoc(true);
     try {
       const res = await fetch(`/api/wms/stock/${locStockItem.id}/location`, {
@@ -836,41 +870,70 @@ function WmsStockContent() {
 
                   {visibleColumns.includes('zone') && (
                     <TableCell>
-                      {row.cellCode ? (
-                        <Tooltip title="Нажмите, чтобы изменить ячейку хранения">
-                          <Chip
-                            icon={<PlaceOutlinedIcon sx={{ fontSize: '13px !important' }} />}
-                            label={`${row.zoneCode || row.zoneName} • ${row.cellCode}`}
-                            size="small"
-                            clickable={hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE)}
-                            onClick={() => hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) && handleOpenLocationModal(row)}
-                            sx={{
-                              fontWeight: 600,
-                              borderRadius: '4px',
-                              fontSize: '0.75rem',
-                              backgroundColor: '#f0f9ff',
-                              color: '#0284c7',
-                              border: '1px solid #bae6fd',
-                            }}
-                          />
-                        </Tooltip>
-                      ) : (
-                        hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) ? (
-                          <Button
-                            size="small"
-                            variant="text"
-                            startIcon={<PlaceOutlinedIcon sx={{ fontSize: 13, color: '#0284c7' }} />}
-                            onClick={() => handleOpenLocationModal(row)}
-                            sx={{ fontSize: '0.75rem', py: 0.2, fontWeight: 600, color: '#0284c7' }}
-                          >
-                            + Ячейка
-                          </Button>
-                        ) : (
-                          <Typography variant="caption" sx={{ color: '#94a3b8' }}>
-                            —
-                          </Typography>
-                        )
-                      )}
+                      {(() => {
+                        const canEdit = canEditStockLocation(row);
+                        if (row.cellCode) {
+                          return (
+                            <Tooltip
+                              title={
+                                canEdit
+                                  ? 'Нажмите, чтобы изменить ячейку хранения'
+                                  : 'Чужой склад: смена ячейки разрешена только назначенному МОЛ склада или администратору'
+                              }
+                            >
+                              <span>
+                                <Chip
+                                  icon={<PlaceOutlinedIcon sx={{ fontSize: '13px !important' }} />}
+                                  label={`${row.zoneCode || row.zoneName} • ${row.cellCode}`}
+                                  size="small"
+                                  clickable={canEdit}
+                                  onClick={(e) => {
+                                    if (canEdit) {
+                                      e.stopPropagation();
+                                      handleOpenLocationModal(row);
+                                    }
+                                  }}
+                                  sx={{
+                                    fontWeight: 600,
+                                    borderRadius: '4px',
+                                    fontSize: '0.75rem',
+                                    backgroundColor: canEdit ? '#f0f9ff' : '#f8fafc',
+                                    color: canEdit ? '#0284c7' : '#64748b',
+                                    border: canEdit ? '1px solid #bae6fd' : '1px solid #e2e8f0',
+                                    cursor: canEdit ? 'pointer' : 'default',
+                                    opacity: canEdit ? 1 : 0.85,
+                                  }}
+                                />
+                              </span>
+                            </Tooltip>
+                          );
+                        }
+
+                        if (canEdit) {
+                          return (
+                            <Button
+                              size="small"
+                              variant="text"
+                              startIcon={<PlaceOutlinedIcon sx={{ fontSize: 13, color: '#0284c7' }} />}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenLocationModal(row);
+                              }}
+                              sx={{ fontSize: '0.75rem', py: 0.2, fontWeight: 600, color: '#0284c7' }}
+                            >
+                              + Ячейка
+                            </Button>
+                          );
+                        }
+
+                        return (
+                          <Tooltip title="Чужой склад: назначение ячейки разрешено только назначенному МОЛ склада или администратору">
+                            <Typography variant="caption" sx={{ color: '#94a3b8', fontStyle: 'italic', cursor: 'default' }}>
+                              —
+                            </Typography>
+                          </Tooltip>
+                        );
+                      })()}
                     </TableCell>
                   )}
 
@@ -997,7 +1060,7 @@ function WmsStockContent() {
         loading={isSavingLoc}
         submitLabel={isSavingLoc ? 'Сохранение...' : 'Сохранить'}
         onSubmit={handleSaveLocation}
-        submitDisabled={isSavingLoc || warehouseZonesForLoc.length === 0}
+        submitDisabled={isSavingLoc || !canEditStockLocation(locStockItem) || warehouseZonesForLoc.length === 0}
       >
         <Stack spacing={2} sx={{ mt: 1 }}>
           <Box>
@@ -1014,22 +1077,32 @@ function WmsStockContent() {
 
           <Divider />
 
+          {!canEditStockLocation(locStockItem) && (
+            <Box sx={{ p: 1.5, bgcolor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 1.5 }}>
+              <Typography variant="body2" color="error.main" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
+                Изменение ячеек запрещено: вы не являетесь ответственным лицом за склад «{locStockItem?.warehouseName}».
+              </Typography>
+            </Box>
+          )}
+
           {warehouseZonesForLoc.length === 0 ? (
             <Box sx={{ p: 2, textAlign: 'center', bgcolor: 'grey.50', borderRadius: 1.5 }}>
               <Typography variant="body2" color="text.secondary">
                 На складе <b>{locStockItem?.warehouseName}</b> еще не созданы зоны и ячейки.
               </Typography>
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={() => {
-                  setIsLocationModalOpen(false);
-                  router.push('/wms/warehouses');
-                }}
-                sx={{ mt: 1.5 }}
-              >
-                Перейти к настройке зон
-              </Button>
+              {canEditStockLocation(locStockItem) && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => {
+                    setIsLocationModalOpen(false);
+                    router.push('/wms/warehouses');
+                  }}
+                  sx={{ mt: 1.5 }}
+                >
+                  Перейти к настройке зон
+                </Button>
+              )}
             </Box>
           ) : (
             <TextField
@@ -1037,6 +1110,7 @@ function WmsStockContent() {
               fullWidth
               label="Выберите ячейку хранения"
               value={selectedCellId}
+              disabled={!canEditStockLocation(locStockItem)}
               onChange={(e) => setSelectedCellId(e.target.value)}
               helperText="Закрепляет основную ячейку размещения на складе"
             >

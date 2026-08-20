@@ -33,8 +33,8 @@ export async function PATCH(
       user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
       user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
 
-    if (!isAdmin && stockItem.warehouse.responsibleUserId && stockItem.warehouse.responsibleUserId !== user.userId) {
-      return forbiddenResponse(`Вы не являетесь ответственным лицом за склад "${stockItem.warehouse.name}". Назначение ячейки запрещено.`);
+    if (!isAdmin && (!stockItem.warehouse.responsibleUserId || stockItem.warehouse.responsibleUserId !== user.userId)) {
+      return forbiddenResponse(`Вы не являетесь ответственным лицом за склад "${stockItem.warehouse.name}". Назначение и изменение ячеек чужого склада запрещено.`);
     }
 
     // Verify cell if provided
@@ -47,6 +47,12 @@ export async function PATCH(
         return NextResponse.json(
           { success: false, error: 'Выбранная ячейка хранения не найдена' },
           { status: 404 }
+        );
+      }
+      if (cell.zone.warehouseId !== stockItem.warehouseId) {
+        return NextResponse.json(
+          { success: false, error: 'Выбранная ячейка не принадлежит складу ТМЦ' },
+          { status: 400 }
         );
       }
     }
