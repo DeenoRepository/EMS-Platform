@@ -89,6 +89,8 @@ export async function POST(req: NextRequest) {
       targetWarehouseId,
       type,
       counterparty,
+      recipientName,
+      equipmentId,
       document,
       comment,
       items,
@@ -97,6 +99,8 @@ export async function POST(req: NextRequest) {
       targetWarehouseId?: string;
       type: OperationType;
       counterparty?: string;
+      recipientName?: string;
+      equipmentId?: string;
       document?: string;
       comment?: string;
       items: OperationItemInput[];
@@ -113,6 +117,8 @@ export async function POST(req: NextRequest) {
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ success: false, error: 'Добавьте хотя бы одну позицию ТМЦ' }, { status: 400 });
     }
+
+    const isIssue = type === 'ISSUE' || type === 'ISSUE_EMPLOYEE' || type === 'ISSUE_WRITE_OFF';
 
     let targetWarehouseName = '';
     if (type === 'TRANSFER') {
@@ -154,9 +160,13 @@ export async function POST(req: NextRequest) {
     // Выполняем транзакцию изменения остатков с жестким контролем
     const lowStockAlerts: { nomenclatureName: string; currentQty: number; minStock: number }[] = [];
 
+    const finalCounterparty =
+      counterparty?.trim() ||
+      (type === 'ISSUE_EMPLOYEE' && recipientName?.trim() ? `Сотрудник: ${recipientName.trim()}` : null);
+
     const operation = await prisma.$transaction(async (tx) => {
       // 1. Проверяем остатки при списании и перемещении
-      if (type === 'ISSUE' || type === 'TRANSFER') {
+      if (isIssue || type === 'TRANSFER') {
         for (const item of items) {
           if (item.quantity <= 0) {
             throw new Error('Количество позиции должно быть больше нуля');
@@ -185,7 +195,7 @@ export async function POST(req: NextRequest) {
         data: {
           warehouseId,
           type,
-          counterparty: counterparty?.trim() || null,
+          counterparty: finalCounterparty,
           document: document?.trim() || null,
           comment: comment?.trim() || (type === 'TRANSFER' ? (targetWarehouseName ? `Перемещение на склад "${targetWarehouseName}"` : `Перемещение на склад ID ${targetWarehouseId}`) : null),
           createdById: user.userId,
@@ -193,7 +203,7 @@ export async function POST(req: NextRequest) {
             create: items.map((i) => ({
               nomenclatureId: i.nomenclatureId,
               quantity: i.quantity,
-              equipmentId: i.equipmentId || null,
+              equipmentId: i.equipmentId || (type === 'ISSUE_WRITE_OFF' && equipmentId ? equipmentId : null),
             })),
           },
         },
@@ -244,7 +254,7 @@ export async function POST(req: NextRequest) {
               },
             });
           }
-        } else if (type === 'ISSUE') {
+        } else if (isIssue) {
           const updatedStock = await tx.stockItem.update({
             where: {
               warehouseId_nomenclatureId: {

@@ -476,6 +476,8 @@ model StockOperation {
 enum OperationType {
   RECEIPT
   ISSUE
+  ISSUE_EMPLOYEE
+  ISSUE_WRITE_OFF
   TRANSFER
   ADJUSTMENT
 }
