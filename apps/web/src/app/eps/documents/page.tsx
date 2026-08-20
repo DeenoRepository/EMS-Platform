@@ -300,7 +300,19 @@ function DocumentsListContent() {
               variant="contained"
               startIcon={<UploadFileIcon />}
               onClick={() => setUploadModalOpen(true)}
-              sx={{ px: 2.25, py: 0.75, fontWeight: 600 }}
+              sx={{
+                height: 38,
+                borderRadius: '8px',
+                fontWeight: 600,
+                fontSize: '0.875rem',
+                textTransform: 'none',
+                px: 2.25,
+                boxSizing: 'border-box',
+                backgroundColor: '#0284c7',
+                '&:hover': {
+                  backgroundColor: '#0369a1',
+                },
+              }}
             >
               Загрузить документ
             </Button>

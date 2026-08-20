@@ -567,11 +567,27 @@ export default function EquipmentPassportPage() {
           { label: equipment.name },
         ]}
         actions={
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center' }}>
             <Button
               variant="outlined"
               startIcon={<ArrowBackIcon />}
               onClick={() => router.push('/eps')}
+              sx={{
+                height: 38,
+                borderRadius: '8px',
+                borderColor: '#e2e8f0',
+                color: '#334155',
+                px: 2,
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                textTransform: 'none',
+                backgroundColor: '#ffffff',
+                boxSizing: 'border-box',
+                '&:hover': {
+                  borderColor: '#cbd5e1',
+                  backgroundColor: '#f8fafc',
+                },
+              }}
             >
               К списку
             </Button>
@@ -580,6 +596,19 @@ export default function EquipmentPassportPage() {
                 variant="contained"
                 startIcon={<EditIcon />}
                 onClick={() => setEditModalOpen(true)}
+                sx={{
+                  height: 38,
+                  borderRadius: '8px',
+                  fontWeight: 600,
+                  fontSize: '0.875rem',
+                  textTransform: 'none',
+                  px: 2.25,
+                  boxSizing: 'border-box',
+                  backgroundColor: '#0284c7',
+                  '&:hover': {
+                    backgroundColor: '#0369a1',
+                  },
+                }}
               >
                 Редактировать
               </Button>
@@ -941,6 +970,19 @@ export default function EquipmentPassportPage() {
                 variant="contained"
                 startIcon={<UploadFileIcon />}
                 onClick={() => setDocModalOpen(true)}
+                sx={{
+                  height: 38,
+                  borderRadius: '8px',
+                  fontWeight: 600,
+                  fontSize: '0.875rem',
+                  textTransform: 'none',
+                  px: 2.25,
+                  boxSizing: 'border-box',
+                  backgroundColor: '#0284c7',
+                  '&:hover': {
+                    backgroundColor: '#0369a1',
+                  },
+                }}
               >
                 Прикрепить документ
               </Button>

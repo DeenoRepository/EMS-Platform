@@ -325,17 +325,19 @@ function EquipmentListContent() {
           <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
             <Button
               variant="outlined"
-              size="small"
               startIcon={<FileDownloadOutlinedIcon />}
               onClick={handleBulkExport}
               sx={{
+                height: 38,
                 borderRadius: '8px',
                 borderColor: '#e2e8f0',
                 color: '#334155',
                 px: 2,
-                py: 0.75,
+                fontSize: '0.875rem',
                 fontWeight: 600,
+                textTransform: 'none',
                 backgroundColor: '#ffffff',
+                boxSizing: 'border-box',
                 '&:hover': {
                   borderColor: '#cbd5e1',
                   backgroundColor: '#f8fafc',
@@ -347,14 +349,16 @@ function EquipmentListContent() {
             {canCreate && (
               <Button
                 variant="contained"
-                size="small"
                 startIcon={<AddIcon />}
                 onClick={() => setOpenCreateWizard(true)}
                 sx={{
+                  height: 38,
                   borderRadius: '8px',
                   fontWeight: 600,
-                  px: 2,
-                  py: 0.75,
+                  fontSize: '0.875rem',
+                  textTransform: 'none',
+                  px: 2.25,
+                  boxSizing: 'border-box',
                   backgroundColor: '#0284c7',
                   '&:hover': {
                     backgroundColor: '#0369a1',
