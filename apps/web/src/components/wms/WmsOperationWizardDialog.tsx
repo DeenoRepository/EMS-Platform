@@ -179,11 +179,13 @@ export function WmsOperationWizardDialog({
   const [newNomDescription, setNewNomDescription] = useState('');
   const [newNomQty, setNewNomQty] = useState('1');
 
-  // Metadata dictionaries
+  // Metadata dictionaries & stock balance cache
   const [warehouses, setWarehouses] = useState<WarehouseOption[]>([]);
   const [equipmentList, setEquipmentList] = useState<EquipmentOption[]>([]);
   const [nomenclatures, setNomenclatures] = useState<NomenclatureOption[]>([]);
   const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [stockMap, setStockMap] = useState<Record<string, { quantity: number; cell?: string }>>({});
+  const [isLoadingStock, setIsLoadingStock] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Automatically determine the warehouse assigned to current user (1 employee = 1 warehouse)
@@ -195,6 +197,56 @@ export function WmsOperationWizardDialog({
     // 2. Default fallback if admin or not set
     return warehouses[0];
   }, [warehouses, user?.userId]);
+
+  const isOutflow = operationType === 'ISSUE_EMPLOYEE' || operationType === 'ISSUE_WRITE_OFF' || operationType === 'TRANSFER';
+
+  const fetchStock = React.useCallback(async (whId: string) => {
+    if (!whId) {
+      setStockMap({});
+      return;
+    }
+    setIsLoadingStock(true);
+    try {
+      const res = await fetch(`/api/wms/stock?warehouseId=${whId}&pageSize=1000`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          const map: Record<string, { quantity: number; cell?: string }> = {};
+          (json.data.items || []).forEach((s: any) => {
+            map[s.nomenclatureId] = {
+              quantity: Number(s.quantity),
+              cell: s.cell?.code || s.cell?.name,
+            };
+          });
+          setStockMap(map);
+        }
+      }
+    } catch (err) {
+      console.error('Ошибка загрузки остатков склада:', err);
+    } finally {
+      setIsLoadingStock(false);
+    }
+  }, []);
+
+  const getWarehouseStock = React.useCallback((nomId: string) => {
+    return stockMap[nomId]?.quantity || 0;
+  }, [stockMap]);
+
+  const getAvailableStock = React.useCallback((nomId: string) => {
+    const rawStock = getWarehouseStock(nomId);
+    const alreadyAdded = lineItems
+      .filter((it) => it.nomenclatureId === nomId)
+      .reduce((sum, it) => sum + it.quantity, 0);
+    return Math.max(0, rawStock - alreadyAdded);
+  }, [getWarehouseStock, lineItems]);
+
+  useEffect(() => {
+    if (warehouseId) {
+      fetchStock(warehouseId);
+    } else {
+      setStockMap({});
+    }
+  }, [warehouseId, fetchStock]);
 
   useEffect(() => {
     if (open) {
@@ -349,6 +401,18 @@ export function WmsOperationWizardDialog({
       return;
     }
 
+    if (isOutflow) {
+      const available = getAvailableStock(selectedNomenclature.id);
+      if (available <= 0) {
+        enqueueSnackbar(`Позиция «${selectedNomenclature.name}» отсутствует на складе (остаток 0)`, { variant: 'error' });
+        return;
+      }
+      if (qty > available) {
+        enqueueSnackbar(`Недостаточно остатка для «${selectedNomenclature.name}». Доступно: ${available} ${selectedNomenclature.unit}, запрошено: ${qty}`, { variant: 'error' });
+        return;
+      }
+    }
+
     const eqObj = equipmentList.find((e) => e.id === itemEquipmentId);
 
     setLineItems((prev) => [
@@ -389,6 +453,18 @@ export function WmsOperationWizardDialog({
       if (lineItems.length === 0) {
         enqueueSnackbar('Добавьте хотя бы одну позицию ТМЦ', { variant: 'warning' });
         return;
+      }
+      if (isOutflow) {
+        for (const item of lineItems) {
+          const rawStock = getWarehouseStock(item.nomenclatureId);
+          const totalRequested = lineItems
+            .filter((it) => it.nomenclatureId === item.nomenclatureId)
+            .reduce((sum, it) => sum + it.quantity, 0);
+          if (totalRequested > rawStock) {
+            enqueueSnackbar(`Превышен остаток для «${item.nomenclatureName}». На складе: ${rawStock} ${item.unit}, в операции: ${totalRequested} ${item.unit}`, { variant: 'error' });
+            return;
+          }
+        }
       }
       setActiveStep(2);
     }
@@ -674,7 +750,59 @@ export function WmsOperationWizardDialog({
                         handleOpenNewNomExpandedMenu(searchInputValue);
                       } else {
                         setSelectedNomenclature(val);
+                        if (val && isOutflow) {
+                          const av = getAvailableStock(val.id);
+                          if (av > 0) {
+                            setItemQty('1');
+                          }
+                        }
                       }
+                    }}
+                    renderOption={(props, option) => {
+                      if (option.isNewAction) {
+                        return (
+                          <li {...props} key={option.id}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.5, color: '#0284c7', fontWeight: 600 }}>
+                              <AddIcon fontSize="small" />
+                              <Typography variant="body2">{option.name}</Typography>
+                            </Box>
+                          </li>
+                        );
+                      }
+                      const stock = getWarehouseStock(option.id);
+                      const isAvailable = stock > 0;
+                      return (
+                        <li {...props} key={option.id}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', py: 0.5 }}>
+                            <Box sx={{ mr: 1, minWidth: 0 }}>
+                              <Typography variant="body2" sx={{ fontWeight: 600, color: '#0f172a' }}>
+                                {option.name}
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: '#64748b' }}>
+                                {option.article ? `Арт: ${option.article}` : 'Без артикула'} • {option.category?.name || 'Без категории'}
+                              </Typography>
+                            </Box>
+                            <Chip
+                              size="small"
+                              label={
+                                isOutflow
+                                  ? isAvailable
+                                    ? `В наличии: ${stock} ${option.unit}`
+                                    : `Нет на складе (0 ${option.unit})`
+                                  : `Остаток: ${stock} ${option.unit}`
+                              }
+                              color={isOutflow ? (isAvailable ? 'success' : 'error') : 'default'}
+                              variant={isOutflow && !isAvailable ? 'filled' : 'outlined'}
+                              sx={{
+                                fontWeight: 700,
+                                fontSize: '0.7rem',
+                                height: 22,
+                                flexShrink: 0,
+                              }}
+                            />
+                          </Box>
+                        </li>
+                      );
                     }}
                     filterOptions={(options, params) => {
                       const filterVal = params.inputValue.toLowerCase().trim();
@@ -732,7 +860,31 @@ export function WmsOperationWizardDialog({
                     label={`Кол-во (${selectedNomenclature?.unit || 'ед'})`}
                     value={itemQty}
                     onChange={(e) => setItemQty(e.target.value)}
+                    error={Boolean(selectedNomenclature && isOutflow && (parseFloat(itemQty) > getAvailableStock(selectedNomenclature.id) || getAvailableStock(selectedNomenclature.id) <= 0))}
+                    helperText={
+                      selectedNomenclature && isOutflow
+                        ? getAvailableStock(selectedNomenclature.id) <= 0
+                          ? `Нет в наличии (0 ${selectedNomenclature.unit})`
+                          : parseFloat(itemQty) > getAvailableStock(selectedNomenclature.id)
+                          ? `Превышает доступно (${getAvailableStock(selectedNomenclature.id)} ${selectedNomenclature.unit})`
+                          : `Доступно: ${getAvailableStock(selectedNomenclature.id)} ${selectedNomenclature.unit}`
+                        : undefined
+                    }
                     inputProps={{ min: 0.01, step: 1 }}
+                    InputProps={{
+                      endAdornment: isOutflow && selectedNomenclature && getAvailableStock(selectedNomenclature.id) > 0 ? (
+                        <InputAdornment position="end">
+                          <Button
+                            size="small"
+                            variant="text"
+                            onClick={() => setItemQty(String(getAvailableStock(selectedNomenclature.id)))}
+                            sx={{ minWidth: 'auto', p: '2px 6px', fontSize: '0.7rem', fontWeight: 700, color: '#0284c7' }}
+                          >
+                            Макс.
+                          </Button>
+                        </InputAdornment>
+                      ) : undefined,
+                    }}
                   />
                 </Grid>
 
@@ -742,7 +894,10 @@ export function WmsOperationWizardDialog({
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={handleAddItem}
-                    disabled={!selectedNomenclature}
+                    disabled={
+                      !selectedNomenclature ||
+                      (isOutflow && (getAvailableStock(selectedNomenclature.id) <= 0 || parseFloat(itemQty) > getAvailableStock(selectedNomenclature.id) || isNaN(parseFloat(itemQty)) || parseFloat(itemQty) <= 0))
+                    }
                     sx={{ height: 40, borderRadius: '8px', fontWeight: 600 }}
                   >
                     Добавить
@@ -988,29 +1143,53 @@ export function WmsOperationWizardDialog({
                       <TableRow>
                         <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Номенклатура</TableCell>
                         <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Артикул</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Количество</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Остаток на складе</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Количество в операции</TableCell>
                         <TableCell align="center" sx={{ width: 50 }} />
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {lineItems.map((item, idx) => (
-                        <TableRow key={idx} hover>
-                          <TableCell sx={{ py: 1, fontWeight: 600, fontSize: '0.8125rem' }}>
-                            {item.nomenclatureName}
-                          </TableCell>
-                          <TableCell sx={{ py: 1, color: '#64748b', fontSize: '0.75rem' }}>
-                            {item.nomenclatureArticle || '—'}
-                          </TableCell>
-                          <TableCell align="right" sx={{ py: 1, fontWeight: 700, fontFeatureSettings: '"tnum"' }}>
-                            {item.quantity} {item.unit}
-                          </TableCell>
-                          <TableCell align="center" sx={{ py: 0.5 }}>
-                            <IconButton size="small" color="error" onClick={() => handleRemoveItem(idx)}>
-                              <DeleteOutlineIcon fontSize="small" />
-                            </IconButton>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {lineItems.map((item, idx) => {
+                        const rawStock = getWarehouseStock(item.nomenclatureId);
+                        const hasDeficit = isOutflow && item.quantity > rawStock;
+                        return (
+                          <TableRow key={idx} hover sx={hasDeficit ? { bgcolor: '#fef2f2' } : {}}>
+                            <TableCell sx={{ py: 1, fontWeight: 600, fontSize: '0.8125rem' }}>
+                              {item.nomenclatureName}
+                              {item.equipmentName && (
+                                <Typography variant="caption" sx={{ display: 'block', color: '#b45309', fontWeight: 600 }}>
+                                  Оборудование: {item.equipmentName}
+                                </Typography>
+                              )}
+                            </TableCell>
+                            <TableCell sx={{ py: 1, color: '#64748b', fontSize: '0.75rem' }}>
+                              {item.nomenclatureArticle || '—'}
+                            </TableCell>
+                            <TableCell align="right" sx={{ py: 1 }}>
+                              <Chip
+                                size="small"
+                                label={`${rawStock} ${item.unit}`}
+                                color={rawStock > 0 ? (hasDeficit ? 'error' : 'default') : 'error'}
+                                variant="outlined"
+                                sx={{ fontWeight: 600, fontSize: '0.75rem', height: 22 }}
+                              />
+                            </TableCell>
+                            <TableCell align="right" sx={{ py: 1, fontWeight: 700, fontFeatureSettings: '"tnum"', color: hasDeficit ? '#dc2626' : 'inherit' }}>
+                              {item.quantity} {item.unit}
+                              {hasDeficit && (
+                                <Typography variant="caption" sx={{ display: 'block', color: '#dc2626', fontWeight: 700 }}>
+                                  Превышение остатка!
+                                </Typography>
+                              )}
+                            </TableCell>
+                            <TableCell align="center" sx={{ py: 0.5 }}>
+                              <IconButton size="small" color="error" onClick={() => handleRemoveItem(idx)}>
+                                <DeleteOutlineIcon fontSize="small" />
+                              </IconButton>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </Paper>
@@ -1107,23 +1286,41 @@ export function WmsOperationWizardDialog({
                     <TableRow>
                       <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Номенклатура</TableCell>
                       <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Артикул</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Количество</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Остаток на складе</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Количество к проведению</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {lineItems.map((item, idx) => (
-                      <TableRow key={idx} hover>
-                        <TableCell sx={{ py: 1, fontWeight: 600, fontSize: '0.8125rem' }}>
-                          {item.nomenclatureName}
-                        </TableCell>
-                        <TableCell sx={{ py: 1, color: '#64748b', fontSize: '0.75rem' }}>
-                          {item.nomenclatureArticle || '—'}
-                        </TableCell>
-                        <TableCell align="right" sx={{ py: 1, fontWeight: 700, fontFeatureSettings: '"tnum"' }}>
-                          {item.quantity} {item.unit}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {lineItems.map((item, idx) => {
+                      const rawStock = getWarehouseStock(item.nomenclatureId);
+                      return (
+                        <TableRow key={idx} hover>
+                          <TableCell sx={{ py: 1, fontWeight: 600, fontSize: '0.8125rem' }}>
+                            {item.nomenclatureName}
+                            {item.equipmentName && (
+                              <Typography variant="caption" sx={{ display: 'block', color: '#b45309', fontWeight: 600 }}>
+                                Оборудование: {item.equipmentName}
+                              </Typography>
+                            )}
+                          </TableCell>
+                          <TableCell sx={{ py: 1, color: '#64748b', fontSize: '0.75rem' }}>
+                            {item.nomenclatureArticle || '—'}
+                          </TableCell>
+                          <TableCell align="right" sx={{ py: 1 }}>
+                            <Chip
+                              size="small"
+                              label={`${rawStock} ${item.unit}`}
+                              color={rawStock > 0 ? 'default' : 'error'}
+                              variant="outlined"
+                              sx={{ fontWeight: 600, fontSize: '0.75rem', height: 22 }}
+                            />
+                          </TableCell>
+                          <TableCell align="right" sx={{ py: 1, fontWeight: 700, fontFeatureSettings: '"tnum"' }}>
+                            {item.quantity} {item.unit}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </Paper>
