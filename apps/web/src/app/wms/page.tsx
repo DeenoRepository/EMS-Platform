@@ -77,98 +77,7 @@ interface WmsStats {
   }>;
 }
 
-/* ─── Quick Action Item ─── */
-interface QuickAction {
-  label: string;
-  description: string;
-  icon: React.ReactNode;
-  href: string;
-  accentColor: string;
-  accentBg: string;
-}
 
-function QuickActionCard({ action, onClick }: { action: QuickAction; onClick: () => void }) {
-  return (
-    <Paper
-      elevation={0}
-      onClick={onClick}
-      sx={{
-        p: 1.75,
-        borderRadius: '10px',
-        border: '1px solid #e2e8f0',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1.5,
-        transition: 'all 0.18s cubic-bezier(0.4, 0, 0.2, 1)',
-        backgroundColor: '#ffffff',
-        '&:hover': {
-          transform: 'translateY(-1px)',
-          boxShadow: '0 4px 12px -2px rgba(15, 23, 42, 0.06)',
-          borderColor: action.accentColor,
-          '& .qa-arrow': {
-            opacity: 1,
-            transform: 'translateX(2px)',
-          },
-        },
-        '&:active': {
-          transform: 'translateY(0)',
-        },
-      }}
-    >
-      <Box
-        sx={{
-          width: 36,
-          height: 36,
-          borderRadius: '8px',
-          backgroundColor: action.accentBg,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          color: action.accentColor,
-          '& svg': { fontSize: 18 },
-        }}
-      >
-        {action.icon}
-      </Box>
-      <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography
-          variant="body2"
-          sx={{
-            fontWeight: 600,
-            fontSize: '0.8125rem',
-            color: '#0f172a',
-            lineHeight: 1.3,
-          }}
-        >
-          {action.label}
-        </Typography>
-        <Typography
-          variant="caption"
-          sx={{
-            color: '#94a3b8',
-            fontSize: '0.6875rem',
-            lineHeight: 1.3,
-            display: 'block',
-          }}
-        >
-          {action.description}
-        </Typography>
-      </Box>
-      <ChevronRightIcon
-        className="qa-arrow"
-        sx={{
-          fontSize: 18,
-          color: '#94a3b8',
-          opacity: 0,
-          flexShrink: 0,
-          transition: 'all 0.18s ease',
-        }}
-      />
-    </Paper>
-  );
-}
 
 /* ─── Compact Deficit Item ─── */
 function DeficitItem({
@@ -288,58 +197,6 @@ export default function WmsDashboardPage() {
   useEffect(() => {
     fetchStats();
   }, []);
-
-  const quickActions: (QuickAction & { permission?: string })[] = [
-    {
-      label: 'Оформить приход ТМЦ',
-      description: 'Поступление на свой склад',
-      icon: <MoveToInboxIcon />,
-      href: '/wms/operations?create=RECEIPT',
-      accentColor: '#16a34a',
-      accentBg: 'rgba(22, 163, 74, 0.08)',
-      permission: PERMISSIONS.WMS_OPERATIONS_CREATE,
-    },
-    {
-      label: 'Выдать сотруднику',
-      description: 'Выдача ТМЦ в подотчет',
-      icon: <PersonIcon />,
-      href: '/wms/operations?create=ISSUE_EMPLOYEE',
-      accentColor: '#1d4ed8',
-      accentBg: 'rgba(29, 78, 216, 0.08)',
-      permission: PERMISSIONS.WMS_OPERATIONS_CREATE,
-    },
-    {
-      label: 'Списать ТМЦ',
-      description: 'На станок или в неликвид',
-      icon: <DeleteSweepIcon />,
-      href: '/wms/operations?create=ISSUE_WRITE_OFF',
-      accentColor: '#d97706',
-      accentBg: 'rgba(217, 119, 6, 0.08)',
-      permission: PERMISSIONS.WMS_OPERATIONS_CREATE,
-    },
-    {
-      label: 'Перемещение',
-      description: 'Между складами',
-      icon: <SwapHorizIcon />,
-      href: '/wms/operations?create=TRANSFER',
-      accentColor: '#7c3aed',
-      accentBg: 'rgba(124, 58, 237, 0.08)',
-      permission: PERMISSIONS.WMS_OPERATIONS_CREATE,
-    },
-    {
-      label: 'Инвентаризация',
-      description: 'Сверка остатков',
-      icon: <FactCheckOutlinedIcon />,
-      href: '/wms/inventory',
-      accentColor: '#0284c7',
-      accentBg: 'rgba(2, 132, 199, 0.08)',
-      permission: PERMISSIONS.WMS_INVENTORY_MANAGE,
-    },
-  ];
-
-  const availableQuickActions = quickActions.filter(
-    (action) => !action.permission || hasPermission(action.permission)
-  );
 
   return (
     <Box sx={{ pb: 4 }}>
@@ -656,9 +513,9 @@ export default function WmsDashboardPage() {
                     icon={<SwapHorizIcon sx={{ fontSize: 32, color: '#94a3b8' }} />}
                     title="Операции не проводились"
                     description="В системе пока нет записей о движении ТМЦ"
-                    actionText="Оформить приход"
-                    actionIcon={<MoveToInboxIcon />}
-                    onAction={() => router.push('/wms/operations?create=RECEIPT')}
+                    actionText="Оформить операцию"
+                    actionIcon={<AutoAwesomeIcon />}
+                    onAction={() => handleOpenWizard('RECEIPT')}
                     minHeight={260}
                   />
                 )}
@@ -667,45 +524,45 @@ export default function WmsDashboardPage() {
           </Card>
         </Grid>
 
-        {/* ── Правая колонка: Быстрые действия + Дефицит ── */}
+        {/* ── Правая колонка: Мастер операций + Дефицит ── */}
         <Grid item xs={12} lg={4}>
           <Stack spacing={2.5}>
-            {/* Быстрые действия */}
+            {/* Карточка запуска мастера складских операций */}
             <Card
               sx={{
                 borderRadius: '12px',
-                border: '1px solid #e2e8f0',
+                border: '1px solid #bae6fd',
+                background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
                 boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
               }}
             >
               <CardContent sx={{ p: 2.5 }}>
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: '0.875rem',
-                    color: '#0f172a',
-                    letterSpacing: '-0.01em',
-                    mb: 2,
-                  }}
-                >
-                  Быстрые действия
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                  <AutoAwesomeIcon sx={{ color: '#0284c7' }} />
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.875rem', color: '#0f172a' }}>
+                    Мастер складских операций
+                  </Typography>
+                </Box>
+                <Typography variant="body2" sx={{ color: '#475569', fontSize: '0.8125rem', mb: 2 }}>
+                  Пошаговое проведение прихода от поставщиков, перемещения между складами, выдачи сотрудникам и списания ТМЦ на оборудование.
                 </Typography>
-                <Stack spacing={1}>
-                  {availableQuickActions.length > 0 ? (
-                    availableQuickActions.map((action) => (
-                      <QuickActionCard
-                        key={action.href}
-                        action={action}
-                        onClick={() => router.push(action.href)}
-                      />
-                    ))
-                  ) : (
-                    <Typography variant="caption" sx={{ color: '#94a3b8', fontStyle: 'italic' }}>
-                      Нет доступных действий для текущей роли
-                    </Typography>
-                  )}
-                </Stack>
+                {hasPermission(PERMISSIONS.WMS_OPERATIONS_CREATE) && (
+                  <Button
+                    variant="contained"
+                    fullWidth
+                    startIcon={<AutoAwesomeIcon />}
+                    onClick={() => handleOpenWizard('RECEIPT')}
+                    sx={{
+                      fontWeight: 700,
+                      borderRadius: '8px',
+                      bgcolor: '#0284c7',
+                      py: 1,
+                      '&:hover': { bgcolor: '#0369a1' },
+                    }}
+                  >
+                    Запустить мастер операций
+                  </Button>
+                )}
               </CardContent>
             </Card>
 
