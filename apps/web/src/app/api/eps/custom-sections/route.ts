@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@ems/database';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
 import { PERMISSIONS } from '@ems/shared';
-import { logAuditEvent } from '@ems/auth';
+import { hasPermission, logAuditEvent } from '@ems/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +11,9 @@ export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
+    if (!hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_VIEW) && !hasPermission(user, PERMISSIONS.EPS_CUSTOM_FIELDS_MANAGE)) {
+      return forbiddenResponse();
+    }
 
     const [sections, unassignedFields] = await Promise.all([
       prisma.customSection.findMany({
@@ -46,7 +49,7 @@ export async function POST(req: NextRequest) {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
 
-    if (!user.permissions.includes(PERMISSIONS.ADMIN_USERS_MANAGE) && !user.roles.includes('admin')) {
+    if (!hasPermission(user, PERMISSIONS.EPS_CUSTOM_FIELDS_MANAGE) && !hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE)) {
       return forbiddenResponse();
     }
 
@@ -102,7 +105,7 @@ export async function PATCH(req: NextRequest) {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
 
-    if (!user.permissions.includes(PERMISSIONS.ADMIN_USERS_MANAGE) && !user.roles.includes('admin')) {
+    if (!hasPermission(user, PERMISSIONS.EPS_CUSTOM_FIELDS_MANAGE) && !hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE)) {
       return forbiddenResponse();
     }
 
@@ -144,7 +147,7 @@ export async function DELETE(req: NextRequest) {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
 
-    if (!user.permissions.includes(PERMISSIONS.ADMIN_USERS_MANAGE) && !user.roles.includes('admin')) {
+    if (!hasPermission(user, PERMISSIONS.EPS_CUSTOM_FIELDS_MANAGE) && !hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE)) {
       return forbiddenResponse();
     }
 
