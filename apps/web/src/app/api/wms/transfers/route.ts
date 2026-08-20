@@ -44,31 +44,72 @@ export async function GET(req: NextRequest) {
       where.status = status;
     }
 
-    if (!isAdmin) {
+    if (isAdmin) {
+      if (warehouseId) {
+        if (mode === 'inbound') {
+          where.targetWarehouseId = warehouseId;
+          where.status = StockTransferStatus.IN_TRANSIT;
+        } else if (mode === 'requests') {
+          where.sourceWarehouseId = warehouseId;
+          where.status = StockTransferStatus.REQUESTED;
+        } else if (mode === 'outbound') {
+          where.sourceWarehouseId = warehouseId;
+          where.status = StockTransferStatus.IN_TRANSIT;
+        } else if (mode === 'my_requests') {
+          where.OR = [
+            { targetWarehouseId: warehouseId },
+            { createdById: user.userId },
+          ];
+          if (!status) where.status = StockTransferStatus.REQUESTED;
+        } else {
+          where.OR = [
+            { sourceWarehouseId: warehouseId },
+            { targetWarehouseId: warehouseId },
+          ];
+        }
+      } else {
+        // Администратор в режиме глобального обзора (все склады)
+        if (mode === 'inbound') {
+          where.status = StockTransferStatus.IN_TRANSIT;
+        } else if (mode === 'requests') {
+          where.status = StockTransferStatus.REQUESTED;
+        } else if (mode === 'outbound') {
+          where.status = StockTransferStatus.IN_TRANSIT;
+        } else if (mode === 'my_requests') {
+          where.createdById = user.userId;
+        }
+        // mode === 'all' -> без ограничений по статусу/направлению
+      }
+    } else {
+      // Пользователь МОЛ или рядовой сотрудник
       if (userWarehouseIds.length > 0) {
+        const targetWhFilter = warehouseId
+          ? (userWarehouseIds.includes(warehouseId) ? [warehouseId] : [])
+          : userWarehouseIds;
+
         if (mode === 'inbound') {
           // Входящие на приемку: я получатель, статус В пути
-          where.targetWarehouseId = { in: userWarehouseIds };
+          where.targetWarehouseId = { in: targetWhFilter };
           where.status = StockTransferStatus.IN_TRANSIT;
         } else if (mode === 'requests') {
           // Входящие запросы ко мне: я отправитель, статус Запрошено
-          where.sourceWarehouseId = { in: userWarehouseIds };
+          where.sourceWarehouseId = { in: targetWhFilter };
           where.status = StockTransferStatus.REQUESTED;
         } else if (mode === 'outbound') {
           // Исходящие отправления от меня: я отправитель, статус В пути
-          where.sourceWarehouseId = { in: userWarehouseIds };
+          where.sourceWarehouseId = { in: targetWhFilter };
           where.status = StockTransferStatus.IN_TRANSIT;
         } else if (mode === 'my_requests') {
-          // Мои запросы к другим: я получатель (или я автор), статус Запрошено
+          // Мои запросы к другим
           where.OR = [
-            { targetWarehouseId: { in: userWarehouseIds }, status: StockTransferStatus.REQUESTED },
+            { targetWarehouseId: { in: targetWhFilter }, status: StockTransferStatus.REQUESTED },
             { createdById: user.userId, status: StockTransferStatus.REQUESTED },
           ];
         } else {
           // Все операции моих складов
           where.OR = [
-            { sourceWarehouseId: { in: userWarehouseIds } },
-            { targetWarehouseId: { in: userWarehouseIds } },
+            { sourceWarehouseId: { in: targetWhFilter } },
+            { targetWarehouseId: { in: targetWhFilter } },
             { createdById: user.userId },
           ];
         }
@@ -81,11 +122,6 @@ export async function GET(req: NextRequest) {
           where.createdById = user.userId;
         }
       }
-    } else if (warehouseId) {
-      where.OR = [
-        { sourceWarehouseId: warehouseId },
-        { targetWarehouseId: warehouseId },
-      ];
     }
 
     if (search) {
@@ -165,23 +201,54 @@ export async function GET(req: NextRequest) {
 
     // Подсчет счетчиков для вкладок
     let counts = { inbound: 0, requests: 0, outbound: 0, total };
-    if (userWarehouseIds.length > 0) {
+    if (isAdmin) {
       const [inboundCount, requestsCount, outboundCount] = await Promise.all([
         prisma.stockTransfer.count({
           where: {
-            targetWarehouseId: { in: userWarehouseIds },
+            ...(warehouseId ? { targetWarehouseId: warehouseId } : {}),
             status: StockTransferStatus.IN_TRANSIT,
           },
         }),
         prisma.stockTransfer.count({
           where: {
-            sourceWarehouseId: { in: userWarehouseIds },
+            ...(warehouseId ? { sourceWarehouseId: warehouseId } : {}),
             status: StockTransferStatus.REQUESTED,
           },
         }),
         prisma.stockTransfer.count({
           where: {
-            sourceWarehouseId: { in: userWarehouseIds },
+            ...(warehouseId ? { sourceWarehouseId: warehouseId } : {}),
+            status: StockTransferStatus.IN_TRANSIT,
+          },
+        }),
+      ]);
+      counts = {
+        inbound: inboundCount,
+        requests: requestsCount,
+        outbound: outboundCount,
+        total,
+      };
+    } else if (userWarehouseIds.length > 0) {
+      const targetWhFilter = warehouseId
+        ? (userWarehouseIds.includes(warehouseId) ? [warehouseId] : [])
+        : userWarehouseIds;
+
+      const [inboundCount, requestsCount, outboundCount] = await Promise.all([
+        prisma.stockTransfer.count({
+          where: {
+            targetWarehouseId: { in: targetWhFilter },
+            status: StockTransferStatus.IN_TRANSIT,
+          },
+        }),
+        prisma.stockTransfer.count({
+          where: {
+            sourceWarehouseId: { in: targetWhFilter },
+            status: StockTransferStatus.REQUESTED,
+          },
+        }),
+        prisma.stockTransfer.count({
+          where: {
+            sourceWarehouseId: { in: targetWhFilter },
             status: StockTransferStatus.IN_TRANSIT,
           },
         }),
