@@ -322,11 +322,11 @@ function WmsTransfersContent() {
             ? 'Мои отправленные запросы на перемещение'
             : 'Журнал межскладских перемещений'
         }
-        totalCount={total}
+        total={total}
         page={page - 1}
-        rowsPerPage={pageSize}
+        pageSize={pageSize}
         onPageChange={(_, newPage) => setPage(newPage + 1)}
-        onRowsPerPageChange={(e) => {
+        onPageSizeChange={(e) => {
           setPageSize(parseInt(e.target.value, 10));
           setPage(1);
         }}
