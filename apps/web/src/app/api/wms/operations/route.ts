@@ -299,8 +299,12 @@ export async function POST(req: NextRequest) {
             include: { nomenclature: true },
           });
 
-          // Проверка на минимальный остаток
           const remainingQty = Number(updatedStock.quantity);
+          if (remainingQty < 0) {
+            throw new Error(`Недостаточно остатка для "${updatedStock.nomenclature.name}". Доступный остаток исчерпан.`);
+          }
+
+          // Проверка на минимальный остаток
           const minStock = updatedStock.nomenclature.minStock !== null ? Number(updatedStock.nomenclature.minStock) : null;
           if (minStock !== null && remainingQty <= minStock) {
             lowStockAlerts.push({
@@ -324,6 +328,11 @@ export async function POST(req: NextRequest) {
             include: { nomenclature: true },
           });
 
+          const remainingQty = Number(updatedStock.quantity);
+          if (remainingQty < 0) {
+            throw new Error(`Недостаточно остатка для перемещения "${updatedStock.nomenclature.name}". Доступный остаток исчерпан.`);
+          }
+
           // Зачисление на целевой склад
           await tx.stockItem.upsert({
             where: {
@@ -342,7 +351,6 @@ export async function POST(req: NextRequest) {
             },
           });
 
-          const remainingQty = Number(updatedStock.quantity);
           const minStock = updatedStock.nomenclature.minStock !== null ? Number(updatedStock.nomenclature.minStock) : null;
           if (minStock !== null && remainingQty <= minStock) {
             lowStockAlerts.push({

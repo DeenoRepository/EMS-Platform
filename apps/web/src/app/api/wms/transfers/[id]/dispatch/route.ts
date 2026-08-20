@@ -72,10 +72,16 @@ export async function POST(
         }
 
         // Списываем со склада-отправителя
-        await tx.stockItem.update({
+        const updated = await tx.stockItem.update({
           where: { id: stock!.id },
           data: { quantity: availableQty - qtyToTransfer },
         });
+
+        if (Number(updated.quantity) < 0) {
+          throw new Error(
+            `Остаток для "${item.nomenclature?.name || 'ТМЦ'}" на складе "${transfer.sourceWarehouse.name}" не может быть отрицательным.`
+          );
+        }
       }
 
       // Переводим статус в IN_TRANSIT
