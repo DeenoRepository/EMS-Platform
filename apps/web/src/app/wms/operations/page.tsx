@@ -80,7 +80,7 @@ interface WarehouseOption {
 function WmsOperationsContent() {
   const searchParams = useSearchParams();
   const { enqueueSnackbar } = useSnackbar();
-  const { hasPermission } = useAuth();
+  const { user, hasPermission } = useAuth();
 
   const [operations, setOperations] = useState<StockOperation[]>([]);
   const [warehouses, setWarehouses] = useState<WarehouseOption[]>([]);
@@ -110,6 +110,10 @@ function WmsOperationsContent() {
           const json = await res.json();
           if (json.success && json.data) {
             setWarehouses(json.data);
+            const userWh = json.data.find((w: WarehouseOption) => w.responsibleUserId === user?.userId);
+            if (userWh && !user?.roles?.includes('admin')) {
+              setSelectedWarehouse(userWh.id);
+            }
           }
         }
       } catch (err) {
@@ -117,7 +121,7 @@ function WmsOperationsContent() {
       }
     }
     loadWarehouses();
-  }, []);
+  }, [user?.userId, user?.roles]);
 
   // Open Wizard if query parameter passed
   useEffect(() => {

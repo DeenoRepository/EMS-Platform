@@ -38,8 +38,11 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import BuildOutlinedIcon from '@mui/icons-material/BuildOutlined';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import SecurityOutlinedIcon from '@mui/icons-material/SecurityOutlined';
+import BusinessIcon from '@mui/icons-material/Business';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import { useSnackbar } from 'notistack';
+import { useAuth } from '@/lib/auth-client';
 import { FormDialog, StatusBadge } from '@/components/ui';
 
 export type OperationType = 'RECEIPT' | 'ISSUE_EMPLOYEE' | 'ISSUE_WRITE_OFF' | 'TRANSFER';
@@ -48,6 +51,12 @@ interface WarehouseOption {
   id: string;
   name: string;
   code: string;
+  responsibleUserId?: string | null;
+  responsibleUser?: {
+    id: string;
+    displayName: string;
+    ldapLogin: string;
+  } | null;
 }
 
 interface EquipmentOption {
@@ -100,7 +109,7 @@ const OPERATION_TYPES = [
   {
     type: 'RECEIPT' as OperationType,
     title: 'Приход ТМЦ',
-    description: 'Поступление материалов и запчастей на склад',
+    description: 'Поступление материалов и запчастей на закрепленный склад',
     icon: <MoveToInboxIcon />,
     color: '#16a34a',
     bgcolor: 'rgba(22, 163, 74, 0.08)',
@@ -124,7 +133,7 @@ const OPERATION_TYPES = [
   {
     type: 'TRANSFER' as OperationType,
     title: 'Межскладское перемещение',
-    description: 'Трансфер позиций между складами или участками',
+    description: 'Трансфер с закрепленного склада на другой склад',
     icon: <SwapHorizIcon />,
     color: '#7c3aed',
     bgcolor: 'rgba(124, 58, 237, 0.08)',
@@ -139,6 +148,7 @@ export function WmsOperationWizardDialog({
   initialNomenclatureId,
 }: WmsOperationWizardDialogProps) {
   const { enqueueSnackbar } = useSnackbar();
+  const { user } = useAuth();
 
   const [activeStep, setActiveStep] = useState(0);
   const [operationType, setOperationType] = useState<OperationType>(initialType);
@@ -176,6 +186,16 @@ export function WmsOperationWizardDialog({
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Automatically determine the warehouse assigned to current user (1 employee = 1 warehouse)
+  const assignedWarehouse = useMemo(() => {
+    if (!warehouses.length) return null;
+    // 1. Direct match by responsibleUserId
+    const userWh = warehouses.find((w) => w.responsibleUserId === user?.userId);
+    if (userWh) return userWh;
+    // 2. Default fallback if admin or not set
+    return warehouses[0];
+  }, [warehouses, user?.userId]);
+
   useEffect(() => {
     if (open) {
       setActiveStep(0);
@@ -187,21 +207,23 @@ export function WmsOperationWizardDialog({
       setItemEquipmentId('');
       setRecipientName('');
       setEquipmentId('');
+      setTargetWarehouseId('');
       setComment('');
       setIsCreatingNewNom(false);
 
       // Load dictionaries
       Promise.all([
         fetch('/api/wms/warehouses').then((r) => r.json()),
-        fetch('/api/equipment?limit=200').then((r) => r.json()),
+        fetch('/api/eps/equipment?limit=200').then((r) => r.json()),
         fetch('/api/wms/nomenclature?limit=500').then((r) => r.json()),
         fetch('/api/wms/categories').then((r) => r.json()).catch(() => ({ success: false })),
       ])
         .then(([whData, eqData, nomData, catData]) => {
-          if (whData.success) {
+          if (whData.success && whData.data) {
             setWarehouses(whData.data);
-            if (whData.data.length > 0 && !warehouseId) {
-              setWarehouseId(whData.data[0].id);
+            const userWh = whData.data.find((w: WarehouseOption) => w.responsibleUserId === user?.userId) || whData.data[0];
+            if (userWh) {
+              setWarehouseId(userWh.id);
             }
           }
           if (eqData.success) {
@@ -224,7 +246,14 @@ export function WmsOperationWizardDialog({
         })
         .catch(console.error);
     }
-  }, [open, initialType, initialNomenclatureId]);
+  }, [open, initialType, initialNomenclatureId, user?.userId]);
+
+  // Ensure warehouseId stays synchronized with assignedWarehouse
+  useEffect(() => {
+    if (assignedWarehouse && (!warehouseId || warehouseId !== assignedWarehouse.id)) {
+      setWarehouseId(assignedWarehouse.id);
+    }
+  }, [assignedWarehouse, warehouseId]);
 
   const handleGenerateSku = () => {
     const typeObj = NOMENCLATURE_TYPES.find((t) => t.id === newNomType) || NOMENCLATURE_TYPES[0];
@@ -282,10 +311,8 @@ export function WmsOperationWizardDialog({
           category: json.data.category,
         };
 
-        // Add to local nomenclatures options
         setNomenclatures((prev) => [createdNom, ...prev]);
 
-        // Directly add to operation line items
         setLineItems((prev) => [
           ...prev,
           {
@@ -350,11 +377,11 @@ export function WmsOperationWizardDialog({
   const handleNextStep = () => {
     if (activeStep === 0) {
       if (!warehouseId) {
-        enqueueSnackbar('Выберите основной склад', { variant: 'warning' });
+        enqueueSnackbar('Не определен закрепленный склад сотрудника', { variant: 'warning' });
         return;
       }
       if (operationType === 'TRANSFER' && (!targetWarehouseId || targetWarehouseId === warehouseId)) {
-        enqueueSnackbar('Выберите склад-получатель, отличный от исходного склада', { variant: 'warning' });
+        enqueueSnackbar('Выберите склад-получатель, отличный от закрепленного склада', { variant: 'warning' });
         return;
       }
       setActiveStep(1);
@@ -419,7 +446,7 @@ export function WmsOperationWizardDialog({
       hideActions
     >
       <Box sx={{ mt: 1.5 }}>
-        {/* STEP 0: Выбор типа и складов */}
+        {/* STEP 0: Выбор типа и закрепленный склад */}
         {activeStep === 0 && (
           <Stack spacing={3}>
             {/* Operation Type Grid */}
@@ -484,48 +511,81 @@ export function WmsOperationWizardDialog({
 
             <Divider />
 
-            {/* Warehouse Selectors */}
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={operationType === 'TRANSFER' ? 6 : 12}>
-                <TextField
-                  select
-                  fullWidth
-                  required
-                  label={operationType === 'TRANSFER' ? 'Исходный склад (Списание)' : 'Основной склад операции'}
-                  value={warehouseId}
-                  onChange={(e) => setWarehouseId(e.target.value)}
-                >
-                  {warehouses.map((w) => (
+            {/* Автоматически закрепленный склад сотрудника (Без выбора из списка) */}
+            <Box>
+              <Typography variant="caption" sx={{ color: '#475569', fontWeight: 700, display: 'block', mb: 1, textTransform: 'uppercase' }}>
+                {operationType === 'TRANSFER' ? 'Исходный склад списания (Закреплен за вами):' : 'Склад проведения операции (МОЛ):'}
+              </Typography>
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 2,
+                  borderRadius: '10px',
+                  bgcolor: '#f8fafc',
+                  border: '1.5px solid #cbd5e1',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 2,
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75 }}>
+                  <Box
+                    sx={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: '8px',
+                      bgcolor: '#e0f2fe',
+                      color: '#0284c7',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <BusinessIcon />
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle1" fontWeight={700} color="#0f172a" sx={{ lineHeight: 1.2 }}>
+                      {assignedWarehouse ? `${assignedWarehouse.name} (${assignedWarehouse.code})` : 'Определение закрепленного склада...'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
+                      Материально ответственное лицо:{' '}
+                      <b>{user?.displayName || assignedWarehouse?.responsibleUser?.displayName || 'Текущий сотрудник'}</b>
+                    </Typography>
+                  </Box>
+                </Box>
+                <Chip
+                  icon={<LockOutlinedIcon sx={{ fontSize: '14px !important' }} />}
+                  label="Закреплен за МОЛ"
+                  size="small"
+                  color="info"
+                  variant="outlined"
+                  sx={{ fontWeight: 700, fontSize: '0.75rem', px: 0.5 }}
+                />
+              </Paper>
+            </Box>
+
+            {/* Выбор склада-получателя только для операции Перемещения */}
+            {operationType === 'TRANSFER' && (
+              <TextField
+                select
+                fullWidth
+                required
+                label="Склад-получатель (Зачисление перемещаемых ТМЦ)"
+                value={targetWarehouseId}
+                onChange={(e) => setTargetWarehouseId(e.target.value)}
+                error={Boolean(targetWarehouseId && targetWarehouseId === warehouseId)}
+                helperText={targetWarehouseId === warehouseId ? 'Склад-получатель должен отличаться от закрепленного исходного склада' : 'Выберите целевой склад, куда поступают ТМЦ'}
+              >
+                {warehouses
+                  .filter((w) => w.id !== warehouseId)
+                  .map((w) => (
                     <MenuItem key={w.id} value={w.id}>
-                      {w.name} ({w.code})
+                      {w.name} ({w.code}) {w.responsibleUser?.displayName ? `— МОЛ: ${w.responsibleUser.displayName}` : ''}
                     </MenuItem>
                   ))}
-                </TextField>
-              </Grid>
-
-              {operationType === 'TRANSFER' && (
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    select
-                    fullWidth
-                    required
-                    label="Склад-получатель (Зачисление)"
-                    value={targetWarehouseId}
-                    onChange={(e) => setTargetWarehouseId(e.target.value)}
-                    error={Boolean(targetWarehouseId && targetWarehouseId === warehouseId)}
-                    helperText={targetWarehouseId === warehouseId ? 'Склад-получатель должен отличаться от исходного' : undefined}
-                  >
-                    {warehouses
-                      .filter((w) => w.id !== warehouseId)
-                      .map((w) => (
-                        <MenuItem key={w.id} value={w.id}>
-                          {w.name} ({w.code})
-                        </MenuItem>
-                      ))}
-                  </TextField>
-                </Grid>
-              )}
-            </Grid>
+              </TextField>
+            )}
 
             {/* Optional Mode-specific parameters */}
             {operationType === 'ISSUE_WRITE_OFF' && (
@@ -994,17 +1054,17 @@ export function WmsOperationWizardDialog({
 
                 <Grid item xs={12} sm={6}>
                   <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
-                    Склад проведения:
+                    Закрепленный склад:
                   </Typography>
                   <Typography variant="body2" fontWeight={600} sx={{ mt: 0.5, color: '#0f172a' }}>
-                    {warehouses.find((w) => w.id === warehouseId)?.name || '—'}
+                    {assignedWarehouse ? `${assignedWarehouse.name} (${assignedWarehouse.code})` : '—'}
                   </Typography>
                 </Grid>
 
                 {operationType === 'TRANSFER' && (
                   <Grid item xs={12} sm={6}>
                     <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
-                      Склад назначения:
+                      Склад назначения (Зачисление):
                     </Typography>
                     <Typography variant="body2" fontWeight={600} sx={{ mt: 0.5, color: '#0f172a' }}>
                       {warehouses.find((w) => w.id === targetWarehouseId)?.name || '—'}
