@@ -293,6 +293,11 @@ export function WmsOperationWizardDialog({
           }
           if (transferWhData.success && transferWhData.data) {
             setTransferWarehouses(transferWhData.data);
+            const userWh = whData.data?.find((w: WarehouseOption) => w.responsibleUserId === user?.userId) || whData.data?.[0];
+            const targetWh = transferWhData.data.find((w: WarehouseOption) => w.id !== userWh?.id) || transferWhData.data[0];
+            if (targetWh) {
+              setTargetWarehouseId(targetWh.id);
+            }
           }
           if (eqData.success) {
             setEquipmentList(eqData.data.items || eqData.data || []);
@@ -740,6 +745,9 @@ export function WmsOperationWizardDialog({
                   value={warehouseId}
                   onChange={(e) => setWarehouseId(e.target.value)}
                   helperText="Выберите склад, на котором проводятся складские операции"
+                  SelectProps={{
+                    displayEmpty: true,
+                  }}
                 >
                   {warehouses.map((w) => (
                     <MenuItem key={w.id} value={w.id}>
@@ -761,6 +769,9 @@ export function WmsOperationWizardDialog({
                 onChange={(e) => setTargetWarehouseId(e.target.value)}
                 error={Boolean(targetWarehouseId && targetWarehouseId === warehouseId)}
                 helperText={targetWarehouseId === warehouseId ? 'Склад-получатель должен отличаться от закрепленного исходного склада' : 'Выберите целевой склад, куда поступают ТМЦ'}
+                SelectProps={{
+                  displayEmpty: true,
+                }}
               >
                 {(transferWarehouses.length > 0 ? transferWarehouses : warehouses)
                   .filter((w) => w.id !== warehouseId)

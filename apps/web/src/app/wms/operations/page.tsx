@@ -197,6 +197,13 @@ function WmsOperationsContent() {
     return '';
   }, [isAdmin, availableWarehouses]);
 
+  const activeWarehouseValue = useMemo(() => {
+    if (!isAdmin && availableWarehouses.length === 1) {
+      return availableWarehouses[0].id;
+    }
+    return selectedWarehouse;
+  }, [isAdmin, availableWarehouses, selectedWarehouse]);
+
   const handleResetFilters = () => {
     setSelectedWarehouse(defaultWarehouse);
     setSelectedType('');
@@ -394,11 +401,14 @@ function WmsOperationsContent() {
             <TextField
               select
               size="small"
-              value={selectedWarehouse}
+              value={activeWarehouseValue}
               disabled={!isAdmin && availableWarehouses.length <= 1}
               onChange={(e) => {
                 setSelectedWarehouse(e.target.value);
                 setPage(0);
+              }}
+              SelectProps={{
+                displayEmpty: true,
               }}
               sx={{
                 minWidth: 220,
@@ -427,6 +437,11 @@ function WmsOperationsContent() {
                   {w.name} ({w.code})
                 </MenuItem>
               ))}
+              {availableWarehouses.length === 0 && (
+                <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>
+                  Мои операции
+                </MenuItem>
+              )}
             </TextField>
 
             <TextField
@@ -436,6 +451,9 @@ function WmsOperationsContent() {
               onChange={(e) => {
                 setSelectedType(e.target.value);
                 setPage(0);
+              }}
+              SelectProps={{
+                displayEmpty: true,
               }}
               sx={{
                 minWidth: 200,

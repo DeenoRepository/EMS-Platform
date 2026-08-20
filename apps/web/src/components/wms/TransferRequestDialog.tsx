@@ -103,6 +103,10 @@ export default function TransferRequestDialog({
             const myWh = json.data.find((w: any) => w.responsibleUserId === user?.userId) || json.data[0];
             if (myWh) {
               setTargetWarehouseId(myWh.id);
+              const firstDonor = json.data.find((w: any) => w.id !== myWh.id);
+              if (firstDonor) {
+                setSourceWarehouseId(firstDonor.id);
+              }
             }
           }
         })
@@ -272,8 +276,13 @@ export default function TransferRequestDialog({
               required
               value={sourceWarehouseId}
               onChange={(e) => setSourceWarehouseId(e.target.value)}
-              label="Выберите склад-донор"
+              SelectProps={{
+                displayEmpty: true,
+              }}
             >
+              <MenuItem value="">
+                <em>— Выберите склад-донор —</em>
+              </MenuItem>
               {warehouses
                 .filter((w) => w.id !== targetWarehouseId)
                 .map((w) => (
