@@ -190,52 +190,6 @@ export default function LoginPage() {
         p: { xs: 2, sm: 3 },
       }}
     >
-      {/* Top Status Badge Header */}
-      <Box
-        sx={{
-          mb: 2.5,
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 1.25,
-          px: 2,
-          py: 0.65,
-          borderRadius: '24px',
-          backgroundColor: 'rgba(15, 23, 42, 0.75)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          backdropFilter: 'blur(12px)',
-          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.25)',
-        }}
-      >
-        <Box
-          sx={{
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            backgroundColor: '#22c55e',
-            boxShadow: '0 0 10px #22c55e',
-            flexShrink: 0,
-          }}
-          aria-hidden="true"
-        />
-        <Typography
-          variant="caption"
-          sx={{
-            color: '#cbd5e1',
-            fontWeight: 600,
-            letterSpacing: '0.03em',
-            fontFeatureSettings: '"tnum"',
-          }}
-        >
-          EMS Platform v1.0.0
-        </Typography>
-        <Typography variant="caption" sx={{ color: '#475569' }} aria-hidden="true">
-          •
-        </Typography>
-        <Typography variant="caption" sx={{ color: '#38bdf8', fontWeight: 600 }}>
-          Сервер активен (TLS 1.3)
-        </Typography>
-      </Box>
-
       {/* Main Authentication Card */}
       <Card
         sx={{
@@ -668,24 +622,6 @@ export default function LoginPage() {
           </Box>
         </CardContent>
       </Card>
-
-      {/* Security & System Footer */}
-      <Box
-        component="footer"
-        sx={{
-          mt: 3,
-          textAlign: 'center',
-          color: '#64748b',
-          fontSize: '0.75rem',
-          maxWidth: 440,
-        }}
-      >
-        <Typography variant="caption" sx={{ display: 'block', color: '#64748b', lineHeight: 1.5 }}>
-          EMS — Промышленная система управления оборудованием и ТМЦ.
-          <br />
-          Защищенная корпоративная авторизация по стандарту TLS 1.3 / LDAP SSO.
-        </Typography>
-      </Box>
 
       {/* Domain Password Recovery Help Dialog */}
       <Dialog
