@@ -501,122 +501,126 @@ export default function LoginPage() {
             </Button>
           </Box>
 
-          <Divider sx={{ my: 2.75 }}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{
-                fontWeight: 600,
-                px: 1,
-                letterSpacing: '0.02em',
-                textTransform: 'uppercase',
-                fontSize: '0.6875rem',
-              }}
-            >
-              Быстрый вход для тестирования
-            </Typography>
-          </Divider>
-
-          {/* Demo Accounts List */}
-          <Box
-            component="section"
-            aria-label="Тестовые учетные записи"
-            sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}
-          >
-            {DEMO_ACCOUNTS.map((demo) => {
-              const IconComp = demo.icon;
-              const isSelected = activeDemo === demo.key;
-
-              return (
-                <Button
-                  key={demo.key}
-                  type="button"
-                  variant="outlined"
-                  size="small"
-                  fullWidth
-                  disabled={loading}
-                  onClick={() => handleDemoLogin(demo.user, demo.pass, demo.key)}
-                  aria-label={`Войти как ${demo.title}, логин ${demo.user}`}
+          {/* Demo Accounts List (Only in development or explicit demo flag) */}
+          {(process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === 'true') && (
+            <>
+              <Divider sx={{ my: 2.75 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
                   sx={{
-                    justifyContent: 'space-between',
-                    px: 1.75,
-                    py: 1.1,
-                    borderRadius: 2,
-                    borderColor: '#e2e8f0',
-                    backgroundColor: '#ffffff',
-                    transition: 'all 0.18s ease-in-out',
-                    '&:hover': {
-                      borderColor: demo.color,
-                      backgroundColor: `${demo.color}08`,
-                      transform: 'translateY(-1px)',
-                      boxShadow: `0 4px 12px ${demo.color}18`,
-                    },
+                    fontWeight: 600,
+                    px: 1,
+                    letterSpacing: '0.02em',
+                    textTransform: 'uppercase',
+                    fontSize: '0.6875rem',
                   }}
                 >
-                  <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
-                    <Box
+                  Быстрый вход для тестирования
+                </Typography>
+              </Divider>
+
+              <Box
+                component="section"
+                aria-label="Тестовые учетные записи"
+                sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}
+              >
+                {DEMO_ACCOUNTS.map((demo) => {
+                  const IconComp = demo.icon;
+                  const isSelected = activeDemo === demo.key;
+
+                  return (
+                    <Button
+                      key={demo.key}
+                      type="button"
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      disabled={loading}
+                      onClick={() => handleDemoLogin(demo.user, demo.pass, demo.key)}
+                      aria-label={`Войти как ${demo.title}, логин ${demo.user}`}
                       sx={{
-                        width: 34,
-                        height: 34,
-                        borderRadius: 1.75,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: `${demo.color}15`,
-                        color: demo.color,
-                        mr: 1.5,
-                        flexShrink: 0,
+                        justifyContent: 'space-between',
+                        px: 1.75,
+                        py: 1.1,
+                        borderRadius: 2,
+                        borderColor: '#e2e8f0',
+                        backgroundColor: '#ffffff',
+                        transition: 'all 0.18s ease-in-out',
+                        '&:hover': {
+                          borderColor: demo.color,
+                          backgroundColor: `${demo.color}08`,
+                          transform: 'translateY(-1px)',
+                          boxShadow: `0 4px 12px ${demo.color}18`,
+                        },
                       }}
                     >
-                      <IconComp sx={{ fontSize: 19 }} />
-                    </Box>
-                    <Box sx={{ textAlign: 'left', minWidth: 0 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
-                        <Typography
-                          variant="body2"
-                          fontWeight={700}
-                          sx={{ color: '#0f172a', lineHeight: 1.25 }}
+                      <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                        <Box
+                          sx={{
+                            width: 34,
+                            height: 34,
+                            borderRadius: 1.75,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: `${demo.color}15`,
+                            color: demo.color,
+                            mr: 1.5,
+                            flexShrink: 0,
+                          }}
                         >
-                          {demo.title}
-                        </Typography>
-                        <StatusBadge
-                          status={demo.roleBadge}
-                          size="small"
-                          customColor={demo.color}
-                          customBg={`${demo.color}12`}
-                          customBorder={`${demo.color}35`}
-                          showIcon={false}
-                        />
+                          <IconComp sx={{ fontSize: 19 }} />
+                        </Box>
+                        <Box sx={{ textAlign: 'left', minWidth: 0 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
+                            <Typography
+                              variant="body2"
+                              fontWeight={700}
+                              sx={{ color: '#0f172a', lineHeight: 1.25 }}
+                            >
+                              {demo.title}
+                            </Typography>
+                            <StatusBadge
+                              status={demo.roleBadge}
+                              size="small"
+                              customColor={demo.color}
+                              customBg={`${demo.color}12`}
+                              customBorder={`${demo.color}35`}
+                              showIcon={false}
+                            />
+                          </Box>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ fontSize: '0.725rem', fontFamily: 'monospace' }}
+                          >
+                            {demo.subtitle}
+                          </Typography>
+                        </Box>
                       </Box>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ fontSize: '0.725rem', fontFamily: 'monospace' }}
-                      >
-                        {demo.subtitle}
-                      </Typography>
-                    </Box>
-                  </Box>
 
-                  <Box sx={{ ml: 1, flexShrink: 0 }}>
-                    {loading && isSelected ? (
-                      <CircularProgress size={18} sx={{ color: demo.color }} />
-                    ) : (
-                      <ArrowForwardIcon
-                        fontSize="small"
-                        sx={{
-                          color: '#94a3b8',
-                          fontSize: 16,
-                          transition: 'transform 0.18s ease',
-                          '&:hover': { transform: 'translateX(3px)' },
-                        }}
-                      />
-                    )}
-                  </Box>
-                </Button>
-              );
-            })}
-          </Box>
+                      <Box sx={{ ml: 1, flexShrink: 0 }}>
+                        {loading && isSelected ? (
+                          <CircularProgress size={18} sx={{ color: demo.color }} />
+                        ) : (
+                          <ArrowForwardIcon
+                            fontSize="small"
+                            sx={{
+                              color: '#94a3b8',
+                              fontSize: 16,
+                              transition: 'transform 0.18s ease',
+                              '&:hover': { transform: 'translateX(3px)' },
+                            }}
+                          />
+                        )}
+                      </Box>
+                    </Button>
+                  );
+                })}
+              </Box>
+            </>
+          )}
         </CardContent>
       </Card>
 
