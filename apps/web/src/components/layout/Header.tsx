@@ -132,7 +132,7 @@ export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProp
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    Управление оборудованием
+                    Система управления оборудованием
                   </Typography>
                 </Box>
               </Box>

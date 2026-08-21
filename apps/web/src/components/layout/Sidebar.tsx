@@ -795,7 +795,7 @@ export default function Sidebar({
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  Управление оборудованием
+                  Система управления оборудованием
                 </Typography>
               </Box>
             </Box>
