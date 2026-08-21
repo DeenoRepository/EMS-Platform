@@ -662,29 +662,6 @@ export default function EquipmentPassportPage() {
             >
               К списку
             </Button>
-            <Button
-              variant="outlined"
-              startIcon={<PrintIcon />}
-              onClick={() => window.print()}
-              sx={{
-                height: 38,
-                borderRadius: '8px',
-                borderColor: '#e2e8f0',
-                color: '#334155',
-                px: 2,
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                textTransform: 'none',
-                backgroundColor: '#ffffff',
-                boxSizing: 'border-box',
-                '&:hover': {
-                  borderColor: '#cbd5e1',
-                  backgroundColor: '#f8fafc',
-                },
-              }}
-            >
-              Печать
-            </Button>
             {canEdit && (
               <Button
                 variant="contained"
@@ -1356,35 +1333,14 @@ export default function EquipmentPassportPage() {
                           </TableCell>
                         </TableRow>
                         <TableRow>
-                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid #f1f5f9' }}>
+                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: 0 }}>
                             Количество проведенных ТО
                           </TableCell>
-                          <TableCell sx={{ fontWeight: 700, py: 1, borderBottom: '1px solid #f1f5f9' }}>
+                          <TableCell sx={{ fontWeight: 700, py: 1, borderBottom: 0 }}>
                             {maintCount ? (
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                 <Typography variant="body2" fontWeight={700}>{maintCount}</Typography>
                                 <Chip label="шт" size="small" variant="outlined" sx={{ height: 18, fontSize: '0.65rem', fontWeight: 700 }} />
-                              </Box>
-                            ) : (
-                              <Typography variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: 0 }}>
-                            Внешний ID (1С / ERP)
-                          </TableCell>
-                          <TableCell sx={{ py: 1, borderBottom: 0 }}>
-                            {extSysId ? (
-                              <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
-                                <Typography variant="body2" fontWeight={600} sx={{ fontFamily: 'monospace' }}>
-                                  {extSysId}
-                                </Typography>
-                                <Tooltip title="Скопировать ID в 1С/ERP">
-                                  <IconButton size="small" sx={{ p: 0.5, color: '#64748b', '&:hover': { color: '#0284c7' } }} onClick={() => handleCopy(extSysId, 'Внешний ID 1C/ERP')}>
-                                    <ContentCopyIcon sx={{ fontSize: 15 }} />
-                                  </IconButton>
-                                </Tooltip>
                               </Box>
                             ) : (
                               <Typography variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>
