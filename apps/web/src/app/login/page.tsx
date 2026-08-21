@@ -251,7 +251,7 @@ export default function LoginPage() {
               fontWeight: 500,
             }}
           >
-            Equipment Management System
+            Система управления оборудованием
           </Typography>
 
           <Box
