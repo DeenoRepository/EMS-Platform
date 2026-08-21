@@ -312,18 +312,18 @@ function ModuleSettingsContent() {
   const handleDeleteSection = (s: CustomSectionItem) => {
     setDeleteConfirm({
       open: true,
-      title: 'Удаление кастомного раздела',
-      message: `Удалить кастомный раздел «${s.name}»? Привязанные поля будут сохранены как общие.`,
+      title: 'Удаление технического раздела',
+      message: `Удалить технический раздел «${s.name}»? Привязанные характеристики будут сохранены как общие параметры.`,
       onConfirm: async () => {
         try {
           const res = await fetch(`/api/eps/custom-sections?id=${s.id}`, { method: 'DELETE' });
           const data = await res.json();
           if (data.success) {
-            enqueueSnackbar('Раздел удален', { variant: 'info' });
+            enqueueSnackbar('Технический раздел удален', { variant: 'info' });
             setDeleteConfirm((prev) => ({ ...prev, open: false }));
             fetchEpsData();
           } else {
-            enqueueSnackbar(data.error || 'Ошибка удаления', { variant: 'error' });
+            enqueueSnackbar(data.error || 'Ошибка удаления раздела', { variant: 'error' });
           }
         } catch {
           enqueueSnackbar('Ошибка сети', { variant: 'error' });
@@ -349,7 +349,7 @@ function ModuleSettingsContent() {
   // Save Field
   const handleSaveField = async () => {
     if (!fieldKey.trim() || !fieldName.trim()) {
-      enqueueSnackbar('Укажите ключ и название поля', { variant: 'warning' });
+      enqueueSnackbar('Укажите системный ключ и наименование параметра', { variant: 'warning' });
       return;
     }
     setSavingField(true);
@@ -372,11 +372,11 @@ function ModuleSettingsContent() {
       });
       const data = await res.json();
       if (data.success) {
-        enqueueSnackbar('Кастомное поле сохранено', { variant: 'success' });
+        enqueueSnackbar('Параметр паспорта сохранен', { variant: 'success' });
         setFieldDialogOpen(false);
         fetchEpsData();
       } else {
-        enqueueSnackbar(data.error || 'Ошибка сохранения', { variant: 'error' });
+        enqueueSnackbar(data.error || 'Ошибка сохранения параметра', { variant: 'error' });
       }
     } catch {
       enqueueSnackbar('Ошибка сети', { variant: 'error' });
@@ -389,18 +389,18 @@ function ModuleSettingsContent() {
   const handleDeleteField = (f: CustomFieldItem) => {
     setDeleteConfirm({
       open: true,
-      title: 'Удаление кастомного поля',
-      message: `Удалить кастомное поле «${f.name}»?`,
+      title: 'Удаление параметра паспорта',
+      message: `Удалить технический параметр «${f.name}»?`,
       onConfirm: async () => {
         try {
           const res = await fetch(`/api/eps/custom-fields?id=${f.id}`, { method: 'DELETE' });
           const data = await res.json();
           if (data.success) {
-            enqueueSnackbar('Поле удалено', { variant: 'info' });
+            enqueueSnackbar('Параметр удален', { variant: 'info' });
             setDeleteConfirm((prev) => ({ ...prev, open: false }));
             fetchEpsData();
           } else {
-            enqueueSnackbar(data.error || 'Ошибка удаления', { variant: 'error' });
+            enqueueSnackbar(data.error || 'Ошибка удаления параметра', { variant: 'error' });
           }
         } catch {
           enqueueSnackbar('Ошибка сети', { variant: 'error' });
@@ -412,7 +412,7 @@ function ModuleSettingsContent() {
   // Save Tag
   const handleSaveTag = async () => {
     if (!tagName.trim()) {
-      enqueueSnackbar('Укажите название тега', { variant: 'warning' });
+      enqueueSnackbar('Укажите наименование метки классификатора', { variant: 'warning' });
       return;
     }
     setSavingTag(true);
@@ -424,12 +424,12 @@ function ModuleSettingsContent() {
       });
       const data = await res.json();
       if (data.success) {
-        enqueueSnackbar('Тег создан', { variant: 'success' });
+        enqueueSnackbar('Метка классификатора создана', { variant: 'success' });
         setTagDialogOpen(false);
         setTagName('');
         fetchEpsData();
       } else {
-        enqueueSnackbar(data.error || 'Ошибка создания', { variant: 'error' });
+        enqueueSnackbar(data.error || 'Ошибка создания метки', { variant: 'error' });
       }
     } catch {
       enqueueSnackbar('Ошибка сети', { variant: 'error' });
@@ -650,10 +650,10 @@ function ModuleSettingsContent() {
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1.5 }}>
                     <Box>
                       <Typography variant="h6" fontWeight={700}>
-                        Кастомные разделы и поля паспорта оборудования
+                        Технические разделы и характеристики паспорта
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Группировка технических параметров по тематическим разделам с единицами измерения
+                        Группировка технических параметров по разделам паспорта с единицами измерения
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -683,7 +683,7 @@ function ModuleSettingsContent() {
                         onClick={() => handleOpenCreateField()}
                         sx={{ borderRadius: '8px' }}
                       >
-                        Добавить поле
+                        Добавить параметр
                       </Button>
                     </Box>
                   </Box>
@@ -694,7 +694,7 @@ function ModuleSettingsContent() {
                 ) : sections.length === 0 ? (
                   <EmptyState
                     title="Разделы не созданы"
-                    description="Кастомные разделы еще не созданы. Нажмите «Добавить раздел» для группировки полей."
+                    description="Технические разделы еще не созданы. Нажмите «Добавить раздел» для группировки параметров."
                     minHeight={160}
                   />
                 ) : (
@@ -724,7 +724,7 @@ function ModuleSettingsContent() {
                               </Box>
                             </Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <Chip label={`${sec.fields.length} полей`} size="small" />
+                              <Chip label={`${sec.fields.length} параметров`} size="small" />
                               <IconButton
                                 size="small"
                                 onClick={(e) => {
@@ -757,7 +757,7 @@ function ModuleSettingsContent() {
                               startIcon={<AddIcon />}
                               onClick={() => handleOpenCreateField(sec.id)}
                             >
-                              Добавить поле в «{sec.name}»
+                              Добавить параметр в «{sec.name}»
                             </Button>
                           </Box>
                         </AccordionDetails>
@@ -769,7 +769,7 @@ function ModuleSettingsContent() {
                       <Accordion defaultExpanded variant="outlined" sx={{ borderRadius: '8px !important', overflow: 'hidden' }}>
                         <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ backgroundColor: '#fffbeb' }}>
                           <Typography variant="subtitle1" fontWeight={700} color="warning.dark">
-                            Общие поля (без привязки к разделу)
+                            Общие параметры (базовые характеристики)
                           </Typography>
                         </AccordionSummary>
                         <AccordionDetails sx={{ p: 0 }}>
@@ -790,10 +790,10 @@ function ModuleSettingsContent() {
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                   <Box>
                     <Typography variant="h6" fontWeight={700}>
-                      Теги и классификаторы
+                      Метки и классификаторы
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      Цветовые метки оборудования
+                      Категории и цветовая маркировка
                     </Typography>
                   </Box>
                   <Button
@@ -806,10 +806,10 @@ function ModuleSettingsContent() {
                       setTagDialogOpen(true);
                     }}
                   >
-                    Создать тег
+                    Добавить метку
                   </Button>
                 </Box>
-                <Divider sx={{ mb: 2 }} />
+                <Divider sx={{ mb: 2.5 }} />
 
                 {loadingEps ? (
                   <PageLoading text="Загрузка списка тегов..." minHeight={140} size={24} />
@@ -982,7 +982,7 @@ function ModuleSettingsContent() {
       <FormDialog
         open={sectionDialogOpen}
         onClose={() => setSectionDialogOpen(false)}
-        title={sectionEditingId ? 'Редактирование кастомного раздела' : 'Создание кастомного раздела'}
+        title={sectionEditingId ? 'Редактирование технического раздела' : 'Создание технического раздела'}
         maxWidth="sm"
         loading={savingSection}
         submitLabel={savingSection ? 'Сохранение...' : 'Сохранить раздел'}
@@ -1052,10 +1052,10 @@ function ModuleSettingsContent() {
       <FormDialog
         open={fieldDialogOpen}
         onClose={() => setFieldDialogOpen(false)}
-        title="Добавление кастомного поля в паспорт"
+        title="Добавление технического параметра в паспорт"
         maxWidth="sm"
         loading={savingField}
-        submitLabel={savingField ? 'Сохранение...' : 'Сохранить поле'}
+        submitLabel={savingField ? 'Сохранение...' : 'Сохранить параметр'}
         onSubmit={handleSaveField}
         submitDisabled={savingField || !fieldName || !fieldKey}
       >
@@ -1078,7 +1078,7 @@ function ModuleSettingsContent() {
           </TextField>
 
           <TextField
-            label="Отображаемое название поля"
+            label="Отображаемое наименование параметра"
             placeholder="например: Номинальная мощность"
             value={fieldName}
             onChange={(e) => setFieldName(e.target.value)}
@@ -1095,7 +1095,7 @@ function ModuleSettingsContent() {
             fullWidth
             size="small"
             required
-            helperText="Идентификатор поля в JSON-объекте оборудования"
+            helperText="Идентификатор параметра в структуре паспорта оборудования"
           />
 
           <Grid container spacing={2}>
@@ -1172,16 +1172,16 @@ function ModuleSettingsContent() {
       <FormDialog
         open={tagDialogOpen}
         onClose={() => setTagDialogOpen(false)}
-        title="Создание тега оборудования"
+        title="Создание классификатора / метки"
         maxWidth="xs"
         loading={savingTag}
-        submitLabel={savingTag ? 'Создание...' : 'Создать тег'}
+        submitLabel={savingTag ? 'Создание...' : 'Создать метку'}
         onSubmit={handleSaveTag}
         submitDisabled={savingTag || !tagName}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
           <TextField
-            label="Название тега"
+            label="Наименование метки"
             placeholder="например: Взрывозащищенное"
             value={tagName}
             onChange={(e) => setTagName(e.target.value)}
@@ -1191,7 +1191,7 @@ function ModuleSettingsContent() {
           />
           <Box>
             <Typography variant="caption" color="text.secondary" gutterBottom display="block">
-              Цвет бейджа:
+              Цвет метки:
             </Typography>
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
               {PRESET_COLORS.map((color) => (
