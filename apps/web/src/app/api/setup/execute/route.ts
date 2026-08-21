@@ -44,9 +44,22 @@ export async function POST(req: NextRequest) {
       jiraConfig,
     } = body;
 
-    if (!adminConfig?.login || !adminConfig?.password) {
+    const isLdapAuth = Boolean(
+      adminConfig?.authType === 'ldap' ||
+      ldapConfig?.authType === 'ldap' ||
+      (ldapConfig?.enabled && ldapConfig?.useForAdmin)
+    );
+
+    if (!adminConfig?.login) {
       return NextResponse.json(
-        { success: false, error: 'Укажите логин и пароль супер-администратора' },
+        { success: false, error: 'Укажите логин супер-администратора' },
+        { status: 400 }
+      );
+    }
+
+    if (!isLdapAuth && !adminConfig?.password) {
+      return NextResponse.json(
+        { success: false, error: 'Укажите пароль супер-администратора для локальной базы данных' },
         { status: 400 }
       );
     }
@@ -145,8 +158,8 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 3. Create or update the Superadmin User
-    const passwordHash = hashPassword(adminConfig.password);
+    // 3. Create or update the Superadmin User (passwordHash is NULL when authenticated via LDAP)
+    const passwordHash = isLdapAuth ? null : (adminConfig.password ? hashPassword(adminConfig.password) : null);
     const superadmin = await client.user.upsert({
       where: { ldapLogin: adminConfig.login.trim().toLowerCase() },
       create: {

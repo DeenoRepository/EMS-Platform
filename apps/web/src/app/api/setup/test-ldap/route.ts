@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { url, bindDn, bindPassword, searchBase } = body;
+    const { url, bindDn, bindPassword, searchBase, searchFilter, testLogin, testPassword } = body;
 
     if (!url) {
       return NextResponse.json(
@@ -43,12 +43,16 @@ export async function POST(req: NextRequest) {
       bindDn: bindDn || undefined,
       bindPassword: bindPassword || undefined,
       searchBase: searchBase || undefined,
+      searchFilter: searchFilter || undefined,
+      testLogin: testLogin ? String(testLogin).trim() : undefined,
+      testPassword: testPassword ? String(testPassword) : undefined,
     });
 
     if (result.success) {
       return NextResponse.json({
         success: true,
         data: result,
+        user: result.user,
         message: result.message || 'Подключение к LDAP успешно установлено!',
       });
     }

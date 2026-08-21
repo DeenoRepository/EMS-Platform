@@ -24,6 +24,7 @@ import {
   InputAdornment,
   IconButton,
   LinearProgress,
+  Radio,
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -33,6 +34,8 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import LanIcon from '@mui/icons-material/Lan';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import KeyIcon from '@mui/icons-material/Key';
+import SecurityIcon from '@mui/icons-material/Security';
 import { PageLoading } from '@/components/ui';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
@@ -67,6 +70,7 @@ export default function SetupWizardPage() {
   const [isTestingDb, setIsTestingDb] = useState(false);
 
   // Step 3: Admin & LDAP Config
+  const [authMode, setAuthMode] = useState<'local' | 'ldap'>('local');
   const [adminLogin, setAdminLogin] = useState('admin');
   const [adminDisplayName, setAdminDisplayName] = useState('Главный Администратор');
   const [adminEmail, setAdminEmail] = useState('admin@company.local');
@@ -79,7 +83,9 @@ export default function SetupWizardPage() {
   const [ldapBindDn, setLdapBindDn] = useState('cn=admin,dc=company,dc=local');
   const [ldapBindPassword, setLdapBindPassword] = useState('adminpassword');
   const [ldapSearchBase, setLdapSearchBase] = useState('dc=company,dc=local');
+  const [ldapSearchFilter, setLdapSearchFilter] = useState('(|(sAMAccountName={{username}})(uid={{username}})(userPrincipalName={{username}}))');
   const [ldapTestResult, setLdapTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [ldapAuthVerified, setLdapAuthVerified] = useState(false);
   const [isTestingLdap, setIsTestingLdap] = useState(false);
 
   // Step 4: Storage & Jira Config
@@ -145,7 +151,49 @@ export default function SetupWizardPage() {
     }
   };
 
-  // Test LDAP connection
+  // Test LDAP Connection & Direct User Bind Authentication
+  const handleTestLdapAuth = async () => {
+    setIsTestingLdap(true);
+    setLdapTestResult(null);
+    try {
+      const res = await fetch('/api/setup/test-ldap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: ldapUrl,
+          bindDn: ldapBindDn || undefined,
+          bindPassword: ldapBindPassword || undefined,
+          searchBase: ldapSearchBase,
+          searchFilter: ldapSearchFilter,
+          testLogin: adminLogin,
+          testPassword: adminPassword,
+        }),
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        setLdapTestResult({ success: true, message: json.message });
+        setLdapAuthVerified(true);
+        if (json.user) {
+          if (json.user.displayName && (!adminDisplayName || adminDisplayName === 'Главный Администратор')) {
+            setAdminDisplayName(json.user.displayName);
+          }
+          if (json.user.email && (!adminEmail || adminEmail === 'admin@company.local')) {
+            setAdminEmail(json.user.email);
+          }
+        }
+      } else {
+        setLdapTestResult({ success: false, message: json.error || 'Ошибка аутентификации в LDAP' });
+        setLdapAuthVerified(false);
+      }
+    } catch (err) {
+      setLdapTestResult({ success: false, message: 'Ошибка сети при проверке LDAP' });
+      setLdapAuthVerified(false);
+    } finally {
+      setIsTestingLdap(false);
+    }
+  };
+
+  // Basic LDAP connection ping
   const handleTestLdap = async () => {
     setIsTestingLdap(true);
     setLdapTestResult(null);
@@ -158,6 +206,7 @@ export default function SetupWizardPage() {
           bindDn: ldapBindDn,
           bindPassword: ldapBindPassword,
           searchBase: ldapSearchBase,
+          searchFilter: ldapSearchFilter,
         }),
       });
       const json = await res.json();
@@ -190,14 +239,18 @@ export default function SetupWizardPage() {
           login: adminLogin,
           displayName: adminDisplayName,
           email: adminEmail,
-          password: adminPassword,
+          password: authMode === 'ldap' ? '' : adminPassword,
+          authType: authMode,
         },
         ldapConfig: {
-          enabled: ldapEnabled,
+          enabled: authMode === 'ldap' || ldapEnabled,
+          authType: authMode,
+          useForAdmin: authMode === 'ldap',
           url: ldapUrl,
           bindDn: ldapBindDn,
           bindPassword: ldapBindPassword,
           searchBase: ldapSearchBase,
+          searchFilter: ldapSearchFilter,
         },
         storageConfig: {
           dir: storageDir,
@@ -492,160 +545,404 @@ export default function SetupWizardPage() {
                 <AdminPanelSettingsIcon color="primary" sx={{ fontSize: 28 }} />
                 <Box>
                   <Typography variant="h6" fontWeight={700}>
-                    Шаг 3: Учетная запись Супер-Администратора
+                    Шаг 3: Авторизация и учетная запись Супер-Администратора
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Главный административный аккаунт для полного управления системой
+                    Выберите режим аутентификации в системе и настройте главного администратора
                   </Typography>
                 </Box>
               </Box>
 
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    required
-                    label="Логин администратора"
-                    value={adminLogin}
-                    onChange={(e) => setAdminLogin(e.target.value)}
-                    placeholder="admin"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="ФИО / Отображаемое имя"
-                    value={adminDisplayName}
-                    onChange={(e) => setAdminDisplayName(e.target.value)}
-                    placeholder="Главный Администратор"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={12}>
-                  <TextField
-                    fullWidth
-                    label="Email администратора"
-                    type="email"
-                    value={adminEmail}
-                    onChange={(e) => setAdminEmail(e.target.value)}
-                    placeholder="admin@company.local"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    required
-                    type={showAdminPass ? 'text' : 'password'}
-                    label="Пароль администратора"
-                    value={adminPassword}
-                    onChange={(e) => setAdminPassword(e.target.value)}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton onClick={() => setShowAdminPass(!showAdminPass)} edge="end">
-                            {showAdminPass ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    required
-                    type={showAdminPass ? 'text' : 'password'}
-                    label="Подтверждение пароля"
-                    value={adminPasswordConfirm}
-                    onChange={(e) => setAdminPasswordConfirm(e.target.value)}
-                    error={Boolean(adminPasswordConfirm && adminPassword !== adminPasswordConfirm)}
-                    helperText={
-                      adminPasswordConfirm && adminPassword !== adminPasswordConfirm
-                        ? 'Пароли не совпадают'
-                        : undefined
-                    }
-                  />
-                </Grid>
-              </Grid>
-
-              <Divider sx={{ my: 1 }} />
-
-              {/* LDAP / Active Directory Block */}
+              {/* Mode Selection */}
               <Box>
-                <FormControlLabel
-                  control={<Switch checked={ldapEnabled} onChange={(e) => setLdapEnabled(e.target.checked)} color="primary" />}
-                  label={
-                    <Box>
-                      <Typography variant="subtitle2" fontWeight={700}>
-                        Включить интеграцию с Active Directory / LDAP
+                <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5 }}>
+                  Режим аутентификации:
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <Paper
+                      onClick={() => {
+                        setAuthMode('local');
+                        setLdapAuthVerified(false);
+                      }}
+                      variant="outlined"
+                      sx={{
+                        p: 2,
+                        cursor: 'pointer',
+                        borderRadius: 2,
+                        border: '2px solid',
+                        borderColor: authMode === 'local' ? 'primary.main' : 'divider',
+                        bgcolor: authMode === 'local' ? 'rgba(2, 132, 199, 0.04)' : 'background.paper',
+                        transition: 'all 0.2s',
+                        '&:hover': { borderColor: 'primary.light' },
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                        <Radio checked={authMode === 'local'} size="small" />
+                        <Typography variant="subtitle2" fontWeight={700}>
+                          Локальная база данных
+                        </Typography>
+                      </Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ pl: 3.5, display: 'block' }}>
+                        Создание локального администратора с хранением хеша пароля в PostgreSQL
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Сквозная корпоративная авторизация доменных пользователей предприятия
+                    </Paper>
+                  </Grid>
+
+                  <Grid item xs={12} sm={6}>
+                    <Paper
+                      onClick={() => setAuthMode('ldap')}
+                      variant="outlined"
+                      sx={{
+                        p: 2,
+                        cursor: 'pointer',
+                        borderRadius: 2,
+                        border: '2px solid',
+                        borderColor: authMode === 'ldap' ? 'primary.main' : 'divider',
+                        bgcolor: authMode === 'ldap' ? 'rgba(2, 132, 199, 0.04)' : 'background.paper',
+                        transition: 'all 0.2s',
+                        '&:hover': { borderColor: 'primary.light' },
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                        <Radio checked={authMode === 'ldap'} size="small" />
+                        <Typography variant="subtitle2" fontWeight={700}>
+                          LDAP / Active Directory (User Binding)
+                        </Typography>
+                      </Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ pl: 3.5, display: 'block' }}>
+                        Аутентификация через привязку к каталогу. Пароль НЕ сохраняется в базе данных
                       </Typography>
-                    </Box>
-                  }
-                />
-
-                {ldapEnabled && (
-                  <Stack spacing={2} sx={{ mt: 2.5, p: 2.5, bgcolor: 'grey.50', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-                    <TextField
-                      fullWidth
-                      label="LDAP URL"
-                      placeholder="ldap://ad.company.local:389"
-                      value={ldapUrl}
-                      onChange={(e) => setLdapUrl(e.target.value)}
-                    />
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          fullWidth
-                          label="Bind DN (Служебный аккаунт)"
-                          placeholder="CN=EMS_Service,OU=Services,DC=company,DC=local"
-                          value={ldapBindDn}
-                          onChange={(e) => setLdapBindDn(e.target.value)}
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          fullWidth
-                          type="password"
-                          label="Bind Password"
-                          value={ldapBindPassword}
-                          onChange={(e) => setLdapBindPassword(e.target.value)}
-                        />
-                      </Grid>
-                    </Grid>
-                    <TextField
-                      fullWidth
-                      label="Search Base (Корень поиска)"
-                      placeholder="OU=Users,DC=company,DC=local"
-                      value={ldapSearchBase}
-                      onChange={(e) => setLdapSearchBase(e.target.value)}
-                    />
-
-                    {ldapTestResult && (
-                      <Alert
-                        severity={ldapTestResult.success ? 'success' : 'error'}
-                        icon={ldapTestResult.success ? <CheckCircleIcon /> : <ErrorOutlineIcon />}
-                        sx={{ borderRadius: 2 }}
-                      >
-                        {ldapTestResult.message}
-                      </Alert>
-                    )}
-
-                    <Box>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={isTestingLdap ? <CircularProgress size={16} /> : <LanIcon />}
-                        onClick={handleTestLdap}
-                        disabled={isTestingLdap}
-                      >
-                        {isTestingLdap ? 'Проверка связи...' : 'Проверить связь с LDAP/AD'}
-                      </Button>
-                    </Box>
-                  </Stack>
-                )}
+                    </Paper>
+                  </Grid>
+                </Grid>
               </Box>
+
+              {/* Mode 1: Local DB */}
+              {authMode === 'local' && (
+                <Stack spacing={2.5}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        required
+                        label="Логин администратора"
+                        value={adminLogin}
+                        onChange={(e) => setAdminLogin(e.target.value)}
+                        placeholder="admin"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="ФИО / Отображаемое имя"
+                        value={adminDisplayName}
+                        onChange={(e) => setAdminDisplayName(e.target.value)}
+                        placeholder="Главный Администратор"
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="Email администратора"
+                        type="email"
+                        value={adminEmail}
+                        onChange={(e) => setAdminEmail(e.target.value)}
+                        placeholder="admin@company.local"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        required
+                        type={showAdminPass ? 'text' : 'password'}
+                        label="Пароль администратора"
+                        value={adminPassword}
+                        onChange={(e) => setAdminPassword(e.target.value)}
+                        InputProps={{
+                          endAdornment: (
+                            <InputAdornment position="end">
+                              <IconButton onClick={() => setShowAdminPass(!showAdminPass)} edge="end">
+                                {showAdminPass ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                              </IconButton>
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        required
+                        type={showAdminPass ? 'text' : 'password'}
+                        label="Подтверждение пароля"
+                        value={adminPasswordConfirm}
+                        onChange={(e) => setAdminPasswordConfirm(e.target.value)}
+                        error={Boolean(adminPasswordConfirm && adminPassword !== adminPasswordConfirm)}
+                        helperText={
+                          adminPasswordConfirm && adminPassword !== adminPasswordConfirm
+                            ? 'Пароли не совпадают'
+                            : undefined
+                        }
+                      />
+                    </Grid>
+                  </Grid>
+
+                  <Divider sx={{ my: 1 }} />
+
+                  {/* Optional secondary LDAP toggle for regular users */}
+                  <Box>
+                    <FormControlLabel
+                      control={<Switch checked={ldapEnabled} onChange={(e) => setLdapEnabled(e.target.checked)} color="primary" />}
+                      label={
+                        <Box>
+                          <Typography variant="subtitle2" fontWeight={700}>
+                            Включить дополнительную интеграцию с Active Directory / LDAP
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Для авторизации остальных сотрудников предприятия через корпоративный домен
+                          </Typography>
+                        </Box>
+                      }
+                    />
+
+                    {ldapEnabled && (
+                      <Stack spacing={2} sx={{ mt: 2, p: 2.5, bgcolor: 'grey.50', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                        <TextField
+                          fullWidth
+                          label="LDAP URL"
+                          placeholder="ldap://ad.company.local:389"
+                          value={ldapUrl}
+                          onChange={(e) => setLdapUrl(e.target.value)}
+                        />
+                        <Grid container spacing={2}>
+                          <Grid item xs={12} sm={6}>
+                            <TextField
+                              fullWidth
+                              label="Bind DN (Служебный аккаунт)"
+                              placeholder="CN=EMS_Service,OU=Services,DC=company,DC=local"
+                              value={ldapBindDn}
+                              onChange={(e) => setLdapBindDn(e.target.value)}
+                            />
+                          </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <TextField
+                              fullWidth
+                              type="password"
+                              label="Bind Password"
+                              value={ldapBindPassword}
+                              onChange={(e) => setLdapBindPassword(e.target.value)}
+                            />
+                          </Grid>
+                        </Grid>
+                        <TextField
+                          fullWidth
+                          label="Search Base (Корень поиска)"
+                          placeholder="OU=Users,DC=company,DC=local"
+                          value={ldapSearchBase}
+                          onChange={(e) => setLdapSearchBase(e.target.value)}
+                        />
+
+                        {ldapTestResult && (
+                          <Alert
+                            severity={ldapTestResult.success ? 'success' : 'error'}
+                            icon={ldapTestResult.success ? <CheckCircleIcon /> : <ErrorOutlineIcon />}
+                            sx={{ borderRadius: 2 }}
+                          >
+                            {ldapTestResult.message}
+                          </Alert>
+                        )}
+
+                        <Box>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={isTestingLdap ? <CircularProgress size={16} /> : <LanIcon />}
+                            onClick={handleTestLdap}
+                            disabled={isTestingLdap}
+                          >
+                            {isTestingLdap ? 'Проверка связи...' : 'Проверить связь с LDAP/AD'}
+                          </Button>
+                        </Box>
+                      </Stack>
+                    )}
+                  </Box>
+                </Stack>
+              )}
+
+              {/* Mode 2: LDAP User Binding */}
+              {authMode === 'ldap' && (
+                <Stack spacing={2.5}>
+                  <Alert severity="info" sx={{ borderRadius: 2 }}>
+                    <AlertTitle sx={{ fontWeight: 700 }}>Режим сквозной авторизации LDAP Binding</AlertTitle>
+                    В этом режиме пароль администратора <strong>НЕ сохраняется в базе данных</strong> платформы. Аутентификация производится напрямую через запрос привязки (User Bind) к каталогу Active Directory / LDAP. Для продолжения установки необходимо подтвердить учетные данные.
+                  </Alert>
+
+                  <Typography variant="subtitle2" fontWeight={700}>
+                    1. Параметры подключения к серверу каталога LDAP:
+                  </Typography>
+
+                  <TextField
+                    fullWidth
+                    required
+                    label="LDAP URL"
+                    placeholder="ldap://ad.company.local:389"
+                    value={ldapUrl}
+                    onChange={(e) => {
+                      setLdapUrl(e.target.value);
+                      setLdapAuthVerified(false);
+                    }}
+                    helperText="Адрес службы каталога (порт 389 для LDAP, 636 для LDAPS)"
+                  />
+
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        required
+                        label="Search Base (Корень поиска)"
+                        placeholder="DC=company,DC=local"
+                        value={ldapSearchBase}
+                        onChange={(e) => {
+                          setLdapSearchBase(e.target.value);
+                          setLdapAuthVerified(false);
+                        }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="Фильтр поиска пользователей"
+                        placeholder="(|(sAMAccountName={{username}})(uid={{username}}))"
+                        value={ldapSearchFilter}
+                        onChange={(e) => {
+                          setLdapSearchFilter(e.target.value);
+                          setLdapAuthVerified(false);
+                        }}
+                      />
+                    </Grid>
+                  </Grid>
+
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="Bind DN (Служебный аккаунт, опционально)"
+                        placeholder="CN=EMS_Service,OU=Services,DC=company,DC=local"
+                        value={ldapBindDn}
+                        onChange={(e) => {
+                          setLdapBindDn(e.target.value);
+                          setLdapAuthVerified(false);
+                        }}
+                        helperText="Оставьте пустым для прямого User Binding"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        type="password"
+                        label="Bind Password (пароль служебного аккаунта)"
+                        value={ldapBindPassword}
+                        onChange={(e) => {
+                          setLdapBindPassword(e.target.value);
+                          setLdapAuthVerified(false);
+                        }}
+                      />
+                    </Grid>
+                  </Grid>
+
+                  <Divider sx={{ my: 1 }} />
+
+                  <Typography variant="subtitle2" fontWeight={700}>
+                    2. Учетные данные супер-администратора в домене / каталоге:
+                  </Typography>
+
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        required
+                        label="Логин администратора в LDAP"
+                        value={adminLogin}
+                        onChange={(e) => {
+                          setAdminLogin(e.target.value);
+                          setLdapAuthVerified(false);
+                        }}
+                        placeholder="admin"
+                        helperText="Имя пользователя (sAMAccountName / uid)"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        required
+                        type={showAdminPass ? 'text' : 'password'}
+                        label="Пароль администратора в LDAP"
+                        value={adminPassword}
+                        onChange={(e) => {
+                          setAdminPassword(e.target.value);
+                          setLdapAuthVerified(false);
+                        }}
+                        helperText="Для тестовой проверки связывания (НЕ сохранится в БД)"
+                        InputProps={{
+                          endAdornment: (
+                            <InputAdornment position="end">
+                              <IconButton onClick={() => setShowAdminPass(!showAdminPass)} edge="end">
+                                {showAdminPass ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                              </IconButton>
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="ФИО / Отображаемое имя"
+                        value={adminDisplayName}
+                        onChange={(e) => setAdminDisplayName(e.target.value)}
+                        placeholder="Главный Администратор"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="Email администратора"
+                        type="email"
+                        value={adminEmail}
+                        onChange={(e) => setAdminEmail(e.target.value)}
+                        placeholder="admin@company.local"
+                      />
+                    </Grid>
+                  </Grid>
+
+                  {ldapTestResult && (
+                    <Alert
+                      severity={ldapTestResult.success ? 'success' : 'error'}
+                      icon={ldapTestResult.success ? <CheckCircleIcon /> : <ErrorOutlineIcon />}
+                      sx={{ borderRadius: 2 }}
+                    >
+                      <AlertTitle sx={{ fontWeight: 700 }}>
+                        {ldapTestResult.success ? 'Аутентификация LDAP подтверждена' : 'Ошибка аутентификации в LDAP'}
+                      </AlertTitle>
+                      {ldapTestResult.message}
+                    </Alert>
+                  )}
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Button
+                      variant="contained"
+                      color={ldapAuthVerified ? 'success' : 'primary'}
+                      startIcon={isTestingLdap ? <CircularProgress size={18} color="inherit" /> : (ldapAuthVerified ? <CheckCircleIcon /> : <LanIcon />)}
+                      onClick={handleTestLdapAuth}
+                      disabled={isTestingLdap || !adminLogin.trim() || !adminPassword || !ldapUrl.trim()}
+                      sx={{ py: 1.2, px: 3, fontWeight: 700 }}
+                    >
+                      {isTestingLdap ? 'Проверка соединения и bind...' : (ldapAuthVerified ? 'Учетные данные в LDAP подтверждены' : 'Проверить соединение и пароль в LDAP')}
+                    </Button>
+                  </Box>
+                </Stack>
+              )}
             </Stack>
           )}
 
@@ -748,19 +1045,31 @@ export default function SetupWizardPage() {
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="caption" color="text.secondary">
-                      Главный администратор
+                      Режим авторизации & Администратор
                     </Typography>
                     <Typography variant="body2" fontWeight={700}>
-                      {adminLogin} ({adminDisplayName})
+                      {authMode === 'ldap' ? 'LDAP User Binding (без пароля в БД)' : 'Локальная база данных'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Логин: {adminLogin} ({adminDisplayName})
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="caption" color="text.secondary">
-                      Active Directory / LDAP
+                      Служба каталогов LDAP
                     </Typography>
                     <Typography variant="body2" fontWeight={700}>
-                      {ldapEnabled ? `Включен (${ldapUrl})` : 'Выключен (локальные пароли)'}
+                      {authMode === 'ldap' || ldapEnabled ? `Включен (${ldapUrl})` : 'Выключен (локальные пароли)'}
                     </Typography>
+                    {authMode === 'ldap' && (
+                      <Chip
+                        size="small"
+                        color="success"
+                        icon={<CheckCircleIcon />}
+                        label="Пароль в LDAP проверен"
+                        sx={{ mt: 0.5, fontWeight: 600, height: 24 }}
+                      />
+                    )}
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="caption" color="text.secondary">
@@ -814,7 +1123,11 @@ export default function SetupWizardPage() {
                 onClick={() => setActiveStep((prev) => prev + 1)}
                 endIcon={<ArrowForwardIcon />}
                 disabled={
-                  (activeStep === 2 && (!adminLogin.trim() || !adminPassword || adminPassword !== adminPasswordConfirm))
+                  (activeStep === 2 && (
+                    authMode === 'local'
+                      ? (!adminLogin.trim() || !adminPassword || adminPassword !== adminPasswordConfirm)
+                      : (!adminLogin.trim() || !adminPassword || !ldapAuthVerified)
+                  ))
                 }
               >
                 Далее
