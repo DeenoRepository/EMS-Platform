@@ -1,9 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@ems/database';
+import fs from 'fs';
+import path from 'path';
+import { PrismaClient, prisma } from '@ems/database';
+import { enforceRateLimit } from '@/lib/rate-limit';
+import { getCurrentUser } from '@/lib/auth-guard';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  // 1. Rate limiting: max 10 attempts per minute
+  const rateLimitError = enforceRateLimit(req, { limit: 10, windowMs: 60 * 1000, prefix: 'test-db' });
+  if (rateLimitError) return rateLimitError;
+
+  // 2. SSRF Protection: If already installed, require admin auth
+  const rootDir = process.cwd();
+  const fileInstalled = fs.existsSync(path.join(rootDir, '.installed')) || fs.existsSync(path.join(rootDir, '..', '..', '.installed'));
+  let dbHasAdmin = false;
+  try {
+    const adminCount = await prisma.user.count({
+      where: { roles: { some: { role: { name: 'admin' } } } },
+    });
+    dbHasAdmin = adminCount > 0;
+  } catch {
+    dbHasAdmin = false;
+  }
+
+  if (fileInstalled || dbHasAdmin) {
+    const user = await getCurrentUser(req);
+    if (!user || !user.roles.includes('admin')) {
+      return NextResponse.json(
+        { success: false, error: 'Диагностика подключения доступна только авторизованному администратору.' },
+        { status: 403 }
+      );
+    }
+  }
+
   let client: PrismaClient | null = null;
   try {
     const body = await req.json();

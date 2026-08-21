@@ -2,16 +2,25 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@ems/database';
 import { authenticateLdap, signSessionToken, verifyPassword, getUserRolesAndPermissions, logAuditEvent } from '@ems/auth';
 import { JwtUserPayload } from '@ems/shared';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  // 1. Rate limiting: max 10 attempts per minute per IP
+  const rateLimitError = enforceRateLimit(req, { limit: 10, windowMs: 60 * 1000, prefix: 'login' });
+  if (rateLimitError) return rateLimitError;
+
   try {
     const body = await req.json();
     const { username, password } = body;
 
-    if (!username || typeof username !== 'string') {
-      return NextResponse.json({ success: false, error: 'Укажите логин' }, { status: 400 });
+    if (!username || typeof username !== 'string' || username.trim().length === 0 || username.length > 256) {
+      return NextResponse.json({ success: false, error: 'Укажите корректный логин (до 256 символов)' }, { status: 400 });
+    }
+
+    if (!password || typeof password !== 'string' || password.length === 0 || password.length > 256) {
+      return NextResponse.json({ success: false, error: 'Укажите корректный пароль' }, { status: 400 });
     }
 
     const trimmedUsername = username.trim();

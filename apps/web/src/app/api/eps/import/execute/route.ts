@@ -3,6 +3,7 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma, EquipmentStatus, FieldType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,6 +36,9 @@ function parseCommissionDate(val: any): Date | null {
 }
 
 export async function POST(req: NextRequest) {
+  const rateLimitError = enforceRateLimit(req, { limit: 5, windowMs: 60 * 1000, prefix: 'batch-import' });
+  if (rateLimitError) return rateLimitError;
+
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();

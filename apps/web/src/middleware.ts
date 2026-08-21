@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 
 function getJwtSecret(): Uint8Array {
-  const secret = process.env.JWT_SECRET || 'ems-default-dev-secret-jwt-key-not-for-production-min-32-chars-long';
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('Критическая ошибка безопасности: Переменная окружения JWT_SECRET обязательна в production-режиме.');
+    }
+    return new TextEncoder().encode('ems-default-dev-secret-jwt-key-not-for-production-min-32-chars-long');
+  }
   return new TextEncoder().encode(secret);
 }
 

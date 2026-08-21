@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { prisma } from '@ems/database';
+import { getCurrentUser } from '@/lib/auth-guard';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,15 +37,21 @@ export async function GET(req: NextRequest) {
 
     const isInstalled = fileExists || hasAdmin;
 
-    // Collect system information
-    const systemInfo = {
-      nodeVersion: process.version,
-      platform: `${os.type()} ${os.release()} (${os.arch()})`,
-      totalMemory: `${Math.round(os.totalmem() / 1024 / 1024 / 1024)} GB`,
-      freeMemory: `${Math.round(os.freemem() / 1024 / 1024 / 1024)} GB`,
-      cwd: rootDir,
-      uptime: `${Math.round(process.uptime())} сек`,
-    };
+    // Check if user is admin
+    const currentUser = await getCurrentUser(req);
+    const isAdmin = currentUser?.roles.includes('admin') || false;
+
+    // Only provide detailed system info if setup is pending or caller is an admin
+    const systemInfo = (!isInstalled || isAdmin)
+      ? {
+          nodeVersion: process.version,
+          platform: `${os.type()} ${os.release()} (${os.arch()})`,
+          totalMemory: `${Math.round(os.totalmem() / 1024 / 1024 / 1024)} GB`,
+          freeMemory: `${Math.round(os.freemem() / 1024 / 1024 / 1024)} GB`,
+          cwd: isAdmin ? rootDir : undefined,
+          uptime: `${Math.round(process.uptime())} сек`,
+        }
+      : undefined;
 
     return NextResponse.json({
       success: true,

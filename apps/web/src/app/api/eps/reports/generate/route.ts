@@ -3,10 +3,14 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma, EquipmentStatus } from '@ems/database';
 import { PERMISSIONS, EQUIPMENT_STATUS_MAP, formatDate, formatDateTime } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  const rateLimitError = enforceRateLimit(req, { limit: 15, windowMs: 60 * 1000, prefix: 'report-gen' });
+  if (rateLimitError) return rateLimitError;
+
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();

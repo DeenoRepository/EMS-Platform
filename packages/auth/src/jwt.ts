@@ -2,13 +2,19 @@ import { SignJWT, jwtVerify } from 'jose';
 import { JwtUserPayload } from '@ems/shared';
 
 function getJwtSecret(): Uint8Array {
-  const secret = process.env.JWT_SECRET || 'ems-default-dev-secret-jwt-key-not-for-production-min-32-chars-long';
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('Критическая ошибка безопасности: Переменная окружения JWT_SECRET обязательна в production-режиме.');
+    }
+    return new TextEncoder().encode('ems-default-dev-secret-jwt-key-not-for-production-min-32-chars-long');
+  }
   return new TextEncoder().encode(secret);
 }
 
 export async function signSessionToken(payload: JwtUserPayload): Promise<string> {
   const jwtSecret = getJwtSecret();
-  const jwtExpiresIn = process.env.JWT_EXPIRES_IN || '8h';
+  const jwtExpiresIn = process.env.JWT_EXPIRES_IN || process.env.JWT_EXPIRATION || '8h';
 
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: 'HS256' })
