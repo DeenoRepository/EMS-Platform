@@ -1,7 +1,9 @@
-import { test, describe } from 'node:test';
+import { test, describe, before } from 'node:test';
 import assert from 'node:assert';
 import { signSessionToken, verifySessionToken } from './jwt';
 import { JwtUserPayload } from '@ems/shared';
+
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_jwt_secret_with_more_than_32_characters_for_security';
 
 describe('JWT Session Management', () => {
   const samplePayload: JwtUserPayload = {
