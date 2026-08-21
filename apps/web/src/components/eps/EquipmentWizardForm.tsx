@@ -192,9 +192,11 @@ export function EquipmentWizardForm({
     if (def.fieldType === 'SELECT' && def.options && Array.isArray(def.options)) {
       return (
         <Grid item xs={12} sm={6} key={def.key}>
+          <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+            {def.name} {def.isRequired && <Box component="span" sx={{ color: 'error.main' }}>*</Box>}
+          </Typography>
           <TextField
             select
-            label={def.name}
             fullWidth
             size="small"
             required={def.isRequired}
@@ -215,8 +217,10 @@ export function EquipmentWizardForm({
     if (def.fieldType === 'TEXTAREA') {
       return (
         <Grid item xs={12} key={def.key}>
+          <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+            {def.name} {def.isRequired && <Box component="span" sx={{ color: 'error.main' }}>*</Box>}
+          </Typography>
           <TextField
-            label={def.name}
             multiline
             rows={2}
             fullWidth
@@ -231,10 +235,11 @@ export function EquipmentWizardForm({
 
     return (
       <Grid item xs={12} sm={6} key={def.key}>
+        <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+          {def.name} {def.isRequired && <Box component="span" sx={{ color: 'error.main' }}>*</Box>}
+        </Typography>
         <TextField
-          label={def.name}
           type={def.fieldType === 'NUMBER' ? 'number' : def.fieldType === 'DATE' ? 'date' : 'text'}
-          InputLabelProps={def.fieldType === 'DATE' ? { shrink: true } : undefined}
           InputProps={
             def.unit
               ? {
@@ -385,8 +390,10 @@ export function EquipmentWizardForm({
 
             <Grid container spacing={2}>
               <Grid item xs={12}>
+                <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+                  Наименование оборудования <Box component="span" sx={{ color: 'error.main' }}>*</Box>
+                </Typography>
                 <TextField
-                  label="Наименование оборудования"
                   placeholder="например: Центробежный насос подачи охлаждающей воды"
                   required
                   fullWidth
@@ -397,8 +404,10 @@ export function EquipmentWizardForm({
               </Grid>
 
               <Grid item xs={12} sm={6}>
+                <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+                  Инвентарный номер
+                </Typography>
                 <TextField
-                  label="Инвентарный номер"
                   placeholder="например: EQ-2024-001"
                   fullWidth
                   size="small"
@@ -408,8 +417,10 @@ export function EquipmentWizardForm({
               </Grid>
 
               <Grid item xs={12} sm={6}>
+                <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+                  Заводской / Серийный номер
+                </Typography>
                 <TextField
-                  label="Заводской / Серийный номер"
                   placeholder="например: SN-998234-A"
                   fullWidth
                   size="small"
@@ -419,8 +430,10 @@ export function EquipmentWizardForm({
               </Grid>
 
               <Grid item xs={12} sm={6}>
+                <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+                  Производитель (Бренд)
+                </Typography>
                 <TextField
-                  label="Производитель (Бренд)"
                   placeholder="например: Siemens / Atlas Copco"
                   fullWidth
                   size="small"
@@ -430,8 +443,10 @@ export function EquipmentWizardForm({
               </Grid>
 
               <Grid item xs={12} sm={6}>
+                <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+                  Модель / Модификация
+                </Typography>
                 <TextField
-                  label="Модель / Модификация"
                   placeholder="например: GA 45 VSD+ / 11 кВт"
                   fullWidth
                   size="small"
@@ -441,8 +456,10 @@ export function EquipmentWizardForm({
               </Grid>
 
               <Grid item xs={12}>
+                <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+                  Место установки (Цех, участок, позиция)
+                </Typography>
                 <TextField
-                  label="Место установки (Цех, участок, позиция)"
                   placeholder="например: Компрессорный цех, поз. К-2"
                   fullWidth
                   size="small"
@@ -525,11 +542,11 @@ export function EquipmentWizardForm({
 
             <Grid container spacing={2.5}>
               <Grid item xs={12} sm={6}>
+                <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+                  Статус оборудования
+                </Typography>
                 <FormControl fullWidth size="small">
-                  <InputLabel id="equipment-status-select-label">Статус оборудования</InputLabel>
                   <Select
-                    labelId="equipment-status-select-label"
-                    label="Статус оборудования"
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
                   >
@@ -545,8 +562,10 @@ export function EquipmentWizardForm({
               </Grid>
 
               <Grid item xs={12} sm={6}>
+                <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+                  Дата ввода в эксплуатацию
+                </Typography>
                 <DatePickerField
-                  label="Дата ввода в эксплуатацию"
                   value={commissionDate}
                   onChange={(val) => setCommissionDate(val || '')}
                   size="small"
