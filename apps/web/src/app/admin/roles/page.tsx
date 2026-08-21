@@ -464,7 +464,7 @@ export default function AdminRolesPage() {
                 </Box>
               </AccordionSummary>
               <AccordionDetails sx={{ pt: 0 }}>
-                <FormGroup sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1 }}>
+                <FormGroup sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
                   {modulePerms.map((perm) => (
                     <FormControlLabel
                       key={perm.id}
@@ -473,15 +473,43 @@ export default function AdminRolesPage() {
                           checked={selectedPermCodes.includes(perm.code)}
                           onChange={() => handleTogglePerm(perm.code)}
                           size="small"
+                          sx={{ alignSelf: 'flex-start', mt: 0.25 }}
                         />
                       }
+                      sx={{
+                        alignItems: 'flex-start',
+                        m: 0,
+                        p: 1.25,
+                        borderRadius: '8px',
+                        border: '1px solid',
+                        borderColor: selectedPermCodes.includes(perm.code) ? '#bae6fd' : '#f1f5f9',
+                        bgcolor: selectedPermCodes.includes(perm.code) ? 'rgba(2, 132, 199, 0.04)' : '#ffffff',
+                        transition: 'all 0.15s ease',
+                        '&:hover': { bgcolor: '#f8fafc', borderColor: '#cbd5e1' },
+                      }}
                       label={
-                        <Box>
-                          <Typography variant="body2" fontWeight={500} fontSize="0.8125rem">
-                            {perm.displayName}
-                          </Typography>
+                        <Box sx={{ ml: 0.5 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap', mb: 0.25 }}>
+                            <Typography variant="body2" fontWeight={600} fontSize="0.8125rem" color="#0f172a">
+                              {perm.displayName}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                fontFamily: 'monospace',
+                                fontSize: '0.6875rem',
+                                color: '#64748b',
+                                bgcolor: '#f1f5f9',
+                                px: 0.75,
+                                py: 0.1,
+                                borderRadius: '4px',
+                              }}
+                            >
+                              {perm.code}
+                            </Typography>
+                          </Box>
                           {perm.description && (
-                            <Typography variant="caption" color="text.secondary" display="block">
+                            <Typography variant="caption" color="#64748b" display="block" sx={{ lineHeight: 1.35 }}>
                               {perm.description}
                             </Typography>
                           )}

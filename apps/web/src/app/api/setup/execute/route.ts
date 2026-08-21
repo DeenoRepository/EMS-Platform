@@ -5,7 +5,7 @@ import crypto from 'crypto';
 import { execSync } from 'child_process';
 import { PrismaClient, prisma } from '@ems/database';
 import { hashPassword } from '@ems/auth';
-import { PERMISSIONS } from '@ems/shared';
+import { PERMISSIONS, PERMISSION_DEFINITIONS } from '@ems/shared';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { getCurrentUser } from '@/lib/auth-guard';
 
@@ -24,12 +24,12 @@ export async function POST(req: NextRequest) {
 
     const fileInstalled = fs.existsSync(installedFilePath) || fs.existsSync(rootInstalledFilePath);
 
+    // If installed file already exists, require superadmin session
     if (fileInstalled) {
-      // Only authenticated admin can reconfigure an already installed system
       const user = await getCurrentUser(req);
-      if (!user || !user.roles.includes('admin')) {
+      if (!user || !user.roles?.includes('admin')) {
         return NextResponse.json(
-          { success: false, error: 'Система уже установлена и настроена. Повторная настройка разрешена только авторизованному администратору.' },
+          { success: false, error: 'Система уже установлена. Повторная инициализация заблокирована.' },
           { status: 403 }
         );
       }
@@ -97,18 +97,21 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 1. Ensure all system permissions exist
-    const allPermissions = Object.values(PERMISSIONS);
-    for (const code of allPermissions) {
+    // 1. Ensure all system permissions exist with rich descriptions
+    for (const [code, def] of Object.entries(PERMISSION_DEFINITIONS)) {
       await client.permission.upsert({
         where: { code },
         create: {
-          code,
-          displayName: code,
-          module: code.split('.')[0] || 'system',
-          description: `Право доступа ${code}`,
+          code: def.code,
+          displayName: def.displayName,
+          module: def.module,
+          description: def.description,
         },
-        update: {},
+        update: {
+          displayName: def.displayName,
+          description: def.description,
+          module: def.module,
+        },
       });
     }
 
