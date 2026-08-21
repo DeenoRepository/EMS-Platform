@@ -815,7 +815,7 @@ function EquipmentListContent() {
                         <Tooltip title="Документов">
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
                             <DescriptionOutlinedIcon sx={{ fontSize: 15 }} />
-                            <span>{eq.counts.documents}</span>
+                            <span>{eq.counts?.documents ?? 0}</span>
                           </Box>
                         </Tooltip>
                         <Tooltip title="Планов ТО">

@@ -596,17 +596,17 @@ function ModuleSettingsContent() {
         ]}
         tabs={
           <NavTabsContainer
-            activeTab={activeTab}
-            onChange={(_, newTab) => {
+            value={activeTab}
+            onChange={(newTab: number) => {
               setActiveTab(newTab);
               const keys = ['eps', 'wms', 'srm', 'mro'];
               router.replace(`/admin/module-settings?tab=${keys[newTab]}`, { scroll: false });
             }}
             tabs={[
-              { label: 'Паспортизация (EPS)', icon: <BadgeOutlinedIcon sx={{ fontSize: 18 }} /> },
-              { label: 'Складской учёт (WMS)', icon: <WarehouseOutlinedIcon sx={{ fontSize: 18 }} /> },
-              { label: 'Система подачи заявок (SRM)', icon: <BugReportOutlinedIcon sx={{ fontSize: 18 }} /> },
-              { label: 'ТО и Ремонт (MRO)', icon: <BuildCircleIcon sx={{ fontSize: 18 }} /> },
+              { value: 0, label: 'Паспортизация (EPS)', icon: <BadgeOutlinedIcon sx={{ fontSize: 18 }} /> },
+              { value: 1, label: 'Складской учёт (WMS)', icon: <WarehouseOutlinedIcon sx={{ fontSize: 18 }} /> },
+              { value: 2, label: 'Система подачи заявок (SRM)', icon: <BugReportOutlinedIcon sx={{ fontSize: 18 }} /> },
+              { value: 3, label: 'ТО и Ремонт (MRO)', icon: <BuildCircleIcon sx={{ fontSize: 18 }} /> },
             ]}
           />
         }
@@ -662,15 +662,15 @@ function ModuleSettingsContent() {
         <Box>
           <Box sx={{ mb: 2.5 }}>
             <NavTabsContainer
-              activeTab={epsSubTab}
-              onChange={(_, newSubTab) => {
+              value={epsSubTab}
+              onChange={(newSubTab: number) => {
                 setEpsSubTab(newSubTab);
                 const sub = newSubTab === 1 ? 'import' : 'fields';
                 router.replace(`/admin/module-settings?tab=eps&subtab=${sub}`, { scroll: false });
               }}
               tabs={[
-                { label: 'Кастомные разделы, поля и теги', icon: <LayersOutlinedIcon sx={{ fontSize: 18 }} /> },
-                { label: 'Мастер импорта оборудования (Smart Import Wizard)', icon: <FileUploadOutlinedIcon sx={{ fontSize: 18 }} /> },
+                { value: 0, label: 'Кастомные разделы, поля и теги', icon: <LayersOutlinedIcon sx={{ fontSize: 18 }} /> },
+                { value: 1, label: 'Мастер импорта оборудования (Smart Import Wizard)', icon: <FileUploadOutlinedIcon sx={{ fontSize: 18 }} /> },
               ]}
             />
           </Box>

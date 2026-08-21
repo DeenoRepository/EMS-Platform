@@ -16,7 +16,8 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import ClearIcon from '@mui/icons-material/Clear';
 
 export interface DatePickerFieldProps {
-  label: string;
+  label?: string;
+  placeholder?: string;
   value: string | null;
   onChange: (date: string | null) => void;
   size?: 'small' | 'medium';
@@ -28,10 +29,12 @@ export interface DatePickerFieldProps {
   maxDate?: string;
   disabled?: boolean;
   className?: string;
+  sx?: any;
 }
 
 export function DatePickerField({
   label,
+  placeholder,
   value,
   onChange,
   size = 'small',
@@ -43,11 +46,13 @@ export function DatePickerField({
   maxDate,
   disabled = false,
   className,
+  sx,
 }: DatePickerFieldProps) {
   return (
     <TextField
       type="date"
-      label={label}
+      label={label || placeholder}
+      placeholder={placeholder}
       value={value || ''}
       onChange={(e) => onChange(e.target.value || null)}
       size={size}
@@ -57,6 +62,7 @@ export function DatePickerField({
       helperText={error || helperText}
       disabled={disabled}
       className={className}
+      sx={sx}
       InputLabelProps={{ shrink: true }}
       inputProps={{ min: minDate, max: maxDate }}
       InputProps={{
