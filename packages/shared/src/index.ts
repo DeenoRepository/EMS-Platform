@@ -55,6 +55,7 @@ export const EQUIPMENT_STATUS_MAP: Record<string, { label: string; color: 'succe
   UNDER_REPAIR: { label: 'На ремонте', color: 'warning' },
   DECOMMISSIONED: { label: 'Списано', color: 'error' },
   IN_STORAGE: { label: 'На складе', color: 'default' },
+  INACTIVE: { label: 'Неактивно', color: 'default' },
   DRAFT: { label: 'Черновик', color: 'default' },
 };
 
@@ -87,9 +88,11 @@ export const APPROVAL_STATUS_MAP: Record<string, { label: string; color: 'warnin
   CANCELLED: { label: 'Отозвано', color: 'default' },
 };
 
-export const OPERATION_TYPE_MAP: Record<string, { label: string; color: 'success' | 'warning' | 'info' | 'default' }> = {
+export const OPERATION_TYPE_MAP: Record<string, { label: string; color: 'success' | 'warning' | 'error' | 'info' | 'default' }> = {
   RECEIPT: { label: 'Приход', color: 'success' },
   ISSUE: { label: 'Расход / Списание', color: 'warning' },
+  ISSUE_EMPLOYEE: { label: 'Выдача сотруднику', color: 'warning' },
+  ISSUE_WRITE_OFF: { label: 'Списание в утиль', color: 'error' },
   TRANSFER: { label: 'Перемещение', color: 'info' },
   ADJUSTMENT: { label: 'Корректировка', color: 'default' },
 };
@@ -150,7 +153,7 @@ export interface JwtUserPayload {
 // 4. ТИПЫ API ОТВЕТОВ
 // ==========================================
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;

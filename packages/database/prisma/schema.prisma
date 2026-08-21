@@ -39,6 +39,7 @@ model User {
   dispatchedTransfers    StockTransfer[]       @relation("TransferDispatchedBy")
   receivedTransfers      StockTransfer[]       @relation("TransferReceivedBy")
   rejectedTransfers      StockTransfer[]       @relation("TransferRejectedBy")
+  checklistResults       ChecklistResult[]
 }
 
 model Role {
@@ -72,6 +73,7 @@ model RolePermission {
   permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
+  @@index([permissionId])
 }
 
 model UserRole {
@@ -82,6 +84,7 @@ model UserRole {
   role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@id([userId, roleId])
+  @@index([roleId])
 }
 
 // ==========================================
@@ -226,6 +229,7 @@ model EquipmentTag {
   tag       Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([equipmentId, tagId])
+  @@index([tagId])
 }
 
 model CustomSection {
@@ -387,6 +391,7 @@ model Warehouse {
   zones               StorageZone[]
   dispatchedTransfers StockTransfer[]     @relation("TransfersDispatched")
   receivedTransfers   StockTransfer[]     @relation("TransfersReceived")
+  usedInMaintenance   MaintenanceUsedPart[]
 
   @@index([responsibleUserId])
 }
@@ -445,12 +450,13 @@ model Nomenclature {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  category       NomenclatureCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  stockItems     StockItem[]
-  operationItems StockOperationItem[]
-  equipmentLinks EquipmentSparePart[]
-  inventoryItems InventoryItem[]
-  transferItems  StockTransferItem[]
+  category          NomenclatureCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  stockItems        StockItem[]
+  operationItems    StockOperationItem[]
+  equipmentLinks    EquipmentSparePart[]
+  inventoryItems    InventoryItem[]
+  transferItems     StockTransferItem[]
+  usedInMaintenance MaintenanceUsedPart[]
 
   @@index([name])
   @@index([article])
@@ -510,6 +516,10 @@ model StockOperationItem {
   operation    StockOperation @relation(fields: [operationId], references: [id], onDelete: Cascade)
   nomenclature Nomenclature   @relation(fields: [nomenclatureId], references: [id], onDelete: Cascade)
   equipment    Equipment?     @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+
+  @@index([operationId])
+  @@index([nomenclatureId])
+  @@index([equipmentId])
 }
 
 model EquipmentSparePart {
@@ -520,6 +530,7 @@ model EquipmentSparePart {
   nomenclature Nomenclature @relation(fields: [nomenclatureId], references: [id], onDelete: Cascade)
 
   @@id([equipmentId, nomenclatureId])
+  @@index([nomenclatureId])
 }
 
 model Inventory {
@@ -536,6 +547,11 @@ model Inventory {
   warehouse Warehouse       @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
   createdBy User            @relation(fields: [createdById], references: [id])
   items     InventoryItem[]
+
+  @@index([warehouseId])
+  @@index([status])
+  @@index([createdById])
+  @@index([date])
 }
 
 enum InventoryStatus {
@@ -557,6 +573,7 @@ model InventoryItem {
   nomenclature Nomenclature @relation(fields: [nomenclatureId], references: [id], onDelete: Cascade)
 
   @@unique([inventoryId, nomenclatureId])
+  @@index([nomenclatureId])
 }
 
 // ==========================================
@@ -713,6 +730,9 @@ model MaintenancePlan {
   equipment Equipment           @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
   checklist ChecklistTemplate?  @relation(fields: [checklistId], references: [id], onDelete: SetNull)
   schedules MaintenanceSchedule[]
+
+  @@index([equipmentId])
+  @@index([checklistId])
 }
 
 enum MaintenanceFrequency {
@@ -776,6 +796,8 @@ model ChecklistTemplateItem {
   isRequired  Boolean           @default(true)
 
   template ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
 }
 
 enum ChecklistItemType {
@@ -791,7 +813,10 @@ model ChecklistResult {
   completedById String
   completedAt   DateTime @default(now())
 
-  schedule MaintenanceSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  schedule    MaintenanceSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  completedBy User                @relation(fields: [completedById], references: [id], onDelete: Restrict)
+
+  @@index([completedById])
 }
 
 model MaintenanceUsedPart {
@@ -801,5 +826,11 @@ model MaintenanceUsedPart {
   warehouseId    String
   quantity       Decimal
 
-  schedule MaintenanceSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  schedule     MaintenanceSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  nomenclature Nomenclature        @relation(fields: [nomenclatureId], references: [id], onDelete: Cascade)
+  warehouse    Warehouse           @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@index([scheduleId])
+  @@index([nomenclatureId])
+  @@index([warehouseId])
 }

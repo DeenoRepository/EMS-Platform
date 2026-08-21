@@ -45,8 +45,9 @@ export async function PATCH(req: NextRequest) {
 
     const body = await req.json();
 
+    const KEY_REGEX = /^[A-Z0-9_]{3,64}$/;
     for (const [key, value] of Object.entries(body)) {
-      if (typeof value === 'string') {
+      if (KEY_REGEX.test(key) && typeof value === 'string' && value.length <= 10000) {
         await prisma.systemSetting.upsert({
           where: { key },
           update: { value },

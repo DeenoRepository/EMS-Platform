@@ -125,23 +125,25 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
             },
           });
 
-          // Списываем количество из ячеек/остатков на складе (если есть запись в StockItem)
+          // Списываем количество из ячеек/остатков на складе
           const stockItem = await tx.stockItem.findFirst({
             where: {
               nomenclatureId,
               warehouseId,
-              quantity: { gte: numQty },
             },
           });
 
-          if (stockItem) {
-            await tx.stockItem.update({
-              where: { id: stockItem.id },
-              data: {
-                quantity: { decrement: numQty },
-              },
-            });
+          if (!stockItem || Number(stockItem.quantity) < numQty) {
+            const availableQty = stockItem ? Number(stockItem.quantity) : 0;
+            throw new Error(`Недостаточно остатка номенклатуры на складе для списания. Требуется: ${numQty}, доступно: ${availableQty}`);
           }
+
+          await tx.stockItem.update({
+            where: { id: stockItem.id },
+            data: {
+              quantity: { decrement: numQty },
+            },
+          });
         }
       }
 

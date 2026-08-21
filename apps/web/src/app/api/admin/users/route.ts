@@ -65,23 +65,45 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Пользователь не найден' }, { status: 404 });
     }
 
-    // Обновление ролей если переданы
-    if (Array.isArray(roleIds)) {
-      await prisma.userRole.deleteMany({ where: { userId } });
-      if (roleIds.length > 0) {
-        await prisma.userRole.createMany({
-          data: roleIds.map((roleId: string) => ({ userId, roleId })),
-        });
-      }
+    // Защита от самоблокировки
+    const isSelf = userId === user.userId;
+    if (isSelf && typeof isActive === 'boolean' && !isActive) {
+      return NextResponse.json(
+        { success: false, error: 'Запрещено деактивировать собственную учетную запись администратора' },
+        { status: 400 }
+      );
     }
 
-    // Обновление активности
-    if (typeof isActive === 'boolean') {
-      await prisma.user.update({
-        where: { id: userId },
-        data: { isActive },
-      });
-    }
+    // Выполняем изменения атомарно в транзакции
+    await prisma.$transaction(async (tx) => {
+      // Обновление ролей если переданы
+      if (Array.isArray(roleIds)) {
+        if (isSelf) {
+          // Проверяем, что администратор не лишает сам себя роли admin
+          const adminRoles = await tx.role.findMany({ where: { name: 'admin' } });
+          const adminRoleIds = adminRoles.map((r) => r.id);
+          const retainsAdmin = roleIds.some((id: string) => adminRoleIds.includes(id));
+          if (!retainsAdmin) {
+            throw new Error('Запрещено удалять у себя роль администратора');
+          }
+        }
+
+        await tx.userRole.deleteMany({ where: { userId } });
+        if (roleIds.length > 0) {
+          await tx.userRole.createMany({
+            data: roleIds.map((roleId: string) => ({ userId, roleId })),
+          });
+        }
+      }
+
+      // Обновление активности
+      if (typeof isActive === 'boolean') {
+        await tx.user.update({
+          where: { id: userId },
+          data: { isActive },
+        });
+      }
+    });
 
     await logAuditEvent({
       userId: user.userId,
@@ -93,6 +115,9 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ success: true, message: 'Пользователь обновлен' });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: 'Ошибка обновления пользователя' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error.message || 'Ошибка обновления пользователя' },
+      { status: 400 }
+    );
   }
 }

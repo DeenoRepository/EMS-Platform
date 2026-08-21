@@ -30,7 +30,20 @@ export async function GET(
       return NextResponse.json({ success: false, error: 'Файл не найден' }, { status: 404 });
     }
 
-    const fileBuffer = fs.readFileSync(resolvedFullPath);
+    const fileStat = fs.statSync(resolvedFullPath);
+    const fileStream = fs.createReadStream(resolvedFullPath);
+    // Convert Node.js readable stream to Web ReadableStream
+    const webStream = new ReadableStream({
+      start(controller) {
+        fileStream.on('data', (chunk) => controller.enqueue(chunk));
+        fileStream.on('end', () => controller.close());
+        fileStream.on('error', (err) => controller.error(err));
+      },
+      cancel() {
+        fileStream.destroy();
+      },
+    });
+
     const ext = path.extname(resolvedFullPath).toLowerCase();
 
     let contentType = 'application/octet-stream';
@@ -48,9 +61,10 @@ export async function GET(
 
     const fileName = path.basename(resolvedFullPath);
 
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(webStream as any, {
       headers: {
         'Content-Type': contentType,
+        'Content-Length': String(fileStat.size),
         'Cache-Control': 'private, no-cache, no-store, must-revalidate',
         'X-Content-Type-Options': 'nosniff',
         'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'",
