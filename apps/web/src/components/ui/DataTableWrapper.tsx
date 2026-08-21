@@ -238,7 +238,7 @@ export function DataTableWrapper({
     },
   };
 
-  const renderHeaderRight = () => (
+  const utilityTools = (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
       {/* Density Selector */}
       {showDensityToggle && (
