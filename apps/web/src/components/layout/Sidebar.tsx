@@ -305,7 +305,7 @@ export default function Sidebar({
           badgeTooltip: wmsLowStockCount && wmsLowStockCount > 0 ? `${wmsLowStockCount} поз. ТМЦ ниже неснижаемого остатка (дефицит)` : undefined,
         },
         {
-          label: 'Движение ТМЦ (Операции)',
+          label: 'Движение ТМЦ',
           path: '/wms/operations',
           icon: <SwapHorizIcon sx={{ fontSize: 15 }} />,
           badge: wmsPendingTransfersCount && wmsPendingTransfersCount > 0 ? wmsPendingTransfersCount : null,
