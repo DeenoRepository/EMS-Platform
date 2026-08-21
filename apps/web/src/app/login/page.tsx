@@ -32,12 +32,9 @@ import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import LanOutlinedIcon from '@mui/icons-material/LanOutlined';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ClearIcon from '@mui/icons-material/Clear';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import ContactSupportOutlinedIcon from '@mui/icons-material/ContactSupportOutlined';
 import DomainIcon from '@mui/icons-material/Domain';
-import VpnKeyOutlinedIcon from '@mui/icons-material/VpnKeyOutlined';
 import { useAuth } from '@/lib/auth-client';
 import { StatusBadge } from '@/components/ui';
 
@@ -646,54 +643,30 @@ export default function LoginPage() {
           <ContactSupportOutlinedIcon sx={{ color: 'primary.main' }} />
           Восстановление доступа
         </DialogTitle>
-        <DialogContent dividers sx={{ py: 2 }}>
-          <Typography variant="body2" sx={{ color: '#334155', mb: 2, lineHeight: 1.5 }}>
-            Авторизация в EMS Platform интегрирована с единым корпоративным каталогом домена Active Directory (LDAP).
+        <DialogContent dividers sx={{ py: 2.5 }}>
+          <Typography variant="body2" sx={{ color: '#334155', mb: 2, lineHeight: 1.55 }}>
+            Для восстановления доступа, сброса пароля или разблокировки учетной записи необходимо обратиться к <b>системному администратору</b> вашего предприятия или в службу технической поддержки (ИТ-отдел).
           </Typography>
 
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            <Box
-              sx={{
-                p: 1.5,
-                borderRadius: 2,
-                backgroundColor: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 1.25,
-              }}
-            >
-              <DomainIcon sx={{ fontSize: 20, color: 'primary.main', mt: 0.2 }} />
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0f172a' }}>
-                  Сброс пароля домена
-                </Typography>
-                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.25 }}>
-                  Воспользуйтесь внутренним порталом самообслуживания Active Directory (SSPR) или нажмите Ctrl+Alt+Del на рабочей станции.
-                </Typography>
-              </Box>
-            </Box>
-
-            <Box
-              sx={{
-                p: 1.5,
-                borderRadius: 2,
-                backgroundColor: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 1.25,
-              }}
-            >
-              <VpnKeyOutlinedIcon sx={{ fontSize: 20, color: 'secondary.main', mt: 0.2 }} />
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0f172a' }}>
-                  Служба технической поддержки
-                </Typography>
-                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.25 }}>
-                  Обратитесь к системному администратору предприятия или в Helpdesk ИТ по внутреннему номеру <b>1024</b>.
-                </Typography>
-              </Box>
+          <Box
+            sx={{
+              p: 2,
+              borderRadius: 2,
+              backgroundColor: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 1.5,
+            }}
+          >
+            <DomainIcon sx={{ fontSize: 22, color: 'primary.main', mt: 0.2, flexShrink: 0 }} />
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0f172a', mb: 0.5 }}>
+                Корпоративный домен Active Directory
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8125rem', lineHeight: 1.45 }}>
+                Учетные записи пользователей управляются централизованно. Смена пароля осуществляется через доменную рабочую станцию (Ctrl+Alt+Del) либо администратором сети.
+              </Typography>
             </Box>
           </Box>
         </DialogContent>
