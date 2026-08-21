@@ -666,6 +666,34 @@ const STATUS_CONFIG_MAP: Record<string, StatusTheme> = {
     border: '#bae6fd',
     icon: <InventoryIcon sx={{ fontSize: 13 }} />,
   },
+  EQUIPMENT_APPROVAL: {
+    label: 'Согласование',
+    color: '#d97706',
+    bg: '#fffbeb',
+    border: '#fde68a',
+    icon: <HourglassEmptyIcon sx={{ fontSize: 13 }} />,
+  },
+  EQUIPMENTAPPROVAL: {
+    label: 'Согласование',
+    color: '#d97706',
+    bg: '#fffbeb',
+    border: '#fde68a',
+    icon: <HourglassEmptyIcon sx={{ fontSize: 13 }} />,
+  },
+  EQUIPMENT_DOCUMENT: {
+    label: 'Документ / Чертеж',
+    color: '#7c3aed',
+    bg: '#faf5ff',
+    border: '#e9d5ff',
+    icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
+  },
+  EQUIPMENTDOCUMENT: {
+    label: 'Документ / Чертеж',
+    color: '#7c3aed',
+    bg: '#faf5ff',
+    border: '#e9d5ff',
+    icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
+  },
   DOCUMENT: {
     label: 'Документ',
     color: '#7c3aed',
@@ -673,7 +701,49 @@ const STATUS_CONFIG_MAP: Record<string, StatusTheme> = {
     border: '#e9d5ff',
     icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
   },
+  PHOTO: {
+    label: 'Фотография',
+    color: '#0f766e',
+    bg: '#f0fdfa',
+    border: '#99f6e4',
+    icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
+  },
+  CUSTOM_FIELD: {
+    label: 'Тех. параметр',
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+    icon: <TuneIcon sx={{ fontSize: 13 }} />,
+  },
+  CUSTOMFIELD: {
+    label: 'Тех. параметр',
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+    icon: <TuneIcon sx={{ fontSize: 13 }} />,
+  },
+  EQUIPMENT_CUSTOM_SECTION: {
+    label: 'Раздел параметров',
+    color: '#475569',
+    bg: '#f1f5f9',
+    border: '#e2e8f0',
+    icon: <TuneIcon sx={{ fontSize: 13 }} />,
+  },
+  EQUIPMENTCUSTOMSECTION: {
+    label: 'Раздел параметров',
+    color: '#475569',
+    bg: '#f1f5f9',
+    border: '#e2e8f0',
+    icon: <TuneIcon sx={{ fontSize: 13 }} />,
+  },
   SPARE_PART: {
+    label: 'Запчасть / ТМЦ',
+    color: '#0f766e',
+    bg: '#f0fdfa',
+    border: '#99f6e4',
+    icon: <BuildCircleIcon sx={{ fontSize: 13 }} />,
+  },
+  SPAREPART: {
     label: 'Запчасть / ТМЦ',
     color: '#0f766e',
     bg: '#f0fdfa',
@@ -700,6 +770,27 @@ const STATUS_CONFIG_MAP: Record<string, StatusTheme> = {
     bg: '#f0f9ff',
     border: '#bae6fd',
     icon: <BuildCircleIcon sx={{ fontSize: 13 }} />,
+  },
+  USER_ACCOUNT: {
+    label: 'Пользователь',
+    color: '#64748b',
+    bg: '#f8fafc',
+    border: '#e2e8f0',
+    icon: <PersonIcon sx={{ fontSize: 13 }} />,
+  },
+  ROLE: {
+    label: 'Роль',
+    color: '#7c3aed',
+    bg: '#faf5ff',
+    border: '#e9d5ff',
+    icon: <TuneIcon sx={{ fontSize: 13 }} />,
+  },
+  PERMISSION: {
+    label: 'Право доступа',
+    color: '#0f766e',
+    bg: '#f0fdfa',
+    border: '#99f6e4',
+    icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
   },
 
   // Import Validation
@@ -740,8 +831,10 @@ export function StatusBadge({
   customIcon,
   customConfig,
 }: StatusBadgeProps) {
-  const normKey = (status || '').toUpperCase().trim().replace(/[\s-]+/g, '_');
-  const baseConfig = STATUS_CONFIG_MAP[normKey] || {
+  const rawKey = status || '';
+  const camelSplitKey = rawKey.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toUpperCase().trim().replace(/[\s-]+/g, '_');
+  const upperKey = rawKey.toUpperCase().trim().replace(/[\s-]+/g, '_');
+  const baseConfig = STATUS_CONFIG_MAP[camelSplitKey] || STATUS_CONFIG_MAP[upperKey] || {
     label: label || status || '—',
     color: '#64748b',
     bg: '#f8fafc',
