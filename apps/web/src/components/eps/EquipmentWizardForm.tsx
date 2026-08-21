@@ -386,11 +386,12 @@ export function EquipmentWizardForm({
             <Grid container spacing={2}>
               <Grid item xs={12}>
                 <TextField
-                  label="Наименование оборудования *"
+                  label="Наименование оборудования"
                   placeholder="например: Центробежный насос подачи охлаждающей воды"
                   required
                   fullWidth
                   size="small"
+                  InputLabelProps={{ shrink: true }}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
@@ -399,9 +400,10 @@ export function EquipmentWizardForm({
               <Grid item xs={12} sm={6}>
                 <TextField
                   label="Инвентарный номер"
-                  placeholder="EQ-2024-001"
+                  placeholder="например: EQ-2024-001"
                   fullWidth
                   size="small"
+                  InputLabelProps={{ shrink: true }}
                   value={inventoryNumber}
                   onChange={(e) => setInventoryNumber(e.target.value)}
                 />
@@ -410,9 +412,10 @@ export function EquipmentWizardForm({
               <Grid item xs={12} sm={6}>
                 <TextField
                   label="Заводской / Серийный номер"
-                  placeholder="SN-998234-A"
+                  placeholder="например: SN-998234-A"
                   fullWidth
                   size="small"
+                  InputLabelProps={{ shrink: true }}
                   value={serialNumber}
                   onChange={(e) => setSerialNumber(e.target.value)}
                 />
@@ -421,9 +424,10 @@ export function EquipmentWizardForm({
               <Grid item xs={12} sm={6}>
                 <TextField
                   label="Производитель (Бренд)"
-                  placeholder="Siemens / Grundfos / KSB"
+                  placeholder="например: Siemens / Atlas Copco"
                   fullWidth
                   size="small"
+                  InputLabelProps={{ shrink: true }}
                   value={manufacturer}
                   onChange={(e) => setManufacturer(e.target.value)}
                 />
@@ -432,9 +436,10 @@ export function EquipmentWizardForm({
               <Grid item xs={12} sm={6}>
                 <TextField
                   label="Модель / Модификация"
-                  placeholder="CR 15-3 / 11 кВт"
+                  placeholder="например: GA 45 VSD+ / 11 кВт"
                   fullWidth
                   size="small"
+                  InputLabelProps={{ shrink: true }}
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
                 />
@@ -443,9 +448,10 @@ export function EquipmentWizardForm({
               <Grid item xs={12}>
                 <TextField
                   label="Место установки (Цех, участок, позиция)"
-                  placeholder="Цех №1, насосная станция оборотного водоснабжения, поз. Н-1"
+                  placeholder="например: Компрессорный цех, поз. К-2"
                   fullWidth
                   size="small"
+                  InputLabelProps={{ shrink: true }}
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                 />
