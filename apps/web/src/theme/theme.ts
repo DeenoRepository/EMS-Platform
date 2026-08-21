@@ -317,17 +317,31 @@ export const theme = createTheme(
       MuiInputBase: {
         styleOverrides: {
           root: {
-            fontSize: '0.78125rem', // 12.5px
+            fontSize: '0.8125rem',
+          },
+        },
+      },
+      MuiOutlinedInput: {
+        styleOverrides: {
+          root: {
+            borderRadius: 8,
+            backgroundColor: '#ffffff',
+            '&:hover .MuiOutlinedInput-notchedOutline': {
+              borderColor: '#94a3b8',
+            },
+            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+              borderColor: '#0284c7',
+            },
           },
           input: {
-            padding: '6px 10px',
+            fontSize: '0.8125rem',
           },
         },
       },
       MuiInputLabel: {
         styleOverrides: {
           root: {
-            fontSize: '0.75rem',
+            fontSize: '0.8125rem',
           },
         },
       },

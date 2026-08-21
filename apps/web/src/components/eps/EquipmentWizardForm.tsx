@@ -391,7 +391,6 @@ export function EquipmentWizardForm({
                   required
                   fullWidth
                   size="small"
-                  InputLabelProps={{ shrink: true }}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
@@ -403,7 +402,6 @@ export function EquipmentWizardForm({
                   placeholder="например: EQ-2024-001"
                   fullWidth
                   size="small"
-                  InputLabelProps={{ shrink: true }}
                   value={inventoryNumber}
                   onChange={(e) => setInventoryNumber(e.target.value)}
                 />
@@ -415,7 +413,6 @@ export function EquipmentWizardForm({
                   placeholder="например: SN-998234-A"
                   fullWidth
                   size="small"
-                  InputLabelProps={{ shrink: true }}
                   value={serialNumber}
                   onChange={(e) => setSerialNumber(e.target.value)}
                 />
@@ -427,7 +424,6 @@ export function EquipmentWizardForm({
                   placeholder="например: Siemens / Atlas Copco"
                   fullWidth
                   size="small"
-                  InputLabelProps={{ shrink: true }}
                   value={manufacturer}
                   onChange={(e) => setManufacturer(e.target.value)}
                 />
@@ -439,7 +435,6 @@ export function EquipmentWizardForm({
                   placeholder="например: GA 45 VSD+ / 11 кВт"
                   fullWidth
                   size="small"
-                  InputLabelProps={{ shrink: true }}
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
                 />
@@ -451,7 +446,6 @@ export function EquipmentWizardForm({
                   placeholder="например: Компрессорный цех, поз. К-2"
                   fullWidth
                   size="small"
-                  InputLabelProps={{ shrink: true }}
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                 />
