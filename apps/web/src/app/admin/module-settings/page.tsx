@@ -125,7 +125,7 @@ const MODULE_KEYS = ['eps', 'wms', 'srm', 'mro'];
 const MODULE_META: Record<string, { title: string; subtitle: string; breadcrumb: string; name: string }> = {
   eps: {
     title: 'Настройки модуля — Паспортизация (EPS)',
-    subtitle: 'Управление техническими разделами, пользовательскими полями, классификаторами и мастер импорта оборудования',
+    subtitle: 'Управление структурой технических разделов, параметрами паспортов и метками классификации',
     breadcrumb: 'Паспортизация (EPS)',
     name: 'Паспортизация оборудования (EPS)',
   },
