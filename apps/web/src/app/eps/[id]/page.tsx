@@ -800,13 +800,13 @@ export default function EquipmentPassportPage() {
           }}
           paper
           tabs={[
-            { label: 'Паспорт (Общие сведения и разделы)', value: 0 },
-            { label: 'Документация', value: 1, badge: equipment.documents.length },
-            { label: 'Согласования', value: 2, badge: equipment.approvals?.length || 0 },
-            { label: 'Запчасти WMS', value: 3, badge: equipment.spareParts.length },
-            { label: 'ТО и Ремонт MRO', value: 4, badge: equipment.maintenancePlans.length },
-            { label: 'Заявки Jira', value: 5, badge: equipment.jiraIssues?.length || 0 },
-            { label: 'История изменений (Аудит)', value: 6 },
+            { label: 'Паспорт оборудования', value: 0 },
+            { label: 'Документация и схемы', value: 1, badge: equipment.documents.length },
+            { label: 'Согласования и заявки', value: 2, badge: equipment.approvals?.length || 0 },
+            { label: 'Комплектующие и ЗИП', value: 3, badge: equipment.spareParts.length },
+            { label: 'График ТОиР и ППР', value: 4, badge: equipment.maintenancePlans.length },
+            { label: 'Журнал инцидентов и дефектов', value: 5, badge: equipment.jiraIssues?.length || 0 },
+            { label: 'Жизненный цикл и аудит', value: 6 },
           ]}
         />
       </Box>
@@ -1592,21 +1592,21 @@ export default function EquipmentPassportPage() {
         </Card>
       )}
 
-      {/* TAB 3: Запчасти (WMS) */}
+      {/* TAB 3: Комплектующие и ЗИП */}
       {activeTab === 3 && (
         <Card sx={{ p: 3 }}>
           <Typography variant="h6" fontWeight={700} gutterBottom>
-            Совместимые запасные части и расходные материалы (WMS)
+            Комплектующие, запасные части и ЗИП
           </Typography>
           <Typography variant="caption" color="text.secondary" paragraph>
-            Номенклатурные позиции склада, применяемые при ремонте и ТО этой единицы
+            Номенклатурные позиции склада WMS, привязанные к обслуживанию и ремонту данной единицы оборудования
           </Typography>
           <Divider sx={{ mb: 2 }} />
 
           {equipment.spareParts.length === 0 ? (
             <EmptyState
-              title="Нет привязанных запчастей"
-              description="В номенклатурном справочнике WMS еще нет позиций, сопоставленных с данным типом оборудования."
+              title="Нет привязанных комплектующих и ЗИП"
+              description="В номенклатурном справочнике склада еще нет позиций, сопоставленных с данным типом оборудования."
               minHeight={180}
             />
           ) : (
@@ -1650,18 +1650,21 @@ export default function EquipmentPassportPage() {
         </Card>
       )}
 
-      {/* TAB 4: ТО и Ремонт (MRO) */}
+      {/* TAB 4: График ТОиР и ППР */}
       {activeTab === 4 && (
         <Card sx={{ p: 3 }}>
           <Typography variant="h6" fontWeight={700} gutterBottom>
-            Планы технического обслуживания и график ППР (MRO)
+            График регламентного обслуживания и ППР (ТОиР)
+          </Typography>
+          <Typography variant="caption" color="text.secondary" paragraph>
+            Планы периодического ТО, графики ППР и перечень технологических операций
           </Typography>
           <Divider sx={{ mb: 2 }} />
 
           {equipment.maintenancePlans.length === 0 ? (
             <EmptyState
-              title="Планы ТО не назначены"
-              description="Для данного оборудования еще не сформированы регламентные планы периодического обслуживания."
+              title="Планы регламентного ТО не назначены"
+              description="Для данного оборудования еще не сформированы регламентные карты и графики периодического обслуживания."
               minHeight={180}
             />
           ) : (
@@ -1700,21 +1703,21 @@ export default function EquipmentPassportPage() {
         </Card>
       )}
 
-      {/* TAB 5: Заявки (SRM) */}
+      {/* TAB 5: Журнал инцидентов и дефектов */}
       {activeTab === 5 && (
         <Card sx={{ p: 3 }}>
           <Typography variant="h6" fontWeight={700} gutterBottom>
-            Связанные заявки на ремонт и инциденты (SRM)
+            Журнал инцидентов, дефектов и заявок на ремонт (SRM)
           </Typography>
           <Typography variant="caption" color="text.secondary" paragraph>
-            Заявки, сопоставленные с данным оборудованием по инвентарному или серийному номеру
+            История обращений, сервисных инцидентов и заявок на восстановление работоспособности
           </Typography>
           <Divider sx={{ mb: 2 }} />
 
           {(!equipment.jiraIssues || equipment.jiraIssues.length === 0) ? (
             <EmptyState
-              title="Связанных заявок не найдено"
-              description="В системе SRM нет зарегистрированных обращений или инцидентов по данному оборудованию."
+              title="Зарегистрированных инцидентов и дефектов нет"
+              description="В журнале сервисных заявок нет зарегистрированных инцидентов по данному оборудованию."
               minHeight={180}
             />
           ) : (
