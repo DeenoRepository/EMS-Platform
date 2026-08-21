@@ -62,7 +62,7 @@ export default function SetupWizardPage() {
   const [dbPort, setDbPort] = useState('5432');
   const [dbName, setDbName] = useState('ems_db');
   const [dbUser, setDbUser] = useState('postgres');
-  const [dbPassword, setDbPassword] = useState('postgres');
+  const [dbPassword, setDbPassword] = useState('postgrespassword');
   const [dbTestResult, setDbTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [isTestingDb, setIsTestingDb] = useState(false);
 

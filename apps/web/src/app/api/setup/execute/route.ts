@@ -24,27 +24,7 @@ export async function POST(req: NextRequest) {
 
     const fileInstalled = fs.existsSync(installedFilePath) || fs.existsSync(rootInstalledFilePath);
 
-    // Check if database already has admin users to prevent hijacking on uninstalled file markers
-    let dbHasAdmin = false;
-    try {
-      const adminCount = await prisma.user.count({
-        where: {
-          roles: {
-            some: {
-              role: {
-                name: 'admin',
-              },
-            },
-          },
-        },
-      });
-      dbHasAdmin = adminCount > 0;
-    } catch {
-      // Database not connected/initialized yet
-      dbHasAdmin = false;
-    }
-
-    if (fileInstalled || dbHasAdmin) {
+    if (fileInstalled) {
       // Only authenticated admin can reconfigure an already installed system
       const user = await getCurrentUser(req);
       if (!user || !user.roles.includes('admin')) {

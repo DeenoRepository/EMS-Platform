@@ -16,17 +16,8 @@ export async function POST(req: NextRequest) {
   // 2. SSRF Protection: If already installed, require admin auth
   const rootDir = process.cwd();
   const fileInstalled = fs.existsSync(path.join(rootDir, '.installed')) || fs.existsSync(path.join(rootDir, '..', '..', '.installed'));
-  let dbHasAdmin = false;
-  try {
-    const adminCount = await prisma.user.count({
-      where: { roles: { some: { role: { name: 'admin' } } } },
-    });
-    dbHasAdmin = adminCount > 0;
-  } catch {
-    dbHasAdmin = false;
-  }
 
-  if (fileInstalled || dbHasAdmin) {
+  if (fileInstalled) {
     const user = await getCurrentUser(req);
     if (!user || !user.roles.includes('admin')) {
       return NextResponse.json(
