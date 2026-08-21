@@ -75,7 +75,7 @@ export default function SetupWizardPage() {
   const [showAdminPass, setShowAdminPass] = useState(false);
 
   const [ldapEnabled, setLdapEnabled] = useState(false);
-  const [ldapUrl, setLdapUrl] = useState('ldap://ems_ldap:389');
+  const [ldapUrl, setLdapUrl] = useState('ldap://127.0.0.1:389');
   const [ldapBindDn, setLdapBindDn] = useState('cn=admin,dc=company,dc=local');
   const [ldapBindPassword, setLdapBindPassword] = useState('adminpassword');
   const [ldapSearchBase, setLdapSearchBase] = useState('dc=company,dc=local');
