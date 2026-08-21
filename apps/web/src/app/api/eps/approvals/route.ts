@@ -113,13 +113,20 @@ export async function GET(req: NextRequest) {
     const myRejectedCount = userApprovals.filter((a) => a.status === 'REJECTED').length;
     const myPendingCount = userApprovals.filter((a) => a.status === 'PENDING').length;
 
+    const targetApprovals =
+      scope === 'my_requests'
+        ? userApprovals
+        : scope === 'to_review'
+        ? allApprovals.filter((a) => a.status === 'PENDING')
+        : allApprovals;
+
     const stats = {
-      total: allApprovals.length,
-      pending: allApprovals.filter((a) => a.status === 'PENDING').length,
-      approved: allApprovals.filter((a) => a.status === 'APPROVED').length,
-      rejected: allApprovals.filter((a) => a.status === 'REJECTED').length,
-      cancelled: allApprovals.filter((a) => a.status === 'CANCELLED').length,
-      // User-scoped actionable stats (strictly for the active user)
+      total: targetApprovals.length,
+      pending: targetApprovals.filter((a) => a.status === 'PENDING').length,
+      approved: targetApprovals.filter((a) => a.status === 'APPROVED').length,
+      rejected: targetApprovals.filter((a) => a.status === 'REJECTED').length,
+      cancelled: targetApprovals.filter((a) => a.status === 'CANCELLED').length,
+      // User-scoped and review stats
       toReview: toReviewCount,
       myRejected: myRejectedCount,
       myPending: myPendingCount,

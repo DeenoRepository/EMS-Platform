@@ -440,7 +440,7 @@ function ApprovalsListContent() {
           <StatCard
             title="На рассмотрении"
             value={stats.pending}
-            subtitle="Ожидают решения"
+            subtitle={scopeTab === 'my_requests' ? 'Моих на рассмотрении' : 'Ожидают решения'}
             icon={<PendingActionsOutlinedIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(217, 119, 6, 0.08)"
             iconColor="#d97706"
@@ -455,7 +455,7 @@ function ApprovalsListContent() {
           <StatCard
             title="Согласовано"
             value={stats.approved}
-            subtitle="Одобренные заявки"
+            subtitle={scopeTab === 'my_requests' ? 'Моих одобренных' : 'Одобренные заявки'}
             icon={<CheckCircleOutlineIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(22, 163, 74, 0.08)"
             iconColor="#16a34a"
@@ -470,7 +470,7 @@ function ApprovalsListContent() {
           <StatCard
             title="Отклонено"
             value={stats.rejected}
-            subtitle="Отклоненные заявки"
+            subtitle={scopeTab === 'my_requests' ? 'Моих отклоненных' : 'Отклоненные заявки'}
             icon={<CancelOutlinedIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(220, 38, 38, 0.08)"
             iconColor="#dc2626"
@@ -485,7 +485,7 @@ function ApprovalsListContent() {
           <StatCard
             title="Отозвано"
             value={stats.cancelled}
-            subtitle="Отмененные инициатором"
+            subtitle={scopeTab === 'my_requests' ? 'Моих отмененных' : 'Отмененные инициатором'}
             icon={<RemoveCircleOutlineIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(100, 116, 139, 0.08)"
             iconColor="#64748b"
@@ -500,7 +500,7 @@ function ApprovalsListContent() {
           <StatCard
             title="Всего заявок"
             value={stats.total}
-            subtitle="За все время"
+            subtitle={scopeTab === 'my_requests' ? 'Всего моих заявок' : 'За все время'}
             icon={<FactCheckOutlinedIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(2, 132, 199, 0.08)"
             iconColor="#0284c7"
@@ -538,8 +538,8 @@ function ApprovalsListContent() {
               {
                 label: 'Требуют рассмотрения',
                 value: 'to_review',
-                badge: stats.pending,
-                badgeColor: stats.pending > 0 ? 'warning' : 'default',
+                badge: (stats as any).toReview ?? (scopeTab === 'to_review' ? stats.pending : undefined),
+                badgeColor: ((stats as any).toReview ?? stats.pending) > 0 ? 'warning' : 'default',
               },
               { label: 'Мои заявки', value: 'my_requests' },
             ]}
