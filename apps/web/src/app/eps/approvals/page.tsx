@@ -611,6 +611,11 @@ function ApprovalsListContent() {
                   ТЕМА / ЗАЯВКА
                 </TableCell>
               )}
+              {visibleColumns.includes('inventoryNumber') && (
+                <TableCell sx={{ fontWeight: 700, width: 120, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  ИНВ. НОМЕР
+                </TableCell>
+              )}
               {visibleColumns.includes('equipment') && (
                 <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
                   ОБОРУДОВАНИЕ
@@ -684,6 +689,33 @@ function ApprovalsListContent() {
                     </TableCell>
                   )}
 
+                  {visibleColumns.includes('inventoryNumber') && (
+                    <TableCell sx={{ width: 120 }}>
+                      {app.equipment?.inventoryNumber ? (
+                        <Paper
+                          variant="outlined"
+                          sx={{
+                            display: 'inline-block',
+                            px: 0.85,
+                            py: 0.2,
+                            fontFamily: 'monospace',
+                            fontWeight: 700,
+                            bgcolor: '#f8fafc',
+                            fontSize: '0.75rem',
+                            borderRadius: '4px',
+                            color: '#334155',
+                            borderColor: '#cbd5e1',
+                            lineHeight: 1.3,
+                          }}
+                        >
+                          {app.equipment.inventoryNumber}
+                        </Paper>
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">—</Typography>
+                      )}
+                    </TableCell>
+                  )}
+
                   {visibleColumns.includes('equipment') && (
                     <TableCell>
                       {app.equipment ? (
@@ -711,23 +743,6 @@ function ApprovalsListContent() {
                           >
                             {app.equipment.name}
                           </Typography>
-                          <Paper
-                            variant="outlined"
-                            sx={{
-                              px: 0.75,
-                              py: 0.1,
-                              fontFamily: 'monospace',
-                              fontWeight: 700,
-                              bgcolor: '#f8fafc',
-                              fontSize: '0.6875rem',
-                              borderRadius: '4px',
-                              color: '#475569',
-                              borderColor: '#cbd5e1',
-                              lineHeight: 1.3,
-                            }}
-                          >
-                            {app.equipment.inventoryNumber || 'Б/Н'}
-                          </Paper>
                         </Box>
                       ) : (
                         <Typography variant="caption" color="text.secondary">
