@@ -13,33 +13,7 @@ echo -e "${YELLOW}         EMS (Equipment Management System) — Установ�
 echo -e "${CYAN}======================================================================${NC}"
 echo ""
 
-# 1. Проверка Node.js
-echo -e "${CYAN}[1/5] Проверка Node.js...${NC}"
-if ! command -v node &> /dev/null; then
-    echo -e "${RED}[ОШИБКА] Node.js не найден! Установите Node.js v18+ (https://nodejs.org/)${NC}"
-    exit 1
-fi
-echo -e "${GREEN}✓ Node.js $(node -v) обнаружен${NC}"
-
-# 2. Проверка pnpm
-echo -e "\n${CYAN}[2/5] Проверка pnpm...${NC}"
-if ! command -v pnpm &> /dev/null; then
-    echo -e "${YELLOW}pnpm не найден. Установка pnpm...${NC}"
-    npm install -g pnpm
-fi
-echo -e "${GREEN}✓ pnpm $(pnpm -v) обнаружен${NC}"
-
-# 3. Установка зависимостей
-echo -e "\n${CYAN}[3/5] Установка зависимостей (pnpm install)...${NC}"
-pnpm install
-echo -e "${GREEN}✓ Зависимости установлены${NC}"
-
-# 4. Генерация Prisma
-echo -e "\n${CYAN}[4/5] Генерация Prisma Client...${NC}"
-pnpm --filter @ems/database generate
-echo -e "${GREEN}✓ Клиент БД сгенерирован${NC}"
-
-# 5. Создание .env при отсутствии
+# 1. Проверка .env
 if [ ! -f ".env" ]; then
     if [ -f ".env.example" ]; then
         cp .env.example .env
@@ -47,12 +21,40 @@ if [ ! -f ".env" ]; then
     fi
 fi
 
-echo -e "\n${CYAN}======================================================================${NC}"
-echo -e "${GREEN} Установка завершена!${NC}"
-echo -e " Для первичной настройки перейдите в веб-мастер:"
-echo -e " ${YELLOW}http://localhost:3000/setup${NC}"
-echo -e "${CYAN}======================================================================${NC}"
-echo ""
+echo -e "${CYAN}Выберите сценарий развертывания EMS Platform:${NC}"
+echo "----------------------------------------------------------------------"
+echo " 1. [Рекомендуется] Запустить Production стек в Docker (Postgres + OpenLDAP + Web)"
+echo " 2. Собрать и запустить локальный Production билд (pnpm build && pnpm start)"
+echo " 3. Запустить режим разработки (pnpm dev)"
+echo " 4. Запустить тесты (pnpm test)"
+echo " 5. Выход"
+echo "----------------------------------------------------------------------"
 
-# Запуск приложения
-pnpm dev
+read -p "Выберите вариант [1-5] (по умолчанию: 1): " choice
+choice=${choice:-1}
+
+case $choice in
+    1)
+        echo -e "\n${GREEN}Сборка и запуск Production стека через Docker Compose...${NC}"
+        docker compose up -d --build
+        echo -e "\n${GREEN}✓ Контейнеры запущены! Откройте в браузере: http://localhost:3000/setup${NC}"
+        ;;
+    2)
+        echo -e "\n${GREEN}Локальная сборка и запуск Production...${NC}"
+        pnpm --filter @ems/database generate
+        pnpm build
+        pnpm --filter @ems/web start
+        ;;
+    3)
+        echo -e "\n${GREEN}Запуск сервера разработки...${NC}"
+        pnpm --filter @ems/database generate
+        pnpm dev
+        ;;
+    4)
+        echo -e "\n${GREEN}Запуск тестов...${NC}"
+        pnpm test
+        ;;
+    *)
+        echo -e "\nВыход."
+        ;;
+esac

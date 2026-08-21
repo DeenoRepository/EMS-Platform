@@ -1,76 +1,70 @@
 @echo off
 chcp 65001 > nul
-title Установщик EMS Platform
+title Установщик EMS Platform (Production)
 
 echo ======================================================================
 echo          EMS (Equipment Management System) - Установщик
 echo ======================================================================
 echo.
 
-:: 1. Проверка Node.js
-where node >nul 2>nul
-if %errorlevel% neq 0 (
-    echo [ОШИБКА] Node.js не обнаружен!
-    echo Пожалуйста, установите Node.js версии 18 или новее с https://nodejs.org/
-    pause
-    exit /b 1
-)
-
-echo [OK] Node.js найден:
-node -v
-echo.
-
-:: 2. Проверка / установка pnpm
-where pnpm >nul 2>nul
-if %errorlevel% neq 0 (
-    echo [ИНФО] pnpm не найден. Выполняется автоматическая установка pnpm...
-    call npm install -g pnpm
-    if %errorlevel% neq 0 (
-        echo [ОШИБКА] Не удалось установить pnpm.
-        pause
-        exit /b 1
-    )
-)
-
-echo [OK] pnpm найден:
-call pnpm -v
-echo.
-
-:: 3. Установка зависимостей
-echo [1/4] Установка зависимостей проекта (pnpm install)...
-call pnpm install
-if %errorlevel% neq 0 (
-    echo [ОШИБКА] Ошибка при установке зависимостей.
-    pause
-    exit /b 1
-)
-echo.
-
-:: 4. Генерация Prisma Client
-echo [2/4] Генерация клиента базы данных Prisma...
-call pnpm --filter @ems/database generate
-echo.
-
-:: 5. Проверка наличия .env
+:: 1. Проверка .env
 if not exist ".env" (
-    echo [3/4] Создание первичного файла конфигурации .env...
     if exist ".env.example" (
         copy .env.example .env > nul
+        echo [OK] Создан файл .env из шаблона .env.example
     )
 )
-echo.
 
-:: 6. Запуск веб-мастера настройки
-echo [4/4] Запуск EMS Platform и веб-мастера настройки...
-echo.
-echo ======================================================================
-echo  Приложение запускается на http://localhost:3000
-echo  Для первоначальной настройки перейдите в веб-мастер:
-echo  http://localhost:3000/setup
-echo ======================================================================
-echo.
+echo Выберите сценарий развертывания EMS Platform:
+echo ----------------------------------------------------------------------
+echo  1. [Рекомендуется] Запустить Production стек в Docker (Postgres + OpenLDAP + Web)
+echo  2. Собрать и запустить локальный Production билд (pnpm build ^&^& pnpm start)
+echo  3. Запустить режим разработки (pnpm dev)
+echo  4. Запустить тесты (pnpm test)
+echo  5. Выход
+echo ----------------------------------------------------------------------
 
-start http://localhost:3000/setup
-call pnpm dev
+set /p choice="Выберите вариант [1-5] (по умолчанию: 1): "
+if "%choice%"=="" set choice=1
 
-pause
+if "%choice%"=="1" (
+    echo.
+    echo Запуск Production стека через Docker Compose...
+    docker compose up -d --build
+    echo.
+    echo Открытие мастера настройки в браузере...
+    start http://localhost:3000/setup
+    pause
+    exit /b 0
+)
+
+if "%choice%"=="2" (
+    echo.
+    echo Локальная сборка и запуск...
+    call pnpm --filter @ems/database generate
+    call pnpm build
+    start http://localhost:3000/setup
+    call pnpm --filter @ems/web start
+    pause
+    exit /b 0
+)
+
+if "%choice%"=="3" (
+    echo.
+    echo Запуск в режиме разработки...
+    call pnpm --filter @ems/database generate
+    start http://localhost:3000/setup
+    call pnpm dev
+    pause
+    exit /b 0
+)
+
+if "%choice%"=="4" (
+    echo.
+    echo Запуск тестов...
+    call pnpm test
+    pause
+    exit /b 0
+)
+
+echo Выход.

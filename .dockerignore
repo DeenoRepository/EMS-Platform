@@ -1,14 +1,47 @@
+# Git
+.git
+.gitignore
+
+# Dependencies & Build artifacts
 node_modules
+apps/web/node_modules
+packages/*/node_modules
+.pnpm-store
 .next
 .turbo
 dist
 build
-.git
-.agents
+*.tsbuildinfo
+
+# Environment & Secret files
 .env
 .env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.installed
+
+# Logs & temp files
+logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+.system_generated
+tmp
+temp
+uploads/*
+!uploads/.gitkeep
+
+# Testing & Coverage
+coverage
+playwright-report
+test-results
+.nyc_output
+
+# Documentation & Spec drafts
+*.csv
+*.sql
+*.tar.gz
+scripts/export_dumps_to_csv.py

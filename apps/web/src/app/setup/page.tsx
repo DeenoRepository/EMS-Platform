@@ -59,7 +59,7 @@ export default function SetupWizardPage() {
 
   // Step 2: Database Config
   const [dbHost, setDbHost] = useState(process.env.NEXT_PUBLIC_DB_HOST || '127.0.0.1');
-  const [dbPort, setDbPort] = useState('5433');
+  const [dbPort, setDbPort] = useState('5432');
   const [dbName, setDbName] = useState('ems_db');
   const [dbUser, setDbUser] = useState('postgres');
   const [dbPassword, setDbPassword] = useState('postgres');
@@ -75,10 +75,10 @@ export default function SetupWizardPage() {
   const [showAdminPass, setShowAdminPass] = useState(false);
 
   const [ldapEnabled, setLdapEnabled] = useState(false);
-  const [ldapUrl, setLdapUrl] = useState('ldap://ad.company.local:389');
-  const [ldapBindDn, setLdapBindDn] = useState('CN=EMS_Service,OU=Services,DC=company,DC=local');
-  const [ldapBindPassword, setLdapBindPassword] = useState('');
-  const [ldapSearchBase, setLdapSearchBase] = useState('DC=company,DC=local');
+  const [ldapUrl, setLdapUrl] = useState('ldap://ems_ldap:389');
+  const [ldapBindDn, setLdapBindDn] = useState('cn=admin,dc=company,dc=local');
+  const [ldapBindPassword, setLdapBindPassword] = useState('adminpassword');
+  const [ldapSearchBase, setLdapSearchBase] = useState('dc=company,dc=local');
   const [ldapTestResult, setLdapTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [isTestingLdap, setIsTestingLdap] = useState(false);
 

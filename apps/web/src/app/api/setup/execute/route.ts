@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { execSync } from 'child_process';
 import { PrismaClient, prisma } from '@ems/database';
 import { hashPassword } from '@ems/auth';
 import { PERMISSIONS } from '@ems/shared';
@@ -80,6 +81,29 @@ export async function POST(req: NextRequest) {
       const database = dbConfig?.database || 'ems_db';
       const authStr = pass ? `${encodeURIComponent(user)}:${encodeURIComponent(pass)}` : encodeURIComponent(user);
       dbUrl = `postgresql://${authStr}@${host}:${port}/${database}`;
+    }
+
+    // Automatically synchronize database schema if schema.prisma is found
+    try {
+      const potentialSchemaPaths = [
+        path.join(rootDir, 'packages', 'database', 'prisma', 'schema.prisma'),
+        path.join(rootDir, '..', '..', 'packages', 'database', 'prisma', 'schema.prisma'),
+        path.join(rootDir, 'prisma', 'schema.prisma'),
+        path.join(rootDir, '..', 'packages', 'database', 'prisma', 'schema.prisma'),
+      ];
+      const schemaPath = potentialSchemaPaths.find((p) => fs.existsSync(p));
+      if (schemaPath) {
+        execSync(`npx prisma db push --schema="${schemaPath}" --accept-data-loss --skip-generate`, {
+          env: {
+            ...process.env,
+            DATABASE_URL: dbUrl,
+          },
+          stdio: 'pipe',
+          timeout: 45000,
+        });
+      }
+    } catch (schemaSyncErr: any) {
+      console.warn('Database schema sync notice:', schemaSyncErr?.message || schemaSyncErr);
     }
 
     // Initialize temporary PrismaClient with the target database URL

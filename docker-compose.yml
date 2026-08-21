@@ -1,16 +1,17 @@
-version: '3.8'
-
 services:
+  # ----------------------------------------------------------------------------
+  # 1. PostgreSQL Database Service
+  # ----------------------------------------------------------------------------
   postgres:
     image: postgres:16-alpine
     container_name: ems_postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_secure_password}
       POSTGRES_DB: ${POSTGRES_DB:-ems_db}
     ports:
-      - "${POSTGRES_BIND_IP:-127.0.0.1}:5432:5432"
+      - "${POSTGRES_BIND_IP:-0.0.0.0}:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -18,7 +19,39 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - ems_network
 
+  # ----------------------------------------------------------------------------
+  # 2. OpenLDAP Directory Service
+  # ----------------------------------------------------------------------------
+  ldap:
+    image: osixia/openldap:1.5.0
+    container_name: ems_ldap
+    restart: unless-stopped
+    command: --copy-service --loglevel info
+    environment:
+      LDAP_ORGANISATION: "EMS Enterprise"
+      LDAP_DOMAIN: "company.local"
+      LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD:-adminpassword}
+    ports:
+      - "389:389"
+      - "636:636"
+    volumes:
+      - ldap_data:/var/lib/ldap
+      - ldap_config:/etc/ldap/slapd.d
+    healthcheck:
+      test: ["CMD-SHELL", "ldapsearch -x -H ldap://localhost:389 -b dc=company,dc=local -D cn=admin,dc=company,dc=local -w ${LDAP_ADMIN_PASSWORD:-adminpassword} '(objectclass=*)' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - ems_network
+
+  # ----------------------------------------------------------------------------
+  # 3. EMS Platform Web Application (Production Build)
+  # ----------------------------------------------------------------------------
   ems-web:
     build:
       context: .
@@ -26,24 +59,40 @@ services:
     container_name: ems_platform
     restart: unless-stopped
     environment:
-      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres_secure_password@postgres:5432/ems_db?schema=public}
+      JWT_SECRET: ${JWT_SECRET:-super_secret_jwt_key_ems_platform_production_change_me_32chars}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-8h}
-      NODE_ENV: ${NODE_ENV:-production}
+      NODE_ENV: production
       UPLOAD_DIR: "/app/uploads"
       PORT: 3000
+      LDAP_ENABLED: ${LDAP_ENABLED:-true}
+      LDAP_URL: ${LDAP_URL:-ldap://ems_ldap:389}
+      LDAP_BIND_DN: ${LDAP_BIND_DN:-cn=admin,dc=company,dc=local}
+      LDAP_BIND_PASSWORD: ${LDAP_BIND_PASSWORD:-adminpassword}
+      LDAP_SEARCH_BASE: ${LDAP_SEARCH_BASE:-dc=company,dc=local}
     ports:
       - "3000:3000"
     depends_on:
       postgres:
         condition: service_healthy
+      ldap:
+        condition: service_healthy
     volumes:
       - ems_uploads:/app/uploads
-    security_opt:
-      - no-new-privileges:true
-    read_only: true
+    networks:
+      - ems_network
 
 volumes:
   postgres_data:
+    driver: local
+  ldap_data:
+    driver: local
+  ldap_config:
+    driver: local
   ems_uploads:
+    driver: local
+
+networks:
+  ems_network:
+    driver: bridge
