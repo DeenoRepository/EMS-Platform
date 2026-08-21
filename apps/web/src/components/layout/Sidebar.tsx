@@ -58,6 +58,7 @@ interface NavChild {
   icon?: React.ReactNode;
   badge?: number | null;
   badgeColor?: 'warning' | 'error' | 'primary' | 'default';
+  badgeTooltip?: string;
 }
 
 interface NavItemDef {
@@ -67,6 +68,7 @@ interface NavItemDef {
   icon: React.ReactNode;
   badge?: number | null;
   badgeColor?: 'warning' | 'error' | 'primary' | 'default';
+  badgeTooltip?: string;
   permission?: string;
   children?: NavChild[];
 }
@@ -90,9 +92,8 @@ export default function Sidebar({
   const router = useRouter();
   const { user, logout, hasPermission } = useAuth();
 
-  // Operational alert stats
+  // Operational alert stats (strictly actionable events requiring user response)
   const [repairCount, setRepairCount] = useState<number | null>(null);
-  const [draftEquipmentCount, setDraftEquipmentCount] = useState<number | null>(null);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number | null>(null);
   const [rejectedApprovalsCount, setRejectedApprovalsCount] = useState<number | null>(null);
   const [wmsLowStockCount, setWmsLowStockCount] = useState<number | null>(null);
@@ -143,7 +144,6 @@ export default function Sidebar({
           const json = await eqRes.value.json();
           if (json.success && json.data?.statusCounts) {
             setRepairCount(json.data.statusCounts.underRepair || null);
-            setDraftEquipmentCount(json.data.statusCounts.draft || null);
           }
         }
         if (modRes.status === 'fulfilled' && modRes.value.ok) {
@@ -201,7 +201,7 @@ export default function Sidebar({
       }
     }
     loadData();
-    const interval = setInterval(loadData, 20000); // 20s polling for reactive event counters
+    const interval = setInterval(loadData, 20000); // 20s polling for real-time reactive event counters
     return () => clearInterval(interval);
   }, [pathname]);
 
@@ -249,7 +249,7 @@ export default function Sidebar({
 
   const canAccessAdmin = user?.roles.includes('admin') || hasPermission(PERMISSIONS.ADMIN_USERS_MANAGE);
 
-  // Purely Operational Modules with Consistent Modern Outlined Icons
+  // Purely Operational Modules with Consistent Modern Outlined Icons & Explicit Event Counters
   const operationalItems: NavItemDef[] = [
     {
       id: 'eps',
@@ -261,13 +261,9 @@ export default function Sidebar({
           label: 'Реестр оборудования',
           path: '/eps',
           icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} />,
-          badge:
-            repairCount && repairCount > 0
-              ? repairCount
-              : draftEquipmentCount && draftEquipmentCount > 0
-              ? draftEquipmentCount
-              : null,
-          badgeColor: repairCount && repairCount > 0 ? 'warning' : 'default',
+          badge: repairCount && repairCount > 0 ? repairCount : null,
+          badgeColor: 'error',
+          badgeTooltip: repairCount && repairCount > 0 ? `${repairCount} ед. оборудования в неисправном состоянии (в ремонте)` : undefined,
         },
         { label: 'Документы', path: '/eps/documents', icon: <ArticleOutlinedIcon sx={{ fontSize: 15 }} /> },
         {
@@ -281,6 +277,12 @@ export default function Sidebar({
               ? rejectedApprovalsCount
               : null,
           badgeColor: pendingApprovalsCount && pendingApprovalsCount > 0 ? 'warning' : 'error',
+          badgeTooltip:
+            pendingApprovalsCount && pendingApprovalsCount > 0
+              ? `${pendingApprovalsCount} заявок ожидает рассмотрения`
+              : rejectedApprovalsCount && rejectedApprovalsCount > 0
+              ? `${rejectedApprovalsCount} отклоненных заявок требует доработки`
+              : undefined,
         },
         { label: 'История изменений', path: '/eps/history', icon: <HistoryOutlinedIcon sx={{ fontSize: 15 }} /> },
         { label: 'Конструктор отчетов', path: '/eps/reports', icon: <AssessmentOutlinedIcon sx={{ fontSize: 15 }} /> },
@@ -298,14 +300,16 @@ export default function Sidebar({
           path: '/wms/stock',
           icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} />,
           badge: wmsLowStockCount && wmsLowStockCount > 0 ? wmsLowStockCount : null,
-          badgeColor: 'warning',
+          badgeColor: 'error',
+          badgeTooltip: wmsLowStockCount && wmsLowStockCount > 0 ? `${wmsLowStockCount} поз. ТМЦ ниже неснижаемого остатка (дефицит)` : undefined,
         },
         {
           label: 'Движение ТМЦ (Операции)',
           path: '/wms/operations',
           icon: <SwapHorizIcon sx={{ fontSize: 15 }} />,
           badge: wmsPendingTransfersCount && wmsPendingTransfersCount > 0 ? wmsPendingTransfersCount : null,
-          badgeColor: 'primary',
+          badgeColor: 'warning',
+          badgeTooltip: wmsPendingTransfersCount && wmsPendingTransfersCount > 0 ? `${wmsPendingTransfersCount} перемещений ожидает приемки / отгрузки` : undefined,
         },
         {
           label: 'Инвентаризация',
@@ -313,6 +317,7 @@ export default function Sidebar({
           icon: <FactCheckOutlinedIcon sx={{ fontSize: 15 }} />,
           badge: wmsActiveInventoriesCount && wmsActiveInventoriesCount > 0 ? wmsActiveInventoriesCount : null,
           badgeColor: 'primary',
+          badgeTooltip: wmsActiveInventoriesCount && wmsActiveInventoriesCount > 0 ? `${wmsActiveInventoriesCount} инвентаризаций в процессе` : undefined,
         },
         { label: 'Склады и зоны', path: '/wms/warehouses', icon: <WarehouseOutlinedIcon sx={{ fontSize: 15 }} /> },
       ],
@@ -331,7 +336,13 @@ export default function Sidebar({
             (srmOpenCount || 0) + (srmInProgressCount || 0) > 0
               ? (srmOpenCount || 0) + (srmInProgressCount || 0)
               : null,
-          badgeColor: (srmOpenCount || 0) > 0 ? 'warning' : 'primary',
+          badgeColor: (srmOpenCount || 0) > 0 ? 'error' : 'warning',
+          badgeTooltip:
+            (srmOpenCount || 0) > 0
+              ? `${srmOpenCount} новых открытых инцидентов требуют назначения`
+              : (srmInProgressCount || 0) > 0
+              ? `${srmInProgressCount} инцидентов в процессе решения`
+              : undefined,
         },
         { label: 'Метрики MTTR / MTBF', path: '/srm?tab=metrics', icon: <SpeedIcon sx={{ fontSize: 15 }} /> },
       ],
@@ -353,6 +364,12 @@ export default function Sidebar({
               ? mroPlannedCount
               : null,
           badgeColor: mroOverdueCount && mroOverdueCount > 0 ? 'error' : 'primary',
+          badgeTooltip:
+            mroOverdueCount && mroOverdueCount > 0
+              ? `${mroOverdueCount} регламентов ТО просрочено!`
+              : mroPlannedCount && mroPlannedCount > 0
+              ? `${mroPlannedCount} регламентов ТО запланировано к выполнению`
+              : undefined,
         },
         { label: 'Журнал регламентов', path: '/mro?tab=logs', icon: <AssignmentTurnedInIcon sx={{ fontSize: 15 }} /> },
         { label: 'Технологические карты', path: '/mro?tab=checklists', icon: <ChecklistIcon sx={{ fontSize: 15 }} /> },
@@ -399,11 +416,26 @@ export default function Sidebar({
   const getBadgeColors = (type?: string) => {
     switch (type) {
       case 'warning':
-        return { bg: 'rgba(245, 158, 11, 0.2)', text: '#fbbf24', border: 'rgba(245, 158, 11, 0.35)' };
+        return {
+          bg: 'rgba(245, 158, 11, 0.2)',
+          text: '#fbbf24',
+          border: 'rgba(245, 158, 11, 0.45)',
+          animation: 'none',
+        };
       case 'error':
-        return { bg: 'rgba(239, 68, 68, 0.2)', text: '#f87171', border: 'rgba(239, 68, 68, 0.35)' };
+        return {
+          bg: 'rgba(239, 68, 68, 0.25)',
+          text: '#f87171',
+          border: 'rgba(239, 68, 68, 0.55)',
+          animation: 'badgePulse 2s infinite',
+        };
       default:
-        return { bg: 'rgba(56, 189, 248, 0.18)', text: '#38bdf8', border: 'rgba(56, 189, 248, 0.35)' };
+        return {
+          bg: 'rgba(56, 189, 248, 0.18)',
+          text: '#38bdf8',
+          border: 'rgba(56, 189, 248, 0.35)',
+          animation: 'none',
+        };
     }
   };
 
@@ -434,6 +466,16 @@ export default function Sidebar({
         if (firstWithBadge?.badgeColor) return firstWithBadge.badgeColor;
       }
       return item.badgeColor || 'default';
+    })();
+
+    const effectiveBadgeTooltip = (() => {
+      if (hasChildren && item.children) {
+        const activeChildrenWithBadge = item.children.filter((c) => c.badge && c.badge > 0 && c.badgeTooltip);
+        if (activeChildrenWithBadge.length > 0) {
+          return activeChildrenWithBadge.map((c) => c.badgeTooltip).join(' • ');
+        }
+      }
+      return item.badgeTooltip || undefined;
     })();
 
     const badgeColors = getBadgeColors(effectiveBadgeColor);
@@ -482,27 +524,35 @@ export default function Sidebar({
             {item.icon}
 
             {hasBadge && (
-              <Box
-                sx={{
-                  position: 'absolute',
-                  top: 4,
-                  right: 4,
-                  minWidth: 15,
-                  height: 15,
-                  borderRadius: '8px',
-                  backgroundColor: badgeColors.text,
-                  color: '#0f172a',
-                  fontSize: '0.625rem',
-                  fontWeight: 800,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  px: 0.3,
-                  fontFamily: 'monospace',
-                }}
-              >
-                {parentBadgeCount}
-              </Box>
+              <Tooltip title={effectiveBadgeTooltip || `${parentBadgeCount} событий`} arrow placement="right">
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: 4,
+                    right: 4,
+                    minWidth: 15,
+                    height: 15,
+                    borderRadius: '8px',
+                    backgroundColor: badgeColors.text,
+                    color: '#0f172a',
+                    fontSize: '0.625rem',
+                    fontWeight: 800,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    px: 0.3,
+                    fontFamily: 'monospace',
+                    animation: badgeColors.animation,
+                    '@keyframes badgePulse': {
+                      '0%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(239, 68, 68, 0.6)' },
+                      '70%': { transform: 'scale(1.1)', boxShadow: '0 0 0 4px rgba(239, 68, 68, 0)' },
+                      '100%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(239, 68, 68, 0)' },
+                    },
+                  }}
+                >
+                  {parentBadgeCount}
+                </Box>
+              </Tooltip>
             )}
           </Box>
         </Tooltip>
@@ -607,27 +657,35 @@ export default function Sidebar({
                 }}
               >
                 {(!hasChildren || !isExpanded) && hasBadge && (
-                  <Box
-                    sx={{
-                      px: 0.4,
-                      height: 17,
-                      minWidth: 17,
-                      borderRadius: '8.5px',
-                      backgroundColor: badgeColors.bg,
-                      color: badgeColors.text,
-                      border: `1px solid ${badgeColors.border}`,
-                      fontSize: '0.65rem',
-                      fontWeight: 700,
-                      fontFamily: 'monospace',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      lineHeight: 1,
-                      boxSizing: 'border-box',
-                    }}
-                  >
-                    {parentBadgeCount}
-                  </Box>
+                  <Tooltip title={effectiveBadgeTooltip || ''} arrow placement="right">
+                    <Box
+                      sx={{
+                        px: 0.4,
+                        height: 17,
+                        minWidth: 17,
+                        borderRadius: '8.5px',
+                        backgroundColor: badgeColors.bg,
+                        color: badgeColors.text,
+                        border: `1px solid ${badgeColors.border}`,
+                        fontSize: '0.65rem',
+                        fontWeight: 700,
+                        fontFamily: 'monospace',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        lineHeight: 1,
+                        boxSizing: 'border-box',
+                        animation: badgeColors.animation,
+                        '@keyframes badgePulse': {
+                          '0%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(239, 68, 68, 0.4)' },
+                          '70%': { transform: 'scale(1.08)', boxShadow: '0 0 0 4px rgba(239, 68, 68, 0)' },
+                          '100%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(239, 68, 68, 0)' },
+                        },
+                      }}
+                    >
+                      {parentBadgeCount}
+                    </Box>
+                  </Tooltip>
                 )}
               </Box>
             )}
@@ -697,27 +755,35 @@ export default function Sidebar({
                           ml: 'auto',
                         }}
                       >
-                        <Box
-                          sx={{
-                            px: 0.4,
-                            height: 17,
-                            minWidth: 17,
-                            borderRadius: '8.5px',
-                            backgroundColor: childBadgeColors.bg,
-                            color: childBadgeColors.text,
-                            border: `1px solid ${childBadgeColors.border}`,
-                            fontSize: '0.65rem',
-                            fontWeight: 700,
-                            fontFamily: 'monospace',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            lineHeight: 1,
-                            boxSizing: 'border-box',
-                          }}
-                        >
-                          {child.badge}
-                        </Box>
+                        <Tooltip title={child.badgeTooltip || ''} arrow placement="right">
+                          <Box
+                            sx={{
+                              px: 0.4,
+                              height: 17,
+                              minWidth: 17,
+                              borderRadius: '8.5px',
+                              backgroundColor: childBadgeColors.bg,
+                              color: childBadgeColors.text,
+                              border: `1px solid ${childBadgeColors.border}`,
+                              fontSize: '0.65rem',
+                              fontWeight: 700,
+                              fontFamily: 'monospace',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              lineHeight: 1,
+                              boxSizing: 'border-box',
+                              animation: childBadgeColors.animation,
+                              '@keyframes badgePulse': {
+                                '0%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(239, 68, 68, 0.4)' },
+                                '70%': { transform: 'scale(1.08)', boxShadow: '0 0 0 4px rgba(239, 68, 68, 0)' },
+                                '100%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(239, 68, 68, 0)' },
+                              },
+                            }}
+                          >
+                            {child.badge}
+                          </Box>
+                        </Tooltip>
                       </Box>
                     )}
                   </Box>
