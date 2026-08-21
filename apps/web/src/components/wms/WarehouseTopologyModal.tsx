@@ -32,7 +32,7 @@ import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import LayersOutlinedIcon from '@mui/icons-material/LayersOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import { useSnackbar } from 'notistack';
-import { FormDialog, EmptyState, useConfirm } from '@/components/ui';
+import { FormDialog, EmptyState, useConfirm, SearchInput } from '@/components/ui';
 import { PERMISSIONS } from '@ems/shared';
 import { useAuth } from '@/lib/auth-client';
 
@@ -563,20 +563,14 @@ export default function WarehouseTopologyModal({
 
                     {/* Search & Action Buttons */}
                     <Stack direction="row" spacing={1.5} alignItems="center">
-                      <TextField
-                        size="small"
-                        placeholder="Поиск ячейки..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <SearchIcon sx={{ fontSize: 18, color: '#94a3b8' }} />
-                            </InputAdornment>
-                          ),
-                          sx: { height: 36, fontSize: '0.8125rem', borderRadius: '8px', width: 180 },
-                        }}
-                      />
+                      <Box sx={{ width: 190 }}>
+                        <SearchInput
+                          size="small"
+                          placeholder="Поиск ячейки..."
+                          value={searchQuery}
+                          onSearch={(val) => setSearchQuery(val)}
+                        />
+                      </Box>
 
                       {canManageZones && (
                         <>

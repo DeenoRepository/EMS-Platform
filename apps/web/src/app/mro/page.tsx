@@ -395,7 +395,7 @@ export default function MroOverviewPage() {
                                     Выполнить
                                   </Button>
                                 ) : (
-                                  <Chip label="В ожидании" size="small" variant="outlined" sx={{ borderRadius: '4px' }} />
+                                  <StatusBadge status="PENDING" label="В ожидании" size="small" variant="outlined" />
                                 )
                               ) : (
                                 <StatusBadge status="COMPLETED" size="small" />

@@ -12,7 +12,6 @@ import {
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
 import NotificationCenter from './NotificationCenter';
-import CommandPalette from './CommandPalette';
 import { useRouter } from 'next/navigation';
 
 interface HeaderProps {
@@ -23,20 +22,9 @@ interface HeaderProps {
 export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProps) {
   const router = useRouter();
 
-  // Command Palette State
-  const [paletteOpen, setPaletteOpen] = useState(false);
-
-  // Global keyboard shortcut for Ctrl+K / Cmd+K
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        setPaletteOpen((prev) => !prev);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  const handleOpenCommandPalette = () => {
+    window.dispatchEvent(new CustomEvent('open-command-palette'));
+  };
 
   return (
     <>
@@ -141,7 +129,7 @@ export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProp
 
           {/* Center: Command Palette Search Bar Trigger */}
           <Box
-            onClick={() => setPaletteOpen(true)}
+            onClick={handleOpenCommandPalette}
             sx={{
               display: 'flex',
               alignItems: 'center',
@@ -196,9 +184,6 @@ export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProp
           </Box>
         </Toolbar>
       </AppBar>
-
-      {/* Global Command Palette Dialog */}
-      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
     </>
   );
 }

@@ -671,11 +671,11 @@ export function SmartImportWizard() {
                         <TableCell sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>{row.rowIndex}</TableCell>
                         <TableCell>
                           {row.status === 'NEW' ? (
-                            <Chip label="Новый объект" size="small" color="success" sx={{ fontSize: '0.7rem', height: 20 }} />
+                            <StatusBadge status="ACTIVE" label="Новый объект" size="small" />
                           ) : row.status === 'COLLISION' ? (
-                            <Chip label="Совпадение инв. №" size="small" color="warning" sx={{ fontSize: '0.7rem', height: 20 }} />
+                            <StatusBadge status="PENDING" label="Совпадение инв. №" size="small" />
                           ) : (
-                            <Chip label="Ошибка данных" size="small" color="error" sx={{ fontSize: '0.7rem', height: 20 }} />
+                            <StatusBadge status="ERROR" label="Ошибка данных" size="small" />
                           )}
                         </TableCell>
                         <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>{row.data.name || '—'}</TableCell>

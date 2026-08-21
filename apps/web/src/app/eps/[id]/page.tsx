@@ -1000,12 +1000,10 @@ export default function EquipmentPassportPage() {
                             Влияет на непрерывность
                           </TableCell>
                           <TableCell sx={{ fontWeight: 700, py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            <Chip
+                            <StatusBadge
+                              status={isCriticalPath ? 'ERROR' : 'DEFAULT'}
                               label={isCriticalPath ? 'Да (Критический путь)' : 'Нет'}
                               size="small"
-                              color={isCriticalPath ? 'error' : 'default'}
-                              variant={isCriticalPath ? 'filled' : 'outlined'}
-                              sx={{ fontWeight: 600, height: 22 }}
                             />
                           </TableCell>
                         </TableRow>
@@ -1274,11 +1272,10 @@ export default function EquipmentPassportPage() {
                             Категория критичности
                           </TableCell>
                           <TableCell sx={{ py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            <Chip
+                            <StatusBadge
+                              status={criticality === 'A' ? 'ERROR' : criticality === 'B' ? 'WARNING' : 'INFO'}
                               label={`Категория ${criticality}`}
                               size="small"
-                              color={criticality === 'A' ? 'error' : criticality === 'B' ? 'warning' : 'info'}
-                              sx={{ fontWeight: 700, height: 22 }}
                             />
                           </TableCell>
                         </TableRow>

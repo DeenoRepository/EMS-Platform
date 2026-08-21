@@ -239,7 +239,13 @@ export function CommandPalette({ open: controlledOpen, onClose: controlledOnClos
     };
 
     window.addEventListener('keydown', handleGlobalKeyDown);
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+    const handleCustomOpen = () => setInternalOpen(true);
+    window.addEventListener('open-command-palette', handleCustomOpen);
+
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown);
+      window.removeEventListener('open-command-palette', handleCustomOpen);
+    };
   }, [isControlled, isOpen, controlledOnClose]);
 
   // Фильтрация элементов
