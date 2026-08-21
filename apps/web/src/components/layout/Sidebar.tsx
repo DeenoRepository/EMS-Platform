@@ -92,10 +92,16 @@ export default function Sidebar({
 
   // Operational alert stats
   const [repairCount, setRepairCount] = useState<number | null>(null);
+  const [draftEquipmentCount, setDraftEquipmentCount] = useState<number | null>(null);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number | null>(null);
+  const [rejectedApprovalsCount, setRejectedApprovalsCount] = useState<number | null>(null);
   const [wmsLowStockCount, setWmsLowStockCount] = useState<number | null>(null);
+  const [wmsPendingTransfersCount, setWmsPendingTransfersCount] = useState<number | null>(null);
+  const [wmsActiveInventoriesCount, setWmsActiveInventoriesCount] = useState<number | null>(null);
   const [srmOpenCount, setSrmOpenCount] = useState<number | null>(null);
+  const [srmInProgressCount, setSrmInProgressCount] = useState<number | null>(null);
   const [mroOverdueCount, setMroOverdueCount] = useState<number | null>(null);
+  const [mroPlannedCount, setMroPlannedCount] = useState<number | null>(null);
 
   // Expanded items in expanded sidebar mode
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
@@ -123,18 +129,21 @@ export default function Sidebar({
   useEffect(() => {
     async function loadData() {
       try {
-        const [eqRes, modRes, appRes, wmsRes, srmRes, mroRes] = await Promise.allSettled([
+        const [eqRes, modRes, appRes, wmsRes, srmRes, mroRes, trRes] = await Promise.allSettled([
           fetch('/api/eps/equipment?pageSize=1'),
           fetch('/api/modules/status'),
           fetch('/api/eps/approvals?pageSize=1'),
           fetch('/api/wms/stats'),
           fetch('/api/srm/stats'),
-          fetch('/api/mro/schedules?status=OVERDUE'),
+          fetch('/api/mro/schedules'),
+          fetch('/api/wms/transfers?pageSize=1'),
         ]);
+
         if (eqRes.status === 'fulfilled' && eqRes.value.ok) {
           const json = await eqRes.value.json();
           if (json.success && json.data?.statusCounts) {
             setRepairCount(json.data.statusCounts.underRepair || null);
+            setDraftEquipmentCount(json.data.statusCounts.draft || null);
           }
         }
         if (modRes.status === 'fulfilled' && modRes.value.ok) {
@@ -145,26 +154,46 @@ export default function Sidebar({
         }
         if (appRes.status === 'fulfilled' && appRes.value.ok) {
           const appJson = await appRes.value.json();
-          if (appJson.success && appJson.data?.stats?.pending) {
+          if (appJson.success && appJson.data?.stats) {
             setPendingApprovalsCount(appJson.data.stats.pending || null);
+            setRejectedApprovalsCount(appJson.data.stats.rejected || null);
           }
         }
         if (wmsRes.status === 'fulfilled' && wmsRes.value.ok) {
           const wmsJson = await wmsRes.value.json();
-          if (wmsJson.success && wmsJson.data?.lowStockCount) {
+          if (wmsJson.success && wmsJson.data) {
             setWmsLowStockCount(wmsJson.data.lowStockCount || null);
+            setWmsActiveInventoriesCount(wmsJson.data.activeInventoriesCount || null);
+          }
+        }
+        if (trRes.status === 'fulfilled' && trRes.value.ok) {
+          const trJson = await trRes.value.json();
+          if (trJson.success && trJson.data?.counts) {
+            const pendingTr = (trJson.data.counts.inbound || 0) + (trJson.data.counts.requests || 0);
+            setWmsPendingTransfersCount(pendingTr || null);
           }
         }
         if (srmRes.status === 'fulfilled' && srmRes.value.ok) {
           const srmJson = await srmRes.value.json();
-          if (srmJson.success && srmJson.data?.openIssues) {
-            setSrmOpenCount(srmJson.data.openIssues || null);
+          if (srmJson.success && srmJson.data) {
+            setSrmOpenCount(srmJson.data.openIssues || 0);
+            setSrmInProgressCount(srmJson.data.inProgressIssues || 0);
           }
         }
         if (mroRes.status === 'fulfilled' && mroRes.value.ok) {
           const mroJson = await mroRes.value.json();
           if (mroJson.success && Array.isArray(mroJson.data)) {
-            setMroOverdueCount(mroJson.data.length || null);
+            const now = new Date();
+            const overdue = mroJson.data.filter(
+              (s: { status: string; scheduledDate: string }) =>
+                s.status === 'MISSED' || (s.status === 'PLANNED' && new Date(s.scheduledDate) < now)
+            ).length;
+            const planned = mroJson.data.filter(
+              (s: { status: string; scheduledDate: string }) =>
+                s.status === 'PLANNED' && new Date(s.scheduledDate) >= now
+            ).length;
+            setMroOverdueCount(overdue || null);
+            setMroPlannedCount(planned || null);
           }
         }
       } catch {
@@ -172,6 +201,8 @@ export default function Sidebar({
       }
     }
     loadData();
+    const interval = setInterval(loadData, 20000); // 20s polling for reactive event counters
+    return () => clearInterval(interval);
   }, [pathname]);
 
   const toggleExpand = (id: string) => {
@@ -230,16 +261,26 @@ export default function Sidebar({
           label: 'Реестр оборудования',
           path: '/eps',
           icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} />,
-          badge: repairCount && repairCount > 0 ? repairCount : null,
-          badgeColor: 'default',
+          badge:
+            repairCount && repairCount > 0
+              ? repairCount
+              : draftEquipmentCount && draftEquipmentCount > 0
+              ? draftEquipmentCount
+              : null,
+          badgeColor: repairCount && repairCount > 0 ? 'warning' : 'default',
         },
         { label: 'Документы', path: '/eps/documents', icon: <ArticleOutlinedIcon sx={{ fontSize: 15 }} /> },
         {
           label: 'Согласования',
           path: '/eps/approvals',
           icon: <FactCheckOutlinedIcon sx={{ fontSize: 15 }} />,
-          badge: pendingApprovalsCount && pendingApprovalsCount > 0 ? pendingApprovalsCount : null,
-          badgeColor: 'warning',
+          badge:
+            pendingApprovalsCount && pendingApprovalsCount > 0
+              ? pendingApprovalsCount
+              : rejectedApprovalsCount && rejectedApprovalsCount > 0
+              ? rejectedApprovalsCount
+              : null,
+          badgeColor: pendingApprovalsCount && pendingApprovalsCount > 0 ? 'warning' : 'error',
         },
         { label: 'История изменений', path: '/eps/history', icon: <HistoryOutlinedIcon sx={{ fontSize: 15 }} /> },
         { label: 'Конструктор отчетов', path: '/eps/reports', icon: <AssessmentOutlinedIcon sx={{ fontSize: 15 }} /> },
@@ -259,8 +300,20 @@ export default function Sidebar({
           badge: wmsLowStockCount && wmsLowStockCount > 0 ? wmsLowStockCount : null,
           badgeColor: 'warning',
         },
-        { label: 'Движение ТМЦ (Операции)', path: '/wms/operations', icon: <SwapHorizIcon sx={{ fontSize: 15 }} /> },
-        { label: 'Инвентаризация', path: '/wms/inventory', icon: <FactCheckOutlinedIcon sx={{ fontSize: 15 }} /> },
+        {
+          label: 'Движение ТМЦ (Операции)',
+          path: '/wms/operations',
+          icon: <SwapHorizIcon sx={{ fontSize: 15 }} />,
+          badge: wmsPendingTransfersCount && wmsPendingTransfersCount > 0 ? wmsPendingTransfersCount : null,
+          badgeColor: 'primary',
+        },
+        {
+          label: 'Инвентаризация',
+          path: '/wms/inventory',
+          icon: <FactCheckOutlinedIcon sx={{ fontSize: 15 }} />,
+          badge: wmsActiveInventoriesCount && wmsActiveInventoriesCount > 0 ? wmsActiveInventoriesCount : null,
+          badgeColor: 'primary',
+        },
         { label: 'Склады и зоны', path: '/wms/warehouses', icon: <WarehouseOutlinedIcon sx={{ fontSize: 15 }} /> },
       ],
     },
@@ -274,8 +327,11 @@ export default function Sidebar({
           label: 'Инциденты и заявки',
           path: '/srm',
           icon: <TimelineIcon sx={{ fontSize: 15 }} />,
-          badge: srmOpenCount && srmOpenCount > 0 ? srmOpenCount : null,
-          badgeColor: 'warning',
+          badge:
+            (srmOpenCount || 0) + (srmInProgressCount || 0) > 0
+              ? (srmOpenCount || 0) + (srmInProgressCount || 0)
+              : null,
+          badgeColor: (srmOpenCount || 0) > 0 ? 'warning' : 'primary',
         },
         { label: 'Метрики MTTR / MTBF', path: '/srm?tab=metrics', icon: <SpeedIcon sx={{ fontSize: 15 }} /> },
       ],
@@ -290,8 +346,13 @@ export default function Sidebar({
           label: 'Графики ППР',
           path: '/mro',
           icon: <CalendarMonthIcon sx={{ fontSize: 15 }} />,
-          badge: mroOverdueCount && mroOverdueCount > 0 ? mroOverdueCount : null,
-          badgeColor: 'error',
+          badge:
+            mroOverdueCount && mroOverdueCount > 0
+              ? mroOverdueCount
+              : mroPlannedCount && mroPlannedCount > 0
+              ? mroPlannedCount
+              : null,
+          badgeColor: mroOverdueCount && mroOverdueCount > 0 ? 'error' : 'primary',
         },
         { label: 'Журнал регламентов', path: '/mro?tab=logs', icon: <AssignmentTurnedInIcon sx={{ fontSize: 15 }} /> },
         { label: 'Технологические карты', path: '/mro?tab=checklists', icon: <ChecklistIcon sx={{ fontSize: 15 }} /> },
