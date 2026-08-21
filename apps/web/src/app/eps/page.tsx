@@ -345,6 +345,10 @@ function EquipmentListContent() {
           aVal = a._count?.spareParts || a.counts?.spareParts || 0;
           bVal = b._count?.spareParts || b.counts?.spareParts || 0;
           break;
+        case 'tags':
+          aVal = Array.isArray(a.tags) ? a.tags.map((t: any) => t.name || t).join(', ') : '';
+          bVal = Array.isArray(b.tags) ? b.tags.map((t: any) => t.name || t).join(', ') : '';
+          break;
         case 'commissionDate':
           aVal = a.commissionDate ? new Date(a.commissionDate).getTime() : 0;
           bVal = b.commissionDate ? new Date(b.commissionDate).getTime() : 0;
@@ -1071,37 +1075,73 @@ function EquipmentListContent() {
 
               {visibleColumns.includes('isCriticalPath') && (
                 <TableCell sx={{ minWidth: 150 }}>
-                  Критический путь
+                  <TableSortLabel
+                    active={sortField === 'isCriticalPath'}
+                    direction={sortField === 'isCriticalPath' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('isCriticalPath')}
+                  >
+                    Критический путь
+                  </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('isUnique') && (
                 <TableCell sx={{ minWidth: 120 }}>
-                  Уникальное
+                  <TableSortLabel
+                    active={sortField === 'isUnique'}
+                    direction={sortField === 'isUnique' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('isUnique')}
+                  >
+                    Уникальное
+                  </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('isImported') && (
                 <TableCell sx={{ minWidth: 120 }}>
-                  Импортное
+                  <TableSortLabel
+                    active={sortField === 'isImported'}
+                    direction={sortField === 'isImported' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('isImported')}
+                  >
+                    Импортное
+                  </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('documentsCount') && (
                 <TableCell sx={{ minWidth: 120 }}>
-                  Документы
+                  <TableSortLabel
+                    active={sortField === 'documentsCount'}
+                    direction={sortField === 'documentsCount' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('documentsCount')}
+                  >
+                    Документы
+                  </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('sparePartsCount') && (
                 <TableCell sx={{ minWidth: 130 }}>
-                  ЗИП / детали
+                  <TableSortLabel
+                    active={sortField === 'sparePartsCount'}
+                    direction={sortField === 'sparePartsCount' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('sparePartsCount')}
+                  >
+                    ЗИП / детали
+                  </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('tags') && (
                 <TableCell sx={{ minWidth: 110 }}>
-                  Теги
+                  <TableSortLabel
+                    active={sortField === 'tags'}
+                    direction={sortField === 'tags' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('tags')}
+                  >
+                    Теги
+                  </TableSortLabel>
                 </TableCell>
               )}
 
