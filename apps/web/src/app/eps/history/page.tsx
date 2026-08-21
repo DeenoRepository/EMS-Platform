@@ -267,12 +267,12 @@ function HistoryListContent() {
   };
 
   const HISTORY_COLUMNS: TableColumnOption[] = [
-    { id: 'createdAt', label: 'Дата и время', defaultVisible: true, required: true },
+    { id: 'createdAt', label: 'Дата и время', defaultVisible: true },
     { id: 'user', label: 'Пользователь', defaultVisible: true },
     { id: 'action', label: 'Действие', defaultVisible: true },
     { id: 'entityType', label: 'Сущность', defaultVisible: true },
     { id: 'equipment', label: 'Оборудование', defaultVisible: true },
-    { id: 'changes', label: 'Детализация изменений', defaultVisible: true, required: true },
+    { id: 'changes', label: 'Детализация изменений', defaultVisible: true },
   ];
 
   const [visibleColumns, setVisibleColumns] = useState<string[]>(() =>

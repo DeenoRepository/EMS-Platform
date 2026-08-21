@@ -331,15 +331,16 @@ function ApprovalsListContent() {
   };
 
   const APPROVAL_COLUMNS: TableColumnOption[] = [
-    { id: 'title', label: 'Тема / Заявка', defaultVisible: true, required: true },
+    { id: 'title', label: 'Тема / Заявка', defaultVisible: true },
+    { id: 'inventoryNumber', label: 'Инв. номер', defaultVisible: true },
     { id: 'equipment', label: 'Оборудование', defaultVisible: true },
-    { id: 'manufacturer', label: 'Производитель', defaultVisible: false },
+    { id: 'manufacturer', label: 'Производитель', defaultVisible: true },
     { id: 'type', label: 'Тип согласования', defaultVisible: true },
     { id: 'status', label: 'Статус', defaultVisible: true },
     { id: 'requester', label: 'Инициатор', defaultVisible: true },
     { id: 'date', label: 'Дата подачи', defaultVisible: true },
     { id: 'reviewer', label: 'Решение / Автор', defaultVisible: true },
-    { id: 'actions', label: 'Действия', defaultVisible: true, required: true },
+    { id: 'actions', label: 'Действия', defaultVisible: true },
   ];
 
   const [visibleColumns, setVisibleColumns] = useState<string[]>(() =>

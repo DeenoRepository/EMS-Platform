@@ -149,10 +149,9 @@ export function DataTableWrapper({
   const currentVisibleColumns = controlledVisibleColumns !== undefined ? controlledVisibleColumns : internalVisibleColumns;
 
   const handleToggleColumn = (colId: string) => {
-    const col = columns?.find((c) => c.id === colId);
-    if (col?.required) return; // Cannot toggle required column
-
     const isCurrentlyVisible = currentVisibleColumns.includes(colId);
+    if (isCurrentlyVisible && currentVisibleColumns.length === 1) return;
+
     const updated = isCurrentlyVisible
       ? currentVisibleColumns.filter((id) => id !== colId)
       : [...currentVisibleColumns, colId];
@@ -227,7 +226,7 @@ export function DataTableWrapper({
     },
     comfortable: {
       '& .MuiTableCell-root': {
-        py: 1.75,
+        py: 1.6,
         px: 2,
         fontSize: '0.875rem',
       },
@@ -237,15 +236,46 @@ export function DataTableWrapper({
         fontSize: '0.75rem',
       },
     },
-  }[currentDensity];
+  };
 
-  // Helper buttons toolbar (Columns, Density, Refresh)
-  const utilityTools = (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-      {/* Column Selector Button */}
-      {columns && columns.length > 0 && viewMode === 'table' && (
+  const renderHeaderRight = () => (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      {/* Density Selector */}
+      {showDensityToggle && (
+        <Tooltip title="Плотность строк">
+          <Box sx={{ display: 'flex', border: '1px solid #e2e8f0', borderRadius: '8px', p: 0.25, bgcolor: '#ffffff' }}>
+            <IconButton
+              size="small"
+              onClick={() => handleDensityChange('compact')}
+              sx={{
+                p: 0.5,
+                borderRadius: '6px',
+                color: currentDensity === 'compact' ? '#0284c7' : '#64748b',
+                backgroundColor: currentDensity === 'compact' ? 'rgba(2, 132, 199, 0.08)' : 'transparent',
+              }}
+            >
+              <ViewListIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+            <IconButton
+              size="small"
+              onClick={() => handleDensityChange('standard')}
+              sx={{
+                p: 0.5,
+                borderRadius: '6px',
+                color: currentDensity === 'standard' ? '#0284c7' : '#64748b',
+                backgroundColor: currentDensity === 'standard' ? 'rgba(2, 132, 199, 0.08)' : 'transparent',
+              }}
+            >
+              <ViewModuleIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Box>
+        </Tooltip>
+      )}
+
+      {/* Column Selector Button & Dropdown */}
+      {columns && columns.length > 0 && (
         <>
-          <Tooltip title="Настроить отображение колонок">
+          <Tooltip title="Настройка видимости колонок">
             <Button
               size="small"
               variant="outlined"
@@ -253,8 +283,6 @@ export function DataTableWrapper({
               startIcon={<ViewWeekOutlinedIcon sx={{ fontSize: 16 }} />}
               sx={{
                 height: 36,
-                minWidth: 'auto',
-                px: 1.25,
                 borderRadius: '8px',
                 borderColor: '#e2e8f0',
                 color: '#475569',
@@ -277,12 +305,14 @@ export function DataTableWrapper({
             onClose={() => setColumnMenuAnchor(null)}
             PaperProps={{
               sx: {
-                width: 240,
-                maxHeight: 380,
+                minWidth: 280,
+                maxWidth: 360,
+                maxHeight: 440,
                 borderRadius: '10px',
                 border: '1px solid #e2e8f0',
-                boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.12)',
+                boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.15)',
                 p: 0.5,
+                overflowX: 'hidden',
               },
             }}
           >
@@ -300,36 +330,36 @@ export function DataTableWrapper({
               </Button>
             </Box>
             <Divider sx={{ my: 0.5, borderColor: '#f1f5f9' }} />
-            <Box sx={{ maxHeight: 260, overflowY: 'auto' }}>
+            <Box sx={{ maxHeight: 290, overflowY: 'auto', overflowX: 'hidden' }}>
               {columns.map((col) => {
                 const isChecked = currentVisibleColumns.includes(col.id);
                 return (
                   <MenuItem
                     key={col.id}
                     onClick={() => handleToggleColumn(col.id)}
-                    disabled={col.required}
                     sx={{
-                      py: 0.5,
-                      px: 1,
+                      py: 0.6,
+                      px: 1.25,
                       borderRadius: '6px',
                       fontSize: '0.8125rem',
+                      whiteSpace: 'normal',
                     }}
                   >
                     <Checkbox
                       size="small"
                       checked={isChecked}
-                      disabled={col.required}
-                      sx={{ p: 0.5, mr: 1 }}
+                      sx={{ p: 0.5, mr: 1, flexShrink: 0 }}
                     />
                     <Typography
                       variant="body2"
                       sx={{
                         fontSize: '0.8125rem',
                         fontWeight: isChecked ? 600 : 400,
-                        color: col.required ? '#94a3b8' : '#334155',
+                        color: isChecked ? '#0f172a' : '#64748b',
+                        lineHeight: 1.3,
                       }}
                     >
-                      {col.label} {col.required && '(обяз.)'}
+                      {col.label}
                     </Typography>
                   </MenuItem>
                 );
@@ -352,8 +382,8 @@ export function DataTableWrapper({
                   fontSize: '0.6875rem',
                   fontWeight: 600,
                   borderRadius: '6px',
-                  py: 0.2,
-                  px: 1.5,
+                  py: 0.35,
+                  px: 1.75,
                   backgroundColor: '#0284c7',
                 }}
               >

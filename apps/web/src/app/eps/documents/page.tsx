@@ -271,14 +271,14 @@ function DocumentsListContent() {
   const canDelete = hasPermission(PERMISSIONS.EPS_EQUIPMENT_DELETE);
 
   const DOCUMENT_COLUMNS: any[] = [
-    { id: 'name', label: 'Имя файла', defaultVisible: true, required: true },
+    { id: 'name', label: 'Имя файла', defaultVisible: true },
     { id: 'equipment', label: 'Оборудование', defaultVisible: true },
     { id: 'docType', label: 'Тип документа', defaultVisible: true },
     { id: 'description', label: 'Описание / Примечание', defaultVisible: true },
     { id: 'size', label: 'Размер', defaultVisible: true },
     { id: 'uploadedBy', label: 'Загрузил', defaultVisible: true },
     { id: 'date', label: 'Дата', defaultVisible: true },
-    { id: 'actions', label: 'Действия', defaultVisible: true, required: true },
+    { id: 'actions', label: 'Действия', defaultVisible: true },
   ];
 
   const [visibleColumns, setVisibleColumns] = useState<string[]>(() =>

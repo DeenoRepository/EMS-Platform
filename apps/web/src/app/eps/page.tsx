@@ -85,7 +85,7 @@ interface TagItem {
 
 const EPS_COLUMNS: TableColumnOption[] = [
   { id: 'inventoryNumber', label: 'Инв. номер', defaultVisible: true },
-  { id: 'name', label: 'Наименование оборудования', defaultVisible: true, required: true },
+  { id: 'name', label: 'Наименование оборудования', defaultVisible: true },
   { id: 'manufacturer', label: 'Производитель / Модель', defaultVisible: true },
   { id: 'location', label: 'Локация / Место', defaultVisible: true },
   { id: 'status', label: 'Статус', defaultVisible: true },
