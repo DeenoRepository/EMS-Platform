@@ -71,8 +71,10 @@ interface EquipmentItem {
   status: string;
   commissionDate: string | null;
   primaryPhoto: string | null;
+  customFields?: Record<string, any> | null;
   tags: { id: string; name: string; color: string | null }[];
-  counts: { documents: number; photos: number; maintenancePlans: number; spareParts: number };
+  counts?: { documents: number; photos: number; maintenancePlans: number; spareParts: number };
+  _count?: { documents?: number; photos?: number; maintenancePlans?: number; spareParts?: number };
   createdAt: string;
   updatedAt: string;
 }
@@ -86,11 +88,31 @@ interface TagItem {
 const EPS_COLUMNS: TableColumnOption[] = [
   { id: 'inventoryNumber', label: 'Инв. номер', defaultVisible: true },
   { id: 'name', label: 'Наименование оборудования', defaultVisible: true },
-  { id: 'manufacturer', label: 'Производитель / Модель', defaultVisible: true },
-  { id: 'location', label: 'Локация / Место', defaultVisible: true },
+  { id: 'serialNumber', label: 'Заводской (серийный) №', defaultVisible: false },
+  { id: 'manufacturer', label: 'Производитель', defaultVisible: true },
+  { id: 'model', label: 'Модель / Марка', defaultVisible: true },
+  { id: 'location', label: 'Локация / Место размещения', defaultVisible: true },
   { id: 'status', label: 'Статус', defaultVisible: true },
-  { id: 'tags', label: 'Теги', defaultVisible: true },
-  { id: 'commissionDate', label: 'Ввод в экспл.', defaultVisible: true },
+  { id: 'criticality', label: 'Категория критичности (A/B/C)', defaultVisible: false },
+  { id: 'actualWear', label: 'Физический износ (%)', defaultVisible: false },
+  { id: 'eqGroup', label: 'Группа оборудования', defaultVisible: false },
+  { id: 'eqType', label: 'Вид оборудования', defaultVisible: false },
+  { id: 'respPerson', label: 'Ответственное лицо (МОЛ)', defaultVisible: false },
+  { id: 'okofCode', label: 'Код ОКОФ', defaultVisible: false },
+  { id: 'okpd2Code', label: 'Код ОКПД2', defaultVisible: false },
+  { id: 'procCode', label: 'Код техпроцесса', defaultVisible: false },
+  { id: 'maintPeriodicity', label: 'Периодичность ТО', defaultVisible: false },
+  { id: 'calibrationInterval', label: 'Межповерочный интервал (мес.)', defaultVisible: false },
+  { id: 'cleanRoom', label: 'Класс чистого помещения', defaultVisible: false },
+  { id: 'isCriticalPath', label: 'Критический путь', defaultVisible: false },
+  { id: 'isUnique', label: 'Уникальное оборудование', defaultVisible: false },
+  { id: 'isImported', label: 'Импортное оборудование', defaultVisible: false },
+  { id: 'documentsCount', label: 'Документы (кол-во)', defaultVisible: false },
+  { id: 'sparePartsCount', label: 'ЗИП / Запчасти (кол-во)', defaultVisible: false },
+  { id: 'tags', label: 'Теги / Метки', defaultVisible: true },
+  { id: 'commissionDate', label: 'Ввод в эксплуатацию', defaultVisible: true },
+  { id: 'updatedAt', label: 'Дата изменения', defaultVisible: false },
+  { id: 'createdAt', label: 'Дата создания', defaultVisible: false },
 ];
 
 function EquipmentListContent() {
@@ -239,9 +261,17 @@ function EquipmentListContent() {
           aVal = a.name || '';
           bVal = b.name || '';
           break;
+        case 'serialNumber':
+          aVal = a.serialNumber || '';
+          bVal = b.serialNumber || '';
+          break;
         case 'manufacturer':
-          aVal = `${a.manufacturer || ''} ${a.model || ''}`;
-          bVal = `${b.manufacturer || ''} ${b.model || ''}`;
+          aVal = a.manufacturer || '';
+          bVal = b.manufacturer || '';
+          break;
+        case 'model':
+          aVal = a.model || '';
+          bVal = b.model || '';
           break;
         case 'location':
           aVal = a.location || '';
@@ -251,9 +281,81 @@ function EquipmentListContent() {
           aVal = a.status || '';
           bVal = b.status || '';
           break;
+        case 'criticality':
+          aVal = a.customFields?.criticality || '';
+          bVal = b.customFields?.criticality || '';
+          break;
+        case 'actualWear':
+          aVal = a.customFields?.actual_wear_percentage !== undefined && a.customFields?.actual_wear_percentage !== '' ? Number(a.customFields.actual_wear_percentage) : -1;
+          bVal = b.customFields?.actual_wear_percentage !== undefined && b.customFields?.actual_wear_percentage !== '' ? Number(b.customFields.actual_wear_percentage) : -1;
+          break;
+        case 'eqGroup':
+          aVal = a.customFields?.equipment_group || '';
+          bVal = b.customFields?.equipment_group || '';
+          break;
+        case 'eqType':
+          aVal = a.customFields?.equipment_type || '';
+          bVal = b.customFields?.equipment_type || '';
+          break;
+        case 'respPerson':
+          aVal = a.customFields?.responsible_person_name || '';
+          bVal = b.customFields?.responsible_person_name || '';
+          break;
+        case 'okofCode':
+          aVal = a.customFields?.okof_code || '';
+          bVal = b.customFields?.okof_code || '';
+          break;
+        case 'okpd2Code':
+          aVal = a.customFields?.okpd2_code || '';
+          bVal = b.customFields?.okpd2_code || '';
+          break;
+        case 'procCode':
+          aVal = a.customFields?.process_classifier_code || '';
+          bVal = b.customFields?.process_classifier_code || '';
+          break;
+        case 'maintPeriodicity':
+          aVal = a.customFields?.maintenance_periodicity || '';
+          bVal = b.customFields?.maintenance_periodicity || '';
+          break;
+        case 'calibrationInterval':
+          aVal = a.customFields?.calibration_interval ? Number(a.customFields.calibration_interval) : -1;
+          bVal = b.customFields?.calibration_interval ? Number(b.customFields.calibration_interval) : -1;
+          break;
+        case 'cleanRoom':
+          aVal = a.customFields?.clean_room_class || '';
+          bVal = b.customFields?.clean_room_class || '';
+          break;
+        case 'isCriticalPath':
+          aVal = a.customFields?.is_critical_path ? 1 : 0;
+          bVal = b.customFields?.is_critical_path ? 1 : 0;
+          break;
+        case 'isUnique':
+          aVal = a.customFields?.is_unique ? 1 : 0;
+          bVal = b.customFields?.is_unique ? 1 : 0;
+          break;
+        case 'isImported':
+          aVal = a.customFields?.is_imported ? 1 : 0;
+          bVal = b.customFields?.is_imported ? 1 : 0;
+          break;
+        case 'documentsCount':
+          aVal = a._count?.documents || a.counts?.documents || 0;
+          bVal = b._count?.documents || b.counts?.documents || 0;
+          break;
+        case 'sparePartsCount':
+          aVal = a._count?.spareParts || a.counts?.spareParts || 0;
+          bVal = b._count?.spareParts || b.counts?.spareParts || 0;
+          break;
         case 'commissionDate':
           aVal = a.commissionDate ? new Date(a.commissionDate).getTime() : 0;
           bVal = b.commissionDate ? new Date(b.commissionDate).getTime() : 0;
+          break;
+        case 'updatedAt':
+          aVal = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+          bVal = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+          break;
+        case 'createdAt':
+          aVal = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0;
           break;
         default:
           aVal = (a as any)[sortField] || '';
@@ -291,11 +393,27 @@ function EquipmentListContent() {
       'Серийный номер': eq.serialNumber || '—',
       'Наименование оборудования': eq.name,
       'Производитель': eq.manufacturer || '—',
-      'Модель': eq.model || '—',
+      'Модель / Марка': eq.model || '—',
       'Место установки': eq.location || '—',
       'Статус': EQUIPMENT_STATUS_MAP[eq.status]?.label || eq.status,
+      'Критичность': eq.customFields?.criticality || '—',
+      'Износ (%)': eq.customFields?.actual_wear_percentage ? `${eq.customFields.actual_wear_percentage}%` : '—',
+      'Группа оборудования': eq.customFields?.equipment_group || '—',
+      'Вид оборудования': eq.customFields?.equipment_type || '—',
+      'МОЛ / Ответственный': eq.customFields?.responsible_person_name || '—',
+      'Код ОКОФ': eq.customFields?.okof_code || '—',
+      'Код ОКПД2': eq.customFields?.okpd2_code || '—',
+      'Код техпроцесса': eq.customFields?.process_classifier_code || '—',
+      'Периодичность ТО': eq.customFields?.maintenance_periodicity || '—',
+      'Класс чистоты': eq.customFields?.clean_room_class || '—',
+      'Интервал поверки (мес.)': eq.customFields?.calibration_interval || '—',
+      'Критический путь': eq.customFields?.is_critical_path ? 'Да' : 'Нет',
+      'Уникальное': eq.customFields?.is_unique ? 'Да' : 'Нет',
+      'Импортное': eq.customFields?.is_imported ? 'Да' : 'Нет',
       'Теги': eq.tags.map((t) => t.name).join(', ') || '—',
       'Ввод в эксплуатацию': formatDate(eq.commissionDate),
+      'Дата изменения': formatDate(eq.updatedAt),
+      'Дата создания': formatDate(eq.createdAt),
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportRows);
@@ -701,7 +819,7 @@ function EquipmentListContent() {
                         <Tooltip title="Планов ТО">
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
                             <ConstructionOutlinedIcon sx={{ fontSize: 15 }} />
-                            <span>{eq.counts.maintenancePlans}</span>
+                            <span>{eq.counts?.maintenancePlans ?? 0}</span>
                           </Box>
                         </Tooltip>
                       </Box>
@@ -759,6 +877,18 @@ function EquipmentListContent() {
                 </TableCell>
               )}
 
+              {visibleColumns.includes('serialNumber') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'serialNumber'}
+                    direction={sortField === 'serialNumber' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('serialNumber')}
+                  >
+                    ЗАВОДСКОЙ / СЕРИЙНЫЙ №
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
               {visibleColumns.includes('manufacturer') && (
                 <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
                   <TableSortLabel
@@ -766,7 +896,19 @@ function EquipmentListContent() {
                     direction={sortField === 'manufacturer' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('manufacturer')}
                   >
-                    ПРОИЗВОДИТЕЛЬ / МОДЕЛЬ
+                    ПРОИЗВОДИТЕЛЬ
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('model') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'model'}
+                    direction={sortField === 'model' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('model')}
+                  >
+                    МОДЕЛЬ / МАРКА
                   </TableSortLabel>
                 </TableCell>
               )}
@@ -795,6 +937,168 @@ function EquipmentListContent() {
                 </TableCell>
               )}
 
+              {visibleColumns.includes('criticality') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'criticality'}
+                    direction={sortField === 'criticality' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('criticality')}
+                  >
+                    КРИТИЧНОСТЬ
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('actualWear') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'actualWear'}
+                    direction={sortField === 'actualWear' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('actualWear')}
+                  >
+                    ИЗНОС (%)
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('eqGroup') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'eqGroup'}
+                    direction={sortField === 'eqGroup' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('eqGroup')}
+                  >
+                    ГРУППА
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('eqType') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'eqType'}
+                    direction={sortField === 'eqType' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('eqType')}
+                  >
+                    ВИД
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('respPerson') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'respPerson'}
+                    direction={sortField === 'respPerson' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('respPerson')}
+                  >
+                    ОТВЕТСТВЕННЫЙ (МОЛ)
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('okofCode') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'okofCode'}
+                    direction={sortField === 'okofCode' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('okofCode')}
+                  >
+                    КОД ОКОФ
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('okpd2Code') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'okpd2Code'}
+                    direction={sortField === 'okpd2Code' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('okpd2Code')}
+                  >
+                    КОД ОКПД2
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('procCode') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'procCode'}
+                    direction={sortField === 'procCode' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('procCode')}
+                  >
+                    ТЕХПРОЦЕСС
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('maintPeriodicity') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'maintPeriodicity'}
+                    direction={sortField === 'maintPeriodicity' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('maintPeriodicity')}
+                  >
+                    ПЕРИОДИЧНОСТЬ ТО
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('calibrationInterval') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'calibrationInterval'}
+                    direction={sortField === 'calibrationInterval' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('calibrationInterval')}
+                  >
+                    ПОВЕРКА (МЕС.)
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('cleanRoom') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'cleanRoom'}
+                    direction={sortField === 'cleanRoom' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('cleanRoom')}
+                  >
+                    КЛАСС ЧИСТОТЫ
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('isCriticalPath') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  КРИТИЧ. ПУТЬ
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('isUnique') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  УНИКАЛЬНОЕ
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('isImported') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  ИМПОРТНОЕ
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('documentsCount') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  ДОКУМЕНТЫ
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('sparePartsCount') && (
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  ЗИП / ДЕТАЛИ
+                </TableCell>
+              )}
+
               {visibleColumns.includes('tags') && (
                 <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
                   ТЕГИ
@@ -812,11 +1116,39 @@ function EquipmentListContent() {
                   </TableSortLabel>
                 </TableCell>
               )}
+
+              {visibleColumns.includes('updatedAt') && (
+                <TableCell sx={{ width: 120, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'updatedAt'}
+                    direction={sortField === 'updatedAt' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('updatedAt')}
+                  >
+                    ОБНОВЛЕНО
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('createdAt') && (
+                <TableCell sx={{ width: 120, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  <TableSortLabel
+                    active={sortField === 'createdAt'}
+                    direction={sortField === 'createdAt' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('createdAt')}
+                  >
+                    СОЗДАНО
+                  </TableSortLabel>
+                </TableCell>
+              )}
             </TableRow>
           </TableHead>
           <TableBody>
             {sortedEquipmentList.map((eq) => {
               const isChecked = selectedIds.includes(eq.id);
+              const custom = eq.customFields || {};
+              const criticality = custom.criticality || 'B';
+              const wear = custom.actual_wear_percentage;
+
               return (
                 <TableRow
                   key={eq.id}
@@ -840,17 +1172,28 @@ function EquipmentListContent() {
 
                   {visibleColumns.includes('inventoryNumber') && (
                     <TableCell>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          fontFamily: 'monospace',
-                          color: '#475569',
-                          fontSize: '0.8125rem',
-                          fontWeight: 500,
-                        }}
-                      >
-                        {eq.inventoryNumber || '—'}
-                      </Typography>
+                      {eq.inventoryNumber ? (
+                        <Paper
+                          variant="outlined"
+                          sx={{
+                            display: 'inline-block',
+                            px: 0.85,
+                            py: 0.15,
+                            fontFamily: 'monospace',
+                            fontWeight: 700,
+                            bgcolor: '#f8fafc',
+                            fontSize: '0.75rem',
+                            borderRadius: '4px',
+                            color: '#334155',
+                            borderColor: '#cbd5e1',
+                            lineHeight: 1.3,
+                          }}
+                        >
+                          {eq.inventoryNumber}
+                        </Paper>
+                      ) : (
+                        <Typography variant="caption" sx={{ color: '#94a3b8' }}>—</Typography>
+                      )}
                     </TableCell>
                   )}
 
@@ -862,27 +1205,30 @@ function EquipmentListContent() {
                           fontWeight: 600,
                           color: '#0284c7',
                           fontSize: '0.8125rem',
-                          lineHeight: 1.3,
+                          lineHeight: 1.35,
+                          '&:hover': { textDecoration: 'underline' },
                         }}
                       >
                         {eq.name}
                       </Typography>
-                      <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '0.75rem', display: 'block', mt: 0.25 }}>
-                        {eq.serialNumber ? `Зав. №: ${eq.serialNumber}` : 'Единица основных средств'}
-                      </Typography>
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('serialNumber') && (
+                    <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace', color: '#475569' }}>
+                      {eq.serialNumber || '—'}
                     </TableCell>
                   )}
 
                   {visibleColumns.includes('manufacturer') && (
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#334155', fontSize: '0.8125rem' }}>
-                        {eq.manufacturer || '—'}
-                      </Typography>
-                      {eq.model && (
-                        <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.75rem', display: 'block', mt: 0.25 }}>
-                          {eq.model}
-                        </Typography>
-                      )}
+                    <TableCell sx={{ fontSize: '0.8125rem', color: '#334155', fontWeight: 500 }}>
+                      {eq.manufacturer || '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('model') && (
+                    <TableCell sx={{ fontSize: '0.8125rem', color: '#475569' }}>
+                      {eq.model || '—'}
                     </TableCell>
                   )}
 
@@ -895,6 +1241,180 @@ function EquipmentListContent() {
                   {visibleColumns.includes('status') && (
                     <TableCell>
                       <StatusBadge status={eq.status} />
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('criticality') && (
+                    <TableCell>
+                      <Chip
+                        label={`Класс ${criticality}`}
+                        size="small"
+                        sx={{
+                          height: 22,
+                          fontSize: '0.6875rem',
+                          fontWeight: 700,
+                          backgroundColor:
+                            criticality === 'A'
+                              ? 'rgba(239, 68, 68, 0.1)'
+                              : criticality === 'B'
+                              ? 'rgba(245, 158, 11, 0.1)'
+                              : 'rgba(100, 116, 139, 0.1)',
+                          color:
+                            criticality === 'A'
+                              ? '#dc2626'
+                              : criticality === 'B'
+                              ? '#d97706'
+                              : '#475569',
+                          border: '1px solid',
+                          borderColor:
+                            criticality === 'A'
+                              ? '#fecaca'
+                              : criticality === 'B'
+                              ? '#fde68a'
+                              : '#e2e8f0',
+                        }}
+                      />
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('actualWear') && (
+                    <TableCell>
+                      {wear !== undefined && wear !== null && wear !== '' ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                          <Typography
+                            variant="body2"
+                            fontWeight={700}
+                            sx={{
+                              fontSize: '0.8125rem',
+                              color: Number(wear) > 70 ? '#dc2626' : Number(wear) > 40 ? '#d97706' : '#16a34a',
+                            }}
+                          >
+                            {wear}%
+                          </Typography>
+                        </Box>
+                      ) : (
+                        <Typography variant="caption" sx={{ color: '#94a3b8' }}>—</Typography>
+                      )}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('eqGroup') && (
+                    <TableCell sx={{ fontSize: '0.8125rem', color: '#475569' }}>
+                      {custom.equipment_group || '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('eqType') && (
+                    <TableCell sx={{ fontSize: '0.8125rem', color: '#475569' }}>
+                      {custom.equipment_type || '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('respPerson') && (
+                    <TableCell sx={{ fontSize: '0.8125rem', color: '#334155', fontWeight: 500 }}>
+                      {custom.responsible_person_name || '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('okofCode') && (
+                    <TableCell sx={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#64748b' }}>
+                      {custom.okof_code || '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('okpd2Code') && (
+                    <TableCell sx={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#64748b' }}>
+                      {custom.okpd2_code || '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('procCode') && (
+                    <TableCell sx={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#64748b' }}>
+                      {custom.process_classifier_code || '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('maintPeriodicity') && (
+                    <TableCell sx={{ fontSize: '0.8125rem', color: '#475569' }}>
+                      {custom.maintenance_periodicity || '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('calibrationInterval') && (
+                    <TableCell sx={{ fontSize: '0.8125rem', color: '#475569' }}>
+                      {custom.calibration_interval ? `${custom.calibration_interval} мес.` : '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('cleanRoom') && (
+                    <TableCell sx={{ fontSize: '0.8125rem', color: '#475569' }}>
+                      {custom.clean_room_class || '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('isCriticalPath') && (
+                    <TableCell>
+                      <Chip
+                        label={custom.is_critical_path ? 'Да' : 'Нет'}
+                        size="small"
+                        sx={{
+                          height: 20,
+                          fontSize: '0.6875rem',
+                          fontWeight: 600,
+                          backgroundColor: custom.is_critical_path ? '#fef2f2' : '#f8fafc',
+                          color: custom.is_critical_path ? '#dc2626' : '#64748b',
+                          border: '1px solid',
+                          borderColor: custom.is_critical_path ? '#fecaca' : '#e2e8f0',
+                        }}
+                      />
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('isUnique') && (
+                    <TableCell>
+                      <Chip
+                        label={custom.is_unique ? 'Да' : 'Нет'}
+                        size="small"
+                        sx={{
+                          height: 20,
+                          fontSize: '0.6875rem',
+                          fontWeight: 600,
+                          backgroundColor: custom.is_unique ? '#f0f9ff' : '#f8fafc',
+                          color: custom.is_unique ? '#0284c7' : '#64748b',
+                          border: '1px solid',
+                          borderColor: custom.is_unique ? '#bae6fd' : '#e2e8f0',
+                        }}
+                      />
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('isImported') && (
+                    <TableCell>
+                      <Chip
+                        label={custom.is_imported ? 'Да' : 'Нет'}
+                        size="small"
+                        sx={{
+                          height: 20,
+                          fontSize: '0.6875rem',
+                          fontWeight: 600,
+                          backgroundColor: custom.is_imported ? '#faf5ff' : '#f8fafc',
+                          color: custom.is_imported ? '#9333ea' : '#64748b',
+                          border: '1px solid',
+                          borderColor: custom.is_imported ? '#e9d5ff' : '#e2e8f0',
+                        }}
+                      />
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('documentsCount') && (
+                    <TableCell sx={{ fontSize: '0.8125rem', color: '#475569' }}>
+                      {eq._count?.documents ?? eq.counts?.documents ?? 0}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('sparePartsCount') && (
+                    <TableCell sx={{ fontSize: '0.8125rem', color: '#475569' }}>
+                      {eq._count?.spareParts ?? eq.counts?.spareParts ?? 0}
                     </TableCell>
                   )}
 
@@ -928,6 +1448,18 @@ function EquipmentListContent() {
                   {visibleColumns.includes('commissionDate') && (
                     <TableCell sx={{ fontSize: '0.8125rem', color: '#64748b', fontFeatureSettings: '"tnum"' }}>
                       {formatDate(eq.commissionDate)}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('updatedAt') && (
+                    <TableCell sx={{ fontSize: '0.8125rem', color: '#64748b', fontFeatureSettings: '"tnum"' }}>
+                      {formatDate(eq.updatedAt)}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('createdAt') && (
+                    <TableCell sx={{ fontSize: '0.8125rem', color: '#64748b', fontFeatureSettings: '"tnum"' }}>
+                      {formatDate(eq.createdAt)}
                     </TableCell>
                   )}
                 </TableRow>
