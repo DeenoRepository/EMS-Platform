@@ -44,7 +44,13 @@ import Inventory2Icon from '@mui/icons-material/Inventory2';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import BuildCircleIcon from '@mui/icons-material/BuildCircle';
 import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
+import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
+import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
+import BugReportOutlinedIcon from '@mui/icons-material/BugReportOutlined';
+import LayersOutlinedIcon from '@mui/icons-material/LayersOutlined';
 import PageHeader from '@/components/layout/PageHeader';
+import { NavTabsContainer } from '@/components/layout/NavTabs';
+import { SmartImportWizard } from '@/components/eps/SmartImportWizard';
 import { useSnackbar } from 'notistack';
 import {
   StatCard,
@@ -105,7 +111,7 @@ const SECTION_ICONS: Record<string, React.ReactNode> = {
   Straighten: <StraightenIcon color="secondary" />,
 };
 
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense } from 'react';
 
 const PRESET_COLORS = ['#0284c7', '#0f766e', '#16a34a', '#d97706', '#dc2626', '#7c3aed', '#db2777', '#475569'];
@@ -115,7 +121,7 @@ const MODULE_KEYS = ['eps', 'wms', 'srm', 'mro'];
 const MODULE_META: Record<string, { title: string; subtitle: string; breadcrumb: string; name: string }> = {
   eps: {
     title: 'Настройки модуля — Паспортизация (EPS)',
-    subtitle: 'Управление техническими разделами, пользовательскими полями и классификаторами оборудования',
+    subtitle: 'Управление техническими разделами, пользовательскими полями, классификаторами и мастер импорта оборудования',
     breadcrumb: 'Паспортизация (EPS)',
     name: 'Паспортизация оборудования (EPS)',
   },
@@ -141,8 +147,10 @@ const MODULE_META: Record<string, { title: string; subtitle: string; breadcrumb:
 
 function ModuleSettingsContent() {
   const { enqueueSnackbar } = useSnackbar();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
+  const subtabParam = searchParams.get('subtab');
 
   const getInitialTab = () => {
     switch (tabParam) {
@@ -158,6 +166,7 @@ function ModuleSettingsContent() {
   };
 
   const [activeTab, setActiveTab] = useState(getInitialTab);
+  const [epsSubTab, setEpsSubTab] = useState(subtabParam === 'import' ? 1 : 0);
 
   useEffect(() => {
     if (tabParam === 'wms') setActiveTab(1);
@@ -165,6 +174,11 @@ function ModuleSettingsContent() {
     else if (tabParam === 'mro') setActiveTab(3);
     else if (tabParam === 'eps') setActiveTab(0);
   }, [tabParam]);
+
+  useEffect(() => {
+    if (subtabParam === 'import') setEpsSubTab(1);
+    else setEpsSubTab(0);
+  }, [subtabParam]);
 
   // EPS Metadata State
   const [sections, setSections] = useState<CustomSectionItem[]>([]);
@@ -580,6 +594,22 @@ function ModuleSettingsContent() {
           { label: 'Настройки модулей', href: '/admin/module-settings' },
           { label: currentMeta.breadcrumb },
         ]}
+        tabs={
+          <NavTabsContainer
+            activeTab={activeTab}
+            onChange={(_, newTab) => {
+              setActiveTab(newTab);
+              const keys = ['eps', 'wms', 'srm', 'mro'];
+              router.replace(`/admin/module-settings?tab=${keys[newTab]}`, { scroll: false });
+            }}
+            tabs={[
+              { label: 'Паспортизация (EPS)', icon: <BadgeOutlinedIcon sx={{ fontSize: 18 }} /> },
+              { label: 'Складской учёт (WMS)', icon: <WarehouseOutlinedIcon sx={{ fontSize: 18 }} /> },
+              { label: 'Система подачи заявок (SRM)', icon: <BugReportOutlinedIcon sx={{ fontSize: 18 }} /> },
+              { label: 'ТО и Ремонт (MRO)', icon: <BuildCircleIcon sx={{ fontSize: 18 }} /> },
+            ]}
+          />
+        }
       />
 
       {/* Module Enable / Disable Control Banner */}
@@ -627,50 +657,60 @@ function ModuleSettingsContent() {
         />
       </Paper>
 
-      {/* TAB 0: EPS — Разделы, Поля и Теги */}
+      {/* TAB 0: EPS — Разделы, Поля, Теги и Мастер Импорта */}
       {activeTab === 0 && (
-        <Grid container spacing={3}>
-          {/* Main Column: Custom Sections with their Fields */}
-          <Grid item xs={12} lg={8}>
-            <Card sx={{ mb: 3 }}>
-              <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Box>
-                    <Typography variant="h6" fontWeight={700}>
-                      Кастомные разделы и поля паспорта оборудования
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Группировка технических параметров по тематическим разделам с единицами измерения
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button
-                      variant="outlined"
-                      color="primary"
-                      size="small"
-                      startIcon={<FileUploadOutlinedIcon />}
-                      onClick={() => router.push('/eps/settings?tab=import')}
-                    >
-                      Мастер импорта
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      startIcon={<AddIcon />}
-                      onClick={handleOpenCreateSection}
-                    >
-                      Добавить раздел
-                    </Button>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      startIcon={<AddIcon />}
-                      onClick={() => handleOpenCreateField()}
-                    >
-                      Добавить поле
-                    </Button>
-                  </Box>
-                </Box>
+        <Box>
+          <Box sx={{ mb: 2.5 }}>
+            <NavTabsContainer
+              activeTab={epsSubTab}
+              onChange={(_, newSubTab) => {
+                setEpsSubTab(newSubTab);
+                const sub = newSubTab === 1 ? 'import' : 'fields';
+                router.replace(`/admin/module-settings?tab=eps&subtab=${sub}`, { scroll: false });
+              }}
+              tabs={[
+                { label: 'Кастомные разделы, поля и теги', icon: <LayersOutlinedIcon sx={{ fontSize: 18 }} /> },
+                { label: 'Мастер импорта оборудования (Smart Import Wizard)', icon: <FileUploadOutlinedIcon sx={{ fontSize: 18 }} /> },
+              ]}
+            />
+          </Box>
+
+          {epsSubTab === 1 ? (
+            <SmartImportWizard />
+          ) : (
+            <Grid container spacing={3}>
+              {/* Main Column: Custom Sections with their Fields */}
+              <Grid item xs={12} lg={8}>
+                <Card sx={{ mb: 3 }}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                      <Box>
+                        <Typography variant="h6" fontWeight={700}>
+                          Кастомные разделы и поля паспорта оборудования
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Группировка технических параметров по тематическим разделам с единицами измерения
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          startIcon={<AddIcon />}
+                          onClick={handleOpenCreateSection}
+                        >
+                          Добавить раздел
+                        </Button>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          startIcon={<AddIcon />}
+                          onClick={() => handleOpenCreateField()}
+                        >
+                          Добавить поле
+                        </Button>
+                      </Box>
+                    </Box>
                 <Divider sx={{ mb: 2.5 }} />
 
                 {loadingEps ? (
@@ -838,6 +878,8 @@ function ModuleSettingsContent() {
             </Card>
           </Grid>
         </Grid>
+        )}
+      </Box>
       )}
 
       {/* TAB 1: WMS — Складской учёт */}

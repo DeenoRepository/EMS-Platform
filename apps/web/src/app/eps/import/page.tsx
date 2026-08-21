@@ -8,7 +8,7 @@ export default function ImportRedirectPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/eps/settings?tab=import');
+    router.replace('/admin/module-settings?tab=eps&subtab=import');
   }, [router]);
 
   return (
