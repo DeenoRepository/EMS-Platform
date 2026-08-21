@@ -6,9 +6,9 @@ set -e
 
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/ems}"
-STORAGE_DIR="${STORAGE_DIR:-./storage}"
+STORAGE_DIR="${STORAGE_DIR:-./uploads}"
 POSTGRES_DB="${POSTGRES_DB:-ems_db}"
-POSTGRES_USER="${POSTGRES_USER:-ems_user}"
+POSTGRES_USER="${POSTGRES_USER:-postgres}"
 POSTGRES_HOST="${POSTGRES_HOST:-localhost}"
 POSTGRES_PORT="${POSTGRES_PORT:-5432}"
 

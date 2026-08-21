@@ -6,15 +6,15 @@ services:
     container_name: ems_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgrespassword
-      POSTGRES_DB: ems_db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgrespassword}
+      POSTGRES_DB: ${POSTGRES_DB:-ems_db}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_BIND_IP:-127.0.0.1}:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d ems_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-ems_db}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -26,10 +26,12 @@ services:
     container_name: ems_platform
     restart: unless-stopped
     environment:
-      DATABASE_URL: "postgresql://postgres:postgrespassword@postgres:5432/ems_db?schema=public"
-      JWT_SECRET: "ems_super_secret_production_key_change_me_12345"
-      JWT_EXPIRATION: "8h"
-      NODE_ENV: "production"
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgrespassword@postgres:5432/ems_db?schema=public}
+      JWT_SECRET: ${JWT_SECRET:-ems_super_secret_production_key_change_me_12345}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-8h}
+      NODE_ENV: ${NODE_ENV:-production}
+      UPLOAD_DIR: "/app/uploads"
       PORT: 3000
     ports:
       - "3000:3000"
@@ -37,7 +39,7 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - ems_uploads:/app/apps/web/uploads
+      - ems_uploads:/app/uploads
 
 volumes:
   postgres_data:

@@ -64,7 +64,7 @@ def parse_and_export_dump(dump_path, output_dir):
     process.wait()
 
 def main():
-    base_dir = "/home/deeno/Public/Projects/EMS-Platform/temp"
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "temp"))
     dumps = [
         ("deps_passport_backup.dump", os.path.join(base_dir, "csv_eps_passport")),
         ("dwms_backup.dump", os.path.join(base_dir, "csv_wms_stock")),

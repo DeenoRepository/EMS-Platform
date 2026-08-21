@@ -512,9 +512,9 @@ export async function syncJiraIssues(targetIntegrationId?: string): Promise<{ co
 
   // 2. Fallback на переменные окружения .env (legacy Jira)
   const isJiraEnabled = process.env.JIRA_ENABLED === 'true';
-  const baseUrl = process.env.JIRA_BASE_URL;
+  const baseUrl = process.env.JIRA_BASE_URL || process.env.JIRA_HOST;
   const apiToken = process.env.JIRA_API_TOKEN;
-  const userEmail = process.env.JIRA_USER_EMAIL;
+  const userEmail = process.env.JIRA_USER_EMAIL || process.env.JIRA_EMAIL;
   const projectKey = process.env.JIRA_PROJECT_KEY || 'EMS';
 
   if (isJiraEnabled && baseUrl && apiToken && userEmail) {

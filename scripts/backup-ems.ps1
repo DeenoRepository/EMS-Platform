@@ -3,9 +3,9 @@
 # ==============================================================================
 param(
     [string]$BackupDir = ".\backups",
-    [string]$StorageDir = ".\storage",
+    [string]$StorageDir = ".\uploads",
     [string]$DbName = "ems_db",
-    [string]$DbUser = "ems_user",
+    [string]$DbUser = "postgres",
     [string]$DbHost = "localhost",
     [int]$DbPort = 5432,
     [int]$RetentionDays = 30

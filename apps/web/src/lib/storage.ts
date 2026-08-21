@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 
-const UPLOAD_ROOT = path.resolve(process.cwd(), process.env.UPLOAD_DIR || './uploads');
+const UPLOAD_ROOT = path.resolve(process.cwd(), process.env.UPLOAD_DIR || process.env.STORAGE_LOCAL_DIR || './uploads');
 
 // Обеспечиваем существование базовых папок
 export function ensureUploadDirs() {

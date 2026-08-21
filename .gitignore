@@ -12,7 +12,13 @@ out
 # Environment variables
 .env
 .env*.local
+.env.production
+.env.test
+.env.staging
 !.env.example
+
+# Installation lock
+.installed
 
 # Logs
 npm-debug.log*
@@ -35,6 +41,7 @@ dist
 build
 *.tsbuildinfo
 
-# Uploaded Files
+# Uploaded & Temporary Files
 uploads/
 temp/
+*.dump
