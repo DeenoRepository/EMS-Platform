@@ -6,6 +6,7 @@ import { useServerInsertedHTML } from 'next/navigation';
 import { CacheProvider } from '@emotion/react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import GlobalStyles from '@mui/material/GlobalStyles';
 import { theme } from './theme';
 
 export default function ThemeRegistry({ children }: { children: React.ReactNode }) {
@@ -53,6 +54,59 @@ export default function ThemeRegistry({ children }: { children: React.ReactNode 
     <CacheProvider value={cache}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
+        <GlobalStyles
+          styles={{
+            '@media print': {
+              '@page': {
+                size: 'A4 portrait',
+                margin: '10mm 12mm 10mm 12mm',
+              },
+              'html, body': {
+                backgroundColor: '#ffffff !important',
+                color: '#0f172a !important',
+                fontSize: '10pt !important',
+                WebkitPrintColorAdjust: 'exact !important',
+                printColorAdjust: 'exact !important',
+                margin: '0 !important',
+                padding: '0 !important',
+                width: '100% !important',
+                minWidth: '100% !important',
+              },
+              '.no-print, header, nav, aside, .MuiDrawer-root, .MuiTabs-root, .MuiBreadcrumbs-root, .page-header-actions, .MuiAlert-root, .notistack-SnackbarContainer': {
+                display: 'none !important',
+              },
+              'main': {
+                width: '100% !important',
+                maxWidth: '100% !important',
+                margin: '0 !important',
+                padding: '0 !important',
+                boxSizing: 'border-box !important',
+              },
+              '.MuiCard-root, .MuiPaper-root': {
+                boxShadow: 'none !important',
+                border: '1px solid #cbd5e1 !important',
+                pageBreakInside: 'avoid !important',
+                breakInside: 'avoid !important',
+                marginBottom: '10px !important',
+                backgroundColor: '#ffffff !important',
+              },
+              '.MuiGrid-container': {
+                width: '100% !important',
+                margin: '0 !important',
+              },
+              '.MuiGrid-item': {
+                paddingTop: '6px !important',
+                paddingLeft: '6px !important',
+              },
+              'button, .MuiIconButton-root': {
+                display: 'none !important',
+              },
+              '.print-only': {
+                display: 'block !important',
+              },
+            },
+          }}
+        />
         {children}
       </ThemeProvider>
     </CacheProvider>

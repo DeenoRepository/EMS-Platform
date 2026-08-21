@@ -44,15 +44,28 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const currentSidebarWidth = collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: 'background.default' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        minHeight: '100vh',
+        backgroundColor: 'background.default',
+        '@media print': {
+          display: 'block !important',
+          backgroundColor: '#ffffff !important',
+          minHeight: 'auto !important',
+        },
+      }}
+    >
       {/* Sidebar Navigation */}
-      <Sidebar
-        open={mobileOpen}
-        collapsed={collapsed}
-        onClose={() => setMobileOpen(false)}
-        onToggleCollapse={handleToggleCollapse}
-        variant={isMobile ? 'temporary' : 'permanent'}
-      />
+      <Box className="no-print" sx={{ display: { print: 'none' } }}>
+        <Sidebar
+          open={mobileOpen}
+          collapsed={collapsed}
+          onClose={() => setMobileOpen(false)}
+          onToggleCollapse={handleToggleCollapse}
+          variant={isMobile ? 'temporary' : 'permanent'}
+        />
+      </Box>
 
       {/* Main Content Area */}
       <Box
@@ -63,15 +76,29 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           minWidth: 0,
           width: { sm: `calc(100% - ${currentSidebarWidth}px)` },
           transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          '@media print': {
+            width: '100% !important',
+            maxWidth: '100% !important',
+            display: 'block !important',
+            margin: '0 !important',
+            padding: '0 !important',
+          },
         }}
       >
-        <Header onToggleSidebar={handleDrawerToggle} sidebarCollapsed={collapsed} />
+        <Box className="no-print" sx={{ display: { print: 'none' } }}>
+          <Header onToggleSidebar={handleDrawerToggle} sidebarCollapsed={collapsed} />
+        </Box>
         <Box
           component="main"
           sx={{
             flexGrow: 1,
             p: { xs: 2, sm: 3, md: 4 },
             maxWidth: '100%',
+            '@media print': {
+              p: '0 !important',
+              m: '0 !important',
+              width: '100% !important',
+            },
           }}
         >
           {children}

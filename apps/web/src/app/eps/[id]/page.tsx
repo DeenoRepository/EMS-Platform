@@ -596,6 +596,39 @@ export default function EquipmentPassportPage() {
 
   return (
     <Box sx={{ maxWidth: 1920, mx: 'auto' }}>
+      {/* Official Print Header (Visible strictly when printing / PDF export) */}
+      <Box
+        className="print-only"
+        sx={{
+          display: 'none',
+          '@media print': {
+            display: 'block !important',
+            mb: 2.5,
+            pb: 1.5,
+            borderBottom: '2px solid #0f172a',
+          },
+        }}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <Box>
+            <Typography variant="h5" fontWeight={800} sx={{ textTransform: 'uppercase', letterSpacing: '0.02em', color: '#0f172a' }}>
+              Электронный паспорт оборудования
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#475569', mt: 0.25 }}>
+              Корпоративная система управления оборудованием и основными фондами (EMS Platform)
+            </Typography>
+          </Box>
+          <Box sx={{ textAlign: 'right' }}>
+            <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
+              Дата выгрузки паспорта:
+            </Typography>
+            <Typography variant="body2" fontWeight={700} sx={{ color: '#0f172a' }}>
+              {new Date().toLocaleDateString('ru-RU')}
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
+
       <PageHeader
         title={equipment.name}
         subtitle={`${equipment.manufacturer || ''} ${equipment.model || ''} • Инв. №: ${equipment.inventoryNumber || 'Б/Н'}`}

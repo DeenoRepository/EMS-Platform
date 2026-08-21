@@ -22,6 +22,7 @@ export default function PageHeader({ title, subtitle, breadcrumbs, actions }: Pa
     <Box sx={{ mb: 3 }}>
       {breadcrumbs && breadcrumbs.length > 0 && (
         <Breadcrumbs
+          className="no-print"
           separator={<NavigateNextIcon sx={{ fontSize: 13, color: '#94a3b8' }} />}
           aria-label="навигация"
           sx={{ mb: 1, '& .MuiBreadcrumbs-li': { fontSize: '0.75rem', lineHeight: 1 } }}
@@ -107,6 +108,7 @@ export default function PageHeader({ title, subtitle, breadcrumbs, actions }: Pa
 
         {actions && (
           <Box
+            className="no-print page-header-actions"
             sx={{
               display: 'flex',
               alignItems: 'center',
