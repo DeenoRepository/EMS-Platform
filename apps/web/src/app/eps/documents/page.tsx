@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, Suspense } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
 import {
   Box,
   Card,
@@ -18,6 +18,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TableSortLabel,
   Tooltip,
   Autocomplete,
   Paper,
@@ -99,6 +100,64 @@ function DocumentsListContent() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [loading, setLoading] = useState(true);
+
+  // Sorting
+  const [sortField, setSortField] = useState<string>('date');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+
+  const handleRequestSort = (property: string) => {
+    const isAsc = sortField === property && sortDirection === 'asc';
+    setSortDirection(isAsc ? 'desc' : 'asc');
+    setSortField(property);
+  };
+
+  const sortedItems = useMemo(() => {
+    if (!sortField) return items;
+    return [...items].sort((a, b) => {
+      let aVal: any = '';
+      let bVal: any = '';
+      switch (sortField) {
+        case 'name':
+          aVal = a.originalName || a.fileName || '';
+          bVal = b.originalName || b.fileName || '';
+          break;
+        case 'equipment':
+          aVal = a.equipment?.name || a.equipment?.inventoryNumber || '';
+          bVal = b.equipment?.name || b.equipment?.inventoryNumber || '';
+          break;
+        case 'docType':
+          aVal = a.docType || '';
+          bVal = b.docType || '';
+          break;
+        case 'description':
+          aVal = a.description || '';
+          bVal = b.description || '';
+          break;
+        case 'size':
+          aVal = Number(a.fileSize || 0);
+          bVal = Number(b.fileSize || 0);
+          break;
+        case 'uploadedBy':
+          aVal = a.uploadedBy?.displayName || a.uploadedBy?.ldapLogin || '';
+          bVal = b.uploadedBy?.displayName || b.uploadedBy?.ldapLogin || '';
+          break;
+        case 'date':
+          aVal = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          break;
+        default:
+          aVal = (a as any)[sortField] || '';
+          bVal = (b as any)[sortField] || '';
+      }
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      return sortDirection === 'asc'
+        ? String(aVal).localeCompare(String(bVal), 'ru')
+        : String(bVal).localeCompare(String(aVal), 'ru');
+    });
+  }, [items, sortField, sortDirection]);
 
   // Filters
   const [search, setSearch] = useState(searchParams?.get('search') || '');
@@ -514,49 +573,91 @@ function DocumentsListContent() {
           <TableHead>
             <TableRow sx={{ backgroundColor: '#ffffff' }}>
               {visibleColumns.includes('name') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ИМЯ ФАЙЛА
+                <TableCell sx={{ minWidth: 200 }}>
+                  <TableSortLabel
+                    active={sortField === 'name'}
+                    direction={sortField === 'name' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('name')}
+                  >
+                    Имя файла
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('equipment') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ОБОРУДОВАНИЕ
+                <TableCell sx={{ minWidth: 180 }}>
+                  <TableSortLabel
+                    active={sortField === 'equipment'}
+                    direction={sortField === 'equipment' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('equipment')}
+                  >
+                    Оборудование
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('docType') && (
-                <TableCell sx={{ fontWeight: 700, width: 170, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ТИП ДОКУМЕНТА
+                <TableCell sx={{ minWidth: 160 }}>
+                  <TableSortLabel
+                    active={sortField === 'docType'}
+                    direction={sortField === 'docType' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('docType')}
+                  >
+                    Тип документа
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('description') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ОПИСАНИЕ
+                <TableCell sx={{ minWidth: 160 }}>
+                  <TableSortLabel
+                    active={sortField === 'description'}
+                    direction={sortField === 'description' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('description')}
+                  >
+                    Описание
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('size') && (
-                <TableCell sx={{ fontWeight: 700, width: 100, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  РАЗМЕР
+                <TableCell sx={{ minWidth: 110 }}>
+                  <TableSortLabel
+                    active={sortField === 'size'}
+                    direction={sortField === 'size' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('size')}
+                  >
+                    Размер
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('uploadedBy') && (
-                <TableCell sx={{ fontWeight: 700, width: 140, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ЗАГРУЗИЛ
+                <TableCell sx={{ minWidth: 140 }}>
+                  <TableSortLabel
+                    active={sortField === 'uploadedBy'}
+                    direction={sortField === 'uploadedBy' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('uploadedBy')}
+                  >
+                    Загрузил
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('date') && (
-                <TableCell sx={{ fontWeight: 700, width: 120, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ДАТА
+                <TableCell sx={{ minWidth: 120 }}>
+                  <TableSortLabel
+                    active={sortField === 'date'}
+                    direction={sortField === 'date' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('date')}
+                  >
+                    Дата
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('actions') && (
-                <TableCell align="right" sx={{ fontWeight: 700, width: 100, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ДЕЙСТВИЯ
+                <TableCell align="right" sx={{ minWidth: 100 }}>
+                  Действия
                 </TableCell>
               )}
             </TableRow>
           </TableHead>
           <TableBody>
-            {items.map((doc) => (
+            {sortedItems.map((doc) => (
               <TableRow key={doc.id} hover>
                 {visibleColumns.includes('name') && (
                   <TableCell>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, Suspense } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
 import {
   Box,
   Card,
@@ -17,6 +17,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TableSortLabel,
   InputAdornment,
   CircularProgress,
   Paper,
@@ -174,6 +175,56 @@ function HistoryListContent() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [loading, setLoading] = useState(true);
+
+  // Sorting
+  const [sortField, setSortField] = useState<string>('createdAt');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+
+  const handleRequestSort = (property: string) => {
+    const isAsc = sortField === property && sortDirection === 'asc';
+    setSortDirection(isAsc ? 'desc' : 'asc');
+    setSortField(property);
+  };
+
+  const sortedItems = useMemo(() => {
+    if (!sortField) return items;
+    return [...items].sort((a, b) => {
+      let aVal: any = '';
+      let bVal: any = '';
+      switch (sortField) {
+        case 'createdAt':
+          aVal = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          break;
+        case 'user':
+          aVal = a.user?.displayName || a.user?.ldapLogin || '';
+          bVal = b.user?.displayName || b.user?.ldapLogin || '';
+          break;
+        case 'action':
+          aVal = a.action || '';
+          bVal = b.action || '';
+          break;
+        case 'entityType':
+          aVal = a.entityType || '';
+          bVal = b.entityType || '';
+          break;
+        case 'equipment':
+          aVal = a.equipment?.name || a.equipment?.inventoryNumber || '';
+          bVal = b.equipment?.name || b.equipment?.inventoryNumber || '';
+          break;
+        default:
+          aVal = (a as any)[sortField] || '';
+          bVal = (b as any)[sortField] || '';
+      }
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      return sortDirection === 'asc'
+        ? String(aVal).localeCompare(String(bVal), 'ru')
+        : String(bVal).localeCompare(String(aVal), 'ru');
+    });
+  }, [items, sortField, sortDirection]);
 
   // Filters
   const [search, setSearch] = useState(searchParams?.get('search') || '');
@@ -505,39 +556,69 @@ function HistoryListContent() {
           <TableHead>
             <TableRow sx={{ backgroundColor: '#ffffff' }}>
               {visibleColumns.includes('createdAt') && (
-                <TableCell sx={{ fontWeight: 700, width: 150, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ДАТА И ВРЕМЯ
+                <TableCell sx={{ minWidth: 160 }}>
+                  <TableSortLabel
+                    active={sortField === 'createdAt'}
+                    direction={sortField === 'createdAt' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('createdAt')}
+                  >
+                    Дата и время
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('user') && (
-                <TableCell sx={{ fontWeight: 700, width: 150, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ПОЛЬЗОВАТЕЛЬ
+                <TableCell sx={{ minWidth: 160 }}>
+                  <TableSortLabel
+                    active={sortField === 'user'}
+                    direction={sortField === 'user' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('user')}
+                  >
+                    Пользователь
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('action') && (
-                <TableCell sx={{ fontWeight: 700, width: 120, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ДЕЙСТВИЕ
+                <TableCell sx={{ minWidth: 130 }}>
+                  <TableSortLabel
+                    active={sortField === 'action'}
+                    direction={sortField === 'action' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('action')}
+                  >
+                    Действие
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('entityType') && (
-                <TableCell sx={{ fontWeight: 700, width: 160, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  СУЩНОСТЬ
+                <TableCell sx={{ minWidth: 150 }}>
+                  <TableSortLabel
+                    active={sortField === 'entityType'}
+                    direction={sortField === 'entityType' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('entityType')}
+                  >
+                    Сущность
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('equipment') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ОБОРУДОВАНИЕ
+                <TableCell sx={{ minWidth: 180 }}>
+                  <TableSortLabel
+                    active={sortField === 'equipment'}
+                    direction={sortField === 'equipment' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('equipment')}
+                  >
+                    Оборудование
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('changes') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ДЕТАЛИЗАЦИЯ ИЗМЕНЕНИЙ
+                <TableCell sx={{ minWidth: 200 }}>
+                  Детализация изменений
                 </TableCell>
               )}
             </TableRow>
           </TableHead>
           <TableBody>
-            {items.map((log) => {
+            {sortedItems.map((log) => {
               const eq = log.equipment;
               const hasDiff = log.changes && Object.keys(log.changes).length > 0;
 

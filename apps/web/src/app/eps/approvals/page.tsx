@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, Suspense } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
 import {
   Box,
   Card,
@@ -18,6 +18,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TableSortLabel,
   InputAdornment,
   CircularProgress,
   Tooltip,
@@ -116,6 +117,72 @@ function ApprovalsListContent() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [loading, setLoading] = useState(true);
+
+  // Sorting
+  const [sortField, setSortField] = useState<string>('date');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+
+  const handleRequestSort = (property: string) => {
+    const isAsc = sortField === property && sortDirection === 'asc';
+    setSortDirection(isAsc ? 'desc' : 'asc');
+    setSortField(property);
+  };
+
+  const sortedItems = useMemo(() => {
+    if (!sortField) return items;
+    return [...items].sort((a, b) => {
+      let aVal: any = '';
+      let bVal: any = '';
+      switch (sortField) {
+        case 'title':
+          aVal = a.title || '';
+          bVal = b.title || '';
+          break;
+        case 'inventoryNumber':
+          aVal = a.equipment?.inventoryNumber || '';
+          bVal = b.equipment?.inventoryNumber || '';
+          break;
+        case 'equipment':
+          aVal = a.equipment?.name || '';
+          bVal = b.equipment?.name || '';
+          break;
+        case 'manufacturer':
+          aVal = a.equipment?.manufacturer || '';
+          bVal = b.equipment?.manufacturer || '';
+          break;
+        case 'type':
+          aVal = a.type || '';
+          bVal = b.type || '';
+          break;
+        case 'status':
+          aVal = a.status || '';
+          bVal = b.status || '';
+          break;
+        case 'requester':
+          aVal = a.requester?.displayName || '';
+          bVal = b.requester?.displayName || '';
+          break;
+        case 'date':
+          aVal = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          break;
+        case 'reviewer':
+          aVal = a.reviewer?.displayName || '';
+          bVal = b.reviewer?.displayName || '';
+          break;
+        default:
+          aVal = (a as any)[sortField] || '';
+          bVal = (b as any)[sortField] || '';
+      }
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      return sortDirection === 'asc'
+        ? String(aVal).localeCompare(String(bVal), 'ru')
+        : String(bVal).localeCompare(String(aVal), 'ru');
+    });
+  }, [items, sortField, sortDirection]);
 
   // Scope Tab: 'all' | 'to_review' | 'my_requests'
   const [scopeTab, setScopeTab] = useState<'all' | 'to_review' | 'my_requests'>('all');
@@ -612,59 +679,113 @@ function ApprovalsListContent() {
           <TableHead>
             <TableRow sx={{ backgroundColor: '#ffffff' }}>
               {visibleColumns.includes('title') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ТЕМА / ЗАЯВКА
+                <TableCell sx={{ minWidth: 200 }}>
+                  <TableSortLabel
+                    active={sortField === 'title'}
+                    direction={sortField === 'title' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('title')}
+                  >
+                    Тема / заявка
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('inventoryNumber') && (
-                <TableCell sx={{ fontWeight: 700, width: 120, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ИНВ. НОМЕР
+                <TableCell sx={{ minWidth: 130 }}>
+                  <TableSortLabel
+                    active={sortField === 'inventoryNumber'}
+                    direction={sortField === 'inventoryNumber' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('inventoryNumber')}
+                  >
+                    Инв. номер
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('equipment') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ОБОРУДОВАНИЕ
+                <TableCell sx={{ minWidth: 180 }}>
+                  <TableSortLabel
+                    active={sortField === 'equipment'}
+                    direction={sortField === 'equipment' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('equipment')}
+                  >
+                    Оборудование
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('manufacturer') && (
-                <TableCell sx={{ fontWeight: 700, width: 170, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ПРОИЗВОДИТЕЛЬ
+                <TableCell sx={{ minWidth: 150 }}>
+                  <TableSortLabel
+                    active={sortField === 'manufacturer'}
+                    direction={sortField === 'manufacturer' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('manufacturer')}
+                  >
+                    Производитель
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('type') && (
-                <TableCell sx={{ fontWeight: 700, width: 170, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ТИП СОГЛАСОВАНИЯ
+                <TableCell sx={{ minWidth: 160 }}>
+                  <TableSortLabel
+                    active={sortField === 'type'}
+                    direction={sortField === 'type' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('type')}
+                  >
+                    Тип согласования
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('status') && (
-                <TableCell sx={{ fontWeight: 700, width: 140, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  СТАТУС
+                <TableCell sx={{ minWidth: 130 }}>
+                  <TableSortLabel
+                    active={sortField === 'status'}
+                    direction={sortField === 'status' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('status')}
+                  >
+                    Статус
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('requester') && (
-                <TableCell sx={{ fontWeight: 700, width: 150, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ИНИЦИАТОР
+                <TableCell sx={{ minWidth: 150 }}>
+                  <TableSortLabel
+                    active={sortField === 'requester'}
+                    direction={sortField === 'requester' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('requester')}
+                  >
+                    Инициатор
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('date') && (
-                <TableCell sx={{ fontWeight: 700, width: 130, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ДАТА ПОДАЧИ
+                <TableCell sx={{ minWidth: 130 }}>
+                  <TableSortLabel
+                    active={sortField === 'date'}
+                    direction={sortField === 'date' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('date')}
+                  >
+                    Дата подачи
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('reviewer') && (
-                <TableCell sx={{ fontWeight: 700, width: 160, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  РЕШЕНИЕ / АВТОР
+                <TableCell sx={{ minWidth: 160 }}>
+                  <TableSortLabel
+                    active={sortField === 'reviewer'}
+                    direction={sortField === 'reviewer' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('reviewer')}
+                  >
+                    Решение / автор
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('actions') && (
-                <TableCell align="right" sx={{ fontWeight: 700, width: 120, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ДЕЙСТВИЯ
+                <TableCell align="right" sx={{ minWidth: 110 }}>
+                  Действия
                 </TableCell>
               )}
             </TableRow>
           </TableHead>
           <TableBody>
-            {items.map((app) => {
+            {sortedItems.map((app) => {
               const isPending = app.status === 'PENDING';
               const isRequester = user?.userId === app.requesterId;
 

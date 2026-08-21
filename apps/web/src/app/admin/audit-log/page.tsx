@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   Box,
   Card,
@@ -11,6 +11,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TableSortLabel,
   Typography,
   Chip,
   TextField,
@@ -64,6 +65,60 @@ export default function AdminAuditLogPage() {
   const [entityTypeFilter, setEntityTypeFilter] = useState('');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+
+  // Sorting
+  const [sortField, setSortField] = useState<string>('createdAt');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+
+  const handleRequestSort = (property: string) => {
+    const isAsc = sortField === property && sortDirection === 'asc';
+    setSortDirection(isAsc ? 'desc' : 'asc');
+    setSortField(property);
+  };
+
+  const sortedLogs = useMemo(() => {
+    if (!sortField) return logs;
+    return [...logs].sort((a, b) => {
+      let aVal: any = '';
+      let bVal: any = '';
+      switch (sortField) {
+        case 'createdAt':
+          aVal = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          break;
+        case 'user':
+          aVal = a.user?.displayName || a.user?.ldapLogin || '';
+          bVal = b.user?.displayName || b.user?.ldapLogin || '';
+          break;
+        case 'action':
+          aVal = a.action || '';
+          bVal = b.action || '';
+          break;
+        case 'entityType':
+          aVal = a.entityType || '';
+          bVal = b.entityType || '';
+          break;
+        case 'entityId':
+          aVal = a.entityId || '';
+          bVal = b.entityId || '';
+          break;
+        case 'ipAddress':
+          aVal = a.ipAddress || '';
+          bVal = b.ipAddress || '';
+          break;
+        default:
+          aVal = (a as any)[sortField] || '';
+          bVal = (b as any)[sortField] || '';
+      }
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      return sortDirection === 'asc'
+        ? String(aVal).localeCompare(String(bVal), 'ru')
+        : String(bVal).localeCompare(String(aVal), 'ru');
+    });
+  }, [logs, sortField, sortDirection]);
 
   // JSON viewer modal
   const [selectedChanges, setSelectedChanges] = useState<any | null>(null);
@@ -327,44 +382,80 @@ export default function AdminAuditLogPage() {
           <TableHead>
             <TableRow sx={{ backgroundColor: '#ffffff' }}>
               {visibleColumns.includes('createdAt') && (
-                <TableCell sx={{ fontWeight: 700, width: 150, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ДАТА И ВРЕМЯ
+                <TableCell sx={{ minWidth: 160 }}>
+                  <TableSortLabel
+                    active={sortField === 'createdAt'}
+                    direction={sortField === 'createdAt' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('createdAt')}
+                  >
+                    Дата и время
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('user') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ПОЛЬЗОВАТЕЛЬ
+                <TableCell sx={{ minWidth: 160 }}>
+                  <TableSortLabel
+                    active={sortField === 'user'}
+                    direction={sortField === 'user' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('user')}
+                  >
+                    Пользователь
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('action') && (
-                <TableCell sx={{ fontWeight: 700, width: 120, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ДЕЙСТВИЕ
+                <TableCell sx={{ minWidth: 130 }}>
+                  <TableSortLabel
+                    active={sortField === 'action'}
+                    direction={sortField === 'action' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('action')}
+                  >
+                    Действие
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('entityType') && (
-                <TableCell sx={{ fontWeight: 700, width: 150, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ТИП ОБЪЕКТА
+                <TableCell sx={{ minWidth: 150 }}>
+                  <TableSortLabel
+                    active={sortField === 'entityType'}
+                    direction={sortField === 'entityType' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('entityType')}
+                  >
+                    Тип объекта
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('entityId') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ID ОБЪЕКТА
+                <TableCell sx={{ minWidth: 160 }}>
+                  <TableSortLabel
+                    active={sortField === 'entityId'}
+                    direction={sortField === 'entityId' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('entityId')}
+                  >
+                    ID объекта
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('ipAddress') && (
-                <TableCell sx={{ fontWeight: 700, width: 130, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  IP АДРЕС
+                <TableCell sx={{ minWidth: 130 }}>
+                  <TableSortLabel
+                    active={sortField === 'ipAddress'}
+                    direction={sortField === 'ipAddress' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('ipAddress')}
+                  >
+                    IP адрес
+                  </TableSortLabel>
                 </TableCell>
               )}
               {visibleColumns.includes('changes') && (
-                <TableCell align="right" sx={{ fontWeight: 700, width: 100, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ИЗМЕНЕНИЯ
+                <TableCell align="right" sx={{ minWidth: 100 }}>
+                  Изменения
                 </TableCell>
               )}
             </TableRow>
           </TableHead>
           <TableBody>
-            {logs.map((log) => {
+            {sortedLogs.map((log) => {
               return (
                 <TableRow key={log.id} hover>
                   {visibleColumns.includes('createdAt') && (
