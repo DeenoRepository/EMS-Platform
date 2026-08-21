@@ -639,29 +639,6 @@ export default function EquipmentPassportPage() {
         ]}
         actions={
           <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center' }}>
-            <Button
-              variant="outlined"
-              startIcon={<ArrowBackIcon />}
-              onClick={() => router.push('/eps')}
-              sx={{
-                height: 38,
-                borderRadius: '8px',
-                borderColor: '#e2e8f0',
-                color: '#334155',
-                px: 2,
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                textTransform: 'none',
-                backgroundColor: '#ffffff',
-                boxSizing: 'border-box',
-                '&:hover': {
-                  borderColor: '#cbd5e1',
-                  backgroundColor: '#f8fafc',
-                },
-              }}
-            >
-              К списку
-            </Button>
             {canEdit && (
               <Button
                 variant="contained"
