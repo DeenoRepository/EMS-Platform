@@ -10,16 +10,17 @@ export interface BreadcrumbItem {
   href?: string;
 }
 
-interface PageHeaderProps {
+export interface PageHeaderProps {
   title: string;
   subtitle?: string;
   breadcrumbs?: BreadcrumbItem[];
   actions?: React.ReactNode;
+  tabs?: React.ReactNode;
 }
 
-export default function PageHeader({ title, subtitle, breadcrumbs, actions }: PageHeaderProps) {
+export default function PageHeader({ title, subtitle, breadcrumbs, actions, tabs }: PageHeaderProps) {
   return (
-    <Box sx={{ mb: 3 }}>
+    <Box sx={{ mb: tabs ? 3 : 3 }}>
       {breadcrumbs && breadcrumbs.length > 0 && (
         <Breadcrumbs
           className="no-print"
@@ -121,6 +122,18 @@ export default function PageHeader({ title, subtitle, breadcrumbs, actions }: Pa
           </Box>
         )}
       </Box>
+
+      {tabs && (
+        <Box
+          className="no-print"
+          sx={{
+            mt: 2,
+            borderBottom: '1px solid #e2e8f0',
+          }}
+        >
+          {tabs}
+        </Box>
+      )}
     </Box>
   );
 }

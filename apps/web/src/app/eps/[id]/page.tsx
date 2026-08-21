@@ -668,6 +668,24 @@ export default function EquipmentPassportPage() {
             )}
           </Box>
         }
+        tabs={
+          <NavTabsContainer
+            value={activeTab}
+            onChange={(val) => {
+              setActiveTab(val);
+              if (val === 6) fetchAudit();
+            }}
+            tabs={[
+              { label: 'Паспорт оборудования', value: 0 },
+              { label: 'Документация и схемы', value: 1, badge: equipment.documents.length },
+              { label: 'Согласования и заявки', value: 2, badge: equipment.approvals?.length || 0 },
+              { label: 'Комплектующие и ЗИП', value: 3, badge: equipment.spareParts.length },
+              { label: 'График ТОиР и ППР', value: 4, badge: equipment.maintenancePlans.length },
+              { label: 'Журнал инцидентов и дефектов', value: 5, badge: equipment.jiraIssues?.length || 0 },
+              { label: 'Жизненный цикл и аудит', value: 6 },
+            ]}
+          />
+        }
       />
 
       {equipment.status === 'DRAFT' && (
@@ -776,35 +794,6 @@ export default function EquipmentPassportPage() {
           />
         </Grid>
       </Grid>
-
-      {/* Navigation Tabs Bar */}
-      <Box
-        sx={{
-          mb: 3,
-          backgroundColor: '#ffffff',
-          border: '1px solid #e2e8f0',
-          borderRadius: '10px',
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
-          px: 1,
-        }}
-      >
-        <NavTabsContainer
-          value={activeTab}
-          onChange={(val) => {
-            setActiveTab(val);
-            if (val === 6) fetchAudit();
-          }}
-          tabs={[
-            { label: 'Паспорт оборудования', value: 0 },
-            { label: 'Документация и схемы', value: 1, badge: equipment.documents.length },
-            { label: 'Согласования и заявки', value: 2, badge: equipment.approvals?.length || 0 },
-            { label: 'Комплектующие и ЗИП', value: 3, badge: equipment.spareParts.length },
-            { label: 'График ТОиР и ППР', value: 4, badge: equipment.maintenancePlans.length },
-            { label: 'Журнал инцидентов и дефектов', value: 5, badge: equipment.jiraIssues?.length || 0 },
-            { label: 'Жизненный цикл и аудит', value: 6 },
-          ]}
-        />
-      </Box>
 
       {/* TAB 0: Паспорт (Сбалансированная инженерная сетка 5/7) */}
       {activeTab === 0 && (

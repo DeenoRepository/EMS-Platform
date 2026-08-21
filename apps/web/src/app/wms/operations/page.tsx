@@ -450,19 +450,17 @@ function WmsOperationsContent() {
             )}
           </Stack>
         }
+        tabs={
+          <NavTabsContainer
+            tabs={mainTabs}
+            value={activeMainTab}
+            onChange={(val) => {
+              setActiveMainTab(val as 'operations' | 'transfers');
+              router.push(`/wms/operations?tab=${val}`, { scroll: false });
+            }}
+          />
+        }
       />
-
-      {/* Main Section Navigation Tabs */}
-      <Box sx={{ mb: 2.5 }}>
-        <NavTabsContainer
-          tabs={mainTabs}
-          value={activeMainTab}
-          onChange={(val) => {
-            setActiveMainTab(val as 'operations' | 'transfers');
-            router.push(`/wms/operations?tab=${val}`, { scroll: false });
-          }}
-        />
-      </Box>
 
       {/* ─── TAB 1: ЖУРНАЛ ОПЕРАЦИЙ ─── */}
       {activeMainTab === 'operations' && (

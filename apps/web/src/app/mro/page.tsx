@@ -255,6 +255,17 @@ export default function MroOverviewPage() {
             </Box>
           )
         }
+        tabs={
+          <NavTabsContainer
+            value={tab}
+            onChange={(val) => setTab(val)}
+            tabs={[
+              { label: 'График нарядов ТО', value: 0, badge: schedules.length },
+              { label: 'Регламентные планы', value: 1, badge: plans.length },
+              { label: 'Шаблоны чек-листов', value: 2, badge: checklists.length },
+            ]}
+          />
+        }
       />
 
       {/* Critical MRO Alerts */}
@@ -312,19 +323,6 @@ export default function MroOverviewPage() {
           />
         </Grid>
       </Grid>
-
-      <Box sx={{ mb: 3 }}>
-        <NavTabsContainer
-          value={tab}
-          onChange={(val) => setTab(val)}
-          paper
-          tabs={[
-            { label: 'График нарядов ТО', value: 0, badge: schedules.length },
-            { label: 'Регламентные планы', value: 1, badge: plans.length },
-            { label: 'Шаблоны чек-листов', value: 2, badge: checklists.length },
-          ]}
-        />
-      </Box>
 
       <Card sx={{ mb: 4, borderRadius: 2 }}>
         <Box sx={{ p: 2 }}>

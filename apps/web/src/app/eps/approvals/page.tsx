@@ -446,27 +446,6 @@ function ApprovalsListContent() {
         </Grid>
       </Grid>
 
-      <Box sx={{ mb: 2 }}>
-        <NavTabsContainer
-          value={scopeTab}
-          onChange={(val) => {
-            setScopeTab(val);
-            setPage(1);
-          }}
-          paper
-          tabs={[
-            { label: 'Все заявки', value: 'all' },
-            {
-              label: 'Требуют рассмотрения',
-              value: 'to_review',
-              badge: stats.pending,
-              badgeColor: stats.pending > 0 ? 'warning' : 'default',
-            },
-            { label: 'Мои заявки', value: 'my_requests' },
-          ]}
-        />
-      </Box>
-
       <DataTableWrapper
         loading={loading}
         page={page - 1}
@@ -481,6 +460,25 @@ function ApprovalsListContent() {
         visibleColumns={visibleColumns}
         onVisibleColumnsChange={setVisibleColumns}
         stickyHeader
+        tabs={
+          <NavTabsContainer
+            value={scopeTab}
+            onChange={(val) => {
+              setScopeTab(val);
+              setPage(1);
+            }}
+            tabs={[
+              { label: 'Все заявки', value: 'all' },
+              {
+                label: 'Требуют рассмотрения',
+                value: 'to_review',
+                badge: stats.pending,
+                badgeColor: stats.pending > 0 ? 'warning' : 'default',
+              },
+              { label: 'Мои заявки', value: 'my_requests' },
+            ]}
+          />
+        }
         empty={items.length === 0 && !loading}
         emptyState={
           <EmptyState

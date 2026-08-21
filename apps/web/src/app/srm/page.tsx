@@ -449,25 +449,23 @@ export default function SrmOverviewPage() {
             </Button>
           )
         }
+        tabs={
+          <NavTabsContainer
+            value={currentTab}
+            onChange={(val) => setCurrentTab(val)}
+            tabs={[
+              { label: 'Обзор и метрики', value: 0, icon: <DashboardIcon /> },
+              { label: 'Реестр заявок', value: 1, icon: <ListAltIcon />, badge: issues.length },
+              ...(hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) || user?.roles.includes('admin')
+                ? [
+                    { label: 'Конструктор сопоставления полей', value: 2, icon: <SettingsSuggestIcon /> },
+                    { label: 'Внешние API и Интеграции', value: 3, icon: <CableIcon />, badge: integrations.length },
+                  ]
+                : []),
+            ]}
+          />
+        }
       />
-
-      <Box sx={{ mb: 3 }}>
-        <NavTabsContainer
-          value={currentTab}
-          onChange={(val) => setCurrentTab(val)}
-          paper
-          tabs={[
-            { label: 'Обзор и метрики', value: 0, icon: <DashboardIcon /> },
-            { label: 'Реестр заявок', value: 1, icon: <ListAltIcon />, badge: issues.length },
-            ...(hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) || user?.roles.includes('admin')
-              ? [
-                  { label: 'Конструктор сопоставления полей', value: 2, icon: <SettingsSuggestIcon /> },
-                  { label: 'Внешние API и Интеграции', value: 3, icon: <CableIcon />, badge: integrations.length },
-                ]
-              : []),
-          ]}
-        />
-      </Box>
 
       {loading ? (
         <PageLoading text="Синхронизация данных SRM и загрузка метрик..." />
