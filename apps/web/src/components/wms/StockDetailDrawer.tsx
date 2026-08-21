@@ -235,7 +235,7 @@ export default function StockDetailDrawer({
                       mt: 0.5,
                     }}
                   >
-                    {stockItem.quantity} <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>{stockItem.unit}</span>
+                    {stockItem.quantity} <Box component="span" sx={{ fontSize: '0.875rem', fontWeight: 500 }}>{stockItem.unit}</Box>
                   </Typography>
                 </Paper>
               </Grid>
@@ -262,7 +262,7 @@ export default function StockDetailDrawer({
                       mt: 0.5,
                     }}
                   >
-                    {minStockNum > 0 ? minStockNum : '—'} <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>{minStockNum > 0 ? stockItem.unit : ''}</span>
+                    {minStockNum > 0 ? minStockNum : '—'} <Box component="span" sx={{ fontSize: '0.875rem', fontWeight: 500 }}>{minStockNum > 0 ? stockItem.unit : ''}</Box>
                   </Typography>
                 </Paper>
               </Grid>
@@ -462,7 +462,7 @@ export default function StockDetailDrawer({
                     </Typography>
                   </Box>
 
-                  <Chip label="Паспорт" size="small" sx={{ fontSize: '0.6875rem', height: 22 }} />
+                  <StatusBadge status="PASSPORT" size="small" />
                 </Paper>
               ))
             )}

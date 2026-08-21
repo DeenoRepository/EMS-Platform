@@ -6,6 +6,7 @@ import {
   Typography,
   IconButton,
   Avatar,
+  // eslint-disable-next-line no-restricted-imports -- Badge used as avatar notification dot, not status
   Badge,
   Menu,
   MenuItem,

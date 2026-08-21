@@ -1,0 +1,31 @@
+{
+  "extends": "next/core-web-vitals",
+  "rules": {
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "@mui/material",
+            "importNames": ["Chip"],
+            "message": "Для статусов используйте StatusBadge из '@/components/ui'. Chip допустим только для тегов/счётчиков — добавьте // eslint-disable-next-line no-restricted-imports с комментарием-обоснованием."
+          },
+          {
+            "name": "@mui/material",
+            "importNames": ["Badge"],
+            "message": "Для индикаторов используйте StatusBadge из '@/components/ui'."
+          },
+          {
+            "name": "@mui/material/Chip",
+            "message": "Для статусов используйте StatusBadge из '@/components/ui'. Chip допустим только для тегов/счётчиков — добавьте eslint-disable с обоснованием."
+          },
+          {
+            "name": "@mui/material/Badge",
+            "message": "Для индикаторов используйте StatusBadge из '@/components/ui'."
+          }
+        ]
+      }
+    ],
+    "no-console": ["warn", { "allow": ["warn", "error"] }]
+  }
+}

@@ -3,8 +3,14 @@ import { prisma } from '@ems/database';
 import { authenticateLdap, signSessionToken, verifyPassword, getUserRolesAndPermissions, logAuditEvent } from '@ems/auth';
 import { JwtUserPayload } from '@ems/shared';
 import { enforceRateLimit } from '@/lib/rate-limit';
+import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
+
+const loginSchema = z.object({
+  username: z.string().trim().min(1, 'Укажите корректный логин (до 256 символов)').max(256, 'Укажите корректный логин (до 256 символов)'),
+  password: z.string().min(1, 'Укажите корректный пароль').max(256, 'Укажите корректный пароль'),
+});
 
 export async function POST(req: NextRequest) {
   // 1. Rate limiting: max 10 attempts per minute per IP
@@ -13,17 +19,9 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { username, password } = body;
+    const { username, password } = loginSchema.parse(body);
 
-    if (!username || typeof username !== 'string' || username.trim().length === 0 || username.length > 256) {
-      return NextResponse.json({ success: false, error: 'Укажите корректный логин (до 256 символов)' }, { status: 400 });
-    }
-
-    if (!password || typeof password !== 'string' || password.length === 0 || password.length > 256) {
-      return NextResponse.json({ success: false, error: 'Укажите корректный пароль' }, { status: 400 });
-    }
-
-    const trimmedUsername = username.trim();
+    const trimmedUsername = username;
     let authenticatedUser: { id: string; ldapLogin: string; displayName: string; email?: string | null } | null = null;
 
     // 1. Попытка аутентификации через LDAP (если включен)
@@ -145,8 +143,15 @@ export async function POST(req: NextRequest) {
     });
 
     return response;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка логина:', error);
-    return NextResponse.json({ success: false, error: 'Внутренняя ошибка сервера' }, { status: 500 });
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { success: false, error: 'Validation error', details: error.issues },
+        { status: 400 }
+      );
+    }
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ success: false, error: 'Внутренняя ошибка сервера', details: message }, { status: 500 });
   }
 }

@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     // Build database URL
     let dbUrl = dbConfig?.url?.trim();
     if (!dbUrl) {
-      const host = dbConfig?.host || 'localhost';
+      const host = dbConfig?.host || process.env.DB_HOST || 'localhost';
       const port = dbConfig?.port || '5432';
       const user = dbConfig?.user || 'postgres';
       const pass = dbConfig?.password || '';

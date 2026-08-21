@@ -1,4 +1,4 @@
-import ldap from 'ldapjs';
+import { Client } from 'ldapts';
 
 export interface LdapUserResult {
   ldapLogin: string;
@@ -42,93 +42,69 @@ export async function authenticateLdap(
     return null;
   }
 
-  return new Promise((resolve) => {
-    let client: ldap.Client | null = null;
-    try {
-      client = ldap.createClient({ url: ldapUrl, timeout: 5000, connectTimeout: 5000 });
-    } catch {
-      return resolve(null);
+  let client: Client;
+  try {
+    client = new Client({ url: ldapUrl, timeout: 5000, connectTimeout: 5000 });
+  } catch {
+    return null;
+  }
+
+  try {
+    if (bindDn && bindPassword) {
+      await client.bind(bindDn, bindPassword);
     }
 
-    client.on('error', () => {
-      resolve(null);
-    });
-
-    const initialBind = () => {
-      if (bindDn && bindPassword) {
-        client!.bind(bindDn, bindPassword, (err) => {
-          if (err) {
-            client?.unbind(() => {});
-            return resolve(null);
-          }
-          searchUser();
-        });
-      } else {
-        searchUser();
-      }
+    const sanitizedUsername = escapeLdapFilter(username);
+    const filter = filterTemplate.replace('{{username}}', sanitizedUsername);
+    const searchOptions = {
+      filter,
+      scope: 'sub' as const,
+      attributes: ['dn', 'displayName', 'cn', 'mail', 'sAMAccountName', 'userPrincipalName'],
     };
 
-    const searchUser = () => {
-      const sanitizedUsername = escapeLdapFilter(username);
-      const filter = filterTemplate.replace('{{username}}', sanitizedUsername);
-      const searchOptions: ldap.SearchOptions = {
-        filter,
-        scope: 'sub',
-        attributes: ['dn', 'displayName', 'cn', 'mail', 'sAMAccountName', 'userPrincipalName'],
-      };
+    const { searchEntries } = await client.search(searchBase, searchOptions);
+    
+    if (searchEntries.length === 0) {
+      await client.unbind();
+      return null;
+    }
 
-      client!.search(searchBase, searchOptions, (err, res) => {
-        if (err) {
-          client?.unbind(() => {});
-          return resolve(null);
-        }
+    const userEntry = searchEntries[0];
+    
+    if (!userEntry || !userEntry.dn) {
+      await client.unbind();
+      return null;
+    }
 
-        let userEntry: any = null;
+    // Попытка bind от имени пользователя
+    const userClient = new Client({ url: ldapUrl, timeout: 5000 });
+    try {
+      await userClient.bind(userEntry.dn, password);
+      await userClient.unbind();
+    } catch {
+      await userClient.unbind();
+      await client.unbind();
+      return null;
+    }
 
-        res.on('searchEntry', (entry: any) => {
-          userEntry = entry.object || entry.pojo || entry;
-        });
+    await client.unbind();
 
-        res.on('error', () => {
-          client?.unbind(() => {});
-          return resolve(null);
-        });
+    const displayName =
+      userEntry.displayName ||
+      userEntry.cn ||
+      userEntry.sAMAccountName ||
+      username;
+    const email = userEntry.mail || undefined;
 
-        res.on('end', () => {
-          if (!userEntry || !userEntry.dn) {
-            client?.unbind(() => {});
-            return resolve(null);
-          }
-
-          // Попытка bind от имени пользователя
-          const userClient = ldap.createClient({ url: ldapUrl, timeout: 5000 });
-          userClient.bind(userEntry.dn, password, (bindErr) => {
-            userClient.unbind(() => {});
-            client?.unbind(() => {});
-
-            if (bindErr) {
-              return resolve(null);
-            }
-
-            const displayName =
-              userEntry.displayName ||
-              userEntry.cn ||
-              userEntry.sAMAccountName ||
-              username;
-            const email = userEntry.mail || undefined;
-
-            resolve({
-              ldapLogin: username,
-              displayName: String(displayName),
-              email: email ? String(email) : undefined,
-            });
-          });
-        });
-      });
+    return {
+      ldapLogin: username,
+      displayName: String(displayName),
+      email: email ? String(email) : undefined,
     };
-
-    initialBind();
-  });
+  } catch (error) {
+    try { await client.unbind(); } catch {}
+    return null;
+  }
 }
 
 export async function testLdapConnection(config: {
@@ -137,72 +113,66 @@ export async function testLdapConnection(config: {
   bindPassword?: string;
   searchBase?: string;
 }): Promise<{ success: boolean; message?: string; error?: string }> {
-  return new Promise((resolve) => {
-    let client: ldap.Client;
-    try {
-      client = ldap.createClient({
-        url: config.url,
-        timeout: 5000,
-        connectTimeout: 5000,
-      });
-    } catch (err: any) {
-      return resolve({ success: false, error: `Некорректный URL: ${err.message}` });
-    }
-
-    client.on('error', (err: any) => {
-      resolve({ success: false, error: `Ошибка связи с LDAP: ${err.message}` });
+  let client: Client;
+  try {
+    client = new Client({
+      url: config.url,
+      timeout: 5000,
+      connectTimeout: 5000,
     });
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, error: `Некорректный URL: ${errorMsg}` };
+  }
 
+  try {
     if (config.bindDn && config.bindPassword) {
-      client.bind(config.bindDn, config.bindPassword, (err) => {
-        if (err) {
-          client.unbind(() => {});
-          return resolve({
-            success: false,
-            error: `Ошибка аутентификации Bind DN: ${err.message}`,
+      try {
+        await client.bind(config.bindDn, config.bindPassword);
+      } catch (err: unknown) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        try { await client.unbind(); } catch {}
+        return {
+          success: false,
+          error: `Ошибка аутентификации Bind DN: ${errorMsg}`,
+        };
+      }
+
+      if (config.searchBase) {
+        try {
+          await client.search(config.searchBase, {
+            scope: 'base',
+            filter: '(objectClass=*)',
+            sizeLimit: 1,
+            timeLimit: 5,
           });
+          try { await client.unbind(); } catch {}
+          return { success: true, message: 'Связь с Active Directory / LDAP подтверждена!' };
+        } catch (searchErr: unknown) {
+          const errorMsg = searchErr instanceof Error ? searchErr.message : String(searchErr);
+          try { await client.unbind(); } catch {}
+          return {
+            success: false,
+            error: `Search Base недоступен (или ошибка поиска): ${errorMsg}`,
+          };
         }
-
-        if (config.searchBase) {
-          client.search(
-            config.searchBase,
-            {
-              scope: 'base',
-              filter: '(objectClass=*)',
-              timeLimit: 5,
-            },
-            (searchErr, res) => {
-              if (searchErr) {
-                client.unbind(() => {});
-                return resolve({
-                  success: false,
-                  error: `Search Base недоступен: ${searchErr.message}`,
-                });
-              }
-              res.on('end', () => {
-                client.unbind(() => {});
-                resolve({ success: true, message: 'Связь с Active Directory / LDAP подтверждена!' });
-              });
-              res.on('error', (resErr) => {
-                client.unbind(() => {});
-                resolve({ success: false, error: `Ошибка поиска: ${resErr.message}` });
-              });
-            }
-          );
-        } else {
-          client.unbind(() => {});
-          resolve({ success: true, message: 'Успешная авторизация Bind DN в LDAP!' });
-        }
-      });
+      } else {
+        try { await client.unbind(); } catch {}
+        return { success: true, message: 'Успешная авторизация Bind DN в LDAP!' };
+      }
     } else {
-      client.search('', { scope: 'base', filter: '(objectClass=*)' }, (err) => {
-        client.unbind(() => {});
-        if (err) {
-          return resolve({ success: true, message: 'LDAP-сервер ответил на сетевой запрос' });
-        }
-        resolve({ success: true, message: 'LDAP-сервер доступен' });
-      });
+      try {
+        await client.search('', { scope: 'base', filter: '(objectClass=*)', sizeLimit: 1, timeLimit: 5 });
+      } catch (err: unknown) {
+        try { await client.unbind(); } catch {}
+        return { success: true, message: 'LDAP-сервер ответил на сетевой запрос (без авторизации)' };
+      }
+      try { await client.unbind(); } catch {}
+      return { success: true, message: 'LDAP-сервер доступен' };
     }
-  });
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    try { await client.unbind(); } catch {}
+    return { success: false, error: `Ошибка связи с LDAP: ${errorMsg}` };
+  }
 }
-

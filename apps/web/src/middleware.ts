@@ -4,12 +4,26 @@ import { jwtVerify } from 'jose';
 function getJwtSecret(): Uint8Array {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('Критическая ошибка безопасности: Переменная окружения JWT_SECRET обязательна в production-режиме.');
-    }
-    return new TextEncoder().encode('ems-default-dev-secret-jwt-key-not-for-production-min-32-chars-long');
+    throw new Error(
+      'FATAL: JWT_SECRET is not set. Application cannot start without it. ' +
+      'Set JWT_SECRET environment variable (minimum 32 characters).'
+    );
   }
   return new TextEncoder().encode(secret);
+}
+
+async function isSetupCompleted(): Promise<boolean> {
+  try {
+    const res = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/setup/status`, {
+      method: 'GET',
+      cache: 'no-store',
+    });
+    if (!res.ok) return false;
+    const data = await res.json();
+    return data?.isConfigured === true;
+  } catch {
+    return false;
+  }
 }
 
 export async function middleware(req: NextRequest) {
@@ -18,14 +32,28 @@ export async function middleware(req: NextRequest) {
   // 1. Исключаем статические ресурсы, favicon, внутренние роуты Next.js, картинки и шрифты
   if (
     pathname.startsWith('/_next') ||
-    pathname.startsWith('/api/setup') ||
-    pathname.startsWith('/setup') ||
+    pathname === '/api/setup/status' ||
     pathname === '/favicon.ico' ||
     pathname === '/logo.png' ||
     pathname === '/api/auth/login' ||
     pathname.startsWith('/api/files') ||
     /\.(png|jpg|jpeg|svg|webp|ico|gif|woff|woff2|ttf|eot|css|js)$/.test(pathname)
   ) {
+    return NextResponse.next();
+  }
+
+  // 1.5. Protect setup routes — only allow if system is NOT yet configured
+  if (pathname.startsWith('/api/setup') || pathname.startsWith('/setup')) {
+    const setupDone = await isSetupCompleted();
+    if (setupDone) {
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json(
+          { success: false, error: 'System is already configured. Setup routes are disabled.' },
+          { status: 403 }
+        );
+      }
+      return NextResponse.redirect(new URL('/login', req.url));
+    }
     return NextResponse.next();
   }
 
@@ -37,7 +65,7 @@ export async function middleware(req: NextRequest) {
   if (token) {
     try {
       const { payload } = await jwtVerify(token, getJwtSecret());
-      user = payload as any;
+      user = payload as unknown as { userId: string; ldapLogin: string; displayName: string; roles: string[]; permissions: string[] };
     } catch {
       user = null;
     }

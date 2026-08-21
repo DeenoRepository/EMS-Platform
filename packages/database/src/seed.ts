@@ -163,18 +163,29 @@ async function main() {
   console.log('✅ Роли и права настроены');
 
   // 3. Создание базового пользователя admin
+  
+  const adminPassword = crypto.randomUUID().slice(0, 12);
+  const engineerPassword = crypto.randomUUID().slice(0, 12);
+  const keeperPassword = crypto.randomUUID().slice(0, 12);
+  
+  console.log('--- СГЕНЕРИРОВАННЫЕ ПАРОЛИ ---');
+  console.log(Admin: );
+  console.log(Engineer: );
+  console.log(Keeper: );
+  console.log('------------------------------');
+
   const adminUser = await prisma.user.upsert({
     where: { ldapLogin: 'admin' },
     update: {
       displayName: 'Главный Администратор',
       email: 'admin@ems.local',
-      passwordHash: hashPassword('admin123'),
+      passwordHash: hashPassword(adminPassword),
     },
     create: {
       ldapLogin: 'admin',
       displayName: 'Главный Администратор',
       email: 'admin@ems.local',
-      passwordHash: hashPassword('admin123'),
+      passwordHash: hashPassword(adminPassword),
     },
   });
 
@@ -190,13 +201,13 @@ async function main() {
     update: {
       displayName: 'Иван Петров (Инженер)',
       email: 'petrov@ems.local',
-      passwordHash: hashPassword('engineer123'),
+      passwordHash: hashPassword(engineerPassword),
     },
     create: {
       ldapLogin: 'engineer',
       displayName: 'Иван Петров (Инженер)',
       email: 'petrov@ems.local',
-      passwordHash: hashPassword('engineer123'),
+      passwordHash: hashPassword(engineerPassword),
     },
   });
 
@@ -212,13 +223,13 @@ async function main() {
     update: {
       displayName: 'Сергей Смирнов (Кладовщик)',
       email: 'smirnov@ems.local',
-      passwordHash: hashPassword('keeper123'),
+      passwordHash: hashPassword(keeperPassword),
     },
     create: {
       ldapLogin: 'keeper',
       displayName: 'Сергей Смирнов (Кладовщик)',
       email: 'smirnov@ems.local',
-      passwordHash: hashPassword('keeper123'),
+      passwordHash: hashPassword(keeperPassword),
     },
   });
 

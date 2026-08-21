@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
-import { prisma, EquipmentStatus } from '@ems/database';
+import { prisma, EquipmentStatus, Prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { z } from 'zod';
 
 export async function GET(req: NextRequest) {
   try {
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const pageSize = parseInt(searchParams.get('pageSize') || '20', 10);
 
-    const where: any = {};
+    const where: Prisma.EquipmentWhereInput = {};
 
     if (status) {
       where.status = status;
@@ -49,8 +50,9 @@ export async function GET(req: NextRequest) {
 
     if (!canManageApprovals) {
       if (!status) {
+        const existingAnd = Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : [];
         where.AND = [
-          ...(where.AND || []),
+          ...existingAnd,
           {
             OR: [
               { status: { not: 'DRAFT' } },
@@ -150,11 +152,27 @@ export async function GET(req: NextRequest) {
         statusCounts,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка /api/eps/equipment:', error);
     return NextResponse.json({ success: false, error: 'Ошибка получения реестра оборудования' }, { status: 500 });
   }
 }
+
+const createSchema = z.object({
+  name: z.string().min(1, 'Укажите наименование оборудования'),
+  inventoryNumber: z.string().optional().nullable(),
+  serialNumber: z.string().optional().nullable(),
+  manufacturer: z.string().optional().nullable(),
+  model: z.string().optional().nullable(),
+  location: z.string().optional().nullable(),
+  status: z.nativeEnum(EquipmentStatus).optional().nullable(),
+  commissionDate: z.string().optional().nullable(),
+  customFields: z.unknown().optional().nullable(),
+  tagIds: z.array(z.string()).optional(),
+  asDraft: z.boolean().optional(),
+  submitForApproval: z.boolean().optional(),
+  approvalComment: z.string().optional().nullable(),
+});
 
 export async function POST(req: NextRequest) {
   try {
@@ -177,11 +195,7 @@ export async function POST(req: NextRequest) {
       asDraft,
       submitForApproval,
       approvalComment,
-    } = body;
-
-    if (!name || typeof name !== 'string') {
-      return NextResponse.json({ success: false, error: 'Укажите наименование оборудования' }, { status: 400 });
-    }
+    } = createSchema.parse(body);
 
     // Проверка уникальности инвентарного номера если указан
     if (inventoryNumber) {
@@ -213,7 +227,7 @@ export async function POST(req: NextRequest) {
         location: location?.trim() || null,
         status: initialStatus,
         commissionDate: commissionDate ? new Date(commissionDate) : null,
-        customFields: customFields || {},
+        customFields: customFields ? JSON.parse(JSON.stringify(customFields)) : {},
         createdById: user.userId,
         tags: Array.isArray(tagIds) && tagIds.length > 0
           ? {
@@ -274,8 +288,15 @@ export async function POST(req: NextRequest) {
         approval: approvalRecord,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка создания оборудования:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка сохранения оборудования' }, { status: 500 });
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { success: false, error: 'Validation error', details: error.issues },
+        { status: 400 }
+      );
+    }
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ success: false, error: 'Ошибка сохранения оборудования', details: message }, { status: 500 });
   }
 }

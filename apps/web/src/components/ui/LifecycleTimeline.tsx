@@ -284,7 +284,7 @@ export function LifecycleTimeline({
                     {/* Author / Performer info */}
                     {evt.author && (
                       <Typography variant="caption" sx={{ display: 'block', mt: 0.5, fontSize: '0.75rem', color: '#64748b' }}>
-                        Исполнитель: <b style={{ color: '#334155' }}>{evt.author}</b>
+                        Исполнитель: <Box component="b" sx={{ color: 'text.secondary' }}>{evt.author}</Box>
                       </Typography>
                     )}
 

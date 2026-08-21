@@ -139,7 +139,7 @@ export function ApprovalStepper({
                 <Box sx={{ pl: 1, pb: 1, color: '#475569', fontSize: '0.8125rem' }}>
                   {step.user && (
                     <Typography variant="caption" display="block" sx={{ color: '#475569', fontSize: '0.75rem' }}>
-                      Ответственный: <strong style={{ color: '#0f172a' }}>{step.user}</strong>
+                      Ответственный: <Box component="strong" sx={{ color: 'text.primary' }}>{step.user}</Box>
                     </Typography>
                   )}
                   {step.date && (

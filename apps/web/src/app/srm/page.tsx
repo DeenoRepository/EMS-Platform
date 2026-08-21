@@ -750,7 +750,7 @@ export default function SrmOverviewPage() {
                                 {item.label}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
-                                <code>{item.srmField}</code> {item.isRequired && <span style={{ color: 'red' }}>*</span>}
+                                <code>{item.srmField}</code> {item.isRequired && <Box component="span" sx={{ color: 'error.main' }}>*</Box>}
                               </Typography>
                             </TableCell>
                             <TableCell>
@@ -1030,9 +1030,9 @@ export default function SrmOverviewPage() {
                                   <TableRow>
                                     <TableCell sx={{ fontWeight: 600 }}>Кастомные поля:</TableCell>
                                     <TableCell>
-                                      <pre style={{ margin: 0, fontSize: '0.75rem' }}>
+                                      <Box component="pre" sx={{ m: 0, fontSize: '0.75rem' }}>
                                         {JSON.stringify(testResult.customFields, null, 2)}
-                                      </pre>
+                                      </Box>
                                     </TableCell>
                                   </TableRow>
                                 )}
@@ -1294,9 +1294,9 @@ export default function SrmOverviewPage() {
         maxWidth="md"
         hideActions
       >
-        <pre style={{ maxHeight: 400, overflow: 'auto', backgroundColor: '#f5f5f5', padding: 12, borderRadius: 4, fontSize: '0.8rem' }}>
+        <Box component="pre" sx={{ maxHeight: 400, overflow: 'auto', bgcolor: 'grey.100', p: 1.5, borderRadius: 1, fontSize: '0.8rem' }}>
           {JSON.stringify(selectedRawIssue?.rawData || selectedRawIssue, null, 2)}
-        </pre>
+        </Box>
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 2 }}>
           <Button onClick={() => setSelectedRawIssue(null)}>Закрыть</Button>
         </Box>

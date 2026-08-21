@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   IconButton,
+  // eslint-disable-next-line no-restricted-imports -- Badge used as notification counter, not status indicator
   Badge,
   Popover,
   Box,

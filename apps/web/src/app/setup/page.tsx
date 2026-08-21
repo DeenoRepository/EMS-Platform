@@ -58,7 +58,7 @@ export default function SetupWizardPage() {
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
 
   // Step 2: Database Config
-  const [dbHost, setDbHost] = useState('127.0.0.1');
+  const [dbHost, setDbHost] = useState(process.env.NEXT_PUBLIC_DB_HOST || '127.0.0.1');
   const [dbPort, setDbPort] = useState('5433');
   const [dbName, setDbName] = useState('ems_db');
   const [dbUser, setDbUser] = useState('postgres');

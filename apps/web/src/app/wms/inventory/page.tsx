@@ -682,7 +682,7 @@ export default function WmsInventoryListPage() {
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
                     <span>{w.name} ({w.code})</span>
                     {isMine ? (
-                      <Chip label="Мой склад" size="small" color="primary" sx={{ height: 20, fontSize: '0.6875rem', fontWeight: 700 }} />
+                      <StatusBadge status="WAREHOUSE" label="Мой склад" size="small" />
                     ) : w.responsibleUser ? (
                       <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                         МОЛ: {w.responsibleUser.displayName}

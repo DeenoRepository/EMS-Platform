@@ -1804,7 +1804,7 @@ export default function EquipmentPassportPage() {
                   {equipment.jiraIssues.map((issue) => (
                     <TableRow key={issue.id} hover>
                       <TableCell>
-                        <Chip label={issue.issueKey} size="small" color="primary" variant="outlined" />
+                        <StatusBadge status="OPEN" label={issue.issueKey} variant="outlined" />
                       </TableCell>
                       <TableCell sx={{ fontWeight: 600 }}>{issue.summary}</TableCell>
                       <TableCell>

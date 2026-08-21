@@ -49,7 +49,8 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
-      const portStr = port ? `:${port}` : ':5432';
+      const defaultPort = process.env.DB_PORT || '5432';
+      const portStr = port ? `:${port}` : `:${defaultPort}`;
       const authStr = password ? `${encodeURIComponent(user)}:${encodeURIComponent(password)}` : encodeURIComponent(user);
       const sslStr = ssl ? '?sslmode=require' : '';
       connectionUrl = `postgresql://${authStr}@${host}${portStr}/${database}${sslStr}`;

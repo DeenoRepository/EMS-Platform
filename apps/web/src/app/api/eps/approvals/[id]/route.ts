@@ -3,6 +3,7 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma, ApprovalStatus, EquipmentStatus } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { z } from 'zod';
 
 export async function GET(
   req: NextRequest,
@@ -40,14 +41,20 @@ export async function GET(
     }
 
     return NextResponse.json({ success: true, data: approval });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка получения заявки на согласование:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { success: false, error: 'Ошибка получения заявки на согласование' },
+      { success: false, error: 'Ошибка получения заявки на согласование', details: message },
       { status: 500 }
     );
   }
 }
+
+const updateSchema = z.object({
+  status: z.nativeEnum(ApprovalStatus, { message: 'Не указан корректный статус согласования' }),
+  resolutionComment: z.string().optional(),
+});
 
 export async function PATCH(
   req: NextRequest,
@@ -59,14 +66,7 @@ export async function PATCH(
 
     const { id } = params;
     const body = await req.json();
-    const { status, resolutionComment } = body;
-
-    if (!status || !(status in ApprovalStatus)) {
-      return NextResponse.json(
-        { success: false, error: 'Не указан корректный статус согласования' },
-        { status: 400 }
-      );
-    }
+    const { status, resolutionComment } = updateSchema.parse(body);
 
     const approval = await prisma.equipmentApproval.findUnique({
       where: { id },
@@ -270,10 +270,17 @@ export async function PATCH(
     });
 
     return NextResponse.json({ success: true, data: updatedApproval });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка обработки согласования:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { success: false, error: 'Validation error', details: error.issues },
+        { status: 400 }
+      );
+    }
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { success: false, error: 'Ошибка сохранения решения по согласованию' },
+      { success: false, error: 'Ошибка сохранения решения по согласованию', details: message },
       { status: 500 }
     );
   }

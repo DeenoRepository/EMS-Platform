@@ -20,10 +20,10 @@ export async function GET(req: NextRequest) {
 
     // Дополняем дефолтными значениями из env если в БД еще нет
     const defaultSettings = {
-      JIRA_BASE_URL: settingsMap['JIRA_BASE_URL'] || process.env.JIRA_BASE_URL || 'https://jira.company.local',
+      JIRA_BASE_URL: settingsMap['JIRA_BASE_URL'] || process.env.JIRA_BASE_URL || '',
       JIRA_PROJECT_KEY: settingsMap['JIRA_PROJECT_KEY'] || process.env.JIRA_PROJECT_KEY || 'EMS',
       JIRA_EQUIPMENT_CUSTOM_FIELD: settingsMap['JIRA_EQUIPMENT_CUSTOM_FIELD'] || process.env.JIRA_EQUIPMENT_CUSTOM_FIELD || 'customfield_10100',
-      LDAP_URL: settingsMap['LDAP_URL'] || process.env.LDAP_URL || 'ldap://ldap.company.local:389',
+      LDAP_URL: settingsMap['LDAP_URL'] || process.env.LDAP_URL || '',
       LDAP_SEARCH_BASE: settingsMap['LDAP_SEARCH_BASE'] || process.env.LDAP_SEARCH_BASE || 'ou=users,dc=company,dc=local',
       APP_NAME: settingsMap['APP_NAME'] || process.env.NEXT_PUBLIC_APP_NAME || 'EMS — Equipment Management System',
     };

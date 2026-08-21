@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
-import { prisma, ApprovalStatus, ApprovalType } from '@ems/database';
+import { prisma, ApprovalStatus, ApprovalType, Prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,17 +24,17 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get('search')?.trim() || '';
     const scope = searchParams.get('scope')?.trim() || 'all'; // all | my_requests | to_review
 
-    const where: any = {};
+    const where: Prisma.EquipmentApprovalWhereInput = {};
 
     if (equipmentId) {
       where.equipmentId = equipmentId;
     }
 
-    if (status && status in ApprovalStatus) {
+    if (status && Object.keys(ApprovalStatus).includes(status)) {
       where.status = status as ApprovalStatus;
     }
 
-    if (type && type in ApprovalType) {
+    if (type && Object.keys(ApprovalType).includes(type)) {
       where.type = type as ApprovalType;
     }
 
@@ -119,14 +120,23 @@ export async function GET(req: NextRequest) {
         stats,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка получения списка согласований EPS:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { success: false, error: 'Ошибка получения списка согласований' },
+      { success: false, error: 'Ошибка получения списка согласований', details: message },
       { status: 500 }
     );
   }
 }
+
+const createSchema = z.object({
+  equipmentId: z.string().min(1, 'Необходимо указать оборудование'),
+  type: z.nativeEnum(ApprovalType, { message: 'Недопустимый тип согласования' }),
+  title: z.string().min(1, 'Необходимо указать заголовок'),
+  description: z.string().optional(),
+  proposedData: z.unknown().optional(),
+});
 
 export async function POST(req: NextRequest) {
   try {
@@ -137,21 +147,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { equipmentId, type, title, description, proposedData } = body;
-
-    if (!equipmentId || !type || !title) {
-      return NextResponse.json(
-        { success: false, error: 'Необходимо указать оборудование, тип согласования и заголовок' },
-        { status: 400 }
-      );
-    }
-
-    if (!(type in ApprovalType)) {
-      return NextResponse.json(
-        { success: false, error: 'Недопустимый тип согласования' },
-        { status: 400 }
-      );
-    }
+    const { equipmentId, type, title, description, proposedData } = createSchema.parse(body);
 
     const equipment = await prisma.equipment.findUnique({ where: { id: equipmentId } });
     if (!equipment) {
@@ -161,11 +157,11 @@ export async function POST(req: NextRequest) {
     const approval = await prisma.equipmentApproval.create({
       data: {
         equipmentId,
-        type: type as ApprovalType,
+        type,
         status: 'PENDING',
         title: title.trim(),
         description: description?.trim() || null,
-        proposedData: proposedData || null,
+        proposedData: proposedData ? JSON.parse(JSON.stringify(proposedData)) : null,
         requesterId: user.userId,
       },
       include: {
@@ -194,10 +190,17 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: approval });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка создания заявки на согласование:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { success: false, error: 'Validation error', details: error.issues },
+        { status: 400 }
+      );
+    }
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { success: false, error: 'Ошибка создания заявки на согласование' },
+      { success: false, error: 'Ошибка создания заявки на согласование', details: message },
       { status: 500 }
     );
   }

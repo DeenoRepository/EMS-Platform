@@ -428,7 +428,7 @@ export default function MroExecutionWizardDialog({
                           }
                         />
                         {isChecked && (
-                          <Chip size="small" label="Выполнено" color="success" sx={{ height: 22, fontSize: '0.6875rem', fontWeight: 700 }} />
+                          <StatusBadge status="COMPLETED" label="Выполнено" size="small" />
                         )}
                       </Box>
                     </Paper>

@@ -11,10 +11,10 @@
     "@ems/database": "workspace:*",
     "@ems/shared": "workspace:*",
     "jose": "^5.9.6",
-    "ldapjs": "^3.0.7"
+    "ldapts": "^9.0.0"
   },
   "devDependencies": {
-    "@types/ldapjs": "^3.0.5",
+    "@types/node": "^22.20.1",
     "typescript": "^5.7.3"
   }
 }

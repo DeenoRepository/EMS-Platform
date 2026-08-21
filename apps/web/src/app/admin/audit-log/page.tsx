@@ -11,7 +11,6 @@ import {
   TableRow,
   TableSortLabel,
   Typography,
-  Chip,
   TextField,
   MenuItem,
   Pagination,

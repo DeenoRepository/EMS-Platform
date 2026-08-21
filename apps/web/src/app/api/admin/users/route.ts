@@ -3,6 +3,7 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,10 +43,17 @@ export async function GET(req: NextRequest) {
       success: true,
       data: formattedUsers,
     });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: 'Ошибка получения пользователей' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ success: false, error: 'Ошибка получения пользователей', details: message }, { status: 500 });
   }
 }
+
+const updateSchema = z.object({
+  userId: z.string().min(1),
+  roleIds: z.array(z.string()).optional(),
+  isActive: z.boolean().optional(),
+});
 
 export async function PATCH(req: NextRequest) {
   try {
@@ -54,11 +62,7 @@ export async function PATCH(req: NextRequest) {
     if (!hasPermission(user, PERMISSIONS.ADMIN_USERS_MANAGE)) return forbiddenResponse();
 
     const body = await req.json();
-    const { userId, roleIds, isActive } = body;
-
-    if (!userId) {
-      return NextResponse.json({ success: false, error: 'Не указан userId' }, { status: 400 });
-    }
+    const { userId, roleIds, isActive } = updateSchema.parse(body);
 
     const targetUser = await prisma.user.findUnique({ where: { id: userId } });
     if (!targetUser) {
@@ -114,9 +118,16 @@ export async function PATCH(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, message: 'Пользователь обновлен' });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { success: false, error: 'Validation error', details: error.issues },
+        { status: 400 }
+      );
+    }
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { success: false, error: error.message || 'Ошибка обновления пользователя' },
+      { success: false, error: message || 'Ошибка обновления пользователя' },
       { status: 400 }
     );
   }

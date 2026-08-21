@@ -3,6 +3,7 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,10 +41,18 @@ export async function GET(req: NextRequest) {
       success: true,
       data: formattedRoles,
     });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: 'Ошибка получения ролей' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ success: false, error: 'Ошибка получения ролей', details: message }, { status: 500 });
   }
 }
+
+const createSchema = z.object({
+  name: z.string().min(1, 'Укажите системное имя'),
+  displayName: z.string().min(1, 'Укажите отображаемое название'),
+  description: z.string().optional(),
+  permissionCodes: z.array(z.string()).optional(),
+});
 
 export async function POST(req: NextRequest) {
   try {
@@ -52,11 +61,7 @@ export async function POST(req: NextRequest) {
     if (!hasPermission(user, PERMISSIONS.ADMIN_ROLES_MANAGE)) return forbiddenResponse();
 
     const body = await req.json();
-    const { name, displayName, description, permissionCodes } = body;
-
-    if (!name || !displayName) {
-      return NextResponse.json({ success: false, error: 'Укажите системное имя и отображаемое название' }, { status: 400 });
-    }
+    const { name, displayName, description, permissionCodes } = createSchema.parse(body);
 
     const cleanName = name.trim().toLowerCase().replace(/\s+/g, '_');
 
@@ -98,7 +103,14 @@ export async function POST(req: NextRequest) {
       success: true,
       data: newRole,
     });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: 'Ошибка создания роли' }, { status: 500 });
+  } catch (error: unknown) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { success: false, error: 'Validation error', details: error.issues },
+        { status: 400 }
+      );
+    }
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ success: false, error: 'Ошибка создания роли', details: message }, { status: 500 });
   }
 }

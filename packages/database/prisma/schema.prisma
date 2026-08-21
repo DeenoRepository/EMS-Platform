@@ -21,6 +21,7 @@ model User {
   lastLoginAt  DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
 
   roles             UserRole[]
   auditLogs         AuditLog[]
@@ -40,6 +41,8 @@ model User {
   receivedTransfers      StockTransfer[]       @relation("TransferReceivedBy")
   rejectedTransfers      StockTransfer[]       @relation("TransferRejectedBy")
   checklistResults       ChecklistResult[]
+
+  @@index([deletedAt])
 }
 
 model Role {
@@ -185,6 +188,7 @@ model Equipment {
   customFields    Json?           // { [fieldKey: string]: any }
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
+  deletedAt       DateTime?
   createdById     String
 
   createdBy        User                  @relation("CreatedBy", fields: [createdById], references: [id])
@@ -202,6 +206,7 @@ model Equipment {
   @@index([manufacturer])
   @@index([createdById])
   @@index([createdAt])
+  @@index([deletedAt])
 }
 
 enum EquipmentStatus {
@@ -287,6 +292,7 @@ model Document {
   description  String?
   uploadedById String
   createdAt    DateTime     @default(now())
+  deletedAt    DateTime?
 
   equipment  Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
   uploadedBy User      @relation("UploadedDocs", fields: [uploadedById], references: [id])
@@ -295,6 +301,7 @@ model Document {
   @@index([docType])
   @@index([uploadedById])
   @@index([createdAt])
+  @@index([deletedAt])
 }
 
 enum DocumentType {
@@ -383,6 +390,7 @@ model Warehouse {
   isActive          Boolean   @default(true)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
 
   responsibleUser     User?               @relation("WarehouseResponsible", fields: [responsibleUserId], references: [id], onDelete: SetNull)
   stockItems          StockItem[]
@@ -394,6 +402,7 @@ model Warehouse {
   usedInMaintenance   MaintenanceUsedPart[]
 
   @@index([responsibleUserId])
+  @@index([deletedAt])
 }
 
 model StorageZone {
@@ -449,6 +458,7 @@ model Nomenclature {
   minStock    Decimal? @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
 
   category          NomenclatureCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   stockItems        StockItem[]
@@ -460,6 +470,7 @@ model Nomenclature {
 
   @@index([name])
   @@index([article])
+  @@index([deletedAt])
 }
 
 model StockItem {

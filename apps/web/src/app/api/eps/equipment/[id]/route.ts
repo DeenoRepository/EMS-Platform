@@ -3,6 +3,7 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma, EquipmentStatus } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,11 +78,29 @@ export async function GET(
         jiraIssues,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка /api/eps/equipment/[id]:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка получения паспорта оборудования' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ success: false, error: 'Ошибка получения паспорта оборудования', details: message }, { status: 500 });
   }
 }
+
+const updateSchema = z.object({
+  name: z.string().optional(),
+  inventoryNumber: z.string().optional().nullable(),
+  serialNumber: z.string().optional().nullable(),
+  manufacturer: z.string().optional().nullable(),
+  model: z.string().optional().nullable(),
+  location: z.string().optional().nullable(),
+  status: z.nativeEnum(EquipmentStatus).optional(),
+  commissionDate: z.string().optional().nullable(),
+  commissioningDate: z.string().optional().nullable(),
+  customFields: z.unknown().optional().nullable(),
+  tagIds: z.array(z.string()).optional(),
+  submitForApproval: z.boolean().optional(),
+  approvalComment: z.string().optional().nullable(),
+  directSave: z.boolean().optional(),
+});
 
 export async function PATCH(
   req: NextRequest,
@@ -94,6 +113,7 @@ export async function PATCH(
 
     const { id } = params;
     const body = await req.json();
+    const parsedBody = updateSchema.parse(body);
     const {
       name,
       inventoryNumber,
@@ -108,7 +128,7 @@ export async function PATCH(
       submitForApproval,
       approvalComment,
       directSave,
-    } = body;
+    } = parsedBody;
 
     const currentEquipment = await prisma.equipment.findUnique({
       where: { id },
@@ -125,7 +145,7 @@ export async function PATCH(
       return isNaN(d.getTime()) ? null : d;
     }
 
-    const rawDate = commissionDate !== undefined ? commissionDate : (body as any).commissioningDate;
+    const rawDate = commissionDate !== undefined ? commissionDate : parsedBody.commissioningDate;
     const parsedCommissionDate = parseDateSafe(rawDate);
 
     const canManageDirectly = hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) || user.roles.includes('admin');
@@ -143,7 +163,7 @@ export async function PATCH(
         location: location !== undefined ? (location?.trim() || null) : currentEquipment.location,
         status: status !== undefined ? status : currentEquipment.status,
         commissionDate: parsedCommissionDate ? parsedCommissionDate.toISOString() : (currentEquipment.commissionDate ? currentEquipment.commissionDate.toISOString() : null),
-        customFields: customFields !== undefined ? customFields : currentEquipment.customFields,
+        customFields: customFields !== undefined ? (customFields ? JSON.parse(JSON.stringify(customFields)) : null) : currentEquipment.customFields,
         tagIds: Array.isArray(tagIds) ? tagIds : currentEquipment.tags.map((t) => t.tagId),
       };
 
@@ -200,7 +220,7 @@ export async function PATCH(
             model: model !== undefined ? (model?.trim() || null) : undefined,
             location: location !== undefined ? (location?.trim() || null) : undefined,
             commissionDate: rawDate !== undefined ? parsedCommissionDate : undefined,
-            customFields: customFields !== undefined ? customFields : undefined,
+            customFields: customFields !== undefined ? (customFields ? JSON.parse(JSON.stringify(customFields)) : {}) : undefined,
           },
           include: { tags: { include: { tag: true } } },
         });
@@ -257,7 +277,7 @@ export async function PATCH(
           location: location !== undefined ? (location?.trim() || null) : undefined,
           status: status as EquipmentStatus | undefined,
           commissionDate: rawDate !== undefined ? parsedCommissionDate : undefined,
-          customFields: customFields !== undefined ? customFields : undefined,
+          customFields: customFields !== undefined ? (customFields ? JSON.parse(JSON.stringify(customFields)) : {}) : undefined,
         },
         include: {
           tags: { include: { tag: true } },
@@ -278,14 +298,21 @@ export async function PATCH(
       action: 'UPDATE',
       entityType: 'Equipment',
       entityId: id,
-      changes: Object.keys(diff).length > 0 ? diff : body,
+      changes: Object.keys(diff).length > 0 ? diff : parsedBody,
     });
 
     return NextResponse.json({ success: true, data: updated });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка обновления оборудования:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { success: false, error: 'Validation error', details: error.issues },
+        { status: 400 }
+      );
+    }
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { success: false, error: error?.message || 'Ошибка обновления оборудования' },
+      { success: false, error: message || 'Ошибка обновления оборудования' },
       { status: 500 }
     );
   }
@@ -318,7 +345,8 @@ export async function DELETE(
     });
 
     return NextResponse.json({ success: true, message: 'Оборудование удалено' });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: 'Ошибка удаления' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ success: false, error: 'Ошибка удаления', details: message }, { status: 500 });
   }
 }
