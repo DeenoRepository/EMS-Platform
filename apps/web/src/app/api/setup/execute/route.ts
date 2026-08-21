@@ -142,44 +142,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Engineer role
-    const engineerRole = await client.role.upsert({
-      where: { name: 'engineer' },
-      create: {
-        name: 'engineer',
-        displayName: 'Инженер по надежности',
-        description: 'Инженер по надежности: паспорта оборудования, ТО и складские операции',
-        isSystem: true,
-      },
-      update: {},
-    });
-
-    const engineerPermCodes = [
-      PERMISSIONS.EPS_EQUIPMENT_VIEW,
-      PERMISSIONS.EPS_EQUIPMENT_CREATE,
-      PERMISSIONS.EPS_EQUIPMENT_EDIT,
-      PERMISSIONS.EPS_DOCUMENTS_UPLOAD,
-      PERMISSIONS.WMS_STOCK_VIEW,
-      PERMISSIONS.WMS_OPERATIONS_CREATE,
-      PERMISSIONS.MRO_SCHEDULE_VIEW,
-      PERMISSIONS.SRM_DASHBOARD_VIEW,
-    ];
-    for (const perm of allDbPermissions.filter((p) => engineerPermCodes.includes(p.code as any))) {
-      await client.rolePermission.upsert({
-        where: {
-          roleId_permissionId: {
-            roleId: engineerRole.id,
-            permissionId: perm.id,
-          },
-        },
-        create: {
-          roleId: engineerRole.id,
-          permissionId: perm.id,
-        },
-        update: {},
-      });
-    }
-
     // 3. Create or update the Superadmin User
     const passwordHash = hashPassword(adminConfig.password);
     const superadmin = await client.user.upsert({
