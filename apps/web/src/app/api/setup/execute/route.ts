@@ -73,13 +73,15 @@ export async function POST(req: NextRequest) {
       ];
       const schemaPath = potentialSchemaPaths.find((p) => fs.existsSync(p));
       if (schemaPath) {
-        execSync(`npx prisma db push --schema="${schemaPath}" --accept-data-loss --skip-generate`, {
+        const prismaCmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+        execSync(`${prismaCmd} prisma db push --schema="${schemaPath}" --accept-data-loss --skip-generate`, {
           env: {
             ...process.env,
             DATABASE_URL: dbUrl,
           },
           stdio: 'pipe',
           timeout: 45000,
+          shell: true as any,
         });
       }
     } catch (schemaSyncErr: any) {
