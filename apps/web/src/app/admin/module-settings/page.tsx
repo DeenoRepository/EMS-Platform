@@ -43,6 +43,7 @@ import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturi
 import Inventory2Icon from '@mui/icons-material/Inventory2';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import BuildCircleIcon from '@mui/icons-material/BuildCircle';
+import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
 import PageHeader from '@/components/layout/PageHeader';
 import { useSnackbar } from 'notistack';
 import {
@@ -643,6 +644,15 @@ function ModuleSettingsContent() {
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      size="small"
+                      startIcon={<FileUploadOutlinedIcon />}
+                      onClick={() => router.push('/eps/settings?tab=import')}
+                    >
+                      Мастер импорта
+                    </Button>
                     <Button
                       variant="outlined"
                       size="small"

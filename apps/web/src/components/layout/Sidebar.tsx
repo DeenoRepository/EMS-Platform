@@ -243,7 +243,7 @@ export default function Sidebar({
         },
         { label: 'История изменений', path: '/eps/history', icon: <HistoryOutlinedIcon sx={{ fontSize: 15 }} /> },
         { label: 'Конструктор отчетов', path: '/eps/reports', icon: <AssessmentOutlinedIcon sx={{ fontSize: 15 }} /> },
-        { label: 'Импорт оборудования', path: '/eps/import', icon: <FileUploadOutlinedIcon sx={{ fontSize: 15 }} /> },
+        { label: 'Настройки модуля', path: '/eps/settings', icon: <SettingsOutlinedIcon sx={{ fontSize: 15 }} /> },
       ],
     },
     {
