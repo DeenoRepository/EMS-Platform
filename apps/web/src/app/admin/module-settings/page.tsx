@@ -594,22 +594,6 @@ function ModuleSettingsContent() {
           { label: 'Настройки модулей', href: '/admin/module-settings' },
           { label: currentMeta.breadcrumb },
         ]}
-        tabs={
-          <NavTabsContainer
-            value={activeTab}
-            onChange={(newTab: number) => {
-              setActiveTab(newTab);
-              const keys = ['eps', 'wms', 'srm', 'mro'];
-              router.replace(`/admin/module-settings?tab=${keys[newTab]}`, { scroll: false });
-            }}
-            tabs={[
-              { value: 0, label: 'Паспортизация (EPS)', icon: <BadgeOutlinedIcon sx={{ fontSize: 18 }} /> },
-              { value: 1, label: 'Складской учёт (WMS)', icon: <WarehouseOutlinedIcon sx={{ fontSize: 18 }} /> },
-              { value: 2, label: 'Система подачи заявок (SRM)', icon: <BugReportOutlinedIcon sx={{ fontSize: 18 }} /> },
-              { value: 3, label: 'ТО и Ремонт (MRO)', icon: <BuildCircleIcon sx={{ fontSize: 18 }} /> },
-            ]}
-          />
-        }
       />
 
       {/* Module Enable / Disable Control Banner */}
