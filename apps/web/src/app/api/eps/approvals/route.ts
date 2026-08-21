@@ -61,7 +61,11 @@ export async function GET(req: NextRequest) {
       ];
     }
 
-    const [items, total, allApprovals] = await Promise.all([
+    const canReview =
+      user.roles.includes('admin') ||
+      hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE);
+
+    const [items, total, allApprovals, userApprovals] = await Promise.all([
       prisma.equipmentApproval.findMany({
         where,
         include: {
@@ -99,7 +103,15 @@ export async function GET(req: NextRequest) {
       prisma.equipmentApproval.findMany({
         select: { status: true },
       }),
+      prisma.equipmentApproval.findMany({
+        where: { requesterId: user.userId },
+        select: { status: true },
+      }),
     ]);
+
+    const toReviewCount = canReview ? allApprovals.filter((a) => a.status === 'PENDING').length : 0;
+    const myRejectedCount = userApprovals.filter((a) => a.status === 'REJECTED').length;
+    const myPendingCount = userApprovals.filter((a) => a.status === 'PENDING').length;
 
     const stats = {
       total: allApprovals.length,
@@ -107,6 +119,11 @@ export async function GET(req: NextRequest) {
       approved: allApprovals.filter((a) => a.status === 'APPROVED').length,
       rejected: allApprovals.filter((a) => a.status === 'REJECTED').length,
       cancelled: allApprovals.filter((a) => a.status === 'CANCELLED').length,
+      // User-scoped actionable stats (strictly for the active user)
+      toReview: toReviewCount,
+      myRejected: myRejectedCount,
+      myPending: myPendingCount,
+      actionableCount: toReviewCount + myRejectedCount,
     };
 
     return NextResponse.json({

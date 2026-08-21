@@ -155,8 +155,9 @@ export default function Sidebar({
         if (appRes.status === 'fulfilled' && appRes.value.ok) {
           const appJson = await appRes.value.json();
           if (appJson.success && appJson.data?.stats) {
-            setPendingApprovalsCount(appJson.data.stats.pending || null);
-            setRejectedApprovalsCount(appJson.data.stats.rejected || null);
+            const stats = appJson.data.stats;
+            setPendingApprovalsCount(stats.toReview !== undefined ? stats.toReview || null : (stats.pending || null));
+            setRejectedApprovalsCount(stats.myRejected !== undefined ? stats.myRejected || null : null);
           }
         }
         if (wmsRes.status === 'fulfilled' && wmsRes.value.ok) {

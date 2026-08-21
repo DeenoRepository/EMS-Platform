@@ -12,6 +12,20 @@ export async function GET(req: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!hasPermission(user, PERMISSIONS.WMS_STOCK_VIEW)) return forbiddenResponse();
 
+    const isAdmin =
+      user.roles.includes('admin') ||
+      hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
+      hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+
+    let userWarehouseIds: string[] = [];
+    if (!isAdmin) {
+      const userWhs = await prisma.warehouse.findMany({
+        where: { responsibleUserId: user.userId, isActive: true },
+        select: { id: true },
+      });
+      userWarehouseIds = userWhs.map((w) => w.id);
+    }
+
     const [
       warehousesCount,
       nomenclatureCount,
@@ -37,44 +51,24 @@ export async function GET(req: NextRequest) {
           },
         },
       }),
-      prisma.inventory.count({ where: { status: 'IN_PROGRESS' } }),
-      // Оптимизированный запрос дефицитных позиций без выгрузки всей таблицы
-      prisma.$queryRaw<
-        Array<{
-          id: string;
-          name: string;
-          warehouseName: string;
-          warehouseCode: string;
-          quantity: number;
-          minStock: number;
-          unit: string;
-        }>
-      >`
-        SELECT 
-          si.id,
-          n.name,
-          w.name as "warehouseName",
-          w.code as "warehouseCode",
-          si.quantity::float as quantity,
-          n."minStock"::float as "minStock",
-          n.unit
-        FROM "StockItem" si
-        JOIN "Nomenclature" n ON si."nomenclatureId" = n.id
-        JOIN "Warehouse" w ON si."warehouseId" = w.id
-        WHERE n."minStock" IS NOT NULL AND si.quantity <= n."minStock"
-        ORDER BY (si.quantity / NULLIF(n."minStock", 0)) ASC, n.name ASC
-      `.catch(async () => {
-        // Fallback через Prisma query с фильтром по номенклатурам с minStock != null
-        const items = await prisma.stockItem.findMany({
-          where: {
-            nomenclature: { minStock: { not: null } },
-          },
-          include: {
-            nomenclature: { select: { minStock: true, name: true, unit: true } },
-            warehouse: { select: { name: true, code: true } },
-          },
-        });
-        return items
+      prisma.inventory.count({
+        where: {
+          status: 'IN_PROGRESS',
+          ...(isAdmin || userWarehouseIds.length === 0 ? {} : { warehouseId: { in: userWarehouseIds } }),
+        },
+      }),
+      // Оптимизированный запрос дефицитных позиций
+      prisma.stockItem.findMany({
+        where: {
+          nomenclature: { minStock: { not: null } },
+          ...(isAdmin || userWarehouseIds.length === 0 ? {} : { warehouseId: { in: userWarehouseIds } }),
+        },
+        include: {
+          nomenclature: { select: { minStock: true, name: true, unit: true } },
+          warehouse: { select: { name: true, code: true } },
+        },
+      }).then((items) =>
+        items
           .filter((si) => si.nomenclature.minStock !== null && Number(si.quantity) <= Number(si.nomenclature.minStock))
           .map((si) => ({
             id: si.id,
@@ -84,8 +78,8 @@ export async function GET(req: NextRequest) {
             quantity: Number(si.quantity),
             minStock: Number(si.nomenclature.minStock),
             unit: si.nomenclature.unit,
-          }));
-      }),
+          }))
+      ),
     ]);
 
     const lowStockItems = deficitStats || [];
@@ -100,6 +94,7 @@ export async function GET(req: NextRequest) {
         lowStockItems: lowStockItems.slice(0, 10),
         activeInventoriesCount: inventoriesCount,
         recentOperations,
+        userWarehouseIds,
       },
     });
   } catch (error: any) {
