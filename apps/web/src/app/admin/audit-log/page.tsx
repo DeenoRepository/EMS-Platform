@@ -351,12 +351,13 @@ export default function AdminAuditLogPage() {
                   }}
                 >
                   <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все объекты</MenuItem>
-                  <MenuItem value="Equipment" sx={{ fontSize: '0.8125rem' }}>Оборудование (Equipment)</MenuItem>
-                  <MenuItem value="Document" sx={{ fontSize: '0.8125rem' }}>Документ (Document)</MenuItem>
-                  <MenuItem value="StockOperation" sx={{ fontSize: '0.8125rem' }}>Складская операция</MenuItem>
-                  <MenuItem value="Role" sx={{ fontSize: '0.8125rem' }}>Роль (Role)</MenuItem>
-                  <MenuItem value="User" sx={{ fontSize: '0.8125rem' }}>Пользователь (User)</MenuItem>
-                  <MenuItem value="SystemSetting" sx={{ fontSize: '0.8125rem' }}>Настройки</MenuItem>
+                  <MenuItem value="Equipment" sx={{ fontSize: '0.8125rem' }}>Оборудование</MenuItem>
+                  <MenuItem value="Document" sx={{ fontSize: '0.8125rem' }}>Документы</MenuItem>
+                  <MenuItem value="StockOperation" sx={{ fontSize: '0.8125rem' }}>Складские операции</MenuItem>
+                  <MenuItem value="Role" sx={{ fontSize: '0.8125rem' }}>Роли и права</MenuItem>
+                  <MenuItem value="User" sx={{ fontSize: '0.8125rem' }}>Пользователи</MenuItem>
+                  <MenuItem value="SystemSetting" sx={{ fontSize: '0.8125rem' }}>Параметры системы</MenuItem>
+                  <MenuItem value="SystemModule" sx={{ fontSize: '0.8125rem' }}>Системные модули</MenuItem>
                 </TextField>
               </Box>
             }
