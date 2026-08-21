@@ -333,6 +333,7 @@ function ApprovalsListContent() {
   const APPROVAL_COLUMNS: TableColumnOption[] = [
     { id: 'title', label: 'Тема / Заявка', defaultVisible: true, required: true },
     { id: 'equipment', label: 'Оборудование', defaultVisible: true },
+    { id: 'manufacturer', label: 'Производитель', defaultVisible: false },
     { id: 'type', label: 'Тип согласования', defaultVisible: true },
     { id: 'status', label: 'Статус', defaultVisible: true },
     { id: 'requester', label: 'Инициатор', defaultVisible: true },
@@ -615,6 +616,11 @@ function ApprovalsListContent() {
                   ОБОРУДОВАНИЕ
                 </TableCell>
               )}
+              {visibleColumns.includes('manufacturer') && (
+                <TableCell sx={{ fontWeight: 700, width: 170, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                  ПРОИЗВОДИТЕЛЬ
+                </TableCell>
+              )}
               {visibleColumns.includes('type') && (
                 <TableCell sx={{ fontWeight: 700, width: 170, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
                   ТИП СОГЛАСОВАНИЯ
@@ -705,36 +711,35 @@ function ApprovalsListContent() {
                           >
                             {app.equipment.name}
                           </Typography>
-                          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
-                            <Paper
-                              variant="outlined"
-                              sx={{
-                                px: 0.75,
-                                py: 0.1,
-                                fontFamily: 'monospace',
-                                fontWeight: 700,
-                                bgcolor: '#f8fafc',
-                                fontSize: '0.6875rem',
-                                borderRadius: '4px',
-                                color: '#475569',
-                                borderColor: '#cbd5e1',
-                                lineHeight: 1.3,
-                              }}
-                            >
-                              {app.equipment.inventoryNumber || 'Б/Н'}
-                            </Paper>
-                            {app.equipment.manufacturer && (
-                              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                                {app.equipment.manufacturer}
-                              </Typography>
-                            )}
-                          </Box>
+                          <Paper
+                            variant="outlined"
+                            sx={{
+                              px: 0.75,
+                              py: 0.1,
+                              fontFamily: 'monospace',
+                              fontWeight: 700,
+                              bgcolor: '#f8fafc',
+                              fontSize: '0.6875rem',
+                              borderRadius: '4px',
+                              color: '#475569',
+                              borderColor: '#cbd5e1',
+                              lineHeight: 1.3,
+                            }}
+                          >
+                            {app.equipment.inventoryNumber || 'Б/Н'}
+                          </Paper>
                         </Box>
                       ) : (
                         <Typography variant="caption" color="text.secondary">
                           —
                         </Typography>
                       )}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('manufacturer') && (
+                    <TableCell sx={{ fontSize: '0.8125rem', color: '#475569' }}>
+                      {app.equipment?.manufacturer || '—'}
                     </TableCell>
                   )}
 
