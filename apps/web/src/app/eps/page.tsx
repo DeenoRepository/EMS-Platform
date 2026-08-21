@@ -854,289 +854,289 @@ function EquipmentListContent() {
               </TableCell>
 
               {visibleColumns.includes('inventoryNumber') && (
-                <TableCell sx={{ width: 130, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 140 }}>
                   <TableSortLabel
                     active={sortField === 'inventoryNumber'}
                     direction={sortField === 'inventoryNumber' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('inventoryNumber')}
                   >
-                    ИНВ. НОМЕР
+                    Инв. номер
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('name') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 220 }}>
                   <TableSortLabel
                     active={sortField === 'name'}
                     direction={sortField === 'name' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('name')}
                   >
-                    НАИМЕНОВАНИЕ ОБОРУДОВАНИЯ
+                    Наименование оборудования
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('serialNumber') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 180 }}>
                   <TableSortLabel
                     active={sortField === 'serialNumber'}
                     direction={sortField === 'serialNumber' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('serialNumber')}
                   >
-                    ЗАВОДСКОЙ / СЕРИЙНЫЙ №
+                    Заводской / серийный №
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('manufacturer') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 150 }}>
                   <TableSortLabel
                     active={sortField === 'manufacturer'}
                     direction={sortField === 'manufacturer' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('manufacturer')}
                   >
-                    ПРОИЗВОДИТЕЛЬ
+                    Производитель
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('model') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 150 }}>
                   <TableSortLabel
                     active={sortField === 'model'}
                     direction={sortField === 'model' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('model')}
                   >
-                    МОДЕЛЬ / МАРКА
+                    Модель / марка
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('location') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 160 }}>
                   <TableSortLabel
                     active={sortField === 'location'}
                     direction={sortField === 'location' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('location')}
                   >
-                    ЛОКАЦИЯ / МЕСТО
+                    Локация / место
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('status') && (
-                <TableCell sx={{ width: 140, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 130 }}>
                   <TableSortLabel
                     active={sortField === 'status'}
                     direction={sortField === 'status' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('status')}
                   >
-                    СТАТУС
+                    Статус
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('criticality') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 130 }}>
                   <TableSortLabel
                     active={sortField === 'criticality'}
                     direction={sortField === 'criticality' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('criticality')}
                   >
-                    КРИТИЧНОСТЬ
+                    Критичность
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('actualWear') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 110 }}>
                   <TableSortLabel
                     active={sortField === 'actualWear'}
                     direction={sortField === 'actualWear' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('actualWear')}
                   >
-                    ИЗНОС (%)
+                    Износ (%)
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('eqGroup') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 130 }}>
                   <TableSortLabel
                     active={sortField === 'eqGroup'}
                     direction={sortField === 'eqGroup' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('eqGroup')}
                   >
-                    ГРУППА
+                    Группа
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('eqType') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 130 }}>
                   <TableSortLabel
                     active={sortField === 'eqType'}
                     direction={sortField === 'eqType' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('eqType')}
                   >
-                    ВИД
+                    Вид
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('respPerson') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 170 }}>
                   <TableSortLabel
                     active={sortField === 'respPerson'}
                     direction={sortField === 'respPerson' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('respPerson')}
                   >
-                    ОТВЕТСТВЕННЫЙ (МОЛ)
+                    Ответственный (МОЛ)
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('okofCode') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 120 }}>
                   <TableSortLabel
                     active={sortField === 'okofCode'}
                     direction={sortField === 'okofCode' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('okofCode')}
                   >
-                    КОД ОКОФ
+                    Код ОКОФ
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('okpd2Code') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 120 }}>
                   <TableSortLabel
                     active={sortField === 'okpd2Code'}
                     direction={sortField === 'okpd2Code' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('okpd2Code')}
                   >
-                    КОД ОКПД2
+                    Код ОКПД2
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('procCode') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 130 }}>
                   <TableSortLabel
                     active={sortField === 'procCode'}
                     direction={sortField === 'procCode' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('procCode')}
                   >
-                    ТЕХПРОЦЕСС
+                    Техпроцесс
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('maintPeriodicity') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 160 }}>
                   <TableSortLabel
                     active={sortField === 'maintPeriodicity'}
                     direction={sortField === 'maintPeriodicity' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('maintPeriodicity')}
                   >
-                    ПЕРИОДИЧНОСТЬ ТО
+                    Периодичность ТО
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('calibrationInterval') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 140 }}>
                   <TableSortLabel
                     active={sortField === 'calibrationInterval'}
                     direction={sortField === 'calibrationInterval' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('calibrationInterval')}
                   >
-                    ПОВЕРКА (МЕС.)
+                    Поверка (мес.)
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('cleanRoom') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 140 }}>
                   <TableSortLabel
                     active={sortField === 'cleanRoom'}
                     direction={sortField === 'cleanRoom' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('cleanRoom')}
                   >
-                    КЛАСС ЧИСТОТЫ
+                    Класс чистоты
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('isCriticalPath') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  КРИТИЧ. ПУТЬ
+                <TableCell sx={{ minWidth: 150 }}>
+                  Критический путь
                 </TableCell>
               )}
 
               {visibleColumns.includes('isUnique') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  УНИКАЛЬНОЕ
+                <TableCell sx={{ minWidth: 120 }}>
+                  Уникальное
                 </TableCell>
               )}
 
               {visibleColumns.includes('isImported') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ИМПОРТНОЕ
+                <TableCell sx={{ minWidth: 120 }}>
+                  Импортное
                 </TableCell>
               )}
 
               {visibleColumns.includes('documentsCount') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ДОКУМЕНТЫ
+                <TableCell sx={{ minWidth: 120 }}>
+                  Документы
                 </TableCell>
               )}
 
               {visibleColumns.includes('sparePartsCount') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ЗИП / ДЕТАЛИ
+                <TableCell sx={{ minWidth: 130 }}>
+                  ЗИП / детали
                 </TableCell>
               )}
 
               {visibleColumns.includes('tags') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
-                  ТЕГИ
+                <TableCell sx={{ minWidth: 110 }}>
+                  Теги
                 </TableCell>
               )}
 
               {visibleColumns.includes('commissionDate') && (
-                <TableCell sx={{ width: 120, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 140 }}>
                   <TableSortLabel
                     active={sortField === 'commissionDate'}
                     direction={sortField === 'commissionDate' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('commissionDate')}
                   >
-                    ВВОД В ЭКСПЛ.
+                    Ввод в экспл.
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('updatedAt') && (
-                <TableCell sx={{ width: 120, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 130 }}>
                   <TableSortLabel
                     active={sortField === 'updatedAt'}
                     direction={sortField === 'updatedAt' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('updatedAt')}
                   >
-                    ОБНОВЛЕНО
+                    Обновлено
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('createdAt') && (
-                <TableCell sx={{ width: 120, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 130 }}>
                   <TableSortLabel
                     active={sortField === 'createdAt'}
                     direction={sortField === 'createdAt' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('createdAt')}
                   >
-                    СОЗДАНО
+                    Создано
                   </TableSortLabel>
                 </TableCell>
               )}

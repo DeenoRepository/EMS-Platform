@@ -207,9 +207,11 @@ export function DataTableWrapper({
         fontSize: '0.75rem',
       },
       '& .MuiTableCell-head': {
-        py: 0.8,
+        py: 0.75,
         px: 1.25,
-        fontSize: '0.6875rem',
+        fontSize: '0.75rem',
+        whiteSpace: 'nowrap',
+        fontWeight: 600,
       },
     },
     standard: {
@@ -219,9 +221,11 @@ export function DataTableWrapper({
         fontSize: '0.8125rem',
       },
       '& .MuiTableCell-head': {
-        py: 1.25,
+        py: 1,
         px: 1.75,
-        fontSize: '0.6875rem',
+        fontSize: '0.75rem',
+        whiteSpace: 'nowrap',
+        fontWeight: 600,
       },
     },
     comfortable: {
@@ -231,9 +235,11 @@ export function DataTableWrapper({
         fontSize: '0.875rem',
       },
       '& .MuiTableCell-head': {
-        py: 1.5,
+        py: 1.25,
         px: 2,
-        fontSize: '0.75rem',
+        fontSize: '0.8125rem',
+        whiteSpace: 'nowrap',
+        fontWeight: 600,
       },
     },
   };

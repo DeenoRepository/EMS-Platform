@@ -239,15 +239,41 @@ export const theme = createTheme(
           root: {
             backgroundColor: '#ffffff',
             '& .MuiTableCell-head': {
-              fontSize: '0.6875rem', // 11px
-              fontWeight: 700,
-              lineHeight: 1.25,
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase',
-              color: '#64748b',
+              fontSize: '0.75rem', // 12px
+              fontWeight: 600,
+              lineHeight: 1.35,
+              letterSpacing: '0.01em',
+              textTransform: 'none',
+              whiteSpace: 'nowrap',
+              color: '#475569',
               padding: '10px 14px',
-              borderBottom: '1px solid #f1f5f9',
+              borderBottom: '1px solid #e2e8f0',
+              userSelect: 'none',
             },
+          },
+        },
+      },
+      MuiTableSortLabel: {
+        styleOverrides: {
+          root: {
+            whiteSpace: 'nowrap',
+            fontWeight: 600,
+            fontSize: '0.75rem',
+            color: '#475569',
+            '&:hover': {
+              color: '#0f172a',
+            },
+            '&.Mui-active': {
+              color: '#0284c7',
+              fontWeight: 700,
+              '& .MuiTableSortLabel-icon': {
+                color: '#0284c7 !important',
+              },
+            },
+          },
+          icon: {
+            fontSize: 16,
+            marginLeft: 4,
           },
         },
       },
