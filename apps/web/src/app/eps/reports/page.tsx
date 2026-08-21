@@ -36,7 +36,6 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ViewColumnOutlinedIcon from '@mui/icons-material/ViewColumnOutlined';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import PrintIcon from '@mui/icons-material/Print';
 import DataObjectIcon from '@mui/icons-material/DataObject';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import SpeedIcon from '@mui/icons-material/Speed';
@@ -596,28 +595,12 @@ export default function ReportBuilderPage() {
     enqueueSnackbar('JSON файл успешно выгружен', { variant: 'success' });
   };
 
-  // Print Report Handler
-  const handlePrintReport = () => {
-    window.print();
-  };
-
   return (
     <Box sx={{ maxWidth: 1920, mx: 'auto', pb: 4 }}>
-      {/* ─── Printable Header (Only visible on window.print) ─── */}
-      <Box sx={{ display: 'none', '@media print': { display: 'block', mb: 3 } }}>
-        <Typography variant="h5" fontWeight={800} align="center" gutterBottom>
-          СВОДНАЯ ВЕДОМОСТЬ ОБОРУДОВАНИЯ И ПАСПОРТОВ
-        </Typography>
-        <Typography variant="body2" align="center" color="text.secondary">
-          Система управления инженерными активами EMS-Platform • Сформировано: {new Date().toLocaleString('ru-RU')}
-        </Typography>
-        <Divider sx={{ my: 1.5 }} />
-      </Box>
-
       {/* ─── Page Header ─── */}
       <PageHeader
         title="EPS — Конструктор отчетов оборудования"
-        subtitle="Интерактивный конструктор ведомостей, выборка параметров по паспортам и экспорт в Excel, CSV, JSON и печать"
+        subtitle="Интерактивный конструктор ведомостей, выборка параметров по паспортам и экспорт в Excel, CSV и JSON"
         breadcrumbs={[
           { label: 'Главная', href: '/' },
           { label: 'Оборудование', href: '/eps' },
@@ -638,35 +621,6 @@ export default function ReportBuilderPage() {
               }}
             >
               Конструктор колонок ({selectedColumnKeys.length})
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<BookmarkAddOutlinedIcon />}
-              onClick={() => setSaveModalOpen(true)}
-              sx={{
-                fontWeight: 600,
-                borderRadius: '8px',
-                borderColor: '#cbd5e1',
-                color: '#0f172a',
-                '&:hover': { borderColor: '#94a3b8', backgroundColor: '#f8fafc' },
-              }}
-            >
-              Сохранить шаблон
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<PrintIcon />}
-              onClick={handlePrintReport}
-              disabled={rows.length === 0}
-              sx={{
-                fontWeight: 600,
-                borderRadius: '8px',
-                borderColor: '#cbd5e1',
-                color: '#0f172a',
-                '&:hover': { borderColor: '#94a3b8', backgroundColor: '#f8fafc' },
-              }}
-            >
-              Печать
             </Button>
             <ExportButton
               formats={['xlsx', 'csv']}
@@ -762,73 +716,6 @@ export default function ReportBuilderPage() {
           />
         </Grid>
       </Grid>
-
-      {/* ─── Industry Presets & Saved Templates Bar ─── */}
-      <Paper
-        elevation={0}
-        sx={{
-          p: 1.5,
-          mb: 2.5,
-          backgroundColor: '#ffffff',
-          borderRadius: '12px',
-          border: '1px solid #e2e8f0',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: 1.5,
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <BookmarkOutlinedIcon color="primary" sx={{ fontSize: 20 }} />
-          <Typography variant="subtitle2" fontWeight={700} color="#0f172a">
-            Готовые пресеты ведомостей:
-          </Typography>
-        </Box>
-
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-          {INDUSTRY_PRESETS.map((preset) => (
-            <Chip
-              key={preset.id}
-              label={preset.name}
-              variant={activePresetOrTemplateId === preset.id ? 'filled' : 'outlined'}
-              color={activePresetOrTemplateId === preset.id ? 'primary' : 'default'}
-              onClick={() => handleApplyPreset(preset)}
-              clickable
-              size="small"
-              sx={{ fontWeight: 600, borderRadius: '8px' }}
-            />
-          ))}
-
-          <Chip
-            label="Все параметры"
-            variant={activePresetOrTemplateId === 'all' ? 'filled' : 'outlined'}
-            color={activePresetOrTemplateId === 'all' ? 'primary' : 'default'}
-            onClick={handleSelectAllColumns}
-            clickable
-            size="small"
-            sx={{ fontWeight: 600, borderRadius: '8px' }}
-          />
-
-          {templates.map((tmpl) => (
-            <Chip
-              key={tmpl.id}
-              label={`${tmpl.name} (${tmpl.createdBy?.displayName || 'Система'})`}
-              variant={activePresetOrTemplateId === `tmpl_${tmpl.id}` ? 'filled' : 'outlined'}
-              color={activePresetOrTemplateId === `tmpl_${tmpl.id}` ? 'primary' : 'default'}
-              onClick={() => handleApplyTemplate(tmpl)}
-              onDelete={(e) => {
-                e.stopPropagation();
-                setDeleteTemplateId(tmpl.id);
-              }}
-              clickable
-              size="small"
-              sx={{ fontWeight: 600, borderRadius: '8px' }}
-            />
-          ))}
-        </Box>
-      </Paper>
-
       {/* ─── 100% Full-Width Report Preview Table with Standard FilterToolbar ─── */}
       <DataTableWrapper
         loading={loadingData}
@@ -1063,27 +950,6 @@ export default function ReportBuilderPage() {
         </Table>
       </DataTableWrapper>
 
-      {/* ─── Printable Signature Footer (Only visible on window.print) ─── */}
-      <Box
-        sx={{
-          display: 'none',
-          '@media print': {
-            display: 'flex',
-            justifyContent: 'space-between',
-            mt: 6,
-            pt: 2,
-            borderTop: '1px solid #cbd5e1',
-          },
-        }}
-      >
-        <Box>
-          <Typography variant="body2">Ответственное лицо (МОЛ): _______________________ / __________________ /</Typography>
-        </Box>
-        <Box>
-          <Typography variant="body2">Главный инженер: _______________________ / __________________ /</Typography>
-        </Box>
-      </Box>
-
       {/* ─── Modal Column Matrix & Order Builder Dialog ─── */}
       <FormDialog
         open={columnBuilderOpen}
@@ -1097,7 +963,39 @@ export default function ReportBuilderPage() {
           enqueueSnackbar(`Выбрано ${selectedColumnKeys.length} колонок`, { variant: 'success' });
         }}
       >
-        <Grid container spacing={2.5} sx={{ pt: 1 }}>
+        {/* Industry Presets inside Dialog */}
+        <Box sx={{ mb: 2, pt: 0.5 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.75 }}>
+            Готовые пресеты ведомостей:
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+            {INDUSTRY_PRESETS.map((preset) => (
+              <Chip
+                key={preset.id}
+                label={preset.name}
+                variant={activePresetOrTemplateId === preset.id ? 'filled' : 'outlined'}
+                color={activePresetOrTemplateId === preset.id ? 'primary' : 'default'}
+                onClick={() => handleApplyPreset(preset)}
+                clickable
+                size="small"
+                sx={{ fontWeight: 600, borderRadius: '6px', fontSize: '0.75rem' }}
+              />
+            ))}
+            <Chip
+              label="Все параметры"
+              variant={activePresetOrTemplateId === 'all' ? 'filled' : 'outlined'}
+              color={activePresetOrTemplateId === 'all' ? 'primary' : 'default'}
+              onClick={handleSelectAllColumns}
+              clickable
+              size="small"
+              sx={{ fontWeight: 600, borderRadius: '6px', fontSize: '0.75rem' }}
+            />
+          </Box>
+        </Box>
+
+        <Divider sx={{ mb: 2 }} />
+
+        <Grid container spacing={2.5}>
           {/* Left Column: Categorized Available Fields */}
           <Grid item xs={12} md={7}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
