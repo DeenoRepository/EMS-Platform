@@ -168,7 +168,7 @@ export function EquipmentWizardForm({
   const renderFieldInput = (def: CustomFieldDef) => {
     if (def.fieldType === 'BOOLEAN') {
       return (
-        <Grid item xs={12} sm={6} key={def.key}>
+        <Box key={def.key} sx={{ gridColumn: { xs: 'span 1', sm: 'span 1' } }}>
           <Paper variant="outlined" sx={{ p: 1.5, height: '100%', display: 'flex', alignItems: 'center', borderRadius: '8px' }}>
             <FormControlLabel
               control={
@@ -185,13 +185,13 @@ export function EquipmentWizardForm({
               }
             />
           </Paper>
-        </Grid>
+        </Box>
       );
     }
 
     if (def.fieldType === 'SELECT' && def.options && Array.isArray(def.options)) {
       return (
-        <Grid item xs={12} sm={6} key={def.key}>
+        <Box key={def.key} sx={{ gridColumn: { xs: 'span 1', sm: 'span 1' } }}>
           <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
             {def.name} {def.isRequired && <Box component="span" sx={{ color: 'error.main' }}>*</Box>}
           </Typography>
@@ -210,13 +210,13 @@ export function EquipmentWizardForm({
               </MenuItem>
             ))}
           </TextField>
-        </Grid>
+        </Box>
       );
     }
 
     if (def.fieldType === 'TEXTAREA') {
       return (
-        <Grid item xs={12} key={def.key}>
+        <Box key={def.key} sx={{ gridColumn: { xs: 'span 1', sm: 'span 2' } }}>
           <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
             {def.name} {def.isRequired && <Box component="span" sx={{ color: 'error.main' }}>*</Box>}
           </Typography>
@@ -229,12 +229,12 @@ export function EquipmentWizardForm({
             value={customFieldValues[def.key] || ''}
             onChange={(e) => handleCustomFieldChange(def.key, e.target.value)}
           />
-        </Grid>
+        </Box>
       );
     }
 
     return (
-      <Grid item xs={12} sm={6} key={def.key}>
+      <Box key={def.key} sx={{ gridColumn: { xs: 'span 1', sm: 'span 1' } }}>
         <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
           {def.name} {def.isRequired && <Box component="span" sx={{ color: 'error.main' }}>*</Box>}
         </Typography>
@@ -257,7 +257,7 @@ export function EquipmentWizardForm({
           value={customFieldValues[def.key] || ''}
           onChange={(e) => handleCustomFieldChange(def.key, e.target.value)}
         />
-      </Grid>
+      </Box>
     );
   };
 
@@ -388,8 +388,15 @@ export function EquipmentWizardForm({
               </Typography>
             </Paper>
 
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                gap: 2,
+                width: '100%',
+              }}
+            >
+              <Box sx={{ gridColumn: { xs: 'span 1', sm: 'span 2' } }}>
                 <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
                   Наименование оборудования <Box component="span" sx={{ color: 'error.main' }}>*</Box>
                 </Typography>
@@ -401,9 +408,9 @@ export function EquipmentWizardForm({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
-              </Grid>
+              </Box>
 
-              <Grid item xs={12} sm={6}>
+              <Box>
                 <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
                   Инвентарный номер
                 </Typography>
@@ -414,9 +421,9 @@ export function EquipmentWizardForm({
                   value={inventoryNumber}
                   onChange={(e) => setInventoryNumber(e.target.value)}
                 />
-              </Grid>
+              </Box>
 
-              <Grid item xs={12} sm={6}>
+              <Box>
                 <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
                   Заводской / Серийный номер
                 </Typography>
@@ -427,9 +434,9 @@ export function EquipmentWizardForm({
                   value={serialNumber}
                   onChange={(e) => setSerialNumber(e.target.value)}
                 />
-              </Grid>
+              </Box>
 
-              <Grid item xs={12} sm={6}>
+              <Box>
                 <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
                   Производитель (Бренд)
                 </Typography>
@@ -440,9 +447,9 @@ export function EquipmentWizardForm({
                   value={manufacturer}
                   onChange={(e) => setManufacturer(e.target.value)}
                 />
-              </Grid>
+              </Box>
 
-              <Grid item xs={12} sm={6}>
+              <Box>
                 <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
                   Модель / Модификация
                 </Typography>
@@ -453,9 +460,9 @@ export function EquipmentWizardForm({
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
                 />
-              </Grid>
+              </Box>
 
-              <Grid item xs={12}>
+              <Box sx={{ gridColumn: { xs: 'span 1', sm: 'span 2' } }}>
                 <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
                   Место установки (Цех, участок, позиция)
                 </Typography>
@@ -466,8 +473,8 @@ export function EquipmentWizardForm({
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                 />
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           </Stack>
         )}
 
@@ -504,9 +511,16 @@ export function EquipmentWizardForm({
                       </Box>
                     </Box>
 
-                    <Grid container spacing={2}>
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                        gap: 2,
+                        width: '100%',
+                      }}
+                    >
                       {sec.fields.map(renderFieldInput)}
-                    </Grid>
+                    </Box>
                   </Paper>
                 ))}
 
@@ -518,9 +532,16 @@ export function EquipmentWizardForm({
                     <Typography variant="subtitle2" fontWeight={700} color="#0f172a" sx={{ mb: 2 }}>
                       Дополнительные параметры
                     </Typography>
-                    <Grid container spacing={2}>
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                        gap: 2,
+                        width: '100%',
+                      }}
+                    >
                       {unassignedFields.map(renderFieldInput)}
-                    </Grid>
+                    </Box>
                   </Paper>
                 )}
               </>
@@ -540,8 +561,15 @@ export function EquipmentWizardForm({
               </Typography>
             </Paper>
 
-            <Grid container spacing={2.5}>
-              <Grid item xs={12} sm={6}>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                gap: 2,
+                width: '100%',
+              }}
+            >
+              <Box>
                 <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
                   Статус оборудования
                 </Typography>
@@ -559,9 +587,9 @@ export function EquipmentWizardForm({
                     ))}
                   </Select>
                 </FormControl>
-              </Grid>
+              </Box>
 
-              <Grid item xs={12} sm={6}>
+              <Box>
                 <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
                   Дата ввода в эксплуатацию
                 </Typography>
@@ -571,9 +599,9 @@ export function EquipmentWizardForm({
                   size="small"
                   fullWidth
                 />
-              </Grid>
+              </Box>
 
-              <Grid item xs={12}>
+              <Box sx={{ gridColumn: { xs: 'span 1', sm: 'span 2' } }}>
                 <Typography variant="subtitle2" fontWeight={700} color="#334155" sx={{ mb: 1.25 }}>
                   Метки и теги оборудования
                 </Typography>
@@ -606,8 +634,8 @@ export function EquipmentWizardForm({
                     })
                   )}
                 </Paper>
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           </Stack>
         )}
 
