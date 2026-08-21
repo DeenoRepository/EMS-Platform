@@ -27,7 +27,11 @@ import {
   AccordionDetails,
   Paper,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
@@ -150,7 +154,6 @@ function ModuleSettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
-  const subtabParam = searchParams.get('subtab');
 
   const getInitialTab = () => {
     switch (tabParam) {
@@ -166,7 +169,7 @@ function ModuleSettingsContent() {
   };
 
   const [activeTab, setActiveTab] = useState(getInitialTab);
-  const [epsSubTab, setEpsSubTab] = useState(subtabParam === 'import' ? 1 : 0);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   useEffect(() => {
     if (tabParam === 'wms') setActiveTab(1);
@@ -174,11 +177,6 @@ function ModuleSettingsContent() {
     else if (tabParam === 'mro') setActiveTab(3);
     else if (tabParam === 'eps') setActiveTab(0);
   }, [tabParam]);
-
-  useEffect(() => {
-    if (subtabParam === 'import') setEpsSubTab(1);
-    else setEpsSubTab(0);
-  }, [subtabParam]);
 
   // EPS Metadata State
   const [sections, setSections] = useState<CustomSectionItem[]>([]);
@@ -641,60 +639,54 @@ function ModuleSettingsContent() {
         />
       </Paper>
 
-      {/* TAB 0: EPS — Разделы, Поля, Теги и Мастер Импорта */}
+      {/* TAB 0: EPS — Разделы, Поля, Теги */}
       {activeTab === 0 && (
         <Box>
-          <Box sx={{ mb: 2.5 }}>
-            <NavTabsContainer
-              value={epsSubTab}
-              onChange={(newSubTab: number) => {
-                setEpsSubTab(newSubTab);
-                const sub = newSubTab === 1 ? 'import' : 'fields';
-                router.replace(`/admin/module-settings?tab=eps&subtab=${sub}`, { scroll: false });
-              }}
-              tabs={[
-                { value: 0, label: 'Кастомные разделы, поля и теги', icon: <LayersOutlinedIcon sx={{ fontSize: 18 }} /> },
-                { value: 1, label: 'Мастер импорта оборудования (Smart Import Wizard)', icon: <FileUploadOutlinedIcon sx={{ fontSize: 18 }} /> },
-              ]}
-            />
-          </Box>
-
-          {epsSubTab === 1 ? (
-            <SmartImportWizard />
-          ) : (
-            <Grid container spacing={3}>
-              {/* Main Column: Custom Sections with their Fields */}
-              <Grid item xs={12} lg={8}>
-                <Card sx={{ mb: 3 }}>
-                  <CardContent sx={{ p: 3 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                      <Box>
-                        <Typography variant="h6" fontWeight={700}>
-                          Кастомные разделы и поля паспорта оборудования
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Группировка технических параметров по тематическим разделам с единицами измерения
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          startIcon={<AddIcon />}
-                          onClick={handleOpenCreateSection}
-                        >
-                          Добавить раздел
-                        </Button>
-                        <Button
-                          variant="contained"
-                          size="small"
-                          startIcon={<AddIcon />}
-                          onClick={() => handleOpenCreateField()}
-                        >
-                          Добавить поле
-                        </Button>
-                      </Box>
+          <Grid container spacing={3}>
+            {/* Main Column: Custom Sections with their Fields */}
+            <Grid item xs={12} lg={8}>
+              <Card sx={{ mb: 3 }}>
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1.5 }}>
+                    <Box>
+                      <Typography variant="h6" fontWeight={700}>
+                        Кастомные разделы и поля паспорта оборудования
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Группировка технических параметров по тематическим разделам с единицами измерения
+                      </Typography>
                     </Box>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        color="primary"
+                        startIcon={<FileUploadOutlinedIcon />}
+                        onClick={() => setImportDialogOpen(true)}
+                        sx={{ borderRadius: '8px' }}
+                      >
+                        Импорт оборудования
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<AddIcon />}
+                        onClick={handleOpenCreateSection}
+                        sx={{ borderRadius: '8px' }}
+                      >
+                        Добавить раздел
+                      </Button>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        startIcon={<AddIcon />}
+                        onClick={() => handleOpenCreateField()}
+                        sx={{ borderRadius: '8px' }}
+                      >
+                        Добавить поле
+                      </Button>
+                    </Box>
+                  </Box>
                 <Divider sx={{ mb: 2.5 }} />
 
                 {loadingEps ? (
@@ -862,7 +854,42 @@ function ModuleSettingsContent() {
             </Card>
           </Grid>
         </Grid>
-        )}
+
+        {/* Modal Dialog: Мастер импорта оборудования */}
+        <Dialog
+          open={importDialogOpen}
+          onClose={() => setImportDialogOpen(false)}
+          maxWidth="lg"
+          fullWidth
+          PaperProps={{
+            sx: { borderRadius: '12px', overflow: 'hidden' },
+          }}
+        >
+          <DialogTitle
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              py: 2,
+              px: 3,
+              borderBottom: '1px solid #e2e8f0',
+              backgroundColor: 'background.paper',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+              <FileUploadOutlinedIcon color="primary" />
+              <Typography variant="h6" fontWeight={700}>
+                Мастер импорта оборудования
+              </Typography>
+            </Box>
+            <IconButton size="small" onClick={() => setImportDialogOpen(false)} aria-label="Закрыть модальное окно">
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent sx={{ p: 3, backgroundColor: 'background.default' }}>
+            <SmartImportWizard />
+          </DialogContent>
+        </Dialog>
       </Box>
       )}
 
