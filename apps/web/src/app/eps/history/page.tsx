@@ -44,6 +44,7 @@ import { useSnackbar } from 'notistack';
 
 import {
   StatCard,
+  SearchInput,
   FilterToolbar,
   EmptyState,
   DataTableWrapper,
@@ -175,6 +176,7 @@ function HistoryListContent() {
   const [loading, setLoading] = useState(true);
 
   // Filters
+  const [search, setSearch] = useState(searchParams?.get('search') || '');
   const [actionFilter, setActionFilter] = useState(searchParams?.get('action') || '');
   const [equipmentFilter, setEquipmentFilter] = useState(searchParams?.get('equipmentId') || '');
   const [startDate, setStartDate] = useState(searchParams?.get('startDate') || '');
@@ -222,6 +224,7 @@ function HistoryListContent() {
         page: String(page),
         pageSize: String(pageSize),
       });
+      if (search) params.append('search', search);
       if (actionFilter) params.append('action', actionFilter);
       if (equipmentFilter) params.append('equipmentId', equipmentFilter);
       if (startDate) params.append('startDate', startDate);
@@ -243,7 +246,7 @@ function HistoryListContent() {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, actionFilter, equipmentFilter, startDate, endDate, enqueueSnackbar]);
+  }, [page, pageSize, search, actionFilter, equipmentFilter, startDate, endDate, enqueueSnackbar]);
 
   useEffect(() => {
     fetchHistory();
@@ -259,6 +262,7 @@ function HistoryListContent() {
   };
 
   const handleResetFilters = () => {
+    setSearch('');
     setActionFilter('');
     setEquipmentFilter('');
     setStartDate('');
@@ -280,8 +284,11 @@ function HistoryListContent() {
   );
 
   const activeFilterCount =
+    (search ? 1 : 0) +
     (actionFilter ? 1 : 0) +
     (equipmentFilter ? 1 : 0) +
+    (startDate ? 1 : 0) +
+    (endDate ? 1 : 0);
     (startDate ? 1 : 0) +
     (endDate ? 1 : 0);
 
@@ -391,88 +398,102 @@ function HistoryListContent() {
             variant="embedded"
             activeFilterCount={activeFilterCount}
             onResetFilters={handleResetFilters}
+            actions={
+              <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center', flexWrap: 'wrap' }}>
+                <TextField
+                  select
+                  size="small"
+                  value={actionFilter}
+                  onChange={(e) => {
+                    setActionFilter(e.target.value);
+                    setPage(1);
+                  }}
+                  SelectProps={{
+                    displayEmpty: true,
+                  }}
+                  sx={{
+                    minWidth: 160,
+                    backgroundColor: '#ffffff',
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '8px',
+                      fontSize: '0.8125rem',
+                      height: 36,
+                      '& fieldset': { borderColor: '#e2e8f0' },
+                      '&:hover fieldset': { borderColor: '#cbd5e1' },
+                    },
+                  }}
+                >
+                  <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все действия</MenuItem>
+                  {Object.entries(AUDIT_ACTION_MAP).map(([key, info]) => (
+                    <MenuItem key={key} value={key} sx={{ fontSize: '0.8125rem' }}>
+                      {info.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+
+                <TextField
+                  select
+                  size="small"
+                  value={equipmentFilter}
+                  onChange={(e) => {
+                    setEquipmentFilter(e.target.value);
+                    setPage(1);
+                  }}
+                  SelectProps={{
+                    displayEmpty: true,
+                  }}
+                  sx={{
+                    minWidth: 200,
+                    backgroundColor: '#ffffff',
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '8px',
+                      fontSize: '0.8125rem',
+                      height: 36,
+                      '& fieldset': { borderColor: '#e2e8f0' },
+                      '&:hover fieldset': { borderColor: '#cbd5e1' },
+                    },
+                  }}
+                >
+                  <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все оборудование</MenuItem>
+                  {equipmentList.map((eq) => (
+                    <MenuItem key={eq.id} value={eq.id} sx={{ fontSize: '0.8125rem' }}>
+                      {eq.inventoryNumber ? `[${eq.inventoryNumber}] ` : ''}{eq.name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+
+                <Box sx={{ width: 140 }}>
+                  <DatePickerField
+                    size="small"
+                    label="С даты"
+                    value={startDate}
+                    onChange={(val) => {
+                      setStartDate(val || '');
+                      setPage(1);
+                    }}
+                  />
+                </Box>
+
+                <Box sx={{ width: 140 }}>
+                  <DatePickerField
+                    size="small"
+                    label="По дату"
+                    value={endDate}
+                    onChange={(val) => {
+                      setEndDate(val || '');
+                      setPage(1);
+                    }}
+                  />
+                </Box>
+              </Box>
+            }
           >
-            <TextField
-              select
-              size="small"
-              value={actionFilter}
-              onChange={(e) => {
-                setActionFilter(e.target.value);
-                setPage(1);
-              }}
-              SelectProps={{
-                displayEmpty: true,
-              }}
-              sx={{
-                minWidth: 160,
-                backgroundColor: '#ffffff',
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '8px',
-                  fontSize: '0.8125rem',
-                  height: 36,
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#cbd5e1' },
-                },
-              }}
-            >
-              <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все действия</MenuItem>
-              {Object.entries(AUDIT_ACTION_MAP).map(([key, info]) => (
-                <MenuItem key={key} value={key} sx={{ fontSize: '0.8125rem' }}>
-                  {info.label}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <TextField
-              select
-              size="small"
-              value={equipmentFilter}
-              onChange={(e) => {
-                setEquipmentFilter(e.target.value);
-                setPage(1);
-              }}
-              SelectProps={{
-                displayEmpty: true,
-              }}
-              sx={{
-                minWidth: 200,
-                backgroundColor: '#ffffff',
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '8px',
-                  fontSize: '0.8125rem',
-                  height: 36,
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#cbd5e1' },
-                },
-              }}
-            >
-              <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все оборудование</MenuItem>
-              {equipmentList.map((eq) => (
-                <MenuItem key={eq.id} value={eq.id} sx={{ fontSize: '0.8125rem' }}>
-                  {eq.inventoryNumber ? `[${eq.inventoryNumber}] ` : ''}{eq.name}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <Box sx={{ width: 150 }}>
-              <DatePickerField
-                size="small"
-                label="С даты"
-                value={startDate}
-                onChange={(val) => {
-                  setStartDate(val || '');
-                  setPage(1);
-                }}
-              />
-            </Box>
-
-            <Box sx={{ width: 150 }}>
-              <DatePickerField
-                size="small"
-                label="По дату"
-                value={endDate}
-                onChange={(val) => {
-                  setEndDate(val || '');
+            <Box sx={{ minWidth: { xs: '100%', sm: 260, md: 320 }, flexGrow: 1 }}>
+              <SearchInput
+                value={search}
+                placeholder="Поиск по событиям, пользователю, объекту..."
+                onSearch={(val) => {
+                  setSearch(val);
                   setPage(1);
                 }}
               />

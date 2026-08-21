@@ -243,8 +243,74 @@ export default function AdminAuditLogPage() {
             variant="embedded"
             activeFilterCount={activeFilterCount}
             onResetFilters={handleResetFilters}
+            actions={
+              <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center', flexWrap: 'wrap' }}>
+                <TextField
+                  select
+                  size="small"
+                  value={actionFilter}
+                  onChange={(e) => {
+                    setActionFilter(e.target.value);
+                    setPage(1);
+                  }}
+                  SelectProps={{
+                    displayEmpty: true,
+                  }}
+                  sx={{
+                    minWidth: 150,
+                    backgroundColor: '#ffffff',
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '8px',
+                      fontSize: '0.8125rem',
+                      height: 36,
+                      '& fieldset': { borderColor: '#e2e8f0' },
+                      '&:hover fieldset': { borderColor: '#cbd5e1' },
+                    },
+                  }}
+                >
+                  <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все действия</MenuItem>
+                  <MenuItem value="CREATE" sx={{ fontSize: '0.8125rem' }}>Создание</MenuItem>
+                  <MenuItem value="UPDATE" sx={{ fontSize: '0.8125rem' }}>Изменение</MenuItem>
+                  <MenuItem value="DELETE" sx={{ fontSize: '0.8125rem' }}>Удаление</MenuItem>
+                  <MenuItem value="LOGIN" sx={{ fontSize: '0.8125rem' }}>Вход</MenuItem>
+                  <MenuItem value="LOGOUT" sx={{ fontSize: '0.8125rem' }}>Выход</MenuItem>
+                </TextField>
+
+                <TextField
+                  select
+                  size="small"
+                  value={entityTypeFilter}
+                  onChange={(e) => {
+                    setEntityTypeFilter(e.target.value);
+                    setPage(1);
+                  }}
+                  SelectProps={{
+                    displayEmpty: true,
+                  }}
+                  sx={{
+                    minWidth: 160,
+                    backgroundColor: '#ffffff',
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '8px',
+                      fontSize: '0.8125rem',
+                      height: 36,
+                      '& fieldset': { borderColor: '#e2e8f0' },
+                      '&:hover fieldset': { borderColor: '#cbd5e1' },
+                    },
+                  }}
+                >
+                  <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все объекты</MenuItem>
+                  <MenuItem value="Equipment" sx={{ fontSize: '0.8125rem' }}>Оборудование (Equipment)</MenuItem>
+                  <MenuItem value="Document" sx={{ fontSize: '0.8125rem' }}>Документ (Document)</MenuItem>
+                  <MenuItem value="StockOperation" sx={{ fontSize: '0.8125rem' }}>Складская операция</MenuItem>
+                  <MenuItem value="Role" sx={{ fontSize: '0.8125rem' }}>Роль (Role)</MenuItem>
+                  <MenuItem value="User" sx={{ fontSize: '0.8125rem' }}>Пользователь (User)</MenuItem>
+                  <MenuItem value="SystemSetting" sx={{ fontSize: '0.8125rem' }}>Настройки</MenuItem>
+                </TextField>
+              </Box>
+            }
           >
-            <Box sx={{ minWidth: { xs: '100%', sm: 260 } }}>
+            <Box sx={{ minWidth: { xs: '100%', sm: 260, md: 320 }, flexGrow: 1 }}>
               <SearchInput
                 placeholder="Поиск по ID или пользователю..."
                 value={search}
@@ -254,69 +320,6 @@ export default function AdminAuditLogPage() {
                 }}
               />
             </Box>
-
-            <TextField
-              select
-              size="small"
-              value={actionFilter}
-              onChange={(e) => {
-                setActionFilter(e.target.value);
-                setPage(1);
-              }}
-              SelectProps={{
-                displayEmpty: true,
-              }}
-              sx={{
-                minWidth: 150,
-                backgroundColor: '#ffffff',
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '8px',
-                  fontSize: '0.8125rem',
-                  height: 36,
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#cbd5e1' },
-                },
-              }}
-            >
-              <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все действия</MenuItem>
-              <MenuItem value="CREATE" sx={{ fontSize: '0.8125rem' }}>Создание</MenuItem>
-              <MenuItem value="UPDATE" sx={{ fontSize: '0.8125rem' }}>Изменение</MenuItem>
-              <MenuItem value="DELETE" sx={{ fontSize: '0.8125rem' }}>Удаление</MenuItem>
-              <MenuItem value="LOGIN" sx={{ fontSize: '0.8125rem' }}>Вход</MenuItem>
-              <MenuItem value="LOGOUT" sx={{ fontSize: '0.8125rem' }}>Выход</MenuItem>
-            </TextField>
-
-            <TextField
-              select
-              size="small"
-              value={entityTypeFilter}
-              onChange={(e) => {
-                setEntityTypeFilter(e.target.value);
-                setPage(1);
-              }}
-              SelectProps={{
-                displayEmpty: true,
-              }}
-              sx={{
-                minWidth: 160,
-                backgroundColor: '#ffffff',
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '8px',
-                  fontSize: '0.8125rem',
-                  height: 36,
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#cbd5e1' },
-                },
-              }}
-            >
-              <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все объекты</MenuItem>
-              <MenuItem value="Equipment" sx={{ fontSize: '0.8125rem' }}>Оборудование (Equipment)</MenuItem>
-              <MenuItem value="Document" sx={{ fontSize: '0.8125rem' }}>Документ (Document)</MenuItem>
-              <MenuItem value="StockOperation" sx={{ fontSize: '0.8125rem' }}>Складская операция</MenuItem>
-              <MenuItem value="Role" sx={{ fontSize: '0.8125rem' }}>Роль (Role)</MenuItem>
-              <MenuItem value="User" sx={{ fontSize: '0.8125rem' }}>Пользователь (User)</MenuItem>
-              <MenuItem value="SystemSetting" sx={{ fontSize: '0.8125rem' }}>Настройки</MenuItem>
-            </TextField>
           </FilterToolbar>
         }
       >

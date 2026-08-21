@@ -609,7 +609,83 @@ function WmsStockContent() {
             activeFilterCount={activeFilterCount}
             onResetFilters={handleResetFilters}
             actions={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: 'wrap' }}>
+                <WarehouseSelect
+                  value={selectedWarehouse}
+                  onChange={(val) => {
+                    setSelectedWarehouse(val);
+                    setSelectedZone('');
+                    setPage(0);
+                  }}
+                  warehouses={warehouses}
+                  isAdmin={hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) || user?.roles?.includes('admin')}
+                  currentUserId={user?.userId}
+                />
+
+                {selectedWarehouse && zones.length > 0 && (
+                  <TextField
+                    select
+                    size="small"
+                    value={selectedZone}
+                    onChange={(e) => {
+                      setSelectedZone(e.target.value);
+                      setPage(0);
+                    }}
+                    SelectProps={{
+                      displayEmpty: true,
+                    }}
+                    sx={{
+                      minWidth: 140,
+                      backgroundColor: '#ffffff',
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '8px',
+                        fontSize: '0.8125rem',
+                        height: 36,
+                        '& fieldset': { borderColor: '#e2e8f0' },
+                        '&:hover fieldset': { borderColor: '#cbd5e1' },
+                      },
+                    }}
+                  >
+                    <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все зоны</MenuItem>
+                    {zones.map((z) => (
+                      <MenuItem key={z.id} value={z.id} sx={{ fontSize: '0.8125rem' }}>
+                        {z.name} ({z.code})
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                )}
+
+                <TextField
+                  select
+                  size="small"
+                  value={selectedCategory}
+                  onChange={(e) => {
+                    setSelectedCategory(e.target.value);
+                    setPage(0);
+                  }}
+                  SelectProps={{
+                    displayEmpty: true,
+                  }}
+                  sx={{
+                    minWidth: 160,
+                    backgroundColor: '#ffffff',
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '8px',
+                      fontSize: '0.8125rem',
+                      height: 36,
+                      '& fieldset': { borderColor: '#e2e8f0' },
+                      '&:hover fieldset': { borderColor: '#cbd5e1' },
+                    },
+                  }}
+                >
+                  <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все категории</MenuItem>
+                  {categories.map((c) => (
+                    <MenuItem key={c.id} value={c.id} sx={{ fontSize: '0.8125rem' }}>
+                      {c.name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+
                 <FormControlLabel
                   control={
                     <Switch
@@ -637,7 +713,7 @@ function WmsStockContent() {
               </Box>
             }
           >
-            <Box sx={{ minWidth: { xs: '100%', sm: 260 } }}>
+            <Box sx={{ minWidth: { xs: '100%', sm: 260, md: 320 }, flexGrow: 1 }}>
               <SearchInput
                 value={search}
                 placeholder="Поиск по названию или артикулу..."
@@ -647,82 +723,6 @@ function WmsStockContent() {
                 }}
               />
             </Box>
-
-            <WarehouseSelect
-              value={selectedWarehouse}
-              onChange={(val) => {
-                setSelectedWarehouse(val);
-                setSelectedZone('');
-                setPage(0);
-              }}
-              warehouses={warehouses}
-              isAdmin={hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) || user?.roles?.includes('admin')}
-              currentUserId={user?.userId}
-            />
-
-            {selectedWarehouse && zones.length > 0 && (
-              <TextField
-                select
-                size="small"
-                value={selectedZone}
-                onChange={(e) => {
-                  setSelectedZone(e.target.value);
-                  setPage(0);
-                }}
-                SelectProps={{
-                  displayEmpty: true,
-                }}
-                sx={{
-                  minWidth: 140,
-                  backgroundColor: '#ffffff',
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '8px',
-                    fontSize: '0.8125rem',
-                    height: 36,
-                    '& fieldset': { borderColor: '#e2e8f0' },
-                    '&:hover fieldset': { borderColor: '#cbd5e1' },
-                  },
-                }}
-              >
-                <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все зоны</MenuItem>
-                {zones.map((z) => (
-                  <MenuItem key={z.id} value={z.id} sx={{ fontSize: '0.8125rem' }}>
-                    {z.name} ({z.code})
-                  </MenuItem>
-                ))}
-              </TextField>
-            )}
-
-            <TextField
-              select
-              size="small"
-              value={selectedCategory}
-              onChange={(e) => {
-                setSelectedCategory(e.target.value);
-                setPage(0);
-              }}
-              SelectProps={{
-                displayEmpty: true,
-              }}
-              sx={{
-                minWidth: 160,
-                backgroundColor: '#ffffff',
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '8px',
-                  fontSize: '0.8125rem',
-                  height: 36,
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#cbd5e1' },
-                },
-              }}
-            >
-              <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все категории</MenuItem>
-              {categories.map((c) => (
-                <MenuItem key={c.id} value={c.id} sx={{ fontSize: '0.8125rem' }}>
-                  {c.name}
-                </MenuItem>
-              ))}
-            </TextField>
           </FilterToolbar>
         }
       >

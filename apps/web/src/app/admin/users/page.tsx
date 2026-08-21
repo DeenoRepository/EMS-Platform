@@ -237,34 +237,47 @@ export default function AdminUsersPage() {
           setSearchQuery('');
           setRoleFilter('');
         }}
+        actions={
+          availableRoles.length > 0 ? (
+            <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center' }}>
+              <TextField
+                select
+                size="small"
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+                SelectProps={{
+                  displayEmpty: true,
+                }}
+                sx={{
+                  minWidth: 200,
+                  backgroundColor: '#ffffff',
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '8px',
+                    fontSize: '0.8125rem',
+                    height: 36,
+                    '& fieldset': { borderColor: '#e2e8f0' },
+                    '&:hover fieldset': { borderColor: '#cbd5e1' },
+                  },
+                }}
+              >
+                <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все роли</MenuItem>
+                {availableRoles.map((r) => (
+                  <MenuItem key={r.id} value={r.id} sx={{ fontSize: '0.8125rem' }}>
+                    {r.displayName}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Box>
+          ) : undefined
+        }
       >
-        <Box sx={{ minWidth: 280 }}>
+        <Box sx={{ minWidth: { xs: '100%', sm: 260, md: 320 }, flexGrow: 1 }}>
           <SearchInput
             placeholder="Поиск по ФИО, логину или email..."
             value={searchQuery}
             onSearch={setSearchQuery}
           />
         </Box>
-
-        {availableRoles.length > 0 && (
-          <TextField
-            select
-            size="small"
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            SelectProps={{
-              displayEmpty: true,
-            }}
-            sx={{ minWidth: 200 }}
-          >
-            <MenuItem value="">Все роли</MenuItem>
-            {availableRoles.map((r) => (
-              <MenuItem key={r.id} value={r.id}>
-                {r.displayName}
-              </MenuItem>
-            ))}
-          </TextField>
-        )}
       </FilterToolbar>
 
       {/* Users Registry Table */}

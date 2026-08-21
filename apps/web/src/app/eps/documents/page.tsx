@@ -431,8 +431,73 @@ function DocumentsListContent() {
             variant="embedded"
             activeFilterCount={activeFilterCount}
             onResetFilters={handleResetFilters}
+            actions={
+              <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center', flexWrap: 'wrap' }}>
+                <TextField
+                  select
+                  size="small"
+                  value={docTypeFilter}
+                  onChange={(e) => {
+                    setDocTypeFilter(e.target.value);
+                    setPage(1);
+                  }}
+                  SelectProps={{
+                    displayEmpty: true,
+                  }}
+                  sx={{
+                    minWidth: 160,
+                    backgroundColor: '#ffffff',
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '8px',
+                      fontSize: '0.8125rem',
+                      height: 36,
+                      '& fieldset': { borderColor: '#e2e8f0' },
+                      '&:hover fieldset': { borderColor: '#cbd5e1' },
+                    },
+                  }}
+                >
+                  <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все типы</MenuItem>
+                  {Object.entries(DOCUMENT_TYPE_MAP).map(([key, label]) => (
+                    <MenuItem key={key} value={key} sx={{ fontSize: '0.8125rem' }}>
+                      {label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+
+                <TextField
+                  select
+                  size="small"
+                  value={equipmentFilter}
+                  onChange={(e) => {
+                    setEquipmentFilter(e.target.value);
+                    setPage(1);
+                  }}
+                  SelectProps={{
+                    displayEmpty: true,
+                  }}
+                  sx={{
+                    minWidth: 200,
+                    backgroundColor: '#ffffff',
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '8px',
+                      fontSize: '0.8125rem',
+                      height: 36,
+                      '& fieldset': { borderColor: '#e2e8f0' },
+                      '&:hover fieldset': { borderColor: '#cbd5e1' },
+                    },
+                  }}
+                >
+                  <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все оборудование</MenuItem>
+                  {equipmentList.map((eq) => (
+                    <MenuItem key={eq.id} value={eq.id} sx={{ fontSize: '0.8125rem' }}>
+                      {eq.inventoryNumber ? `[${eq.inventoryNumber}] ` : ''}{eq.name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Box>
+            }
           >
-            <Box sx={{ minWidth: { xs: '100%', sm: 260 } }}>
+            <Box sx={{ minWidth: { xs: '100%', sm: 260, md: 320 }, flexGrow: 1 }}>
               <SearchInput
                 value={search}
                 placeholder="Поиск по названию файла, описанию, инв. №..."
@@ -442,68 +507,6 @@ function DocumentsListContent() {
                 }}
               />
             </Box>
-
-            <TextField
-              select
-              size="small"
-              value={docTypeFilter}
-              onChange={(e) => {
-                setDocTypeFilter(e.target.value);
-                setPage(1);
-              }}
-              SelectProps={{
-                displayEmpty: true,
-              }}
-              sx={{
-                minWidth: 160,
-                backgroundColor: '#ffffff',
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '8px',
-                  fontSize: '0.8125rem',
-                  height: 36,
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#cbd5e1' },
-                },
-              }}
-            >
-              <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все типы</MenuItem>
-              {Object.entries(DOCUMENT_TYPE_MAP).map(([key, label]) => (
-                <MenuItem key={key} value={key} sx={{ fontSize: '0.8125rem' }}>
-                  {label}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <TextField
-              select
-              size="small"
-              value={equipmentFilter}
-              onChange={(e) => {
-                setEquipmentFilter(e.target.value);
-                setPage(1);
-              }}
-              SelectProps={{
-                displayEmpty: true,
-              }}
-              sx={{
-                minWidth: 200,
-                backgroundColor: '#ffffff',
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '8px',
-                  fontSize: '0.8125rem',
-                  height: 36,
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#cbd5e1' },
-                },
-              }}
-            >
-              <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все оборудование</MenuItem>
-              {equipmentList.map((eq) => (
-                <MenuItem key={eq.id} value={eq.id} sx={{ fontSize: '0.8125rem' }}>
-                  {eq.inventoryNumber ? `[${eq.inventoryNumber}] ` : ''}{eq.name}
-                </MenuItem>
-              ))}
-            </TextField>
           </FilterToolbar>
         }
       >

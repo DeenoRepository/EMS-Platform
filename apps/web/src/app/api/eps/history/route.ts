@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
     const action = searchParams.get('action')?.trim() || '';
     const equipmentId = searchParams.get('equipmentId')?.trim() || '';
     const userId = searchParams.get('userId')?.trim() || '';
+    const search = searchParams.get('search')?.trim() || '';
     const startDate = searchParams.get('startDate')?.trim() || '';
     const endDate = searchParams.get('endDate')?.trim() || '';
 
@@ -45,9 +46,14 @@ export async function GET(req: NextRequest) {
     }
 
     if (equipmentId) {
+      where.entityId = equipmentId;
+    }
+
+    if (search) {
       where.OR = [
-        { entityId: equipmentId },
-        { entityType: 'Equipment', entityId: equipmentId },
+        { user: { displayName: { contains: search, mode: 'insensitive' } } },
+        { user: { ldapLogin: { contains: search, mode: 'insensitive' } } },
+        { entityId: { contains: search, mode: 'insensitive' } },
       ];
     }
 
