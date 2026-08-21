@@ -524,26 +524,7 @@ function WmsStockContent() {
         ]}
         actions={
           <Stack direction="row" spacing={1.5} alignItems="center">
-            {hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) && (
-              <Button
-                variant="outlined"
-                startIcon={<AddIcon />}
-                onClick={() => setIsNomenclatureModalOpen(true)}
-                sx={{
-                  height: 36,
-                  px: 2,
-                  fontSize: '0.8125rem',
-                  fontWeight: 600,
-                  borderRadius: '8px',
-                  textTransform: 'none',
-                  borderColor: 'grey.400',
-                  color: 'text.secondary',
-                  '&:hover': { borderColor: 'text.disabled', bgcolor: 'background.default' },
-                }}
-              >
-                Новая номенклатура
-              </Button>
-            )}
+
             {hasPermission(PERMISSIONS.WMS_OPERATIONS_CREATE) && (
               <Button
                 variant="contained"
