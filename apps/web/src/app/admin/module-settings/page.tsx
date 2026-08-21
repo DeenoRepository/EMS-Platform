@@ -49,7 +49,6 @@ import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import BugReportOutlinedIcon from '@mui/icons-material/BugReportOutlined';
 import LayersOutlinedIcon from '@mui/icons-material/LayersOutlined';
 import PageHeader from '@/components/layout/PageHeader';
-import { NavTabsContainer } from '@/components/layout/NavTabs';
 import { SmartImportWizard } from '@/components/eps/SmartImportWizard';
 import { useSnackbar } from 'notistack';
 import {
@@ -60,6 +59,7 @@ import {
   PageLoading,
   FormDialog,
   StatusBadge,
+  NavTabsContainer,
 } from '@/components/ui';
 
 interface CustomFieldItem {
