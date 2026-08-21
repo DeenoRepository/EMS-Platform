@@ -80,7 +80,7 @@ const STATUS_CONFIG_MAP: Record<string, StatusTheme> = {
     icon: <CancelIcon sx={{ fontSize: 13 }} />,
   },
 
-  // Approvals Statuses
+  // EPS Approvals Statuses
   PENDING: {
     label: 'На согласовании',
     color: '#f59e0b',
@@ -108,6 +108,71 @@ const STATUS_CONFIG_MAP: Record<string, StatusTheme> = {
     bg: '#f8fafc',
     border: '#e2e8f0',
     icon: <CancelIcon sx={{ fontSize: 13 }} />,
+  },
+
+  // EPS Approval Types (Russian Nomenclature)
+  COMMISSIONING: {
+    label: 'Ввод в эксплуатацию',
+    color: '#059669',
+    bg: '#ecfdf5',
+    border: '#a7f3d0',
+    icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
+  },
+  PARAMETER_CHANGE: {
+    label: 'Изменение параметров',
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+    icon: <TuneIcon sx={{ fontSize: 13 }} />,
+  },
+  STATUS_CHANGE: {
+    label: 'Смена статуса',
+    color: '#7c3aed',
+    bg: '#faf5ff',
+    border: '#e9d5ff',
+    icon: <SwapHorizIcon sx={{ fontSize: 13 }} />,
+  },
+  EQUIPMENT_CREATE: {
+    label: 'Создание оборудования',
+    color: '#16a34a',
+    bg: '#f0fdf4',
+    border: '#bbf7d0',
+    icon: <AddCircleOutlineIcon sx={{ fontSize: 13 }} />,
+  },
+  EQUIPMENT_UPDATE: {
+    label: 'Изменение характеристик',
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+    icon: <EditOutlinedIcon sx={{ fontSize: 13 }} />,
+  },
+  EQUIPMENT_DELETE: {
+    label: 'Удаление оборудования',
+    color: '#dc2626',
+    bg: '#fef2f2',
+    border: '#fecaca',
+    icon: <DeleteOutlineIcon sx={{ fontSize: 13 }} />,
+  },
+  DOCUMENT_APPROVAL: {
+    label: 'Согласование документа',
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+    icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
+  },
+  DOCUMENT_CREATE: {
+    label: 'Загрузка документа',
+    color: '#059669',
+    bg: '#ecfdf5',
+    border: '#a7f3d0',
+    icon: <AddCircleOutlineIcon sx={{ fontSize: 13 }} />,
+  },
+  DOCUMENT_DELETE: {
+    label: 'Удаление документа',
+    color: '#dc2626',
+    bg: '#fef2f2',
+    border: '#fecaca',
+    icon: <DeleteOutlineIcon sx={{ fontSize: 13 }} />,
   },
 
   // WMS Inventory & Stock Statuses

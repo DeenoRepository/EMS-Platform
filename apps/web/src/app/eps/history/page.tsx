@@ -566,24 +566,38 @@ function HistoryListContent() {
                           onClick={() => router.push(`/eps/${eq.id}`)}
                           sx={{
                             cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 0.75,
-                            '&:hover': { color: 'primary.main', textDecoration: 'underline' },
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'flex-start',
+                            gap: 0.35,
+                            '&:hover .equipment-name': { color: 'primary.main', textDecoration: 'underline' },
                           }}
                         >
-                          <PrecisionManufacturingIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                          <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
+                          <Typography
+                            className="equipment-name"
+                            variant="body2"
+                            fontWeight={600}
+                            sx={{ fontSize: '0.8125rem', color: '#0f172a', lineHeight: 1.35 }}
+                          >
                             {eq.name}
                           </Typography>
-                          {eq.inventoryNumber && (
-                            <Chip
-                              label={eq.inventoryNumber}
-                              size="small"
-                              variant="outlined"
-                              sx={{ fontWeight: 700, fontFamily: 'monospace', height: 20, borderRadius: '4px' }}
-                            />
-                          )}
+                          <Paper
+                            variant="outlined"
+                            sx={{
+                              px: 0.75,
+                              py: 0.1,
+                              fontFamily: 'monospace',
+                              fontWeight: 700,
+                              bgcolor: '#f8fafc',
+                              fontSize: '0.6875rem',
+                              borderRadius: '4px',
+                              color: '#475569',
+                              borderColor: '#cbd5e1',
+                              lineHeight: 1.3,
+                            }}
+                          >
+                            {eq.inventoryNumber || 'Б/Н'}
+                          </Paper>
                         </Box>
                       ) : (
                         <Typography variant="caption" color="text.secondary">
