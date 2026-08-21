@@ -615,15 +615,14 @@ export default function ReportBuilderPage() {
               sx={{
                 fontWeight: 600,
                 borderRadius: '8px',
-                borderColor: 'grey.400',
-                color: 'text.primary',
-                '&:hover': { borderColor: 'text.disabled', backgroundColor: 'background.default' },
+                height: 36,
+                minHeight: 36,
               }}
             >
               Конструктор колонок ({selectedColumnKeys.length})
             </Button>
             <ExportButton
-              formats={['xlsx', 'csv']}
+              formats={['xlsx', 'csv', 'json']}
               variant="contained"
               color="primary"
               label="Экспорт"
@@ -631,17 +630,9 @@ export default function ReportBuilderPage() {
               onExport={(fmt) => {
                 if (fmt === 'xlsx') handleExportExcel();
                 else if (fmt === 'csv') handleExportCsv();
+                else if (fmt === 'json') handleExportJson();
               }}
             />
-            <Button
-              variant="text"
-              startIcon={<DataObjectIcon />}
-              onClick={handleExportJson}
-              disabled={rows.length === 0}
-              sx={{ fontWeight: 600, color: 'text.disabled' }}
-            >
-              JSON
-            </Button>
           </Box>
         }
       />

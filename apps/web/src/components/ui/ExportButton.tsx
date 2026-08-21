@@ -13,9 +13,10 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import TableChartOutlinedIcon from '@mui/icons-material/TableChartOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
+import DataObjectIcon from '@mui/icons-material/DataObject';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 
-export type ExportFormat = 'xlsx' | 'csv' | 'pdf';
+export type ExportFormat = 'xlsx' | 'csv' | 'pdf' | 'json';
 
 export interface ExportButtonProps {
   onExport: (format: ExportFormat) => void | Promise<void>;
@@ -23,7 +24,7 @@ export interface ExportButtonProps {
   loading?: boolean;
   disabled?: boolean;
   label?: string;
-  size?: 'small' | 'medium';
+  size?: 'small' | 'medium' | 'large';
   variant?: 'contained' | 'outlined' | 'text';
   color?: 'primary' | 'secondary' | 'inherit' | 'success' | 'info' | 'warning';
   className?: string;
@@ -45,6 +46,11 @@ const FORMAT_CONFIG: Record<ExportFormat, { label: string; subLabel: string; ico
     subLabel: 'Печатный документ для отчёта',
     icon: <PictureAsPdfOutlinedIcon fontSize="small" sx={{ color: '#dc2626' }} />,
   },
+  json: {
+    label: 'JSON (.json)',
+    subLabel: 'Машиночитаемый формат данных',
+    icon: <DataObjectIcon fontSize="small" sx={{ color: '#8b5cf6' }} />,
+  },
 };
 
 export function ExportButton({
@@ -53,9 +59,9 @@ export function ExportButton({
   loading = false,
   disabled = false,
   label = 'Экспорт',
-  size = 'small',
+  size = 'medium',
   variant = 'outlined',
-  color = 'inherit',
+  color = 'primary',
   className,
 }: ExportButtonProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -67,21 +73,15 @@ export function ExportButton({
         className={className}
         variant={variant}
         size={size}
+        color={color}
         disabled={disabled || loading}
         startIcon={loading ? <CircularProgress size={15} color="inherit" /> : <FileDownloadOutlinedIcon />}
         onClick={() => onExport(formats[0])}
         sx={{
           fontWeight: 600,
           borderRadius: '8px',
-          borderColor: '#e2e8f0',
-          color: '#334155',
-          backgroundColor: '#ffffff',
-          px: 1.75,
-          py: 0.6,
-          '&:hover': {
-            borderColor: '#cbd5e1',
-            backgroundColor: '#f8fafc',
-          },
+          height: 36,
+          minHeight: 36,
         }}
       >
         {label}
@@ -108,6 +108,7 @@ export function ExportButton({
         className={className}
         variant={variant}
         size={size}
+        color={color}
         disabled={disabled || loading}
         startIcon={loading ? <CircularProgress size={15} color="inherit" /> : <FileDownloadOutlinedIcon />}
         endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 18 }} />}
@@ -118,15 +119,8 @@ export function ExportButton({
         sx={{
           fontWeight: 600,
           borderRadius: '8px',
-          borderColor: '#e2e8f0',
-          color: '#334155',
-          backgroundColor: '#ffffff',
-          px: 1.75,
-          py: 0.6,
-          '&:hover': {
-            borderColor: '#cbd5e1',
-            backgroundColor: '#f8fafc',
-          },
+          height: 36,
+          minHeight: 36,
         }}
       >
         {label}
