@@ -205,8 +205,8 @@ export default function AdminSettingsPage() {
                           display: 'flex',
                           flexDirection: 'column',
                           justifyContent: 'space-between',
-                          backgroundColor: enabled ? '#ffffff' : '#f8fafc',
-                          borderColor: enabled ? '#cbd5e1' : '#e2e8f0',
+                          backgroundColor: enabled ? 'background.paper' : 'background.default',
+                          borderColor: enabled ? 'grey.400' : 'divider',
                           transition: 'all 0.15s ease',
                           '&:hover': {
                             boxShadow: '0 4px 12px rgba(0,0,0,0.05)',

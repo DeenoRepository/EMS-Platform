@@ -615,9 +615,9 @@ export default function ReportBuilderPage() {
               sx={{
                 fontWeight: 600,
                 borderRadius: '8px',
-                borderColor: '#cbd5e1',
-                color: '#0f172a',
-                '&:hover': { borderColor: '#94a3b8', backgroundColor: '#f8fafc' },
+                borderColor: 'grey.400',
+                color: 'text.primary',
+                '&:hover': { borderColor: 'text.disabled', backgroundColor: 'background.default' },
               }}
             >
               Конструктор колонок ({selectedColumnKeys.length})
@@ -638,7 +638,7 @@ export default function ReportBuilderPage() {
               startIcon={<DataObjectIcon />}
               onClick={handleExportJson}
               disabled={rows.length === 0}
-              sx={{ fontWeight: 600, color: '#64748b' }}
+              sx={{ fontWeight: 600, color: 'text.disabled' }}
             >
               JSON
             </Button>
@@ -695,10 +695,10 @@ export default function ReportBuilderPage() {
             }
             iconBgColor={
               averageWear !== null && averageWear > 70
-                ? '#fee2e2'
+                ? 'error.light'
                 : averageWear !== null && averageWear > 30
-                ? '#fef3c7'
-                : '#dcfce7'
+                ? 'warning.light'
+                : 'success.light'
             }
             loading={loadingData && rows.length === 0}
           />
@@ -747,13 +747,13 @@ export default function ReportBuilderPage() {
                   SelectProps={{ displayEmpty: true }}
                   sx={{
                     minWidth: 150,
-                    backgroundColor: '#ffffff',
+                    backgroundColor: 'background.paper',
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '8px',
                       fontSize: '0.8125rem',
                       height: 36,
-                      '& fieldset': { borderColor: '#e2e8f0' },
-                      '&:hover fieldset': { borderColor: '#cbd5e1' },
+                      '& fieldset': { borderColor: 'divider' },
+                      '&:hover fieldset': { borderColor: 'grey.400' },
                     },
                   }}
                 >
@@ -775,13 +775,13 @@ export default function ReportBuilderPage() {
                   }}
                   sx={{
                     minWidth: 150,
-                    backgroundColor: '#ffffff',
+                    backgroundColor: 'background.paper',
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '8px',
                       fontSize: '0.8125rem',
                       height: 36,
-                      '& fieldset': { borderColor: '#e2e8f0' },
-                      '&:hover fieldset': { borderColor: '#cbd5e1' },
+                      '& fieldset': { borderColor: 'divider' },
+                      '&:hover fieldset': { borderColor: 'grey.400' },
                     },
                   }}
                 />
@@ -796,13 +796,13 @@ export default function ReportBuilderPage() {
                   }}
                   sx={{
                     minWidth: 150,
-                    backgroundColor: '#ffffff',
+                    backgroundColor: 'background.paper',
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '8px',
                       fontSize: '0.8125rem',
                       height: 36,
-                      '& fieldset': { borderColor: '#e2e8f0' },
-                      '&:hover fieldset': { borderColor: '#cbd5e1' },
+                      '& fieldset': { borderColor: 'divider' },
+                      '&:hover fieldset': { borderColor: 'grey.400' },
                     },
                   }}
                 />
@@ -848,7 +848,7 @@ export default function ReportBuilderPage() {
         emptyState={
           <EmptyState
             paper
-            icon={<TableChartIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+            icon={<TableChartIcon sx={{ fontSize: 36, color: 'text.disabled' }} />}
             title="Нет записей для формирования ведомости"
             description="По заданным критериям фильтрации оборудование не найдено. Измените параметры поиска или сбросьте фильтры."
             actionText="Сбросить фильтры"
@@ -858,8 +858,8 @@ export default function ReportBuilderPage() {
       >
         <Table size="small">
           <TableHead>
-            <TableRow sx={{ backgroundColor: '#ffffff' }}>
-              <TableCell sx={{ fontWeight: 700, width: 56, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+            <TableRow sx={{ backgroundColor: 'background.paper' }}>
+              <TableCell sx={{ fontWeight: 700, width: 56, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
                 № П/П
               </TableCell>
               {activeColumnsDef.map((col) => (
@@ -868,7 +868,7 @@ export default function ReportBuilderPage() {
                   sx={{
                     fontWeight: 700,
                     fontSize: '0.6875rem',
-                    color: '#64748b',
+                    color: 'text.disabled',
                     letterSpacing: '0.05em',
                     whiteSpace: 'nowrap',
                   }}
@@ -894,7 +894,7 @@ export default function ReportBuilderPage() {
           <TableBody>
             {paginatedRows.map((row, idx) => (
               <TableRow key={row.id || idx} hover sx={{ '&:last-child td': { borderBottom: 0 } }}>
-                <TableCell sx={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600 }}>
+                <TableCell sx={{ color: 'text.disabled', fontSize: '0.75rem', fontWeight: 600 }}>
                   {(page - 1) * pageSize + idx + 1}
                 </TableCell>
                 {activeColumnsDef.map((col) => (
@@ -911,16 +911,16 @@ export default function ReportBuilderPage() {
                           height: 22,
                           backgroundColor:
                             row.criticality.includes('A')
-                              ? '#fee2e2'
+                              ? 'error.light'
                               : row.criticality.includes('B')
-                              ? '#fef3c7'
+                              ? 'warning.light'
                               : '#e0f2fe',
                           color:
                             row.criticality.includes('A')
-                              ? '#dc2626'
+                              ? 'error.main'
                               : row.criticality.includes('B')
-                              ? '#d97706'
-                              : '#0284c7',
+                              ? 'warning.main'
+                              : 'primary.main',
                         }}
                       />
                     ) : col.key === 'actual_wear_percentage' && row.actual_wear_percentage !== '—' ? (
@@ -931,10 +931,10 @@ export default function ReportBuilderPage() {
                           fontSize: '0.8125rem',
                           color:
                             parseFloat(row.actual_wear_percentage) > 70
-                              ? '#dc2626'
+                              ? 'error.main'
                               : parseFloat(row.actual_wear_percentage) > 30
-                              ? '#d97706'
-                              : '#16a34a',
+                              ? 'warning.main'
+                              : 'success.main',
                         }}
                       >
                         {row.actual_wear_percentage}
@@ -1114,7 +1114,7 @@ export default function ReportBuilderPage() {
                 maxHeight: 430,
                 overflowY: 'auto',
                 p: 0.5,
-                backgroundColor: '#f8fafc',
+                backgroundColor: 'background.default',
                 borderRadius: '8px',
               }}
             >
@@ -1123,7 +1123,7 @@ export default function ReportBuilderPage() {
                   <ListItem
                     key={col.key}
                     sx={{
-                      backgroundColor: '#ffffff',
+                      backgroundColor: 'background.paper',
                       mb: 0.75,
                       borderRadius: '6px',
                       border: '1px solid #e2e8f0',
@@ -1132,7 +1132,7 @@ export default function ReportBuilderPage() {
                   >
                     <Typography
                       variant="caption"
-                      sx={{ width: 22, color: '#94a3b8', fontWeight: 700 }}
+                      sx={{ width: 22, color: 'text.disabled', fontWeight: 700 }}
                     >
                       {index + 1}.
                     </Typography>
@@ -1210,7 +1210,7 @@ export default function ReportBuilderPage() {
             size="small"
             placeholder="Краткое назначение отчета..."
           />
-          <Paper variant="outlined" sx={{ p: 2, backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+          <Paper variant="outlined" sx={{ p: 2, backgroundColor: 'background.default', borderRadius: '8px' }}>
             <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
               В шаблон будут сохранены:
             </Typography>

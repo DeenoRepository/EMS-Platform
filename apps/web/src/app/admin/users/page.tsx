@@ -248,13 +248,13 @@ export default function AdminUsersPage() {
                 }}
                 sx={{
                   minWidth: 200,
-                  backgroundColor: '#ffffff',
+                  backgroundColor: 'background.paper',
                   '& .MuiOutlinedInput-root': {
                     borderRadius: '8px',
                     fontSize: '0.8125rem',
                     height: 36,
-                    '& fieldset': { borderColor: '#e2e8f0' },
-                    '&:hover fieldset': { borderColor: '#cbd5e1' },
+                    '& fieldset': { borderColor: 'divider' },
+                    '&:hover fieldset': { borderColor: 'grey.400' },
                   },
                 }}
               >
@@ -282,7 +282,7 @@ export default function AdminUsersPage() {
       {filteredUsers.length === 0 && !loading ? (
         <EmptyState
           paper
-          icon={<PersonOutlineIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+          icon={<PersonOutlineIcon sx={{ fontSize: 36, color: 'text.disabled' }} />}
           title="Пользователи не найдены"
           description={
             searchQuery || roleFilter

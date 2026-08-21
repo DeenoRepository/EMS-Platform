@@ -450,17 +450,17 @@ function EquipmentListContent() {
               sx={{
                 height: 38,
                 borderRadius: '8px',
-                borderColor: '#e2e8f0',
-                color: '#334155',
+                borderColor: 'divider',
+                color: 'text.secondary',
                 px: 2,
                 fontSize: '0.875rem',
                 fontWeight: 600,
                 textTransform: 'none',
-                backgroundColor: '#ffffff',
+                backgroundColor: 'background.paper',
                 boxSizing: 'border-box',
                 '&:hover': {
-                  borderColor: '#cbd5e1',
-                  backgroundColor: '#f8fafc',
+                  borderColor: 'grey.400',
+                  backgroundColor: 'background.default',
                 },
               }}
             >
@@ -479,9 +479,9 @@ function EquipmentListContent() {
                   textTransform: 'none',
                   px: 2.25,
                   boxSizing: 'border-box',
-                  backgroundColor: '#0284c7',
+                  backgroundColor: 'primary.main',
                   '&:hover': {
-                    backgroundColor: '#0369a1',
+                    backgroundColor: 'primary.dark',
                   },
                 }}
               >
@@ -599,7 +599,7 @@ function EquipmentListContent() {
         empty={items.length === 0 && !loading}
         emptyState={
           <EmptyState
-            icon={<PrecisionManufacturingIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+            icon={<PrecisionManufacturingIcon sx={{ fontSize: 36, color: 'text.disabled' }} />}
             title="Оборудование не найдено"
             description={
               activeFilterCount > 0
@@ -628,13 +628,13 @@ function EquipmentListContent() {
                   SelectProps={{ displayEmpty: true }}
                   sx={{
                     minWidth: 140,
-                    backgroundColor: '#ffffff',
+                    backgroundColor: 'background.paper',
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '8px',
                       fontSize: '0.8125rem',
                       height: 36,
-                      '& fieldset': { borderColor: '#e2e8f0' },
-                      '&:hover fieldset': { borderColor: '#cbd5e1' },
+                      '& fieldset': { borderColor: 'divider' },
+                      '&:hover fieldset': { borderColor: 'grey.400' },
                     },
                   }}
                 >
@@ -657,13 +657,13 @@ function EquipmentListContent() {
                   SelectProps={{ displayEmpty: true }}
                   sx={{
                     minWidth: 130,
-                    backgroundColor: '#ffffff',
+                    backgroundColor: 'background.paper',
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '8px',
                       fontSize: '0.8125rem',
                       height: 36,
-                      '& fieldset': { borderColor: '#e2e8f0' },
-                      '&:hover fieldset': { borderColor: '#cbd5e1' },
+                      '& fieldset': { borderColor: 'divider' },
+                      '&:hover fieldset': { borderColor: 'grey.400' },
                     },
                   }}
                 >
@@ -723,7 +723,7 @@ function EquipmentListContent() {
                     '&:hover': {
                       transform: 'translateY(-3px)',
                       boxShadow: '0 12px 24px -8px rgba(15, 23, 42, 0.12)',
-                      borderColor: '#0284c7',
+                      borderColor: 'primary.main',
                     },
                   }}
                   onClick={() => handleRowClick(eq)}
@@ -731,7 +731,7 @@ function EquipmentListContent() {
                   <Box
                     sx={{
                       height: 140,
-                      backgroundColor: '#f8fafc',
+                      backgroundColor: 'background.default',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -748,7 +748,7 @@ function EquipmentListContent() {
                         sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />
                     ) : (
-                      <PrecisionManufacturingIcon sx={{ fontSize: 54, color: '#cbd5e1' }} />
+                      <PrecisionManufacturingIcon sx={{ fontSize: 54, color: 'grey.400' }} />
                     )}
                     <Box sx={{ position: 'absolute', top: 8, right: 8 }}>
                       <StatusBadge status={eq.status} />
@@ -762,7 +762,7 @@ function EquipmentListContent() {
                         sx={{
                           fontFamily: 'monospace',
                           fontWeight: 700,
-                          color: '#0284c7',
+                          color: 'primary.main',
                           backgroundColor: 'rgba(2, 132, 199, 0.08)',
                           px: 0.75,
                           py: 0.25,
@@ -776,7 +776,7 @@ function EquipmentListContent() {
                       </Typography>
                     </Box>
 
-                    <Typography variant="subtitle2" fontWeight={700} lineHeight={1.3} sx={{ mb: 0.75, color: '#0f172a' }}>
+                    <Typography variant="subtitle2" fontWeight={700} lineHeight={1.3} sx={{ mb: 0.75, color: 'text.primary' }}>
                       {eq.name}
                     </Typography>
 
@@ -838,7 +838,7 @@ function EquipmentListContent() {
       >
         <Table size="small" aria-label="Реестр оборудования">
           <TableHead>
-            <TableRow sx={{ backgroundColor: '#ffffff' }}>
+            <TableRow sx={{ backgroundColor: 'background.paper' }}>
               <TableCell padding="checkbox" sx={{ width: 44, pl: 2 }}>
                 <Checkbox
                   size="small"
@@ -1219,18 +1219,18 @@ function EquipmentListContent() {
                             py: 0.15,
                             fontFamily: 'monospace',
                             fontWeight: 700,
-                            bgcolor: '#f8fafc',
+                            bgcolor: 'background.default',
                             fontSize: '0.75rem',
                             borderRadius: '4px',
-                            color: '#334155',
-                            borderColor: '#cbd5e1',
+                            color: 'text.secondary',
+                            borderColor: 'grey.400',
                             lineHeight: 1.3,
                           }}
                         >
                           {eq.inventoryNumber}
                         </Paper>
                       ) : (
-                        <Typography variant="caption" sx={{ color: '#94a3b8' }}>—</Typography>
+                        <Typography variant="caption" sx={{ color: 'text.disabled' }}>—</Typography>
                       )}
                     </TableCell>
                   )}
@@ -1241,7 +1241,7 @@ function EquipmentListContent() {
                         variant="body2"
                         sx={{
                           fontWeight: 600,
-                          color: '#0284c7',
+                          color: 'primary.main',
                           fontSize: '0.8125rem',
                           lineHeight: 1.35,
                           '&:hover': { textDecoration: 'underline' },
@@ -1253,25 +1253,25 @@ function EquipmentListContent() {
                   )}
 
                   {visibleColumns.includes('serialNumber') && (
-                    <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace', color: '#475569' }}>
+                    <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace', color: 'text.secondary' }}>
                       {eq.serialNumber || '—'}
                     </TableCell>
                   )}
 
                   {visibleColumns.includes('manufacturer') && (
-                    <TableCell sx={{ fontSize: '0.8125rem', color: '#334155', fontWeight: 500 }}>
+                    <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary', fontWeight: 500 }}>
                       {eq.manufacturer || '—'}
                     </TableCell>
                   )}
 
                   {visibleColumns.includes('model') && (
-                    <TableCell sx={{ fontSize: '0.8125rem', color: '#475569' }}>
+                    <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
                       {eq.model || '—'}
                     </TableCell>
                   )}
 
                   {visibleColumns.includes('location') && (
-                    <TableCell sx={{ fontSize: '0.8125rem', color: '#334155' }}>
+                    <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
                       {eq.location || '—'}
                     </TableCell>
                   )}
@@ -1299,17 +1299,17 @@ function EquipmentListContent() {
                               : 'rgba(100, 116, 139, 0.1)',
                           color:
                             criticality === 'A'
-                              ? '#dc2626'
+                              ? 'error.main'
                               : criticality === 'B'
-                              ? '#d97706'
-                              : '#475569',
+                              ? 'warning.main'
+                              : 'text.secondary',
                           border: '1px solid',
                           borderColor:
                             criticality === 'A'
                               ? '#fecaca'
                               : criticality === 'B'
                               ? '#fde68a'
-                              : '#e2e8f0',
+                              : 'divider',
                         }}
                       />
                     </TableCell>
@@ -1324,68 +1324,68 @@ function EquipmentListContent() {
                             fontWeight={700}
                             sx={{
                               fontSize: '0.8125rem',
-                              color: Number(wear) > 70 ? '#dc2626' : Number(wear) > 40 ? '#d97706' : '#16a34a',
+                              color: Number(wear) > 70 ? 'error.main' : Number(wear) > 40 ? 'warning.main' : 'success.main',
                             }}
                           >
                             {wear}%
                           </Typography>
                         </Box>
                       ) : (
-                        <Typography variant="caption" sx={{ color: '#94a3b8' }}>—</Typography>
+                        <Typography variant="caption" sx={{ color: 'text.disabled' }}>—</Typography>
                       )}
                     </TableCell>
                   )}
 
                   {visibleColumns.includes('eqGroup') && (
-                    <TableCell sx={{ fontSize: '0.8125rem', color: '#475569' }}>
+                    <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
                       {custom.equipment_group || '—'}
                     </TableCell>
                   )}
 
                   {visibleColumns.includes('eqType') && (
-                    <TableCell sx={{ fontSize: '0.8125rem', color: '#475569' }}>
+                    <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
                       {custom.equipment_type || '—'}
                     </TableCell>
                   )}
 
                   {visibleColumns.includes('respPerson') && (
-                    <TableCell sx={{ fontSize: '0.8125rem', color: '#334155', fontWeight: 500 }}>
+                    <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary', fontWeight: 500 }}>
                       {custom.responsible_person_name || '—'}
                     </TableCell>
                   )}
 
                   {visibleColumns.includes('okofCode') && (
-                    <TableCell sx={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#64748b' }}>
+                    <TableCell sx={{ fontSize: '0.75rem', fontFamily: 'monospace', color: 'text.disabled' }}>
                       {custom.okof_code || '—'}
                     </TableCell>
                   )}
 
                   {visibleColumns.includes('okpd2Code') && (
-                    <TableCell sx={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#64748b' }}>
+                    <TableCell sx={{ fontSize: '0.75rem', fontFamily: 'monospace', color: 'text.disabled' }}>
                       {custom.okpd2_code || '—'}
                     </TableCell>
                   )}
 
                   {visibleColumns.includes('procCode') && (
-                    <TableCell sx={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#64748b' }}>
+                    <TableCell sx={{ fontSize: '0.75rem', fontFamily: 'monospace', color: 'text.disabled' }}>
                       {custom.process_classifier_code || '—'}
                     </TableCell>
                   )}
 
                   {visibleColumns.includes('maintPeriodicity') && (
-                    <TableCell sx={{ fontSize: '0.8125rem', color: '#475569' }}>
+                    <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
                       {custom.maintenance_periodicity || '—'}
                     </TableCell>
                   )}
 
                   {visibleColumns.includes('calibrationInterval') && (
-                    <TableCell sx={{ fontSize: '0.8125rem', color: '#475569' }}>
+                    <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
                       {custom.calibration_interval ? `${custom.calibration_interval} мес.` : '—'}
                     </TableCell>
                   )}
 
                   {visibleColumns.includes('cleanRoom') && (
-                    <TableCell sx={{ fontSize: '0.8125rem', color: '#475569' }}>
+                    <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
                       {custom.clean_room_class || '—'}
                     </TableCell>
                   )}
@@ -1399,10 +1399,10 @@ function EquipmentListContent() {
                           height: 20,
                           fontSize: '0.6875rem',
                           fontWeight: 600,
-                          backgroundColor: custom.is_critical_path ? '#fef2f2' : '#f8fafc',
-                          color: custom.is_critical_path ? '#dc2626' : '#64748b',
+                          backgroundColor: custom.is_critical_path ? 'error.light' : 'background.default',
+                          color: custom.is_critical_path ? 'error.main' : 'text.disabled',
                           border: '1px solid',
-                          borderColor: custom.is_critical_path ? '#fecaca' : '#e2e8f0',
+                          borderColor: custom.is_critical_path ? '#fecaca' : 'divider',
                         }}
                       />
                     </TableCell>
@@ -1417,10 +1417,10 @@ function EquipmentListContent() {
                           height: 20,
                           fontSize: '0.6875rem',
                           fontWeight: 600,
-                          backgroundColor: custom.is_unique ? '#f0f9ff' : '#f8fafc',
-                          color: custom.is_unique ? '#0284c7' : '#64748b',
+                          backgroundColor: custom.is_unique ? '#f0f9ff' : 'background.default',
+                          color: custom.is_unique ? 'primary.main' : 'text.disabled',
                           border: '1px solid',
-                          borderColor: custom.is_unique ? '#bae6fd' : '#e2e8f0',
+                          borderColor: custom.is_unique ? '#bae6fd' : 'divider',
                         }}
                       />
                     </TableCell>
@@ -1435,23 +1435,23 @@ function EquipmentListContent() {
                           height: 20,
                           fontSize: '0.6875rem',
                           fontWeight: 600,
-                          backgroundColor: custom.is_imported ? '#faf5ff' : '#f8fafc',
-                          color: custom.is_imported ? '#9333ea' : '#64748b',
+                          backgroundColor: custom.is_imported ? '#faf5ff' : 'background.default',
+                          color: custom.is_imported ? '#9333ea' : 'text.disabled',
                           border: '1px solid',
-                          borderColor: custom.is_imported ? '#e9d5ff' : '#e2e8f0',
+                          borderColor: custom.is_imported ? '#e9d5ff' : 'divider',
                         }}
                       />
                     </TableCell>
                   )}
 
                   {visibleColumns.includes('documentsCount') && (
-                    <TableCell sx={{ fontSize: '0.8125rem', color: '#475569' }}>
+                    <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
                       {eq._count?.documents ?? eq.counts?.documents ?? 0}
                     </TableCell>
                   )}
 
                   {visibleColumns.includes('sparePartsCount') && (
-                    <TableCell sx={{ fontSize: '0.8125rem', color: '#475569' }}>
+                    <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
                       {eq._count?.spareParts ?? eq.counts?.spareParts ?? 0}
                     </TableCell>
                   )}
@@ -1468,8 +1468,8 @@ function EquipmentListContent() {
                               sx={{
                                 fontSize: '0.6875rem',
                                 height: 22,
-                                backgroundColor: '#ffffff',
-                                color: '#475569',
+                                backgroundColor: 'background.paper',
+                                color: 'text.secondary',
                                 border: '1px solid #e2e8f0',
                                 borderRadius: '4px',
                                 fontWeight: 500,
@@ -1477,26 +1477,26 @@ function EquipmentListContent() {
                             />
                           ))
                         ) : (
-                          <Typography variant="caption" sx={{ color: '#94a3b8' }}>—</Typography>
+                          <Typography variant="caption" sx={{ color: 'text.disabled' }}>—</Typography>
                         )}
                       </Box>
                     </TableCell>
                   )}
 
                   {visibleColumns.includes('commissionDate') && (
-                    <TableCell sx={{ fontSize: '0.8125rem', color: '#64748b', fontFeatureSettings: '"tnum"' }}>
+                    <TableCell sx={{ fontSize: '0.8125rem', color: 'text.disabled', fontFeatureSettings: '"tnum"' }}>
                       {formatDate(eq.commissionDate)}
                     </TableCell>
                   )}
 
                   {visibleColumns.includes('updatedAt') && (
-                    <TableCell sx={{ fontSize: '0.8125rem', color: '#64748b', fontFeatureSettings: '"tnum"' }}>
+                    <TableCell sx={{ fontSize: '0.8125rem', color: 'text.disabled', fontFeatureSettings: '"tnum"' }}>
                       {formatDate(eq.updatedAt)}
                     </TableCell>
                   )}
 
                   {visibleColumns.includes('createdAt') && (
-                    <TableCell sx={{ fontSize: '0.8125rem', color: '#64748b', fontFeatureSettings: '"tnum"' }}>
+                    <TableCell sx={{ fontSize: '0.8125rem', color: 'text.disabled', fontFeatureSettings: '"tnum"' }}>
                       {formatDate(eq.createdAt)}
                     </TableCell>
                   )}

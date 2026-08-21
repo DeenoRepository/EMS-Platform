@@ -395,8 +395,8 @@ export default function MroExecutionWizardDialog({
                         p: 2,
                         borderRadius: '8px',
                         border: '1px solid',
-                        borderColor: isChecked ? '#86efac' : '#e2e8f0',
-                        bgcolor: isChecked ? 'rgba(240, 253, 244, 0.5)' : '#ffffff',
+                        borderColor: isChecked ? '#86efac' : 'divider',
+                        bgcolor: isChecked ? 'rgba(240, 253, 244, 0.5)' : 'background.paper',
                         transition: 'all 0.15s ease',
                       }}
                     >
@@ -524,7 +524,7 @@ export default function MroExecutionWizardDialog({
               ) : (
                 <Paper elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
                   <Table size="small">
-                    <TableHead sx={{ bgcolor: '#f8fafc' }}>
+                    <TableHead sx={{ bgcolor: 'background.default' }}>
                       <TableRow>
                         <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Запчасть / Материал</TableCell>
                         <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Артикул</TableCell>
@@ -539,7 +539,7 @@ export default function MroExecutionWizardDialog({
                           <TableCell sx={{ py: 1, fontWeight: 600, fontSize: '0.8125rem' }}>
                             {item.nomenclatureName}
                           </TableCell>
-                          <TableCell sx={{ py: 1, color: '#64748b', fontSize: '0.75rem' }}>
+                          <TableCell sx={{ py: 1, color: 'text.disabled', fontSize: '0.75rem' }}>
                             {item.nomenclatureArticle || '—'}
                           </TableCell>
                           <TableCell sx={{ py: 1, fontSize: '0.75rem' }}>{item.warehouseName}</TableCell>

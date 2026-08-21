@@ -434,7 +434,7 @@ function HistoryListContent() {
         empty={items.length === 0 && !loading}
         emptyState={
           <EmptyState
-            icon={<HistoryOutlinedIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+            icon={<HistoryOutlinedIcon sx={{ fontSize: 36, color: 'text.disabled' }} />}
             title="События аудита не найдены"
             description={
               activeFilterCount > 0
@@ -465,13 +465,13 @@ function HistoryListContent() {
                   }}
                   sx={{
                     minWidth: 160,
-                    backgroundColor: '#ffffff',
+                    backgroundColor: 'background.paper',
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '8px',
                       fontSize: '0.8125rem',
                       height: 36,
-                      '& fieldset': { borderColor: '#e2e8f0' },
-                      '&:hover fieldset': { borderColor: '#cbd5e1' },
+                      '& fieldset': { borderColor: 'divider' },
+                      '&:hover fieldset': { borderColor: 'grey.400' },
                     },
                   }}
                 >
@@ -496,13 +496,13 @@ function HistoryListContent() {
                   }}
                   sx={{
                     minWidth: 200,
-                    backgroundColor: '#ffffff',
+                    backgroundColor: 'background.paper',
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '8px',
                       fontSize: '0.8125rem',
                       height: 36,
-                      '& fieldset': { borderColor: '#e2e8f0' },
-                      '&:hover fieldset': { borderColor: '#cbd5e1' },
+                      '& fieldset': { borderColor: 'divider' },
+                      '&:hover fieldset': { borderColor: 'grey.400' },
                     },
                   }}
                 >
@@ -555,7 +555,7 @@ function HistoryListContent() {
       >
         <Table size="small">
           <TableHead>
-            <TableRow sx={{ backgroundColor: '#ffffff' }}>
+            <TableRow sx={{ backgroundColor: 'background.paper' }}>
               {visibleColumns.includes('createdAt') && (
                 <TableCell sx={{ minWidth: 160 }}>
                   <TableSortLabel
@@ -626,7 +626,7 @@ function HistoryListContent() {
               return (
                 <TableRow key={log.id} hover>
                   {visibleColumns.includes('createdAt') && (
-                    <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace', whiteSpace: 'nowrap', color: '#64748b' }}>
+                    <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace', whiteSpace: 'nowrap', color: 'text.disabled' }}>
                       {formatDateTime(log.createdAt)}
                     </TableCell>
                   )}
@@ -635,7 +635,7 @@ function HistoryListContent() {
                     <TableCell>
                       {log.user ? (
                         <Box>
-                          <Typography variant="body2" fontWeight={600} fontSize="0.8125rem" sx={{ color: '#0f172a' }}>
+                          <Typography variant="body2" fontWeight={600} fontSize="0.8125rem" sx={{ color: 'text.primary' }}>
                             {log.user.displayName}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
@@ -680,7 +680,7 @@ function HistoryListContent() {
                             className="equipment-name"
                             variant="body2"
                             fontWeight={600}
-                            sx={{ fontSize: '0.8125rem', color: '#0f172a', lineHeight: 1.35 }}
+                            sx={{ fontSize: '0.8125rem', color: 'text.primary', lineHeight: 1.35 }}
                           >
                             {eq.name}
                           </Typography>
@@ -691,11 +691,11 @@ function HistoryListContent() {
                               py: 0.1,
                               fontFamily: 'monospace',
                               fontWeight: 700,
-                              bgcolor: '#f8fafc',
+                              bgcolor: 'background.default',
                               fontSize: '0.6875rem',
                               borderRadius: '4px',
-                              color: '#475569',
-                              borderColor: '#cbd5e1',
+                              color: 'text.secondary',
+                              borderColor: 'grey.400',
                               lineHeight: 1.3,
                             }}
                           >

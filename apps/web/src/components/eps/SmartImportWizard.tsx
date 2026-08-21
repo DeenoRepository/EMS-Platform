@@ -394,7 +394,7 @@ export function SmartImportWizard() {
 
                     return (
                       <Grid item xs={12} key={mf.header}>
-                        <Paper variant="outlined" sx={{ p: 2.5, backgroundColor: res.action === 'CREATE' ? '#f0fdf4' : '#f8fafc', borderRadius: '8px' }}>
+                        <Paper variant="outlined" sx={{ p: 2.5, backgroundColor: res.action === 'CREATE' ? 'success.light' : 'background.default', borderRadius: '8px' }}>
                           <Grid container spacing={2} alignItems="center">
                             <Grid item xs={12} md={3}>
                               <Typography variant="subtitle2" fontWeight={700} color="primary.main">
@@ -564,7 +564,7 @@ export function SmartImportWizard() {
                       cursor: 'pointer',
                       borderRadius: '8px',
                       border: conflictStrategy === 'UPSERT' ? '2px solid #0284c7' : '1px solid #e2e8f0',
-                      backgroundColor: conflictStrategy === 'UPSERT' ? 'rgba(2, 132, 199, 0.04)' : '#ffffff',
+                      backgroundColor: conflictStrategy === 'UPSERT' ? 'rgba(2, 132, 199, 0.04)' : 'background.paper',
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
@@ -588,7 +588,7 @@ export function SmartImportWizard() {
                       cursor: 'pointer',
                       borderRadius: '8px',
                       border: conflictStrategy === 'SKIP' ? '2px solid #0284c7' : '1px solid #e2e8f0',
-                      backgroundColor: conflictStrategy === 'SKIP' ? 'rgba(2, 132, 199, 0.04)' : '#ffffff',
+                      backgroundColor: conflictStrategy === 'SKIP' ? 'rgba(2, 132, 199, 0.04)' : 'background.paper',
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
@@ -723,7 +723,7 @@ export function SmartImportWizard() {
 
             <Grid container spacing={3} sx={{ mt: 3, mb: 4, maxWidth: 900, mx: 'auto' }}>
               <Grid item xs={12} sm={3}>
-                <Paper variant="outlined" sx={{ p: 2.5, backgroundColor: '#f0fdf4', borderColor: '#86efac', borderRadius: '8px' }}>
+                <Paper variant="outlined" sx={{ p: 2.5, backgroundColor: 'success.light', borderColor: '#86efac', borderRadius: '8px' }}>
                   <Typography variant="caption" color="success.main" fontWeight={700} display="block">
                     СОЗДАНО НОВЫХ
                   </Typography>
@@ -745,7 +745,7 @@ export function SmartImportWizard() {
               </Grid>
 
               <Grid item xs={12} sm={3}>
-                <Paper variant="outlined" sx={{ p: 2.5, backgroundColor: '#f8fafc', borderColor: '#cbd5e1', borderRadius: '8px' }}>
+                <Paper variant="outlined" sx={{ p: 2.5, backgroundColor: 'background.default', borderColor: 'grey.400', borderRadius: '8px' }}>
                   <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">
                     ПРОПУЩЕНО
                   </Typography>

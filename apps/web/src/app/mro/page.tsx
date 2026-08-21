@@ -330,7 +330,7 @@ export default function MroOverviewPage() {
                 schedules.length === 0 ? (
                   <EmptyState
                     paper
-                    icon={<CalendarMonthIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+                    icon={<CalendarMonthIcon sx={{ fontSize: 36, color: 'text.disabled' }} />}
                     title="В графике пока нет запланированных работ"
                     description="Вы можете запланировать наряд на техническое обслуживание для единицы оборудования."
                     actionText={hasPermission(PERMISSIONS.MRO_SCHEDULE_MANAGE) ? "Запланировать ТО" : undefined}
@@ -409,7 +409,7 @@ export default function MroOverviewPage() {
                 plans.length === 0 ? (
                   <EmptyState
                     paper
-                    icon={<AssignmentIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+                    icon={<AssignmentIcon sx={{ fontSize: 36, color: 'text.disabled' }} />}
                     title="Регламентные планы еще не созданы"
                     description="Создайте периодический регламентный план обслуживания с привязкой чек-листа."
                     actionText={hasPermission(PERMISSIONS.MRO_SCHEDULE_MANAGE) ? "Новый план ТО" : undefined}
@@ -466,7 +466,7 @@ export default function MroOverviewPage() {
                 checklists.length === 0 ? (
                   <EmptyState
                     paper
-                    icon={<ChecklistRtlIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+                    icon={<ChecklistRtlIcon sx={{ fontSize: 36, color: 'text.disabled' }} />}
                     title="Шаблоны чек-листов отсутствуют"
                     description="Создайте структурированные опросные листы и регламенты проверки узлов оборудования."
                     actionText={hasPermission(PERMISSIONS.MRO_SCHEDULE_MANAGE) ? "Новый чек-лист" : undefined}

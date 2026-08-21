@@ -536,9 +536,9 @@ function WmsStockContent() {
                   fontWeight: 600,
                   borderRadius: '8px',
                   textTransform: 'none',
-                  borderColor: '#cbd5e1',
-                  color: '#334155',
-                  '&:hover': { borderColor: '#94a3b8', bgcolor: '#f8fafc' },
+                  borderColor: 'grey.400',
+                  color: 'text.secondary',
+                  '&:hover': { borderColor: 'text.disabled', bgcolor: 'background.default' },
                 }}
               >
                 Новая номенклатура
@@ -559,8 +559,8 @@ function WmsStockContent() {
                   fontWeight: 600,
                   borderRadius: '8px',
                   textTransform: 'none',
-                  bgcolor: '#0284c7',
-                  '&:hover': { bgcolor: '#0369a1' },
+                  bgcolor: 'primary.main',
+                  '&:hover': { bgcolor: 'primary.dark' },
                 }}
               >
                 Мастер операций
@@ -592,7 +592,7 @@ function WmsStockContent() {
         empty={items.length === 0 && !isLoading}
         emptyState={
           <EmptyState
-            icon={<Inventory2OutlinedIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+            icon={<Inventory2OutlinedIcon sx={{ fontSize: 36, color: 'text.disabled' }} />}
             title="Позиции ТМЦ не найдены"
             description={
               activeFilterCount > 0
@@ -636,13 +636,13 @@ function WmsStockContent() {
                     }}
                     sx={{
                       minWidth: 140,
-                      backgroundColor: '#ffffff',
+                      backgroundColor: 'background.paper',
                       '& .MuiOutlinedInput-root': {
                         borderRadius: '8px',
                         fontSize: '0.8125rem',
                         height: 36,
-                        '& fieldset': { borderColor: '#e2e8f0' },
-                        '&:hover fieldset': { borderColor: '#cbd5e1' },
+                        '& fieldset': { borderColor: 'divider' },
+                        '&:hover fieldset': { borderColor: 'grey.400' },
                       },
                     }}
                   >
@@ -668,13 +668,13 @@ function WmsStockContent() {
                   }}
                   sx={{
                     minWidth: 160,
-                    backgroundColor: '#ffffff',
+                    backgroundColor: 'background.paper',
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '8px',
                       fontSize: '0.8125rem',
                       height: 36,
-                      '& fieldset': { borderColor: '#e2e8f0' },
-                      '&:hover fieldset': { borderColor: '#cbd5e1' },
+                      '& fieldset': { borderColor: 'divider' },
+                      '&:hover fieldset': { borderColor: 'grey.400' },
                     },
                   }}
                 >
@@ -728,7 +728,7 @@ function WmsStockContent() {
       >
         <Table size="small" aria-label="Реестр остатков складов и ТМЦ">
           <TableHead>
-            <TableRow sx={{ backgroundColor: '#ffffff' }}>
+            <TableRow sx={{ backgroundColor: 'background.paper' }}>
               <TableCell padding="checkbox" sx={{ width: 44, pl: 2 }}>
                 <Checkbox
                   size="small"
@@ -745,7 +745,7 @@ function WmsStockContent() {
               </TableCell>
 
               {visibleColumns.includes('warehouse') && (
-                <TableCell sx={{ width: 140, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ width: 140, fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
                   <TableSortLabel
                     active={sortField === 'warehouse'}
                     direction={sortField === 'warehouse' ? sortDirection : 'asc'}
@@ -757,7 +757,7 @@ function WmsStockContent() {
               )}
 
               {visibleColumns.includes('zone') && (
-                <TableCell sx={{ width: 160, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ width: 160, fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
                   <TableSortLabel
                     active={sortField === 'zone'}
                     direction={sortField === 'zone' ? sortDirection : 'asc'}
@@ -769,7 +769,7 @@ function WmsStockContent() {
               )}
 
               {visibleColumns.includes('sku') && (
-                <TableCell sx={{ width: 120, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ width: 120, fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
                   <TableSortLabel
                     active={sortField === 'sku'}
                     direction={sortField === 'sku' ? sortDirection : 'asc'}
@@ -781,7 +781,7 @@ function WmsStockContent() {
               )}
 
               {visibleColumns.includes('name') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
                   <TableSortLabel
                     active={sortField === 'name'}
                     direction={sortField === 'name' ? sortDirection : 'asc'}
@@ -793,7 +793,7 @@ function WmsStockContent() {
               )}
 
               {visibleColumns.includes('category') && (
-                <TableCell sx={{ width: 140, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ width: 140, fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
                   <TableSortLabel
                     active={sortField === 'category'}
                     direction={sortField === 'category' ? sortDirection : 'asc'}
@@ -805,7 +805,7 @@ function WmsStockContent() {
               )}
 
               {visibleColumns.includes('quantity') && (
-                <TableCell align="right" sx={{ width: 140, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell align="right" sx={{ width: 140, fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
                   <TableSortLabel
                     active={sortField === 'quantity'}
                     direction={sortField === 'quantity' ? sortDirection : 'asc'}
@@ -817,7 +817,7 @@ function WmsStockContent() {
               )}
 
               {visibleColumns.includes('minQuantity') && (
-                <TableCell align="center" sx={{ width: 110, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell align="center" sx={{ width: 110, fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
                   <TableSortLabel
                     active={sortField === 'minQuantity'}
                     direction={sortField === 'minQuantity' ? sortDirection : 'asc'}
@@ -829,7 +829,7 @@ function WmsStockContent() {
               )}
 
               {visibleColumns.includes('status') && (
-                <TableCell align="center" sx={{ width: 120, fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell align="center" sx={{ width: 120, fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
                   <TableSortLabel
                     active={sortField === 'status'}
                     direction={sortField === 'status' ? sortDirection : 'asc'}
@@ -841,7 +841,7 @@ function WmsStockContent() {
               )}
 
               {visibleColumns.includes('equipment') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
                   СОВМЕСТИМОЕ ОБОРУДОВАНИЕ
                 </TableCell>
               )}
@@ -881,13 +881,13 @@ function WmsStockContent() {
                           fontWeight: 600,
                           borderRadius: '4px',
                           fontSize: '0.6875rem',
-                          backgroundColor: '#ffffff',
-                          color: '#475569',
+                          backgroundColor: 'background.paper',
+                          color: 'text.secondary',
                           border: '1px solid #e2e8f0',
                           height: 20,
                         }}
                       />
-                      <Typography variant="caption" sx={{ display: 'block', mt: 0.25, color: '#64748b', fontSize: '0.75rem' }}>
+                      <Typography variant="caption" sx={{ display: 'block', mt: 0.25, color: 'text.disabled', fontSize: '0.75rem' }}>
                         {row.warehouseName}
                       </Typography>
                     </TableCell>
@@ -922,8 +922,8 @@ function WmsStockContent() {
                                     fontWeight: 600,
                                     borderRadius: '4px',
                                     fontSize: '0.75rem',
-                                    backgroundColor: canEdit ? '#f0f9ff' : '#f8fafc',
-                                    color: canEdit ? '#0284c7' : '#64748b',
+                                    backgroundColor: canEdit ? '#f0f9ff' : 'background.default',
+                                    color: canEdit ? 'primary.main' : 'text.disabled',
                                     border: canEdit ? '1px solid #bae6fd' : '1px solid #e2e8f0',
                                     cursor: canEdit ? 'pointer' : 'default',
                                     opacity: canEdit ? 1 : 0.85,
@@ -939,12 +939,12 @@ function WmsStockContent() {
                             <Button
                               size="small"
                               variant="text"
-                              startIcon={<PlaceOutlinedIcon sx={{ fontSize: 13, color: '#0284c7' }} />}
+                              startIcon={<PlaceOutlinedIcon sx={{ fontSize: 13, color: 'primary.main' }} />}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleOpenLocationModal(row);
                               }}
-                              sx={{ fontSize: '0.75rem', py: 0.2, fontWeight: 600, color: '#0284c7' }}
+                              sx={{ fontSize: '0.75rem', py: 0.2, fontWeight: 600, color: 'primary.main' }}
                             >
                               + Ячейка
                             </Button>
@@ -953,7 +953,7 @@ function WmsStockContent() {
 
                         return (
                           <Tooltip title="Чужой склад: назначение ячейки разрешено только назначенному МОЛ склада или администратору">
-                            <Typography variant="caption" sx={{ color: '#94a3b8', fontStyle: 'italic', cursor: 'default' }}>
+                            <Typography variant="caption" sx={{ color: 'text.disabled', fontStyle: 'italic', cursor: 'default' }}>
                               —
                             </Typography>
                           </Tooltip>
@@ -963,7 +963,7 @@ function WmsStockContent() {
                   )}
 
                   {visibleColumns.includes('sku') && (
-                    <TableCell sx={{ fontFamily: 'monospace', fontWeight: 500, fontSize: '0.8125rem', color: '#475569' }}>
+                    <TableCell sx={{ fontFamily: 'monospace', fontWeight: 500, fontSize: '0.8125rem', color: 'text.secondary' }}>
                       {row.article || '—'}
                     </TableCell>
                   )}
@@ -974,7 +974,7 @@ function WmsStockContent() {
                       sx={{
                         fontWeight: 600,
                         fontSize: '0.8125rem',
-                        color: '#0284c7',
+                        color: 'primary.main',
                         cursor: 'pointer',
                         '&:hover': { textDecoration: 'underline' },
                       }}
@@ -985,7 +985,7 @@ function WmsStockContent() {
 
 
                   {visibleColumns.includes('category') && (
-                    <TableCell sx={{ fontSize: '0.8125rem', color: '#334155' }}>
+                    <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
                       {row.category}
                     </TableCell>
                   )}
@@ -998,7 +998,7 @@ function WmsStockContent() {
                         sx={{
                           fontFeatureSettings: '"tnum"',
                           fontSize: '0.8125rem',
-                          color: row.isLowStock ? '#dc2626' : '#0f172a',
+                          color: row.isLowStock ? 'error.main' : 'text.primary',
                         }}
                       >
                         {row.quantity} {row.unit}
@@ -1008,7 +1008,7 @@ function WmsStockContent() {
 
                   {visibleColumns.includes('minQuantity') && (
                     <TableCell align="center">
-                      <Typography variant="body2" sx={{ fontFeatureSettings: '"tnum"', fontSize: '0.8125rem', color: '#64748b' }}>
+                      <Typography variant="body2" sx={{ fontFeatureSettings: '"tnum"', fontSize: '0.8125rem', color: 'text.disabled' }}>
                         {row.minStock} {row.minStock !== '—' ? row.unit : ''}
                       </Typography>
                     </TableCell>
@@ -1039,9 +1039,9 @@ function WmsStockContent() {
                                   fontSize: '0.6875rem',
                                   height: 22,
                                   borderRadius: '4px',
-                                  backgroundColor: '#ffffff',
+                                  backgroundColor: 'background.paper',
                                   border: '1px solid #e2e8f0',
-                                  color: '#475569',
+                                  color: 'text.secondary',
                                   fontWeight: 500,
                                 }}
                               />
@@ -1055,15 +1055,15 @@ function WmsStockContent() {
                                 fontSize: '0.6875rem',
                                 height: 22,
                                 borderRadius: '4px',
-                                backgroundColor: '#f1f5f9',
-                                color: '#64748b',
+                                backgroundColor: 'grey.100',
+                                color: 'text.disabled',
                                 fontWeight: 600,
                               }}
                             />
                           )}
                         </Stack>
                       ) : (
-                        <Typography variant="caption" sx={{ color: '#94a3b8' }}>—</Typography>
+                        <Typography variant="caption" sx={{ color: 'text.disabled' }}>—</Typography>
                       )}
                     </TableCell>
                   )}

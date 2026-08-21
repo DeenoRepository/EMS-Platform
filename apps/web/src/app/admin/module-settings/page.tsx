@@ -624,8 +624,8 @@ function ModuleSettingsContent() {
           justifyContent: 'space-between',
           flexWrap: 'wrap',
           gap: 2,
-          backgroundColor: currentModuleEnabled ? '#f8fafc' : '#fffbeb',
-          borderColor: currentModuleEnabled ? '#e2e8f0' : '#fde68a',
+          backgroundColor: currentModuleEnabled ? 'background.default' : '#fffbeb',
+          borderColor: currentModuleEnabled ? 'divider' : '#fde68a',
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -728,7 +728,7 @@ function ModuleSettingsContent() {
                         <AccordionSummary
                           expandIcon={<ExpandMoreIcon />}
                           sx={{
-                            backgroundColor: '#f8fafc',
+                            backgroundColor: 'background.default',
                             borderBottom: '1px solid #e2e8f0',
                             px: 2.5,
                           }}

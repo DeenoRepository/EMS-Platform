@@ -615,7 +615,7 @@ export default function SrmOverviewPage() {
               {issues.length === 0 ? (
                 <EmptyState
                   paper
-                  icon={<ListAltIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+                  icon={<ListAltIcon sx={{ fontSize: 36, color: 'text.disabled' }} />}
                   title="Заявки не найдены"
                   description="Заявки из внешних систем управления еще не синхронизированы. Нажмите «Синхронизировать все системы» для загрузки инцидентов."
                   actionText="Синхронизировать сейчас"

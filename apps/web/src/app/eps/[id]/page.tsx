@@ -611,18 +611,18 @@ export default function EquipmentPassportPage() {
       >
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <Box>
-            <Typography variant="h5" fontWeight={800} sx={{ textTransform: 'uppercase', letterSpacing: '0.02em', color: '#0f172a' }}>
+            <Typography variant="h5" fontWeight={800} sx={{ textTransform: 'uppercase', letterSpacing: '0.02em', color: 'text.primary' }}>
               Электронный паспорт оборудования
             </Typography>
-            <Typography variant="body2" sx={{ color: '#475569', mt: 0.25 }}>
+            <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.25 }}>
               Корпоративная система управления оборудованием и основными фондами (EMS Platform)
             </Typography>
           </Box>
           <Box sx={{ textAlign: 'right' }}>
-            <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
+            <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block' }}>
               Дата выгрузки паспорта:
             </Typography>
-            <Typography variant="body2" fontWeight={700} sx={{ color: '#0f172a' }}>
+            <Typography variant="body2" fontWeight={700} sx={{ color: 'text.primary' }}>
               {new Date().toLocaleDateString('ru-RU')}
             </Typography>
           </Box>
@@ -652,9 +652,9 @@ export default function EquipmentPassportPage() {
                   textTransform: 'none',
                   px: 2.25,
                   boxSizing: 'border-box',
-                  backgroundColor: '#0284c7',
+                  backgroundColor: 'primary.main',
                   '&:hover': {
-                    backgroundColor: '#0369a1',
+                    backgroundColor: 'primary.dark',
                   },
                 }}
               >
@@ -764,10 +764,10 @@ export default function EquipmentPassportPage() {
             }
             iconBgColor={
               actualWear !== null && actualWear > 70
-                ? '#fee2e2'
+                ? 'error.light'
                 : actualWear !== null && actualWear > 30
-                ? '#fef3c7'
-                : '#dcfce7'
+                ? 'warning.light'
+                : 'success.light'
             }
           />
         </Grid>
@@ -790,7 +790,7 @@ export default function EquipmentPassportPage() {
             icon={<CategoryIcon sx={{ fontSize: 24 }} />}
             accentColor={criticality === 'A' ? '#ef4444' : criticality === 'B' ? '#f59e0b' : '#0ea5e9'}
             iconColor={criticality === 'A' ? '#ef4444' : criticality === 'B' ? '#f59e0b' : '#0ea5e9'}
-            iconBgColor={criticality === 'A' ? '#fee2e2' : criticality === 'B' ? '#fef3c7' : '#e0f2fe'}
+            iconBgColor={criticality === 'A' ? 'error.light' : criticality === 'B' ? 'warning.light' : '#e0f2fe'}
           />
         </Grid>
       </Grid>
@@ -837,11 +837,11 @@ export default function EquipmentPassportPage() {
                                     py: 0.2,
                                     fontFamily: 'monospace',
                                     fontWeight: 700,
-                                    bgcolor: '#f8fafc',
+                                    bgcolor: 'background.default',
                                     fontSize: '0.8125rem',
                                     borderRadius: '5px',
-                                    color: '#0f172a',
-                                    borderColor: '#cbd5e1',
+                                    color: 'text.primary',
+                                    borderColor: 'grey.400',
                                     lineHeight: 1.4,
                                   }}
                                 >
@@ -850,7 +850,7 @@ export default function EquipmentPassportPage() {
                                 <Tooltip title="Скопировать инвентарный номер">
                                   <IconButton
                                     size="small"
-                                    sx={{ p: 0.5, color: '#64748b', '&:hover': { color: '#0284c7' } }}
+                                    sx={{ p: 0.5, color: 'text.disabled', '&:hover': { color: 'primary.main' } }}
                                     onClick={() => handleCopy(equipment.inventoryNumber || '', 'Инвентарный номер')}
                                   >
                                     <ContentCopyIcon sx={{ fontSize: 15 }} />
@@ -876,11 +876,11 @@ export default function EquipmentPassportPage() {
                                     py: 0.2,
                                     fontFamily: 'monospace',
                                     fontWeight: 700,
-                                    bgcolor: '#f8fafc',
+                                    bgcolor: 'background.default',
                                     fontSize: '0.8125rem',
                                     borderRadius: '5px',
-                                    color: '#0f172a',
-                                    borderColor: '#cbd5e1',
+                                    color: 'text.primary',
+                                    borderColor: 'grey.400',
                                     lineHeight: 1.4,
                                   }}
                                 >
@@ -889,7 +889,7 @@ export default function EquipmentPassportPage() {
                                 <Tooltip title="Скопировать серийный номер">
                                   <IconButton
                                     size="small"
-                                    sx={{ p: 0.5, color: '#64748b', '&:hover': { color: '#0284c7' } }}
+                                    sx={{ p: 0.5, color: 'text.disabled', '&:hover': { color: 'primary.main' } }}
                                     onClick={() => handleCopy(equipment.serialNumber || '', 'Серийный номер')}
                                   >
                                     <ContentCopyIcon sx={{ fontSize: 15 }} />
@@ -1111,18 +1111,18 @@ export default function EquipmentPassportPage() {
                                     py: 0.2,
                                     fontFamily: 'monospace',
                                     fontWeight: 700,
-                                    bgcolor: '#f8fafc',
+                                    bgcolor: 'background.default',
                                     fontSize: '0.8125rem',
                                     borderRadius: '5px',
-                                    color: '#0f172a',
-                                    borderColor: '#cbd5e1',
+                                    color: 'text.primary',
+                                    borderColor: 'grey.400',
                                     lineHeight: 1.4,
                                   }}
                                 >
                                   {okofCode}
                                 </Paper>
                                 <Tooltip title="Скопировать код ОКОФ">
-                                  <IconButton size="small" sx={{ p: 0.5, color: '#64748b', '&:hover': { color: '#0284c7' } }} onClick={() => handleCopy(okofCode, 'Код ОКОФ')}>
+                                  <IconButton size="small" sx={{ p: 0.5, color: 'text.disabled', '&:hover': { color: 'primary.main' } }} onClick={() => handleCopy(okofCode, 'Код ОКОФ')}>
                                     <ContentCopyIcon sx={{ fontSize: 15 }} />
                                   </IconButton>
                                 </Tooltip>
@@ -1146,18 +1146,18 @@ export default function EquipmentPassportPage() {
                                     py: 0.2,
                                     fontFamily: 'monospace',
                                     fontWeight: 700,
-                                    bgcolor: '#f8fafc',
+                                    bgcolor: 'background.default',
                                     fontSize: '0.8125rem',
                                     borderRadius: '5px',
-                                    color: '#0f172a',
-                                    borderColor: '#cbd5e1',
+                                    color: 'text.primary',
+                                    borderColor: 'grey.400',
                                     lineHeight: 1.4,
                                   }}
                                 >
                                   {okpd2Code}
                                 </Paper>
                                 <Tooltip title="Скопировать код ОКПД2">
-                                  <IconButton size="small" sx={{ p: 0.5, color: '#64748b', '&:hover': { color: '#0284c7' } }} onClick={() => handleCopy(okpd2Code, 'Код ОКПД2')}>
+                                  <IconButton size="small" sx={{ p: 0.5, color: 'text.disabled', '&:hover': { color: 'primary.main' } }} onClick={() => handleCopy(okpd2Code, 'Код ОКПД2')}>
                                     <ContentCopyIcon sx={{ fontSize: 15 }} />
                                   </IconButton>
                                 </Tooltip>
@@ -1181,18 +1181,18 @@ export default function EquipmentPassportPage() {
                                     py: 0.2,
                                     fontFamily: 'monospace',
                                     fontWeight: 700,
-                                    bgcolor: '#f8fafc',
+                                    bgcolor: 'background.default',
                                     fontSize: '0.8125rem',
                                     borderRadius: '5px',
-                                    color: '#0f172a',
-                                    borderColor: '#cbd5e1',
+                                    color: 'text.primary',
+                                    borderColor: 'grey.400',
                                     lineHeight: 1.4,
                                   }}
                                 >
                                   {procCode}
                                 </Paper>
                                 <Tooltip title="Скопировать код классификатора">
-                                  <IconButton size="small" sx={{ p: 0.5, color: '#64748b', '&:hover': { color: '#0284c7' } }} onClick={() => handleCopy(procCode, 'Технологический классификатор')}>
+                                  <IconButton size="small" sx={{ p: 0.5, color: 'text.disabled', '&:hover': { color: 'primary.main' } }} onClick={() => handleCopy(procCode, 'Технологический классификатор')}>
                                     <ContentCopyIcon sx={{ fontSize: 15 }} />
                                   </IconButton>
                                 </Tooltip>
@@ -1465,9 +1465,9 @@ export default function EquipmentPassportPage() {
                   textTransform: 'none',
                   px: 2.25,
                   boxSizing: 'border-box',
-                  backgroundColor: '#0284c7',
+                  backgroundColor: 'primary.main',
                   '&:hover': {
-                    backgroundColor: '#0369a1',
+                    backgroundColor: 'primary.dark',
                   },
                 }}
               >
@@ -1874,7 +1874,7 @@ export default function EquipmentPassportPage() {
                               component="pre"
                               sx={{
                                 p: 1,
-                                backgroundColor: '#f8fafc',
+                                backgroundColor: 'background.default',
                                 borderRadius: 1,
                                 fontSize: '0.75rem',
                                 m: 0,

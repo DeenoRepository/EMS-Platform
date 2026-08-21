@@ -294,7 +294,7 @@ export default function AdminRolesPage() {
       {roles.length === 0 && !loading ? (
         <EmptyState
           paper
-          icon={<SecurityIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+          icon={<SecurityIcon sx={{ fontSize: 36, color: 'text.disabled' }} />}
           title="Роли не найдены"
           description="В системе пока нет зарегистрированных ролей доступа."
           actionText="Создать роль"

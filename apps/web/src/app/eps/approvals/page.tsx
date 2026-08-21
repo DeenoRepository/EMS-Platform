@@ -548,7 +548,7 @@ function ApprovalsListContent() {
         empty={items.length === 0 && !loading}
         emptyState={
           <EmptyState
-            icon={<FactCheckOutlinedIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+            icon={<FactCheckOutlinedIcon sx={{ fontSize: 36, color: 'text.disabled' }} />}
             title="Заявки на согласование не найдены"
             description={
               activeFilterCount > 0
@@ -579,13 +579,13 @@ function ApprovalsListContent() {
                   }}
                   sx={{
                     minWidth: 170,
-                    backgroundColor: '#ffffff',
+                    backgroundColor: 'background.paper',
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '8px',
                       fontSize: '0.8125rem',
                       height: 36,
-                      '& fieldset': { borderColor: '#e2e8f0' },
-                      '&:hover fieldset': { borderColor: '#cbd5e1' },
+                      '& fieldset': { borderColor: 'divider' },
+                      '&:hover fieldset': { borderColor: 'grey.400' },
                     },
                   }}
                 >
@@ -610,13 +610,13 @@ function ApprovalsListContent() {
                   }}
                   sx={{
                     minWidth: 150,
-                    backgroundColor: '#ffffff',
+                    backgroundColor: 'background.paper',
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '8px',
                       fontSize: '0.8125rem',
                       height: 36,
-                      '& fieldset': { borderColor: '#e2e8f0' },
-                      '&:hover fieldset': { borderColor: '#cbd5e1' },
+                      '& fieldset': { borderColor: 'divider' },
+                      '&:hover fieldset': { borderColor: 'grey.400' },
                     },
                   }}
                 >
@@ -641,13 +641,13 @@ function ApprovalsListContent() {
                   }}
                   sx={{
                     minWidth: 200,
-                    backgroundColor: '#ffffff',
+                    backgroundColor: 'background.paper',
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '8px',
                       fontSize: '0.8125rem',
                       height: 36,
-                      '& fieldset': { borderColor: '#e2e8f0' },
-                      '&:hover fieldset': { borderColor: '#cbd5e1' },
+                      '& fieldset': { borderColor: 'divider' },
+                      '&:hover fieldset': { borderColor: 'grey.400' },
                     },
                   }}
                 >
@@ -676,7 +676,7 @@ function ApprovalsListContent() {
       >
         <Table size="small">
           <TableHead>
-            <TableRow sx={{ backgroundColor: '#ffffff' }}>
+            <TableRow sx={{ backgroundColor: 'background.paper' }}>
               {visibleColumns.includes('title') && (
                 <TableCell sx={{ minWidth: 200 }}>
                   <TableSortLabel
@@ -825,11 +825,11 @@ function ApprovalsListContent() {
                             py: 0.2,
                             fontFamily: 'monospace',
                             fontWeight: 700,
-                            bgcolor: '#f8fafc',
+                            bgcolor: 'background.default',
                             fontSize: '0.75rem',
                             borderRadius: '4px',
-                            color: '#334155',
-                            borderColor: '#cbd5e1',
+                            color: 'text.secondary',
+                            borderColor: 'grey.400',
                             lineHeight: 1.3,
                           }}
                         >
@@ -864,7 +864,7 @@ function ApprovalsListContent() {
                             className="equipment-name"
                             variant="body2"
                             fontWeight={600}
-                            sx={{ fontSize: '0.8125rem', color: '#0f172a', lineHeight: 1.35 }}
+                            sx={{ fontSize: '0.8125rem', color: 'text.primary', lineHeight: 1.35 }}
                           >
                             {app.equipment.name}
                           </Typography>
@@ -878,7 +878,7 @@ function ApprovalsListContent() {
                   )}
 
                   {visibleColumns.includes('manufacturer') && (
-                    <TableCell sx={{ fontSize: '0.8125rem', color: '#475569' }}>
+                    <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
                       {app.equipment?.manufacturer || '—'}
                     </TableCell>
                   )}
@@ -902,7 +902,7 @@ function ApprovalsListContent() {
                   )}
 
                   {visibleColumns.includes('date') && (
-                    <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace', color: '#64748b' }}>
+                    <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace', color: 'text.disabled' }}>
                       {formatDateTime(app.createdAt)}
                     </TableCell>
                   )}
@@ -911,7 +911,7 @@ function ApprovalsListContent() {
                     <TableCell sx={{ fontSize: '0.8125rem' }}>
                       {app.reviewer ? (
                         <Box>
-                          <Typography variant="caption" fontWeight={600} display="block" sx={{ color: '#0f172a' }}>
+                          <Typography variant="caption" fontWeight={600} display="block" sx={{ color: 'text.primary' }}>
                             {app.reviewer.displayName}
                           </Typography>
                           <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
@@ -992,7 +992,7 @@ function ApprovalsListContent() {
       >
         {selectedApprovalForReview && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-            <Paper variant="outlined" sx={{ p: 2, backgroundColor: '#f8fafc' }}>
+            <Paper variant="outlined" sx={{ p: 2, backgroundColor: 'background.default' }}>
               <Typography variant="caption" color="text.secondary" display="block">
                 Оборудование:
               </Typography>
@@ -1128,7 +1128,7 @@ function ApprovalsListContent() {
               {selectedApprovalForDetails.title}
             </Typography>
 
-            <Paper variant="outlined" sx={{ p: 2, backgroundColor: '#f8fafc' }}>
+            <Paper variant="outlined" sx={{ p: 2, backgroundColor: 'background.default' }}>
               <Typography variant="caption" color="text.secondary" display="block">
                 Оборудование:
               </Typography>

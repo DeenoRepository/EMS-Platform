@@ -104,7 +104,7 @@ function DeficitItem({
           sx={{
             fontWeight: 600,
             fontSize: '0.8125rem',
-            color: '#0f172a',
+            color: 'text.primary',
             flex: 1,
             mr: 1,
           }}
@@ -119,8 +119,8 @@ function DeficitItem({
             fontSize: '0.625rem',
             fontWeight: 600,
             borderRadius: '4px',
-            bgcolor: '#f1f5f9',
-            color: '#475569',
+            bgcolor: 'grey.100',
+            color: 'text.secondary',
           }}
         />
       </Box>
@@ -131,7 +131,7 @@ function DeficitItem({
             flex: 1,
             height: 4,
             borderRadius: 2,
-            bgcolor: '#f1f5f9',
+            bgcolor: 'grey.100',
             overflow: 'hidden',
           }}
         >
@@ -150,7 +150,7 @@ function DeficitItem({
           sx={{
             fontWeight: 700,
             fontFeatureSettings: '"tnum"',
-            color: isCritical ? '#dc2626' : '#d97706',
+            color: isCritical ? 'error.main' : 'warning.main',
             fontSize: '0.6875rem',
             whiteSpace: 'nowrap',
           }}
@@ -219,9 +219,9 @@ export default function WmsDashboardPage() {
                 fontWeight: 600,
                 borderRadius: '8px',
                 textTransform: 'none',
-                borderColor: '#cbd5e1',
-                color: '#334155',
-                '&:hover': { borderColor: '#94a3b8', bgcolor: '#f8fafc' },
+                borderColor: 'grey.400',
+                color: 'text.secondary',
+                '&:hover': { borderColor: 'text.disabled', bgcolor: 'background.default' },
               }}
             >
               Обновить
@@ -239,8 +239,8 @@ export default function WmsDashboardPage() {
                   fontWeight: 600,
                   borderRadius: '8px',
                   textTransform: 'none',
-                  bgcolor: '#0284c7',
-                  '&:hover': { bgcolor: '#0369a1' },
+                  bgcolor: 'primary.main',
+                  '&:hover': { bgcolor: 'primary.dark' },
                 }}
               >
                 Мастер операций
@@ -305,7 +305,7 @@ export default function WmsDashboardPage() {
             subtitle="Позиций требуют пополнения"
             icon={<WarningAmberOutlinedIcon sx={{ fontSize: 20 }} />}
             iconBgColor={stats && stats.lowStockCount > 0 ? 'rgba(220, 38, 38, 0.1)' : 'rgba(217, 119, 6, 0.08)'}
-            iconColor={stats && stats.lowStockCount > 0 ? '#dc2626' : '#d97706'}
+            iconColor={stats && stats.lowStockCount > 0 ? 'error.main' : 'warning.main'}
             accentColor={stats && stats.lowStockCount > 0 ? '#dc2626' : '#d97706'}
             loading={isLoading && !stats}
             onClick={() => router.push('/wms/stock?lowStockOnly=true')}
@@ -349,13 +349,13 @@ export default function WmsDashboardPage() {
                     sx={{
                       fontWeight: 700,
                       fontSize: '1rem',
-                      color: '#0f172a',
+                      color: 'text.primary',
                       letterSpacing: '-0.015em',
                     }}
                   >
                     Последние складские операции
                   </Typography>
-                  <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '0.75rem' }}>
+                  <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.75rem' }}>
                     Движение ТМЦ за последний период
                   </Typography>
                 </Box>
@@ -368,7 +368,7 @@ export default function WmsDashboardPage() {
                     fontWeight: 600,
                     fontSize: '0.75rem',
                     borderRadius: '6px',
-                    color: '#0284c7',
+                    color: 'primary.main',
                     '&:hover': { bgcolor: 'rgba(2, 132, 199, 0.06)' },
                   }}
                 >
@@ -386,24 +386,24 @@ export default function WmsDashboardPage() {
                 ) : stats && stats.recentOperations.length > 0 ? (
                   <DataTableWrapper total={stats.recentOperations.length}>
                     <Table size="small" aria-label="Таблица последних складских операций">
-                      <TableHead sx={{ bgcolor: '#f8fafc' }}>
+                      <TableHead sx={{ bgcolor: 'background.default' }}>
                         <TableRow>
-                          <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#475569', py: 1 }}>
+                          <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'text.secondary', py: 1 }}>
                             Тип
                           </TableCell>
-                          <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#475569', py: 1 }}>
+                          <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'text.secondary', py: 1 }}>
                             Дата
                           </TableCell>
-                          <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#475569', py: 1 }}>
+                          <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'text.secondary', py: 1 }}>
                             Склад
                           </TableCell>
-                          <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#475569', py: 1 }}>
+                          <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'text.secondary', py: 1 }}>
                             Номенклатура
                           </TableCell>
-                          <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#475569', py: 1 }}>
+                          <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'text.secondary', py: 1 }}>
                             Кол-во
                           </TableCell>
-                          <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#475569', py: 1 }}>
+                          <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'text.secondary', py: 1 }}>
                             Исполнитель
                           </TableCell>
                         </TableRow>
@@ -417,8 +417,8 @@ export default function WmsDashboardPage() {
                               key={op.id}
                               hover
                               sx={{
-                                '&:hover': { bgcolor: '#f8fafc' },
-                                '& td': { py: 1.25, borderColor: '#f1f5f9' },
+                                '&:hover': { bgcolor: 'background.default' },
+                                '& td': { py: 1.25, borderColor: 'grey.100' },
                               }}
                             >
                               <TableCell>
@@ -429,7 +429,7 @@ export default function WmsDashboardPage() {
                                   variant="caption"
                                   sx={{
                                     fontFeatureSettings: '"tnum"',
-                                    color: '#475569',
+                                    color: 'text.secondary',
                                     fontSize: '0.75rem',
                                   }}
                                 >
@@ -445,8 +445,8 @@ export default function WmsDashboardPage() {
                                     fontSize: '0.6875rem',
                                     fontWeight: 600,
                                     borderRadius: '4px',
-                                    bgcolor: '#f1f5f9',
-                                    color: '#334155',
+                                    bgcolor: 'grey.100',
+                                    color: 'text.secondary',
                                   }}
                                 />
                               </TableCell>
@@ -458,7 +458,7 @@ export default function WmsDashboardPage() {
                                     sx={{
                                       fontWeight: 500,
                                       fontSize: '0.8125rem',
-                                      color: '#0f172a',
+                                      color: 'text.primary',
                                       maxWidth: 200,
                                     }}
                                   >
@@ -467,7 +467,7 @@ export default function WmsDashboardPage() {
                                   {otherCount > 0 && (
                                     <Typography
                                       variant="caption"
-                                      sx={{ color: '#64748b', fontSize: '0.6875rem' }}
+                                      sx={{ color: 'text.disabled', fontSize: '0.6875rem' }}
                                     >
                                       и ещё {otherCount} поз.
                                     </Typography>
@@ -477,7 +477,7 @@ export default function WmsDashboardPage() {
                                       variant="caption"
                                       sx={{
                                         display: 'block',
-                                        color: '#0284c7',
+                                        color: 'primary.main',
                                         fontSize: '0.6875rem',
                                         fontWeight: 500,
                                       }}
@@ -494,7 +494,7 @@ export default function WmsDashboardPage() {
                                     fontWeight: 700,
                                     fontSize: '0.8125rem',
                                     fontFeatureSettings: '"tnum"',
-                                    color: '#0f172a',
+                                    color: 'text.primary',
                                   }}
                                 >
                                   {firstItem ? `${firstItem.quantity} ${firstItem.nomenclature.unit}` : '—'}
@@ -505,7 +505,7 @@ export default function WmsDashboardPage() {
                                   variant="caption"
                                   noWrap
                                   sx={{
-                                    color: '#64748b',
+                                    color: 'text.disabled',
                                     fontSize: '0.75rem',
                                     maxWidth: 120,
                                     display: 'block',
@@ -522,7 +522,7 @@ export default function WmsDashboardPage() {
                   </DataTableWrapper>
                 ) : (
                   <EmptyState
-                    icon={<SwapHorizIcon sx={{ fontSize: 32, color: '#94a3b8' }} />}
+                    icon={<SwapHorizIcon sx={{ fontSize: 32, color: 'text.disabled' }} />}
                     title="Операции не проводились"
                     description="В системе пока нет записей о движении ТМЦ"
                     actionText="Оформить операцию"
@@ -554,7 +554,7 @@ export default function WmsDashboardPage() {
                     sx={{
                       fontWeight: 700,
                       fontSize: '0.875rem',
-                      color: '#0f172a',
+                      color: 'text.primary',
                       letterSpacing: '-0.01em',
                     }}
                   >
@@ -569,7 +569,7 @@ export default function WmsDashboardPage() {
                       fontWeight: 600,
                       fontSize: '0.6875rem',
                       borderRadius: '6px',
-                      color: '#0284c7',
+                      color: 'primary.main',
                       px: 1,
                       py: 0.25,
                       minWidth: 'auto',
@@ -601,7 +601,7 @@ export default function WmsDashboardPage() {
                           fontWeight: 600,
                           fontSize: '0.75rem',
                           borderRadius: '8px',
-                          color: '#0284c7',
+                          color: 'primary.main',
                           bgcolor: 'rgba(2, 132, 199, 0.04)',
                           '&:hover': { bgcolor: 'rgba(2, 132, 199, 0.08)' },
                         }}
@@ -612,7 +612,7 @@ export default function WmsDashboardPage() {
                   </Box>
                 ) : (
                   <EmptyState
-                    icon={<Inventory2OutlinedIcon sx={{ fontSize: 28, color: '#16a34a' }} />}
+                    icon={<Inventory2OutlinedIcon sx={{ fontSize: 28, color: 'success.main' }} />}
                     title="Дефицит отсутствует"
                     description="Все позиции в пределах нормативных остатков"
                     minHeight={120}

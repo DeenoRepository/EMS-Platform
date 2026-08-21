@@ -337,8 +337,8 @@ function WmsOperationsContent() {
     if (op.type === 'RECEIPT') {
       return (
         <Stack direction="row" spacing={0.75} alignItems="center">
-          <MoveToInboxIcon sx={{ fontSize: 16, color: '#16a34a' }} />
-          <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: '#15803d', fontWeight: 600 }}>
+          <MoveToInboxIcon sx={{ fontSize: 16, color: 'success.main' }} />
+          <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'success.dark', fontWeight: 600 }}>
             {op.counterparty ? `Поставщик: ${op.counterparty}` : 'Приход ТМЦ на склад'}
           </Typography>
         </Stack>
@@ -348,8 +348,8 @@ function WmsOperationsContent() {
     if (op.type === 'ISSUE_EMPLOYEE') {
       return (
         <Stack direction="row" spacing={0.75} alignItems="center">
-          <PersonIcon sx={{ fontSize: 16, color: '#1d4ed8' }} />
-          <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: '#1d4ed8', fontWeight: 600 }}>
+          <PersonIcon sx={{ fontSize: 16, color: 'info.dark' }} />
+          <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'info.dark', fontWeight: 600 }}>
             {op.counterparty || 'Сотрудник в подотчет'}
           </Typography>
         </Stack>
@@ -361,8 +361,8 @@ function WmsOperationsContent() {
       if (firstItemWithEq && firstItemWithEq.equipment) {
         return (
           <Stack direction="row" spacing={0.75} alignItems="center">
-            <PrecisionManufacturingIcon sx={{ fontSize: 16, color: '#b45309' }} />
-            <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: '#b45309', fontWeight: 600 }}>
+            <PrecisionManufacturingIcon sx={{ fontSize: 16, color: 'warning.dark' }} />
+            <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'warning.dark', fontWeight: 600 }}>
               Оборудование: {firstItemWithEq.equipment.name} ({firstItemWithEq.equipment.inventoryNumber})
             </Typography>
           </Stack>
@@ -370,8 +370,8 @@ function WmsOperationsContent() {
       }
       return (
         <Stack direction="row" spacing={0.75} alignItems="center">
-          <DeleteSweepIcon sx={{ fontSize: 16, color: '#dc2626' }} />
-          <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: '#b91c1c', fontWeight: 600 }}>
+          <DeleteSweepIcon sx={{ fontSize: 16, color: 'error.main' }} />
+          <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'error.dark', fontWeight: 600 }}>
             {op.counterparty || 'Списание в неликвид/брак'}
           </Typography>
         </Stack>
@@ -390,7 +390,7 @@ function WmsOperationsContent() {
     }
 
     return (
-      <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: '#475569' }}>
+      <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
         {op.counterparty || '—'}
       </Typography>
     );
@@ -419,9 +419,9 @@ function WmsOperationsContent() {
                 fontWeight: 600,
                 borderRadius: '8px',
                 textTransform: 'none',
-                borderColor: '#cbd5e1',
-                color: '#334155',
-                '&:hover': { borderColor: '#94a3b8', bgcolor: '#f8fafc' },
+                borderColor: 'grey.400',
+                color: 'text.secondary',
+                '&:hover': { borderColor: 'text.disabled', bgcolor: 'background.default' },
               }}
             >
               Запросить перевод ТМЦ
@@ -441,8 +441,8 @@ function WmsOperationsContent() {
                   fontWeight: 600,
                   borderRadius: '8px',
                   textTransform: 'none',
-                  bgcolor: '#0284c7',
-                  '&:hover': { bgcolor: '#0369a1' },
+                  bgcolor: 'primary.main',
+                  '&:hover': { bgcolor: 'primary.dark' },
                 }}
               >
                 Мастер операций
@@ -571,13 +571,13 @@ function WmsOperationsContent() {
                   SelectProps={{ displayEmpty: true }}
                   sx={{
                     minWidth: 200,
-                    backgroundColor: '#ffffff',
+                    backgroundColor: 'background.paper',
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '8px',
                       fontSize: '0.8125rem',
                       height: 36,
-                      '& fieldset': { borderColor: '#e2e8f0' },
-                      '&:hover fieldset': { borderColor: '#cbd5e1' },
+                      '& fieldset': { borderColor: 'divider' },
+                      '&:hover fieldset': { borderColor: 'grey.400' },
                     },
                   }}
                 >
@@ -592,39 +592,39 @@ function WmsOperationsContent() {
           >
             <Table size="small">
               <TableHead>
-                <TableRow sx={{ backgroundColor: '#f8fafc' }}>
+                <TableRow sx={{ backgroundColor: 'background.default' }}>
                   {visibleOpsColumns.includes('date') && (
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#475569' }}>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'text.secondary' }}>
                       Дата / Время
                     </TableCell>
                   )}
                   {visibleOpsColumns.includes('type') && (
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#475569' }}>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'text.secondary' }}>
                       Тип операции
                     </TableCell>
                   )}
                   {visibleOpsColumns.includes('warehouse') && (
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#475569' }}>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'text.secondary' }}>
                       Склад
                     </TableCell>
                   )}
                   {visibleOpsColumns.includes('items') && (
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#475569' }}>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'text.secondary' }}>
                       Позиции ТМЦ и количество
                     </TableCell>
                   )}
                   {visibleOpsColumns.includes('recipient') && (
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#475569' }}>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'text.secondary' }}>
                       Назначение / Получатель / Оборудование
                     </TableCell>
                   )}
                   {visibleOpsColumns.includes('comment') && (
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#475569' }}>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'text.secondary' }}>
                       Примечание
                     </TableCell>
                   )}
                   {visibleOpsColumns.includes('executor') && (
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: '#475569' }}>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'text.secondary' }}>
                       Исполнитель
                     </TableCell>
                   )}
@@ -635,7 +635,7 @@ function WmsOperationsContent() {
                   <TableRow>
                     <TableCell colSpan={visibleOpsColumns.length} sx={{ py: 6 }}>
                       <EmptyState
-                        icon={<SwapHorizIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+                        icon={<SwapHorizIcon sx={{ fontSize: 36, color: 'text.disabled' }} />}
                         title="Операций не найдено"
                         description="В журнале пока нет записей о движении ТМЦ, соответствующих выбранным фильтрам."
                         actionText={hasPermission(PERMISSIONS.WMS_OPERATIONS_CREATE) ? "Оформить операцию через мастер" : undefined}
@@ -652,7 +652,7 @@ function WmsOperationsContent() {
                   operations.map((op) => (
                     <TableRow key={op.id} hover>
                       {visibleOpsColumns.includes('date') && (
-                        <TableCell sx={{ whiteSpace: 'nowrap', fontFamily: 'monospace', fontSize: '0.8125rem', color: '#475569' }}>
+                        <TableCell sx={{ whiteSpace: 'nowrap', fontFamily: 'monospace', fontSize: '0.8125rem', color: 'text.secondary' }}>
                           {formatDateTime(op.date)}
                         </TableCell>
                       )}
@@ -670,13 +670,13 @@ function WmsOperationsContent() {
                               fontWeight: 600,
                               borderRadius: '4px',
                               fontSize: '0.6875rem',
-                              backgroundColor: '#ffffff',
-                              color: '#475569',
+                              backgroundColor: 'background.paper',
+                              color: 'text.secondary',
                               border: '1px solid #e2e8f0',
                               height: 20,
                             }}
                           />
-                          <Typography variant="caption" sx={{ display: 'block', mt: 0.25, color: '#64748b', fontSize: '0.75rem' }}>
+                          <Typography variant="caption" sx={{ display: 'block', mt: 0.25, color: 'text.disabled', fontSize: '0.75rem' }}>
                             {op.warehouse.name}
                           </Typography>
                         </TableCell>
@@ -685,7 +685,7 @@ function WmsOperationsContent() {
                         <TableCell>
                           <Stack spacing={0.5}>
                             {op.items.map((it) => (
-                              <Typography key={it.id} variant="body2" sx={{ fontSize: '0.8125rem', color: '#0f172a' }}>
+                              <Typography key={it.id} variant="body2" sx={{ fontSize: '0.8125rem', color: 'text.primary' }}>
                                 <b>{it.nomenclature.name}</b>: {it.quantity} {it.nomenclature.unit}
                               </Typography>
                             ))}
@@ -699,14 +699,14 @@ function WmsOperationsContent() {
                       )}
                       {visibleOpsColumns.includes('comment') && (
                         <TableCell>
-                          <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: '#475569' }}>
+                          <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
                             {op.comment || '—'}
                           </Typography>
                         </TableCell>
                       )}
                       {visibleOpsColumns.includes('executor') && (
                         <TableCell sx={{ fontSize: '0.8125rem' }}>
-                          <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8125rem', color: '#334155' }}>
+                          <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
                             {op.createdBy?.displayName}
                           </Typography>
                         </TableCell>
@@ -839,7 +839,7 @@ function WmsOperationsContent() {
           >
             <Table size="small">
               <TableHead>
-                <TableRow sx={{ bgcolor: '#f8fafc' }}>
+                <TableRow sx={{ bgcolor: 'background.default' }}>
                   <TableCell sx={{ fontWeight: 700, width: 140 }}>Номер</TableCell>
                   <TableCell sx={{ fontWeight: 700, width: 180 }}>Статус</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Маршрут (Откуда → Куда)</TableCell>
@@ -877,7 +877,7 @@ function WmsOperationsContent() {
                     return (
                       <TableRow key={t.id} hover>
                         <TableCell sx={{ py: 1.25, fontWeight: 700, fontFeatureSettings: '"tnum"' }}>
-                          <Typography variant="body2" sx={{ fontWeight: 700, color: '#0f172a' }}>
+                          <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>
                             {t.transferNumber}
                           </Typography>
                         </TableCell>
@@ -887,19 +887,19 @@ function WmsOperationsContent() {
                         <TableCell sx={{ py: 1.25 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                             <Box>
-                              <Typography variant="body2" sx={{ fontWeight: 600, color: '#0f172a' }}>
+                              <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
                                 {t.sourceWarehouse.name}
                               </Typography>
-                              <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
+                              <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block' }}>
                                 МОЛ: {t.sourceWarehouse.responsibleUser?.displayName || 'Не назначен'}
                               </Typography>
                             </Box>
-                            <ArrowForwardIcon sx={{ fontSize: 16, color: '#94a3b8' }} />
+                            <ArrowForwardIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
                             <Box>
-                              <Typography variant="body2" sx={{ fontWeight: 600, color: '#0284c7' }}>
+                              <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main' }}>
                                 {t.targetWarehouse.name}
                               </Typography>
-                              <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
+                              <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block' }}>
                                 МОЛ: {t.targetWarehouse.responsibleUser?.displayName || 'Не назначен'}
                               </Typography>
                             </Box>
@@ -908,7 +908,7 @@ function WmsOperationsContent() {
                         <TableCell sx={{ py: 1.25 }}>
                           <Stack spacing={0.5}>
                             {t.items.map((it) => (
-                              <Typography key={it.id} variant="caption" sx={{ color: '#334155', display: 'block' }}>
+                              <Typography key={it.id} variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
                                 • <b>{it.nomenclature?.name}</b>: {it.quantity} {it.nomenclature?.unit || 'шт'}
                                 {it.targetCell && (
                                   <Chip
@@ -924,7 +924,7 @@ function WmsOperationsContent() {
                         <TableCell sx={{ py: 1.25 }}>
                           {t.rejectionReason ? (
                             <Box sx={{ p: 0.75, bgcolor: '#fef2f2', borderRadius: '6px', border: '1px solid #fecaca' }}>
-                              <Typography variant="caption" sx={{ color: '#dc2626', fontWeight: 700, display: 'block' }}>
+                              <Typography variant="caption" sx={{ color: 'error.main', fontWeight: 700, display: 'block' }}>
                                 Отказ:
                               </Typography>
                               <Typography variant="caption" sx={{ color: '#991b1b' }}>
@@ -932,7 +932,7 @@ function WmsOperationsContent() {
                               </Typography>
                             </Box>
                           ) : t.requestReason ? (
-                            <Typography variant="caption" sx={{ color: '#475569' }}>
+                            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                               {t.requestReason}
                             </Typography>
                           ) : (
@@ -941,7 +941,7 @@ function WmsOperationsContent() {
                             </Typography>
                           )}
                         </TableCell>
-                        <TableCell sx={{ py: 1.25, fontSize: '0.75rem', color: '#64748b' }}>
+                        <TableCell sx={{ py: 1.25, fontSize: '0.75rem', color: 'text.disabled' }}>
                           {formatDateTime(t.createdAt)}
                         </TableCell>
                         <TableCell align="right" sx={{ py: 1.25 }}>

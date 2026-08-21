@@ -278,8 +278,8 @@ export default function WmsInventoryListPage() {
                 fontWeight: 600,
                 borderRadius: '8px',
                 textTransform: 'none',
-                bgcolor: '#0284c7',
-                '&:hover': { bgcolor: '#0369a1' },
+                bgcolor: 'primary.main',
+                '&:hover': { bgcolor: 'primary.dark' },
               }}
             >
               Новая инвентаризация
@@ -339,7 +339,7 @@ export default function WmsInventoryListPage() {
         empty={sortedInventories.length === 0 && !isLoading}
         emptyState={
           <EmptyState
-            icon={<FactCheckOutlinedIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+            icon={<FactCheckOutlinedIcon sx={{ fontSize: 36, color: 'text.disabled' }} />}
             title="Акты инвентаризации не найдены"
             description={
               activeFilterCount > 0
@@ -390,13 +390,13 @@ export default function WmsInventoryListPage() {
               }}
               sx={{
                 minWidth: 160,
-                backgroundColor: '#ffffff',
+                backgroundColor: 'background.paper',
                 '& .MuiOutlinedInput-root': {
                   borderRadius: '8px',
                   fontSize: '0.8125rem',
                   height: 36,
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#cbd5e1' },
+                  '& fieldset': { borderColor: 'divider' },
+                  '&:hover fieldset': { borderColor: 'grey.400' },
                 },
               }}
             >
@@ -418,13 +418,13 @@ export default function WmsInventoryListPage() {
               }}
               sx={{
                 minWidth: 160,
-                backgroundColor: '#ffffff',
+                backgroundColor: 'background.paper',
                 '& .MuiOutlinedInput-root': {
                   borderRadius: '8px',
                   fontSize: '0.8125rem',
                   height: 36,
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#cbd5e1' },
+                  '& fieldset': { borderColor: 'divider' },
+                  '&:hover fieldset': { borderColor: 'grey.400' },
                 },
               }}
             >
@@ -437,9 +437,9 @@ export default function WmsInventoryListPage() {
       >
         <Table size="small" aria-label="Реестр актов инвентаризации">
           <TableHead>
-            <TableRow sx={{ backgroundColor: '#ffffff' }}>
+            <TableRow sx={{ backgroundColor: 'background.paper' }}>
               {visibleColumns.includes('code') && (
-                <TableCell sx={{ fontWeight: 700, width: 140, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ fontWeight: 700, width: 140, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
                   <TableSortLabel
                     active={sortField === 'code'}
                     direction={sortField === 'code' ? sortDirection : 'asc'}
@@ -451,7 +451,7 @@ export default function WmsInventoryListPage() {
               )}
 
               {visibleColumns.includes('warehouse') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
                   <TableSortLabel
                     active={sortField === 'warehouse'}
                     direction={sortField === 'warehouse' ? sortDirection : 'asc'}
@@ -463,7 +463,7 @@ export default function WmsInventoryListPage() {
               )}
 
               {visibleColumns.includes('status') && (
-                <TableCell sx={{ fontWeight: 700, width: 130, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ fontWeight: 700, width: 130, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
                   <TableSortLabel
                     active={sortField === 'status'}
                     direction={sortField === 'status' ? sortDirection : 'asc'}
@@ -475,7 +475,7 @@ export default function WmsInventoryListPage() {
               )}
 
               {visibleColumns.includes('count') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
                   <TableSortLabel
                     active={sortField === 'count'}
                     direction={sortField === 'count' ? sortDirection : 'asc'}
@@ -487,7 +487,7 @@ export default function WmsInventoryListPage() {
               )}
 
               {visibleColumns.includes('date') && (
-                <TableCell sx={{ fontWeight: 700, width: 160, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ fontWeight: 700, width: 160, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
                   <TableSortLabel
                     active={sortField === 'date'}
                     direction={sortField === 'date' ? sortDirection : 'desc'}
@@ -499,7 +499,7 @@ export default function WmsInventoryListPage() {
               )}
 
               {visibleColumns.includes('author') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
                   <TableSortLabel
                     active={sortField === 'author'}
                     direction={sortField === 'author' ? sortDirection : 'asc'}
@@ -511,7 +511,7 @@ export default function WmsInventoryListPage() {
               )}
 
               {visibleColumns.includes('actions') && (
-                <TableCell align="right" sx={{ fontWeight: 700, width: 140, fontSize: '0.6875rem', color: '#64748b', letterSpacing: '0.05em' }}>
+                <TableCell align="right" sx={{ fontWeight: 700, width: 140, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
                   ДЕЙСТВИЯ
                 </TableCell>
               )}
@@ -526,14 +526,14 @@ export default function WmsInventoryListPage() {
                 onClick={() => router.push(`/wms/inventory/${inv.id}`)}
               >
                 {visibleColumns.includes('code') && (
-                  <TableCell sx={{ fontWeight: 700, fontFamily: 'monospace', fontSize: '0.8125rem', color: '#0284c7' }}>
+                  <TableCell sx={{ fontWeight: 700, fontFamily: 'monospace', fontSize: '0.8125rem', color: 'primary.main' }}>
                     INV-{inv.id.slice(-6).toUpperCase()}
                   </TableCell>
                 )}
 
                 {visibleColumns.includes('warehouse') && (
                   <TableCell>
-                    <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem', color: '#0f172a' }}>
+                    <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem', color: 'text.primary' }}>
                       {inv.warehouse.name}
                     </Typography>
                     <Chip
@@ -544,9 +544,9 @@ export default function WmsInventoryListPage() {
                         borderRadius: '4px',
                         fontSize: '0.6875rem',
                         height: 20,
-                        backgroundColor: '#ffffff',
+                        backgroundColor: 'background.paper',
                         border: '1px solid #e2e8f0',
-                        color: '#475569',
+                        color: 'text.secondary',
                       }}
                     />
                   </TableCell>
@@ -560,20 +560,20 @@ export default function WmsInventoryListPage() {
 
                 {visibleColumns.includes('count') && (
                   <TableCell>
-                    <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem', color: '#334155' }}>
+                    <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
                       {inv._count.items} поз.
                     </Typography>
                   </TableCell>
                 )}
 
                 {visibleColumns.includes('date') && (
-                  <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace', color: '#64748b' }}>
+                  <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace', color: 'text.disabled' }}>
                     {formatDateTime(inv.createdAt)}
                   </TableCell>
                 )}
 
                 {visibleColumns.includes('author') && (
-                  <TableCell sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#334155' }}>
+                  <TableCell sx={{ fontSize: '0.8125rem', fontWeight: 500, color: 'text.secondary' }}>
                     {inv.createdBy.displayName}
                   </TableCell>
                 )}
@@ -584,7 +584,7 @@ export default function WmsInventoryListPage() {
                       <Button
                         size="small"
                         variant="outlined"
-                        startIcon={<FactCheckOutlinedIcon sx={{ fontSize: '14px !important', color: '#0284c7' }} />}
+                        startIcon={<FactCheckOutlinedIcon sx={{ fontSize: '14px !important', color: 'primary.main' }} />}
                         onClick={async (e) => {
                           e.stopPropagation();
                           try {
@@ -609,7 +609,7 @@ export default function WmsInventoryListPage() {
                           py: 0.3,
                           px: 1,
                           borderColor: '#bae6fd',
-                          color: '#0284c7',
+                          color: 'primary.main',
                           backgroundColor: '#f0f9ff',
                           '&:hover': {
                             backgroundColor: '#e0f2fe',
@@ -630,8 +630,8 @@ export default function WmsInventoryListPage() {
                           borderRadius: '6px',
                           py: 0.3,
                           px: 1.25,
-                          borderColor: '#e2e8f0',
-                          color: '#334155',
+                          borderColor: 'divider',
+                          color: 'text.secondary',
                         }}
                       >
                         {inv.status === 'COMPLETED' ? 'Просмотр' : 'Сверка'}

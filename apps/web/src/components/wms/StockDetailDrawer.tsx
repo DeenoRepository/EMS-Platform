@@ -124,7 +124,7 @@ export default function StockDetailDrawer({
       PaperProps={{
         sx: {
           width: { xs: '100%', sm: 540 },
-          bgcolor: '#ffffff',
+          bgcolor: 'background.paper',
           boxShadow: '-8px 0 24px -4px rgba(15, 23, 42, 0.12)',
           display: 'flex',
           flexDirection: 'column',
@@ -136,7 +136,7 @@ export default function StockDetailDrawer({
         sx={{
           p: 2.5,
           borderBottom: '1px solid #e2e8f0',
-          bgcolor: '#f8fafc',
+          bgcolor: 'background.default',
           display: 'flex',
           alignItems: 'flex-start',
           justifyContent: 'space-between',
@@ -150,7 +150,7 @@ export default function StockDetailDrawer({
               height: 44,
               borderRadius: '10px',
               bgcolor: isCritical ? 'rgba(239, 68, 68, 0.1)' : 'rgba(2, 132, 199, 0.1)',
-              color: isCritical ? '#ef4444' : '#0284c7',
+              color: isCritical ? '#ef4444' : 'primary.main',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -160,25 +160,25 @@ export default function StockDetailDrawer({
             <Inventory2OutlinedIcon sx={{ fontSize: 24 }} />
           </Box>
           <Box sx={{ minWidth: 0 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#0f172a', lineHeight: 1.3 }} noWrap>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'text.primary', lineHeight: 1.3 }} noWrap>
               {stockItem.name}
             </Typography>
             <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5 }}>
               <Chip
                 label={stockItem.article ? `Арт: ${stockItem.article}` : 'Без артикула'}
                 size="small"
-                sx={{ height: 20, fontSize: '0.6875rem', fontWeight: 600, bgcolor: '#e2e8f0' }}
+                sx={{ height: 20, fontSize: '0.6875rem', fontWeight: 600, bgcolor: 'divider' }}
               />
               <Chip
                 label={stockItem.category || 'Без категории'}
                 size="small"
-                sx={{ height: 20, fontSize: '0.6875rem', fontWeight: 500, bgcolor: '#f1f5f9' }}
+                sx={{ height: 20, fontSize: '0.6875rem', fontWeight: 500, bgcolor: 'grey.100' }}
               />
             </Stack>
           </Box>
         </Box>
 
-        <IconButton onClick={onClose} size="small" sx={{ color: '#94a3b8' }}>
+        <IconButton onClick={onClose} size="small" sx={{ color: 'text.disabled' }}>
           <CloseIcon fontSize="small" />
         </IconButton>
       </Box>
@@ -220,17 +220,17 @@ export default function StockDetailDrawer({
                     p: 2,
                     borderRadius: '10px',
                     border: '1px solid #e2e8f0',
-                    bgcolor: '#f8fafc',
+                    bgcolor: 'background.default',
                   }}
                 >
-                  <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>
+                  <Typography variant="caption" sx={{ color: 'text.disabled', fontWeight: 600 }}>
                     Текущий остаток
                   </Typography>
                   <Typography
                     variant="h5"
                     sx={{
                       fontWeight: 800,
-                      color: isCritical ? '#dc2626' : '#0f172a',
+                      color: isCritical ? 'error.main' : 'text.primary',
                       fontFeatureSettings: '"tnum"',
                       mt: 0.5,
                     }}
@@ -247,17 +247,17 @@ export default function StockDetailDrawer({
                     p: 2,
                     borderRadius: '10px',
                     border: '1px solid #e2e8f0',
-                    bgcolor: '#f8fafc',
+                    bgcolor: 'background.default',
                   }}
                 >
-                  <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>
+                  <Typography variant="caption" sx={{ color: 'text.disabled', fontWeight: 600 }}>
                     Неснижаемый порог
                   </Typography>
                   <Typography
                     variant="h5"
                     sx={{
                       fontWeight: 800,
-                      color: '#475569',
+                      color: 'text.secondary',
                       fontFeatureSettings: '"tnum"',
                       mt: 0.5,
                     }}
@@ -272,17 +272,17 @@ export default function StockDetailDrawer({
             {minStockNum > 0 && (
               <Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
-                  <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>
+                  <Typography variant="caption" sx={{ color: 'text.disabled', fontWeight: 600 }}>
                     Обеспеченность запасом
                   </Typography>
                   <Typography
                     variant="caption"
-                    sx={{ fontWeight: 700, color: isCritical ? '#dc2626' : '#16a34a' }}
+                    sx={{ fontWeight: 700, color: isCritical ? 'error.main' : 'success.main' }}
                   >
                     {fillPercent.toFixed(0)}%
                   </Typography>
                 </Box>
-                <Box sx={{ height: 6, borderRadius: 3, bgcolor: '#e2e8f0', overflow: 'hidden' }}>
+                <Box sx={{ height: 6, borderRadius: 3, bgcolor: 'divider', overflow: 'hidden' }}>
                   <Box
                     sx={{
                       width: `${fillPercent}%`,
@@ -304,27 +304,27 @@ export default function StockDetailDrawer({
                 border: '1px solid #e2e8f0',
               }}
             >
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0f172a', mb: 1.5 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary', mb: 1.5 }}>
                 Размещение на складе
               </Typography>
 
               <Stack spacing={1.5}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <WarehouseOutlinedIcon sx={{ fontSize: 18, color: '#64748b' }} />
-                    <Typography variant="body2" sx={{ color: '#475569' }}>
+                    <WarehouseOutlinedIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                       Склад:
                     </Typography>
                   </Box>
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#0f172a' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
                     {stockItem.warehouseName} ({stockItem.warehouseCode})
                   </Typography>
                 </Box>
 
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <LocationOnOutlinedIcon sx={{ fontSize: 18, color: '#64748b' }} />
-                    <Typography variant="body2" sx={{ color: '#475569' }}>
+                    <LocationOnOutlinedIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                       Ячейка / Адрес:
                     </Typography>
                   </Box>
@@ -336,12 +336,12 @@ export default function StockDetailDrawer({
                         sx={{
                           fontWeight: 700,
                           bgcolor: '#eff6ff',
-                          color: '#1d4ed8',
+                          color: 'info.dark',
                           borderRadius: '6px',
                         }}
                       />
                     ) : (
-                      <Typography variant="caption" sx={{ color: '#94a3b8', fontStyle: 'italic' }}>
+                      <Typography variant="caption" sx={{ color: 'text.disabled', fontStyle: 'italic' }}>
                         Не назначена
                       </Typography>
                     )}
@@ -371,8 +371,8 @@ export default function StockDetailDrawer({
                         textTransform: 'none',
                         fontWeight: 600,
                         ...(!canEditLocation && {
-                          borderColor: '#e2e8f0',
-                          color: '#94a3b8',
+                          borderColor: 'divider',
+                          color: 'text.disabled',
                         }),
                       }}
                     >
@@ -394,8 +394,8 @@ export default function StockDetailDrawer({
                   borderRadius: '8px',
                   textTransform: 'none',
                   fontWeight: 600,
-                  bgcolor: '#0284c7',
-                  '&:hover': { bgcolor: '#0369a1' },
+                  bgcolor: 'primary.main',
+                  '&:hover': { bgcolor: 'primary.dark' },
                 }}
               >
                 Печать этикетки
@@ -420,13 +420,13 @@ export default function StockDetailDrawer({
         {/* TAB 1: Совместимое оборудование */}
         {tabIndex === 1 && (
           <Stack spacing={1.5}>
-            <Typography variant="caption" sx={{ color: '#64748b' }}>
+            <Typography variant="caption" sx={{ color: 'text.disabled' }}>
               Оборудование и технологические линии, где устанавливается данная деталь:
             </Typography>
 
             {stockItem.compatibleEquipment.length === 0 ? (
               <EmptyState
-                icon={<PrecisionManufacturingIcon sx={{ fontSize: 32, color: '#94a3b8' }} />}
+                icon={<PrecisionManufacturingIcon sx={{ fontSize: 32, color: 'text.disabled' }} />}
                 title="Оборудование не привязано"
                 description="В каталоге ТМЦ нет привязки к конкретному оборудованию"
                 minHeight={160}
@@ -447,17 +447,17 @@ export default function StockDetailDrawer({
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     '&:hover': {
-                      borderColor: '#0284c7',
-                      bgcolor: '#f8fafc',
+                      borderColor: 'primary.main',
+                      bgcolor: 'background.default',
                       transform: 'translateY(-1px)',
                     },
                   }}
                 >
                   <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#0f172a' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
                       {eq.name}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#64748b' }}>
+                    <Typography variant="caption" sx={{ color: 'text.disabled' }}>
                       Инв. №: <strong>{eq.inventoryNumber}</strong>
                     </Typography>
                   </Box>
@@ -478,14 +478,14 @@ export default function StockDetailDrawer({
               </Box>
             ) : operations.length === 0 ? (
               <EmptyState
-                icon={<HistoryIcon sx={{ fontSize: 32, color: '#94a3b8' }} />}
+                icon={<HistoryIcon sx={{ fontSize: 32, color: 'text.disabled' }} />}
                 title="История операций пуста"
                 description="По данной позиции пока нет записей о движении на этом складе"
                 minHeight={160}
               />
             ) : (
               <Table size="small">
-                <TableHead sx={{ bgcolor: '#f8fafc' }}>
+                <TableHead sx={{ bgcolor: 'background.default' }}>
                   <TableRow>
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Тип</TableCell>
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Дата</TableCell>
@@ -498,7 +498,7 @@ export default function StockDetailDrawer({
                       <TableCell sx={{ py: 1 }}>
                         <StatusBadge status={op.type} />
                       </TableCell>
-                      <TableCell sx={{ py: 1, fontSize: '0.75rem', color: '#64748b' }}>
+                      <TableCell sx={{ py: 1, fontSize: '0.75rem', color: 'text.disabled' }}>
                         {formatDateTime(op.date || op.createdAt)}
                       </TableCell>
                       <TableCell align="right" sx={{ py: 1, fontWeight: 600, fontSize: '0.8125rem' }}>
@@ -523,10 +523,10 @@ export default function StockDetailDrawer({
                 borderRadius: '8px',
                 border: '2px dashed #94a3b8',
                 textAlign: 'center',
-                bgcolor: '#ffffff',
+                bgcolor: 'background.paper',
               }}
             >
-              <Typography variant="caption" sx={{ fontWeight: 700, color: '#0f172a', display: 'block', mb: 1 }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.primary', display: 'block', mb: 1 }}>
                 EMS WMS LABEL
               </Typography>
               {/* QR Code Placeholder Graphic */}
@@ -536,22 +536,22 @@ export default function StockDetailDrawer({
                   height: 120,
                   mx: 'auto',
                   mb: 1.5,
-                  bgcolor: '#f1f5f9',
+                  bgcolor: 'grey.100',
                   borderRadius: '4px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
-                <QrCode2Icon sx={{ fontSize: 96, color: '#0f172a' }} />
+                <QrCode2Icon sx={{ fontSize: 96, color: 'text.primary' }} />
               </Box>
-              <Typography variant="body2" sx={{ fontWeight: 700, fontSize: '0.8125rem', color: '#0f172a' }} noWrap>
+              <Typography variant="body2" sx={{ fontWeight: 700, fontSize: '0.8125rem', color: 'text.primary' }} noWrap>
                 {stockItem.name}
               </Typography>
-              <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
+              <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block' }}>
                 {stockItem.article || 'SKU-NONE'}
               </Typography>
-              <Typography variant="caption" sx={{ color: '#0284c7', fontWeight: 600, display: 'block', mt: 0.5 }}>
+              <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 600, display: 'block', mt: 0.5 }}>
                 {stockItem.cellCode ? `Ячейка: ${stockItem.cellCode}` : `Склад: ${stockItem.warehouseCode}`}
               </Typography>
             </Paper>
@@ -564,7 +564,7 @@ export default function StockDetailDrawer({
                 borderRadius: '8px',
                 textTransform: 'none',
                 fontWeight: 600,
-                bgcolor: '#0284c7',
+                bgcolor: 'primary.main',
                 px: 4,
               }}
             >

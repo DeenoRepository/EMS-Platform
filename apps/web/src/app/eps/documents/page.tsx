@@ -372,9 +372,9 @@ function DocumentsListContent() {
                 textTransform: 'none',
                 px: 2.25,
                 boxSizing: 'border-box',
-                backgroundColor: '#0284c7',
+                backgroundColor: 'primary.main',
                 '&:hover': {
-                  backgroundColor: '#0369a1',
+                  backgroundColor: 'primary.dark',
                 },
               }}
             >
@@ -478,7 +478,7 @@ function DocumentsListContent() {
         empty={items.length === 0 && !loading}
         emptyState={
           <EmptyState
-            icon={<DescriptionOutlinedIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+            icon={<DescriptionOutlinedIcon sx={{ fontSize: 36, color: 'text.disabled' }} />}
             title="Документы не найдены"
             description={
               activeFilterCount > 0
@@ -509,13 +509,13 @@ function DocumentsListContent() {
                   }}
                   sx={{
                     minWidth: 160,
-                    backgroundColor: '#ffffff',
+                    backgroundColor: 'background.paper',
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '8px',
                       fontSize: '0.8125rem',
                       height: 36,
-                      '& fieldset': { borderColor: '#e2e8f0' },
-                      '&:hover fieldset': { borderColor: '#cbd5e1' },
+                      '& fieldset': { borderColor: 'divider' },
+                      '&:hover fieldset': { borderColor: 'grey.400' },
                     },
                   }}
                 >
@@ -540,13 +540,13 @@ function DocumentsListContent() {
                   }}
                   sx={{
                     minWidth: 200,
-                    backgroundColor: '#ffffff',
+                    backgroundColor: 'background.paper',
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '8px',
                       fontSize: '0.8125rem',
                       height: 36,
-                      '& fieldset': { borderColor: '#e2e8f0' },
-                      '&:hover fieldset': { borderColor: '#cbd5e1' },
+                      '& fieldset': { borderColor: 'divider' },
+                      '&:hover fieldset': { borderColor: 'grey.400' },
                     },
                   }}
                 >
@@ -575,7 +575,7 @@ function DocumentsListContent() {
       >
         <Table size="small">
           <TableHead>
-            <TableRow sx={{ backgroundColor: '#ffffff' }}>
+            <TableRow sx={{ backgroundColor: 'background.paper' }}>
               {visibleColumns.includes('name') && (
                 <TableCell sx={{ minWidth: 200 }}>
                   <TableSortLabel
@@ -697,7 +697,7 @@ function DocumentsListContent() {
                           className="equipment-name"
                           variant="body2"
                           fontWeight={600}
-                          sx={{ fontSize: '0.8125rem', color: '#0f172a', lineHeight: 1.35 }}
+                          sx={{ fontSize: '0.8125rem', color: 'text.primary', lineHeight: 1.35 }}
                         >
                           {doc.equipment.name}
                         </Typography>
@@ -708,11 +708,11 @@ function DocumentsListContent() {
                             py: 0.1,
                             fontFamily: 'monospace',
                             fontWeight: 700,
-                            bgcolor: '#f8fafc',
+                            bgcolor: 'background.default',
                             fontSize: '0.6875rem',
                             borderRadius: '4px',
-                            color: '#475569',
-                            borderColor: '#cbd5e1',
+                            color: 'text.secondary',
+                            borderColor: 'grey.400',
                             lineHeight: 1.3,
                           }}
                         >

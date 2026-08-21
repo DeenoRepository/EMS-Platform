@@ -278,7 +278,7 @@ export default function AdminAuditLogPage() {
         empty={logs.length === 0 && !loading}
         emptyState={
           <EmptyState
-            icon={<HistoryIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+            icon={<HistoryIcon sx={{ fontSize: 36, color: 'text.disabled' }} />}
             title="Записей аудита не найдено"
             description={
               activeFilterCount > 0
@@ -309,13 +309,13 @@ export default function AdminAuditLogPage() {
                   }}
                   sx={{
                     minWidth: 150,
-                    backgroundColor: '#ffffff',
+                    backgroundColor: 'background.paper',
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '8px',
                       fontSize: '0.8125rem',
                       height: 36,
-                      '& fieldset': { borderColor: '#e2e8f0' },
-                      '&:hover fieldset': { borderColor: '#cbd5e1' },
+                      '& fieldset': { borderColor: 'divider' },
+                      '&:hover fieldset': { borderColor: 'grey.400' },
                     },
                   }}
                 >
@@ -340,13 +340,13 @@ export default function AdminAuditLogPage() {
                   }}
                   sx={{
                     minWidth: 160,
-                    backgroundColor: '#ffffff',
+                    backgroundColor: 'background.paper',
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '8px',
                       fontSize: '0.8125rem',
                       height: 36,
-                      '& fieldset': { borderColor: '#e2e8f0' },
-                      '&:hover fieldset': { borderColor: '#cbd5e1' },
+                      '& fieldset': { borderColor: 'divider' },
+                      '&:hover fieldset': { borderColor: 'grey.400' },
                     },
                   }}
                 >
@@ -376,7 +376,7 @@ export default function AdminAuditLogPage() {
       >
         <Table size="small" aria-label="Журнал аудита действий">
           <TableHead>
-            <TableRow sx={{ backgroundColor: '#ffffff' }}>
+            <TableRow sx={{ backgroundColor: 'background.paper' }}>
               {visibleColumns.includes('createdAt') && (
                 <TableCell sx={{ minWidth: 160 }}>
                   <TableSortLabel
@@ -455,7 +455,7 @@ export default function AdminAuditLogPage() {
               return (
                 <TableRow key={log.id} hover>
                   {visibleColumns.includes('createdAt') && (
-                    <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace', whiteSpace: 'nowrap', color: '#64748b' }}>
+                    <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace', whiteSpace: 'nowrap', color: 'text.disabled' }}>
                       {formatDateTime(log.createdAt)}
                     </TableCell>
                   )}
@@ -463,7 +463,7 @@ export default function AdminAuditLogPage() {
                     <TableCell>
                       {log.user ? (
                         <Box>
-                          <Typography variant="body2" fontWeight={600} fontSize="0.8125rem" sx={{ color: '#0f172a' }}>
+                          <Typography variant="body2" fontWeight={600} fontSize="0.8125rem" sx={{ color: 'text.primary' }}>
                             {log.user.displayName}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
@@ -488,7 +488,7 @@ export default function AdminAuditLogPage() {
                     </TableCell>
                   )}
                   {visibleColumns.includes('entityId') && (
-                    <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#475569' }}>
+                    <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: 'text.secondary' }}>
                       {log.entityId}
                     </TableCell>
                   )}
@@ -510,8 +510,8 @@ export default function AdminAuditLogPage() {
                             borderRadius: '6px',
                             py: 0.3,
                             px: 1.25,
-                            borderColor: '#e2e8f0',
-                            color: '#334155',
+                            borderColor: 'divider',
+                            color: 'text.secondary',
                           }}
                         >
                           Детали
@@ -541,8 +541,8 @@ export default function AdminAuditLogPage() {
           component="pre"
           sx={{
             p: 2,
-            backgroundColor: '#0f172a',
-            color: '#38bdf8',
+            backgroundColor: 'text.primary',
+            color: 'primary.light',
             borderRadius: 2,
             overflow: 'auto',
             fontSize: '0.8125rem',

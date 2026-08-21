@@ -339,7 +339,7 @@ export function EquipmentWizardForm({
           mb: 2.5,
           borderRadius: '10px',
           border: '1px solid #e2e8f0',
-          bgcolor: '#f8fafc',
+          bgcolor: 'background.default',
         }}
       >
         <Stepper activeStep={activeStep} alternativeLabel>
@@ -358,7 +358,7 @@ export function EquipmentWizardForm({
                   '& .MuiStepLabel-label': {
                     fontSize: mode === 'dialog' ? '0.75rem' : '0.8125rem',
                     fontWeight: activeStep === index ? 700 : 500,
-                    color: activeStep === index ? '#0284c7' : '#64748b',
+                    color: activeStep === index ? 'primary.main' : 'text.disabled',
                   },
                 }}
               >
@@ -722,8 +722,8 @@ export function EquipmentWizardForm({
               sx={{
                 height: 38,
                 borderRadius: '8px',
-                borderColor: '#e2e8f0',
-                color: '#334155',
+                borderColor: 'divider',
+                color: 'text.secondary',
                 px: 2,
                 fontWeight: 600,
                 textTransform: 'none',
@@ -748,8 +748,8 @@ export function EquipmentWizardForm({
                 fontSize: '0.875rem',
                 textTransform: 'none',
                 px: 2.5,
-                backgroundColor: '#0284c7',
-                '&:hover': { backgroundColor: '#0369a1' },
+                backgroundColor: 'primary.main',
+                '&:hover': { backgroundColor: 'primary.dark' },
               }}
             >
               Далее
@@ -784,8 +784,8 @@ export function EquipmentWizardForm({
                   fontSize: '0.875rem',
                   textTransform: 'none',
                   px: 2.25,
-                  backgroundColor: '#0284c7',
-                  '&:hover': { backgroundColor: '#0369a1' },
+                  backgroundColor: 'primary.main',
+                  '&:hover': { backgroundColor: 'primary.dark' },
                 }}
               >
                 Отправить на согласование

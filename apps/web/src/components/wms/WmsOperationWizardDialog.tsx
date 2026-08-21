@@ -113,7 +113,7 @@ const OPERATION_TYPES = [
     title: 'Приход ТМЦ',
     description: 'Поступление материалов и запчастей на закрепленный склад',
     icon: <MoveToInboxIcon />,
-    color: '#16a34a',
+    color: 'success.main',
     bgcolor: 'rgba(22, 163, 74, 0.08)',
   },
   {
@@ -121,7 +121,7 @@ const OPERATION_TYPES = [
     title: 'Выдача сотруднику',
     description: 'Выдача расходников или инструмента в подотчет',
     icon: <PersonIcon />,
-    color: '#1d4ed8',
+    color: 'info.dark',
     bgcolor: 'rgba(29, 78, 216, 0.08)',
   },
   {
@@ -129,7 +129,7 @@ const OPERATION_TYPES = [
     title: 'Списание ТМЦ',
     description: 'Монтаж на оборудование (ТОиР), списание в брак, неликвид или утилизация',
     icon: <DeleteSweepIcon />,
-    color: '#d97706',
+    color: 'warning.main',
     bgcolor: 'rgba(217, 119, 6, 0.08)',
   },
   {
@@ -571,7 +571,7 @@ export function WmsOperationWizardDialog({
           <Stack spacing={3}>
             {/* Operation Type Grid */}
             <Box>
-              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, display: 'block', mb: 1.5 }}>
+              <Typography variant="caption" sx={{ color: 'text.disabled', fontWeight: 600, display: 'block', mb: 1.5 }}>
                 Выберите тип складской операции:
               </Typography>
               <Grid container spacing={1.5}>
@@ -590,8 +590,8 @@ export function WmsOperationWizardDialog({
                           boxSizing: 'border-box',
                           borderRadius: '10px',
                           border: '2px solid',
-                          borderColor: isSelected ? op.color : '#e2e8f0',
-                          bgcolor: isSelected ? op.bgcolor : '#ffffff',
+                          borderColor: isSelected ? op.color : 'divider',
+                          bgcolor: isSelected ? op.bgcolor : 'background.paper',
                           cursor: 'pointer',
                           transition: 'all 0.15s ease',
                           display: 'flex',
@@ -608,7 +608,7 @@ export function WmsOperationWizardDialog({
                             width: 40,
                             height: 40,
                             borderRadius: '8px',
-                            bgcolor: isSelected ? '#ffffff' : op.bgcolor,
+                            bgcolor: isSelected ? 'background.paper' : op.bgcolor,
                             color: op.color,
                             display: 'flex',
                             alignItems: 'center',
@@ -619,10 +619,10 @@ export function WmsOperationWizardDialog({
                           {op.icon}
                         </Box>
                         <Box sx={{ flex: 1 }}>
-                          <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#0f172a', lineHeight: 1.25 }}>
+                          <Typography variant="subtitle2" fontWeight={700} sx={{ color: 'text.primary', lineHeight: 1.25 }}>
                             {op.title}
                           </Typography>
-                          <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mt: 0.5, lineHeight: 1.3 }}>
+                          <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block', mt: 0.5, lineHeight: 1.3 }}>
                             {op.description}
                           </Typography>
                         </Box>
@@ -637,7 +637,7 @@ export function WmsOperationWizardDialog({
 
             {/* Склад проведения операции: для кладовщика строго его закрепленный склад, для администратора - выбор */}
             <Box>
-              <Typography variant="caption" sx={{ color: '#475569', fontWeight: 700, display: 'block', mb: 1, textTransform: 'uppercase' }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 1, textTransform: 'uppercase' }}>
                 {operationType === 'TRANSFER' ? 'Исходный склад списания (Закреплен за вами):' : 'Склад проведения операции (МОЛ):'}
               </Typography>
               {!isAdmin && currentWarehouse ? (
@@ -646,7 +646,7 @@ export function WmsOperationWizardDialog({
                   sx={{
                     p: 2,
                     borderRadius: '10px',
-                    bgcolor: '#f8fafc',
+                    bgcolor: 'background.default',
                     border: '1.5px solid #cbd5e1',
                     display: 'flex',
                     alignItems: 'center',
@@ -661,7 +661,7 @@ export function WmsOperationWizardDialog({
                         height: 42,
                         borderRadius: '8px',
                         bgcolor: '#e0f2fe',
-                        color: '#0284c7',
+                        color: 'primary.main',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -780,7 +780,7 @@ export function WmsOperationWizardDialog({
                         width: 40,
                         height: 40,
                         borderRadius: '8px',
-                        bgcolor: '#ffffff',
+                        bgcolor: 'background.paper',
                         color: currentOpMeta.color,
                         display: 'flex',
                         alignItems: 'center',
@@ -791,10 +791,10 @@ export function WmsOperationWizardDialog({
                       {currentOpMeta.icon}
                     </Box>
                     <Box>
-                      <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, display: 'block', textTransform: 'uppercase', fontSize: '0.6875rem' }}>
+                      <Typography variant="caption" sx={{ color: 'text.disabled', fontWeight: 700, display: 'block', textTransform: 'uppercase', fontSize: '0.6875rem' }}>
                         Проводимая операция:
                       </Typography>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9375rem' }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary', fontSize: '0.9375rem' }}>
                         {getCurrentOpBannerTitle()}
                       </Typography>
                     </Box>
@@ -802,10 +802,10 @@ export function WmsOperationWizardDialog({
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
-                    <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, display: 'block' }}>
+                    <Typography variant="caption" sx={{ color: 'text.disabled', fontWeight: 600, display: 'block' }}>
                       {operationType === 'TRANSFER' ? 'Склад списания (МОЛ):' : 'Склад операции (МОЛ):'}
                     </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#0f172a' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>
                       {currentWarehouse ? `${currentWarehouse.name} (${currentWarehouse.code})` : '—'}
                     </Typography>
                     {operationType === 'TRANSFER' && targetWarehouseId && (
@@ -814,7 +814,7 @@ export function WmsOperationWizardDialog({
                       </Typography>
                     )}
                     {operationType === 'ISSUE_EMPLOYEE' && recipientName && (
-                      <Typography variant="caption" sx={{ display: 'block', color: '#1d4ed8', fontWeight: 700, mt: 0.25 }}>
+                      <Typography variant="caption" sx={{ display: 'block', color: 'info.dark', fontWeight: 700, mt: 0.25 }}>
                         Получатель: {recipientName}
                       </Typography>
                     )}
@@ -826,7 +826,7 @@ export function WmsOperationWizardDialog({
             {/* Quick Item Add / Search Card */}
             <Paper elevation={0} sx={{ p: 2.5, borderRadius: '10px', bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0f172a' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary' }}>
                   Поиск и добавление позиций ТМЦ:
                 </Typography>
                 {operationType === 'RECEIPT' && (
@@ -834,7 +834,7 @@ export function WmsOperationWizardDialog({
                     size="small"
                     startIcon={<AddIcon />}
                     onClick={() => handleOpenCreateNomDialog('')}
-                    sx={{ fontWeight: 600, textTransform: 'none', color: '#0284c7' }}
+                    sx={{ fontWeight: 600, textTransform: 'none', color: 'primary.main' }}
                   >
                     + Новая номенклатура
                   </Button>
@@ -846,7 +846,7 @@ export function WmsOperationWizardDialog({
                   <Grid item xs={12}>
                     <Stack spacing={1.5} sx={{ mb: 1, p: 1.5, bgcolor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                       <Box>
-                        <Typography variant="caption" sx={{ fontWeight: 700, color: '#475569', display: 'block', mb: 0.75 }}>
+                        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block', mb: 0.75 }}>
                           Причина / основание списания:
                         </Typography>
                         <Stack direction="row" spacing={1} flexWrap="wrap">
@@ -895,7 +895,7 @@ export function WmsOperationWizardDialog({
                           value={itemEquipmentId}
                           onChange={(e) => setItemEquipmentId(e.target.value)}
                           helperText="Укажите единицу оборудования, на которую монтируется деталь, или оставьте пустым для общего списания"
-                          sx={{ bgcolor: '#ffffff' }}
+                          sx={{ bgcolor: 'background.paper' }}
                         >
                           <MenuItem value="">— Не привязано к конкретному оборудованию (Общий монтаж) —</MenuItem>
                           {equipmentList.map((eq) => (
@@ -948,7 +948,7 @@ export function WmsOperationWizardDialog({
                       if (option.isNewAction) {
                         return (
                           <li {...props} key={option.id}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.75, px: 1, color: '#0284c7', fontWeight: 600 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.75, px: 1, color: 'primary.main', fontWeight: 600 }}>
                               <AddIcon fontSize="small" />
                               <Typography variant="body2">{option.name}</Typography>
                             </Box>
@@ -976,14 +976,14 @@ export function WmsOperationWizardDialog({
                                 variant="body2"
                                 sx={{
                                   fontWeight: 600,
-                                  color: '#0f172a',
+                                  color: 'text.primary',
                                   lineHeight: 1.35,
                                   wordBreak: 'break-word',
                                 }}
                               >
                                 {option.name}
                               </Typography>
-                              <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mt: 0.25 }}>
+                              <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block', mt: 0.25 }}>
                                 {option.article ? `Арт: ${option.article}` : 'Без артикула'} • {option.category?.name || 'Без категории'} • {option.unit}
                               </Typography>
                             </Box>
@@ -1087,7 +1087,7 @@ export function WmsOperationWizardDialog({
                             size="small"
                             variant="text"
                             onClick={() => setItemQty(String(getAvailableStock(selectedNomenclature.id)))}
-                            sx={{ minWidth: 'auto', p: '2px 4px', fontSize: '0.7rem', fontWeight: 700, color: '#0284c7' }}
+                            sx={{ minWidth: 'auto', p: '2px 4px', fontSize: '0.7rem', fontWeight: 700, color: 'primary.main' }}
                           >
                             Макс
                           </Button>
@@ -1138,7 +1138,7 @@ export function WmsOperationWizardDialog({
 
             {/* List of Added Line Items */}
             <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0f172a', mb: 1 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary', mb: 1 }}>
                 Позиции в операции ({lineItems.length}):
               </Typography>
 
@@ -1149,7 +1149,7 @@ export function WmsOperationWizardDialog({
               ) : (
                 <Paper elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
                   <Table size="small">
-                    <TableHead sx={{ bgcolor: '#f8fafc' }}>
+                    <TableHead sx={{ bgcolor: 'background.default' }}>
                       <TableRow>
                         <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Номенклатура</TableCell>
                         <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Артикул</TableCell>
@@ -1166,11 +1166,11 @@ export function WmsOperationWizardDialog({
                         const rawStock = getWarehouseStock(item.nomenclatureId);
                         const hasDeficit = isOutflow && item.quantity > rawStock;
                         return (
-                          <TableRow key={idx} hover sx={hasDeficit ? { bgcolor: '#fef2f2' } : {}}>
+                          <TableRow key={idx} hover sx={hasDeficit ? { bgcolor: 'error.light' } : {}}>
                             <TableCell sx={{ py: 1, fontWeight: 600, fontSize: '0.8125rem' }}>
                               {item.nomenclatureName}
                             </TableCell>
-                            <TableCell sx={{ py: 1, color: '#64748b', fontSize: '0.75rem' }}>
+                            <TableCell sx={{ py: 1, color: 'text.disabled', fontSize: '0.75rem' }}>
                               {item.nomenclatureArticle || '—'}
                             </TableCell>
                             {operationType === 'ISSUE_WRITE_OFF' && (
@@ -1189,7 +1189,7 @@ export function WmsOperationWizardDialog({
                                     size="small"
                                     label={item.writeOffReason || 'Списание в неликвид/брак'}
                                     variant="outlined"
-                                    sx={{ fontWeight: 500, fontSize: '0.75rem', height: 24, color: '#64748b' }}
+                                    sx={{ fontWeight: 500, fontSize: '0.75rem', height: 24, color: 'text.disabled' }}
                                   />
                                 )}
                               </TableCell>
@@ -1203,10 +1203,10 @@ export function WmsOperationWizardDialog({
                                 sx={{ fontWeight: 600, fontSize: '0.75rem', height: 22 }}
                               />
                             </TableCell>
-                            <TableCell align="right" sx={{ py: 1, fontWeight: 700, fontFeatureSettings: '"tnum"', color: hasDeficit ? '#dc2626' : 'inherit' }}>
+                            <TableCell align="right" sx={{ py: 1, fontWeight: 700, fontFeatureSettings: '"tnum"', color: hasDeficit ? 'error.main' : 'inherit' }}>
                               {item.quantity} {item.unit}
                               {hasDeficit && (
-                                <Typography variant="caption" sx={{ display: 'block', color: '#dc2626', fontWeight: 700 }}>
+                                <Typography variant="caption" sx={{ display: 'block', color: 'error.main', fontWeight: 700 }}>
                                   Превышение остатка!
                                 </Typography>
                               )}
@@ -1252,7 +1252,7 @@ export function WmsOperationWizardDialog({
             <Paper elevation={0} sx={{ p: 2.5, borderRadius: '10px', bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
+                  <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block' }}>
                     Тип операции:
                   </Typography>
                   <Box sx={{ mt: 0.5 }}>
@@ -1261,20 +1261,20 @@ export function WmsOperationWizardDialog({
                 </Grid>
 
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
+                  <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block' }}>
                     Закрепленный склад:
                   </Typography>
-                  <Typography variant="body2" fontWeight={600} sx={{ mt: 0.5, color: '#0f172a' }}>
+                  <Typography variant="body2" fontWeight={600} sx={{ mt: 0.5, color: 'text.primary' }}>
                     {currentWarehouse ? `${currentWarehouse.name} (${currentWarehouse.code})` : '—'}
                   </Typography>
                 </Grid>
 
                 {operationType === 'TRANSFER' && (
                   <Grid item xs={12} sm={6}>
-                    <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
+                    <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block' }}>
                       Склад назначения (Зачисление):
                     </Typography>
-                    <Typography variant="body2" fontWeight={600} sx={{ mt: 0.5, color: '#0f172a' }}>
+                    <Typography variant="body2" fontWeight={600} sx={{ mt: 0.5, color: 'text.primary' }}>
                       {warehouses.find((w) => w.id === targetWarehouseId)?.name || '—'}
                     </Typography>
                   </Grid>
@@ -1282,10 +1282,10 @@ export function WmsOperationWizardDialog({
 
                 {operationType === 'ISSUE_EMPLOYEE' && recipientName && (
                   <Grid item xs={12} sm={6}>
-                    <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
+                    <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block' }}>
                       Получатель:
                     </Typography>
-                    <Typography variant="body2" fontWeight={600} sx={{ mt: 0.5, color: '#0f172a' }}>
+                    <Typography variant="body2" fontWeight={600} sx={{ mt: 0.5, color: 'text.primary' }}>
                       {recipientName}
                     </Typography>
                   </Grid>
@@ -1293,10 +1293,10 @@ export function WmsOperationWizardDialog({
 
                 {comment && (
                   <Grid item xs={12}>
-                    <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
+                    <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block' }}>
                       Примечание:
                     </Typography>
-                    <Typography variant="body2" sx={{ mt: 0.25, color: '#334155' }}>
+                    <Typography variant="body2" sx={{ mt: 0.25, color: 'text.secondary' }}>
                       {comment}
                     </Typography>
                   </Grid>
@@ -1306,12 +1306,12 @@ export function WmsOperationWizardDialog({
 
             {/* Line Items Review Table */}
             <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0f172a', mb: 1 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary', mb: 1 }}>
                 Итоговый перечень позиций ({lineItems.length}):
               </Typography>
               <Paper elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
                 <Table size="small">
-                  <TableHead sx={{ bgcolor: '#f8fafc' }}>
+                  <TableHead sx={{ bgcolor: 'background.default' }}>
                     <TableRow>
                       <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Номенклатура</TableCell>
                       <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Артикул</TableCell>
@@ -1330,7 +1330,7 @@ export function WmsOperationWizardDialog({
                           <TableCell sx={{ py: 1, fontWeight: 600, fontSize: '0.8125rem' }}>
                             {item.nomenclatureName}
                           </TableCell>
-                          <TableCell sx={{ py: 1, color: '#64748b', fontSize: '0.75rem' }}>
+                          <TableCell sx={{ py: 1, color: 'text.disabled', fontSize: '0.75rem' }}>
                             {item.nomenclatureArticle || '—'}
                           </TableCell>
                           {operationType === 'ISSUE_WRITE_OFF' && (
@@ -1349,7 +1349,7 @@ export function WmsOperationWizardDialog({
                                   size="small"
                                   label={item.writeOffReason || 'Списание в неликвид/брак'}
                                   variant="outlined"
-                                  sx={{ fontWeight: 500, fontSize: '0.75rem', height: 24, color: '#64748b' }}
+                                  sx={{ fontWeight: 500, fontSize: '0.75rem', height: 24, color: 'text.disabled' }}
                                 />
                               )}
                             </TableCell>
@@ -1387,8 +1387,8 @@ export function WmsOperationWizardDialog({
                   px: 3,
                   py: 1,
                   fontWeight: 700,
-                  bgcolor: '#16a34a',
-                  '&:hover': { bgcolor: '#15803d' },
+                  bgcolor: 'success.main',
+                  '&:hover': { bgcolor: 'success.dark' },
                 }}
               >
                 {isSubmitting ? 'Проведение в БД...' : 'Подтвердить и провести операцию'}
