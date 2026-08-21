@@ -27,6 +27,8 @@ import {
   FormControl,
   InputLabel,
   Select,
+  Tooltip,
+  LinearProgress,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -47,6 +49,9 @@ import TuneIcon from '@mui/icons-material/Tune';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import AddIcon from '@mui/icons-material/Add';
+import PrintIcon from '@mui/icons-material/Print';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import PageHeader from '@/components/layout/PageHeader';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -64,6 +69,7 @@ import {
 import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
 import {
+  StatCard,
   StatusBadge,
   EmptyState,
   ConfirmDialog,
@@ -549,6 +555,45 @@ export default function EquipmentPassportPage() {
 
   const statusInfo = EQUIPMENT_STATUS_MAP[equipment.status] || { label: equipment.status, color: 'default' };
 
+  // Extracted custom fields
+  const custom = equipment.customFields || {};
+  const actualWear =
+    custom.actual_wear_percentage !== undefined &&
+    custom.actual_wear_percentage !== null &&
+    custom.actual_wear_percentage !== ''
+      ? Number(custom.actual_wear_percentage)
+      : null;
+  const criticality = custom.criticality || 'B';
+  const okofCode = custom.okof_code || '';
+  const okpd2Code = custom.okpd2_code || '';
+  const procCode = custom.process_classifier_code || '';
+  const eqGroup = custom.equipment_group || '';
+  const eqType = custom.equipment_type || '';
+  const maintPeriodicity = custom.maintenance_periodicity || '';
+  const maintScheduleYear = custom.maintenance_schedule_year || '';
+  const maintCount = custom.maintenance_count || '';
+  const respPerson = custom.responsible_person_name || '';
+  const extSysId = custom.external_system_id || '';
+  const isCriticalPath = Boolean(custom.is_critical_path);
+  const calibrationInt = custom.calibration_interval;
+  const cleanRoom = custom.clean_room_class;
+  const isUnique = custom.is_unique;
+  const isImported = custom.is_imported;
+
+  // Copy helper with feedback
+  const handleCopy = (text: string, label: string) => {
+    if (!text || text === '—') return;
+    navigator.clipboard.writeText(text);
+    enqueueSnackbar(`${label} скопирован в буфер: ${text}`, {
+      variant: 'info',
+      autoHideDuration: 2200,
+    });
+  };
+
+  // Sections that are rendered in dedicated engineering/custom blocks
+  const specialSectionCodes = new Set(['classifiers', 'condition_wear', 'maintenance_regulations', 'operational']);
+  const engineeringSections = sections.filter((s) => !specialSectionCodes.has(s.code));
+
   return (
     <Box sx={{ maxWidth: 1920, mx: 'auto' }}>
       <PageHeader
@@ -583,6 +628,29 @@ export default function EquipmentPassportPage() {
               }}
             >
               К списку
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<PrintIcon />}
+              onClick={() => window.print()}
+              sx={{
+                height: 38,
+                borderRadius: '8px',
+                borderColor: '#e2e8f0',
+                color: '#334155',
+                px: 2,
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                textTransform: 'none',
+                backgroundColor: '#ffffff',
+                boxSizing: 'border-box',
+                '&:hover': {
+                  borderColor: '#cbd5e1',
+                  backgroundColor: '#f8fafc',
+                },
+              }}
+            >
+              Печать
             </Button>
             {canEdit && (
               <Button
@@ -648,99 +716,76 @@ export default function EquipmentPassportPage() {
         </Alert>
       )}
 
-      {/* Top Overview & Reliability Cards */}
+      {/* Top Overview KPI Panel (4x StatCards) */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={8}>
-          <Card sx={{ p: 2.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <Box
-              sx={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                gap: 2,
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, flexWrap: 'wrap' }}>
-                <Box>
-                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
-                    Текущий статус
-                  </Typography>
-                  <StatusBadge status={equipment.status} />
-                </Box>
-
-                <Box>
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    Местоположение
-                  </Typography>
-                  <Typography variant="subtitle2" fontWeight={700} sx={{ mt: 0.5 }}>
-                    {equipment.location || '—'}
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    Заводской номер
-                  </Typography>
-                  <Typography variant="subtitle2" fontWeight={700} sx={{ mt: 0.5 }}>
-                    {equipment.serialNumber || '—'}
-                  </Typography>
-                </Box>
-              </Box>
-
-              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                {equipment.tags.map(({ tag }) => (
-                  <Chip
-                    key={tag.id}
-                    label={tag.name}
-                    size="small"
-                    variant="outlined"
-                    sx={{
-                      backgroundColor: tag.color ? `${tag.color}15` : undefined,
-                      color: tag.color || 'inherit',
-                      borderColor: tag.color || undefined,
-                      fontWeight: 600,
-                    }}
-                  />
-                ))}
-              </Box>
-            </Box>
-
-            <Divider sx={{ my: 2 }} />
-
-            {/* Quick Metrics Summary */}
-            <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-              <Box>
-                <Typography variant="caption" color="text.secondary">Дата ввода:</Typography>
-                <Typography variant="body2" fontWeight={600}>{formatDate(equipment.commissionDate)}</Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary">Прикреплено документов:</Typography>
-                <Typography variant="body2" fontWeight={600}>{equipment.documents.length} файлов</Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary">Регламентов ТО:</Typography>
-                <Typography variant="body2" fontWeight={600}>{equipment.maintenancePlans.length} планов</Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary">Установлено ТМЦ:</Typography>
-                <Typography variant="body2" fontWeight={600}>{equipment.spareParts.length} позиций</Typography>
-              </Box>
-            </Box>
-          </Card>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Статус актива"
+            value={statusInfo.label}
+            subtitle={equipment.location ? `Локация: ${equipment.location}` : `Ввод: ${formatDate(equipment.commissionDate)}`}
+            icon={<PrecisionManufacturingIcon sx={{ fontSize: 24 }} />}
+            accentColor="#0284c7"
+            iconColor="#0284c7"
+            iconBgColor="#e0f2fe"
+          />
         </Grid>
-
-        <Grid item xs={12} md={4}>
-          <HealthScoreGauge
-            score={healthScore}
-            size="sm"
-            title="Индекс технического состояния"
-            subtitle="Надежность и готовность к работе"
-            metrics={[
-              { label: 'ТО', value: equipment.maintenancePlans.length, status: equipment.maintenancePlans.length > 0 ? 'good' : 'warning' },
-              { label: 'Сбоев', value: (equipment.jiraIssues || []).length, status: (equipment.jiraIssues || []).length > 0 ? 'critical' : 'good' },
-              { label: 'ТМЦ', value: equipment.spareParts.length, status: 'good' },
-            ]}
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Физический износ"
+            value={actualWear !== null ? `${actualWear}%` : '—'}
+            subtitle={
+              actualWear !== null
+                ? actualWear < 30
+                  ? 'Состояние в норме'
+                  : actualWear < 70
+                  ? 'Умеренный износ'
+                  : 'Критический износ'
+                : 'Амортизация не задана'
+            }
+            icon={<SpeedIcon sx={{ fontSize: 24 }} />}
+            accentColor={
+              actualWear !== null && actualWear > 70
+                ? '#ef4444'
+                : actualWear !== null && actualWear > 30
+                ? '#f59e0b'
+                : '#10b981'
+            }
+            iconColor={
+              actualWear !== null && actualWear > 70
+                ? '#ef4444'
+                : actualWear !== null && actualWear > 30
+                ? '#f59e0b'
+                : '#10b981'
+            }
+            iconBgColor={
+              actualWear !== null && actualWear > 70
+                ? '#fee2e2'
+                : actualWear !== null && actualWear > 30
+                ? '#fef3c7'
+                : '#dcfce7'
+            }
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Регламент ТОиР"
+            value={maintPeriodicity || (equipment.maintenancePlans.length > 0 ? `${equipment.maintenancePlans.length} плана ТО` : 'По регламенту')}
+            subtitle={maintScheduleYear ? `График: ${maintScheduleYear}` : 'График ППР 2026'}
+            icon={<ShieldIcon sx={{ fontSize: 24 }} />}
+            accentColor="#10b981"
+            iconColor="#10b981"
+            iconBgColor="#dcfce7"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Критичность актива"
+            value={`Класс ${criticality}`}
+            subtitle={equipment.spareParts.length > 0 ? `Запас ТМЦ: ${equipment.spareParts.length} поз.` : 'Категория надежности'}
+            icon={<CategoryIcon sx={{ fontSize: 24 }} />}
+            accentColor={criticality === 'A' ? '#ef4444' : criticality === 'B' ? '#f59e0b' : '#0ea5e9'}
+            iconColor={criticality === 'A' ? '#ef4444' : criticality === 'B' ? '#f59e0b' : '#0ea5e9'}
+            iconBgColor={criticality === 'A' ? '#fee2e2' : criticality === 'B' ? '#fef3c7' : '#e0f2fe'}
           />
         </Grid>
       </Grid>
@@ -766,73 +811,472 @@ export default function EquipmentPassportPage() {
         />
       </Box>
 
-      {/* TAB 0: Паспорт (Общие сведения и кастомные разделы) */}
+      {/* TAB 0: Паспорт (Сбалансированная инженерная сетка 5/7) */}
       {activeTab === 0 && (
         <Grid container spacing={3}>
-          {/* Main Specifications Card */}
-          <Grid item xs={12} lg={6}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                  <PrecisionManufacturingIcon color="primary" />
-                  <Typography variant="h6" fontWeight={700}>
-                    Основные технические реквизиты
-                  </Typography>
-                </Box>
-                <Divider sx={{ mb: 2 }} />
+          {/* LEFT COLUMN (5/12): Идентификация, Размещение, Метрология, Надежность */}
+          <Grid item xs={12} lg={5}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {/* Card 1: Основные реквизиты и размещение */}
+              <Card>
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                    <PrecisionManufacturingIcon color="primary" />
+                    <Typography variant="h6" fontWeight={700}>
+                      Основные реквизиты и размещение
+                    </Typography>
+                  </Box>
+                  <Divider sx={{ mb: 2 }} />
 
-                <TableContainer>
-                  <Table size="small">
-                    <TableBody>
-                      <TableRow>
-                        <TableCell sx={{ fontWeight: 600, width: '45%', color: 'text.secondary' }}>
-                          Наименование
-                        </TableCell>
-                        <TableCell sx={{ fontWeight: 700 }}>{equipment.name}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell sx={{ color: 'text.secondary' }}>Инвентарный номер</TableCell>
-                        <TableCell sx={{ fontWeight: 700, fontFamily: 'monospace' }}>{equipment.inventoryNumber || '—'}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell sx={{ color: 'text.secondary' }}>Заводской / Серийный №</TableCell>
-                        <TableCell>{equipment.serialNumber || '—'}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell sx={{ color: 'text.secondary' }}>Производитель</TableCell>
-                        <TableCell>{equipment.manufacturer || '—'}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell sx={{ color: 'text.secondary' }}>Модель / Модификация</TableCell>
-                        <TableCell>{equipment.model || '—'}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell sx={{ color: 'text.secondary' }}>Дата ввода в эксплуатацию</TableCell>
-                        <TableCell>{formatDate(equipment.commissionDate)}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell sx={{ color: 'text.secondary' }}>Место установки (Локация)</TableCell>
-                        <TableCell>{equipment.location || '—'}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell sx={{ color: 'text.secondary' }}>Паспорт зарегистрировал</TableCell>
-                        <TableCell>{equipment.createdBy?.displayName} ({formatDate(equipment.createdAt)})</TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </CardContent>
-            </Card>
+                  <TableContainer>
+                    <Table size="small">
+                      <TableBody>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 600, width: '45%', color: 'text.secondary' }}>
+                            Наименование
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>{equipment.name}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell sx={{ color: 'text.secondary' }}>Инвентарный номер</TableCell>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Paper
+                                variant="outlined"
+                                sx={{
+                                  px: 1,
+                                  py: 0.25,
+                                  fontFamily: 'monospace',
+                                  fontWeight: 700,
+                                  bgcolor: '#f1f5f9',
+                                  fontSize: '0.8125rem',
+                                  borderRadius: '6px',
+                                }}
+                              >
+                                {equipment.inventoryNumber || 'Б/Н'}
+                              </Paper>
+                              {equipment.inventoryNumber && (
+                                <Tooltip title="Скопировать инвентарный номер">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleCopy(equipment.inventoryNumber || '', 'Инвентарный номер')}
+                                  >
+                                    <ContentCopyIcon sx={{ fontSize: 16 }} />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell sx={{ color: 'text.secondary' }}>Заводской / Серийный №</TableCell>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Typography variant="body2" fontWeight={600}>
+                                {equipment.serialNumber || '—'}
+                              </Typography>
+                              {equipment.serialNumber && (
+                                <Tooltip title="Скопировать серийный номер">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleCopy(equipment.serialNumber || '', 'Серийный номер')}
+                                  >
+                                    <ContentCopyIcon sx={{ fontSize: 16 }} />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell sx={{ color: 'text.secondary' }}>Производитель (Бренд)</TableCell>
+                          <TableCell sx={{ fontWeight: 600 }}>{equipment.manufacturer || '—'}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell sx={{ color: 'text.secondary' }}>Модель / Модификация</TableCell>
+                          <TableCell sx={{ fontWeight: 600 }}>{equipment.model || '—'}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell sx={{ color: 'text.secondary' }}>Место установки (Локация)</TableCell>
+                          <TableCell sx={{ fontWeight: 600 }}>{equipment.location || '—'}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell sx={{ color: 'text.secondary' }}>Ответственное лицо (МОЛ)</TableCell>
+                          <TableCell sx={{ fontWeight: 600 }}>
+                            {respPerson || equipment.createdBy?.displayName || '—'}
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell sx={{ color: 'text.secondary' }}>Дата ввода в эксплуатацию</TableCell>
+                          <TableCell>{formatDate(equipment.commissionDate)}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell sx={{ color: 'text.secondary' }}>Паспорт зарегистрировал</TableCell>
+                          <TableCell>
+                            {equipment.createdBy?.displayName} ({formatDate(equipment.createdAt)})
+                          </TableCell>
+                        </TableRow>
+                        {equipment.tags.length > 0 && (
+                          <TableRow>
+                            <TableCell sx={{ color: 'text.secondary' }}>Теги классификации</TableCell>
+                            <TableCell>
+                              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                {equipment.tags.map(({ tag }) => (
+                                  <Chip
+                                    key={tag.id}
+                                    label={tag.name}
+                                    size="small"
+                                    variant="outlined"
+                                    sx={{
+                                      backgroundColor: tag.color ? `${tag.color}15` : undefined,
+                                      color: tag.color || 'inherit',
+                                      borderColor: tag.color || undefined,
+                                      fontWeight: 600,
+                                      height: 22,
+                                    }}
+                                  />
+                                ))}
+                              </Box>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </CardContent>
+              </Card>
+
+              {/* Card 2: Эксплуатационные требования и метрология */}
+              <Card>
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                    <StraightenIcon color="secondary" />
+                    <Typography variant="h6" fontWeight={700}>
+                      Эксплуатация и метрология
+                    </Typography>
+                  </Box>
+                  <Divider sx={{ mb: 2 }} />
+
+                  <TableContainer>
+                    <Table size="small">
+                      <TableBody>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', width: '50%' }}>
+                            Влияет на непрерывность процесса
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>
+                            <Chip
+                              label={isCriticalPath ? 'Да (Критический путь)' : 'Нет'}
+                              size="small"
+                              color={isCriticalPath ? 'error' : 'default'}
+                              variant={isCriticalPath ? 'filled' : 'outlined'}
+                              sx={{ fontWeight: 600, height: 22 }}
+                            />
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary' }}>
+                            Периодичность поверки датчиков
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>
+                            {calibrationInt ? (
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <Typography variant="body2" fontWeight={700}>{calibrationInt}</Typography>
+                                <Chip label="мес" size="small" variant="outlined" sx={{ height: 18, fontSize: '0.65rem', fontWeight: 700 }} />
+                              </Box>
+                            ) : (
+                              '—'
+                            )}
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary' }}>
+                            Класс чистоты помещения (ISO)
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>
+                            {cleanRoom ? `Класс ${cleanRoom}` : '—'}
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary' }}>
+                            Уникальное / единичное оборудование
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>
+                            {isUnique !== undefined && isUnique !== null
+                              ? isUnique
+                                ? 'Да (Уникальное)'
+                                : 'Нет (Серийное)'
+                              : '—'}
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary' }}>
+                            Импортное оборудование
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>
+                            {isImported !== undefined && isImported !== null
+                              ? isImported
+                                ? 'Да (Импорт)'
+                                : 'Нет (Отечественное)'
+                              : '—'}
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </CardContent>
+              </Card>
+
+              {/* Card 3: Индекс технического состояния */}
+              <HealthScoreGauge
+                score={healthScore}
+                size="sm"
+                title="Индекс технического состояния"
+                subtitle="Комплексная надежность и готовность актива"
+                metrics={[
+                  { label: 'Планы ТО', value: equipment.maintenancePlans.length, status: equipment.maintenancePlans.length > 0 ? 'good' : 'warning' },
+                  { label: 'Инциденты', value: (equipment.jiraIssues || []).length, status: (equipment.jiraIssues || []).length > 0 ? 'critical' : 'good' },
+                  { label: 'Запас ТМЦ', value: equipment.spareParts.length, status: 'good' },
+                ]}
+              />
+            </Box>
           </Grid>
 
-          {/* Custom Sections Cards */}
-          <Grid item xs={12} lg={6}>
+          {/* RIGHT COLUMN (7/12): Классификаторы, ТОиР, Инженерия */}
+          <Grid item xs={12} lg={7}>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {sections.map((sec) => (
+              {/* Card 1: Общероссийские и отраслевые классификаторы */}
+              <Card>
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                    <CategoryIcon color="primary" />
+                    <Box>
+                      <Typography variant="h6" fontWeight={700}>
+                        Общероссийские и отраслевые классификаторы
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Нормативные коды классификации основных фондов и технологических процессов
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Divider sx={{ mb: 2 }} />
+
+                  <TableContainer>
+                    <Table size="small">
+                      <TableBody>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', width: '45%' }}>
+                            Код по ОКОФ (ОК 013-2014)
+                          </TableCell>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Paper
+                                variant="outlined"
+                                sx={{
+                                  px: 1.25,
+                                  py: 0.25,
+                                  fontFamily: 'monospace',
+                                  fontWeight: 700,
+                                  bgcolor: '#f1f5f9',
+                                  fontSize: '0.875rem',
+                                  borderRadius: '6px',
+                                  color: '#0f172a',
+                                }}
+                              >
+                                {okofCode || '—'}
+                              </Paper>
+                              {okofCode && (
+                                <Tooltip title="Скопировать код ОКОФ">
+                                  <IconButton size="small" onClick={() => handleCopy(okofCode, 'Код ОКОФ')}>
+                                    <ContentCopyIcon sx={{ fontSize: 16 }} />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary' }}>
+                            Код по ОКПД2 (ОК 034-2014)
+                          </TableCell>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Paper
+                                variant="outlined"
+                                sx={{
+                                  px: 1.25,
+                                  py: 0.25,
+                                  fontFamily: 'monospace',
+                                  fontWeight: 700,
+                                  bgcolor: '#f1f5f9',
+                                  fontSize: '0.875rem',
+                                  borderRadius: '6px',
+                                  color: '#0f172a',
+                                }}
+                              >
+                                {okpd2Code || '—'}
+                              </Paper>
+                              {okpd2Code && (
+                                <Tooltip title="Скопировать код ОКПД2">
+                                  <IconButton size="small" onClick={() => handleCopy(okpd2Code, 'Код ОКПД2')}>
+                                    <ContentCopyIcon sx={{ fontSize: 16 }} />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary' }}>
+                            Код технологического классификатора
+                          </TableCell>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Typography variant="body2" fontWeight={600} sx={{ fontFamily: 'monospace' }}>
+                                {procCode || '—'}
+                              </Typography>
+                              {procCode && (
+                                <Tooltip title="Скопировать код классификатора">
+                                  <IconButton size="small" onClick={() => handleCopy(procCode, 'Технологический классификатор')}>
+                                    <ContentCopyIcon sx={{ fontSize: 16 }} />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary' }}>
+                            Группа оборудования
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 600 }}>{eqGroup || '—'}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary' }}>
+                            Тип оборудования (Установка)
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 600 }}>{eqType || '—'}</TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </CardContent>
+              </Card>
+
+              {/* Card 2: Техническое состояние и график ТОиР */}
+              <Card>
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                    <SpeedIcon color="error" />
+                    <Box>
+                      <Typography variant="h6" fontWeight={700}>
+                        Техническое состояние и регламент ТОиР
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Степень износа, критичность и утвержденный график обслуживания
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Divider sx={{ mb: 2 }} />
+
+                  <TableContainer>
+                    <Table size="small">
+                      <TableBody>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', width: '45%' }}>
+                            Фактический процент износа
+                          </TableCell>
+                          <TableCell>
+                            {actualWear !== null ? (
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, maxWidth: 260 }}>
+                                <Typography variant="body2" fontWeight={700} sx={{ minWidth: 40 }}>
+                                  {actualWear}%
+                                </Typography>
+                                <Box sx={{ flexGrow: 1 }}>
+                                  <LinearProgress
+                                    variant="determinate"
+                                    value={Math.min(100, Math.max(0, actualWear))}
+                                    color={actualWear > 70 ? 'error' : actualWear > 30 ? 'warning' : 'success'}
+                                    sx={{ height: 8, borderRadius: 4 }}
+                                  />
+                                </Box>
+                              </Box>
+                            ) : (
+                              '—'
+                            )}
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary' }}>
+                            Категория критичности
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={`Категория ${criticality}`}
+                              size="small"
+                              color={criticality === 'A' ? 'error' : criticality === 'B' ? 'warning' : 'info'}
+                              sx={{ fontWeight: 700, height: 22 }}
+                            />
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary' }}>
+                            Периодичность регламентного ТО
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 600 }}>{maintPeriodicity || '—'}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary' }}>
+                            Утвержденный график ТО на 2026 год
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 600 }}>{maintScheduleYear || '—'}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary' }}>
+                            Количество проведенных ТО / ремонтов
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>
+                            {maintCount ? (
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <Typography variant="body2" fontWeight={700}>{maintCount}</Typography>
+                                <Chip label="шт" size="small" variant="outlined" sx={{ height: 18, fontSize: '0.65rem', fontWeight: 700 }} />
+                              </Box>
+                            ) : (
+                              '—'
+                            )}
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary' }}>
+                            Идентификатор в учетной системе (1С / ERP)
+                          </TableCell>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Typography variant="body2" fontWeight={600} sx={{ fontFamily: 'monospace' }}>
+                                {extSysId || '—'}
+                              </Typography>
+                              {extSysId && (
+                                <Tooltip title="Скопировать ID в 1С/ERP">
+                                  <IconButton size="small" onClick={() => handleCopy(extSysId, 'Внешний ID 1C/ERP')}>
+                                    <ContentCopyIcon sx={{ fontSize: 16 }} />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </CardContent>
+              </Card>
+
+              {/* Card 3+: Инженерные характеристики (Электрика, Механика и др.) */}
+              {engineeringSections.map((sec) => (
                 <Card key={sec.id}>
                   <CardContent sx={{ p: 3 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                      {SECTION_ICONS[sec.icon || 'Bolt'] || <TuneIcon color="primary" />}
+                      {SECTION_ICONS[sec.icon || 'Bolt'] || <BoltIcon color="warning" />}
                       <Box>
                         <Typography variant="h6" fontWeight={700}>
                           {sec.name}
@@ -862,7 +1306,7 @@ export default function EquipmentPassportPage() {
 
                             return (
                               <TableRow key={f.key}>
-                                <TableCell sx={{ fontWeight: 500, color: 'text.secondary', width: '50%' }}>
+                                <TableCell sx={{ fontWeight: 500, color: 'text.secondary', width: '45%' }}>
                                   {f.name}
                                 </TableCell>
                                 <TableCell sx={{ fontWeight: 700 }}>
@@ -914,7 +1358,7 @@ export default function EquipmentPassportPage() {
 
                             return (
                               <TableRow key={f.key}>
-                                <TableCell sx={{ fontWeight: 500, color: 'text.secondary', width: '50%' }}>
+                                <TableCell sx={{ fontWeight: 500, color: 'text.secondary', width: '45%' }}>
                                   {f.name}
                                 </TableCell>
                                 <TableCell sx={{ fontWeight: 700 }}>
