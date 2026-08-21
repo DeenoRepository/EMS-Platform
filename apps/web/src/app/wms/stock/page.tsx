@@ -499,8 +499,8 @@ function WmsStockContent() {
           bVal = b.isLowStock ? 0 : 1;
           break;
         default:
-          aVal = (a as any)[sortField] || '';
-          bVal = (b as any)[sortField] || '';
+          aVal = (a as unknown as Record<string, unknown>)[sortField] ?? '';
+          bVal = (b as unknown as Record<string, unknown>)[sortField] ?? '';
       }
 
       if (typeof aVal === 'number' && typeof bVal === 'number') {

@@ -3,12 +3,10 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   Box,
-  Card,
   Grid,
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TableRow,
   TableSortLabel,
@@ -19,7 +17,6 @@ import {
   Pagination,
   IconButton,
   Button,
-  InputAdornment,
 } from '@mui/material';
 import HistoryIcon from '@mui/icons-material/History';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
@@ -107,8 +104,8 @@ export default function AdminAuditLogPage() {
           bVal = b.ipAddress || '';
           break;
         default:
-          aVal = (a as any)[sortField] || '';
-          bVal = (b as any)[sortField] || '';
+          aVal = (a as unknown as Record<string, unknown>)[sortField] ?? '';
+          bVal = (b as unknown as Record<string, unknown>)[sortField] ?? '';
       }
 
       if (typeof aVal === 'number' && typeof bVal === 'number') {

@@ -62,7 +62,7 @@ interface AuditLogItem {
   action: string;
   entityType: string;
   entityId: string;
-  changes: any;
+  changes: Record<string, unknown> | null;
   ipAddress: string | null;
   createdAt: string;
   user: {
@@ -92,24 +92,24 @@ const ENTITY_TYPE_LABELS: Record<string, string> = {
   EquipmentCustomSection: 'Пользовательский раздел',
 };
 
-function formatValue(key: string, val: any): React.ReactNode {
+function formatValue(key: string, val: unknown): React.ReactNode {
   if (val === null || val === undefined || val === '') return '—';
   if (typeof val === 'boolean') return val ? 'Да' : 'Нет';
 
   if (key === 'status') {
-    return <StatusBadge status={val} size="small" />;
+    return <StatusBadge status={String(val)} size="small" />;
   }
 
   if (key === 'docType') {
-    return DOCUMENT_TYPE_MAP[val] || String(val);
+    return DOCUMENT_TYPE_MAP[String(val)] || String(val);
   }
 
   if (key === 'type') {
-    return APPROVAL_TYPE_MAP[val] || String(val);
+    return APPROVAL_TYPE_MAP[String(val)] || String(val);
   }
 
   if (key === 'approvalStatus') {
-    return <StatusBadge status={val} size="small" />;
+    return <StatusBadge status={String(val)} size="small" />;
   }
 
   if (typeof val === 'object') {
@@ -119,7 +119,7 @@ function formatValue(key: string, val: any): React.ReactNode {
   return String(val);
 }
 
-function RenderChangesDiff({ changes }: { changes: any }) {
+function RenderChangesDiff({ changes }: { changes: Record<string, unknown> | null | undefined }) {
   if (!changes || typeof changes !== 'object') {
     return <Typography variant="caption" color="text.secondary">—</Typography>;
   }
@@ -132,19 +132,20 @@ function RenderChangesDiff({ changes }: { changes: any }) {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-      {entries.map(([key, val]: [string, any]) => {
+      {entries.map(([key, val]) => {
         if (val && typeof val === 'object' && 'old' in val && 'new' in val) {
+          const changeObj = val as { old: unknown; new: unknown };
           return (
             <Box key={key} sx={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
               <Typography component="span" sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.75rem' }}>
                 {key}:
               </Typography>
               <Box component="span" sx={{ textDecoration: 'line-through', color: 'error.main', opacity: 0.8 }}>
-                {formatValue(key, val.old)}
+                {formatValue(key, changeObj.old)}
               </Box>
               <ArrowRightAltIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
               <Box component="span" sx={{ color: 'success.main', fontWeight: 600 }}>
-                {formatValue(key, val.new)}
+                {formatValue(key, changeObj.new)}
               </Box>
             </Box>
           );

@@ -35,9 +35,7 @@ import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import ConstructionOutlinedIcon from '@mui/icons-material/ConstructionOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
-import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
-import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import PageHeader from '@/components/layout/PageHeader';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -362,8 +360,8 @@ function EquipmentListContent() {
           bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0;
           break;
         default:
-          aVal = (a as any)[sortField] || '';
-          bVal = (b as any)[sortField] || '';
+          aVal = (a as unknown as Record<string, unknown>)[sortField] ?? '';
+          bVal = (b as unknown as Record<string, unknown>)[sortField] ?? '';
       }
 
       if (typeof aVal === 'number' && typeof bVal === 'number') {

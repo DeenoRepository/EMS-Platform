@@ -33,7 +33,6 @@ import TimerIcon from '@mui/icons-material/Timer';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import SyncIcon from '@mui/icons-material/Sync';
 import BugReportIcon from '@mui/icons-material/BugReport';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import ListAltIcon from '@mui/icons-material/ListAlt';

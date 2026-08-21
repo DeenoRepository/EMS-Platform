@@ -327,9 +327,13 @@ function DocumentsListContent() {
 
   const canUpload = hasPermission(PERMISSIONS.EPS_DOCUMENTS_UPLOAD);
   const canEdit = hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT);
-  const canDelete = hasPermission(PERMISSIONS.EPS_EQUIPMENT_DELETE);
+  interface DocumentColumnDef {
+    id: string;
+    label: string;
+    defaultVisible: boolean;
+  }
 
-  const DOCUMENT_COLUMNS: any[] = [
+  const DOCUMENT_COLUMNS: DocumentColumnDef[] = [
     { id: 'name', label: 'Имя файла', defaultVisible: true },
     { id: 'equipment', label: 'Оборудование', defaultVisible: true },
     { id: 'docType', label: 'Тип документа', defaultVisible: true },
