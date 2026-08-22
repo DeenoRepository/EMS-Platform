@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { requireAuth } from '@/lib/auth-guard';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
-import { hasPermission } from '@ems/auth';
+import { sanitizeAuthConfig, mergeAuthConfig } from '@/lib/srm-providers';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const user = await getCurrentUser(req);
-    if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.SRM_DASHBOARD_VIEW)) return forbiddenResponse();
+  const auth = await requireAuth(req, PERMISSIONS.SRM_DASHBOARD_VIEW);
+  if (auth.errorResponse) return auth.errorResponse;
 
+  try {
     const integration = await prisma.srmIntegration.findUnique({
       where: { id: params.id },
       include: {
@@ -25,20 +24,23 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ success: false, error: 'Подключение не найдено' }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, data: integration });
+    return NextResponse.json({
+      success: true,
+      data: {
+        ...integration,
+        authConfig: sanitizeAuthConfig(integration.authConfig),
+      },
+    });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: 'Ошибка получения данных интеграции' }, { status: 500 });
   }
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const user = await getCurrentUser(req);
-    if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE) && !user.roles.includes('admin')) {
-      return forbiddenResponse();
-    }
+  const auth = await requireAuth(req, [PERMISSIONS.ADMIN_SETTINGS_MANAGE, PERMISSIONS.SRM_SYNC_TRIGGER]);
+  if (auth.errorResponse) return auth.errorResponse;
 
+  try {
     const body = await req.json();
     const {
       name,
@@ -65,6 +67,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       });
     }
 
+    // Сохраняем существующие секреты при передаче маскированного плейсхолдера
+    const resolvedAuthConfig = authConfig !== undefined ? mergeAuthConfig(authConfig, existing.authConfig) : existing.authConfig;
+
     const updated = await prisma.srmIntegration.update({
       where: { id: params.id },
       data: {
@@ -72,7 +77,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         providerType: providerType || existing.providerType,
         baseUrl: baseUrl !== undefined ? baseUrl.trim() : existing.baseUrl,
         authType: authType || existing.authType,
-        authConfig: authConfig !== undefined ? authConfig : existing.authConfig,
+        authConfig: resolvedAuthConfig,
         queryConfig: queryConfig !== undefined ? queryConfig : existing.queryConfig,
         mappingConfig: mappingConfig !== undefined ? mappingConfig : existing.mappingConfig,
         isActive: isActive !== undefined ? Boolean(isActive) : existing.isActive,
@@ -84,7 +89,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({
       success: true,
       message: 'Настройки подключения обновлены',
-      data: updated,
+      data: {
+        ...updated,
+        authConfig: sanitizeAuthConfig(updated.authConfig),
+      },
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: 'Ошибка обновления подключения' }, { status: 500 });
@@ -92,13 +100,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const user = await getCurrentUser(req);
-    if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE) && !user.roles.includes('admin')) {
-      return forbiddenResponse();
-    }
+  const auth = await requireAuth(req, [PERMISSIONS.ADMIN_SETTINGS_MANAGE, PERMISSIONS.SRM_SYNC_TRIGGER]);
+  if (auth.errorResponse) return auth.errorResponse;
 
+  try {
     await prisma.srmIntegration.delete({
       where: { id: params.id },
     });

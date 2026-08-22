@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { requireAuth } from '@/lib/auth-guard';
 import { PERMISSIONS } from '@ems/shared';
-import { hasPermission } from '@ems/auth';
 import {
   getJiraFieldMapping,
   saveJiraFieldMapping,
@@ -55,11 +54,10 @@ const SAMPLE_JIRA_ISSUE = {
 };
 
 export async function GET(req: NextRequest) {
-  try {
-    const user = await getCurrentUser(req);
-    if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.SRM_DASHBOARD_VIEW)) return forbiddenResponse();
+  const auth = await requireAuth(req, PERMISSIONS.SRM_DASHBOARD_VIEW);
+  if (auth.errorResponse) return auth.errorResponse;
 
+  try {
     const config = await getJiraFieldMapping();
 
     return NextResponse.json({
@@ -80,14 +78,10 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  try {
-    const user = await getCurrentUser(req);
-    if (!user) return unauthorizedResponse();
-    // Требуем права администратора или управления настройками
-    if (!hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE) && !user.roles.includes('admin')) {
-      return forbiddenResponse();
-    }
+  const auth = await requireAuth(req, [PERMISSIONS.ADMIN_SETTINGS_MANAGE, PERMISSIONS.SRM_SYNC_TRIGGER]);
+  if (auth.errorResponse) return auth.errorResponse;
 
+  try {
     const body = await req.json();
     const config: JiraFieldMappingConfig = body;
 

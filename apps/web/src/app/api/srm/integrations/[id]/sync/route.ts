@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { requireAuth } from '@/lib/auth-guard';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
-import { hasPermission } from '@ems/auth';
 import { syncJiraIssues } from '@/lib/jira-service';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await requireAuth(req, [PERMISSIONS.SRM_SYNC_TRIGGER, PERMISSIONS.ADMIN_SETTINGS_MANAGE]);
+  if (auth.errorResponse) return auth.errorResponse;
+
   try {
-    const user = await getCurrentUser(req);
-    if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.SRM_DASHBOARD_VIEW)) return forbiddenResponse();
 
     const integration = await prisma.srmIntegration.findUnique({
       where: { id: params.id },

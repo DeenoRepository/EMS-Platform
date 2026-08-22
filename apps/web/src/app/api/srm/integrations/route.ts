@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { requireAuth } from '@/lib/auth-guard';
 import { prisma, SrmProviderType, SrmAuthType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
-import { hasPermission } from '@ems/auth';
-import { getAvailableSrmProviders } from '@/lib/srm-providers';
+import { getAvailableSrmProviders, sanitizeAuthConfig } from '@/lib/srm-providers';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-  try {
-    const user = await getCurrentUser(req);
-    if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.SRM_DASHBOARD_VIEW)) return forbiddenResponse();
+  const auth = await requireAuth(req, PERMISSIONS.SRM_DASHBOARD_VIEW);
+  if (auth.errorResponse) return auth.errorResponse;
 
-    const [integrations, providerTemplates] = await Promise.all([
+  try {
+    const [rawIntegrations, providerTemplates] = await Promise.all([
       prisma.srmIntegration.findMany({
         orderBy: { createdAt: 'desc' },
         include: {
@@ -24,6 +22,12 @@ export async function GET(req: NextRequest) {
       }),
       getAvailableSrmProviders(),
     ]);
+
+    // Санитизация конфиденциальных учетных данных (маскирование токенов и паролей)
+    const integrations = rawIntegrations.map((item) => ({
+      ...item,
+      authConfig: sanitizeAuthConfig(item.authConfig),
+    }));
 
     return NextResponse.json({
       success: true,
@@ -42,13 +46,10 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  try {
-    const user = await getCurrentUser(req);
-    if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE) && !user.roles.includes('admin')) {
-      return forbiddenResponse();
-    }
+  const auth = await requireAuth(req, [PERMISSIONS.ADMIN_SETTINGS_MANAGE, PERMISSIONS.SRM_SYNC_TRIGGER]);
+  if (auth.errorResponse) return auth.errorResponse;
 
+  try {
     const body = await req.json();
     const {
       name,
@@ -107,7 +108,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Подключение успешно создано',
-      data: integration,
+      data: {
+        ...integration,
+        authConfig: sanitizeAuthConfig(integration.authConfig),
+      },
     });
   } catch (error: any) {
     console.error('Ошибка создания подключения SRM:', error);

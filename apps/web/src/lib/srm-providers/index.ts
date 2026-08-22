@@ -32,6 +32,37 @@ export function getSrmAdapter(type: SrmProviderType): ISrmProviderAdapter {
 }
 
 /**
+ * Санитизация конфигурации аутентификации (маскирование паролей и токенов)
+ */
+export function sanitizeAuthConfig(authConfig: any): any {
+  if (!authConfig || typeof authConfig !== 'object') return {};
+  const sanitized = { ...authConfig };
+  if (sanitized.password) sanitized.password = '••••••••';
+  if (sanitized.apiToken) sanitized.apiToken = '••••••••';
+  if (sanitized.apiKey) sanitized.apiKey = '••••••••';
+  if (sanitized.token) sanitized.token = '••••••••';
+  return sanitized;
+}
+
+/**
+ * Слияние обновленной конфигурации с сохранением существующих секретов, если передан плейсхолдер
+ */
+export function mergeAuthConfig(newAuthConfig: any, existingAuthConfig: any): any {
+  if (!newAuthConfig) return existingAuthConfig || {};
+  if (!existingAuthConfig) return newAuthConfig;
+  const merged = { ...newAuthConfig };
+  const secretKeys = ['password', 'apiToken', 'apiKey', 'token'];
+  for (const key of secretKeys) {
+    if (merged[key] === '••••••••' || merged[key] === undefined || merged[key] === '') {
+      if (existingAuthConfig[key]) {
+        merged[key] = existingAuthConfig[key];
+      }
+    }
+  }
+  return merged;
+}
+
+/**
  * Список всех поддерживаемых провайдеров интеграций
  */
 export function getAvailableSrmProviders(): SrmProviderMetadata[] {
@@ -42,3 +73,5 @@ export function getAvailableSrmProviders(): SrmProviderMetadata[] {
     adapters.REST_GENERIC.getMetadata(),
   ];
 }
+
+

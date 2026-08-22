@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Box,
   Card,
@@ -13,7 +14,6 @@ import {
   TableRow,
   TableCell,
   TableBody,
-  Chip,
   CircularProgress,
   IconButton,
   Tooltip,
@@ -25,8 +25,6 @@ import {
   FormControl,
   InputLabel,
   Select,
-  Switch,
-  FormControlLabel,
 } from '@mui/material';
 import SpeedIcon from '@mui/icons-material/Speed';
 import TimerIcon from '@mui/icons-material/Timer';
@@ -45,9 +43,22 @@ import HubIcon from '@mui/icons-material/Hub';
 import CableIcon from '@mui/icons-material/Cable';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import PageHeader from '@/components/layout/PageHeader';
 import { useSnackbar } from 'notistack';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Cell, PieChart, Pie, Legend } from 'recharts';
+import * as XLSX from 'xlsx';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip as RechartsTooltip,
+  Cell,
+  PieChart,
+  Pie,
+  Legend,
+} from 'recharts';
 import {
   StatCard,
   EmptyState,
@@ -56,41 +67,71 @@ import {
   TrendSparkline,
   HealthScoreGauge,
   StatusBadge,
+  SearchInput,
+  FilterToolbar,
   PageLoading,
   FormDialog,
   ConfirmDialog,
   NavTabsContainer,
+  type TableDensity,
 } from '@/components/ui';
 import { SrmIntegrationWizardDialog } from '@/components/srm';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS } from '@ems/shared';
 
-const STATUS_COLORS: Record<string, string> = {
-  Open: '#f44336',
-  'In Progress': '#ff9800',
-  Closed: '#4caf50',
-  Resolved: '#2196f3',
+const CHART_PALETTE = ['#0284c7', '#0d9488', '#16a34a', '#d97706', '#dc2626', '#7c3aed'];
+
+const TAB_INDEX_TO_SLUG: Record<number, string> = {
+  0: 'metrics',
+  1: 'issues',
+  2: 'mapping',
+  3: 'integrations',
 };
 
-const PIE_COLORS = ['#3f51b5', '#00bcd4', '#4caf50', '#ff9800', '#f44336'];
+const TAB_SLUG_TO_INDEX: Record<string, number> = {
+  metrics: 0,
+  issues: 1,
+  mapping: 2,
+  integrations: 3,
+};
 
-export default function SrmOverviewPage() {
+function SrmOverviewContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { enqueueSnackbar } = useSnackbar();
   const { user, hasPermission } = useAuth();
-  const [currentTab, setCurrentTab] = useState(0);
+
+  // Tab State with URL query sync
+  const initialTabSlug = searchParams.get('tab');
+  const initialTabIndex = initialTabSlug && TAB_SLUG_TO_INDEX[initialTabSlug] !== undefined
+    ? TAB_SLUG_TO_INDEX[initialTabSlug]
+    : 0;
+
+  const [currentTab, setCurrentTab] = useState<number>(initialTabIndex);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [issues, setIssues] = useState<any[]>([]);
 
-  // Интеграции с внешними системами
+  // Search, Filters and Pagination State for Registry
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [priorityFilter, setPriorityFilter] = useState('ALL');
+  const [integrationFilter, setIntegrationFilter] = useState('ALL');
+  const [equipmentFilter, setEquipmentFilter] = useState('ALL');
+  const [issueTypeFilter, setIssueTypeFilter] = useState('ALL');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [density, setDensity] = useState<TableDensity>('standard');
+
+  // Integrations State
   const [integrations, setIntegrations] = useState<any[]>([]);
   const [providerTemplates, setProviderTemplates] = useState<any[]>([]);
   const [openIntegrationDialog, setOpenIntegrationDialog] = useState(false);
   const [testingIntegrationId, setTestingIntegrationId] = useState<string | null>(null);
   const [integrationPingResult, setIntegrationPingResult] = useState<any>(null);
 
-  // Форма новой интеграции
+  // Form State for Integration
   const [integrationForm, setIntegrationForm] = useState({
     name: '',
     providerType: 'JIRA',
@@ -107,7 +148,7 @@ export default function SrmOverviewPage() {
     isDefault: false,
   });
 
-  // Состояние конструктора сопоставления полей
+  // Field Mapping Builder State
   const [mappingConfig, setMappingConfig] = useState<any>(null);
   const [mappingDefaults, setMappingDefaults] = useState<any>(null);
   const [sampleJsonText, setSampleJsonText] = useState<string>('');
@@ -115,7 +156,7 @@ export default function SrmOverviewPage() {
   const [testResult, setTestResult] = useState<any>(null);
   const [savingMapping, setSavingMapping] = useState(false);
 
-  // Выбранная задача для просмотра сырых данных JSON
+  // Selected Raw Issue for JSON Inspector
   const [selectedRawIssue, setSelectedRawIssue] = useState<any>(null);
 
   const loadData = async () => {
@@ -129,7 +170,7 @@ export default function SrmOverviewPage() {
       ]);
 
       if (resStats.success) setStats(resStats.data);
-      if (resIssues.success) setIssues(resIssues.data);
+      if (resIssues.success) setIssues(resIssues.data || []);
       if (resMapping.success) {
         setMappingConfig(resMapping.data.config);
         setMappingDefaults(resMapping.data.defaults);
@@ -151,6 +192,15 @@ export default function SrmOverviewPage() {
     loadData();
   }, []);
 
+  // Sync tab change with URL query parameter
+  const handleTabChange = (newTab: number) => {
+    setCurrentTab(newTab);
+    const slug = TAB_INDEX_TO_SLUG[newTab] || 'metrics';
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', slug);
+    router.replace(`/srm?${params.toString()}`, { scroll: false });
+  };
+
   const handleSync = async () => {
     setSyncing(true);
     try {
@@ -169,7 +219,139 @@ export default function SrmOverviewPage() {
     }
   };
 
-  // Обработчики интеграций
+  // Filtered and Searched Issues List
+  const filteredIssues = useMemo(() => {
+    return issues.filter((issue) => {
+      // 1. Полнотекстовый поиск
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const keyMatch = issue.issueKey?.toLowerCase().includes(q);
+        const summaryMatch = issue.summary?.toLowerCase().includes(q);
+        const assigneeMatch = issue.assignee?.toLowerCase().includes(q);
+        const reporterMatch = issue.reporter?.toLowerCase().includes(q);
+        const eqNameMatch = issue.equipment?.name?.toLowerCase().includes(q);
+        const eqInvMatch = issue.equipment?.inventoryNumber?.toLowerCase().includes(q);
+        if (!keyMatch && !summaryMatch && !assigneeMatch && !reporterMatch && !eqNameMatch && !eqInvMatch) {
+          return false;
+        }
+      }
+
+      // 2. Фильтр по статусу
+      if (statusFilter !== 'ALL' && issue.status !== statusFilter) {
+        return false;
+      }
+
+      // 3. Фильтр по приоритету
+      if (priorityFilter !== 'ALL' && issue.priority !== priorityFilter) {
+        return false;
+      }
+
+      // 4. Фильтр по типу заявки
+      if (issueTypeFilter !== 'ALL' && issue.issueType !== issueTypeFilter) {
+        return false;
+      }
+
+      // 5. Фильтр по интеграции / источнику
+      if (integrationFilter !== 'ALL' && issue.integrationId !== integrationFilter) {
+        return false;
+      }
+
+      // 6. Фильтр по оборудованию
+      if (equipmentFilter === 'linked' && !issue.equipmentId) {
+        return false;
+      }
+      if (equipmentFilter === 'unlinked' && issue.equipmentId) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [issues, searchQuery, statusFilter, priorityFilter, issueTypeFilter, integrationFilter, equipmentFilter]);
+
+  // Paginated Issues
+  const paginatedIssues = useMemo(() => {
+    const startIndex = page * rowsPerPage;
+    return filteredIssues.slice(startIndex, startIndex + rowsPerPage);
+  }, [filteredIssues, page, rowsPerPage]);
+
+  // Active filters count
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (searchQuery.trim()) count++;
+    if (statusFilter !== 'ALL') count++;
+    if (priorityFilter !== 'ALL') count++;
+    if (issueTypeFilter !== 'ALL') count++;
+    if (integrationFilter !== 'ALL') count++;
+    if (equipmentFilter !== 'ALL') count++;
+    return count;
+  }, [searchQuery, statusFilter, priorityFilter, issueTypeFilter, integrationFilter, equipmentFilter]);
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setStatusFilter('ALL');
+    setPriorityFilter('ALL');
+    setIssueTypeFilter('ALL');
+    setIntegrationFilter('ALL');
+    setEquipmentFilter('ALL');
+    setPage(0);
+  };
+
+  // Distinct values for filter dropdowns
+  const availableStatuses = useMemo(() => {
+    const set = new Set<string>();
+    issues.forEach((i) => i.status && set.add(i.status));
+    return Array.from(set);
+  }, [issues]);
+
+  const availablePriorities = useMemo(() => {
+    const set = new Set<string>();
+    issues.forEach((i) => i.priority && set.add(i.priority));
+    return Array.from(set);
+  }, [issues]);
+
+  const availableIssueTypes = useMemo(() => {
+    const set = new Set<string>();
+    issues.forEach((i) => i.issueType && set.add(i.issueType));
+    return Array.from(set);
+  }, [issues]);
+
+  // Excel Export Handler
+  const handleExportExcel = () => {
+    if (!filteredIssues || filteredIssues.length === 0) {
+      enqueueSnackbar('Нет данных для экспорта', { variant: 'warning' });
+      return;
+    }
+
+    try {
+      const exportRows = filteredIssues.map((issue) => ({
+        'Ключ заявки': issue.issueKey,
+        'Тема инцидента': issue.summary,
+        'Источник (Интеграция)': issue.integration?.name || 'Внешняя система',
+        'Тип источника': issue.integration?.providerType || 'JIRA',
+        'Статус': issue.status,
+        'Приоритет': issue.priority,
+        'Тип заявки': issue.issueType,
+        'Инвентарный №': issue.equipment?.inventoryNumber || '—',
+        'Оборудование': issue.equipment?.name || '—',
+        'Исполнитель': issue.assignee || '—',
+        'Автор заявки': issue.reporter || '—',
+        'Дата создания': issue.createdDate ? new Date(issue.createdDate).toLocaleString('ru-RU') : '—',
+        'Дата закрытия': issue.resolvedDate ? new Date(issue.resolvedDate).toLocaleString('ru-RU') : '—',
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(exportRows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Реестр SRM');
+      const dateStr = new Date().toISOString().split('T')[0];
+      XLSX.writeFile(workbook, `srm_incidents_${dateStr}.xlsx`);
+      enqueueSnackbar(`Экспортировано ${exportRows.length} записей в Excel`, { variant: 'success' });
+    } catch (err) {
+      console.error('Ошибка экспорта в Excel:', err);
+      enqueueSnackbar('Ошибка при формировании Excel-файла', { variant: 'error' });
+    }
+  };
+
+  // Integration handlers
   const handleSelectTemplate = (template: any) => {
     setIntegrationForm({
       name: template.name,
@@ -187,62 +369,6 @@ export default function SrmOverviewPage() {
       isDefault: integrations.length === 0,
     });
     setOpenIntegrationDialog(true);
-  };
-
-  const handleCreateIntegration = async () => {
-    if (!integrationForm.name || !integrationForm.baseUrl) {
-      enqueueSnackbar('Заполните название и URL подключения', { variant: 'error' });
-      return;
-    }
-
-    try {
-      const authConfig: any = {};
-      if (integrationForm.authType === 'BASIC') {
-        authConfig.username = integrationForm.username;
-        authConfig.apiToken = integrationForm.apiToken;
-      } else if (integrationForm.authType === 'BEARER') {
-        authConfig.token = integrationForm.apiToken;
-      } else if (integrationForm.authType === 'API_KEY') {
-        authConfig.apiKey = integrationForm.apiKey;
-        authConfig.headerName = integrationForm.headerName;
-      }
-
-      const queryConfig: any = {
-        endpoint: integrationForm.endpoint,
-      };
-      if (integrationForm.providerType === 'JIRA') {
-        queryConfig.projectKey = integrationForm.projectKeyOrId || 'EMS';
-      } else if (integrationForm.providerType === 'REDMINE' || integrationForm.providerType === 'GITLAB_ISSUES') {
-        queryConfig.projectId = integrationForm.projectKeyOrId;
-      }
-
-      const res = await fetch('/api/srm/integrations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: integrationForm.name,
-          providerType: integrationForm.providerType,
-          baseUrl: integrationForm.baseUrl,
-          authType: integrationForm.authType,
-          authConfig,
-          queryConfig,
-          syncInterval: integrationForm.syncInterval,
-          isActive: integrationForm.isActive,
-          isDefault: integrationForm.isDefault,
-        }),
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        enqueueSnackbar('Подключение успешно добавлено', { variant: 'success' });
-        setOpenIntegrationDialog(false);
-        loadData();
-      } else {
-        enqueueSnackbar(data.error || 'Ошибка добавления подключения', { variant: 'error' });
-      }
-    } catch {
-      enqueueSnackbar('Ошибка сервера при создании интеграции', { variant: 'error' });
-    }
   };
 
   const [deleteIntegrationId, setDeleteIntegrationId] = useState<string | null>(null);
@@ -302,7 +428,7 @@ export default function SrmOverviewPage() {
     }
   };
 
-  // Обработчики конструктора маппинга
+  // Mapping Handlers
   const handleStandardFieldChange = (index: number, field: string, value: any) => {
     if (!mappingConfig) return;
     const nextMappings = [...mappingConfig.standardMappings];
@@ -436,22 +562,35 @@ export default function SrmOverviewPage() {
         subtitle="Мониторинг инцидентов, контроль SLA, аналитика надежности оборудования и единый центр интеграций (Jira, Redmine, GitLab, 1C)"
         breadcrumbs={[{ label: 'Главная', href: '/' }, { label: 'Система подачи заявок' }]}
         actions={
-          (hasPermission(PERMISSIONS.SRM_SYNC_TRIGGER) || hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) || user?.roles.includes('admin')) && (
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={syncing ? <CircularProgress size={20} color="inherit" /> : <SyncIcon />}
-              onClick={handleSync}
-              disabled={syncing}
-            >
-              Синхронизировать все системы
-            </Button>
-          )
+          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+            {(hasPermission(PERMISSIONS.SRM_REPORTS_EXPORT) || hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) || user?.roles.includes('admin')) && (
+              <Button
+                variant="outlined"
+                startIcon={<FileDownloadOutlinedIcon />}
+                onClick={handleExportExcel}
+                disabled={issues.length === 0}
+              >
+                Экспорт в Excel
+              </Button>
+            )}
+
+            {(hasPermission(PERMISSIONS.SRM_SYNC_TRIGGER) || hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) || user?.roles.includes('admin')) && (
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={syncing ? <CircularProgress size={20} color="inherit" /> : <SyncIcon />}
+                onClick={handleSync}
+                disabled={syncing}
+              >
+                Синхронизировать все системы
+              </Button>
+            )}
+          </Box>
         }
         tabs={
           <NavTabsContainer
             value={currentTab}
-            onChange={(val) => setCurrentTab(val)}
+            onChange={handleTabChange}
             tabs={[
               { label: 'Обзор и метрики', value: 0, icon: <DashboardIcon /> },
               { label: 'Реестр заявок', value: 1, icon: <ListAltIcon />, badge: issues.length },
@@ -484,7 +623,7 @@ export default function SrmOverviewPage() {
                       description: `В очереди находится ${stats.openIssues} открытых и ${stats.inProgressIssues || 0} выполняемых заявок. Проверьте приоритеты и SLA.`,
                       count: stats.openIssues,
                       actionLabel: 'Открыть реестр заявок',
-                      onAction: () => setCurrentTab(1),
+                      onAction: () => handleTabChange(1),
                     },
                   ]}
                 />
@@ -523,8 +662,8 @@ export default function SrmOverviewPage() {
                     title="Соблюдение регламентов SLA"
                     subtitle="Устранено в регламентный срок"
                     metrics={[
-                      { label: 'В срок', value: '96%', status: 'good' },
-                      { label: 'Просрочено', value: '4%', status: 'warning' },
+                      { label: 'В срок', value: `${stats?.slaComplianceRate || 96}%`, status: 'good' },
+                      { label: 'Просрочено', value: `${100 - (parseFloat(stats?.slaComplianceRate) || 96)}%`, status: 'warning' },
                     ]}
                   />
                 </Grid>
@@ -539,7 +678,7 @@ export default function SrmOverviewPage() {
                     iconColor="#d97706"
                     accentColor="#d97706"
                     active={true}
-                    onClick={() => setCurrentTab(1)}
+                    onClick={() => handleTabChange(1)}
                   />
                 </Grid>
               </Grid>
@@ -557,9 +696,9 @@ export default function SrmOverviewPage() {
                           <XAxis dataKey="status" />
                           <YAxis allowDecimals={false} />
                           <RechartsTooltip />
-                          <Bar dataKey="count" fill="#3f51b5" radius={[6, 6, 0, 0]}>
+                          <Bar dataKey="count" fill="#0284c7" radius={[6, 6, 0, 0]}>
                             {statusChartData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.status] || '#3f51b5'} />
+                              <Cell key={`cell-${index}`} fill={CHART_PALETTE[index % CHART_PALETTE.length]} />
                             ))}
                           </Bar>
                         </BarChart>
@@ -586,7 +725,7 @@ export default function SrmOverviewPage() {
                             label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
                           >
                             {priorityChartData.map((_, index) => (
-                              <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                              <Cell key={`cell-${index}`} fill={CHART_PALETTE[index % CHART_PALETTE.length]} />
                             ))}
                           </Pie>
                           <RechartsTooltip />
@@ -600,7 +739,7 @@ export default function SrmOverviewPage() {
             </>
           )}
 
-          {/* ВКЛАДКА 1: РЕЕСТР ЗАЯВОК */}
+          {/* ВКЛАДКА 1: РЕЕСТР ЗАЯВОК С ФИЛЬТРАМИ И ПОИСКОМ */}
           {(currentTab === 0 || currentTab === 1) && (
             <Box sx={{ mb: 4 }}>
               <Box sx={{ pb: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -608,22 +747,153 @@ export default function SrmOverviewPage() {
                   {currentTab === 0 ? 'Последние заявки из внешних систем' : 'Полный реестр инцидентов и заявок'}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Всего синхронизировано: <b>{issues.length}</b>
+                  Всего: <b>{issues.length}</b> | Отфильтровано: <b>{filteredIssues.length}</b>
                 </Typography>
               </Box>
 
-              {issues.length === 0 ? (
+              {/* ПАНЕЛЬ ФИЛЬТРОВ И ЖИВОГО ПОИСКА */}
+              {currentTab === 1 && (
+                <FilterToolbar
+                  activeFilterCount={activeFilterCount}
+                  onResetFilters={handleResetFilters}
+                  variant="standalone"
+                >
+                  <Box sx={{ width: { xs: '100%', sm: 260 } }}>
+                    <SearchInput
+                      placeholder="Поиск по ключу, теме, исполнителю..."
+                      value={searchQuery}
+                      onSearch={(val) => {
+                        setSearchQuery(val);
+                        setPage(0);
+                      }}
+                    />
+                  </Box>
+
+                  <FormControl size="small" sx={{ minWidth: 140 }}>
+                    <InputLabel>Статус</InputLabel>
+                    <Select
+                      value={statusFilter}
+                      label="Статус"
+                      onChange={(e) => {
+                        setStatusFilter(e.target.value);
+                        setPage(0);
+                      }}
+                    >
+                      <MenuItem value="ALL">Все статусы</MenuItem>
+                      {availableStatuses.map((st) => (
+                        <MenuItem key={st} value={st}>
+                          {st}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  <FormControl size="small" sx={{ minWidth: 140 }}>
+                    <InputLabel>Приоритет</InputLabel>
+                    <Select
+                      value={priorityFilter}
+                      label="Приоритет"
+                      onChange={(e) => {
+                        setPriorityFilter(e.target.value);
+                        setPage(0);
+                      }}
+                    >
+                      <MenuItem value="ALL">Все приоритеты</MenuItem>
+                      {availablePriorities.map((p) => (
+                        <MenuItem key={p} value={p}>
+                          {p}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  <FormControl size="small" sx={{ minWidth: 140 }}>
+                    <InputLabel>Тип заявки</InputLabel>
+                    <Select
+                      value={issueTypeFilter}
+                      label="Тип заявки"
+                      onChange={(e) => {
+                        setIssueTypeFilter(e.target.value);
+                        setPage(0);
+                      }}
+                    >
+                      <MenuItem value="ALL">Все типы</MenuItem>
+                      {availableIssueTypes.map((t) => (
+                        <MenuItem key={t} value={t}>
+                          {t}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  <FormControl size="small" sx={{ minWidth: 160 }}>
+                    <InputLabel>Оборудование</InputLabel>
+                    <Select
+                      value={equipmentFilter}
+                      label="Оборудование"
+                      onChange={(e) => {
+                        setEquipmentFilter(e.target.value);
+                        setPage(0);
+                      }}
+                    >
+                      <MenuItem value="ALL">Любое</MenuItem>
+                      <MenuItem value="linked">Только с оборудованием</MenuItem>
+                      <MenuItem value="unlinked">Без привязки</MenuItem>
+                    </Select>
+                  </FormControl>
+
+                  {integrations.length > 1 && (
+                    <FormControl size="small" sx={{ minWidth: 160 }}>
+                      <InputLabel>Источник</InputLabel>
+                      <Select
+                        value={integrationFilter}
+                        label="Источник"
+                        onChange={(e) => {
+                          setIntegrationFilter(e.target.value);
+                          setPage(0);
+                        }}
+                      >
+                        <MenuItem value="ALL">Все источники</MenuItem>
+                        {integrations.map((i) => (
+                          <MenuItem key={i.id} value={i.id}>
+                            {i.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  )}
+                </FilterToolbar>
+              )}
+
+              {filteredIssues.length === 0 ? (
                 <EmptyState
                   paper
                   icon={<ListAltIcon sx={{ fontSize: 36, color: 'text.disabled' }} />}
-                  title="Заявки не найдены"
-                  description="Заявки из внешних систем управления еще не синхронизированы. Нажмите «Синхронизировать все системы» для загрузки инцидентов."
-                  actionText="Синхронизировать сейчас"
-                  onAction={handleSync}
+                  title={issues.length === 0 ? 'Заявки не найдены' : 'Нет заявок по заданным фильтрам'}
+                  description={
+                    issues.length === 0
+                      ? 'Заявки из внешних систем управления еще не синхронизированы. Нажмите «Синхронизировать все системы» для загрузки инцидентов.'
+                      : 'Попробуйте изменить параметры поиска или сбросить активные фильтры.'
+                  }
+                  actionText={issues.length === 0 ? 'Синхронизировать сейчас' : 'Сбросить фильтры'}
+                  onAction={issues.length === 0 ? handleSync : handleResetFilters}
                 />
               ) : (
-                <DataTableWrapper total={issues.length} stickyHeader>
-                  <Table size="small" aria-label="Реестр заявок SRM">
+                <DataTableWrapper
+                  total={filteredIssues.length}
+                  page={page}
+                  pageSize={rowsPerPage}
+                  onPageChange={(_event: unknown, newPage: number) => setPage(newPage)}
+                  onPageSizeChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setRowsPerPage(parseInt(e.target.value, 10));
+                    setPage(0);
+                  }}
+                  density={density}
+                  onDensityChange={(d) => setDensity(d)}
+                  showDensityToggle
+                  stickyHeader
+                >
+                  <Table size={density === 'compact' ? 'small' : 'medium'} aria-label="Реестр заявок SRM">
                     <TableHead>
                       <TableRow>
                         <TableCell sx={{ fontWeight: 700, width: 130 }}>Ключ задачи</TableCell>
@@ -640,7 +910,7 @@ export default function SrmOverviewPage() {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {issues.map((issue) => (
+                      {paginatedIssues.map((issue) => (
                         <TableRow key={issue.id} hover>
                           <TableCell sx={{ fontWeight: 700, color: 'primary.main', fontFamily: 'monospace' }}>
                             {issue.issueKey}
@@ -1313,5 +1583,13 @@ export default function SrmOverviewPage() {
         onClose={() => setDeleteIntegrationId(null)}
       />
     </Box>
+  );
+}
+
+export default function SrmOverviewPage() {
+  return (
+    <Suspense fallback={<PageLoading text="Загрузка модуля SRM..." />}>
+      <SrmOverviewContent />
+    </Suspense>
   );
 }

@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { requireAuth } from '@/lib/auth-guard';
 import { PERMISSIONS } from '@ems/shared';
-import { hasPermission } from '@ems/auth';
 import { testJiraFieldMapping, JiraFieldMappingConfig } from '@/lib/jira-service';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAuth(req, PERMISSIONS.SRM_DASHBOARD_VIEW);
+  if (auth.errorResponse) return auth.errorResponse;
+
   try {
-    const user = await getCurrentUser(req);
-    if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.SRM_DASHBOARD_VIEW)) return forbiddenResponse();
 
     const body = await req.json();
     const { sampleIssue, config }: { sampleIssue: any; config: JiraFieldMappingConfig } = body;
