@@ -31,6 +31,7 @@ import LanOutlinedIcon from '@mui/icons-material/LanOutlined';
 import ClearIcon from '@mui/icons-material/Clear';
 import ContactSupportOutlinedIcon from '@mui/icons-material/ContactSupportOutlined';
 import DomainIcon from '@mui/icons-material/Domain';
+import LanguageIcon from '@mui/icons-material/Language';
 import { useAuth } from '@/lib/auth-client';
 
 export default function LoginPage() {
@@ -395,6 +396,33 @@ export default function LoginPage() {
               </Fade>
             )}
 
+            {(/[а-яёА-ЯЁ]/.test(password) || /[а-яёА-ЯЁ]/.test(username)) && (
+              <Fade in={true}>
+                <Box
+                  role="status"
+                  aria-live="polite"
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.75,
+                    mt: 1,
+                    px: 1.25,
+                    py: 0.5,
+                    borderRadius: 1.5,
+                    backgroundColor: '#eff6ff',
+                    border: '1px solid #bfdbfe',
+                    color: '#1e40af',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  <LanguageIcon sx={{ fontSize: 16 }} aria-hidden="true" />
+                  <span>Русская раскладка (RU): система автоматически сопоставит символы в EN</span>
+                </Box>
+              </Fade>
+            )}
+
+
             <Box
               sx={{
                 display: 'flex',
@@ -447,6 +475,10 @@ export default function LoginPage() {
               variant="contained"
               size="large"
               disabled={loading}
+              onClick={(e) => {
+                e.preventDefault();
+                performLogin(username, password);
+              }}
               sx={{
                 py: 1.25,
                 fontWeight: 700,

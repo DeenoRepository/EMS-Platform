@@ -10,7 +10,22 @@ export function hashPassword(password: string, iterations = DEFAULT_ITERATIONS):
   return `pbkdf2$${iterations}$${salt}$${hash}`;
 }
 
-export function verifyPassword(password: string, storedHash: string): boolean {
+const RU_TO_EN_KEYBOARD: Record<string, string> = {
+  'й': 'q', 'ц': 'w', 'у': 'e', 'к': 'r', 'е': 't', 'н': 'y', 'г': 'u', 'ш': 'i', 'щ': 'o', 'з': 'p', 'х': '[', 'ъ': ']',
+  'ф': 'a', 'ы': 's', 'в': 'd', 'а': 'f', 'п': 'g', 'р': 'h', 'о': 'j', 'л': 'k', 'д': 'l', 'ж': ';', 'э': "'",
+  'я': 'z', 'ч': 'x', 'с': 'c', 'м': 'v', 'и': 'b', 'т': 'n', 'ь': 'm', 'б': ',', 'ю': '.',
+  'Й': 'Q', 'Ц': 'W', 'У': 'E', 'К': 'R', 'Е': 'T', 'Н': 'Y', 'Г': 'U', 'Ш': 'I', 'Щ': 'O', 'З': 'P', 'Х': '{', 'Ъ': '}',
+  'Ф': 'A', 'Ы': 'S', 'В': 'D', 'А': 'F', 'П': 'G', 'Р': 'H', 'О': 'J', 'Л': 'K', 'Д': 'L', 'Ж': ':', 'Э': '"',
+  'Я': 'Z', 'Ч': 'X', 'С': 'C', 'М': 'V', 'И': 'B', 'Т': 'N', 'Ь': 'M', 'Б': '<', 'Ю': '>',
+  'ё': '`', 'Ё': '~',
+};
+
+export function fixKeyboardLayout(input: string): string {
+  if (!input) return input;
+  return input.split('').map((ch) => RU_TO_EN_KEYBOARD[ch] || ch).join('');
+}
+
+function verifySingle(password: string, storedHash: string): boolean {
   try {
     if (!storedHash) return false;
 
@@ -50,3 +65,18 @@ export function verifyPassword(password: string, storedHash: string): boolean {
     return false;
   }
 }
+
+export function verifyPassword(password: string, storedHash: string): boolean {
+  if (verifySingle(password, storedHash)) {
+    return true;
+  }
+  // Если пароль содержит кириллические символы (случайно введен в русской раскладке)
+  if (/[а-яёА-ЯЁ]/.test(password)) {
+    const fixed = fixKeyboardLayout(password);
+    if (verifySingle(fixed, storedHash)) {
+      return true;
+    }
+  }
+  return false;
+}
+

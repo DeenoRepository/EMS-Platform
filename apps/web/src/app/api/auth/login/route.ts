@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@ems/database';
-import { authenticateLdap, signSessionToken, verifyPassword, getUserRolesAndPermissions, logAuditEvent } from '@ems/auth';
+import { authenticateLdap, signSessionToken, verifyPassword, fixKeyboardLayout, getUserRolesAndPermissions, logAuditEvent } from '@ems/auth';
 import { JwtUserPayload } from '@ems/shared';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { logger } from '@/lib/logger';
@@ -69,9 +69,16 @@ export async function POST(req: NextRequest) {
       authenticatedUser = user;
     } else {
       // 2. Fallback: Проверка локального пользователя в БД (например, admin)
-      const user = await prisma.user.findUnique({
+      let user = await prisma.user.findUnique({
         where: { ldapLogin: trimmedUsername },
       });
+
+      if (!user && /[а-яёА-ЯЁ]/.test(trimmedUsername)) {
+        const convertedUsername = fixKeyboardLayout(trimmedUsername);
+        user = await prisma.user.findUnique({
+          where: { ldapLogin: convertedUsername },
+        });
+      }
 
       if (user && user.passwordHash && password) {
         const isValid = verifyPassword(password, user.passwordHash);
