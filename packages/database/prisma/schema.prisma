@@ -699,27 +699,42 @@ enum SrmAuthType {
 }
 
 model JiraIssueCache {
-  id            String          @id @default(uuid())
-  issueKey      String          @unique // e.g. EMS-104 or REDMINE-12
-  summary       String
-  status        String
-  priority      String
-  issueType     String
-  assignee      String?
-  reporter      String?
-  createdDate   DateTime
-  resolvedDate  DateTime?
-  equipmentId   String?         // Сопоставленное оборудование
-  integrationId String?         // Ссылка на источник интеграции
-  rawData       Json            // Полный исходный JSON
-  syncedAt      DateTime        @default(now())
+  id              String          @id @default(uuid())
+  issueKey        String          @unique // e.g. EMS-104, INC-2026-0001, REDMINE-12
+  summary         String
+  description     String?         @db.Text
+  status          String          // OPEN, IN_PROGRESS, RESOLVED, CLOSED, WAITING
+  priority        String          // LOW, MEDIUM, HIGH, CRITICAL
+  issueType       String          // INCIDENT, SERVICE_REQUEST, REPAIR, MAINTENANCE, DEFECT
+  source          String          @default("JIRA") // INTERNAL, JIRA, REDMINE, 1C, GITLAB, WEBHOOK
+  failureCategory String?         // MECHANICAL, ELECTRICAL, HYDRAULIC, SOFTWARE, OPERATOR_ERROR, WEAR, OTHER
+  downtimeMinutes Int?            // Время простоя оборудования в минутах
+  slaDeadline     DateTime?       // Плановое время решения по регламенту SLA
+  slaBreached     Boolean?        @default(false)
+  resolutionNotes String?         @db.Text
+  warrantyClaim   Boolean?        @default(false)
+  contractorName  String?         // Сервисный подрядчик / СЦ
+  mroScheduleId   String?         // Связанный заказ-наряд ТОиР
+  assignee        String?
+  reporter        String?
+  createdById     String?         // Внутренний пользователь-инициатор
+  createdDate     DateTime
+  resolvedDate    DateTime?
+  equipmentId     String?         // Сопоставленное оборудование
+  integrationId   String?         // Ссылка на источник интеграции
+  rawData         Json?           // Полный исходный JSON (или кастомные параметры)
+  syncedAt        DateTime        @default(now())
 
-  integration   SrmIntegration? @relation(fields: [integrationId], references: [id], onDelete: SetNull)
+  integration     SrmIntegration? @relation(fields: [integrationId], references: [id], onDelete: SetNull)
 
   @@index([status])
+  @@index([priority])
+  @@index([failureCategory])
   @@index([equipmentId])
   @@index([integrationId])
+  @@index([source])
   @@index([createdDate])
+  @@index([slaDeadline])
 }
 
 // ==========================================

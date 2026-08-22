@@ -29,6 +29,10 @@ export const PERMISSIONS = {
 
   // SRM
   SRM_DASHBOARD_VIEW: 'srm.dashboard.view',
+  SRM_REQUESTS_CREATE: 'srm.requests.create',
+  SRM_REQUESTS_MANAGE: 'srm.requests.manage',
+  SRM_RELIABILITY_VIEW: 'srm.reliability.view',
+  SRM_WARRANTY_MANAGE: 'srm.warranty.manage',
   SRM_SYNC_TRIGGER: 'srm.sync.trigger',
   SRM_REPORTS_EXPORT: 'srm.reports.export',
 
@@ -211,6 +215,30 @@ export const PERMISSION_DEFINITIONS: Record<PermissionCode, PermissionDefinition
     module: 'srm',
     description: 'Доступ к дашборду надежности, списку поломок, инцидентов и метрикам MTTR / MTBF',
   },
+  'srm.requests.create': {
+    code: 'srm.requests.create',
+    displayName: 'Подача сервисных заявок и инцидентов',
+    module: 'srm',
+    description: 'Создание внутренних заявок на неисправность и ремонт оборудования',
+  },
+  'srm.requests.manage': {
+    code: 'srm.requests.manage',
+    displayName: 'Управление инцидентами и нарядами',
+    module: 'srm',
+    description: 'Назначение исполнителей, сброс статусов, передача в MRO и закрытие инцидентов',
+  },
+  'srm.reliability.view': {
+    code: 'srm.reliability.view',
+    displayName: 'Аналитика надежности RAMS & RCM',
+    module: 'srm',
+    description: 'Доступ к расчетам MTTR, MTBF, КТГ, анализу Парето и причинам простоев',
+  },
+  'srm.warranty.manage': {
+    code: 'srm.warranty.manage',
+    displayName: 'Управление гарантиями и рекламациями',
+    module: 'srm',
+    description: 'Ведение гарантийных случаев, сервисных договоров и рекламационных актов',
+  },
   'srm.sync.trigger': {
     code: 'srm.sync.trigger',
     displayName: 'Синхронизация с Helpdesk / Jira',
@@ -333,6 +361,40 @@ export const AUDIT_ACTION_MAP: Record<string, { label: string; color: 'success' 
   DELETE: { label: 'Удаление', color: 'error' },
   LOGIN: { label: 'Вход в систему', color: 'default' },
   LOGOUT: { label: 'Выход из системы', color: 'default' },
+};
+
+export const SRM_STATUS_MAP: Record<string, { label: string; color: 'error' | 'warning' | 'info' | 'success' | 'default' }> = {
+  OPEN: { label: 'Новая / Открыта', color: 'error' },
+  IN_PROGRESS: { label: 'В работе', color: 'warning' },
+  WAITING: { label: 'Ожидание запчастей / Подрядчика', color: 'info' },
+  RESOLVED: { label: 'Устранена / Решена', color: 'success' },
+  CLOSED: { label: 'Закрыта', color: 'default' },
+};
+
+export const SRM_PRIORITY_MAP: Record<string, { label: string; color: 'error' | 'warning' | 'info' | 'default' }> = {
+  CRITICAL: { label: 'Аварийный / Критический', color: 'error' },
+  HIGH: { label: 'Высокий', color: 'error' },
+  MEDIUM: { label: 'Средний', color: 'warning' },
+  LOW: { label: 'Низкий', color: 'info' },
+};
+
+export const SRM_FAILURE_CATEGORY_MAP: Record<string, { label: string; color: 'error' | 'warning' | 'info' | 'default' | 'success' }> = {
+  MECHANICAL: { label: 'Механический излом / Узел', color: 'error' },
+  ELECTRICAL: { label: 'Электрооборудование / Привод', color: 'warning' },
+  HYDRAULIC: { label: 'Гидравлика / Пневматика / Давление', color: 'info' },
+  SOFTWARE: { label: 'Сбой ПО / ЧПУ / Контроллер', color: 'info' },
+  OPERATOR_ERROR: { label: 'Человеческий фактор / Ошибка', color: 'default' },
+  WEAR: { label: 'Естественный износ / Деградация', color: 'warning' },
+  OTHER: { label: 'Прочая неисправность', color: 'default' },
+};
+
+export const SRM_SOURCE_MAP: Record<string, { label: string; color: 'primary' | 'secondary' | 'info' | 'warning' | 'default' }> = {
+  INTERNAL: { label: 'Внутренний ServiceDesk', color: 'primary' },
+  JIRA: { label: 'Jira Service Management', color: 'info' },
+  REDMINE: { label: 'Redmine', color: 'warning' },
+  '1C': { label: '1С:ТОиР / 1C:ERP', color: 'secondary' },
+  GITLAB: { label: 'GitLab Issues', color: 'info' },
+  WEBHOOK: { label: 'REST Webhook / SCADA', color: 'default' },
 };
 
 // ==========================================

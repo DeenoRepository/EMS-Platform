@@ -43,6 +43,7 @@ import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import BugReportOutlinedIcon from '@mui/icons-material/BugReportOutlined';
+import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useAuth } from '@/lib/auth-client';
@@ -325,13 +326,14 @@ export default function Sidebar({
     },
     {
       id: 'srm',
-      label: 'Система подачи заявок',
+      label: 'Система подачи заявок (SRM)',
       icon: <BugReportOutlinedIcon sx={{ fontSize: 18 }} />,
       permission: PERMISSIONS.SRM_DASHBOARD_VIEW,
       children: [
+        { label: 'Обзор и дашборд', path: '/srm?tab=metrics', icon: <SpeedIcon sx={{ fontSize: 15 }} /> },
         {
           label: 'Инциденты и заявки',
-          path: '/srm',
+          path: '/srm?tab=issues',
           icon: <TimelineIcon sx={{ fontSize: 15 }} />,
           badge:
             (srmOpenCount || 0) + (srmInProgressCount || 0) > 0
@@ -345,7 +347,8 @@ export default function Sidebar({
               ? `${srmInProgressCount} инцидентов в процессе решения`
               : undefined,
         },
-        { label: 'Метрики MTTR / MTBF', path: '/srm?tab=metrics', icon: <SpeedIcon sx={{ fontSize: 15 }} /> },
+        { label: 'RAMS & Анализ отказов', path: '/srm?tab=reliability', icon: <AssessmentOutlinedIcon sx={{ fontSize: 15 }} /> },
+        { label: 'Гарантии и подрядчики', path: '/srm?tab=warranty', icon: <ShieldOutlinedIcon sx={{ fontSize: 15 }} /> },
       ],
     },
     {

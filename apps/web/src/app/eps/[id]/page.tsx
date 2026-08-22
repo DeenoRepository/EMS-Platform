@@ -86,6 +86,7 @@ import {
   DatePickerField,
   type LifecycleEvent,
 } from '@/components/ui';
+import { CreateServiceRequestDialog } from '@/components/srm';
 
 interface CustomFieldDef {
   id: string;
@@ -223,6 +224,9 @@ export default function EquipmentPassportPage() {
   const [docType, setDocType] = useState('SCHEMA');
   const [docDescription, setDocDescription] = useState('');
   const [uploading, setUploading] = useState(false);
+
+  // SRM Incident Dialog State
+  const [openCreateSrmModal, setOpenCreateSrmModal] = useState(false);
 
   // Confirm State
   const [confirmState, setConfirmState] = useState<{
@@ -1775,12 +1779,26 @@ export default function EquipmentPassportPage() {
       {/* TAB 5: Журнал инцидентов и дефектов */}
       {activeTab === 5 && (
         <Card sx={{ p: 3 }}>
-          <Typography variant="h6" fontWeight={700} gutterBottom>
-            Журнал инцидентов, дефектов и заявок на ремонт (SRM)
-          </Typography>
-          <Typography variant="caption" color="text.secondary" paragraph>
-            История обращений, сервисных инцидентов и заявок на восстановление работоспособности
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+            <Box>
+              <Typography variant="h6" fontWeight={700} gutterBottom sx={{ mb: 0.25 }}>
+                Журнал инцидентов, дефектов и заявок на ремонт (SRM)
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                История обращений, сервисных инцидентов и заявок на восстановление работоспособности
+              </Typography>
+            </Box>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<AddIcon />}
+              size="small"
+              onClick={() => setOpenCreateSrmModal(true)}
+              sx={{ fontWeight: 700, borderRadius: '8px' }}
+            >
+              Зафиксировать отказ / Заявка SRM
+            </Button>
+          </Box>
           <Divider sx={{ mb: 2 }} />
 
           {(!equipment.jiraIssues || equipment.jiraIssues.length === 0) ? (
@@ -2299,6 +2317,14 @@ export default function EquipmentPassportPage() {
         cancelText="Отмена"
         onConfirm={confirmState.onConfirm}
         onClose={() => setConfirmState((prev) => ({ ...prev, open: false }))}
+      />
+
+      {/* Диалог создания инцидента SRM */}
+      <CreateServiceRequestDialog
+        open={openCreateSrmModal}
+        onClose={() => setOpenCreateSrmModal(false)}
+        initialEquipmentId={equipment.id}
+        onSuccess={() => fetchEquipmentAndMeta()}
       />
     </Box>
   );

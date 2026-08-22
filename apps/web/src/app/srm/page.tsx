@@ -25,6 +25,7 @@ import {
   FormControl,
   InputLabel,
   Select,
+  Chip,
 } from '@mui/material';
 import SpeedIcon from '@mui/icons-material/Speed';
 import TimerIcon from '@mui/icons-material/Timer';
@@ -41,11 +42,11 @@ import SaveIcon from '@mui/icons-material/Save';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import HubIcon from '@mui/icons-material/Hub';
 import CableIcon from '@mui/icons-material/Cable';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import BuildCircleIcon from '@mui/icons-material/BuildCircle';
+import AddIcon from '@mui/icons-material/Add';
 import PageHeader from '@/components/layout/PageHeader';
 import { useSnackbar } from 'notistack';
 import * as XLSX from 'xlsx';
@@ -72,29 +73,44 @@ import {
   SearchInput,
   FilterToolbar,
   PageLoading,
-  FormDialog,
   ConfirmDialog,
   NavTabsContainer,
   type TableDensity,
 } from '@/components/ui';
-import { SrmIntegrationWizardDialog } from '@/components/srm';
+import {
+  SrmIntegrationWizardDialog,
+  CreateServiceRequestDialog,
+  SrmIssueDetailsDrawer,
+  SrmReliabilityAnalytics,
+  SrmWarrantyTab,
+} from '@/components/srm';
 import { useAuth } from '@/lib/auth-client';
-import { PERMISSIONS } from '@ems/shared';
+import {
+  PERMISSIONS,
+  SRM_FAILURE_CATEGORY_MAP,
+  SRM_SOURCE_MAP,
+  SRM_STATUS_MAP,
+  SRM_PRIORITY_MAP,
+} from '@ems/shared';
 
 const CHART_PALETTE = ['#0284c7', '#0d9488', '#16a34a', '#d97706', '#dc2626', '#7c3aed'];
 
 const TAB_INDEX_TO_SLUG: Record<number, string> = {
   0: 'metrics',
   1: 'issues',
-  2: 'mapping',
-  3: 'integrations',
+  2: 'reliability',
+  3: 'warranty',
+  4: 'mapping',
+  5: 'integrations',
 };
 
 const TAB_SLUG_TO_INDEX: Record<string, number> = {
   metrics: 0,
   issues: 1,
-  mapping: 2,
-  integrations: 3,
+  reliability: 2,
+  warranty: 3,
+  mapping: 4,
+  integrations: 5,
 };
 
 function SrmOverviewContent() {
@@ -113,15 +129,21 @@ function SrmOverviewContent() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [stats, setStats] = useState<any>(null);
+  const [analytics, setAnalytics] = useState<any>(null);
   const [issues, setIssues] = useState<any[]>([]);
+
+  // Modals and Drawers
+  const [openCreateDialog, setOpenCreateDialog] = useState(false);
+  const [selectedIssueForDrawer, setSelectedIssueForDrawer] = useState<any | null>(null);
 
   // Search, Filters and Pagination State for Registry
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [priorityFilter, setPriorityFilter] = useState('ALL');
+  const [sourceFilter, setSourceFilter] = useState('ALL');
+  const [failureCategoryFilter, setFailureCategoryFilter] = useState('ALL');
   const [integrationFilter, setIntegrationFilter] = useState('ALL');
   const [equipmentFilter, setEquipmentFilter] = useState('ALL');
-  const [issueTypeFilter, setIssueTypeFilter] = useState('ALL');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [density, setDensity] = useState<TableDensity>('standard');
@@ -133,23 +155,6 @@ function SrmOverviewContent() {
   const [testingIntegrationId, setTestingIntegrationId] = useState<string | null>(null);
   const [integrationPingResult, setIntegrationPingResult] = useState<any>(null);
 
-  // Form State for Integration
-  const [integrationForm, setIntegrationForm] = useState({
-    name: '',
-    providerType: 'JIRA',
-    baseUrl: '',
-    authType: 'BASIC',
-    username: '',
-    apiToken: '',
-    apiKey: '',
-    headerName: '',
-    endpoint: '',
-    projectKeyOrId: '',
-    syncInterval: 60,
-    isActive: true,
-    isDefault: false,
-  });
-
   // Field Mapping Builder State
   const [mappingConfig, setMappingConfig] = useState<any>(null);
   const [mappingDefaults, setMappingDefaults] = useState<any>(null);
@@ -158,20 +163,19 @@ function SrmOverviewContent() {
   const [testResult, setTestResult] = useState<any>(null);
   const [savingMapping, setSavingMapping] = useState(false);
 
-  // Selected Raw Issue for JSON Inspector
-  const [selectedRawIssue, setSelectedRawIssue] = useState<any>(null);
-
   const loadData = async () => {
     setLoading(true);
     try {
-      const [resStats, resIssues, resMapping, resIntegrations] = await Promise.all([
+      const [resStats, resAnalytics, resIssues, resMapping, resIntegrations] = await Promise.all([
         fetch('/api/srm/stats').then((r) => r.json()),
+        fetch('/api/srm/analytics/reliability').then((r) => r.json()),
         fetch('/api/srm/issues').then((r) => r.json()),
         fetch('/api/srm/mapping').then((r) => r.json()),
         fetch('/api/srm/integrations').then((r) => r.json()),
       ]);
 
       if (resStats.success) setStats(resStats.data);
+      if (resAnalytics.success) setAnalytics(resAnalytics.data);
       if (resIssues.success) setIssues(resIssues.data || []);
       if (resMapping.success) {
         setMappingConfig(resMapping.data.config);
@@ -233,7 +237,8 @@ function SrmOverviewContent() {
         const reporterMatch = issue.reporter?.toLowerCase().includes(q);
         const eqNameMatch = issue.equipment?.name?.toLowerCase().includes(q);
         const eqInvMatch = issue.equipment?.inventoryNumber?.toLowerCase().includes(q);
-        if (!keyMatch && !summaryMatch && !assigneeMatch && !reporterMatch && !eqNameMatch && !eqInvMatch) {
+        const contrMatch = issue.contractorName?.toLowerCase().includes(q);
+        if (!keyMatch && !summaryMatch && !assigneeMatch && !reporterMatch && !eqNameMatch && !eqInvMatch && !contrMatch) {
           return false;
         }
       }
@@ -248,17 +253,22 @@ function SrmOverviewContent() {
         return false;
       }
 
-      // 4. Фильтр по типу заявки
-      if (issueTypeFilter !== 'ALL' && issue.issueType !== issueTypeFilter) {
+      // 4. Фильтр по источнику (INTERNAL, JIRA, REDMINE, 1C)
+      if (sourceFilter !== 'ALL' && (issue.source || 'JIRA') !== sourceFilter) {
         return false;
       }
 
-      // 5. Фильтр по интеграции / источнику
+      // 5. Фильтр по категории отказа
+      if (failureCategoryFilter !== 'ALL' && issue.failureCategory !== failureCategoryFilter) {
+        return false;
+      }
+
+      // 6. Фильтр по интеграции
       if (integrationFilter !== 'ALL' && issue.integrationId !== integrationFilter) {
         return false;
       }
 
-      // 6. Фильтр по оборудованию
+      // 7. Фильтр по оборудованию
       if (equipmentFilter === 'linked' && !issue.equipmentId) {
         return false;
       }
@@ -268,7 +278,7 @@ function SrmOverviewContent() {
 
       return true;
     });
-  }, [issues, searchQuery, statusFilter, priorityFilter, issueTypeFilter, integrationFilter, equipmentFilter]);
+  }, [issues, searchQuery, statusFilter, priorityFilter, sourceFilter, failureCategoryFilter, integrationFilter, equipmentFilter]);
 
   // Paginated Issues
   const paginatedIssues = useMemo(() => {
@@ -282,40 +292,23 @@ function SrmOverviewContent() {
     if (searchQuery.trim()) count++;
     if (statusFilter !== 'ALL') count++;
     if (priorityFilter !== 'ALL') count++;
-    if (issueTypeFilter !== 'ALL') count++;
+    if (sourceFilter !== 'ALL') count++;
+    if (failureCategoryFilter !== 'ALL') count++;
     if (integrationFilter !== 'ALL') count++;
     if (equipmentFilter !== 'ALL') count++;
     return count;
-  }, [searchQuery, statusFilter, priorityFilter, issueTypeFilter, integrationFilter, equipmentFilter]);
+  }, [searchQuery, statusFilter, priorityFilter, sourceFilter, failureCategoryFilter, integrationFilter, equipmentFilter]);
 
   const handleResetFilters = () => {
     setSearchQuery('');
     setStatusFilter('ALL');
     setPriorityFilter('ALL');
-    setIssueTypeFilter('ALL');
+    setSourceFilter('ALL');
+    setFailureCategoryFilter('ALL');
     setIntegrationFilter('ALL');
     setEquipmentFilter('ALL');
     setPage(0);
   };
-
-  // Distinct values for filter dropdowns
-  const availableStatuses = useMemo(() => {
-    const set = new Set<string>();
-    issues.forEach((i) => i.status && set.add(i.status));
-    return Array.from(set);
-  }, [issues]);
-
-  const availablePriorities = useMemo(() => {
-    const set = new Set<string>();
-    issues.forEach((i) => i.priority && set.add(i.priority));
-    return Array.from(set);
-  }, [issues]);
-
-  const availableIssueTypes = useMemo(() => {
-    const set = new Set<string>();
-    issues.forEach((i) => i.issueType && set.add(i.issueType));
-    return Array.from(set);
-  }, [issues]);
 
   // Excel Export Handler
   const handleExportExcel = () => {
@@ -328,13 +321,15 @@ function SrmOverviewContent() {
       const exportRows = filteredIssues.map((issue) => ({
         'Ключ заявки': issue.issueKey,
         'Тема инцидента': issue.summary,
-        'Источник (Интеграция)': issue.integration?.name || 'Внешняя система',
-        'Тип источника': issue.integration?.providerType || 'JIRA',
+        'Источник': SRM_SOURCE_MAP[issue.source]?.label || issue.integration?.name || issue.source || 'Внешняя система',
         'Статус': issue.status,
         'Приоритет': issue.priority,
-        'Тип заявки': issue.issueType,
+        'Категория отказа': SRM_FAILURE_CATEGORY_MAP[issue.failureCategory]?.label || issue.failureCategory || '—',
         'Инвентарный №': issue.equipment?.inventoryNumber || '—',
         'Оборудование': issue.equipment?.name || '—',
+        'Простой (мин)': issue.downtimeMinutes || 0,
+        'Гарантия': issue.warrantyClaim ? 'Да' : 'Нет',
+        'Подрядчик': issue.contractorName || '—',
         'Исполнитель': issue.assignee || '—',
         'Автор заявки': issue.reporter || '—',
         'Дата создания': issue.createdDate ? new Date(issue.createdDate).toLocaleString('ru-RU') : '—',
@@ -360,31 +355,7 @@ function SrmOverviewContent() {
     enqueueSnackbar('Webhook URL скопирован в буфер обмена', { variant: 'success' });
   };
 
-  // Integration handlers
-  const handleSelectTemplate = (template: any) => {
-    setIntegrationForm({
-      name: template.name,
-      providerType: template.type,
-      baseUrl: 'https://',
-      authType: template.defaultAuthType,
-      username: '',
-      apiToken: '',
-      apiKey: '',
-      headerName: '',
-      endpoint: template.defaultEndpoint,
-      projectKeyOrId: '',
-      syncInterval: 60,
-      isActive: true,
-      isDefault: integrations.length === 0,
-    });
-    setOpenIntegrationDialog(true);
-  };
-
   const [deleteIntegrationId, setDeleteIntegrationId] = useState<string | null>(null);
-
-  const handleDeleteIntegration = (id: string) => {
-    setDeleteIntegrationId(id);
-  };
 
   const confirmDeleteIntegration = async () => {
     if (!deleteIntegrationId) return;
@@ -567,11 +538,21 @@ function SrmOverviewContent() {
   return (
     <Box>
       <PageHeader
-        title="SRM — Система подачи и управления заявками"
-        subtitle="Мониторинг инцидентов, контроль SLA, аналитика надежности оборудования и единый центр интеграций (Jira, Redmine, GitLab, 1C)"
-        breadcrumbs={[{ label: 'Главная', href: '/' }, { label: 'Система подачи заявок' }]}
+        title="SRM 2.0 — Управление заявками, инцидентами и надежностью оборудования"
+        subtitle="Единый ServiceDesk: регистрация отказов, контроль SLA, RAMS-аналитика (MTTR/MTBF/КТГ) и интеграция с Jira, Redmine, 1C"
+        breadcrumbs={[{ label: 'Главная', href: '/' }, { label: 'Система подачи заявок (SRM)' }]}
         actions={
           <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<AddIcon />}
+              onClick={() => setOpenCreateDialog(true)}
+              sx={{ fontWeight: 700, borderRadius: '8px' }}
+            >
+              Подать сервисную заявку
+            </Button>
+
             {(hasPermission(PERMISSIONS.SRM_REPORTS_EXPORT) || hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) || user?.roles.includes('admin')) && (
               <Button
                 variant="outlined"
@@ -585,13 +566,12 @@ function SrmOverviewContent() {
 
             {(hasPermission(PERMISSIONS.SRM_SYNC_TRIGGER) || hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) || user?.roles.includes('admin')) && (
               <Button
-                variant="contained"
-                color="primary"
-                startIcon={syncing ? <CircularProgress size={20} color="inherit" /> : <SyncIcon />}
+                variant="outlined"
+                startIcon={syncing ? <CircularProgress size={18} color="inherit" /> : <SyncIcon />}
                 onClick={handleSync}
                 disabled={syncing}
               >
-                Синхронизировать все системы
+                Синхронизировать
               </Button>
             )}
           </Box>
@@ -601,12 +581,14 @@ function SrmOverviewContent() {
             value={currentTab}
             onChange={handleTabChange}
             tabs={[
-              { label: 'Обзор и метрики', value: 0, icon: <DashboardIcon /> },
-              { label: 'Реестр заявок', value: 1, icon: <ListAltIcon />, badge: issues.length },
+              { label: 'Обзор и дашборд', value: 0, icon: <DashboardIcon /> },
+              { label: 'Реестр инцидентов', value: 1, icon: <ListAltIcon />, badge: issues.length },
+              { label: 'RAMS & Анализ отказов', value: 2, icon: <SpeedIcon /> },
+              { label: 'Гарантии и подрядчики', value: 3, icon: <ShieldOutlinedIcon />, badge: analytics?.warrantyIncidentsCount || 0 },
               ...(hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) || user?.roles.includes('admin')
                 ? [
-                    { label: 'Конструктор сопоставления полей', value: 2, icon: <SettingsSuggestIcon /> },
-                    { label: 'Внешние API и Интеграции', value: 3, icon: <CableIcon />, badge: integrations.length },
+                    { label: 'Конструктор сопоставления', value: 4, icon: <SettingsSuggestIcon /> },
+                    { label: 'Внешние API и Интеграции', value: 5, icon: <CableIcon />, badge: integrations.length },
                   ]
                 : []),
             ]}
@@ -615,7 +597,7 @@ function SrmOverviewContent() {
       />
 
       {loading ? (
-        <PageLoading text="Синхронизация данных SRM и загрузка метрик..." />
+        <PageLoading text="Загрузка данных SRM 2.0 и расчет метрик надежности..." />
       ) : (
         <>
           {/* ВКЛАДКА 0: ДАШБОРД И МЕТРИКИ */}
@@ -629,9 +611,9 @@ function SrmOverviewContent() {
                       id: 'srm-open-issues',
                       severity: stats.openIssues > 5 ? 'CRITICAL' : 'WARNING',
                       title: 'Требуется обработка открытых инцидентов ServiceDesk',
-                      description: `В очереди находится ${stats.openIssues} открытых и ${stats.inProgressIssues || 0} выполняемых заявок. Проверьте приоритеты и SLA.`,
+                      description: `В очереди находится ${stats.openIssues} открытых и ${stats.inProgressIssues || 0} выполняемых заявок. Проверьте приоритеты и регламенты SLA.`,
                       count: stats.openIssues,
-                      actionLabel: 'Открыть реестр заявок',
+                      actionLabel: 'Открыть реестр инцидентов',
                       onAction: () => handleTabChange(1),
                     },
                   ]}
@@ -642,12 +624,12 @@ function SrmOverviewContent() {
               <Grid container spacing={2} sx={{ mb: 3 }}>
                 <Grid item xs={12} sm={6} md={3}>
                   <TrendSparkline
-                    title="Динамика MTTR (восстановление)"
-                    currentValue={`${stats?.mttrHours || '4.2'} ч`}
+                    title="Динамика MTTR (время ремонта)"
+                    currentValue={`${analytics?.mttrHours || stats?.mttrHours || '4.2'} ч`}
                     unit="ч"
                     changePercent={-8.5}
-                    periodLabel="vs пред. месяц"
-                    data={[6.2, 5.8, 5.1, 4.9, 4.5, 4.2]}
+                    periodLabel="vs пред. период"
+                    data={[6.2, 5.8, 5.1, 4.9, 4.5, analytics?.mttrHours || 4.2]}
                     color="#0284c7"
                   />
                 </Grid>
@@ -655,24 +637,24 @@ function SrmOverviewContent() {
                 <Grid item xs={12} sm={6} md={3}>
                   <TrendSparkline
                     title="Динамика MTBF (наработка)"
-                    currentValue={`${stats?.mtbfDays || '48'} дн`}
+                    currentValue={`${analytics?.mtbfDays || stats?.mtbfDays || '48'} дн`}
                     unit="дн"
                     changePercent={12.4}
-                    periodLabel="vs пред. месяц"
-                    data={[32, 36, 40, 42, 45, 48]}
+                    periodLabel="vs пред. период"
+                    data={[32, 36, 40, 42, 45, analytics?.mtbfDays || 48]}
                     color="#16a34a"
                   />
                 </Grid>
 
                 <Grid item xs={12} sm={6} md={3}>
                   <HealthScoreGauge
-                    score={parseFloat(stats?.slaComplianceRate) || 96}
+                    score={analytics?.availabilityPercent || parseFloat(stats?.slaComplianceRate) || 96}
                     size="sm"
-                    title="Соблюдение регламентов SLA"
-                    subtitle="Устранено в регламентный срок"
+                    title="КТГ (Техническая готовность)"
+                    subtitle="Availability Rate оборудования"
                     metrics={[
-                      { label: 'В срок', value: `${stats?.slaComplianceRate || 96}%`, status: 'good' },
-                      { label: 'Просрочено', value: `${100 - (parseFloat(stats?.slaComplianceRate) || 96)}%`, status: 'warning' },
+                      { label: 'КТГ', value: `${analytics?.availabilityPercent || 94.5}%`, status: 'good' },
+                      { label: 'SLA', value: `${analytics?.slaComplianceRate || stats?.slaComplianceRate || 96}%`, status: 'good' },
                     ]}
                   />
                 </Grid>
@@ -680,7 +662,7 @@ function SrmOverviewContent() {
                 <Grid item xs={12} sm={6} md={3}>
                   <StatCard
                     title="Всего заявок в SRM"
-                    value={stats?.totalIssues || 0}
+                    value={stats?.totalIssues || issues.length}
                     subtitle={`В работе: ${stats?.inProgressIssues || 0} | Открыто: ${stats?.openIssues || 0}`}
                     icon={<BugReportIcon sx={{ fontSize: 20 }} />}
                     iconBgColor="rgba(217, 119, 6, 0.08)"
@@ -748,12 +730,12 @@ function SrmOverviewContent() {
             </>
           )}
 
-          {/* ВКЛАДКА 1: РЕЕСТР ЗАЯВОК С ФИЛЬТРАМИ И ПОИСКОМ */}
-          {(currentTab === 0 || currentTab === 1) && (
+          {/* ВКЛАДКА 1: РЕЕСТР ИНЦИДЕНТОВ С ФИЛЬТРАМИ И ПОИСКОМ */}
+          {currentTab === 1 && (
             <Box sx={{ mb: 4 }}>
               <Box sx={{ pb: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography variant="h6" fontWeight={700}>
-                  {currentTab === 0 ? 'Последние заявки из внешних систем' : 'Полный реестр инцидентов и заявок'}
+                  Полный реестр инцидентов и сервисных заявок
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Всего: <b>{issues.length}</b> | Отфильтровано: <b>{filteredIssues.length}</b>
@@ -761,118 +743,112 @@ function SrmOverviewContent() {
               </Box>
 
               {/* ПАНЕЛЬ ФИЛЬТРОВ И ЖИВОГО ПОИСКА */}
-              {currentTab === 1 && (
-                <FilterToolbar
-                  activeFilterCount={activeFilterCount}
-                  onResetFilters={handleResetFilters}
-                  variant="standalone"
-                >
-                  <Box sx={{ width: { xs: '100%', sm: 260 } }}>
-                    <SearchInput
-                      placeholder="Поиск по ключу, теме, исполнителю..."
-                      value={searchQuery}
-                      onSearch={(val) => {
-                        setSearchQuery(val);
-                        setPage(0);
-                      }}
-                    />
-                  </Box>
+              <FilterToolbar
+                activeFilterCount={activeFilterCount}
+                onResetFilters={handleResetFilters}
+                variant="standalone"
+              >
+                <Box sx={{ width: { xs: '100%', sm: 260 } }}>
+                  <SearchInput
+                    placeholder="Поиск по ключу, теме, исполнителю..."
+                    value={searchQuery}
+                    onSearch={(val) => {
+                      setSearchQuery(val);
+                      setPage(0);
+                    }}
+                  />
+                </Box>
 
-                  <FormControl size="small" sx={{ minWidth: 140 }}>
-                    <InputLabel>Статус</InputLabel>
-                    <Select
-                      value={statusFilter}
-                      label="Статус"
-                      onChange={(e) => {
-                        setStatusFilter(e.target.value);
-                        setPage(0);
-                      }}
-                    >
-                      <MenuItem value="ALL">Все статусы</MenuItem>
-                      {availableStatuses.map((st) => (
-                        <MenuItem key={st} value={st}>
-                          {st}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                <FormControl size="small" sx={{ minWidth: 140 }}>
+                  <InputLabel>Статус</InputLabel>
+                  <Select
+                    value={statusFilter}
+                    label="Статус"
+                    onChange={(e) => {
+                      setStatusFilter(e.target.value);
+                      setPage(0);
+                    }}
+                  >
+                    <MenuItem value="ALL">Все статусы</MenuItem>
+                    <MenuItem value="OPEN">Новая / Открыта</MenuItem>
+                    <MenuItem value="IN_PROGRESS">В работе</MenuItem>
+                    <MenuItem value="WAITING">Ожидание</MenuItem>
+                    <MenuItem value="RESOLVED">Решена</MenuItem>
+                    <MenuItem value="CLOSED">Закрыта</MenuItem>
+                  </Select>
+                </FormControl>
 
-                  <FormControl size="small" sx={{ minWidth: 140 }}>
-                    <InputLabel>Приоритет</InputLabel>
-                    <Select
-                      value={priorityFilter}
-                      label="Приоритет"
-                      onChange={(e) => {
-                        setPriorityFilter(e.target.value);
-                        setPage(0);
-                      }}
-                    >
-                      <MenuItem value="ALL">Все приоритеты</MenuItem>
-                      {availablePriorities.map((p) => (
-                        <MenuItem key={p} value={p}>
-                          {p}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                <FormControl size="small" sx={{ minWidth: 140 }}>
+                  <InputLabel>Приоритет</InputLabel>
+                  <Select
+                    value={priorityFilter}
+                    label="Приоритет"
+                    onChange={(e) => {
+                      setPriorityFilter(e.target.value);
+                      setPage(0);
+                    }}
+                  >
+                    <MenuItem value="ALL">Все приоритеты</MenuItem>
+                    <MenuItem value="CRITICAL">Аварийный</MenuItem>
+                    <MenuItem value="HIGH">Высокий</MenuItem>
+                    <MenuItem value="MEDIUM">Средний</MenuItem>
+                    <MenuItem value="LOW">Низкий</MenuItem>
+                  </Select>
+                </FormControl>
 
-                  <FormControl size="small" sx={{ minWidth: 140 }}>
-                    <InputLabel>Тип заявки</InputLabel>
-                    <Select
-                      value={issueTypeFilter}
-                      label="Тип заявки"
-                      onChange={(e) => {
-                        setIssueTypeFilter(e.target.value);
-                        setPage(0);
-                      }}
-                    >
-                      <MenuItem value="ALL">Все типы</MenuItem>
-                      {availableIssueTypes.map((t) => (
-                        <MenuItem key={t} value={t}>
-                          {t}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                <FormControl size="small" sx={{ minWidth: 150 }}>
+                  <InputLabel>Категория дефекта</InputLabel>
+                  <Select
+                    value={failureCategoryFilter}
+                    label="Категория дефекта"
+                    onChange={(e) => {
+                      setFailureCategoryFilter(e.target.value);
+                      setPage(0);
+                    }}
+                  >
+                    <MenuItem value="ALL">Все категории</MenuItem>
+                    {Object.entries(SRM_FAILURE_CATEGORY_MAP).map(([key, meta]) => (
+                      <MenuItem key={key} value={key}>
+                        {meta.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
 
-                  <FormControl size="small" sx={{ minWidth: 160 }}>
-                    <InputLabel>Оборудование</InputLabel>
-                    <Select
-                      value={equipmentFilter}
-                      label="Оборудование"
-                      onChange={(e) => {
-                        setEquipmentFilter(e.target.value);
-                        setPage(0);
-                      }}
-                    >
-                      <MenuItem value="ALL">Любое</MenuItem>
-                      <MenuItem value="linked">Только с оборудованием</MenuItem>
-                      <MenuItem value="unlinked">Без привязки</MenuItem>
-                    </Select>
-                  </FormControl>
+                <FormControl size="small" sx={{ minWidth: 140 }}>
+                  <InputLabel>Источник</InputLabel>
+                  <Select
+                    value={sourceFilter}
+                    label="Источник"
+                    onChange={(e) => {
+                      setSourceFilter(e.target.value);
+                      setPage(0);
+                    }}
+                  >
+                    <MenuItem value="ALL">Все источники</MenuItem>
+                    <MenuItem value="INTERNAL">Внутренний ServiceDesk</MenuItem>
+                    <MenuItem value="JIRA">Jira</MenuItem>
+                    <MenuItem value="REDMINE">Redmine</MenuItem>
+                    <MenuItem value="1C">1C</MenuItem>
+                  </Select>
+                </FormControl>
 
-                  {integrations.length > 1 && (
-                    <FormControl size="small" sx={{ minWidth: 160 }}>
-                      <InputLabel>Источник</InputLabel>
-                      <Select
-                        value={integrationFilter}
-                        label="Источник"
-                        onChange={(e) => {
-                          setIntegrationFilter(e.target.value);
-                          setPage(0);
-                        }}
-                      >
-                        <MenuItem value="ALL">Все источники</MenuItem>
-                        {integrations.map((i) => (
-                          <MenuItem key={i.id} value={i.id}>
-                            {i.name}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  )}
-                </FilterToolbar>
-              )}
+                <FormControl size="small" sx={{ minWidth: 150 }}>
+                  <InputLabel>Оборудование</InputLabel>
+                  <Select
+                    value={equipmentFilter}
+                    label="Оборудование"
+                    onChange={(e) => {
+                      setEquipmentFilter(e.target.value);
+                      setPage(0);
+                    }}
+                  >
+                    <MenuItem value="ALL">Любое</MenuItem>
+                    <MenuItem value="linked">Только с оборудованием</MenuItem>
+                    <MenuItem value="unlinked">Без привязки</MenuItem>
+                  </Select>
+                </FormControl>
+              </FilterToolbar>
 
               {filteredIssues.length === 0 ? (
                 <EmptyState
@@ -881,11 +857,11 @@ function SrmOverviewContent() {
                   title={issues.length === 0 ? 'Заявки не найдены' : 'Нет заявок по заданным фильтрам'}
                   description={
                     issues.length === 0
-                      ? 'Заявки из внешних систем управления еще не синхронизированы. Нажмите «Синхронизировать все системы» для загрузки инцидентов.'
+                      ? 'В системе еще нет зарегистрированных заявок. Нажмите «Подать сервисную заявку» или синхронизируйте внешние системы.'
                       : 'Попробуйте изменить параметры поиска или сбросить активные фильтры.'
                   }
-                  actionText={issues.length === 0 ? 'Синхронизировать сейчас' : 'Сбросить фильтры'}
-                  onAction={issues.length === 0 ? handleSync : handleResetFilters}
+                  actionText={issues.length === 0 ? 'Подать заявку' : 'Сбросить фильтры'}
+                  onAction={issues.length === 0 ? () => setOpenCreateDialog(true) : handleResetFilters}
                 />
               ) : (
                 <DataTableWrapper
@@ -902,7 +878,7 @@ function SrmOverviewContent() {
                   showDensityToggle
                   stickyHeader
                 >
-                  <Table size={density === 'compact' ? 'small' : 'medium'} aria-label="Реестр заявок SRM">
+                  <Table size={density === 'compact' ? 'small' : 'medium'} aria-label="Реестр инцидентов SRM">
                     <TableHead>
                       <TableRow>
                         <TableCell sx={{ fontWeight: 700, width: 130 }}>Ключ задачи</TableCell>
@@ -913,29 +889,41 @@ function SrmOverviewContent() {
                         <TableCell sx={{ fontWeight: 700 }}>Связанное оборудование</TableCell>
                         <TableCell sx={{ fontWeight: 700, width: 130 }}>Исполнитель</TableCell>
                         <TableCell sx={{ fontWeight: 700, width: 120 }}>Дата создания</TableCell>
-                        <TableCell sx={{ fontWeight: 700, width: 90 }} align="right">
+                        <TableCell sx={{ fontWeight: 700, width: 100 }} align="right">
                           Действия
                         </TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {paginatedIssues.map((issue) => (
-                        <TableRow key={issue.id} hover>
+                        <TableRow
+                          key={issue.id}
+                          hover
+                          sx={{ cursor: 'pointer' }}
+                          onClick={() => setSelectedIssueForDrawer(issue)}
+                        >
                           <TableCell sx={{ fontWeight: 700, color: 'primary.main', fontFamily: 'monospace' }}>
                             {issue.issueKey}
                           </TableCell>
-                          <TableCell sx={{ maxWidth: 320 }}>
+                          <TableCell sx={{ maxWidth: 300 }}>
                             <Typography variant="body2" noWrap title={issue.summary} fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
                               {issue.summary}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              Тип: {issue.issueType}
-                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 0.5, mt: 0.25 }}>
+                              {issue.failureCategory && (
+                                <Typography variant="caption" color="text.secondary">
+                                  {SRM_FAILURE_CATEGORY_MAP[issue.failureCategory]?.label || issue.failureCategory}
+                                </Typography>
+                              )}
+                              {issue.warrantyClaim && (
+                                <Chip label="Гарантия" size="small" color="warning" sx={{ height: 16, fontSize: '0.65rem' }} />
+                              )}
+                            </Box>
                           </TableCell>
                           <TableCell>
                             <StatusBadge
-                              status={issue.integration?.name || 'JIRA'}
-                              label={issue.integration?.name || 'Jira'}
+                              status={issue.source || 'INTERNAL'}
+                              label={SRM_SOURCE_MAP[issue.source]?.label || issue.integration?.name || 'Внутренний'}
                               variant="outlined"
                               size="small"
                             />
@@ -966,30 +954,14 @@ function SrmOverviewContent() {
                           <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace' }}>
                             {new Date(issue.createdDate).toLocaleDateString('ru-RU')}
                           </TableCell>
-                          <TableCell align="right">
-                            <Box sx={{ display: 'inline-flex', gap: 0.75, alignItems: 'center' }}>
-                              <Tooltip title="Создать наряд ТОиР в модуле MRO">
-                                <IconButton
-                                  size="small"
-                                  color="primary"
-                                  onClick={() => {
-                                    const params = new URLSearchParams();
-                                    params.set('createSchedule', 'true');
-                                    if (issue.equipmentId) params.set('equipmentId', issue.equipmentId);
-                                    params.set('title', `Ремонт по заявке ${issue.issueKey}: ${issue.summary}`);
-                                    params.set('notes', `Создано на основе инцидента SRM (${issue.integration?.name || 'ServiceDesk'}). Приоритет: ${issue.priority}, статус: ${issue.status}.`);
-                                    router.push(`/mro?${params.toString()}`);
-                                  }}
-                                >
-                                  <BuildCircleIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
+                          <TableCell align="right" onClick={(e) => e.stopPropagation()}>
+                            <Box sx={{ display: 'inline-flex', gap: 0.5, alignItems: 'center' }}>
                               <Button
                                 size="small"
                                 variant="outlined"
-                                onClick={() => setSelectedRawIssue(issue)}
+                                onClick={() => setSelectedIssueForDrawer(issue)}
                               >
-                                JSON
+                                Карточка
                               </Button>
                             </Box>
                           </TableCell>
@@ -1002,8 +974,18 @@ function SrmOverviewContent() {
             </Box>
           )}
 
-          {/* ВКЛАДКА 2: КОНСТРУКТОР СОПОСТАВЛЕНИЯ ПОЛЕЙ */}
-          {currentTab === 2 && mappingConfig && (
+          {/* ВКЛАДКА 2: RAMS & АНАЛИЗ НАДЕЖНОСТИ */}
+          {currentTab === 2 && (
+            <SrmReliabilityAnalytics analytics={analytics} loading={loading} />
+          )}
+
+          {/* ВКЛАДКА 3: ГАРАНТИИ И ПОДРЯДЧИКИ */}
+          {currentTab === 3 && (
+            <SrmWarrantyTab issues={issues} onSelectIssue={(iss) => setSelectedIssueForDrawer(iss)} />
+          )}
+
+          {/* ВКЛАДКА 4: КОНСТРУКТОР СОПОСТАВЛЕНИЯ ПОЛЕЙ */}
+          {currentTab === 4 && mappingConfig && (
             <Box>
               <Box sx={{ mb: 3 }}>
                 <CriticalAlertBanner
@@ -1317,7 +1299,7 @@ function SrmOverviewContent() {
                                   <TableCell sx={{ fontWeight: 600 }}>Связанное оборудование:</TableCell>
                                   <TableCell>
                                     {testResult.mapped?.equipmentId ? (
-                                      <StatusBadge status="SURPLUS" label="Оборудование привязано" size="small" />
+                                      <StatusBadge status="ACTIVE" label="Оборудование привязано" size="small" />
                                     ) : (
                                       <Typography variant="caption" color="error">Не привязано</Typography>
                                     )}
@@ -1379,8 +1361,8 @@ function SrmOverviewContent() {
             </Box>
           )}
 
-          {/* ВКЛАДКА 3: ВНЕШНИЕ API И ИНТЕГРАЦИИ (CONNECTORS) */}
-          {currentTab === 3 && (
+          {/* ВКЛАДКА 5: ВНЕШНИЕ API И ИНТЕГРАЦИИ (CONNECTORS) */}
+          {currentTab === 5 && (
             <Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <div>
@@ -1396,21 +1378,6 @@ function SrmOverviewContent() {
                   color="primary"
                   startIcon={<AddCircleOutlineIcon />}
                   onClick={() => {
-                    setIntegrationForm({
-                      name: 'Новое подключение API',
-                      providerType: 'JIRA',
-                      baseUrl: 'https://',
-                      authType: 'BASIC',
-                      username: '',
-                      apiToken: '',
-                      apiKey: '',
-                      headerName: '',
-                      endpoint: '/rest/api/2/search',
-                      projectKeyOrId: '',
-                      syncInterval: 60,
-                      isActive: true,
-                      isDefault: integrations.length === 0,
-                    });
                     setOpenIntegrationDialog(true);
                   }}
                 >
@@ -1433,7 +1400,7 @@ function SrmOverviewContent() {
                         transition: 'all 0.2s',
                         '&:hover': { borderColor: 'primary.main', transform: 'translateY(-2px)' },
                       }}
-                      onClick={() => handleSelectTemplate(template)}
+                      onClick={() => setOpenIntegrationDialog(true)}
                     >
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                         <HubIcon color="primary" />
@@ -1545,7 +1512,7 @@ function SrmOverviewContent() {
                                   <IconButton
                                     size="small"
                                     color="error"
-                                    onClick={() => handleDeleteIntegration(item.id)}
+                                    onClick={() => setDeleteIntegrationId(item.id)}
                                   >
                                     <DeleteOutlineIcon fontSize="small" />
                                   </IconButton>
@@ -1570,15 +1537,6 @@ function SrmOverviewContent() {
                   <Typography variant="subtitle2" fontWeight={700}>
                     {integrationPingResult.data?.message || integrationPingResult.message || 'Результат проверки связи'}
                   </Typography>
-                  {integrationPingResult.data?.diagnostics && (
-                    <Box sx={{ mt: 1 }}>
-                      {integrationPingResult.data.diagnostics.map((d: string, i: number) => (
-                        <Typography key={i} variant="caption" display="block">
-                          • {d}
-                        </Typography>
-                      ))}
-                    </Box>
-                  )}
                 </Alert>
               )}
             </Box>
@@ -1586,44 +1544,50 @@ function SrmOverviewContent() {
         </>
       )}
 
-      {/* МАСТЕР НАСТРОЙКИ ИНТЕГРАЦИИ SERVICEDESK / JIRA */}
+      {/* Диалог создания сервисной заявки */}
+      <CreateServiceRequestDialog
+        open={openCreateDialog}
+        onClose={() => setOpenCreateDialog(false)}
+        onSuccess={() => {
+          loadData();
+          handleTabChange(1);
+        }}
+      />
+
+      {/* Drawer детального просмотра инцидента */}
+      <SrmIssueDetailsDrawer
+        open={Boolean(selectedIssueForDrawer)}
+        onClose={() => setSelectedIssueForDrawer(null)}
+        issue={selectedIssueForDrawer}
+        onIssueUpdated={() => {
+          loadData();
+          setSelectedIssueForDrawer(null);
+        }}
+      />
+
+      {/* Диалог мастера интеграций */}
       <SrmIntegrationWizardDialog
         open={openIntegrationDialog}
         onClose={() => setOpenIntegrationDialog(false)}
-        onSuccess={loadData}
+        onSuccess={() => loadData()}
       />
 
-      {/* ДИАЛОГ ПРОСМОТРА СЫРОГО JSON ЗАДАЧИ */}
-      <FormDialog
-        open={Boolean(selectedRawIssue)}
-        onClose={() => setSelectedRawIssue(null)}
-        title={`Исходный JSON задачи: ${selectedRawIssue?.issueKey || ''}`}
-        maxWidth="md"
-        hideActions
-      >
-        <Box component="pre" sx={{ maxHeight: 400, overflow: 'auto', bgcolor: 'grey.100', p: 1.5, borderRadius: 1, fontSize: '0.8rem' }}>
-          {JSON.stringify(selectedRawIssue?.rawData || selectedRawIssue, null, 2)}
-        </Box>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 2 }}>
-          <Button onClick={() => setSelectedRawIssue(null)}>Закрыть</Button>
-        </Box>
-      </FormDialog>
-
+      {/* Диалог подтверждения удаления интеграции */}
       <ConfirmDialog
         open={Boolean(deleteIntegrationId)}
-        title="Удаление подключения"
-        message="Вы уверены, что хотите удалить данное подключение ServiceDesk?"
-        variant="danger"
-        confirmText="Удалить"
-        cancelText="Отмена"
-        onConfirm={confirmDeleteIntegration}
         onClose={() => setDeleteIntegrationId(null)}
+        onConfirm={confirmDeleteIntegration}
+        title="Удаление подключения к внешнему ServiceDesk"
+        message="Вы действительно хотите удалить данное подключение API? Ранее синхронизированные заявки сохранятся в базе данных."
+        confirmText="Удалить подключение"
+        cancelText="Отмена"
+        variant="danger"
       />
     </Box>
   );
 }
 
-export default function SrmOverviewPage() {
+export default function SrmPage() {
   return (
     <Suspense fallback={<PageLoading text="Загрузка модуля SRM..." />}>
       <SrmOverviewContent />
