@@ -79,7 +79,12 @@ export default function LoginPage() {
     if (e.getModifierState) {
       setCapsLockActive(e.getModifierState('CapsLock'));
     }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      performLogin(username, password);
+    }
   };
+
 
   const performLogin = async (user: string, pass: string) => {
     const trimmedUser = user.trim();
@@ -112,10 +117,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await performLogin(username, password);
-  };
 
   const handleClearUsername = () => {
     setUsername('');
@@ -269,15 +270,7 @@ export default function LoginPage() {
           )}
 
           <Box
-            component="form"
-            method="post"
-            action="#"
-            onSubmit={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleSubmit(e);
-            }}
-            noValidate
+            component="div"
             aria-label="Форма входа в учетную запись EMS"
           >
             <TextField
@@ -291,6 +284,7 @@ export default function LoginPage() {
               autoFocus
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              onKeyDown={handleKeyDown}
               disabled={loading}
               size="medium"
               aria-required="true"
@@ -470,15 +464,12 @@ export default function LoginPage() {
             </Box>
 
             <Button
-              type="submit"
+              type="button"
               fullWidth
               variant="contained"
               size="large"
               disabled={loading}
-              onClick={(e) => {
-                e.preventDefault();
-                performLogin(username, password);
-              }}
+              onClick={() => performLogin(username, password)}
               sx={{
                 py: 1.25,
                 fontWeight: 700,

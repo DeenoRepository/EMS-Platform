@@ -72,7 +72,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (data.success && data.data) {
         setUser(data.data.user);
-        router.push('/eps');
+        if (typeof window !== 'undefined') {
+          const searchParams = new URLSearchParams(window.location.search);
+          const from = searchParams.get('from') || '/eps';
+          window.location.href = from;
+        } else {
+          router.push('/eps');
+        }
         return { success: true };
       }
       return { success: false, error: data.error || 'Ошибка входа' };
@@ -88,7 +94,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // ignore
     } finally {
       setUser(null);
-      router.push('/login');
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      } else {
+        router.push('/login');
+      }
     }
   };
 
