@@ -13,11 +13,15 @@
     "db:migrate": "pnpm --filter @ems/database migrate",
     "db:migrate:deploy": "pnpm --filter @ems/database exec prisma migrate deploy",
     "db:seed": "pnpm --filter @ems/database seed",
-    "db:studio": "pnpm --filter @ems/database studio"
+    "db:studio": "pnpm --filter @ems/database studio",
+    "jira:start": "tsx docker/jira/server.ts",
+    "srm:import-jira": "tsx scripts/import-jira-xml.ts"
   },
   "devDependencies": {
+    "@types/node": "^22.13.4",
     "tsx": "^4.23.12",
     "turbo": "^2.4.4",
     "typescript": "^5.7.3"
   }
 }
+

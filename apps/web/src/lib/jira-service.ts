@@ -711,7 +711,14 @@ export async function calculateSrmMetrics(equipmentId?: string): Promise<{
     priorityCounts[issue.priority] = (priorityCounts[issue.priority] || 0) + 1;
 
     const lowerStatus = issue.status.toLowerCase();
-    if (lowerStatus.includes('closed') || lowerStatus.includes('resolved') || lowerStatus.includes('done')) {
+    if (
+      lowerStatus.includes('closed') ||
+      lowerStatus.includes('resolved') ||
+      lowerStatus.includes('done') ||
+      lowerStatus.includes('решен') ||
+      lowerStatus.includes('готов') ||
+      lowerStatus.includes('закрыт')
+    ) {
       resolvedIssues++;
       if (issue.resolvedDate) {
         const diffMs = issue.resolvedDate.getTime() - issue.createdDate.getTime();
@@ -723,7 +730,13 @@ export async function calculateSrmMetrics(equipmentId?: string): Promise<{
           slaMetCount++;
         }
       }
-    } else if (lowerStatus.includes('progress') || lowerStatus.includes('in work') || lowerStatus.includes('review')) {
+    } else if (
+      lowerStatus.includes('progress') ||
+      lowerStatus.includes('in work') ||
+      lowerStatus.includes('review') ||
+      lowerStatus.includes('процесс') ||
+      lowerStatus.includes('работе')
+    ) {
       inProgressIssues++;
     } else {
       openIssues++;

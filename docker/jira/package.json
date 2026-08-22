@@ -1,0 +1,17 @@
+{
+  "name": "ems-jira-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Jira REST API Service for EMS Platform SRM Integration",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "tsx server.ts"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "tsx": "^4.23.12",
+    "typescript": "^5.7.3"
+  }
+}
