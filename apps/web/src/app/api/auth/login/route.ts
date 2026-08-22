@@ -3,6 +3,7 @@ import { prisma } from '@ems/database';
 import { authenticateLdap, signSessionToken, verifyPassword, getUserRolesAndPermissions, logAuditEvent } from '@ems/auth';
 import { JwtUserPayload } from '@ems/shared';
 import { enforceRateLimit } from '@/lib/rate-limit';
+import { logger } from '@/lib/logger';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -144,7 +145,9 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (error: unknown) {
-    console.error('Ошибка логина:', error);
+    logger.error('Login handler error', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Validation error', details: error.issues },

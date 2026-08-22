@@ -1,5 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+/**
+ * rate-limit.ts — In-memory rate limiter for Next.js API routes.
+ *
+ * ⚠️  ВАЖНО: Данная реализация хранит счётчики в памяти процесса.
+ *    При развёртывании нескольких инстансов (horizontal scaling) каждый
+ *    инстанс ведёт собственный счётчик. Для распределённого rate-limiting
+ *    замените rateLimitStore на Redis-клиент (ioredis / @upstash/redis).
+ *
+ *    Пример замены на Redis:
+ *    ```
+ *    const redis = new Redis(process.env.RATE_LIMIT_REDIS_URL);
+ *    // Используйте redis.incr() + redis.expire() вместо rateLimitStore
+ *    ```
+ *
+ *    Для единственного инстанса (монолитный деплой, Docker) — достаточно текущей реализации.
+ */
+
 interface RateLimitRecord {
   count: number;
   resetAt: number;
@@ -7,7 +24,7 @@ interface RateLimitRecord {
 
 const rateLimitStore = new Map<string, RateLimitRecord>();
 
-// Cleanup stale entries every 5 minutes
+// Очистка устаревших записей каждые 5 минут
 if (typeof setInterval !== 'undefined') {
   setInterval(() => {
     const now = Date.now();
@@ -79,11 +96,13 @@ export function checkRateLimit(
 }
 
 /**
- * Helper to extract client IP address from NextRequest
+ * Helper to extract client IP address from NextRequest.
+ * Handles X-Forwarded-For (proxies/load balancers) and X-Real-IP (nginx).
  */
 export function getClientIp(req: NextRequest): string {
   const forwarded = req.headers.get('x-forwarded-for');
   if (forwarded) {
+    // x-forwarded-for may contain a comma-separated list; take the first (client) IP
     return forwarded.split(',')[0].trim();
   }
   const realIp = req.headers.get('x-real-ip');
@@ -126,4 +145,12 @@ export function enforceRateLimit(
   }
 
   return null;
+}
+
+/**
+ * Сбросить все счётчики rate limit (для тестов).
+ * @internal
+ */
+export function _resetRateLimitStore(): void {
+  rateLimitStore.clear();
 }

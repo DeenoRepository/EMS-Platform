@@ -4,6 +4,7 @@ import path from 'path';
 import os from 'os';
 import { prisma } from '@ems/database';
 import { getCurrentUser } from '@/lib/auth-guard';
+import '@/lib/env-validate';
 
 export const dynamic = 'force-dynamic';
 

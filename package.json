@@ -7,10 +7,11 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
-    "test": "tsx --test packages/auth/src/rbac.test.ts packages/auth/src/jwt.test.ts packages/auth/src/jira-mapping.test.ts packages/auth/src/srm-adapters.test.ts packages/auth/src/wms.test.ts packages/auth/src/eps.test.ts",
+    "test": "tsx --test packages/auth/src/rbac.test.ts packages/auth/src/jwt.test.ts packages/auth/src/jira-mapping.test.ts packages/auth/src/srm-adapters.test.ts packages/auth/src/wms.test.ts packages/auth/src/eps.test.ts packages/auth/src/password.test.ts apps/web/src/lib/__tests__/rate-limit.test.ts",
     "db:generate": "pnpm --filter @ems/database generate",
     "db:push": "pnpm --filter @ems/database push",
     "db:migrate": "pnpm --filter @ems/database migrate",
+    "db:migrate:deploy": "pnpm --filter @ems/database exec prisma migrate deploy",
     "db:seed": "pnpm --filter @ems/database seed",
     "db:studio": "pnpm --filter @ems/database studio"
   },

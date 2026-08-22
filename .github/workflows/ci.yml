@@ -11,6 +11,21 @@ jobs:
     name: Build, Lint & Test
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ems_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -31,10 +46,16 @@ jobs:
 
       - name: Generate Prisma Client
         run: pnpm db:generate
+        env:
+          DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/ems_db?schema=public'
 
       - name: Run ESLint
         run: pnpm lint
-        continue-on-error: true
+
+      - name: Apply database migrations
+        run: pnpm db:migrate:deploy
+        env:
+          DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/ems_db?schema=public'
 
       - name: Build packages and Next.js
         run: pnpm build
@@ -46,3 +67,6 @@ jobs:
 
       - name: Run unit & integration tests
         run: pnpm test
+        env:
+          JWT_SECRET: 'ci_pipeline_secret_jwt_key_min_32_characters_long_ci_only'
+          DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/ems_db?schema=public'
