@@ -219,21 +219,29 @@ export function parseJiraXmlFile(filePath: string, baseUrl: string = 'http://loc
       const cfNameMatch = /<customfieldname>([\s\S]*?)<\/customfieldname>/i.exec(cfBlock);
       const cfName = cfNameMatch ? decodeXmlEntities(cfNameMatch[1].trim()) : '';
 
+      const cleanVal = (val: string) => {
+        return decodeXmlEntities(val)
+          .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, '$1')
+          .replace(/<[^>]+>/g, '')
+          .replace(/[\r\n\s]+/g, ' ')
+          .trim();
+      };
+
       const cfValMatch = /<customfieldvalue[^>]*>([\s\S]*?)<\/customfieldvalue>/i.exec(cfBlock);
-      const cfVal = cfValMatch ? decodeXmlEntities(cfValMatch[1].trim()) : '';
+      const cfVal = cfValMatch ? cleanVal(cfValMatch[1]) : '';
 
       if (cfName.includes('Оборудование')) {
-        equipment = cfVal.replace(/[\r\n]+/g, ' ').trim();
+        equipment = cfVal;
       } else if (cfName.includes('отклика')) {
-        slaResponse = cfVal.replace(/[\r\n\s]+/g, ' ').trim();
+        slaResponse = cfVal;
       } else if (cfName.includes('решения')) {
-        slaResolution = cfVal.replace(/[\r\n\s]+/g, ' ').trim();
+        slaResolution = cfVal;
       } else if (cfName.includes('работ')) {
-        workType = cfVal.trim();
+        workType = cfVal;
       } else if (cfName.includes('Автора')) {
-        authorFio = cfVal.trim();
+        authorFio = cfVal;
       } else if (cfName.includes('Тип запроса')) {
-        requestType = cfVal.replace(/[\r\n\s]+/g, ' ').trim();
+        requestType = cfVal;
       }
     }
 
