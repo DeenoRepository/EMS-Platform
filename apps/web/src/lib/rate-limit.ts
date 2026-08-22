@@ -3,38 +3,124 @@ import { NextRequest, NextResponse } from 'next/server';
 /**
  * rate-limit.ts — In-memory rate limiter for Next.js API routes.
  *
- * ⚠️  ВАЖНО: Данная реализация хранит счётчики в памяти процесса.
- *    При развёртывании нескольких инстансов (horizontal scaling) каждый
- *    инстанс ведёт собственный счётчик. Для распределённого rate-limiting
- *    замените rateLimitStore на Redis-клиент (ioredis / @upstash/redis).
+ * Архитектура: pluggable store.
  *
- *    Пример замены на Redis:
- *    ```
- *    const redis = new Redis(process.env.RATE_LIMIT_REDIS_URL);
- *    // Используйте redis.incr() + redis.expire() вместо rateLimitStore
- *    ```
+ * По умолчанию используется InMemoryStore — достаточно для единственного
+ * инстанса (монолитный Docker-деплой).
  *
- *    Для единственного инстанса (монолитный деплой, Docker) — достаточно текущей реализации.
+ * Для горизонтального масштабирования переключитесь на RedisStore:
+ *
+ * ```ts
+ * // lib/rate-limit-store.ts
+ * import { Redis } from 'ioredis';
+ * import { RedisRateLimitStore } from '@/lib/rate-limit';
+ *
+ * const redis = new Redis(process.env.RATE_LIMIT_REDIS_URL!);
+ * export const rateLimitStore = new RedisRateLimitStore(redis);
+ * ```
+ *
+ * Затем передайте его в enforceRateLimit:
+ * ```ts
+ * import { rateLimitStore } from '@/lib/rate-limit-store';
+ * enforceRateLimit(req, { limit: 10, windowMs: 60_000 }, undefined, rateLimitStore);
+ * ```
  */
+
+// ---------------------------------------------------------------------------
+// Store interface
+// ---------------------------------------------------------------------------
+
+export interface RateLimitStore {
+  /** Инкрементирует счётчик для ключа и возвращает текущее значение + TTL. */
+  increment(key: string, windowMs: number): Promise<{ count: number; resetAt: number }>;
+  /** Сбрасывает счётчик (для тестов). */
+  reset?(): void | Promise<void>;
+}
+
+// ---------------------------------------------------------------------------
+// In-Memory Store (default, single-instance)
+// ---------------------------------------------------------------------------
 
 interface RateLimitRecord {
   count: number;
   resetAt: number;
 }
 
-const rateLimitStore = new Map<string, RateLimitRecord>();
+export class InMemoryRateLimitStore implements RateLimitStore {
+  private readonly store = new Map<string, RateLimitRecord>();
 
-// Очистка устаревших записей каждые 5 минут
-if (typeof setInterval !== 'undefined') {
-  setInterval(() => {
-    const now = Date.now();
-    for (const [key, record] of rateLimitStore.entries()) {
-      if (record.resetAt <= now) {
-        rateLimitStore.delete(key);
-      }
+  constructor() {
+    // Очистка устаревших записей каждые 5 минут
+    if (typeof setInterval !== 'undefined') {
+      setInterval(() => {
+        const now = Date.now();
+        for (const [key, record] of this.store.entries()) {
+          if (record.resetAt <= now) {
+            this.store.delete(key);
+          }
+        }
+      }, 5 * 60 * 1000).unref?.();
     }
-  }, 5 * 60 * 1000).unref?.();
+  }
+
+  async increment(key: string, windowMs: number): Promise<{ count: number; resetAt: number }> {
+    const now = Date.now();
+    const record = this.store.get(key);
+
+    if (!record || record.resetAt <= now) {
+      const newRecord: RateLimitRecord = { count: 1, resetAt: now + windowMs };
+      this.store.set(key, newRecord);
+      return { count: 1, resetAt: newRecord.resetAt };
+    }
+
+    record.count += 1;
+    return { count: record.count, resetAt: record.resetAt };
+  }
+
+  reset(): void {
+    this.store.clear();
+  }
 }
+
+// ---------------------------------------------------------------------------
+// Redis Store (для горизонтального масштабирования)
+// Раскомментируйте и установите ioredis: pnpm add ioredis
+// ---------------------------------------------------------------------------
+//
+// import type { Redis } from 'ioredis';
+//
+// export class RedisRateLimitStore implements RateLimitStore {
+//   constructor(private readonly redis: Redis) {}
+//
+//   async increment(key: string, windowMs: number): Promise<{ count: number; resetAt: number }> {
+//     const pipeline = this.redis.pipeline();
+//     pipeline.incr(key);
+//     pipeline.pttl(key);
+//     const [[, count], [, ttl]] = await pipeline.exec() as [[null, number], [null, number]];
+//
+//     const windowSec = Math.ceil(windowMs / 1000);
+//     if (ttl === -1) {
+//       await this.redis.expire(key, windowSec);
+//     }
+//
+//     const resetAt = Date.now() + (ttl > 0 ? ttl : windowMs);
+//     return { count, resetAt };
+//   }
+//
+//   async reset(): Promise<void> {
+//     await this.redis.flushdb();
+//   }
+// }
+
+// ---------------------------------------------------------------------------
+// Singleton default store
+// ---------------------------------------------------------------------------
+
+const defaultStore: RateLimitStore = new InMemoryRateLimitStore();
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
 
 export interface RateLimitOptions {
   /** Maximum number of allowed requests in the time window */
@@ -56,43 +142,22 @@ export interface RateLimitResult {
 /**
  * Check rate limit for a specific identifier (IP address, user ID, or custom key).
  */
-export function checkRateLimit(
+export async function checkRateLimit(
   identifier: string,
-  options: RateLimitOptions
-): RateLimitResult {
-  const windowMs = options.windowMs || 60 * 1000;
+  options: RateLimitOptions,
+  store: RateLimitStore = defaultStore
+): Promise<RateLimitResult> {
+  const windowMs = options.windowMs ?? 60 * 1000;
   const limit = options.limit;
-  const key = `${options.prefix || 'rl'}:${identifier}`;
-  const now = Date.now();
+  const key = `${options.prefix ?? 'rl'}:${identifier}`;
 
-  const record = rateLimitStore.get(key);
+  const { count, resetAt } = await store.increment(key, windowMs);
 
-  if (!record || record.resetAt <= now) {
-    rateLimitStore.set(key, {
-      count: 1,
-      resetAt: now + windowMs,
-    });
-    return {
-      allowed: true,
-      limit,
-      remaining: limit - 1,
-      resetAt: now + windowMs,
-      retryAfterSeconds: Math.ceil(windowMs / 1000),
-    };
-  }
+  const remaining = Math.max(0, limit - count);
+  const allowed = count <= limit;
+  const retryAfterSeconds = Math.ceil((resetAt - Date.now()) / 1000);
 
-  record.count += 1;
-  const remaining = Math.max(0, limit - record.count);
-  const allowed = record.count <= limit;
-  const retryAfterSeconds = Math.ceil((record.resetAt - now) / 1000);
-
-  return {
-    allowed,
-    limit,
-    remaining,
-    resetAt: record.resetAt,
-    retryAfterSeconds,
-  };
+  return { allowed, limit, remaining, resetAt, retryAfterSeconds };
 }
 
 /**
@@ -119,32 +184,33 @@ export function getClientIp(req: NextRequest): string {
 export function enforceRateLimit(
   req: NextRequest,
   options: RateLimitOptions,
-  customKey?: string
-): NextResponse | null {
+  customKey?: string,
+  store?: RateLimitStore
+): Promise<NextResponse | null> {
   const ip = getClientIp(req);
   const identifier = customKey ? `${ip}:${customKey}` : ip;
-  const result = checkRateLimit(identifier, options);
 
-  if (!result.allowed) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: `Превышен лимит запросов. Повторите попытку через ${result.retryAfterSeconds} сек.`,
-        retryAfter: result.retryAfterSeconds,
-      },
-      {
-        status: 429,
-        headers: {
-          'Retry-After': String(result.retryAfterSeconds),
-          'X-RateLimit-Limit': String(result.limit),
-          'X-RateLimit-Remaining': '0',
-          'X-RateLimit-Reset': String(Math.ceil(result.resetAt / 1000)),
+  return checkRateLimit(identifier, options, store).then((result) => {
+    if (!result.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Превышен лимит запросов. Повторите попытку через ${result.retryAfterSeconds} сек.`,
+          retryAfter: result.retryAfterSeconds,
         },
-      }
-    );
-  }
-
-  return null;
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(result.retryAfterSeconds),
+            'X-RateLimit-Limit': String(result.limit),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': String(Math.ceil(result.resetAt / 1000)),
+          },
+        }
+      );
+    }
+    return null;
+  });
 }
 
 /**
@@ -152,5 +218,5 @@ export function enforceRateLimit(
  * @internal
  */
 export function _resetRateLimitStore(): void {
-  rateLimitStore.clear();
+  (defaultStore as InMemoryRateLimitStore).reset?.();
 }

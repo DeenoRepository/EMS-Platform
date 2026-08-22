@@ -8,7 +8,7 @@ import { enforceRateLimit } from '@/lib/rate-limit';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
-  const rateLimitError = enforceRateLimit(req, { limit: 15, windowMs: 60 * 1000, prefix: 'report-gen' });
+  const rateLimitError = await enforceRateLimit(req, { limit: 15, windowMs: 60 * 1000, prefix: 'report-gen' });
   if (rateLimitError) return rateLimitError;
 
   try {

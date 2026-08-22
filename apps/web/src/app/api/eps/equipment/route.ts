@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     const tagId = searchParams.get('tagId');
     const manufacturer = searchParams.get('manufacturer');
     const page = parseInt(searchParams.get('page') || '1', 10);
-    const pageSize = parseInt(searchParams.get('pageSize') || '20', 10);
+    const pageSize = Math.min(200, Math.max(1, parseInt(searchParams.get('pageSize') || '20', 10)));
 
     const where: Prisma.EquipmentWhereInput = {};
 

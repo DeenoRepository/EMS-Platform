@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   // 1. Rate limiting: max 10 attempts per minute
-  const rateLimitError = enforceRateLimit(req, { limit: 10, windowMs: 60 * 1000, prefix: 'test-ldap' });
+  const rateLimitError = await enforceRateLimit(req, { limit: 10, windowMs: 60 * 1000, prefix: 'test-ldap' });
   if (rateLimitError) return rateLimitError;
 
   // 2. SSRF Protection: If already installed, require admin auth

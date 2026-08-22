@@ -36,7 +36,7 @@ function parseCommissionDate(val: any): Date | null {
 }
 
 export async function POST(req: NextRequest) {
-  const rateLimitError = enforceRateLimit(req, { limit: 5, windowMs: 60 * 1000, prefix: 'batch-import' });
+  const rateLimitError = await enforceRateLimit(req, { limit: 5, windowMs: 60 * 1000, prefix: 'batch-import' });
   if (rateLimitError) return rateLimitError;
 
   try {

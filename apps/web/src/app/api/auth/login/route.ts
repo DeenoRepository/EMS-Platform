@@ -15,7 +15,7 @@ const loginSchema = z.object({
 
 export async function POST(req: NextRequest) {
   // 1. Rate limiting: max 10 attempts per minute per IP
-  const rateLimitError = enforceRateLimit(req, { limit: 10, windowMs: 60 * 1000, prefix: 'login' });
+  const rateLimitError = await enforceRateLimit(req, { limit: 10, windowMs: 60 * 1000, prefix: 'login' });
   if (rateLimitError) return rateLimitError;
 
   try {

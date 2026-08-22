@@ -1,204 +1,151 @@
-import { test, describe, mock, before } from 'node:test';
+import { test, describe } from 'node:test';
 import assert from 'node:assert';
+import { getCurrentUser, requireAuth, unauthorizedResponse, forbiddenResponse } from '../auth-guard';
+import { signSessionToken } from '@ems/auth';
+import { PERMISSIONS, JwtUserPayload } from '@ems/shared';
+import type { NextRequest } from 'next/server';
 
-// ─── Мокаем зависимости до импорта auth-guard ─────────────────────────────
+// Обеспечиваем наличие JWT_SECRET для тестов
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'super_secret_test_jwt_key_32_characters_long_min';
 
-// Мок @ems/auth — возвращаем заданный payload
-let mockVerifyResult: object | null = null;
-mock.module('@ems/auth', {
-  namedExports: {
-    verifySessionToken: async (_token: string) => mockVerifyResult,
-    hasPermission: (user: { roles: string[]; permissions: string[] } | null, code: string) => {
-      if (!user) return false;
-      if (user.roles.includes('admin')) return true;
-      return user.permissions.includes(code);
-    },
-    hasAnyPermission: (user: { roles: string[]; permissions: string[] } | null, codes: string[]) => {
-      if (!user) return false;
-      if (user.roles.includes('admin')) return true;
-      return codes.some((c) => user.permissions.includes(c));
-    },
-  },
-});
-
-// Мок next/headers — возвращаем пустой cookieStore
-mock.module('next/headers', {
-  namedExports: {
-    cookies: () => ({ get: (_name: string) => undefined }),
-  },
-});
-
-// Мок @ems/shared
-mock.module('@ems/shared', {
-  namedExports: {
-    PERMISSIONS: {
-      EPS_EQUIPMENT_VIEW: 'eps.equipment.view',
-      ADMIN_USERS_MANAGE: 'admin.users.manage',
-    },
-  },
-});
-
-// ─── Вспомогательные функции ───────────────────────────────────────────────
-
-function makeReq(overrides: {
+function makeNextRequest(overrides: {
   method?: string;
   authHeader?: string;
-  cookie?: string;
   origin?: string;
   host?: string;
-} = {}): Request {
+} = {}): NextRequest {
+  const headers = new Headers();
+  if (overrides.authHeader) headers.set('authorization', overrides.authHeader);
+  if (overrides.origin) headers.set('origin', overrides.origin);
+  if (overrides.host) headers.set('host', overrides.host);
+
   return {
     method: overrides.method || 'GET',
-    headers: {
-      get: (name: string) => {
-        if (name === 'authorization') return overrides.authHeader ?? null;
-        if (name === 'origin') return overrides.origin ?? null;
-        if (name === 'host') return overrides.host ?? 'localhost:3000';
-        return null;
-      },
-    },
-    cookies: {
-      get: (_name: string) => overrides.cookie ? { value: overrides.cookie } : undefined,
-    },
-  } as unknown as Request;
+    headers,
+  } as unknown as NextRequest;
 }
 
-const adminPayload = {
-  userId: 'admin-id',
+const adminUser: JwtUserPayload = {
+  userId: 'admin-id-123',
   ldapLogin: 'admin',
-  displayName: 'Администратор',
+  displayName: 'Администратор Системы',
   roles: ['admin'],
   permissions: [],
 };
 
-const guestPayload = {
-  userId: 'guest-id',
+const guestUser: JwtUserPayload = {
+  userId: 'guest-id-456',
   ldapLogin: 'guest',
-  displayName: 'Гость',
+  displayName: 'Гостевой Пользователь',
   roles: ['guest'],
-  permissions: ['eps.equipment.view'],
+  permissions: [PERMISSIONS.EPS_EQUIPMENT_VIEW],
 };
 
-describe('auth-guard', () => {
-  // Lazy import after mocks are set up
-  let getCurrentUser: Function;
-  let requireAuth: Function;
-  let unauthorizedResponse: Function;
-  let forbiddenResponse: Function;
-
-  before(async () => {
-    const mod = await import('../auth-guard');
-    getCurrentUser = mod.getCurrentUser;
-    requireAuth = mod.requireAuth;
-    unauthorizedResponse = mod.unauthorizedResponse;
-    forbiddenResponse = mod.forbiddenResponse;
-  });
-
+describe('auth-guard unit tests', () => {
   describe('getCurrentUser', () => {
     test('returns null when no token present', async () => {
-      mockVerifyResult = null;
-      const result = await getCurrentUser(makeReq());
-      assert.strictEqual(result, null);
+      const req = makeNextRequest();
+      const user = await getCurrentUser(req);
+      assert.strictEqual(user, null);
     });
 
     test('returns user payload from valid Bearer token', async () => {
-      mockVerifyResult = adminPayload;
-      const result = await getCurrentUser(
-        makeReq({ authHeader: 'Bearer valid.jwt.token' })
-      );
-      assert.deepStrictEqual(result, adminPayload);
+      const token = await signSessionToken(adminUser);
+      const req = makeNextRequest({ authHeader: `Bearer ${token}` });
+      const user = await getCurrentUser(req);
+      assert.ok(user);
+      assert.strictEqual(user.userId, adminUser.userId);
+      assert.strictEqual(user.ldapLogin, adminUser.ldapLogin);
+      assert.deepStrictEqual(user.roles, adminUser.roles);
     });
 
-    test('returns null when verifySessionToken fails', async () => {
-      mockVerifyResult = null;
-      const result = await getCurrentUser(makeReq({ authHeader: 'Bearer bad-token' }));
-      assert.strictEqual(result, null);
+    test('returns null when Bearer token is malformed', async () => {
+      const req = makeNextRequest({ authHeader: 'Bearer invalid.malformed.token' });
+      const user = await getCurrentUser(req);
+      assert.strictEqual(user, null);
     });
   });
 
-  describe('unauthorizedResponse', () => {
-    test('returns 401 with default message', async () => {
-      const res = unauthorizedResponse();
+  describe('unauthorizedResponse & forbiddenResponse', () => {
+    test('unauthorizedResponse returns 401 with error message', async () => {
+      const res = unauthorizedResponse('Требуется авторизация');
       assert.strictEqual(res.status, 401);
-      const body = await res.json();
-      assert.strictEqual(body.success, false);
-      assert.ok(body.error.length > 0);
+      const data = await res.json();
+      assert.strictEqual(data.success, false);
+      assert.strictEqual(data.error, 'Требуется авторизация');
     });
 
-    test('returns 401 with custom message', async () => {
-      const res = unauthorizedResponse('Пользовательское сообщение');
-      const body = await res.json();
-      assert.strictEqual(body.error, 'Пользовательское сообщение');
-    });
-  });
-
-  describe('forbiddenResponse', () => {
-    test('returns 403', async () => {
-      const res = forbiddenResponse();
+    test('forbiddenResponse returns 403 with error message', async () => {
+      const res = forbiddenResponse('Недостаточно прав');
       assert.strictEqual(res.status, 403);
-      const body = await res.json();
-      assert.strictEqual(body.success, false);
+      const data = await res.json();
+      assert.strictEqual(data.success, false);
+      assert.strictEqual(data.error, 'Недостаточно прав');
     });
   });
 
   describe('requireAuth', () => {
-    test('returns errorResponse 401 when no user', async () => {
-      mockVerifyResult = null;
-      const result = await requireAuth(makeReq({ method: 'GET' }));
+    test('returns errorResponse 401 when no user authenticated', async () => {
+      const req = makeNextRequest({ method: 'GET' });
+      const result = await requireAuth(req);
       assert.ok(result.errorResponse);
       assert.strictEqual(result.errorResponse.status, 401);
     });
 
-    test('returns user when authenticated without permission check', async () => {
-      mockVerifyResult = adminPayload;
-      const result = await requireAuth(makeReq({ authHeader: 'Bearer valid.jwt.token', method: 'GET' }));
+    test('returns user when authenticated without specific permission check', async () => {
+      const token = await signSessionToken(adminUser);
+      const req = makeNextRequest({ authHeader: `Bearer ${token}`, method: 'GET' });
+      const result = await requireAuth(req);
       assert.ok(result.user);
-      assert.strictEqual(result.user.userId, adminPayload.userId);
+      assert.strictEqual(result.user.userId, adminUser.userId);
     });
 
-    test('returns user when authenticated and has required permission', async () => {
-      mockVerifyResult = guestPayload;
-      const result = await requireAuth(
-        makeReq({ authHeader: 'Bearer valid', method: 'GET' }),
-        'eps.equipment.view'
-      );
+    test('returns user when user has required permission', async () => {
+      const token = await signSessionToken(guestUser);
+      const req = makeNextRequest({ authHeader: `Bearer ${token}`, method: 'GET' });
+      const result = await requireAuth(req, PERMISSIONS.EPS_EQUIPMENT_VIEW);
       assert.ok(result.user);
+      assert.strictEqual(result.user.userId, guestUser.userId);
     });
 
     test('returns 403 when user lacks required permission', async () => {
-      mockVerifyResult = guestPayload;
-      const result = await requireAuth(
-        makeReq({ authHeader: 'Bearer valid', method: 'GET' }),
-        'admin.users.manage'
-      );
+      const token = await signSessionToken(guestUser);
+      const req = makeNextRequest({ authHeader: `Bearer ${token}`, method: 'GET' });
+      const result = await requireAuth(req, PERMISSIONS.ADMIN_USERS_MANAGE);
       assert.ok(result.errorResponse);
       assert.strictEqual(result.errorResponse.status, 403);
     });
 
-    test('CSRF: blocks cross-origin POST requests', async () => {
-      mockVerifyResult = adminPayload;
-      const result = await requireAuth(
-        makeReq({
-          authHeader: 'Bearer valid',
-          method: 'POST',
-          origin: 'https://evil.com',
-          host: 'ems.company.local',
-        })
-      );
+    test('admin user bypasses permission checks', async () => {
+      const token = await signSessionToken(adminUser);
+      const req = makeNextRequest({ authHeader: `Bearer ${token}`, method: 'GET' });
+      const result = await requireAuth(req, PERMISSIONS.ADMIN_USERS_MANAGE);
+      assert.ok(result.user);
+      assert.strictEqual(result.user.userId, adminUser.userId);
+    });
+
+    test('CSRF: blocks cross-origin mutating requests (POST)', async () => {
+      const token = await signSessionToken(adminUser);
+      const req = makeNextRequest({
+        authHeader: `Bearer ${token}`,
+        method: 'POST',
+        origin: 'https://attacker.evil.com',
+        host: 'ems.company.local',
+      });
+      const result = await requireAuth(req);
       assert.ok(result.errorResponse);
       assert.strictEqual(result.errorResponse.status, 403);
     });
 
-    test('CSRF: allows same-origin POST requests', async () => {
-      mockVerifyResult = adminPayload;
-      const result = await requireAuth(
-        makeReq({
-          authHeader: 'Bearer valid',
-          method: 'POST',
-          origin: 'http://ems.company.local',
-          host: 'ems.company.local',
-        })
-      );
+    test('CSRF: allows same-origin mutating requests', async () => {
+      const token = await signSessionToken(adminUser);
+      const req = makeNextRequest({
+        authHeader: `Bearer ${token}`,
+        method: 'POST',
+        origin: 'https://ems.company.local',
+        host: 'ems.company.local',
+      });
+      const result = await requireAuth(req);
       assert.ok(result.user);
     });
   });

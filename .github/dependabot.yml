@@ -1,0 +1,42 @@
+version: 2
+
+updates:
+  # npm / pnpm зависимости (monorepo root)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Novosibirsk"
+    groups:
+      # Группируем minors/patches MUI вместе
+      mui:
+        patterns:
+          - "@mui/*"
+          - "@emotion/*"
+      # Next.js и React вместе
+      nextjs:
+        patterns:
+          - "next"
+          - "react"
+          - "react-dom"
+          - "@types/react*"
+      # Prisma вместе
+      prisma:
+        patterns:
+          - "prisma"
+          - "@prisma/*"
+    ignore:
+      # Мажорные обновления — только вручную
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Novosibirsk"

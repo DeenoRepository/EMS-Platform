@@ -4,7 +4,7 @@
 
 # 1. Base Layer with pnpm
 FROM node:22-alpine AS base
-RUN corepack enable && corepack prepare pnpm@9 --activate
+RUN corepack enable && corepack prepare pnpm@11.16.0 --activate
 WORKDIR /app
 
 # 2. Dependencies Layer (Optimized caching)

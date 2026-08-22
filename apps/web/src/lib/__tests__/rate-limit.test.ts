@@ -22,72 +22,72 @@ describe('Rate Limiting', () => {
   });
 
   describe('checkRateLimit', () => {
-    test('allows first request', () => {
-      const result = checkRateLimit('test-ip-1', { limit: 3, windowMs: 60_000 });
+    test('allows first request', async () => {
+      const result = await checkRateLimit('test-ip-1', { limit: 3, windowMs: 60_000 });
       assert.strictEqual(result.allowed, true);
       assert.strictEqual(result.remaining, 2);
       assert.strictEqual(result.limit, 3);
     });
 
-    test('allows up to the limit', () => {
+    test('allows up to the limit', async () => {
       for (let i = 0; i < 3; i++) {
-        const result = checkRateLimit('test-ip-2', { limit: 3, windowMs: 60_000 });
+        const result = await checkRateLimit('test-ip-2', { limit: 3, windowMs: 60_000 });
         assert.strictEqual(result.allowed, true);
       }
     });
 
-    test('blocks after exceeding the limit', () => {
+    test('blocks after exceeding the limit', async () => {
       for (let i = 0; i < 3; i++) {
-        checkRateLimit('test-ip-3', { limit: 3, windowMs: 60_000 });
+        await checkRateLimit('test-ip-3', { limit: 3, windowMs: 60_000 });
       }
-      const result = checkRateLimit('test-ip-3', { limit: 3, windowMs: 60_000 });
+      const result = await checkRateLimit('test-ip-3', { limit: 3, windowMs: 60_000 });
       assert.strictEqual(result.allowed, false);
       assert.strictEqual(result.remaining, 0);
     });
 
-    test('different identifiers are tracked independently', () => {
+    test('different identifiers are tracked independently', async () => {
       for (let i = 0; i < 3; i++) {
-        checkRateLimit('ip-a', { limit: 3, windowMs: 60_000 });
+        await checkRateLimit('ip-a', { limit: 3, windowMs: 60_000 });
       }
       // ip-a should be blocked
-      assert.strictEqual(checkRateLimit('ip-a', { limit: 3, windowMs: 60_000 }).allowed, false);
+      const resA = await checkRateLimit('ip-a', { limit: 3, windowMs: 60_000 });
+      assert.strictEqual(resA.allowed, false);
       // ip-b should still be allowed
-      assert.strictEqual(checkRateLimit('ip-b', { limit: 3, windowMs: 60_000 }).allowed, true);
+      const resB = await checkRateLimit('ip-b', { limit: 3, windowMs: 60_000 });
+      assert.strictEqual(resB.allowed, true);
     });
 
-    test('prefix isolates separate rate limit buckets', () => {
+    test('prefix isolates separate rate limit buckets', async () => {
       for (let i = 0; i < 2; i++) {
-        checkRateLimit('shared-ip', { limit: 2, windowMs: 60_000, prefix: 'login' });
+        await checkRateLimit('shared-ip', { limit: 2, windowMs: 60_000, prefix: 'login' });
       }
       // login bucket exhausted
-      assert.strictEqual(
-        checkRateLimit('shared-ip', { limit: 2, windowMs: 60_000, prefix: 'login' }).allowed,
-        false
-      );
+      const resLogin = await checkRateLimit('shared-ip', { limit: 2, windowMs: 60_000, prefix: 'login' });
+      assert.strictEqual(resLogin.allowed, false);
       // reports bucket is independent
-      assert.strictEqual(
-        checkRateLimit('shared-ip', { limit: 2, windowMs: 60_000, prefix: 'reports' }).allowed,
-        true
-      );
+      const resReports = await checkRateLimit('shared-ip', { limit: 2, windowMs: 60_000, prefix: 'reports' });
+      assert.strictEqual(resReports.allowed, true);
     });
 
-    test('retryAfterSeconds is positive when blocked', () => {
+    test('retryAfterSeconds is positive when blocked', async () => {
       for (let i = 0; i < 3; i++) {
-        checkRateLimit('test-ip-4', { limit: 3, windowMs: 60_000 });
+        await checkRateLimit('test-ip-4', { limit: 3, windowMs: 60_000 });
       }
-      const result = checkRateLimit('test-ip-4', { limit: 3, windowMs: 60_000 });
+      const result = await checkRateLimit('test-ip-4', { limit: 3, windowMs: 60_000 });
       assert.ok(result.retryAfterSeconds > 0);
     });
 
     test('window resets after TTL (simulated with short window)', async () => {
-      checkRateLimit('test-ip-5', { limit: 1, windowMs: 50 });
-      checkRateLimit('test-ip-5', { limit: 1, windowMs: 50 });
+      await checkRateLimit('test-ip-5', { limit: 1, windowMs: 50 });
+      await checkRateLimit('test-ip-5', { limit: 1, windowMs: 50 });
       // Now blocked
-      assert.strictEqual(checkRateLimit('test-ip-5', { limit: 1, windowMs: 50 }).allowed, false);
+      const resBlocked = await checkRateLimit('test-ip-5', { limit: 1, windowMs: 50 });
+      assert.strictEqual(resBlocked.allowed, false);
       // Wait for window to expire
       await new Promise((resolve) => setTimeout(resolve, 100));
       // Should be allowed again
-      assert.strictEqual(checkRateLimit('test-ip-5', { limit: 1, windowMs: 50 }).allowed, true);
+      const resAllowed = await checkRateLimit('test-ip-5', { limit: 1, windowMs: 50 });
+      assert.strictEqual(resAllowed.allowed, true);
     });
   });
 

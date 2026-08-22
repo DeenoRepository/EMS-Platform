@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   // 1. Rate limiting: max 3 setup executions per 10 minutes
-  const rateLimitError = enforceRateLimit(req, { limit: 3, windowMs: 10 * 60 * 1000, prefix: 'setup-exec' });
+  const rateLimitError = await enforceRateLimit(req, { limit: 3, windowMs: 10 * 60 * 1000, prefix: 'setup-exec' });
   if (rateLimitError) return rateLimitError;
 
   let client: PrismaClient | null = null;
