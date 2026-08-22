@@ -44,12 +44,30 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
 
-  // Восстановление сохраненного логина при первой загрузке
+  // Восстановление сохраненного логина и очистка чувствительных URL-параметров (защита от утечки пароля при случайном GET-сабмите)
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const urlUser = searchParams.get('username');
+      const urlPass = searchParams.get('password');
+
+      if (urlUser) {
+        setUsername(urlUser);
+      }
+      if (urlPass) {
+        setPassword(urlPass);
+      }
+
+      // Немедленно очищаем URL от пароля и параметров в строке браузера и истории
+      if (window.location.search) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+
     try {
       const savedUser = localStorage.getItem('ems_saved_username');
       if (savedUser) {
-        setUsername(savedUser);
+        setUsername((prev) => prev || savedUser);
       }
     } catch {
       // Игнорируем ошибки доступа к localStorage в приватном режиме
@@ -251,7 +269,13 @@ export default function LoginPage() {
 
           <Box
             component="form"
-            onSubmit={handleSubmit}
+            method="post"
+            action="#"
+            onSubmit={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleSubmit(e);
+            }}
             noValidate
             aria-label="Форма входа в учетную запись EMS"
           >
