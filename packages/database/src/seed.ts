@@ -169,9 +169,9 @@ async function main() {
   const keeperPassword = crypto.randomUUID().slice(0, 12);
   
   console.log('--- СГЕНЕРИРОВАННЫЕ ПАРОЛИ ---');
-  console.log(Admin: );
-  console.log(Engineer: );
-  console.log(Keeper: );
+  console.log(`Admin: ${adminPassword}`);
+  console.log(`Engineer: ${engineerPassword}`);
+  console.log(`Keeper: ${keeperPassword}`);
   console.log('------------------------------');
 
   const adminUser = await prisma.user.upsert({
