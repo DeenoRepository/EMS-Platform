@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Box,
   Card,
@@ -44,7 +45,8 @@ import {
 import { MroExecutionWizardDialog } from '@/components/mro';
 import { useAuth } from '@/lib/auth-client';
 
-export default function MroOverviewPage() {
+function MroOverviewContent() {
+  const searchParams = useSearchParams();
   const { enqueueSnackbar } = useSnackbar();
   const { hasPermission } = useAuth();
   const [tab, setTab] = useState(0);
@@ -121,7 +123,21 @@ export default function MroOverviewPage() {
 
   useEffect(() => {
     loadData();
-  }, []);
+
+    if (searchParams.get('createSchedule') === 'true') {
+      const eqId = searchParams.get('equipmentId') || '';
+      const titleParam = searchParams.get('title') || '';
+      const notesParam = searchParams.get('notes') || '';
+      setScheduleForm({
+        equipmentId: eqId,
+        planId: '',
+        title: titleParam,
+        scheduledDate: new Date().toISOString().split('T')[0],
+        notes: notesParam,
+      });
+      setOpenScheduleDialog(true);
+    }
+  }, [searchParams]);
 
   const handleCreateSchedule = async () => {
     try {
@@ -694,5 +710,13 @@ export default function MroOverviewPage() {
         schedule={selectedSchedule}
       />
     </Box>
+  );
+}
+
+export default function MroOverviewPage() {
+  return (
+    <Suspense fallback={<PageLoading text="Загрузка модуля ТОиР..." />}>
+      <MroOverviewContent />
+    </Suspense>
   );
 }

@@ -52,6 +52,8 @@ import AddIcon from '@mui/icons-material/Add';
 import PrintIcon from '@mui/icons-material/Print';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import LaunchIcon from '@mui/icons-material/Launch';
+import BuildCircleIcon from '@mui/icons-material/BuildCircle';
 import PageHeader from '@/components/layout/PageHeader';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -1798,6 +1800,7 @@ export default function EquipmentPassportPage() {
                     <TableCell sx={{ fontWeight: 600 }}>Статус</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Создана</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Решена</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }} align="right">Действия</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -1815,6 +1818,34 @@ export default function EquipmentPassportPage() {
                       </TableCell>
                       <TableCell sx={{ fontSize: '0.8125rem' }}>{formatDateTime(issue.createdDate)}</TableCell>
                       <TableCell sx={{ fontSize: '0.8125rem' }}>{formatDateTime(issue.resolvedDate)}</TableCell>
+                      <TableCell align="right">
+                        <Box sx={{ display: 'inline-flex', gap: 0.75 }}>
+                          <Tooltip title="Создать наряд ТОиР в модуле MRO">
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => {
+                                const params = new URLSearchParams();
+                                params.set('createSchedule', 'true');
+                                params.set('equipmentId', equipment.id);
+                                params.set('title', `Ремонт по инциденту ${issue.issueKey}: ${issue.summary}`);
+                                params.set('notes', `Создано из журнала инцидентов SRM. Статус: ${issue.status}, приоритет: ${issue.priority}`);
+                                router.push(`/mro?${params.toString()}`);
+                              }}
+                            >
+                              <BuildCircleIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Открыть в реестре SRM">
+                            <IconButton
+                              size="small"
+                              onClick={() => router.push(`/srm?tab=issues`)}
+                            >
+                              <LaunchIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

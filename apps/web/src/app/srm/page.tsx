@@ -44,6 +44,8 @@ import CableIcon from '@mui/icons-material/Cable';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import BuildCircleIcon from '@mui/icons-material/BuildCircle';
 import PageHeader from '@/components/layout/PageHeader';
 import { useSnackbar } from 'notistack';
 import * as XLSX from 'xlsx';
@@ -349,6 +351,13 @@ function SrmOverviewContent() {
       console.error('Ошибка экспорта в Excel:', err);
       enqueueSnackbar('Ошибка при формировании Excel-файла', { variant: 'error' });
     }
+  };
+
+  const handleCopyWebhookUrl = (id: string) => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const webhookUrl = `${origin}/api/srm/webhooks/${id}`;
+    navigator.clipboard.writeText(webhookUrl);
+    enqueueSnackbar('Webhook URL скопирован в буфер обмена', { variant: 'success' });
   };
 
   // Integration handlers
@@ -958,13 +967,31 @@ function SrmOverviewContent() {
                             {new Date(issue.createdDate).toLocaleDateString('ru-RU')}
                           </TableCell>
                           <TableCell align="right">
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              onClick={() => setSelectedRawIssue(issue)}
-                            >
-                              JSON
-                            </Button>
+                            <Box sx={{ display: 'inline-flex', gap: 0.75, alignItems: 'center' }}>
+                              <Tooltip title="Создать наряд ТОиР в модуле MRO">
+                                <IconButton
+                                  size="small"
+                                  color="primary"
+                                  onClick={() => {
+                                    const params = new URLSearchParams();
+                                    params.set('createSchedule', 'true');
+                                    if (issue.equipmentId) params.set('equipmentId', issue.equipmentId);
+                                    params.set('title', `Ремонт по заявке ${issue.issueKey}: ${issue.summary}`);
+                                    params.set('notes', `Создано на основе инцидента SRM (${issue.integration?.name || 'ServiceDesk'}). Приоритет: ${issue.priority}, статус: ${issue.status}.`);
+                                    router.push(`/mro?${params.toString()}`);
+                                  }}
+                                >
+                                  <BuildCircleIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                onClick={() => setSelectedRawIssue(issue)}
+                              >
+                                JSON
+                              </Button>
+                            </Box>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -1487,6 +1514,16 @@ function SrmOverviewContent() {
                               </TableCell>
                               <TableCell align="right">
                                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                                  <Tooltip title="Скопировать Webhook URL для настройки Push в Jira/Redmine">
+                                    <Button
+                                      size="small"
+                                      variant="outlined"
+                                      startIcon={<ContentCopyIcon sx={{ fontSize: 14 }} />}
+                                      onClick={() => handleCopyWebhookUrl(item.id)}
+                                    >
+                                      Webhook
+                                    </Button>
+                                  </Tooltip>
                                   <Button
                                     size="small"
                                     variant="outlined"

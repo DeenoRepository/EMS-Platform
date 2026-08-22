@@ -63,6 +63,40 @@ export function mergeAuthConfig(newAuthConfig: any, existingAuthConfig: any): an
 }
 
 /**
+ * Извлечение объекта задачи из разнородных форматов входящих вебхуков (Jira, GitLab, Redmine, Generic)
+ */
+export function extractIssueFromWebhookPayload(payload: any): any {
+  if (!payload || typeof payload !== 'object') return null;
+
+  // 1. Atlassian Jira Webhook: { webhookEvent: 'jira:issue_created', issue: { ... } }
+  if (payload.issue && typeof payload.issue === 'object') {
+    return payload.issue;
+  }
+
+  // 2. GitLab Issues Webhook: { object_kind: 'issue', object_attributes: { ... } }
+  if (payload.object_kind === 'issue' && payload.object_attributes) {
+    return {
+      ...payload.object_attributes,
+      references: payload.project ? { full: `${payload.project.path_with_namespace}#${payload.object_attributes.iid}` } : { full: `#${payload.object_attributes.iid}` },
+      author: payload.user || payload.object_attributes.author,
+      assignee: payload.assignees?.[0] || payload.assignee,
+    };
+  }
+
+  // 3. Redmine Webhook: { action: 'opened', issue: { ... } }
+  if (payload.issue) {
+    return payload.issue;
+  }
+
+  // 4. Generic REST payload: если передан сразу объект инцидента
+  if (payload.id || payload.key || payload.issueKey || payload.summary || payload.title) {
+    return payload;
+  }
+
+  return null;
+}
+
+/**
  * Список всех поддерживаемых провайдеров интеграций
  */
 export function getAvailableSrmProviders(): SrmProviderMetadata[] {
@@ -73,5 +107,3 @@ export function getAvailableSrmProviders(): SrmProviderMetadata[] {
     adapters.REST_GENERIC.getMetadata(),
   ];
 }
-
-
