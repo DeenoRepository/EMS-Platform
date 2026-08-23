@@ -15,8 +15,10 @@ function getJwtSecret(): Uint8Array {
 // ---------------------------------------------------------------------------
 // Setup-status cache — предотвращает DB/HTTP-запрос на каждый входящий запрос
 // ---------------------------------------------------------------------------
+// Setup-status cache — предотвращает лишний оверхед
+// ---------------------------------------------------------------------------
 let setupCache: { value: boolean; expiresAt: number } | null = null;
-const SETUP_CACHE_TTL_MS = 60_000; // 60 секунд
+const SETUP_CACHE_TTL_MS = 2_000; // 2 секунды для мгновенной реакции на статус установки
 
 async function isSetupCompleted(): Promise<boolean> {
   const now = Date.now();
@@ -26,26 +28,19 @@ async function isSetupCompleted(): Promise<boolean> {
     return setupCache.value;
   }
 
-  // После установки система уже настроена — проверяем .installed файл
-  // и флаг в переменной окружения (без HTTP-запросов и без импорта Prisma в middleware)
   let isConfigured = false;
 
   try {
-    // Используем встроенный fetch только один раз и кешируем
-    // Запрос идёт на localhost — это loopback, не внешний вызов
     const url = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/setup/status`;
     const res = await fetch(url, {
       method: 'GET',
-      // Next.js cache: cache on server-side for 60 seconds
-      next: { revalidate: 60 },
-    } as RequestInit);
+      cache: 'no-store',
+    });
     if (res.ok) {
       const data = await res.json();
       isConfigured = data?.data?.isInstalled === true;
     }
   } catch {
-    // При недоступности API считаем что система НЕ настроена —
-    // безопаснее показать setup wizard, чем заблокировать вход
     isConfigured = false;
   }
 
@@ -98,8 +93,8 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // 2. Получение токена сессии
-  const token = req.cookies.get('ems_session')?.value;
+  // 2. Получение токена сессии (поддерживаем ems_token и ems_session)
+  const token = req.cookies.get('ems_token')?.value || req.cookies.get('ems_session')?.value;
 
   // 3. Проверка токена
   let user: { userId: string; ldapLogin: string; displayName: string; roles: string[]; permissions: string[] } | null = null;
