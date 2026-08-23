@@ -16,6 +16,7 @@ out
 .env.test
 .env.staging
 !.env.example
+!.env.production.example
 
 # Installation lock
 .installed
@@ -25,6 +26,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+*.log
+logs/
 
 # OS Files
 .DS_Store
@@ -41,7 +44,16 @@ dist
 build
 *.tsbuildinfo
 
-# Uploaded & Temporary Files
-uploads/
+# Uploaded, Temporary & Backup Files
+uploads/*
+!uploads/.gitkeep
 temp/
+backups/
 *.dump
+*.sql
+*.sql.gz
+*.tar.gz
+.system_generated/
+coverage/
+playwright-report/
+test-results/
