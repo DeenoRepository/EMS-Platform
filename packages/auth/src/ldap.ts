@@ -228,6 +228,42 @@ export async function testLdapConnection(config: {
         }
 
         if (!userEntry || !userEntry.dn) {
+          // Fallback: check direct DN candidates (e.g. cn=admin,dc=company,dc=local or uid=admin)
+          const fallbackCandidates = [
+            `cn=${config.testLogin},${config.searchBase}`,
+            `uid=${config.testLogin},${config.searchBase}`,
+            config.bindDn,
+          ].filter(Boolean) as string[];
+
+          let fallbackSuccess = false;
+          let fallbackDn = '';
+
+          for (const cand of fallbackCandidates) {
+            const fallbackClient = new Client({ url: config.url, timeout: 5000 });
+            try {
+              await fallbackClient.bind(cand, config.testPassword);
+              fallbackSuccess = true;
+              fallbackDn = cand;
+              await fallbackClient.unbind();
+              break;
+            } catch {
+              try { await fallbackClient.unbind(); } catch {}
+            }
+          }
+
+          if (fallbackSuccess) {
+            try { await client.unbind(); } catch {}
+            return {
+              success: true,
+              message: `Аутентификация администратора в LDAP успешна! (Прямой Bind: ${fallbackDn})`,
+              user: {
+                ldapLogin: config.testLogin,
+                displayName: config.testLogin,
+                email: undefined,
+              },
+            };
+          }
+
           try { await client.unbind(); } catch {}
           return {
             success: false,
