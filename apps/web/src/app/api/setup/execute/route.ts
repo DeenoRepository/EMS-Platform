@@ -64,6 +64,41 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // -------------------------------------------------------------------------
+    // Pre-flight dependency validation
+    // -------------------------------------------------------------------------
+    const nodeMajor = parseInt(process.versions.node.split('.')[0] || '0', 10);
+    if (nodeMajor < 18) {
+      return NextResponse.json(
+        { success: false, error: 'Установка заблокирована: версия Node.js ниже 18.0.0. Обновите Node.js.' },
+        { status: 400 }
+      );
+    }
+
+    const storagePath = path.resolve(storageConfig?.dir || process.env.STORAGE_LOCAL_DIR || path.join(rootDir, 'uploads'));
+    try {
+      if (!fs.existsSync(storagePath)) {
+        fs.mkdirSync(storagePath, { recursive: true });
+      }
+      const testFile = path.join(storagePath, `.perm_test_${Date.now()}.tmp`);
+      fs.writeFileSync(testFile, 'test');
+      fs.unlinkSync(testFile);
+    } catch (err: any) {
+      return NextResponse.json(
+        { success: false, error: `Установка заблокирована: каталог хранилища недоступен для записи (${storagePath}): ${err.message}` },
+        { status: 400 }
+      );
+    }
+
+    try {
+      crypto.randomBytes(32);
+    } catch (err: any) {
+      return NextResponse.json(
+        { success: false, error: `Установка заблокирована: ошибка генерации криптографической энтропии: ${err.message}` },
+        { status: 400 }
+      );
+    }
+
     // Build database URL
     let dbUrl = dbConfig?.url?.trim();
     if (!dbUrl) {

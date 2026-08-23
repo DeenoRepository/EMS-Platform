@@ -36,6 +36,10 @@ import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import KeyIcon from '@mui/icons-material/Key';
 import SecurityIcon from '@mui/icons-material/Security';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import { PageLoading } from '@/components/ui';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
@@ -44,12 +48,24 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 const STEPS = [
-  'Системные требования',
+  'Системные зависимости',
   'База данных PostgreSQL',
   'Супер-Администратор & LDAP',
   'Хранилище и интеграции',
   'Инициализация системы',
 ];
+
+export interface DependencyCheckItem {
+  id: string;
+  name: string;
+  category: 'runtime' | 'database' | 'storage' | 'security' | 'system';
+  isCritical: boolean;
+  status: 'PASS' | 'WARN' | 'FAIL';
+  currentValue: string;
+  requiredValue: string;
+  message?: string;
+  troubleshooting?: string;
+}
 
 export default function SetupWizardPage() {
   const router = useRouter();
@@ -59,6 +75,12 @@ export default function SetupWizardPage() {
   const [isInstalled, setIsInstalled] = useState<boolean | null>(null);
   const [systemInfo, setSystemInfo] = useState<any>(null);
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
+  const [isRefreshingDeps, setIsRefreshingDeps] = useState(false);
+  const [dependencies, setDependencies] = useState<{
+    allCriticalPassed: boolean;
+    failedCount: number;
+    checks: DependencyCheckItem[];
+  } | null>(null);
 
   // Step 2: Database Config
   const [dbHost, setDbHost] = useState(process.env.NEXT_PUBLIC_DB_HOST || '127.0.0.1');
@@ -100,27 +122,39 @@ export default function SetupWizardPage() {
   const [execError, setExecError] = useState<string | null>(null);
   const [execSuccess, setExecSuccess] = useState(false);
 
-  // Load status
-  useEffect(() => {
-    async function checkStatus() {
-      setIsCheckingStatus(true);
-      try {
-        const res = await fetch('/api/setup/status');
-        if (res.ok) {
-          const json = await res.json();
-          if (json.success) {
-            setIsInstalled(json.data.isInstalled);
-            setSystemInfo(json.data.systemInfo);
+  const fetchStatus = async () => {
+    try {
+      const res = await fetch('/api/setup/status');
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success) {
+          setIsInstalled(json.data.isInstalled);
+          setSystemInfo(json.data.systemInfo);
+          setDependencies(json.data.dependencies);
+          if (json.data.systemInfo?.dbHost) {
+            setDbHost(json.data.systemInfo.dbHost);
+          }
+          if (json.data.systemInfo?.dbPort) {
+            setDbPort(String(json.data.systemInfo.dbPort));
           }
         }
-      } catch (err) {
-        console.error('Error checking setup status:', err);
-      } finally {
-        setIsCheckingStatus(false);
       }
+    } catch (err) {
+      console.error('Error checking setup status:', err);
+    } finally {
+      setIsCheckingStatus(false);
+      setIsRefreshingDeps(false);
     }
-    checkStatus();
+  };
+
+  useEffect(() => {
+    fetchStatus();
   }, []);
+
+  const handleRefreshDependencies = async () => {
+    setIsRefreshingDeps(true);
+    await fetchStatus();
+  };
 
   // Test DB connection
   const handleTestDatabase = async () => {
@@ -374,76 +408,140 @@ export default function SetupWizardPage() {
         </Box>
 
         <CardContent sx={{ p: 4 }}>
-          {/* STEP 1: System Checks */}
+          {/* STEP 1: System Checks & Dependencies */}
           {activeStep === 0 && (
             <Stack spacing={3}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <RocketLaunchIcon color="primary" sx={{ fontSize: 28 }} />
-                <Box>
-                  <Typography variant="h6" fontWeight={700}>
-                    Шаг 1: Проверка системных требований
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Диагностика окружения сервера перед установкой
-                  </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <RocketLaunchIcon color="primary" sx={{ fontSize: 28 }} />
+                  <Box>
+                    <Typography variant="h6" fontWeight={700}>
+                      Шаг 1: Проверка системных зависимостей и требований
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Автоматическая проверка готовности окружения перед установкой платформы
+                    </Typography>
+                  </Box>
                 </Box>
+
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={isRefreshingDeps ? <CircularProgress size={16} color="inherit" /> : <RefreshIcon />}
+                  disabled={isRefreshingDeps || isCheckingStatus}
+                  onClick={handleRefreshDependencies}
+                  sx={{ textTransform: 'none', fontWeight: 600, borderRadius: '8px' }}
+                >
+                  {isRefreshingDeps ? 'Проверка...' : 'Повторить проверку'}
+                </Button>
               </Box>
 
+              {/* Blocking vs Ready Banner */}
+              {dependencies && !dependencies.allCriticalPassed && (
+                <Alert
+                  severity="error"
+                  icon={<ErrorOutlineIcon fontSize="inherit" />}
+                  sx={{ borderRadius: 2 }}
+                >
+                  <AlertTitle sx={{ fontWeight: 700 }}>
+                    Установка заблокирована: обнаружены неисправные или отсутствующие зависимости ({dependencies.failedCount})
+                  </AlertTitle>
+                  Дальнейшая установка остановлена. Исправьте выявленные первопричины (отмечены красным) и нажмите кнопку <b>«Повторить проверку»</b> для разблокировки мастера.
+                </Alert>
+              )}
+
+              {dependencies && dependencies.allCriticalPassed && (
+                <Alert
+                  severity="success"
+                  icon={<CheckCircleOutlineIcon fontSize="inherit" />}
+                  sx={{ borderRadius: 2 }}
+                >
+                  <AlertTitle sx={{ fontWeight: 700 }}>Все системные зависимости успешно проверены</AlertTitle>
+                  Среда Node.js, служба PostgreSQL, файловое хранилище и модуль криптографии исправны и готовы к работе. Нажмите <b>«Далее»</b> для настройки БД.
+                </Alert>
+              )}
+
+              {/* Dependency Checks Grid */}
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                      Версия Node.js
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                      <CheckCircleIcon color="success" fontSize="small" />
-                      <Typography variant="body1" fontWeight={700}>
-                        {systemInfo?.nodeVersion || 'v18+'}
-                      </Typography>
-                    </Box>
-                  </Paper>
-                </Grid>
+                {dependencies?.checks.map((check) => {
+                  const isPass = check.status === 'PASS';
+                  const isWarn = check.status === 'WARN';
+                  const isFail = check.status === 'FAIL';
 
-                <Grid item xs={12} sm={6}>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                      Операционная система
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                      <CheckCircleIcon color="success" fontSize="small" />
-                      <Typography variant="body1" fontWeight={700}>
-                        {systemInfo?.platform || 'Windows / Linux'}
-                      </Typography>
-                    </Box>
-                  </Paper>
-                </Grid>
+                  const borderColor = isFail ? '#ef4444' : isWarn ? '#f59e0b' : '#10b981';
+                  const bgColor = isFail ? 'rgba(239, 68, 68, 0.04)' : isWarn ? 'rgba(245, 158, 11, 0.04)' : 'rgba(16, 185, 129, 0.03)';
 
-                <Grid item xs={12} sm={6}>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                      Оперативная память (Свободно / Всего)
-                    </Typography>
-                    <Typography variant="body1" fontWeight={700} sx={{ mt: 0.5 }}>
-                      {systemInfo?.freeMemory || '—'} / {systemInfo?.totalMemory || '—'}
-                    </Typography>
-                  </Paper>
-                </Grid>
+                  return (
+                    <Grid item xs={12} key={check.id}>
+                      <Paper
+                        variant="outlined"
+                        sx={{
+                          p: 2.5,
+                          borderRadius: 2,
+                          borderLeft: `4px solid ${borderColor}`,
+                          backgroundColor: bgColor,
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, mb: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            {isPass && <CheckCircleIcon color="success" fontSize="small" />}
+                            {isWarn && <WarningAmberIcon color="warning" fontSize="small" />}
+                            {isFail && <ErrorOutlineIcon color="error" fontSize="small" />}
+                            <Typography variant="subtitle1" fontWeight={700}>
+                              {check.name}
+                            </Typography>
+                            {check.isCritical && (
+                              <Chip label="Критическая зависимость" size="small" variant="outlined" color="primary" sx={{ height: 20, fontSize: '0.65rem' }} />
+                            )}
+                          </Box>
+                          <Chip
+                            label={isPass ? 'ИСПРАВНО' : isWarn ? 'ПРЕДУПРЕЖДЕНИЕ' : 'ОШИБКА / НЕДОСТУПНО'}
+                            size="small"
+                            color={isPass ? 'success' : isWarn ? 'warning' : 'error'}
+                            sx={{ fontWeight: 700, fontSize: '0.7rem' }}
+                          />
+                        </Box>
 
-                <Grid item xs={12} sm={6}>
-                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                      Рабочая директория
-                    </Typography>
-                    <Typography variant="body2" fontFamily="monospace" sx={{ mt: 0.5 }} noWrap>
-                      {systemInfo?.cwd || process.cwd()}
-                    </Typography>
-                  </Paper>
-                </Grid>
+                        <Grid container spacing={1} sx={{ mt: 0.5 }}>
+                          <Grid item xs={12} sm={6}>
+                            <Typography variant="caption" color="text.secondary" display="block">
+                              Текущее состояние:
+                            </Typography>
+                            <Typography variant="body2" fontWeight={600} fontFamily={check.id === 'node_runtime' ? 'monospace' : 'inherit'}>
+                              {check.currentValue}
+                            </Typography>
+                          </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <Typography variant="caption" color="text.secondary" display="block">
+                              Требование платформы:
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {check.requiredValue}
+                            </Typography>
+                          </Grid>
+                        </Grid>
+
+                        {check.message && (
+                          <Typography variant="caption" color={isFail ? 'error.main' : 'text.secondary'} sx={{ display: 'block', mt: 1 }}>
+                            {check.message}
+                          </Typography>
+                        )}
+
+                        {isFail && check.troubleshooting && (
+                          <Box sx={{ mt: 1.5, p: 1.5, bgcolor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 1.5 }}>
+                            <Typography variant="caption" fontWeight={700} color="error.dark" display="block">
+                              Решение и устранение первопричины:
+                            </Typography>
+                            <Typography variant="caption" color="error.dark">
+                              {check.troubleshooting}
+                            </Typography>
+                          </Box>
+                        )}
+                      </Paper>
+                    </Grid>
+                  );
+                })}
               </Grid>
-
-              <Alert severity="info" sx={{ borderRadius: 2 }}>
-                Сервер готов к развертыванию. Нажмите <b>«Далее»</b> для настройки подключения к PostgreSQL.
-              </Alert>
             </Stack>
           )}
 
@@ -1123,6 +1221,8 @@ export default function SetupWizardPage() {
                 onClick={() => setActiveStep((prev) => prev + 1)}
                 endIcon={<ArrowForwardIcon />}
                 disabled={
+                  (activeStep === 0 && (!dependencies?.allCriticalPassed || isCheckingStatus || isRefreshingDeps)) ||
+                  (activeStep === 1 && (!dbTestResult?.success || isTestingDb)) ||
                   (activeStep === 2 && (
                     authMode === 'local'
                       ? (!adminLogin.trim() || !adminPassword || adminPassword !== adminPasswordConfirm)
