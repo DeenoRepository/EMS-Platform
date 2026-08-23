@@ -35,18 +35,6 @@ export async function getUserRolesAndPermissions(userId: string): Promise<{ role
     }
   }
 
-  // Для администратора по умолчанию активны все гранулярные права в системе
-  if (rolesSet.has('admin') || rolesSet.has('administrator')) {
-    try {
-      const allDbPerms = await prisma.permission.findMany({ select: { code: true } });
-      for (const p of allDbPerms) {
-        permissionsSet.add(p.code);
-      }
-    } catch {
-      // Fallback
-    }
-  }
-
   return {
     roles: Array.from(rolesSet),
     permissions: Array.from(permissionsSet),

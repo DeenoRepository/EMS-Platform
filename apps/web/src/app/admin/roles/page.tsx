@@ -119,11 +119,7 @@ export default function AdminRolesPage() {
     setRoleName(role.name);
     setRoleDisplayName(role.displayName);
     setRoleDescription(role.description || '');
-    if (role.name === 'admin') {
-      setSelectedPermCodes(permissions.map((p) => p.code));
-    } else {
-      setSelectedPermCodes([...role.permissions]);
-    }
+    setSelectedPermCodes([...role.permissions]);
     setDialogOpen(true);
   };
 

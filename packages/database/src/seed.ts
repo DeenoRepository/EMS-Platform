@@ -40,6 +40,10 @@ async function main() {
 
     // SRM
     { code: 'srm.dashboard.view', displayName: 'Просмотр системы подачи заявок', module: 'srm', description: 'Доступ к заявкам, инцидентам, графикам и метрикам MTTR/MTBF' },
+    { code: 'srm.requests.create', displayName: 'Подача сервисных заявок и инцидентов', module: 'srm', description: 'Создание внутренних заявок на неисправность и ремонт оборудования' },
+    { code: 'srm.requests.manage', displayName: 'Управление инцидентами и нарядами', module: 'srm', description: 'Назначение исполнителей, сброс статусов, передача в MRO и закрытие инцидентов' },
+    { code: 'srm.reliability.view', displayName: 'Аналитика надежности RAMS & RCM', module: 'srm', description: 'Доступ к расчетам MTTR, MTBF, КТГ, анализу Парето и причинам простоев' },
+    { code: 'srm.warranty.manage', displayName: 'Управление гарантиями и рекламациями', module: 'srm', description: 'Ведение гарантийных случаев, сервисных договоров и рекламационных актов' },
     { code: 'srm.sync.trigger', displayName: 'Синхронизация инцидентов', module: 'srm', description: 'Ручной запуск синхронизации с внешними Helpdesk/Jira' },
     { code: 'srm.reports.export', displayName: 'Экспорт отчетов SRM', module: 'srm', description: 'Выгрузка аналитики в Excel и PDF' },
 
