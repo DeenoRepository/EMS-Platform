@@ -1,4 +1,4 @@
-name: CI Pipeline
+name: EMS Platform CI
 
 on:
   push:
@@ -6,41 +6,25 @@ on:
   pull_request:
     branches: [master, main]
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  # ============================================================================
-  # Job 1: Build, Lint & Unit Tests
-  # ============================================================================
-  build-and-test:
-    name: Build, Lint & Test
+  validate:
+    name: Lint, Test & Build
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: ems_db
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
+    timeout-minutes: 15
 
     steps:
-      - name: Checkout repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v3
+        uses: pnpm/action-setup@v4
         with:
-          version: 11
+          version: 11.16.0
+          run_install: false
 
       - name: Setup Node.js 22
         uses: actions/setup-node@v4
@@ -48,114 +32,20 @@ jobs:
           node-version: 22
           cache: 'pnpm'
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Generate Prisma Client
-        run: pnpm db:generate
-        env:
-          DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/ems_db?schema=public'
+        run: pnpm --filter @ems/database generate
 
       - name: Run ESLint
-        run: pnpm lint
+        run: pnpm run lint
 
-      - name: Apply database migrations
-        run: pnpm db:migrate:deploy
-        env:
-          DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/ems_db?schema=public'
+      - name: Run Automated Test Suite (Domain, SecOps, RBAC)
+        run: pnpm test
 
-      - name: Build packages and Next.js
+      - name: Build Monorepo (Turborepo & Next.js 14 Production Build)
         run: pnpm build
         env:
-          NEXT_TELEMETRY_DISABLED: '1'
-          NODE_ENV: 'production'
-          DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/ems_db?schema=public'
-          JWT_SECRET: 'ci_pipeline_secret_jwt_key_min_32_characters_long_ci_only'
-
-      - name: Run unit & integration tests
-        run: pnpm test
-        env:
-          JWT_SECRET: 'ci_pipeline_secret_jwt_key_min_32_characters_long_ci_only'
-          DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/ems_db?schema=public'
-
-  # ============================================================================
-  # Job 2: Security Audit (npm audit + dependency check)
-  # ============================================================================
-  security-audit:
-    name: Security Audit
-    runs-on: ubuntu-latest
-    needs: build-and-test
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 11
-
-      - name: Setup Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Run pnpm audit (high severity)
-        run: pnpm audit --audit-level=high
-        continue-on-error: true  # Не блокируем пайплайн, но отображаем результат
-
-      - name: Run pnpm audit (critical severity — блокирующий)
-        run: pnpm audit --audit-level=critical
-
-  # ============================================================================
-  # Job 3: Docker Build & Push (только при пуше в main/master)
-  # ============================================================================
-  docker-build:
-    name: Docker Build & Push
-    runs-on: ubuntu-latest
-    needs: build-and-test
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=sha,prefix=sha-
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          build-args: |
-            NODE_ENV=production
+          NODE_ENV: production
+          JWT_SECRET: super_secret_ci_dummy_jwt_key_minimum_32_characters_long

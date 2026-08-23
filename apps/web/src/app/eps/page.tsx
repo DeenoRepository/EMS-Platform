@@ -253,7 +253,7 @@ function EquipmentListContent() {
   const [sortField, setSortField] = useState<string>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  const equipmentList = Array.isArray(items) ? items : [];
+  const equipmentList = useMemo(() => (Array.isArray(items) ? items : []), [items]);
 
   const handleRequestSort = (property: string) => {
     const isAsc = sortField === property && sortDirection === 'asc';

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -103,7 +103,7 @@ export default function WarehouseTopologyModal({
   const [batchSlots, setBatchSlots] = useState('2'); // Мест на полке
   const [isGeneratingBatch, setIsGeneratingBatch] = useState(false);
 
-  const fetchZones = async () => {
+  const fetchZones = useCallback(async () => {
     if (!warehouse) return;
     setIsLoading(true);
     try {
@@ -123,13 +123,13 @@ export default function WarehouseTopologyModal({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [warehouse, selectedZoneIndex, enqueueSnackbar]);
 
   useEffect(() => {
     if (open && warehouse) {
       fetchZones();
     }
-  }, [open, warehouse]);
+  }, [open, warehouse, fetchZones]);
 
   const activeZone = zones[selectedZoneIndex] || null;
 

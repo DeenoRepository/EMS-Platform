@@ -53,5 +53,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/setup/status || exit 1
 
-# Run migrations then start app
-CMD ["sh", "-c", "pnpm --filter @ems/database migrate:deploy && pnpm --filter @ems/web start"]
+# Synchronize database schema then start app
+CMD ["sh", "-c", "pnpm --filter @ems/database push && pnpm --filter @ems/web start"]
