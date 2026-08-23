@@ -243,9 +243,9 @@ export default function WmsDashboardPage() {
       )}
 
       <PageHeader
-        title="Складской учёт (WMS)"
-        subtitle="Мониторинг остатков, дефицита ТМЦ, операций прихода, списания и инвентаризаций"
-        breadcrumbs={[{ label: 'Главная', href: '/' }, { label: 'Складской учёт' }]}
+        title="Панель материальных потоков и остатков (WMS)"
+        subtitle="Сводный баланс ТМЦ, мониторинг неснижаемых запасов, дефицитные позиции и статистика движения"
+        breadcrumbs={[{ label: 'Главная', href: '/' }, { label: 'Складской учёт ТМЦ' }]}
         actions={
           <Stack direction="row" spacing={1.5} alignItems="center">
             <Button

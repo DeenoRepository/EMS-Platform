@@ -88,17 +88,17 @@ interface SrmIssueItem {
 }
 
 const SRM_COLUMNS: TableColumnOption[] = [
-  { id: 'key', label: 'Номер / Ключ', defaultVisible: true },
-  { id: 'title', label: 'Тема заявки / Описание дефекта', defaultVisible: true },
-  { id: 'equipment', label: 'Оборудование', defaultVisible: true },
-  { id: 'priority', label: 'Приоритет', defaultVisible: true },
-  { id: 'status', label: 'Статус', defaultVisible: true },
-  { id: 'failureCategory', label: 'Категория отказа', defaultVisible: true },
-  { id: 'source', label: 'Источник', defaultVisible: false },
-  { id: 'reportedBy', label: 'Инициатор', defaultVisible: true },
-  { id: 'assignedTo', label: 'Исполнитель', defaultVisible: false },
+  { id: 'key', label: 'Номер инцидента / Заявки', defaultVisible: true },
+  { id: 'title', label: 'Краткое содержание неисправности', defaultVisible: true },
+  { id: 'equipment', label: 'Технологическая позиция оборудования', defaultVisible: true },
+  { id: 'priority', label: 'Приоритет / Критичность', defaultVisible: true },
+  { id: 'status', label: 'Статус обработки', defaultVisible: true },
+  { id: 'failureCategory', label: 'Причина отказа (ГОСТ 27.002-2015)', defaultVisible: true },
+  { id: 'source', label: 'Источник регистрации', defaultVisible: false },
+  { id: 'reportedBy', label: 'Автор обращения (ФИО)', defaultVisible: true },
+  { id: 'assignedTo', label: 'Ответственный исполнитель', defaultVisible: false },
   { id: 'createdAt', label: 'Дата регистрации', defaultVisible: true },
-  { id: 'actions', label: 'Действия', defaultVisible: true, required: true },
+  { id: 'actions', label: 'Операции', defaultVisible: true, required: true },
 ];
 
 function SrmPageContent() {
@@ -320,12 +320,12 @@ function SrmPageContent() {
 
       {/* 1. Header */}
       <PageHeader
-        title="Реестр заявок и инцидентов"
-        subtitle="Оперативный учёт обращений, сбоев оборудования и аварийных заявок ServiceDesk"
+        title="Журнал инцидентов и сервисных заявок"
+        subtitle="Регистрация отказов оборудования, технологических простоев и сервисных нарядов"
         breadcrumbs={[
           { label: 'Главная', href: '/' },
-          { label: 'Подача заявок', href: '/srm' },
-          { label: 'Реестр заявок' },
+          { label: 'Управление инцидентами', href: '/srm' },
+          { label: 'Журнал инцидентов' },
         ]}
         actions={
           <Stack direction="row" spacing={1.25}>

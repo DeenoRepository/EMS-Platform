@@ -334,14 +334,14 @@ function DocumentsListContent() {
   }
 
   const DOCUMENT_COLUMNS: DocumentColumnDef[] = [
-    { id: 'name', label: 'Имя файла', defaultVisible: true },
-    { id: 'equipment', label: 'Оборудование', defaultVisible: true },
-    { id: 'docType', label: 'Тип документа', defaultVisible: true },
-    { id: 'description', label: 'Описание / Примечание', defaultVisible: true },
-    { id: 'size', label: 'Размер', defaultVisible: true },
-    { id: 'uploadedBy', label: 'Загрузил', defaultVisible: true },
-    { id: 'date', label: 'Дата', defaultVisible: true },
-    { id: 'actions', label: 'Действия', defaultVisible: true },
+    { id: 'name', label: 'Наименование файла', defaultVisible: true },
+    { id: 'equipment', label: 'Технологическая единица оборудования', defaultVisible: true },
+    { id: 'docType', label: 'Вид документа (ЕСКД / ТР ТС)', defaultVisible: true },
+    { id: 'description', label: 'Аннотация / Описание документа', defaultVisible: true },
+    { id: 'size', label: 'Объем файла', defaultVisible: true },
+    { id: 'uploadedBy', label: 'Автор загрузки (ФИО)', defaultVisible: true },
+    { id: 'date', label: 'Дата регистрации', defaultVisible: true },
+    { id: 'actions', label: 'Операции', defaultVisible: true },
   ];
 
   const [visibleColumns, setVisibleColumns] = useState<string[]>(() =>
@@ -351,12 +351,12 @@ function DocumentsListContent() {
   return (
     <Box sx={{ pb: 4 }}>
       <PageHeader
-        title="Электронный архив документов"
-        subtitle="Техническая документация, паспорта, чертежи, схемы, руководства и регламенты обслуживания оборудования"
+        title="Электронный архив технической документации"
+        subtitle="Конструкторская и эксплуатационная документация (ЕСКД): паспорта, чертежи, схемы, руководства по эксплуатации (РЭ) и акты"
         breadcrumbs={[
           { label: 'Главная', href: '/' },
-          { label: 'Оборудование', href: '/eps' },
-          { label: 'Документы' },
+          { label: 'Реестр оборудования', href: '/eps' },
+          { label: 'Электронный архив документации' },
         ]}
         actions={
           canUpload && (

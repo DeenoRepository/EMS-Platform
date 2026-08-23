@@ -232,12 +232,12 @@ export default function AdminRolesPage() {
   return (
     <Box sx={{ width: '100%', pb: 2 }}>
       <PageHeader
-        title="Роли и гранулярные права"
-        subtitle="Настройка матриц прав доступа и создание кастомных ролей"
+        title="Матрица ролей и гранулярных полномочий"
+        subtitle="Конфигурация ролевой модели безопасности (RBAC) и распределение прав доступа по модулям"
         breadcrumbs={[
           { label: 'Главная', href: '/' },
           { label: 'Администрирование', href: '/admin/settings' },
-          { label: 'Роли и права' },
+          { label: 'Матрица ролей и полномочий' },
         ]}
         actions={
           <Button

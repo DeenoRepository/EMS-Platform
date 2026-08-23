@@ -179,12 +179,12 @@ export default function AdminUsersPage() {
   return (
     <Box sx={{ width: '100%', pb: 2 }}>
       <PageHeader
-        title="Управление пользователями"
-        subtitle="Синхронизированные учетные записи LDAP и назначение ролей"
+        title="Учетные записи пользователей платформы"
+        subtitle="Управление профилями, синхронизация с каталогом OpenLDAP/Active Directory и назначение ролей"
         breadcrumbs={[
           { label: 'Главная', href: '/' },
           { label: 'Администрирование', href: '/admin/settings' },
-          { label: 'Пользователи' },
+          { label: 'Учетные записи' },
         ]}
       />
 
@@ -308,13 +308,13 @@ export default function AdminUsersPage() {
           <Table size="small" aria-label="Таблица пользователей системы">
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 700 }}>Пользователь</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 150 }}>LDAP Логин</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Email</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>ФИО / Пользователь</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 160 }}>Учетная запись (Логин)</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Корпоративный Email</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Назначенные роли</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 160 }}>Последний вход</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 100 }}>Активен</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, width: 100 }}>Действия</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 170 }}>Дата последнего входа</TableCell>
+                <TableCell sx={{ fontWeight: 700, width: 110 }}>Статус доступа</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, width: 100 }}>Операции</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>

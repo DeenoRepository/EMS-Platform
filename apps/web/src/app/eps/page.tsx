@@ -87,33 +87,33 @@ interface TagItem {
 }
 
 const EPS_COLUMNS: TableColumnOption[] = [
-  { id: 'inventoryNumber', label: 'Инв. номер', defaultVisible: true },
+  { id: 'inventoryNumber', label: 'Инвентарный номер', defaultVisible: true },
   { id: 'name', label: 'Наименование оборудования', defaultVisible: true },
-  { id: 'serialNumber', label: 'Заводской (серийный) №', defaultVisible: false },
-  { id: 'manufacturer', label: 'Производитель', defaultVisible: true },
-  { id: 'model', label: 'Модель / Марка', defaultVisible: true },
-  { id: 'location', label: 'Локация / Место размещения', defaultVisible: true },
-  { id: 'status', label: 'Статус', defaultVisible: true },
-  { id: 'criticality', label: 'Категория критичности (A/B/C)', defaultVisible: false },
-  { id: 'actualWear', label: 'Физический износ (%)', defaultVisible: false },
+  { id: 'serialNumber', label: 'Заводской (серийный) номер', defaultVisible: false },
+  { id: 'manufacturer', label: 'Предприятие-изготовитель', defaultVisible: true },
+  { id: 'model', label: 'Модель / Типоразмер', defaultVisible: true },
+  { id: 'location', label: 'Место установки / Технологическая позиция', defaultVisible: true },
+  { id: 'status', label: 'Эксплуатационный статус', defaultVisible: true },
+  { id: 'criticality', label: 'Категория критичности (A / B / C)', defaultVisible: false },
+  { id: 'actualWear', label: 'Степень физического износа (%)', defaultVisible: false },
   { id: 'eqGroup', label: 'Группа оборудования', defaultVisible: false },
   { id: 'eqType', label: 'Вид оборудования', defaultVisible: false },
   { id: 'respPerson', label: 'Ответственное лицо (МОЛ)', defaultVisible: false },
-  { id: 'okofCode', label: 'Код ОКОФ', defaultVisible: false },
-  { id: 'okpd2Code', label: 'Код ОКПД2', defaultVisible: false },
-  { id: 'procCode', label: 'Код техпроцесса', defaultVisible: false },
-  { id: 'maintPeriodicity', label: 'Периодичность ТО', defaultVisible: false },
+  { id: 'okofCode', label: 'Код ОКОФ (ОК 013-2014)', defaultVisible: false },
+  { id: 'okpd2Code', label: 'Код ОКПД2 (ОК 034-2014)', defaultVisible: false },
+  { id: 'procCode', label: 'Код технологического процесса', defaultVisible: false },
+  { id: 'maintPeriodicity', label: 'Периодичность регламентного ТО', defaultVisible: false },
   { id: 'calibrationInterval', label: 'Межповерочный интервал (мес.)', defaultVisible: false },
-  { id: 'cleanRoom', label: 'Класс чистого помещения', defaultVisible: false },
-  { id: 'isCriticalPath', label: 'Критический путь', defaultVisible: false },
-  { id: 'isUnique', label: 'Уникальное оборудование', defaultVisible: false },
+  { id: 'cleanRoom', label: 'Класс чистоты помещения (ISO)', defaultVisible: false },
+  { id: 'isCriticalPath', label: 'Влияние на непрерывность процесса', defaultVisible: false },
+  { id: 'isUnique', label: 'Уникальное / единичное оборудование', defaultVisible: false },
   { id: 'isImported', label: 'Импортное оборудование', defaultVisible: false },
-  { id: 'documentsCount', label: 'Документы (кол-во)', defaultVisible: false },
-  { id: 'sparePartsCount', label: 'ЗИП / Запчасти (кол-во)', defaultVisible: false },
-  { id: 'tags', label: 'Теги / Метки', defaultVisible: true },
-  { id: 'commissionDate', label: 'Ввод в эксплуатацию', defaultVisible: true },
-  { id: 'updatedAt', label: 'Дата изменения', defaultVisible: false },
-  { id: 'createdAt', label: 'Дата создания', defaultVisible: false },
+  { id: 'documentsCount', label: 'Комплект документации (ед.)', defaultVisible: false },
+  { id: 'sparePartsCount', label: 'Комплект ЗИП / Запчасти (ед.)', defaultVisible: false },
+  { id: 'tags', label: 'Технологические метки (теги)', defaultVisible: true },
+  { id: 'commissionDate', label: 'Дата ввода в эксплуатацию', defaultVisible: true },
+  { id: 'updatedAt', label: 'Дата последней корректировки', defaultVisible: false },
+  { id: 'createdAt', label: 'Дата первичной регистрации', defaultVisible: false },
 ];
 
 function EquipmentListContent() {
@@ -481,11 +481,11 @@ function EquipmentListContent() {
 
       {/* Page Header */}
       <PageHeader
-        title="Оборудование"
-        subtitle="Реестр и управление основными средствами предприятия"
+        title="Реестр технологического оборудования"
+        subtitle="Паспортизация, технические характеристики, эксплуатационный статус и жизненный цикл оборудования"
         breadcrumbs={[
           { label: 'Главная', href: '/' },
-          { label: 'Оборудование' },
+          { label: 'Реестр оборудования' },
         ]}
         actions={
           <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>

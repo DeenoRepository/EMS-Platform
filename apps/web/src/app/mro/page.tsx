@@ -82,14 +82,14 @@ interface MaintenanceScheduleItem {
 }
 
 const MRO_COLUMNS: TableColumnOption[] = [
-  { id: 'scheduledDate', label: 'Дата плана / Срок', defaultVisible: true },
-  { id: 'equipment', label: 'Оборудование', defaultVisible: true },
-  { id: 'plan', label: 'Регламент / Техкарта', defaultVisible: true },
-  { id: 'periodicity', label: 'Периодичность', defaultVisible: true },
-  { id: 'status', label: 'Статус исполнения', defaultVisible: true },
-  { id: 'location', label: 'Локация', defaultVisible: false },
-  { id: 'completedBy', label: 'Исполнитель', defaultVisible: true },
-  { id: 'actions', label: 'Действия', defaultVisible: true, required: true },
+  { id: 'scheduledDate', label: 'Плановый срок проведения', defaultVisible: true },
+  { id: 'equipment', label: 'Технологическая единица оборудования', defaultVisible: true },
+  { id: 'plan', label: 'План регламентного обслуживания', defaultVisible: true },
+  { id: 'periodicity', label: 'Периодичность регламента', defaultVisible: true },
+  { id: 'status', label: 'Статус исполнения наряда', defaultVisible: true },
+  { id: 'location', label: 'Место установки оборудования', defaultVisible: false },
+  { id: 'completedBy', label: 'Ответственный исполнитель / Бригадир', defaultVisible: true },
+  { id: 'actions', label: 'Операции', defaultVisible: true, required: true },
 ];
 
 function MroPageContent() {
@@ -275,12 +275,12 @@ function MroPageContent() {
 
       {/* 1. Header */}
       <PageHeader
-        title="График ТО и ППР"
-        subtitle="Календарный план планово-предупредительных ремонтов, контроль сроков и проведение регламентов"
+        title="График планово-предупредительных ремонтов (ППР)"
+        subtitle="Календарное планирование регламентного ТО, наряды-задания и контроль исполнения"
         breadcrumbs={[
           { label: 'Главная', href: '/' },
           { label: 'ТО и Ремонт', href: '/mro' },
-          { label: 'График ТО и ППР' },
+          { label: 'График ППР' },
         ]}
         actions={
           <Stack direction="row" spacing={1.25}>

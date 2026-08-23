@@ -102,14 +102,14 @@ interface ZoneOption {
 }
 
 const STOCK_COLUMNS: TableColumnOption[] = [
-  { id: 'warehouse', label: 'Склад', defaultVisible: true },
-  { id: 'zone', label: 'Место (Ячейка)', defaultVisible: true },
-  { id: 'sku', label: 'Артикул', defaultVisible: true },
-  { id: 'name', label: 'Номенклатура (ТМЦ)', defaultVisible: true, required: true },
-  { id: 'category', label: 'Категория', defaultVisible: true },
-  { id: 'quantity', label: 'Остаток на складе', defaultVisible: true },
-  { id: 'minQuantity', label: 'Мин. остаток', defaultVisible: true },
-  { id: 'status', label: 'Статус', defaultVisible: true },
+  { id: 'warehouse', label: 'Склад хранения', defaultVisible: true },
+  { id: 'zone', label: 'Адресная ячейка хранения', defaultVisible: true },
+  { id: 'sku', label: 'Номенклатурный артикул', defaultVisible: true },
+  { id: 'name', label: 'Наименование ТМЦ', defaultVisible: true, required: true },
+  { id: 'category', label: 'Товарная группа / Категория', defaultVisible: true },
+  { id: 'quantity', label: 'Фактический остаток', defaultVisible: true },
+  { id: 'minQuantity', label: 'Неснижаемый нормативный остаток', defaultVisible: true },
+  { id: 'status', label: 'Статус обеспеченности', defaultVisible: true },
   { id: 'equipment', label: 'Совместимое оборудование', defaultVisible: true },
 ];
 
@@ -515,12 +515,12 @@ function WmsStockContent() {
   return (
     <Box sx={{ pb: selectedIds.length > 0 ? 8 : 4 }}>
       <PageHeader
-        title="Остатки складов и номенклатура (ТМЦ)"
-        subtitle="Реестр наличия запасных частей, адреса ячеистого хранения и привязка к оборудованию"
+        title="Номенклатурный справочник и остатки ТМЦ"
+        subtitle="Складские запасы запасных частей, инструмента, ГСМ и материалов с адресным хранением"
         breadcrumbs={[
           { label: 'Главная', href: '/' },
-          { label: 'Складской учёт', href: '/wms' },
-          { label: 'Остатки' },
+          { label: 'Складской учёт ТМЦ', href: '/wms' },
+          { label: 'Номенклатура и остатки' },
         ]}
         actions={
           <Stack direction="row" spacing={1.5} alignItems="center">

@@ -213,7 +213,7 @@ export const PERMISSION_DEFINITIONS: Record<PermissionCode, PermissionDefinition
     code: 'srm.dashboard.view',
     displayName: 'Просмотр инцидентов и сервисных заявок',
     module: 'srm',
-    description: 'Доступ к дашборду надежности, списку поломок, инцидентов и метрикам MTTR / MTBF',
+    description: 'Доступ к сводной панели надежности, списку поломок, инцидентов и метрикам MTTR / MTBF',
   },
   'srm.requests.create': {
     code: 'srm.requests.create',

@@ -87,7 +87,7 @@ const COMMAND_ITEMS: CommandItem[] = [
   // WMS
   {
     id: 'wms-root',
-    title: 'Складской дашборд',
+    title: 'Панель материальных потоков и остатков',
     subtitle: 'Сводка остатков ТМЦ, дефицит, активные инвентаризации',
     category: 'WMS',
     icon: <Inventory2OutlinedIcon sx={{ fontSize: 20 }} />,
