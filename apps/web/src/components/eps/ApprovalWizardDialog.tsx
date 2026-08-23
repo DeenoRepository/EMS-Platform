@@ -178,7 +178,7 @@ export default function ApprovalWizardDialog({
               renderInput={(params) => (
                 <TextField
                   {...params}
-                  label="Целевое оборудование *"
+                  label="Целевое оборудование"
                   placeholder="Начните ввод названия или инвентарного номера..."
                   size="small"
                   fullWidth
@@ -221,10 +221,11 @@ export default function ApprovalWizardDialog({
             <TextField
               select
               size="small"
-              label="Тип регламентного согласования *"
+              label="Тип регламентного согласования"
               value={approvalType}
               onChange={(e) => setApprovalType(e.target.value)}
               fullWidth
+              required
             >
               {Object.entries(APPROVAL_TYPE_MAP).map(([k, label]) => (
                 <MenuItem key={k} value={k}>
@@ -253,10 +254,11 @@ export default function ApprovalWizardDialog({
               <TextField
                 select
                 size="small"
-                label="Целевой рабочий статус оборудования *"
+                label="Целевой рабочий статус оборудования"
                 value={targetStatus}
                 onChange={(e) => setTargetStatus(e.target.value)}
                 fullWidth
+                required
               >
                 {Object.entries(EQUIPMENT_STATUS_MAP).map(([k, info]) => (
                   <MenuItem key={k} value={k}>
@@ -267,7 +269,7 @@ export default function ApprovalWizardDialog({
             )}
 
             <TextField
-              label="Тема / Название заявки *"
+              label="Тема / Название заявки"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               size="small"

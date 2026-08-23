@@ -225,9 +225,9 @@ export default function SrmIntegrationWizardDialog({
         {activeStep === 0 && (
           <Stack spacing={2.5}>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={7}>
+              <Grid item xs={12} sm={6}>
                 <TextField
-                  label="Название подключения *"
+                  label="Название подключения"
                   fullWidth
                   size="small"
                   value={name}
@@ -237,7 +237,7 @@ export default function SrmIntegrationWizardDialog({
                 />
               </Grid>
 
-              <Grid item xs={12} sm={5}>
+              <Grid item xs={12} sm={6}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Тип провайдера</InputLabel>
                   <Select
@@ -256,7 +256,7 @@ export default function SrmIntegrationWizardDialog({
 
               <Grid item xs={12}>
                 <TextField
-                  label="Базовый URL сервера (Base URL) *"
+                  label="Базовый URL сервера (Base URL)"
                   fullWidth
                   size="small"
                   value={baseUrl}

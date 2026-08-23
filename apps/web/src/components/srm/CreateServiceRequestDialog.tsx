@@ -167,7 +167,7 @@ export default function CreateServiceRequestDialog({
         <Stack spacing={2.5}>
           {/* Тема инцидента */}
           <TextField
-            label="Краткая суть неисправности / Тема инцидента *"
+            label="Краткая суть неисправности / Тема инцидента"
             fullWidth
             size="small"
             value={summary}
@@ -179,7 +179,7 @@ export default function CreateServiceRequestDialog({
 
           <Grid container spacing={2}>
             {/* Оборудование */}
-            <Grid item xs={12} sm={7}>
+            <Grid item xs={12} sm={6}>
               <Autocomplete
                 size="small"
                 options={equipmentList}
@@ -207,7 +207,7 @@ export default function CreateServiceRequestDialog({
             </Grid>
 
             {/* Приоритет */}
-            <Grid item xs={12} sm={5}>
+            <Grid item xs={12} sm={6}>
               <FormControl fullWidth size="small">
                 <InputLabel>Приоритет инцидента</InputLabel>
                 <Select

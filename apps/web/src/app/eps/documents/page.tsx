@@ -831,10 +831,11 @@ function DocumentsListContent() {
             renderInput={(params) => (
               <TextField
                 {...params}
-                label="Оборудование *"
+                label="Оборудование"
                 placeholder="Выберите единицу оборудования"
                 size="small"
                 fullWidth
+                required
               />
             )}
           />
@@ -843,10 +844,11 @@ function DocumentsListContent() {
           <TextField
             select
             size="small"
-            label="Тип документа *"
+            label="Тип документа"
             value={uploadDocType}
             onChange={(e) => setUploadDocType(e.target.value)}
             fullWidth
+            required
           >
             {Object.entries(DOCUMENT_TYPE_MAP).map(([k, label]) => (
               <MenuItem key={k} value={k}>

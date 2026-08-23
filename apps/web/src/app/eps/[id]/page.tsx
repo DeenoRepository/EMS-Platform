@@ -2019,9 +2019,10 @@ function EquipmentPassportContent() {
             <Grid container spacing={2}>
               <Grid item xs={12}>
                 <TextField
-                  label="Наименование оборудования *"
+                  label="Наименование оборудования"
                   fullWidth
                   size="small"
+                  required
                   value={editForm.name || ''}
                   onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                 />
@@ -2264,10 +2265,11 @@ function EquipmentPassportContent() {
           <TextField
             select
             size="small"
-            label="Тип согласования *"
+            label="Тип согласования"
             value={createApprovalType}
             onChange={(e) => setCreateApprovalType(e.target.value)}
             fullWidth
+            required
           >
             {Object.entries(APPROVAL_TYPE_MAP).map(([k, label]) => (
               <MenuItem key={k} value={k}>
@@ -2280,10 +2282,11 @@ function EquipmentPassportContent() {
             <TextField
               select
               size="small"
-              label="Целевой рабочий статус *"
+              label="Целевой рабочий статус"
               value={createApprovalTargetStatus}
               onChange={(e) => setCreateApprovalTargetStatus(e.target.value)}
               fullWidth
+              required
             >
               {Object.entries(EQUIPMENT_STATUS_MAP).map(([k, info]) => (
                 <MenuItem key={k} value={k}>
@@ -2294,11 +2297,12 @@ function EquipmentPassportContent() {
           )}
 
           <TextField
-            label="Тема заявки *"
+            label="Тема заявки"
             value={createApprovalTitle}
             onChange={(e) => setCreateApprovalTitle(e.target.value)}
             size="small"
             fullWidth
+            required
             placeholder="Например: Согласование акта списания в связи с износом"
           />
 

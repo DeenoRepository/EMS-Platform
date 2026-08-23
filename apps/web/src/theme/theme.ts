@@ -372,9 +372,24 @@ export const theme = createTheme(
             '&.Mui-focused': {
               color: '#0284c7',
             },
+            '&.MuiInputLabel-shrink': {
+              backgroundColor: '#ffffff',
+              padding: '0 6px',
+              marginLeft: '-3px',
+              borderRadius: '3px',
+              zIndex: 2,
+            },
           },
           sizeSmall: {
             fontSize: '0.8125rem',
+            '&.MuiInputLabel-shrink': {
+              fontSize: '0.75rem',
+              backgroundColor: '#ffffff',
+              padding: '0 6px',
+              marginLeft: '-3px',
+              borderRadius: '3px',
+              zIndex: 2,
+            },
           },
         },
       },

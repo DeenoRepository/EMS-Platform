@@ -1184,11 +1184,12 @@ export default function ReportBuilderPage() {
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
           <TextField
-            label="Название шаблона *"
+            label="Название шаблона"
             value={newTemplateName}
             onChange={(e) => setNewTemplateName(e.target.value)}
             fullWidth
             size="small"
+            required
             placeholder="Например: Инвентаризационная ведомость цеха №1"
           />
           <TextField
