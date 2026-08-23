@@ -582,7 +582,7 @@ function ModuleSettingsContent() {
   const currentModuleEnabled = moduleStatus[currentModuleKey] !== false;
 
   return (
-    <Box sx={{ maxWidth: 1920, mx: 'auto' }}>
+    <Box sx={{ width: '100%', pb: 2 }}>
       <PageHeader
         title={currentMeta.title}
         subtitle={currentMeta.subtitle}

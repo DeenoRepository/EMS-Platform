@@ -160,7 +160,7 @@ export default function AdminSettingsPage() {
   ];
 
   return (
-    <Box sx={{ maxWidth: 1920, mx: 'auto' }}>
+    <Box sx={{ width: '100%', pb: 2 }}>
       <PageHeader
         title="Параметры системы"
         subtitle="Глобальная конфигурация платформы, активность модулей и параметры интеграции с LDAP и Jira API"

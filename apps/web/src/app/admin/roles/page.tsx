@@ -230,7 +230,7 @@ export default function AdminRolesPage() {
   const customRoles = roles.filter((r) => !r.isSystem).length;
 
   return (
-    <Box sx={{ maxWidth: 1920, mx: 'auto', pb: 4 }}>
+    <Box sx={{ width: '100%', pb: 2 }}>
       <PageHeader
         title="Роли и гранулярные права"
         subtitle="Настройка матриц прав доступа и создание кастомных ролей"

@@ -11,7 +11,7 @@ export default function NewEquipmentPage() {
   const router = useRouter();
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', pb: 6 }}>
+    <Box sx={{ width: '100%', pb: 2 }}>
       <PageHeader
         title="Регистрация нового оборудования"
         subtitle="Пошаговый мастер создания паспорта единицы оборудования в реестре EPS"

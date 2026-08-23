@@ -220,7 +220,7 @@ export default function WmsWarehousesPage() {
   const totalOperations = warehouses.reduce((acc, w) => acc + (w._count?.operations || 0), 0);
 
   return (
-    <Box sx={{ maxWidth: 1920, mx: 'auto', pb: 4 }}>
+    <Box sx={{ width: '100%', pb: 2 }}>
       <PageHeader
         title="Склады и зоны хранения"
         subtitle="Справочник складских комплексов, топология зон и ячеек адресного хранения ТМЦ"

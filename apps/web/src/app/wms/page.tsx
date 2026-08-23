@@ -199,7 +199,7 @@ export default function WmsDashboardPage() {
   }, []);
 
   return (
-    <Box sx={{ pb: 4 }}>
+    <Box sx={{ pb: 2 }}>
       <PageHeader
         title="Складской учёт (WMS)"
         subtitle="Мониторинг остатков, дефицита ТМЦ, операций прихода, списания и инвентаризаций"

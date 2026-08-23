@@ -53,7 +53,7 @@ export default function MroComingSoonPage() {
   ];
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
+    <Box sx={{ width: '100%', pb: 2 }}>
       <PageHeader
         title="MRO — Техническое обслуживание и ремонт"
         subtitle="Модуль управления планово-предупредительными ремонтами (ППР) и ТОиР"

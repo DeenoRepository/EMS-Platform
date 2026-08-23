@@ -20,7 +20,7 @@ export interface PageHeaderProps {
 
 export default function PageHeader({ title, subtitle, breadcrumbs, actions, tabs }: PageHeaderProps) {
   return (
-    <Box sx={{ mb: tabs ? 3 : 3 }}>
+    <Box sx={{ mb: tabs ? 2 : 2.25 }}>
       {breadcrumbs && breadcrumbs.length > 0 && (
         <Breadcrumbs
           className="no-print"

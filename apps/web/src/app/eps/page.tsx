@@ -432,7 +432,7 @@ function EquipmentListContent() {
   };
 
   return (
-    <Box sx={{ pb: 6 }}>
+    <Box sx={{ pb: 2 }}>
       {/* Page Header */}
       <PageHeader
         title="Оборудование"

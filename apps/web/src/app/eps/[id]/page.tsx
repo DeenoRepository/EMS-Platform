@@ -601,7 +601,7 @@ export default function EquipmentPassportPage() {
   const engineeringSections = sections.filter((s) => !specialSectionCodes.has(s.code));
 
   return (
-    <Box sx={{ maxWidth: 1920, mx: 'auto' }}>
+    <Box sx={{ width: '100%', pb: 2 }}>
       {/* Official Print Header (Visible strictly when printing / PDF export) */}
       <Box
         className="print-only"

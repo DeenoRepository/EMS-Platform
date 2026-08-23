@@ -596,7 +596,7 @@ export default function ReportBuilderPage() {
   };
 
   return (
-    <Box sx={{ maxWidth: 1920, mx: 'auto', pb: 4 }}>
+    <Box sx={{ width: '100%', pb: 2 }}>
       {/* ─── Page Header ─── */}
       <PageHeader
         title="EPS — Конструктор отчетов оборудования"

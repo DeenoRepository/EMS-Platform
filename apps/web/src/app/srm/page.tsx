@@ -53,7 +53,7 @@ export default function SrmComingSoonPage() {
   ];
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
+    <Box sx={{ width: '100%', pb: 2 }}>
       <PageHeader
         title="SRM — Система подачи и управления заявками"
         subtitle="Модуль ServiceDesk и контроля надежности оборудования"

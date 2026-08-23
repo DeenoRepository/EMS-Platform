@@ -92,8 +92,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           component="main"
           sx={{
             flexGrow: 1,
-            p: { xs: 2, sm: 3, md: 4 },
+            p: { xs: 1.5, sm: 2, md: 2.5 },
             maxWidth: '100%',
+            width: '100%',
+            boxSizing: 'border-box',
             '@media print': {
               p: '0 !important',
               m: '0 !important',

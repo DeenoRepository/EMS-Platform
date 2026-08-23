@@ -177,7 +177,7 @@ export default function AdminUsersPage() {
   });
 
   return (
-    <Box sx={{ maxWidth: 1920, mx: 'auto', pb: 4 }}>
+    <Box sx={{ width: '100%', pb: 2 }}>
       <PageHeader
         title="Управление пользователями"
         subtitle="Синхронизированные учетные записи LDAP и назначение ролей"
