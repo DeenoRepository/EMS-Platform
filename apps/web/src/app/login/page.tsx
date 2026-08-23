@@ -33,10 +33,13 @@ import ContactSupportOutlinedIcon from '@mui/icons-material/ContactSupportOutlin
 import DomainIcon from '@mui/icons-material/Domain';
 import LanguageIcon from '@mui/icons-material/Language';
 import { useAuth } from '@/lib/auth-client';
-import { InfrastructureHealthBanner } from '@/components/ui';
+import { useSystemHealth, ServiceUnavailableCard } from '@/components/ui';
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const { health, loading: healthLoading, isReady, checkHealth } = useSystemHealth(5000);
+  const isOffline = isReady === false;
+
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
@@ -45,11 +48,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
-  const [isInfrastructureReady, setIsInfrastructureReady] = useState(true);
-
-  const handleHealthChange = useCallback((isReady: boolean) => {
-    setIsInfrastructureReady(isReady);
-  }, []);
 
   // Восстановление сохраненного логина и очистка чувствительных URL-параметров (защита от утечки пароля при случайном GET-сабмите)
   useEffect(() => {
@@ -105,7 +103,7 @@ export default function LoginPage() {
       return;
     }
 
-    if (!isInfrastructureReady) {
+    if (isOffline) {
       setError('База данных PostgreSQL недоступна. Запустите Docker и выполните: docker compose up -d postgres ldap');
       return;
     }
@@ -255,17 +253,17 @@ export default function LoginPage() {
 
         <CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
           <Box sx={{ mb: 2.5, textAlign: 'center' }}>
-            <Typography variant="subtitle1" fontWeight={700} sx={{ color: isInfrastructureReady ? '#0f172a' : '#991b1b' }}>
-              {isInfrastructureReady ? 'Вход в учетную запись' : 'Сервис временно недоступен'}
+            <Typography variant="subtitle1" fontWeight={700} sx={{ color: isOffline ? '#991b1b' : '#0f172a' }}>
+              {isOffline ? 'Сервис временно недоступен' : 'Вход в учетную запись'}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem', mt: 0.25 }}>
-              {isInfrastructureReady
-                ? 'Введите корпоративные учетные данные'
-                : 'Один из узлов инфраструктуры отключен или не отвечает'}
+              {isOffline
+                ? 'Один из узлов инфраструктуры отключен или не отвечает'
+                : 'Введите корпоративные учетные данные'}
             </Typography>
           </Box>
 
-          {error && isInfrastructureReady && (
+          {error && !isOffline && (
             <Fade in={Boolean(error)}>
               <Alert
                 severity="error"
@@ -289,12 +287,11 @@ export default function LoginPage() {
           )}
 
           {/* Full Infrastructure Offline Diagnostic Panel */}
-          {!isInfrastructureReady ? (
-            <InfrastructureHealthBanner
-              variant="full"
-              hideWhenHealthy={true}
-              onHealthChange={handleHealthChange}
-              autoRefreshIntervalMs={5000}
+          {isOffline ? (
+            <ServiceUnavailableCard
+              health={health}
+              loading={healthLoading}
+              onRefresh={checkHealth}
             />
           ) : (
             <Box

@@ -39,30 +39,10 @@ export interface SystemHealthReport {
   };
 }
 
-export interface InfrastructureHealthBannerProps {
-  variant?: 'banner' | 'full';
-  hideWhenHealthy?: boolean;
-  onHealthChange?: (isReady: boolean, report: SystemHealthReport | null) => void;
-  autoRefreshIntervalMs?: number;
-  className?: string;
-}
-
-export function InfrastructureHealthBanner({
-  variant = 'full',
-  hideWhenHealthy = true,
-  onHealthChange,
-  autoRefreshIntervalMs = 0,
-  className,
-}: InfrastructureHealthBannerProps) {
+export function useSystemHealth(autoRefreshIntervalMs = 5000) {
   const [health, setHealth] = useState<SystemHealthReport | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  // Store onHealthChange in a ref to avoid infinite re-render cycles
-  const onHealthChangeRef = useRef(onHealthChange);
-  useEffect(() => {
-    onHealthChangeRef.current = onHealthChange;
-  }, [onHealthChange]);
+  const [loading, setLoading] = useState(true);
+  const [isReady, setIsReady] = useState<boolean | null>(null);
 
   const checkHealth = useCallback(async () => {
     setLoading(true);
@@ -78,9 +58,7 @@ export function InfrastructureHealthBanner({
       const data = await res.json();
       if (data.success && data.data) {
         setHealth(data.data);
-        if (onHealthChangeRef.current) {
-          onHealthChangeRef.current(data.data.isReady, data.data);
-        }
+        setIsReady(data.data.isReady);
       } else {
         const fallbackReport: SystemHealthReport = {
           isReady: false,
@@ -97,9 +75,7 @@ export function InfrastructureHealthBanner({
           },
         };
         setHealth(fallbackReport);
-        if (onHealthChangeRef.current) {
-          onHealthChangeRef.current(false, fallbackReport);
-        }
+        setIsReady(false);
       }
     } catch (err: any) {
       const offlineReport: SystemHealthReport = {
@@ -119,9 +95,7 @@ export function InfrastructureHealthBanner({
         },
       };
       setHealth(offlineReport);
-      if (onHealthChangeRef.current) {
-        onHealthChangeRef.current(false, offlineReport);
-      }
+      setIsReady(false);
     } finally {
       clearTimeout(timeoutId);
       setLoading(false);
@@ -137,6 +111,152 @@ export function InfrastructureHealthBanner({
     }
   }, [checkHealth, autoRefreshIntervalMs]);
 
+  return { health, loading, isReady, checkHealth };
+}
+
+export interface ServiceUnavailableCardProps {
+  health: SystemHealthReport | null;
+  loading?: boolean;
+  onRefresh?: () => void;
+  className?: string;
+}
+
+export function ServiceUnavailableCard({
+  health,
+  loading = false,
+  onRefresh,
+  className,
+}: ServiceUnavailableCardProps) {
+  const [copied, setCopied] = useState(false);
+
+  const db = health?.services?.database;
+  const defaultCommand = db?.command || 'docker compose up -d postgres ldap';
+
+  const handleCopyCommand = (command: string) => {
+    navigator.clipboard.writeText(command);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <Box sx={{ textAlign: 'center', py: 0.5 }} className={className}>
+      <Box
+        sx={{
+          width: 56,
+          height: 56,
+          borderRadius: '50%',
+          backgroundColor: '#fee2e2',
+          color: '#dc2626',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          mb: 1.75,
+          boxShadow: '0 4px 14px rgba(220, 38, 38, 0.18)',
+        }}
+      >
+        <DnsOutlinedIcon sx={{ fontSize: 30 }} />
+      </Box>
+
+      <Typography variant="h6" fontWeight={700} sx={{ color: '#991b1b', fontSize: '1.05rem', mb: 0.75 }}>
+        Сервис в данный момент недоступен
+      </Typography>
+
+      <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem', mb: 2.25, lineHeight: 1.5 }}>
+        {db?.error || `Один из обязательных узлов инфраструктуры (База данных PostgreSQL на ${db?.host || '127.0.0.1:5432'}) отключен. Ввод учетных данных заблокирован до восстановления связи.`}
+      </Typography>
+
+      {/* Command Box */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: 1.5,
+          mb: 2.5,
+          borderRadius: '10px',
+          backgroundColor: '#f8fafc',
+          border: '1px solid #e2e8f0',
+          textAlign: 'left',
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.75 }}>
+          <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, fontSize: '0.72rem' }}>
+            Команда для запуска базы данных:
+          </Typography>
+          <Tooltip title={copied ? 'Скопировано!' : 'Скопировать'}>
+            <IconButton
+              size="small"
+              onClick={() => handleCopyCommand(defaultCommand)}
+              sx={{
+                color: copied ? '#16a34a' : '#64748b',
+                backgroundColor: copied ? '#dcfce7' : '#e2e8f0',
+                p: 0.5,
+                borderRadius: '5px',
+                '&:hover': { backgroundColor: copied ? '#bbf7d0' : '#cbd5e1' },
+              }}
+            >
+              {copied ? <CheckIcon sx={{ fontSize: 14 }} /> : <ContentCopyIcon sx={{ fontSize: 14 }} />}
+            </IconButton>
+          </Tooltip>
+        </Box>
+        <Typography
+          variant="caption"
+          sx={{
+            fontFamily: 'monospace',
+            fontWeight: 700,
+            color: '#0f172a',
+            fontSize: '0.8rem',
+            wordBreak: 'break-all',
+            display: 'block',
+            backgroundColor: '#ffffff',
+            p: 1,
+            borderRadius: '6px',
+            border: '1px solid #cbd5e1',
+          }}
+        >
+          {defaultCommand}
+        </Typography>
+      </Paper>
+
+      <Button
+        fullWidth
+        variant="contained"
+        size="large"
+        onClick={onRefresh}
+        disabled={loading}
+        startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <RefreshIcon sx={{ fontSize: 18 }} />}
+        sx={{
+          py: 1.25,
+          fontWeight: 700,
+          fontSize: '0.875rem',
+          borderRadius: 2,
+          textTransform: 'none',
+          backgroundColor: '#0284c7',
+          boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
+          '&:hover': {
+            backgroundColor: '#0369a1',
+            boxShadow: '0 6px 18px rgba(2, 132, 199, 0.45)',
+          },
+        }}
+      >
+        {loading ? 'Проверка подключения...' : 'Проверить доступность сервиса'}
+      </Button>
+    </Box>
+  );
+}
+
+export interface InfrastructureHealthBannerProps {
+  hideWhenHealthy?: boolean;
+  autoRefreshIntervalMs?: number;
+  className?: string;
+}
+
+export function InfrastructureHealthBanner({
+  hideWhenHealthy = true,
+  autoRefreshIntervalMs = 5000,
+  className,
+}: InfrastructureHealthBannerProps) {
+  const { health, loading, isReady, checkHealth } = useSystemHealth(autoRefreshIntervalMs);
+  const [copied, setCopied] = useState(false);
+
   const handleCopyCommand = (command: string) => {
     navigator.clipboard.writeText(command);
     setCopied(true);
@@ -147,7 +267,7 @@ export function InfrastructureHealthBanner({
     return null;
   }
 
-  const isHealthy = health.isReady && health.services.database.status === 'healthy';
+  const isHealthy = isReady === true;
 
   if (isHealthy && hideWhenHealthy) {
     return null;
@@ -157,114 +277,6 @@ export function InfrastructureHealthBanner({
   const isDbDown = db.status === 'unreachable';
   const defaultCommand = db.command || 'docker compose up -d postgres ldap';
 
-  // 1. FULL VIEW (Replaces login inputs completely when infrastructure is down)
-  if (variant === 'full') {
-    return (
-      <Box sx={{ textAlign: 'center', py: 0.5 }} className={className}>
-        <Box
-          sx={{
-            width: 54,
-            height: 54,
-            borderRadius: '50%',
-            backgroundColor: '#fee2e2',
-            color: '#dc2626',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            mb: 1.75,
-            boxShadow: '0 4px 14px rgba(220, 38, 38, 0.18)',
-          }}
-        >
-          <DnsOutlinedIcon sx={{ fontSize: 30 }} />
-        </Box>
-
-        <Typography variant="h6" fontWeight={700} sx={{ color: '#991b1b', fontSize: '1.05rem', mb: 0.75 }}>
-          Сервис в данный момент недоступен
-        </Typography>
-
-        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem', mb: 2.25, lineHeight: 1.5 }}>
-          {db.error || `Один из обязательных узлов инфраструктуры (База данных PostgreSQL на ${db.host || '127.0.0.1:5432'}) отключен. Ввод учетных данных заблокирован до восстановления связи.`}
-        </Typography>
-
-        {/* Command Box */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 1.5,
-            mb: 2.5,
-            borderRadius: '10px',
-            backgroundColor: '#f8fafc',
-            border: '1px solid #e2e8f0',
-            textAlign: 'left',
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.75 }}>
-            <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, fontSize: '0.72rem' }}>
-              Команда для запуска базы данных:
-            </Typography>
-            <Tooltip title={copied ? 'Скопировано!' : 'Скопировать'}>
-              <IconButton
-                size="small"
-                onClick={() => handleCopyCommand(defaultCommand)}
-                sx={{
-                  color: copied ? '#16a34a' : '#64748b',
-                  backgroundColor: copied ? '#dcfce7' : '#e2e8f0',
-                  p: 0.5,
-                  borderRadius: '5px',
-                  '&:hover': { backgroundColor: copied ? '#bbf7d0' : '#cbd5e1' },
-                }}
-              >
-                {copied ? <CheckIcon sx={{ fontSize: 14 }} /> : <ContentCopyIcon sx={{ fontSize: 14 }} />}
-              </IconButton>
-            </Tooltip>
-          </Box>
-          <Typography
-            variant="caption"
-            sx={{
-              fontFamily: 'monospace',
-              fontWeight: 700,
-              color: '#0f172a',
-              fontSize: '0.8rem',
-              wordBreak: 'break-all',
-              display: 'block',
-              backgroundColor: '#ffffff',
-              p: 1,
-              borderRadius: '6px',
-              border: '1px solid #cbd5e1',
-            }}
-          >
-            {defaultCommand}
-          </Typography>
-        </Paper>
-
-        <Button
-          fullWidth
-          variant="contained"
-          size="large"
-          onClick={checkHealth}
-          disabled={loading}
-          startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <RefreshIcon sx={{ fontSize: 18 }} />}
-          sx={{
-            py: 1.25,
-            fontWeight: 700,
-            fontSize: '0.875rem',
-            borderRadius: 2,
-            textTransform: 'none',
-            backgroundColor: '#0284c7',
-            boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
-            '&:hover': {
-              backgroundColor: '#0369a1',
-              boxShadow: '0 6px 18px rgba(2, 132, 199, 0.45)',
-            },
-          }}
-        >
-          {loading ? 'Проверка подключения...' : 'Проверить доступность сервиса'}
-        </Button>
-      </Box>
-    );
-  }
-
-  // 2. BANNER VIEW
   return (
     <Collapse in={!isHealthy} timeout="auto">
       <Paper
