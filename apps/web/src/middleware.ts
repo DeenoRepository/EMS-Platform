@@ -76,19 +76,26 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // 1.5. Protect setup routes — only allow if system is NOT yet configured
-  if (pathname.startsWith('/api/setup') || pathname.startsWith('/setup')) {
-    const setupDone = await isSetupCompleted();
-    if (setupDone) {
-      if (pathname.startsWith('/api/')) {
-        return NextResponse.json(
-          { success: false, error: 'System is already configured. Setup routes are disabled.' },
-          { status: 403 }
-        );
-      }
-      return NextResponse.redirect(new URL('/login', req.url));
+  // 1.5. Проверка статуса первоначальной инициализации системы
+  const setupDone = await isSetupCompleted();
+
+  if (!setupDone) {
+    // Если система еще НЕ настроена — все пользователи направляются в мастер настройки
+    if (!pathname.startsWith('/setup') && !pathname.startsWith('/api/setup')) {
+      return NextResponse.redirect(new URL('/setup', req.url));
     }
     return NextResponse.next();
+  } else {
+    // Если система УЖЕ настроена — блокируем мастер настройки и перенаправляем на /login
+    if (pathname.startsWith('/setup')) {
+      return NextResponse.redirect(new URL('/login', req.url));
+    }
+    if (pathname.startsWith('/api/setup')) {
+      return NextResponse.json(
+        { success: false, error: 'Система уже настроена. Мастер первоначальной настройки заблокирован.' },
+        { status: 403 }
+      );
+    }
   }
 
   // 2. Получение токена сессии
