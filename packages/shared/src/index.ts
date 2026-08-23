@@ -287,25 +287,25 @@ export const EQUIPMENT_STATUS_MAP: Record<string, { label: string; color: 'succe
 };
 
 export const DOCUMENT_TYPE_MAP: Record<string, string> = {
-  SCHEMA: 'Схема / Чертёж',
-  MANUAL: 'Инструкция по эксплуатации',
-  CERTIFICATE: 'Сертификат / Паспорт изделия',
-  PASSPORT: 'Формуляр / Паспорт',
-  ACT: 'Акт ввода / испытаний',
-  OTHER: 'Прочий документ',
+  SCHEMA: 'Принципиальная / Монтажная схема, Чертёж (ЕСКД)',
+  MANUAL: 'Руководство по эксплуатации и ТО (РЭ)',
+  CERTIFICATE: 'Сертификат соответствия / Декларация ТР ТС',
+  PASSPORT: 'Формуляр / Паспорт изделия (ПС)',
+  ACT: 'Акт ввода в эксплуатацию / Акт испытаний',
+  OTHER: 'Прочая техническая документация',
 };
 
 export const APPROVAL_TYPE_MAP: Record<string, string> = {
-  EQUIPMENT_CREATE: 'Создание оборудования',
-  EQUIPMENT_UPDATE: 'Изменение характеристик',
-  EQUIPMENT_DELETE: 'Удаление оборудования',
-  DOCUMENT_CREATE: 'Загрузка документа',
-  DOCUMENT_DELETE: 'Удаление документа',
-  COMMISSIONING: 'Ввод в эксплуатацию',
-  DECOMMISSIONING: 'Списание оборудования',
-  STATUS_CHANGE: 'Смена рабочего статуса',
-  PARAMETER_CHANGE: 'Изменение характеристик',
-  DOCUMENT_APPROVAL: 'Согласование документации',
+  EQUIPMENT_CREATE: 'Создание карточки оборудования',
+  EQUIPMENT_UPDATE: 'Изменение технических характеристик',
+  EQUIPMENT_DELETE: 'Удаление единицы оборудования',
+  DOCUMENT_CREATE: 'Прикрепление технической документации',
+  DOCUMENT_DELETE: 'Аннулирование / Удаление документа',
+  COMMISSIONING: 'Ввод в промышленную эксплуатацию',
+  DECOMMISSIONING: 'Вывод из эксплуатации и списание',
+  STATUS_CHANGE: 'Изменение эксплуатационного статуса',
+  PARAMETER_CHANGE: 'Корректировка паспорта оборудования',
+  DOCUMENT_APPROVAL: 'Утверждение нормативно-технической документации',
 };
 
 export const APPROVAL_STATUS_MAP: Record<string, { label: string; color: 'warning' | 'success' | 'error' | 'default' | 'info' }> = {
@@ -379,13 +379,13 @@ export const SRM_PRIORITY_MAP: Record<string, { label: string; color: 'error' | 
 };
 
 export const SRM_FAILURE_CATEGORY_MAP: Record<string, { label: string; color: 'error' | 'warning' | 'info' | 'default' | 'success' }> = {
-  MECHANICAL: { label: 'Механический излом / Узел', color: 'error' },
-  ELECTRICAL: { label: 'Электрооборудование / Привод', color: 'warning' },
-  HYDRAULIC: { label: 'Гидравлика / Пневматика / Давление', color: 'info' },
-  SOFTWARE: { label: 'Сбой ПО / ЧПУ / Контроллер', color: 'info' },
-  OPERATOR_ERROR: { label: 'Человеческий фактор / Ошибка', color: 'default' },
-  WEAR: { label: 'Естественный износ / Деградация', color: 'warning' },
-  OTHER: { label: 'Прочая неисправность', color: 'default' },
+  MECHANICAL: { label: 'Механический отказ / Износ узлов и кинематики', color: 'error' },
+  ELECTRICAL: { label: 'Электрооборудование / Привод / Цепи питания', color: 'warning' },
+  HYDRAULIC: { label: 'Гидравлика / Пневматика / Нарушение давления', color: 'info' },
+  SOFTWARE: { label: 'Сбой управляющего ПО / ЧПУ / ПЛК контроллера', color: 'info' },
+  OPERATOR_ERROR: { label: 'Нарушение регламента эксплуатации / Ошибка персонала', color: 'default' },
+  WEAR: { label: 'Предельное состояние / Естественная деградация', color: 'warning' },
+  OTHER: { label: 'Прочая неустановленная неисправность', color: 'default' },
 };
 
 export const SRM_SOURCE_MAP: Record<string, { label: string; color: 'primary' | 'secondary' | 'info' | 'warning' | 'default' }> = {

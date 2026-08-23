@@ -92,7 +92,7 @@ const PROJECTS_MAP: Record<string, JiraProject> = {
   GRIO2: {
     id: '10405',
     key: 'GRIO2',
-    name: 'ГриО КПИМС (Сектор измерений)',
+    name: 'ГРиО КПИМС (Сектор измерений)',
     projectTypeKey: 'service_desk',
     lead: { name: 'kvashnin.ilya', displayName: 'Квашнин Илья Николаевич' },
   },
