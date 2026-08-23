@@ -7,16 +7,17 @@ import {
   Paper,
   Button,
   CircularProgress,
+  Chip,
+  Fade,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import CloudOffOutlinedIcon from '@mui/icons-material/CloudOffOutlined';
+import EngineeringOutlinedIcon from '@mui/icons-material/EngineeringOutlined';
+import ContactSupportOutlinedIcon from '@mui/icons-material/ContactSupportOutlined';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 
 export interface ServiceHealthInfo {
   status: 'healthy' | 'unreachable' | 'degraded' | 'disabled';
   name: string;
-  host?: string;
-  database?: string;
-  error?: string;
   latencyMs?: number;
 }
 
@@ -36,7 +37,7 @@ export const initialOfflineReport: SystemHealthReport = {
   services: {
     database: {
       status: 'unreachable',
-      name: 'Database Service',
+      name: 'Database',
     },
     storage: { status: 'healthy', name: 'Storage' },
     ldap: { status: 'disabled', name: 'LDAP' },
@@ -101,56 +102,172 @@ export function ServiceUnavailableCard({
   className,
 }: ServiceUnavailableCardProps) {
   return (
-    <Box sx={{ textAlign: 'center', py: 1.5, px: 0.5 }} className={className}>
+    <Box
+      sx={{
+        textAlign: 'center',
+        pt: 1,
+        pb: 0.5,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+      }}
+      className={className}
+    >
+      {/* Animated Status Icon Header */}
       <Box
         sx={{
-          width: 64,
-          height: 64,
-          borderRadius: '50%',
-          backgroundColor: '#fee2e2',
-          color: '#dc2626',
+          position: 'relative',
+          mb: 2.5,
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
-          mb: 2,
-          boxShadow: '0 4px 14px rgba(220, 38, 38, 0.18)',
         }}
       >
-        <CloudOffOutlinedIcon sx={{ fontSize: 34 }} />
+        {/* Outer Glow Halo */}
+        <Box
+          sx={{
+            position: 'absolute',
+            width: 76,
+            height: 76,
+            borderRadius: '50%',
+            backgroundColor: 'rgba(239, 68, 68, 0.08)',
+            animation: 'pulseGlow 3s infinite ease-in-out',
+            '@keyframes pulseGlow': {
+              '0%': { transform: 'scale(0.95)', opacity: 0.5 },
+              '50%': { transform: 'scale(1.15)', opacity: 1 },
+              '100%': { transform: 'scale(0.95)', opacity: 0.5 },
+            },
+          }}
+        />
+
+        {/* Central Icon Container */}
+        <Box
+          sx={{
+            width: 58,
+            height: 58,
+            borderRadius: '16px',
+            background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
+            border: '1px solid #fecaca',
+            color: '#dc2626',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 8px 20px -4px rgba(220, 38, 38, 0.15)',
+            zIndex: 1,
+          }}
+        >
+          <EngineeringOutlinedIcon sx={{ fontSize: 32 }} />
+        </Box>
       </Box>
 
+      {/* Status Badge */}
+      <Chip
+        label="Технические работы"
+        size="small"
+        sx={{
+          mb: 1.5,
+          fontWeight: 700,
+          fontSize: '0.72rem',
+          letterSpacing: 0.3,
+          backgroundColor: '#fff1f2',
+          color: '#be123c',
+          border: '1px solid #fecdd3',
+          height: 24,
+          '& .MuiChip-label': {
+            px: 1.25,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.6,
+            '&::before': {
+              content: '""',
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              backgroundColor: '#e11d48',
+              boxShadow: '0 0 0 2px rgba(225, 29, 72, 0.2)',
+            },
+          },
+        }}
+      />
+
+      {/* Subtitle / Description */}
       <Typography
         variant="body2"
         sx={{
           color: '#475569',
-          fontSize: '0.875rem',
-          mb: 3,
+          fontSize: '0.8125rem',
           lineHeight: 1.55,
-          maxWidth: 320,
-          mx: 'auto',
+          mb: 2.5,
+          maxWidth: 330,
+          fontWeight: 400,
         }}
       >
-        В данный момент сервис временно недоступен. Пожалуйста, повторите попытку через некоторое время или обратитесь к системному администратору.
+        Авторизация временно приостановлена в связи с проведением регламентных работ или отсутствием связи с сервером.
       </Typography>
 
+      {/* Support Info Box */}
+      <Paper
+        elevation={0}
+        sx={{
+          width: '100%',
+          p: 1.5,
+          mb: 2.75,
+          borderRadius: 2,
+          backgroundColor: '#f8fafc',
+          border: '1px solid #e2e8f0',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 1.25,
+          textAlign: 'left',
+        }}
+      >
+        <ContactSupportOutlinedIcon
+          sx={{ fontSize: 18, color: '#0284c7', mt: 0.15, flexShrink: 0 }}
+        />
+        <Typography
+          variant="caption"
+          sx={{
+            color: '#64748b',
+            fontSize: '0.75rem',
+            lineHeight: 1.45,
+            fontWeight: 500,
+          }}
+        >
+          При возникновении срочных вопросов обратитесь в службу технической поддержки (ИТ-отдел).
+        </Typography>
+      </Paper>
+
+      {/* Primary Action Button */}
       <Button
         fullWidth
         variant="contained"
         size="large"
         onClick={onRefresh}
         disabled={loading}
-        startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <RefreshIcon sx={{ fontSize: 18 }} />}
+        startIcon={
+          loading ? (
+            <CircularProgress size={16} color="inherit" />
+          ) : (
+            <RefreshIcon sx={{ fontSize: 18 }} />
+          )
+        }
         sx={{
-          py: 1.35,
-          fontWeight: 700,
+          py: 1.2,
+          fontWeight: 600,
           fontSize: '0.875rem',
           borderRadius: 2,
           textTransform: 'none',
           backgroundColor: '#0284c7',
-          boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
+          color: '#ffffff',
+          boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)',
+          transition: 'all 0.2s ease',
           '&:hover': {
             backgroundColor: '#0369a1',
-            boxShadow: '0 6px 18px rgba(2, 132, 199, 0.45)',
+            boxShadow: '0 6px 16px rgba(2, 132, 199, 0.35)',
+            transform: 'translateY(-1px)',
+          },
+          '&:active': {
+            transform: 'translateY(0)',
           },
         }}
       >

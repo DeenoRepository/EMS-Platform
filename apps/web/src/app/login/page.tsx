@@ -252,16 +252,16 @@ export default function LoginPage() {
         </Box>
 
         <CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
-          <Box sx={{ mb: 2.5, textAlign: 'center' }}>
-            <Typography variant="subtitle1" fontWeight={700} sx={{ color: isOffline ? '#991b1b' : '#0f172a' }}>
-              {isOffline ? 'Сервис временно недоступен' : 'Вход в учетную запись'}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem', mt: 0.25 }}>
-              {isOffline
-                ? 'Техническое обслуживание системы'
-                : 'Введите корпоративные учетные данные'}
-            </Typography>
-          </Box>
+          {!isOffline && (
+            <Box sx={{ mb: 2.5, textAlign: 'center' }}>
+              <Typography variant="subtitle1" fontWeight={700} sx={{ color: '#0f172a' }}>
+                Вход в учетную запись
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem', mt: 0.25 }}>
+                Введите корпоративные учетные данные
+              </Typography>
+            </Box>
+          )}
 
           {error && !isOffline && (
             <Fade in={Boolean(error)}>
