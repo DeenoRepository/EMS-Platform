@@ -92,22 +92,22 @@ docker compose -f docker-compose.prod.yml up -d --build
 
 ## 5. Резервное копирование и восстановление (Backup & Restore)
 
-### Создание резервной копии базы данных:
+### Создание резервной копии базы данных и файлов:
 * **Linux / Bash:**
   ```bash
-  chmod +x scripts/backup-db.sh
-  ./scripts/backup-db.sh
+  chmod +x scripts/backup.sh
+  ./scripts/backup.sh
   ```
-  *(Резервные копии автоматически архивируются в `backups/postgres/` и хранятся 30 дней)*
+  *(Резервные копии БД и файлов архивируются в `backups/` и хранятся 30 дней)*
 
 * **Windows / PowerShell:**
   ```powershell
-  .\scripts\backup-db.ps1
+  .\scripts\backup.ps1
   ```
 
 ### Восстановление из бэкапа:
 ```bash
-gunzip -c backups/postgres/ems_backup_YYYYMMDD_HHMMSS.sql.gz | docker exec -i ems_postgres_prod psql -U postgres -d ems_db
+gunzip -c backups/ems_database_YYYYMMDD_HHMMSS.sql.gz | docker exec -i ems_postgres_prod psql -U postgres -d ems_db
 ```
 
 ---
