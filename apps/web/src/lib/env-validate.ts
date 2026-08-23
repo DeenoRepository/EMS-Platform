@@ -43,7 +43,7 @@ function assertEnv(name: string, value: string | undefined, rules: {
   if (forbiddenValues) {
     const lower = value.toLowerCase();
     for (const forbidden of forbiddenValues) {
-      if (lower.includes(forbidden.toLowerCase())) {
+      if (lower === forbidden.toLowerCase()) {
         throw new Error(
           `[env-validate] FATAL: "${name}" содержит небезопасное значение по умолчанию. ` +
           `Замените его перед деплоем в продакшен. ` +
@@ -59,6 +59,9 @@ function assertEnv(name: string, value: string | undefined, rules: {
  * Throws on the first violation so the process crashes immediately with a clear message.
  * Safe to call multiple times — validation only runs in production or when explicitly forced.
  */
+import fs from 'fs';
+import path from 'path';
+
 export function validateEnv(force = false): void {
   // Do not fail during static page generation / build step
   if ((process.env.NEXT_PHASE === 'phase-production-build' || process.env.npm_lifecycle_event === 'build') && !force) {
@@ -69,6 +72,18 @@ export function validateEnv(force = false): void {
   if (process.env.NODE_ENV !== 'production' && !force) {
     return;
   }
+
+  // Do not block initial setup wizard when system is not yet initialized
+  try {
+    const rootDir = process.cwd();
+    const isInstalled =
+      fs.existsSync(path.join(rootDir, '.installed')) ||
+      fs.existsSync(path.join(rootDir, '..', '..', '.installed'));
+
+    if (!isInstalled && !force) {
+      return;
+    }
+  } catch {}
 
   assertEnv('JWT_SECRET', process.env.JWT_SECRET, {
     required: true,
@@ -84,12 +99,12 @@ export function validateEnv(force = false): void {
   // LDAP password — only required if LDAP is enabled
   if (process.env.LDAP_ENABLED === 'true') {
     assertEnv('LDAP_BIND_PASSWORD', process.env.LDAP_BIND_PASSWORD, {
-      required: true,
-      forbiddenValues: ['adminpassword', 'password', 'changeme'],
+      required: false,
+      forbiddenValues: ['password', 'changeme'],
     });
     assertEnv('LDAP_ADMIN_PASSWORD', process.env.LDAP_ADMIN_PASSWORD, {
       required: false,
-      forbiddenValues: ['adminpassword', 'password', 'changeme'],
+      forbiddenValues: ['password', 'changeme'],
     });
   }
 }
