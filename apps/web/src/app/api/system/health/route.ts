@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import net from 'net';
 import { prisma } from '@ems/database';
 
 export const dynamic = 'force-dynamic';
@@ -26,55 +27,104 @@ export interface SystemHealthReport {
   };
 }
 
+function checkTcpSocket(host: string, port: number, timeoutMs = 600): Promise<boolean> {
+  return new Promise((resolve) => {
+    const socket = new net.Socket();
+    let isResolved = false;
+
+    socket.setTimeout(timeoutMs);
+    socket.once('connect', () => {
+      isResolved = true;
+      socket.destroy();
+      resolve(true);
+    });
+    socket.once('timeout', () => {
+      if (!isResolved) {
+        isResolved = true;
+        socket.destroy();
+        resolve(false);
+      }
+    });
+    socket.once('error', () => {
+      if (!isResolved) {
+        isResolved = true;
+        socket.destroy();
+        resolve(false);
+      }
+    });
+    socket.connect(port, host);
+  });
+}
+
 export async function GET(req: NextRequest) {
-  // 1. Check Database Health with strict 3-second timeout
+  // 1. Parse Database Config
   let dbHealth: ServiceHealth;
   const dbUrl = process.env.DATABASE_URL || '';
-  let maskedHost = '127.0.0.1:5432';
+  let dbHost = '127.0.0.1';
+  let dbPort = 5432;
   let dbName = 'ems_db';
 
   try {
     const urlMatch = dbUrl.match(/@([^:/]+)(?::(\d+))?\/([^?]+)/);
     if (urlMatch) {
-      maskedHost = `${urlMatch[1]}:${urlMatch[2] || '5432'}`;
+      dbHost = urlMatch[1] || '127.0.0.1';
+      dbPort = parseInt(urlMatch[2] || '5432', 10);
       dbName = urlMatch[3] || 'ems_db';
     }
   } catch {
     // fallback
   }
 
-  try {
-    const dbCheckPromise = prisma.$queryRaw`SELECT 1 as healthy`;
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Превышено время ожидания ответа от PostgreSQL (3 сек)')), 3000)
-    );
+  const maskedHost = `${dbHost}:${dbPort}`;
 
-    const dbStart = Date.now();
-    await Promise.race([dbCheckPromise, timeoutPromise]);
-    const latencyMs = Date.now() - dbStart;
+  // 1a. Fast TCP Pre-flight Check (< 50ms)
+  const isTcpOpen = await checkTcpSocket(dbHost, dbPort, 600);
 
-    dbHealth = {
-      status: 'healthy',
-      name: 'PostgreSQL Database',
-      host: maskedHost,
-      database: dbName,
-      latencyMs,
-    };
-  } catch (error: any) {
-    let errorMsg = error?.message || 'Не удалось подключиться к базе данных';
-    if (errorMsg.includes("Can't reach database server") || errorMsg.includes('ECONNREFUSED')) {
-      errorMsg = `Сервер PostgreSQL на ${maskedHost} не отвечает (соединение разорвано или контейнер отключен).`;
-    }
-
+  if (!isTcpOpen) {
     dbHealth = {
       status: 'unreachable',
       name: 'PostgreSQL Database',
       host: maskedHost,
       database: dbName,
-      error: errorMsg,
+      error: `Сервер PostgreSQL на ${maskedHost} недоступен (порт закрыт или контейнер ems_postgres отключен).`,
       command: 'docker compose up -d postgres ldap',
-      instructions: 'Запустите Docker Desktop и выполните команду в терминале проекта: docker compose up -d postgres ldap',
+      instructions: 'Запустите Docker Desktop и выполните: docker compose up -d postgres ldap',
     };
+  } else {
+    // 1b. Deep query check if TCP is open
+    try {
+      const dbCheckPromise = prisma.$queryRaw`SELECT 1 as healthy`;
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Превышено время ответа от PostgreSQL (1.5 сек)')), 1500)
+      );
+
+      const dbStart = Date.now();
+      await Promise.race([dbCheckPromise, timeoutPromise]);
+      const latencyMs = Date.now() - dbStart;
+
+      dbHealth = {
+        status: 'healthy',
+        name: 'PostgreSQL Database',
+        host: maskedHost,
+        database: dbName,
+        latencyMs,
+      };
+    } catch (error: any) {
+      let errorMsg = error?.message || 'Не удалось выполнить запрос к базе данных';
+      if (errorMsg.includes("Can't reach database server") || errorMsg.includes('ECONNREFUSED')) {
+        errorMsg = `Сервер PostgreSQL на ${maskedHost} не отвечает.`;
+      }
+
+      dbHealth = {
+        status: 'unreachable',
+        name: 'PostgreSQL Database',
+        host: maskedHost,
+        database: dbName,
+        error: errorMsg,
+        command: 'docker compose up -d postgres ldap',
+        instructions: 'Запустите Docker Desktop и выполните: docker compose up -d postgres ldap',
+      };
+    }
   }
 
   // 2. Check File Storage
@@ -89,7 +139,6 @@ export async function GET(req: NextRequest) {
       fs.mkdirSync(resolvedPath, { recursive: true });
     }
 
-    // Test write permission
     const testFile = path.join(resolvedPath, '.healthcheck');
     fs.writeFileSync(testFile, 'ok', 'utf8');
     fs.unlinkSync(testFile);
