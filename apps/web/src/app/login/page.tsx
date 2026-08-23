@@ -258,7 +258,7 @@ export default function LoginPage() {
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem', mt: 0.25 }}>
               {isOffline
-                ? 'Один из узлов инфраструктуры отключен или не отвечает'
+                ? 'Техническое обслуживание системы'
                 : 'Введите корпоративные учетные данные'}
             </Typography>
           </Box>

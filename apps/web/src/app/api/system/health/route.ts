@@ -9,11 +9,6 @@ export const dynamic = 'force-dynamic';
 export interface ServiceHealth {
   status: 'healthy' | 'unreachable' | 'degraded' | 'disabled';
   name: string;
-  host?: string;
-  database?: string;
-  error?: string;
-  command?: string;
-  instructions?: string;
   latencyMs?: number;
 }
 
@@ -27,7 +22,7 @@ export interface SystemHealthReport {
   };
 }
 
-function checkTcpSocket(host: string, port: number, timeoutMs = 600): Promise<boolean> {
+function checkTcpSocket(host: string, port: number, timeoutMs = 500): Promise<boolean> {
   return new Promise((resolve) => {
     const socket = new net.Socket();
     let isResolved = false;
@@ -57,45 +52,36 @@ function checkTcpSocket(host: string, port: number, timeoutMs = 600): Promise<bo
 }
 
 export async function GET(req: NextRequest) {
-  // 1. Parse Database Config
-  let dbHealth: ServiceHealth;
-  const dbUrl = process.env.DATABASE_URL || '';
+  // 1. Parse Database Config for probing
   let dbHost = '127.0.0.1';
   let dbPort = 5432;
-  let dbName = 'ems_db';
+  const dbUrl = process.env.DATABASE_URL || '';
 
   try {
     const urlMatch = dbUrl.match(/@([^:/]+)(?::(\d+))?\/([^?]+)/);
     if (urlMatch) {
       dbHost = urlMatch[1] || '127.0.0.1';
       dbPort = parseInt(urlMatch[2] || '5432', 10);
-      dbName = urlMatch[3] || 'ems_db';
     }
   } catch {
     // fallback
   }
 
-  const maskedHost = `${dbHost}:${dbPort}`;
-
   // 1a. Fast TCP Pre-flight Check (< 50ms)
-  const isTcpOpen = await checkTcpSocket(dbHost, dbPort, 600);
+  let dbHealth: ServiceHealth;
+  const isTcpOpen = await checkTcpSocket(dbHost, dbPort, 500);
 
   if (!isTcpOpen) {
     dbHealth = {
       status: 'unreachable',
-      name: 'PostgreSQL Database',
-      host: maskedHost,
-      database: dbName,
-      error: `Сервер PostgreSQL на ${maskedHost} недоступен (порт закрыт или контейнер ems_postgres отключен).`,
-      command: 'docker compose up -d postgres ldap',
-      instructions: 'Запустите Docker Desktop и выполните: docker compose up -d postgres ldap',
+      name: 'Database',
     };
   } else {
-    // 1b. Deep query check if TCP is open
+    // 1b. Query check if TCP is open
     try {
       const dbCheckPromise = prisma.$queryRaw`SELECT 1 as healthy`;
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Превышено время ответа от PostgreSQL (1.5 сек)')), 1500)
+        setTimeout(() => reject(new Error('timeout')), 1500)
       );
 
       const dbStart = Date.now();
@@ -104,25 +90,13 @@ export async function GET(req: NextRequest) {
 
       dbHealth = {
         status: 'healthy',
-        name: 'PostgreSQL Database',
-        host: maskedHost,
-        database: dbName,
+        name: 'Database',
         latencyMs,
       };
-    } catch (error: any) {
-      let errorMsg = error?.message || 'Не удалось выполнить запрос к базе данных';
-      if (errorMsg.includes("Can't reach database server") || errorMsg.includes('ECONNREFUSED')) {
-        errorMsg = `Сервер PostgreSQL на ${maskedHost} не отвечает.`;
-      }
-
+    } catch {
       dbHealth = {
         status: 'unreachable',
-        name: 'PostgreSQL Database',
-        host: maskedHost,
-        database: dbName,
-        error: errorMsg,
-        command: 'docker compose up -d postgres ldap',
-        instructions: 'Запустите Docker Desktop и выполните: docker compose up -d postgres ldap',
+        name: 'Database',
       };
     }
   }
@@ -145,14 +119,12 @@ export async function GET(req: NextRequest) {
 
     storageHealth = {
       status: 'healthy',
-      name: 'Файловое хранилище (uploads)',
-      host: uploadDir,
+      name: 'Storage',
     };
-  } catch (err: any) {
+  } catch {
     storageHealth = {
       status: 'degraded',
-      name: 'Файловое хранилище (uploads)',
-      error: `Ошибка доступа к директории загрузок: ${err.message}`,
+      name: 'Storage',
     };
   }
 
@@ -160,8 +132,7 @@ export async function GET(req: NextRequest) {
   const ldapEnabled = process.env.LDAP_ENABLED === 'true';
   const ldapHealth: ServiceHealth = {
     status: ldapEnabled ? 'healthy' : 'disabled',
-    name: 'Active Directory / OpenLDAP',
-    host: ldapEnabled ? process.env.LDAP_URL || 'ldap://127.0.0.1:389' : undefined,
+    name: 'LDAP',
   };
 
   const isReady = dbHealth.status === 'healthy';
