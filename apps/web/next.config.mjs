@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+const isDev = process.env.NODE_ENV === 'development';
+
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@ems/database', '@ems/shared', '@ems/auth'],
@@ -35,13 +37,12 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline'",
+              `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' data: https://fonts.gstatic.com",
               "img-src 'self' data: blob: https:",
-              // ws:/wss: только для Next.js HMR в dev-режиме
-              ...(process.env.NODE_ENV === 'development'
-                ? ["connect-src 'self' https: ws: wss:"]
+              ...(isDev
+                ? ["connect-src 'self' https: ws: wss: http:"]
                 : ["connect-src 'self' https:"]
               ),
               "frame-ancestors 'self'",
