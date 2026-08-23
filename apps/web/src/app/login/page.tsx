@@ -49,27 +49,10 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
 
-  // Восстановление сохраненного логина и очистка чувствительных URL-параметров (защита от утечки пароля при случайном GET-сабмите)
+  // Очистка чувствительных параметров URL и восстановление сохраненного логина
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const searchParams = new URLSearchParams(window.location.search);
-      const urlUser = searchParams.get('username');
-      const urlPass = searchParams.get('password');
-
-      if (urlUser && urlPass) {
-        setUsername(urlUser);
-        setPassword(urlPass);
-        performLogin(urlUser, urlPass);
-      } else {
-        if (urlUser) {
-          setUsername(urlUser);
-        }
-        if (urlPass) {
-          setPassword(urlPass);
-        }
-      }
-
-      // Немедленно очищаем URL от пароля и параметров в строке браузера и истории
+      // Немедленно стираем любые URL-параметры (включая случайные ?username=...&password=...)
       if (window.location.search) {
         window.history.replaceState({}, document.title, window.location.pathname);
       }
@@ -91,12 +74,14 @@ export default function LoginPage() {
     }
     if (e.key === 'Enter') {
       e.preventDefault();
+      e.stopPropagation();
       performLogin(username, password);
     }
   };
 
-
   const performLogin = async (user: string, pass: string) => {
+    if (loading) return;
+
     const trimmedUser = user.trim();
     if (!trimmedUser) {
       setError('Пожалуйста, введите ваш корпоративный логин (LDAP / sAMAccountName)');
@@ -111,23 +96,28 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    if (rememberMe) {
-      try {
-        localStorage.setItem('ems_saved_username', trimmedUser);
-      } catch {
-        // ignore
+    try {
+      if (rememberMe) {
+        try {
+          localStorage.setItem('ems_saved_username', trimmedUser);
+        } catch {
+          // ignore
+        }
+      } else {
+        try {
+          localStorage.removeItem('ems_saved_username');
+        } catch {
+          // ignore
+        }
       }
-    } else {
-      try {
-        localStorage.removeItem('ems_saved_username');
-      } catch {
-        // ignore
-      }
-    }
 
-    const res = await login(trimmedUser, pass);
-    if (!res.success) {
-      setError(res.error || 'Неверный логин или пароль');
+      const res = await login(trimmedUser, pass);
+      if (!res.success) {
+        setError(res.error || 'Неверный логин или пароль');
+        setLoading(false);
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Ошибка при отправке запроса авторизации');
       setLoading(false);
     }
   };
@@ -296,9 +286,13 @@ export default function LoginPage() {
           ) : (
             <Box
               component="form"
+              method="post"
+              action="#"
               onSubmit={(e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 performLogin(username, password);
+                return false;
               }}
               aria-label="Форма входа в учетную запись EMS"
             >
