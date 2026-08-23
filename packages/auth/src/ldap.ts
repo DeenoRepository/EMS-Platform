@@ -29,13 +29,14 @@ export function escapeLdapFilter(input: string): string {
 
 export async function authenticateLdap(
   username: string,
-  password: string
+  password: string,
+  configOverride?: { ldapUrl?: string; searchBase?: string; ldapEnabled?: boolean }
 ): Promise<LdapUserResult | null> {
-  const ldapEnabled = process.env.LDAP_ENABLED === 'true';
-  const ldapUrl = process.env.LDAP_URL;
+  const ldapEnabled = configOverride?.ldapEnabled !== undefined ? configOverride.ldapEnabled : process.env.LDAP_ENABLED === 'true';
+  const ldapUrl = configOverride?.ldapUrl || process.env.LDAP_URL;
   const bindDn = process.env.LDAP_BIND_DN;
   const bindPassword = process.env.LDAP_BIND_PASSWORD;
-  const searchBase = process.env.LDAP_SEARCH_BASE || '';
+  const searchBase = configOverride?.searchBase || process.env.LDAP_SEARCH_BASE || '';
   const filterTemplate = process.env.LDAP_SEARCH_FILTER || '(|(sAMAccountName={{username}})(uid={{username}})(userPrincipalName={{username}}))';
 
   if (!ldapEnabled || !ldapUrl) {

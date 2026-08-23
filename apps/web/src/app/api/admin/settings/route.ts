@@ -3,6 +3,7 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { invalidateSystemSettingsCache } from '@/lib/system-settings-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,6 +64,9 @@ export async function PATCH(req: NextRequest) {
       entityId: 'SYSTEM',
       changes: body,
     });
+
+    // Invalidate in-memory cache so updates take effect immediately
+    invalidateSystemSettingsCache();
 
     return NextResponse.json({ success: true, message: 'Настройки сохранены' });
   } catch (error: any) {

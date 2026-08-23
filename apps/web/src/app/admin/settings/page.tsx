@@ -33,6 +33,8 @@ import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined';
 import EngineeringIcon from '@mui/icons-material/Engineering';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import NetworkCheckIcon from '@mui/icons-material/NetworkCheck';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import PageHeader from '@/components/layout/PageHeader';
 import { useSnackbar } from 'notistack';
 import { StatusBadge, PageLoading, ConfirmDialog } from '@/components/ui';
@@ -43,6 +45,25 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingMaintenance, setSavingMaintenance] = useState(false);
+
+  // Connection Testing States
+  const [testingLdap, setTestingLdap] = useState(false);
+  const [ldapTestResult, setLdapTestResult] = useState<{
+    success: boolean;
+    latencyMs?: number;
+    message?: string;
+    error?: string;
+    details?: any;
+  } | null>(null);
+
+  const [testingJira, setTestingJira] = useState(false);
+  const [jiraTestResult, setJiraTestResult] = useState<{
+    success: boolean;
+    latencyMs?: number;
+    message?: string;
+    error?: string;
+    details?: any;
+  } | null>(null);
 
   const [settings, setSettings] = useState({
     APP_NAME: '',
@@ -212,6 +233,73 @@ export default function AdminSettingsPage() {
       enqueueSnackbar('Ошибка сети', { variant: 'error' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleTestLdap = async () => {
+    if (!settings.LDAP_URL.trim()) {
+      enqueueSnackbar('Укажите LDAP URL для проверки подключения', { variant: 'warning' });
+      return;
+    }
+
+    setTestingLdap(true);
+    setLdapTestResult(null);
+    try {
+      const res = await fetch('/api/admin/settings/test-ldap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ldapUrl: settings.LDAP_URL,
+          searchBase: settings.LDAP_SEARCH_BASE,
+        }),
+      });
+      const data = await res.json();
+      setLdapTestResult(data);
+      if (data.success) {
+        enqueueSnackbar(data.message || 'Подключение к LDAP успешно установлено', { variant: 'success' });
+      } else {
+        enqueueSnackbar(data.error || 'Ошибка проверки LDAP', { variant: 'error' });
+      }
+    } catch (err: any) {
+      const errorMsg = err.message || 'Сетевая ошибка при проверке LDAP';
+      setLdapTestResult({ success: false, error: errorMsg });
+      enqueueSnackbar(errorMsg, { variant: 'error' });
+    } finally {
+      setTestingLdap(false);
+    }
+  };
+
+  const handleTestJira = async () => {
+    if (!settings.JIRA_BASE_URL.trim()) {
+      enqueueSnackbar('Укажите Jira Base URL для проверки подключения', { variant: 'warning' });
+      return;
+    }
+
+    setTestingJira(true);
+    setJiraTestResult(null);
+    try {
+      const res = await fetch('/api/admin/settings/test-jira', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jiraBaseUrl: settings.JIRA_BASE_URL,
+          projectKey: settings.JIRA_PROJECT_KEY,
+          customFieldId: settings.JIRA_EQUIPMENT_CUSTOM_FIELD,
+        }),
+      });
+      const data = await res.json();
+      setJiraTestResult(data);
+      if (data.success) {
+        enqueueSnackbar(data.message || 'Подключение к Jira успешно проверено', { variant: 'success' });
+      } else {
+        enqueueSnackbar(data.error || 'Ошибка проверки Jira', { variant: 'error' });
+      }
+    } catch (err: any) {
+      const errorMsg = err.message || 'Сетевая ошибка при проверке Jira';
+      setJiraTestResult({ success: false, error: errorMsg });
+      enqueueSnackbar(errorMsg, { variant: 'error' });
+    } finally {
+      setTestingJira(false);
     }
   };
 
@@ -466,13 +554,25 @@ export default function AdminSettingsPage() {
           <Grid container spacing={3}>
             {/* LDAP Settings */}
             <Grid item xs={12} md={6}>
-              <Card sx={{ height: '100%' }}>
-                <CardContent sx={{ p: 3 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <LanIcon color="primary" />
-                    <Typography variant="h6" fontWeight={700}>
-                      Интеграция с LDAP / Active Directory
-                    </Typography>
+              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <CardContent sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, flexWrap: 'wrap', gap: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <LanIcon color="primary" />
+                      <Typography variant="h6" fontWeight={700}>
+                        Интеграция с LDAP / Active Directory
+                      </Typography>
+                    </Box>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={testingLdap ? <CircularProgress size={14} color="inherit" /> : <NetworkCheckIcon />}
+                      disabled={testingLdap}
+                      onClick={handleTestLdap}
+                      sx={{ textTransform: 'none', fontWeight: 600, borderRadius: '8px' }}
+                    >
+                      {testingLdap ? 'Проверка...' : 'Проверить подключение'}
+                    </Button>
                   </Box>
                   <Typography variant="caption" color="text.secondary" paragraph>
                     Параметры корпоративного каталога для аутентификации пользователей
@@ -499,6 +599,37 @@ export default function AdminSettingsPage() {
                       onChange={(e) => handleChange('LDAP_SEARCH_BASE', e.target.value)}
                       helperText="Базовая ветка поиска пользователей"
                     />
+
+                    {/* LDAP Test Result Banner */}
+                    {ldapTestResult && (
+                      <Alert
+                        severity={ldapTestResult.success ? 'success' : 'error'}
+                        icon={ldapTestResult.success ? <CheckCircleOutlineIcon fontSize="inherit" /> : <ErrorOutlineIcon fontSize="inherit" />}
+                        sx={{ mt: 1, borderRadius: 2, fontSize: '0.8125rem' }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+                          <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
+                            {ldapTestResult.success
+                              ? ldapTestResult.message || 'Подключение успешно установлено'
+                              : ldapTestResult.error || 'Ошибка подключения'}
+                          </Typography>
+                          {ldapTestResult.latencyMs !== undefined && (
+                            <Chip
+                              label={`${ldapTestResult.latencyMs} мс`}
+                              size="small"
+                              color={ldapTestResult.success ? 'success' : 'error'}
+                              variant="outlined"
+                              sx={{ height: 20, fontSize: '0.7rem', fontWeight: 700 }}
+                            />
+                          )}
+                        </Box>
+                        {ldapTestResult.details?.authMode && (
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                            Режим проверки: {ldapTestResult.details.authMode}
+                          </Typography>
+                        )}
+                      </Alert>
+                    )}
                   </Box>
                 </CardContent>
               </Card>
@@ -506,13 +637,25 @@ export default function AdminSettingsPage() {
 
             {/* Jira Settings */}
             <Grid item xs={12} md={6}>
-              <Card sx={{ height: '100%' }}>
-                <CardContent sx={{ p: 3 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <AssessmentIcon color="primary" />
-                    <Typography variant="h6" fontWeight={700}>
-                      Интеграция с Jira Service Desk
-                    </Typography>
+              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <CardContent sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, flexWrap: 'wrap', gap: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <AssessmentIcon color="primary" />
+                      <Typography variant="h6" fontWeight={700}>
+                        Интеграция с Jira Service Desk
+                      </Typography>
+                    </Box>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={testingJira ? <CircularProgress size={14} color="inherit" /> : <NetworkCheckIcon />}
+                      disabled={testingJira}
+                      onClick={handleTestJira}
+                      sx={{ textTransform: 'none', fontWeight: 600, borderRadius: '8px' }}
+                    >
+                      {testingJira ? 'Проверка...' : 'Проверить подключение'}
+                    </Button>
                   </Box>
                   <Typography variant="caption" color="text.secondary" paragraph>
                     Параметры подключения к корпоративной Jira для модуля SRM
@@ -549,6 +692,37 @@ export default function AdminSettingsPage() {
                       onChange={(e) => handleChange('JIRA_EQUIPMENT_CUSTOM_FIELD', e.target.value)}
                       helperText="ID кастомного поля Jira для привязки инвентарного номера"
                     />
+
+                    {/* Jira Test Result Banner */}
+                    {jiraTestResult && (
+                      <Alert
+                        severity={jiraTestResult.success ? 'success' : 'error'}
+                        icon={jiraTestResult.success ? <CheckCircleOutlineIcon fontSize="inherit" /> : <ErrorOutlineIcon fontSize="inherit" />}
+                        sx={{ mt: 1, borderRadius: 2, fontSize: '0.8125rem' }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+                          <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
+                            {jiraTestResult.success
+                              ? jiraTestResult.message || 'Подключение успешно проверено'
+                              : jiraTestResult.error || 'Ошибка подключения'}
+                          </Typography>
+                          {jiraTestResult.latencyMs !== undefined && (
+                            <Chip
+                              label={`${jiraTestResult.latencyMs} мс`}
+                              size="small"
+                              color={jiraTestResult.success ? 'success' : 'error'}
+                              variant="outlined"
+                              sx={{ height: 20, fontSize: '0.7rem', fontWeight: 700 }}
+                            />
+                          )}
+                        </Box>
+                        {jiraTestResult.details?.serverTitle && (
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                            Инстанс: {jiraTestResult.details.serverTitle}
+                          </Typography>
+                        )}
+                      </Alert>
+                    )}
                   </Box>
                 </CardContent>
               </Card>

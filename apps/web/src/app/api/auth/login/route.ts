@@ -4,6 +4,7 @@ import { authenticateLdap, signSessionToken, verifyPassword, fixKeyboardLayout, 
 import { JwtUserPayload } from '@ems/shared';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { logger } from '@/lib/logger';
+import { getSystemSettings } from '@/lib/system-settings-service';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -25,8 +26,12 @@ export async function POST(req: NextRequest) {
     const trimmedUsername = username;
     let authenticatedUser: { id: string; ldapLogin: string; displayName: string; email?: string | null } | null = null;
 
-    // 1. Попытка аутентификации через LDAP (если включен)
-    const ldapResult = await authenticateLdap(trimmedUsername, password || '');
+    // 1. Попытка аутентификации через LDAP с учетом динамических настроек из БД
+    const sysSettings = await getSystemSettings();
+    const ldapResult = await authenticateLdap(trimmedUsername, password || '', {
+      ldapUrl: sysSettings.LDAP_URL,
+      searchBase: sysSettings.LDAP_SEARCH_BASE,
+    });
 
     if (ldapResult) {
       // Пользователь аутентифицирован через LDAP. Находим или создаем запись в БД
