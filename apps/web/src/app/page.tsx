@@ -34,6 +34,7 @@ import {
   PageLoading,
   HealthScoreGauge,
   EmptyState,
+  ErrorBoundary,
 } from '@/components/ui';
 import { EquipmentWizardDialog } from '@/components/eps';
 import { CreateServiceRequestDialog } from '@/components/srm';
@@ -97,13 +98,22 @@ interface DashboardStats {
   };
 }
 
-export default function ExecutiveDashboardPage() {
+const DEFAULT_STATS: DashboardStats = {
+  eps: { total: 0, active: 0, underRepair: 0, inStorage: 0, decommissioned: 0 },
+  wms: { warehousesCount: 0, nomenclatureCount: 0, lowStockCount: 0, activeInventoriesCount: 0, lowStockItems: [] },
+  srm: { openIssues: 0, inProgressIssues: 0, resolvedIssues: 0, totalIssues: 0, recentIssues: [] },
+  mro: { overdueCount: 0, plannedCount: 0, completedCount: 0, totalCount: 0, nextSchedules: [] },
+  approvals: { pending: 0 },
+};
+
+function ExecutiveDashboardContent() {
   const router = useRouter();
   const { hasPermission } = useAuth();
 
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [stats, setStats] = useState<DashboardStats>(DEFAULT_STATS);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   // Wizards State
   const [isEqWizardOpen, setIsEqWizardOpen] = useState(false);
@@ -112,10 +122,11 @@ export default function ExecutiveDashboardPage() {
 
   const fetchDashboardData = useCallback(async () => {
     try {
-      const [eqRes, wmsRes, srmRes, mroRes, appRes] = await Promise.allSettled([
+      const [eqRes, wmsRes, srmStatsRes, srmIssuesRes, mroRes, appRes] = await Promise.allSettled([
         fetch('/api/eps/equipment?pageSize=1'),
         fetch('/api/wms/stats'),
         fetch('/api/srm/stats'),
+        fetch('/api/srm/issues?pageSize=4'),
         fetch('/api/mro/schedules'),
         fetch('/api/eps/approvals?pageSize=1'),
       ]);
@@ -155,16 +166,29 @@ export default function ExecutiveDashboardPage() {
         }
       }
 
-      if (srmRes.status === 'fulfilled' && srmRes.value.ok) {
-        const json = await srmRes.value.json();
+      if (srmStatsRes.status === 'fulfilled' && srmStatsRes.value.ok) {
+        const json = await srmStatsRes.value.json();
         if (json.success && json.data) {
-          newStats.srm = {
-            openIssues: json.data.openIssues || 0,
-            inProgressIssues: json.data.inProgressIssues || 0,
-            resolvedIssues: json.data.resolvedIssues || 0,
-            totalIssues: json.data.totalIssues || 0,
-            recentIssues: (json.data.recentIssues || []).slice(0, 4),
-          };
+          newStats.srm.openIssues = json.data.openIssues || 0;
+          newStats.srm.inProgressIssues = json.data.inProgressIssues || 0;
+          newStats.srm.resolvedIssues = json.data.resolvedIssues || 0;
+          newStats.srm.totalIssues = json.data.totalIssues || 0;
+        }
+      }
+
+      if (srmIssuesRes.status === 'fulfilled' && srmIssuesRes.value.ok) {
+        const json = await srmIssuesRes.value.json();
+        if (json.success && json.data) {
+          const rawItems = json.data.items || json.data || [];
+          newStats.srm.recentIssues = rawItems.map((item: any) => ({
+            id: item.id,
+            key: item.issueKey || item.id,
+            title: item.summary || item.title || 'Без названия',
+            status: item.status || 'OPEN',
+            priority: item.priority || 'MEDIUM',
+            createdAt: item.createdDate || item.createdAt || new Date().toISOString(),
+            equipment: item.equipment ? { name: item.equipment.name, inventoryNumber: item.equipment.inventoryNumber || null } : null,
+          })).slice(0, 4);
         }
       }
 
@@ -188,7 +212,15 @@ export default function ExecutiveDashboardPage() {
             nextSchedules: json.data
               .filter((s: any) => s.status === 'PLANNED')
               .sort((a: any, b: any) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime())
-              .slice(0, 4),
+              .slice(0, 4)
+              .map((s: any) => ({
+                id: s.id,
+                equipmentName: s.equipment?.name || 'Оборудование',
+                title: s.plan?.name || 'Регламент ТО',
+                scheduledDate: s.scheduledDate,
+                periodicity: s.plan?.periodicity || 'MONTHLY',
+                status: s.status,
+              })),
           };
         }
       }
@@ -202,10 +234,11 @@ export default function ExecutiveDashboardPage() {
 
       setStats(newStats);
     } catch {
-      // keep previous
+      // keep default
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setHasLoadedOnce(true);
     }
   }, []);
 
@@ -218,8 +251,8 @@ export default function ExecutiveDashboardPage() {
     fetchDashboardData();
   };
 
-  if (loading && !stats) {
-    return <PageLoading text="Загрузка сводной панели EMS-Platform..." />;
+  if (loading && !hasLoadedOnce) {
+    return <PageLoading text="Загрузка панели управления EMS-Platform..." />;
   }
 
   // Calculate Operational Readiness Score (KTG / Availability)
@@ -627,7 +660,7 @@ export default function ExecutiveDashboardPage() {
                 </Typography>
 
                 <Box sx={{ py: 1 }}>
-                  <HealthScoreGauge score={availabilityRate} size="md" />
+                  <HealthScoreGauge score={availabilityRate} size="md" paper={false} title="" />
                 </Box>
 
                 <Divider sx={{ my: 2 }} />
@@ -761,5 +794,13 @@ export default function ExecutiveDashboardPage() {
         />
       )}
     </Box>
+  );
+}
+
+export default function ExecutiveDashboardPage() {
+  return (
+    <ErrorBoundary title="Ошибка панели управления" description="Произошла непредвиденная ошибка при отображении сводной панели. Попробуйте обновить страницу.">
+      <ExecutiveDashboardContent />
+    </ErrorBoundary>
   );
 }

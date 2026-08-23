@@ -251,7 +251,7 @@ export default function Sidebar({
     await logout();
   };
 
-  const canAccessAdmin = user?.roles.includes('admin') || hasPermission(PERMISSIONS.ADMIN_USERS_MANAGE);
+  const canAccessAdmin = user?.roles?.includes('admin') || hasPermission(PERMISSIONS.ADMIN_USERS_MANAGE);
 
   // Главное (Панель управления)
   const mainItems: NavItemDef[] = [

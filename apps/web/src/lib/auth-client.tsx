@@ -105,14 +105,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const hasPermission = (permissionCode: string) => {
     if (!user) return false;
-    if (user.roles.includes('admin')) return true;
-    return user.permissions.includes(permissionCode);
+    if (user.roles?.includes('admin')) return true;
+    return user.permissions?.includes(permissionCode) || false;
   };
 
   const hasAnyPermission = (permissionCodes: string[]) => {
     if (!user) return false;
-    if (user.roles.includes('admin')) return true;
-    return permissionCodes.some((p) => user.permissions.includes(p));
+    if (user.roles?.includes('admin')) return true;
+    return permissionCodes.some((p) => user.permissions?.includes(p)) || false;
   };
 
   return (
