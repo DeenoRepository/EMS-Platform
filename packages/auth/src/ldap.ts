@@ -69,42 +69,33 @@ export async function authenticateLdap(
 
       const { searchEntries } = await client.search(searchBase, searchOptions);
 
-      if (searchEntries.length === 0) {
-        await client.unbind();
-        return null;
+      if (searchEntries.length > 0 && searchEntries[0]?.dn) {
+        const userEntry = searchEntries[0];
+        const userClient = new Client({ url: ldapUrl, timeout: 5000 });
+        try {
+          await userClient.bind(userEntry.dn, password);
+          await userClient.unbind();
+          await client.unbind();
+
+          const displayName =
+            userEntry.displayName ||
+            userEntry.cn ||
+            userEntry.sAMAccountName ||
+            username;
+          const email = userEntry.mail || undefined;
+
+          return {
+            ldapLogin: username,
+            displayName: String(displayName),
+            email: email ? String(email) : undefined,
+          };
+        } catch {
+          try { await userClient.unbind(); } catch {}
+          try { await client.unbind(); } catch {}
+          return null;
+        }
       }
 
-      const userEntry = searchEntries[0];
-      if (!userEntry || !userEntry.dn) {
-        await client.unbind();
-        return null;
-      }
-
-      // User authentication bind
-      const userClient = new Client({ url: ldapUrl, timeout: 5000 });
-      try {
-        await userClient.bind(userEntry.dn, password);
-        await userClient.unbind();
-      } catch {
-        await userClient.unbind();
-        await client.unbind();
-        return null;
-      }
-
-      await client.unbind();
-
-      const displayName =
-        userEntry.displayName ||
-        userEntry.cn ||
-        userEntry.sAMAccountName ||
-        username;
-      const email = userEntry.mail || undefined;
-
-      return {
-        ldapLogin: username,
-        displayName: String(displayName),
-        email: email ? String(email) : undefined,
-      };
     }
 
     // Mode 2: Direct User Binding (No service account or direct DN)
