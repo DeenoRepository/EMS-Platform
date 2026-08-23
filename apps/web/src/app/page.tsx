@@ -36,7 +36,6 @@ import {
   EmptyState,
   ErrorBoundary,
 } from '@/components/ui';
-import { EquipmentWizardDialog } from '@/components/eps';
 import { CreateServiceRequestDialog } from '@/components/srm';
 import { WmsOperationWizardDialog } from '@/components/wms';
 import { useAuth } from '@/lib/auth-client';
@@ -116,7 +115,6 @@ function ExecutiveDashboardContent() {
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   // Wizards State
-  const [isEqWizardOpen, setIsEqWizardOpen] = useState(false);
   const [isSrmDialogOpen, setIsSrmDialogOpen] = useState(false);
   const [isWmsWizardOpen, setIsWmsWizardOpen] = useState(false);
 
@@ -321,28 +319,15 @@ function ExecutiveDashboardContent() {
         subtitle="Единый центр мониторинга парка оборудования, складских запасов, регламентов ТО и инцидентов"
         breadcrumbs={[{ label: 'Главная', href: '/' }, { label: 'Панель управления' }]}
         actions={
-          <Stack direction="row" spacing={1.25} alignItems="center">
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={handleRefresh}
-              startIcon={<RefreshIcon className={refreshing ? 'animate-spin' : ''} sx={{ fontSize: 16 }} />}
-              sx={{ fontWeight: 600, borderRadius: '8px', minHeight: 36 }}
-            >
-              Обновить
-            </Button>
-            {hasPermission(PERMISSIONS.EPS_EQUIPMENT_CREATE) && (
-              <Button
-                variant="contained"
-                size="small"
-                startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-                onClick={() => setIsEqWizardOpen(true)}
-                sx={{ fontWeight: 700, borderRadius: '8px', minHeight: 36, backgroundColor: '#0284c7' }}
-              >
-                Новое оборудование
-              </Button>
-            )}
-          </Stack>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={handleRefresh}
+            startIcon={<RefreshIcon className={refreshing ? 'animate-spin' : ''} sx={{ fontSize: 16 }} />}
+            sx={{ fontWeight: 600, borderRadius: '8px', minHeight: 36 }}
+          >
+            Обновить данные
+          </Button>
         }
       />
 
@@ -760,17 +745,6 @@ function ExecutiveDashboardContent() {
       </Grid>
 
       {/* Dialogs */}
-      {isEqWizardOpen && (
-        <EquipmentWizardDialog
-          open={isEqWizardOpen}
-          onClose={() => setIsEqWizardOpen(false)}
-          onSuccess={() => {
-            setIsEqWizardOpen(false);
-            fetchDashboardData();
-          }}
-        />
-      )}
-
       {isSrmDialogOpen && (
         <CreateServiceRequestDialog
           open={isSrmDialogOpen}
