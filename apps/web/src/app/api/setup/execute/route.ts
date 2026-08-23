@@ -288,6 +288,32 @@ export async function POST(req: NextRequest) {
       update: {},
     });
 
+    // 4. Save system settings to database
+    const settingsToSave = [
+      { key: 'LDAP_ENABLED', value: (ldapConfig?.enabled || isLdapAuth) ? 'true' : 'false', description: 'Служба каталогов LDAP включена' },
+      { key: 'LDAP_URL', value: ldapConfig?.url || '', description: 'URL сервера LDAP' },
+      { key: 'LDAP_SEARCH_BASE', value: ldapConfig?.searchBase || '', description: 'Search Base LDAP' },
+      { key: 'LDAP_SEARCH_FILTER', value: ldapConfig?.searchFilter || '(|(sAMAccountName={{username}})(uid={{username}})(userPrincipalName={{username}}))', description: 'Фильтр поиска LDAP' },
+      { key: 'LDAP_BIND_DN', value: ldapConfig?.bindDn || '', description: 'Bind DN' },
+      { key: 'STORAGE_LOCAL_DIR', value: storageDir, description: 'Каталог хранилища файлов' },
+      { key: 'JIRA_BASE_URL', value: jiraHost, description: 'URL внешней SRM/Jira' },
+      { key: 'JIRA_PROJECT_KEY', value: jiraConfig?.projectKey || 'EMS', description: 'Ключ проекта SRM/Jira' },
+    ];
+
+    for (const s of settingsToSave) {
+      await client.systemSetting.upsert({
+        where: { key: s.key },
+        create: {
+          key: s.key,
+          value: s.value,
+          description: s.description,
+        },
+        update: {
+          value: s.value,
+          description: s.description,
+        },
+      });
+    }
 
     // 5. Create .installed lock file
     try {
