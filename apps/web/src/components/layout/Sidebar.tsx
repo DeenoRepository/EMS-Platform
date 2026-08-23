@@ -50,7 +50,7 @@ import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS, PlatformMaintenanceStatus } from '@ems/shared';
 import { StatusBadge } from '@/components/ui';
 
-export const SIDEBAR_WIDTH_EXPANDED = 300;
+export const SIDEBAR_WIDTH_EXPANDED = 330;
 export const SIDEBAR_WIDTH_COLLAPSED = 68;
 
 interface NavChild {
@@ -357,7 +357,7 @@ export default function Sidebar({
     },
     {
       id: 'srm',
-      label: 'Управление инцидентами и сервисом (SRM)',
+      label: 'Управление инцидентами (SRM)',
       icon: <BugReportOutlinedIcon sx={{ fontSize: 18 }} />,
       permission: PERMISSIONS.SRM_DASHBOARD_VIEW,
       badgeText: maintenanceStatus?.modules.srm?.enabled ? 'ТО' : undefined,
@@ -377,7 +377,7 @@ export default function Sidebar({
     },
     {
       id: 'mro',
-      label: 'Техническое обслуживание и ремонт (MRO)',
+      label: 'Техническое обслуживание (MRO)',
       icon: <BuildOutlinedIcon sx={{ fontSize: 18 }} />,
       permission: PERMISSIONS.MRO_SCHEDULE_VIEW,
       badgeText: maintenanceStatus?.modules.mro?.enabled ? 'ТО' : undefined,
@@ -402,7 +402,7 @@ export default function Sidebar({
   const adminItems: NavItemDef[] = [
     {
       id: 'access',
-      label: 'Управление доступом и безопасность',
+      label: 'Управление доступом и правами',
       icon: <AdminPanelSettingsOutlinedIcon sx={{ fontSize: 18 }} />,
       children: [
         { label: 'Учетные записи пользователей', path: '/admin/users', icon: <GroupOutlinedIcon sx={{ fontSize: 15 }} /> },
@@ -411,7 +411,7 @@ export default function Sidebar({
     },
     {
       id: 'module-settings',
-      label: 'Конфигурация модулей и доступности',
+      label: 'Конфигурация модулей',
       icon: <TuneOutlinedIcon sx={{ fontSize: 18 }} />,
       children: [
         { label: 'Паспортизация оборудования (EPS)', path: '/admin/module-settings?tab=eps', icon: <BadgeOutlinedIcon sx={{ fontSize: 15 }} /> },
@@ -597,9 +597,9 @@ export default function Sidebar({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            pl: 1.25,
+            pl: 1,
             pr: 0.5,
-            py: 0.75,
+            py: 0.7,
             borderRadius: '6px',
             cursor: 'pointer',
             color: active ? '#38bdf8' : '#cbd5e1',
@@ -627,7 +627,7 @@ export default function Sidebar({
           )}
 
           {/* Left: Icon & Label */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, overflow: 'hidden', minWidth: 0, flexGrow: 1, mr: 0.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, overflow: 'hidden', minWidth: 0, flexGrow: 1, mr: 0.25 }}>
             <Box sx={{ color: active ? '#38bdf8' : '#94a3b8', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
               {item.icon}
             </Box>
@@ -638,6 +638,7 @@ export default function Sidebar({
                 fontSize: '0.78125rem', // 12.5px
                 fontWeight: active ? 600 : 500,
                 color: active ? '#ffffff' : 'inherit',
+                letterSpacing: '-0.01em',
               }}
             >
               {item.label}
@@ -645,7 +646,7 @@ export default function Sidebar({
           </Box>
 
           {/* Right: Chevron & Badge (arrow and badge on standardized vertical lines) */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0, ml: 'auto' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, flexShrink: 0, ml: 'auto' }}>
             {hasChildren && (
               <Box
                 sx={{
@@ -670,7 +671,7 @@ export default function Sidebar({
             {(hasChildren || hasBadge) && (
               <Box
                 sx={{
-                  minWidth: item.badgeText ? 42 : 20,
+                  minWidth: item.badgeText ? 36 : 18,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -681,7 +682,7 @@ export default function Sidebar({
                   <Tooltip title={effectiveBadgeTooltip || (item.badgeText ? item.badgeText : '')} arrow placement="right">
                     <Box
                       sx={{
-                        px: item.badgeText ? 0.75 : 0.4,
+                        px: item.badgeText ? 0.6 : 0.4,
                         height: 17,
                         minWidth: 17,
                         borderRadius: '8.5px',
@@ -718,8 +719,8 @@ export default function Sidebar({
           <Collapse in={isExpanded} timeout="auto" unmountOnExit>
             <Box
               sx={{
-                ml: '21px',
-                pl: '14px',
+                ml: '14px',
+                pl: '8px',
                 borderLeft: '1.5px solid rgba(255, 255, 255, 0.1)',
                 my: 0.25,
                 display: 'flex',
@@ -737,7 +738,7 @@ export default function Sidebar({
                     key={child.path + child.label}
                     onClick={() => handleNavigate(child.path)}
                     sx={{
-                      pl: 1.25,
+                      pl: 1,
                       pr: 0.5,
                       py: 0.5,
                       borderRadius: '5px',
@@ -749,7 +750,7 @@ export default function Sidebar({
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      gap: 1,
+                      gap: 0.75,
                       transition: 'all 0.12s ease',
                       '&:hover': {
                         backgroundColor: isChildActive ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255, 255, 255, 0.05)',
@@ -757,9 +758,9 @@ export default function Sidebar({
                       },
                     }}
                   >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, overflow: 'hidden', minWidth: 0, flexGrow: 1, mr: 0.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, overflow: 'hidden', minWidth: 0, flexGrow: 1, mr: 0.25 }}>
                       {child.icon}
-                      <Typography variant="inherit" noWrap sx={{ fontSize: '0.75rem' }}>
+                      <Typography variant="inherit" noWrap sx={{ fontSize: '0.75rem', letterSpacing: '-0.01em' }}>
                         {child.label}
                       </Typography>
                     </Box>
