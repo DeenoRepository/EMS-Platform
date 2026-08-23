@@ -351,7 +351,6 @@ export default function Sidebar({
           badgeTooltip: srmOpenCount && srmOpenCount > 0 ? `${srmOpenCount} активных сервисных заявок` : undefined,
         },
         { label: 'Аналитика надежности', path: '/srm/analytics', icon: <TimelineIcon sx={{ fontSize: 15 }} /> },
-        { label: 'Гарантии и рекламации', path: '/srm/warranties', icon: <ShieldOutlinedIcon sx={{ fontSize: 15 }} /> },
       ],
     },
     {
