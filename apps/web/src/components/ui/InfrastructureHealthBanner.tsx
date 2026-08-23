@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -39,15 +39,33 @@ export interface SystemHealthReport {
   };
 }
 
+export const initialOfflineReport: SystemHealthReport = {
+  isReady: false,
+  timestamp: new Date().toISOString(),
+  services: {
+    database: {
+      status: 'unreachable',
+      name: 'PostgreSQL Database',
+      host: '127.0.0.1:5432',
+      database: 'ems_db',
+      error: 'Сервер PostgreSQL на 127.0.0.1:5432 недоступен (порт закрыт или контейнер ems_postgres отключен).',
+      command: 'docker compose up -d postgres ldap',
+      instructions: 'Запустите Docker Desktop и выполните: docker compose up -d postgres ldap',
+    },
+    storage: { status: 'healthy', name: 'Файловое хранилище' },
+    ldap: { status: 'disabled', name: 'LDAP' },
+  },
+};
+
 export function useSystemHealth(autoRefreshIntervalMs = 5000) {
-  const [health, setHealth] = useState<SystemHealthReport | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isReady, setIsReady] = useState<boolean | null>(null);
+  const [health, setHealth] = useState<SystemHealthReport>(initialOfflineReport);
+  const [loading, setLoading] = useState(false);
+  const [isReady, setIsReady] = useState<boolean>(false);
 
   const checkHealth = useCallback(async () => {
     setLoading(true);
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000);
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
 
     try {
       const res = await fetch('/api/system/health', {
@@ -67,6 +85,8 @@ export function useSystemHealth(autoRefreshIntervalMs = 5000) {
             database: {
               status: 'unreachable',
               name: 'PostgreSQL Database',
+              host: '127.0.0.1:5432',
+              database: 'ems_db',
               error: data.error || 'Не удалось получить статус системы',
               command: 'docker compose up -d postgres ldap',
             },
@@ -85,6 +105,8 @@ export function useSystemHealth(autoRefreshIntervalMs = 5000) {
           database: {
             status: 'unreachable',
             name: 'PostgreSQL Database',
+            host: '127.0.0.1:5432',
+            database: 'ems_db',
             error: err?.name === 'AbortError'
               ? 'Превышено время ожидания ответа от сервера базы данных'
               : (err.message || 'Сетевой сбой при проверке инфраструктуры'),
@@ -129,8 +151,8 @@ export function ServiceUnavailableCard({
 }: ServiceUnavailableCardProps) {
   const [copied, setCopied] = useState(false);
 
-  const db = health?.services?.database;
-  const defaultCommand = db?.command || 'docker compose up -d postgres ldap';
+  const db = health?.services?.database || initialOfflineReport.services.database;
+  const defaultCommand = db.command || 'docker compose up -d postgres ldap';
 
   const handleCopyCommand = (command: string) => {
     navigator.clipboard.writeText(command);
@@ -162,7 +184,7 @@ export function ServiceUnavailableCard({
       </Typography>
 
       <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem', mb: 2.25, lineHeight: 1.5 }}>
-        {db?.error || `Один из обязательных узлов инфраструктуры (База данных PostgreSQL на ${db?.host || '127.0.0.1:5432'}) отключен. Ввод учетных данных заблокирован до восстановления связи.`}
+        {db.error || `Один из обязательных узлов инфраструктуры (База данных PostgreSQL на ${db.host || '127.0.0.1:5432'}) отключен. Ввод учетных данных заблокирован до восстановления связи.`}
       </Typography>
 
       {/* Command Box */}
@@ -262,10 +284,6 @@ export function InfrastructureHealthBanner({
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-
-  if (!health) {
-    return null;
-  }
 
   const isHealthy = isReady === true;
 

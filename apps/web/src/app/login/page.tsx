@@ -286,15 +286,8 @@ export default function LoginPage() {
             </Fade>
           )}
 
-          {/* Initial Health Check Loading */}
-          {healthLoading && isReady === null ? (
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 4, gap: 1.5 }}>
-              <CircularProgress size={32} sx={{ color: '#0284c7' }} />
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem', fontWeight: 500 }}>
-                Проверка доступности сервиса...
-              </Typography>
-            </Box>
-          ) : isOffline ? (
+          {/* Full Infrastructure Offline Diagnostic Panel */}
+          {isOffline ? (
             <ServiceUnavailableCard
               health={health}
               loading={healthLoading}
