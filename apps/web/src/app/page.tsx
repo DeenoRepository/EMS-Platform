@@ -262,40 +262,64 @@ function ExecutiveDashboardContent() {
         }
         breadcrumbs={[{ label: 'Главная', href: '/' }, { label: 'Панель управления' }]}
         actions={
-          <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+          <Stack direction="row" spacing={1.5} alignItems="center">
             {stats.canToggleScope && (
-              <ToggleButtonGroup
-                value={selectedScope}
-                exclusive
-                onChange={handleScopeChange}
-                size="small"
+              <Box
                 sx={{
-                  bgcolor: '#ffffff',
-                  height: 36,
-                  '& .MuiToggleButton-root': {
-                    px: 1.75,
-                    fontSize: '0.8125rem',
-                    fontWeight: 600,
-                    textTransform: 'none',
-                    borderRadius: '8px',
-                    borderColor: '#cbd5e1',
-                    '&.Mui-selected': {
-                      bgcolor: 'primary.main',
-                      color: '#ffffff',
-                      '&:hover': { bgcolor: 'primary.dark' },
-                    },
-                  },
+                  bgcolor: '#f1f5f9',
+                  p: '3px',
+                  borderRadius: '10px',
+                  border: '1px solid #e2e8f0',
+                  display: 'inline-flex',
+                  alignItems: 'center',
                 }}
               >
-                <ToggleButton value="enterprise">
-                  <BusinessIcon sx={{ fontSize: 16, mr: 0.75 }} />
-                  Все предприятие
-                </ToggleButton>
-                <ToggleButton value="personal">
-                  <PersonIcon sx={{ fontSize: 16, mr: 0.75 }} />
-                  Моя зона
-                </ToggleButton>
-              </ToggleButtonGroup>
+                <ToggleButtonGroup
+                  value={selectedScope}
+                  exclusive
+                  onChange={handleScopeChange}
+                  size="small"
+                  sx={{
+                    '& .MuiToggleButtonGroup-grouped': {
+                      border: 'none !important',
+                      borderRadius: '8px !important',
+                      mx: '2px',
+                    },
+                    '& .MuiToggleButton-root': {
+                      px: 1.5,
+                      py: 0.5,
+                      height: 30,
+                      fontSize: '0.8125rem',
+                      fontWeight: 600,
+                      textTransform: 'none',
+                      color: '#64748b',
+                      transition: 'all 0.15s ease',
+                      '&:hover': {
+                        bgcolor: 'rgba(255, 255, 255, 0.6)',
+                        color: '#0f172a',
+                      },
+                      '&.Mui-selected': {
+                        bgcolor: '#ffffff',
+                        color: '#0284c7',
+                        fontWeight: 700,
+                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)',
+                        '&:hover': {
+                          bgcolor: '#ffffff',
+                        },
+                      },
+                    },
+                  }}
+                >
+                  <ToggleButton value="enterprise">
+                    <BusinessIcon sx={{ fontSize: 16, mr: 0.75 }} />
+                    Все предприятие
+                  </ToggleButton>
+                  <ToggleButton value="personal">
+                    <PersonIcon sx={{ fontSize: 16, mr: 0.75 }} />
+                    Моя зона
+                  </ToggleButton>
+                </ToggleButtonGroup>
+              </Box>
             )}
 
             <Button
@@ -303,7 +327,22 @@ function ExecutiveDashboardContent() {
               size="small"
               onClick={handleRefresh}
               startIcon={<RefreshIcon className={refreshing ? 'animate-spin' : ''} sx={{ fontSize: 16 }} />}
-              sx={{ fontWeight: 600, borderRadius: '8px', minHeight: 36 }}
+              sx={{
+                height: 38,
+                px: 2,
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+                borderRadius: '10px',
+                borderColor: '#cbd5e1',
+                bgcolor: '#ffffff',
+                color: '#334155',
+                textTransform: 'none',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)',
+                '&:hover': {
+                  borderColor: '#94a3b8',
+                  bgcolor: '#f8fafc',
+                },
+              }}
             >
               Обновить данные
             </Button>
