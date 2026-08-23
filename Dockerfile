@@ -50,8 +50,8 @@ USER node
 EXPOSE 3000
 
 # Healthcheck for orchestration
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/setup/status || exit 1
+HEALTHCHECK --interval=20s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/system/health || exit 1
 
-# Synchronize database schema then start app
-CMD ["sh", "-c", "pnpm --filter @ems/database push && pnpm --filter @ems/web start"]
+# Synchronize database schema gracefully and start Next.js production server
+CMD ["sh", "-c", "pnpm --filter @ems/database push || true; pnpm --filter @ems/web start"]
