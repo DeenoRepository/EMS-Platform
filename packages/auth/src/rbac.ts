@@ -35,6 +35,18 @@ export async function getUserRolesAndPermissions(userId: string): Promise<{ role
     }
   }
 
+  // Для администратора по умолчанию активны все гранулярные права в системе
+  if (rolesSet.has('admin') || rolesSet.has('administrator')) {
+    try {
+      const allDbPerms = await prisma.permission.findMany({ select: { code: true } });
+      for (const p of allDbPerms) {
+        permissionsSet.add(p.code);
+      }
+    } catch {
+      // Fallback
+    }
+  }
+
   return {
     roles: Array.from(rolesSet),
     permissions: Array.from(permissionsSet),
@@ -43,18 +55,18 @@ export async function getUserRolesAndPermissions(userId: string): Promise<{ role
 
 export function hasPermission(user: JwtUserPayload | null | undefined, permissionCode: string): boolean {
   if (!user) return false;
-  if (user.roles.includes('admin')) return true; // Суперпользователь
-  return user.permissions.includes(permissionCode);
+  if (user.roles?.includes('admin') || user.roles?.includes('administrator')) return true; // Суперпользователь имеет полный доступ
+  return user.permissions?.includes(permissionCode) || false;
 }
 
 export function hasAnyPermission(user: JwtUserPayload | null | undefined, permissionCodes: string[]): boolean {
   if (!user) return false;
-  if (user.roles.includes('admin')) return true;
-  return permissionCodes.some((code) => user.permissions.includes(code));
+  if (user.roles?.includes('admin') || user.roles?.includes('administrator')) return true;
+  return permissionCodes.some((code) => user.permissions?.includes(code)) || false;
 }
 
 export function hasAllPermissions(user: JwtUserPayload | null | undefined, permissionCodes: string[]): boolean {
   if (!user) return false;
-  if (user.roles.includes('admin')) return true;
-  return permissionCodes.every((code) => user.permissions.includes(code));
+  if (user.roles?.includes('admin') || user.roles?.includes('administrator')) return true;
+  return permissionCodes.every((code) => user.permissions?.includes(code)) || false;
 }

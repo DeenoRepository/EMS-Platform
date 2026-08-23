@@ -119,7 +119,11 @@ export default function AdminRolesPage() {
     setRoleName(role.name);
     setRoleDisplayName(role.displayName);
     setRoleDescription(role.description || '');
-    setSelectedPermCodes([...role.permissions]);
+    if (role.name === 'admin') {
+      setSelectedPermCodes(permissions.map((p) => p.code));
+    } else {
+      setSelectedPermCodes([...role.permissions]);
+    }
     setDialogOpen(true);
   };
 
@@ -342,7 +346,7 @@ export default function AdminRolesPage() {
                   <TableCell>
                     <StatusBadge
                       status={r.name === 'admin' ? 'ADMIN' : 'USER'}
-                      label={`${r.permissions.length} из ${permissions.length}`}
+                      label={r.name === 'admin' ? `Все права (${permissions.length})` : `${r.permissions.length} из ${permissions.length}`}
                       size="small"
                       variant="subtle"
                     />

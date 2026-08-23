@@ -27,6 +27,18 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: 'asc' },
     });
 
+    const allDbPerms = await prisma.permission.findMany();
+    const adminRole = roles.find((r) => r.name === 'admin');
+    if (adminRole && adminRole.permissions.length < allDbPerms.length) {
+      for (const p of allDbPerms) {
+        await prisma.rolePermission.upsert({
+          where: { roleId_permissionId: { roleId: adminRole.id, permissionId: p.id } },
+          update: {},
+          create: { roleId: adminRole.id, permissionId: p.id },
+        });
+      }
+    }
+
     const formattedRoles = roles.map((r) => ({
       id: r.id,
       name: r.name,
@@ -34,7 +46,7 @@ export async function GET(req: NextRequest) {
       description: r.description,
       isSystem: r.isSystem,
       userCount: r._count.users,
-      permissions: r.permissions.map((p) => p.permission.code),
+      permissions: r.name === 'admin' ? allDbPerms.map((p) => p.code) : r.permissions.map((p) => p.permission.code),
     }));
 
     return NextResponse.json({
