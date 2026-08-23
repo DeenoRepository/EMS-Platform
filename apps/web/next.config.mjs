@@ -3,6 +3,8 @@ const isDev = process.env.NODE_ENV === 'development';
 
 const nextConfig = {
   reactStrictMode: true,
+  poweredByHeader: false,
+  compress: true,
   transpilePackages: ['@ems/database', '@ems/shared', '@ems/auth'],
   async headers() {
     return [
@@ -40,11 +42,8 @@ const nextConfig = {
               `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' data: https://fonts.gstatic.com",
-              "img-src 'self' data: blob: https:",
-              ...(isDev
-                ? ["connect-src 'self' https: ws: wss: http:"]
-                : ["connect-src 'self' https:"]
-              ),
+              "img-src 'self' data: blob: https: http:",
+              "connect-src 'self' https: http: ws: wss:",
               "frame-ancestors 'self'",
               "base-uri 'self'",
               "form-action 'self'",

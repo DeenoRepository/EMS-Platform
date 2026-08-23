@@ -1,0 +1,130 @@
+# ==============================================================================
+# EMS Platform — Production Docker Compose Stack
+# ==============================================================================
+# Usage:
+#   docker compose -f docker-compose.prod.yml up -d --build
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. Production PostgreSQL Database Service
+  # ----------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: ems_postgres_prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password is required}
+      POSTGRES_DB: ${POSTGRES_DB:-ems_db}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    command: >
+      postgres -c max_connections=200
+               -c shared_buffers=512MB
+               -c effective_cache_size=1536MB
+               -c maintenance_work_mem=128MB
+               -c checkpoint_completion_target=0.9
+               -c wal_buffers=16MB
+               -c default_statistics_target=100
+               -c random_page_cost=1.1
+               -c effective_io_concurrency=200
+               -c work_mem=5242kB
+               -c min_wal_size=1GB
+               -c max_wal_size=4GB
+    volumes:
+      - ems_postgres_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-ems_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - ems_prod_network
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+
+  # ----------------------------------------------------------------------------
+  # 2. EMS Platform Next.js Web Application
+  # ----------------------------------------------------------------------------
+  ems-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ems_web_prod
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ems_db}?schema=public
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required and must be >= 32 characters}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-8h}
+      UPLOAD_DIR: "/app/uploads"
+      LDAP_ENABLED: ${LDAP_ENABLED:-false}
+      LDAP_URL: ${LDAP_URL:-}
+      LDAP_BIND_DN: ${LDAP_BIND_DN:-}
+      LDAP_BIND_PASSWORD: ${LDAP_BIND_PASSWORD:-}
+      LDAP_SEARCH_BASE: ${LDAP_SEARCH_BASE:-}
+      SRM_PROVIDER_TYPE: ${SRM_PROVIDER_TYPE:-DISABLED}
+      SRM_PROVIDER_URL: ${SRM_PROVIDER_URL:-}
+      SRM_PROJECT_KEY: ${SRM_PROJECT_KEY:-}
+      SRM_API_KEY: ${SRM_API_KEY:-}
+      SRM_CUSTOM_FIELD_ID: ${SRM_CUSTOM_FIELD_ID:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ems_uploads_prod_data:/app/uploads
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/api/system/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 25s
+    networks:
+      - ems_prod_network
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+
+  # ----------------------------------------------------------------------------
+  # 3. Production Nginx Reverse Proxy (SSL, Compression & Security)
+  # ----------------------------------------------------------------------------
+  nginx:
+    image: nginx:alpine
+    container_name: ems_nginx_prod
+    restart: always
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - ems-web
+    networks:
+      - ems_prod_network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
+networks:
+  ems_prod_network:
+    driver: bridge
+    name: ems_prod_network
+
+volumes:
+  ems_postgres_prod_data:
+    name: ems_postgres_prod_data
+  ems_uploads_prod_data:
+    name: ems_uploads_prod_data
