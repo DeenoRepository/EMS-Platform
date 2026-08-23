@@ -8,12 +8,10 @@ import {
   Button,
   CircularProgress,
   Chip,
-  Fade,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import EngineeringOutlinedIcon from '@mui/icons-material/EngineeringOutlined';
 import ContactSupportOutlinedIcon from '@mui/icons-material/ContactSupportOutlined';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 
 export interface ServiceHealthInfo {
   status: 'healthy' | 'unreachable' | 'degraded' | 'disabled';
@@ -31,23 +29,10 @@ export interface SystemHealthReport {
   };
 }
 
-export const initialOfflineReport: SystemHealthReport = {
-  isReady: false,
-  timestamp: new Date().toISOString(),
-  services: {
-    database: {
-      status: 'unreachable',
-      name: 'Database',
-    },
-    storage: { status: 'healthy', name: 'Storage' },
-    ldap: { status: 'disabled', name: 'LDAP' },
-  },
-};
-
-export function useSystemHealth(autoRefreshIntervalMs = 5000) {
-  const [health, setHealth] = useState<SystemHealthReport>(initialOfflineReport);
+export function useSystemHealth(autoRefreshIntervalMs = 3000) {
+  const [health, setHealth] = useState<SystemHealthReport | null>(null);
   const [loading, setLoading] = useState(false);
-  const [isReady, setIsReady] = useState<boolean>(false);
+  const [isReady, setIsReady] = useState<boolean>(true);
 
   const checkHealth = useCallback(async () => {
     setLoading(true);
@@ -65,11 +50,11 @@ export function useSystemHealth(autoRefreshIntervalMs = 5000) {
         setHealth(data.data);
         setIsReady(data.data.isReady);
       } else {
-        setHealth(initialOfflineReport);
+        setHealth(null);
         setIsReady(false);
       }
     } catch {
-      setHealth(initialOfflineReport);
+      setHealth(null);
       setIsReady(false);
     } finally {
       clearTimeout(timeoutId);
