@@ -20,13 +20,24 @@ export async function GET(req: NextRequest) {
     });
 
     // Дополняем дефолтными значениями из env если в БД еще нет
+    const providerUrl = settingsMap['SRM_PROVIDER_URL'] || settingsMap['JIRA_BASE_URL'] || process.env.JIRA_BASE_URL || '';
+    const projectKey = settingsMap['SRM_PROJECT_KEY'] || settingsMap['JIRA_PROJECT_KEY'] || process.env.JIRA_PROJECT_KEY || 'EMS';
+    const customFieldId = settingsMap['SRM_CUSTOM_FIELD_ID'] || settingsMap['JIRA_EQUIPMENT_CUSTOM_FIELD'] || process.env.JIRA_EQUIPMENT_CUSTOM_FIELD || 'customfield_10100';
+    const providerType = settingsMap['SRM_PROVIDER_TYPE'] || (providerUrl ? 'JIRA' : 'JIRA');
+
     const defaultSettings = {
-      JIRA_BASE_URL: settingsMap['JIRA_BASE_URL'] || process.env.JIRA_BASE_URL || '',
-      JIRA_PROJECT_KEY: settingsMap['JIRA_PROJECT_KEY'] || process.env.JIRA_PROJECT_KEY || 'EMS',
-      JIRA_EQUIPMENT_CUSTOM_FIELD: settingsMap['JIRA_EQUIPMENT_CUSTOM_FIELD'] || process.env.JIRA_EQUIPMENT_CUSTOM_FIELD || 'customfield_10100',
-      LDAP_URL: settingsMap['LDAP_URL'] || process.env.LDAP_URL || '',
-      LDAP_SEARCH_BASE: settingsMap['LDAP_SEARCH_BASE'] || process.env.LDAP_SEARCH_BASE || 'ou=users,dc=company,dc=local',
       APP_NAME: settingsMap['APP_NAME'] || process.env.NEXT_PUBLIC_APP_NAME || 'EMS — Equipment Management System',
+      LDAP_URL: settingsMap['LDAP_URL'] || process.env.LDAP_URL || '',
+      LDAP_SEARCH_BASE: settingsMap['LDAP_SEARCH_BASE'] || process.env.LDAP_SEARCH_BASE || 'dc=company,dc=local',
+      SRM_PROVIDER_TYPE: providerType,
+      SRM_PROVIDER_URL: providerUrl,
+      SRM_PROJECT_KEY: projectKey,
+      SRM_API_KEY: settingsMap['SRM_API_KEY'] || '',
+      SRM_CUSTOM_FIELD_ID: customFieldId,
+      // Backward compatibility aliases
+      JIRA_BASE_URL: providerUrl,
+      JIRA_PROJECT_KEY: projectKey,
+      JIRA_EQUIPMENT_CUSTOM_FIELD: customFieldId,
     };
 
     return NextResponse.json({
