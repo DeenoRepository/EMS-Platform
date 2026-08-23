@@ -215,7 +215,7 @@ export default function CreateNomenclatureDialog({
 
         {/* SKU & Unit */}
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={7}>
+          <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
               label="Артикул / Заводской код"
@@ -235,7 +235,7 @@ export default function CreateNomenclatureDialog({
               }}
             />
           </Grid>
-          <Grid item xs={12} sm={5}>
+          <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
               label="Ед. измерения"

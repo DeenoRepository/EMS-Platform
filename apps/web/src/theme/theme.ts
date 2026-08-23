@@ -314,33 +314,66 @@ export const theme = createTheme(
           },
         },
       },
+      MuiTextField: {
+        defaultProps: {
+          size: 'small',
+        },
+      },
       MuiInputBase: {
         styleOverrides: {
           root: {
+            fontSize: '0.875rem',
+          },
+          sizeSmall: {
             fontSize: '0.8125rem',
           },
         },
       },
       MuiOutlinedInput: {
+        defaultProps: {
+          size: 'small',
+        },
         styleOverrides: {
           root: {
             borderRadius: 8,
             backgroundColor: '#ffffff',
+            '& .MuiOutlinedInput-notchedOutline': {
+              borderColor: '#cbd5e1',
+            },
             '&:hover .MuiOutlinedInput-notchedOutline': {
               borderColor: '#94a3b8',
             },
             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
               borderColor: '#0284c7',
+              borderWidth: '1.5px',
             },
           },
           input: {
+            fontSize: '0.875rem',
+            color: '#0f172a',
+            '&::placeholder': {
+              color: '#94a3b8',
+              opacity: 1,
+            },
+          },
+          inputSizeSmall: {
             fontSize: '0.8125rem',
           },
         },
       },
       MuiInputLabel: {
+        defaultProps: {
+          size: 'small',
+        },
         styleOverrides: {
           root: {
+            color: '#64748b',
+            fontSize: '0.875rem',
+            '&.Mui-focused': {
+              color: '#0284c7',
+            },
+          },
+          sizeSmall: {
             fontSize: '0.8125rem',
           },
         },
