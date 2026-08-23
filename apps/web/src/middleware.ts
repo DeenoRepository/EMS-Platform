@@ -106,15 +106,15 @@ export async function middleware(req: NextRequest) {
 
   // 4. Доступ к главной странице (/) и странице логина (/login)
   if (pathname === '/') {
-    if (user) {
-      return NextResponse.redirect(new URL('/eps', req.url));
+    if (!user) {
+      return NextResponse.redirect(new URL('/login', req.url));
     }
-    return NextResponse.redirect(new URL('/login', req.url));
+    return NextResponse.next();
   }
 
   if (pathname === '/login') {
     if (user) {
-      return NextResponse.redirect(new URL('/eps', req.url));
+      return NextResponse.redirect(new URL('/', req.url));
     }
     return NextResponse.next();
   }

@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!user && !pathname.startsWith('/login') && !pathname.startsWith('/setup')) {
         router.push('/login');
       } else if (user && pathname === '/login') {
-        router.push('/eps');
+        router.push('/');
       }
     }
   }, [user, isLoading, pathname, router]);
@@ -75,10 +75,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (typeof window !== 'undefined') {
           const searchParams = new URLSearchParams(window.location.search);
           const rawFrom = searchParams.get('from');
-          const from = rawFrom && !rawFrom.startsWith('/login') && rawFrom.startsWith('/') ? rawFrom : '/eps';
+          const from = rawFrom && !rawFrom.startsWith('/login') && rawFrom.startsWith('/') ? rawFrom : '/';
           window.location.href = from;
         } else {
-          router.push('/eps');
+          router.push('/');
         }
         return { success: true };
       }
