@@ -66,6 +66,7 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith('/_next') ||
     pathname === '/api/setup/status' ||
     pathname === '/api/system/health' ||
+    pathname === '/api/system/maintenance' ||
     pathname === '/favicon.ico' ||
     pathname === '/logo.png' ||
     pathname === '/api/auth/login' ||
