@@ -153,7 +153,7 @@ export function HealthScoreGauge({
               />
             </svg>
 
-            {/* Inner Score Badge */}
+            {/* Inner Score Value */}
             <Box
               sx={{
                 position: 'absolute',
@@ -162,7 +162,6 @@ export function HealthScoreGauge({
                 right: 0,
                 bottom: 0,
                 display: 'flex',
-                flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
                 textAlign: 'center',
@@ -180,33 +179,35 @@ export function HealthScoreGauge({
                 }}
               >
                 {normalizedScore}
-                <Typography component="span" sx={{ fontSize: '0.6em', fontWeight: 600, ml: 0.25 }}>
+                <Typography component="span" sx={{ fontSize: '0.65em', fontWeight: 700, ml: 0.25 }}>
                   %
                 </Typography>
               </Typography>
-
-              {size !== 'sm' && (
-                <Chip
-                  icon={<StatusIcon sx={{ fontSize: '13px !important' }} />}
-                  label={statusLabel}
-                  size="small"
-                  sx={{
-                    mt: 0.5,
-                    height: 20,
-                    fontSize: '0.6875rem',
-                    fontWeight: 700,
-                    bgcolor: `${color}15`,
-                    color,
-                    borderRadius: '20px',
-                    border: `1px solid ${color}30`,
-                    '& .MuiChip-icon': { color: 'inherit' },
-                  }}
-                />
-              )}
             </Box>
           </>
         )}
       </Box>
+
+      {/* Status Chip (Cleanly positioned below the gauge) */}
+      {!loading && (
+        <Chip
+          icon={<StatusIcon sx={{ fontSize: '14px !important' }} />}
+          label={statusLabel}
+          size="small"
+          sx={{
+            height: 24,
+            px: 1,
+            fontSize: '0.75rem',
+            fontWeight: 700,
+            bgcolor: `${color}15`,
+            color,
+            borderRadius: '20px',
+            border: `1px solid ${color}30`,
+            '& .MuiChip-icon': { color: 'inherit' },
+            '& .MuiChip-label': { px: 0.75 },
+          }}
+        />
+      )}
 
       {/* Title, Subtitle and Breakdown Metrics */}
       <Box sx={{ textAlign: size === 'sm' ? 'left' : 'center', width: size === 'sm' ? 'auto' : '100%' }}>
@@ -226,25 +227,6 @@ export function HealthScoreGauge({
               <Typography variant="caption" sx={{ display: 'block', mt: 0.25, fontSize: dimensions.subSize, color: '#64748b' }}>
                 {subtitle}
               </Typography>
-            )}
-
-            {size === 'sm' && (
-              <Chip
-                icon={<StatusIcon sx={{ fontSize: '12px !important' }} />}
-                label={statusLabel}
-                size="small"
-                sx={{
-                  mt: 0.5,
-                  height: 18,
-                  fontSize: '0.625rem',
-                  fontWeight: 700,
-                  bgcolor: `${color}15`,
-                  color,
-                  borderRadius: '20px',
-                  border: `1px solid ${color}30`,
-                  '& .MuiChip-icon': { color: 'inherit' },
-                }}
-              />
             )}
           </>
         )}
