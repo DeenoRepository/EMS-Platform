@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -11,7 +11,6 @@ import {
   Collapse,
   Tooltip,
 } from '@mui/material';
-import StorageIcon from '@mui/icons-material/Storage';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckIcon from '@mui/icons-material/Check';
@@ -53,21 +52,31 @@ export function InfrastructureHealthBanner({
   className,
 }: InfrastructureHealthBannerProps) {
   const [health, setHealth] = useState<SystemHealthReport | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Store onHealthChange in a ref to avoid infinite re-render cycles
+  const onHealthChangeRef = useRef(onHealthChange);
+  useEffect(() => {
+    onHealthChangeRef.current = onHealthChange;
+  }, [onHealthChange]);
 
   const checkHealth = useCallback(async () => {
     setLoading(true);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+
     try {
       const res = await fetch('/api/system/health', {
         cache: 'no-store',
         headers: { 'Cache-Control': 'no-cache' },
+        signal: controller.signal,
       });
       const data = await res.json();
       if (data.success && data.data) {
         setHealth(data.data);
-        if (onHealthChange) {
-          onHealthChange(data.data.isReady, data.data);
+        if (onHealthChangeRef.current) {
+          onHealthChangeRef.current(data.data.isReady, data.data);
         }
       } else {
         const fallbackReport: SystemHealthReport = {
@@ -85,8 +94,8 @@ export function InfrastructureHealthBanner({
           },
         };
         setHealth(fallbackReport);
-        if (onHealthChange) {
-          onHealthChange(false, fallbackReport);
+        if (onHealthChangeRef.current) {
+          onHealthChangeRef.current(false, fallbackReport);
         }
       }
     } catch (err: any) {
@@ -97,7 +106,9 @@ export function InfrastructureHealthBanner({
           database: {
             status: 'unreachable',
             name: 'PostgreSQL Database',
-            error: err.message || 'Сетевой сбой при проверке инфраструктуры',
+            error: err?.name === 'AbortError'
+              ? 'Превышено время ожидания ответа от сервера базы данных'
+              : (err.message || 'Сетевой сбой при проверке инфраструктуры'),
             command: 'docker compose up -d postgres ldap',
           },
           storage: { status: 'healthy', name: 'Файловое хранилище' },
@@ -105,13 +116,14 @@ export function InfrastructureHealthBanner({
         },
       };
       setHealth(offlineReport);
-      if (onHealthChange) {
-        onHealthChange(false, offlineReport);
+      if (onHealthChangeRef.current) {
+        onHealthChangeRef.current(false, offlineReport);
       }
     } finally {
+      clearTimeout(timeoutId);
       setLoading(false);
     }
-  }, [onHealthChange]);
+  }, []);
 
   useEffect(() => {
     checkHealth();
@@ -128,18 +140,9 @@ export function InfrastructureHealthBanner({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (!health && loading) {
-    return (
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 1.5, gap: 1 }}>
-        <CircularProgress size={16} />
-        <Typography variant="caption" color="text.secondary">
-          Диагностика инфраструктуры...
-        </Typography>
-      </Box>
-    );
+  if (!health) {
+    return null;
   }
-
-  if (!health) return null;
 
   const isHealthy = health.isReady && health.services.database.status === 'healthy';
 
@@ -156,7 +159,7 @@ export function InfrastructureHealthBanner({
       <Paper
         elevation={0}
         sx={{
-          p: 2.25,
+          p: 2,
           mb: 2.5,
           borderRadius: '12px',
           backgroundColor: '#fef2f2',
@@ -168,24 +171,24 @@ export function InfrastructureHealthBanner({
         <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
           <Box
             sx={{
-              width: 38,
-              height: 38,
-              borderRadius: '10px',
+              width: 36,
+              height: 36,
+              borderRadius: '9px',
               backgroundColor: '#fee2e2',
               color: '#dc2626',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
-              mt: 0.25,
+              mt: 0.2,
             }}
           >
-            {isDbDown ? <ErrorOutlineIcon sx={{ fontSize: 22 }} /> : <WarningAmberIcon sx={{ fontSize: 22 }} />}
+            {isDbDown ? <ErrorOutlineIcon sx={{ fontSize: 20 }} /> : <WarningAmberIcon sx={{ fontSize: 20 }} />}
           </Box>
 
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 0.5 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#991b1b', fontSize: '0.875rem' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#991b1b', fontSize: '0.85rem' }}>
                 {isDbDown
                   ? 'База данных PostgreSQL отключена'
                   : 'Компоненты инфраструктуры требуют внимания'}
@@ -196,12 +199,12 @@ export function InfrastructureHealthBanner({
                 variant="outlined"
                 onClick={checkHealth}
                 disabled={loading}
-                startIcon={loading ? <CircularProgress size={12} color="inherit" /> : <RefreshIcon sx={{ fontSize: 15 }} />}
+                startIcon={loading ? <CircularProgress size={12} color="inherit" /> : <RefreshIcon sx={{ fontSize: 14 }} />}
                 sx={{
-                  fontSize: '0.75rem',
+                  fontSize: '0.72rem',
                   fontWeight: 600,
-                  py: 0.25,
-                  px: 1.25,
+                  py: 0.2,
+                  px: 1,
                   borderRadius: '6px',
                   borderColor: '#fca5a5',
                   color: '#991b1b',
@@ -216,14 +219,14 @@ export function InfrastructureHealthBanner({
               </Button>
             </Box>
 
-            <Typography variant="body2" sx={{ color: '#7f1d1d', fontSize: '0.8125rem', mb: 1.5, lineHeight: 1.45 }}>
+            <Typography variant="body2" sx={{ color: '#7f1d1d', fontSize: '0.8rem', mb: 1.25, lineHeight: 1.4 }}>
               {db.error || `Не удается установить соединение с сервером БД (${db.host || '127.0.0.1:5432'}). Авторизация и операции с данными заблокированы.`}
             </Typography>
 
             {/* Instruction / Run Command Card */}
             <Box
               sx={{
-                p: 1.25,
+                p: 1.2,
                 borderRadius: '8px',
                 backgroundColor: '#ffffff',
                 border: '1px solid #fecaca',
@@ -234,7 +237,7 @@ export function InfrastructureHealthBanner({
               }}
             >
               <Box sx={{ overflow: 'hidden', minWidth: 0 }}>
-                <Typography variant="caption" sx={{ color: '#64748b', display: 'block', fontWeight: 600, fontSize: '0.7rem' }}>
+                <Typography variant="caption" sx={{ color: '#64748b', display: 'block', fontWeight: 600, fontSize: '0.68rem' }}>
                   Команда для запуска в терминале:
                 </Typography>
                 <Typography
@@ -243,7 +246,7 @@ export function InfrastructureHealthBanner({
                     fontFamily: 'monospace',
                     fontWeight: 700,
                     color: '#0f172a',
-                    fontSize: '0.78125rem',
+                    fontSize: '0.75rem',
                     wordBreak: 'break-all',
                     display: 'block',
                   }}
@@ -259,14 +262,14 @@ export function InfrastructureHealthBanner({
                   sx={{
                     color: copied ? '#16a34a' : '#64748b',
                     backgroundColor: copied ? '#dcfce7' : '#f1f5f9',
-                    p: 0.75,
+                    p: 0.6,
                     borderRadius: '6px',
                     '&:hover': {
                       backgroundColor: copied ? '#bbf7d0' : '#e2e8f0',
                     },
                   }}
                 >
-                  {copied ? <CheckIcon sx={{ fontSize: 16 }} /> : <ContentCopyIcon sx={{ fontSize: 16 }} />}
+                  {copied ? <CheckIcon sx={{ fontSize: 15 }} /> : <ContentCopyIcon sx={{ fontSize: 15 }} />}
                 </IconButton>
               </Tooltip>
             </Box>

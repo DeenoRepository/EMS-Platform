@@ -47,6 +47,10 @@ export default function LoginPage() {
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
   const [isInfrastructureReady, setIsInfrastructureReady] = useState(true);
 
+  const handleHealthChange = useCallback((isReady: boolean) => {
+    setIsInfrastructureReady(isReady);
+  }, []);
+
   // Восстановление сохраненного логина и очистка чувствительных URL-параметров (защита от утечки пароля при случайном GET-сабмите)
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -285,7 +289,7 @@ export default function LoginPage() {
           {/* Real-time Infrastructure & Database Health Warning Banner */}
           <InfrastructureHealthBanner
             hideWhenHealthy={true}
-            onHealthChange={(isReady) => setIsInfrastructureReady(isReady)}
+            onHealthChange={handleHealthChange}
             autoRefreshIntervalMs={5000}
           />
 
