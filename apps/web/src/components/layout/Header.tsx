@@ -53,7 +53,7 @@ export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProp
 
             {sidebarCollapsed && (
               <Box
-                onClick={() => router.push('/eps')}
+                onClick={() => router.push('/')}
                 title="Перейти на главную"
                 sx={{
                   display: { xs: 'none', sm: 'flex' },

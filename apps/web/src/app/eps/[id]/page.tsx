@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
 import {
   Box,
   Card,
@@ -55,7 +55,7 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import LaunchIcon from '@mui/icons-material/Launch';
 import BuildCircleIcon from '@mui/icons-material/BuildCircle';
 import PageHeader from '@/components/layout/PageHeader';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
   EQUIPMENT_STATUS_MAP,
   DOCUMENT_TYPE_MAP,
@@ -189,17 +189,38 @@ interface EquipmentDetails {
   }[];
 }
 
-export default function EquipmentPassportPage() {
+function EquipmentPassportContent() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { hasPermission } = useAuth();
   const { enqueueSnackbar } = useSnackbar();
 
+  const searchParams = useSearchParams();
+  const tabParam = searchParams?.get('tab');
+
+  const TAB_KEY_MAP: Record<string, number> = {
+    overview: 0,
+    specs: 1,
+    photos: 2,
+    docs: 3,
+    'spare-parts': 4,
+    mro: 5,
+    srm: 6,
+    history: 7,
+  };
+  const TAB_INDEX_MAP = ['overview', 'specs', 'photos', 'docs', 'spare-parts', 'mro', 'srm', 'history'];
+
   const [equipment, setEquipment] = useState<EquipmentDetails | null>(null);
   const [sections, setSections] = useState<CustomSectionDef[]>([]);
   const [unassignedFields, setUnassignedFields] = useState<CustomFieldDef[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState(0);
+
+  const [activeTab, setActiveTab] = useState(() => {
+    if (tabParam && TAB_KEY_MAP[tabParam] !== undefined) {
+      return TAB_KEY_MAP[tabParam];
+    }
+    return 0;
+  });
 
   // Modals state
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -297,6 +318,12 @@ export default function EquipmentPassportPage() {
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
+    const key = TAB_INDEX_MAP[newValue] || 'overview';
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      params.set('tab', key);
+      router.replace(`/eps/${id}?${params.toString()}`);
+    }
     if (newValue === 7) {
       fetchAudit();
     }
@@ -2327,5 +2354,13 @@ export default function EquipmentPassportPage() {
         onSuccess={() => fetchEquipmentAndMeta()}
       />
     </Box>
+  );
+}
+
+export default function EquipmentPassportPage() {
+  return (
+    <Suspense fallback={<PageLoading text="Загрузка паспорта оборудования..." />}>
+      <EquipmentPassportContent />
+    </Suspense>
   );
 }

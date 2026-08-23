@@ -848,7 +848,7 @@ export async function createInternalServiceRequest(data: {
   assignee?: string;
   warrantyClaim?: boolean;
   contractorName?: string;
-}) {
+}): Promise<any> {
   const currentYear = new Date().getFullYear();
   
   // Генерация уникального номера заявки: INC-YYYY-XXXX
@@ -952,7 +952,7 @@ export async function createInternalServiceRequest(data: {
 /**
  * Создание аварийного заказ-наряда MRO на основе инцидента SRM
  */
-export async function createMroWorkOrderFromIssue(issueId: string, userId?: string) {
+export async function createMroWorkOrderFromIssue(issueId: string, userId?: string): Promise<any> {
   const issue = await prisma.jiraIssueCache.findUnique({
     where: { id: issueId },
   });

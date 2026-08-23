@@ -256,6 +256,12 @@ export default function Sidebar({
   // Purely Operational Modules with Consistent Modern Outlined Icons & Explicit Event Counters
   const operationalItems: NavItemDef[] = [
     {
+      id: 'dashboard',
+      label: 'Главный дашборд',
+      path: '/',
+      icon: <AnalyticsOutlinedIcon sx={{ fontSize: 18 }} />,
+    },
+    {
       id: 'eps',
       label: 'Паспортизация (EPS)',
       icon: <BadgeOutlinedIcon sx={{ fontSize: 18 }} />,
@@ -331,8 +337,9 @@ export default function Sidebar({
       label: 'Подача заявок (SRM)',
       path: '/srm',
       icon: <BugReportOutlinedIcon sx={{ fontSize: 18 }} />,
-      badgeText: 'Скоро',
-      badgeTooltip: 'Модуль SRM находится в разработке (Скоро)',
+      badge: srmOpenCount && srmOpenCount > 0 ? srmOpenCount : null,
+      badgeColor: srmOpenCount && srmOpenCount > 0 ? 'warning' : 'default',
+      badgeTooltip: srmOpenCount && srmOpenCount > 0 ? `${srmOpenCount} активных сервисных заявок` : undefined,
       permission: PERMISSIONS.SRM_DASHBOARD_VIEW,
     },
     {
@@ -340,8 +347,9 @@ export default function Sidebar({
       label: 'ТО и Ремонт (MRO)',
       path: '/mro',
       icon: <BuildOutlinedIcon sx={{ fontSize: 18 }} />,
-      badgeText: 'Скоро',
-      badgeTooltip: 'Модуль MRO находится в разработке (Скоро)',
+      badge: mroOverdueCount && mroOverdueCount > 0 ? mroOverdueCount : null,
+      badgeColor: mroOverdueCount && mroOverdueCount > 0 ? 'error' : 'default',
+      badgeTooltip: mroOverdueCount && mroOverdueCount > 0 ? `${mroOverdueCount} просроченных регламентов ТО` : undefined,
       permission: PERMISSIONS.MRO_SCHEDULE_VIEW,
     },
   ];
@@ -825,7 +833,7 @@ export default function Sidebar({
           <>
             {/* Brand Logo & Professional Typography */}
             <Box
-              onClick={() => handleNavigate('/eps')}
+              onClick={() => handleNavigate('/')}
               title="Перейти на главную"
               sx={{
                 display: 'flex',
