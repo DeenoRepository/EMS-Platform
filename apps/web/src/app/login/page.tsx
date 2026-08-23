@@ -270,7 +270,11 @@ export default function LoginPage() {
           )}
 
           <Box
-            component="div"
+            component="form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              performLogin(username, password);
+            }}
             aria-label="Форма входа в учетную запись EMS"
           >
             <TextField
@@ -464,12 +468,11 @@ export default function LoginPage() {
             </Box>
 
             <Button
-              type="button"
+              type="submit"
               fullWidth
               variant="contained"
               size="large"
               disabled={loading}
-              onClick={() => performLogin(username, password)}
               sx={{
                 py: 1.25,
                 fontWeight: 700,
