@@ -253,14 +253,18 @@ export default function Sidebar({
 
   const canAccessAdmin = user?.roles.includes('admin') || hasPermission(PERMISSIONS.ADMIN_USERS_MANAGE);
 
-  // Purely Operational Modules with Consistent Modern Outlined Icons & Explicit Event Counters
-  const operationalItems: NavItemDef[] = [
+  // Главное (Панель управления)
+  const mainItems: NavItemDef[] = [
     {
       id: 'dashboard',
-      label: 'Главный дашборд',
+      label: 'Панель управления',
       path: '/',
       icon: <AnalyticsOutlinedIcon sx={{ fontSize: 18 }} />,
     },
+  ];
+
+  // Purely Operational Modules with Consistent Modern Outlined Icons & Explicit Event Counters
+  const operationalItems: NavItemDef[] = [
     {
       id: 'eps',
       label: 'Паспортизация (EPS)',
@@ -947,24 +951,47 @@ export default function Sidebar({
           scrollbarColor: 'rgba(255, 255, 255, 0.14) transparent',
         }}
       >
-        {/* Main Menu Section */}
-        {!collapsed && (
-          <Typography
-            variant="caption"
-            sx={{
-              display: 'block',
-              px: 1.25,
-              mb: 1,
-              fontSize: '0.6875rem',
-              fontWeight: 700,
-              color: '#64748b',
-              letterSpacing: '0.06em',
-            }}
-          >
-            ГЛАВНОЕ МЕНЮ
-          </Typography>
-        )}
-        {operationalItems.map(renderNavBlock)}
+        {/* Блок «Главное» */}
+        <Box sx={{ mb: 2 }}>
+          {!collapsed && (
+            <Typography
+              variant="caption"
+              sx={{
+                display: 'block',
+                px: 1.25,
+                mb: 0.75,
+                fontSize: '0.6875rem',
+                fontWeight: 700,
+                color: '#64748b',
+                letterSpacing: '0.06em',
+              }}
+            >
+              ГЛАВНОЕ
+            </Typography>
+          )}
+          {mainItems.map(renderNavBlock)}
+        </Box>
+
+        {/* Блок «Модули» */}
+        <Box sx={{ mb: 2 }}>
+          {!collapsed && (
+            <Typography
+              variant="caption"
+              sx={{
+                display: 'block',
+                px: 1.25,
+                mb: 0.75,
+                fontSize: '0.6875rem',
+                fontWeight: 700,
+                color: '#64748b',
+                letterSpacing: '0.06em',
+              }}
+            >
+              МОДУЛИ
+            </Typography>
+          )}
+          {operationalItems.map(renderNavBlock)}
+        </Box>
 
         {/* Administration Section with Sub-groups */}
         {canAccessAdmin && (

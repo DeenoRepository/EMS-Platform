@@ -284,9 +284,9 @@ export default function ExecutiveDashboardPage() {
     <Box sx={{ width: '100%', pb: 4 }}>
       {/* 1. Header */}
       <PageHeader
-        title="Сводная панель управления (Executive Dashboard)"
+        title="Панель управления"
         subtitle="Единый центр мониторинга парка оборудования, складских запасов, регламентов ТО и инцидентов"
-        breadcrumbs={[{ label: 'Главная', href: '/' }]}
+        breadcrumbs={[{ label: 'Главная', href: '/' }, { label: 'Панель управления' }]}
         actions={
           <Stack direction="row" spacing={1.25} alignItems="center">
             <Button
