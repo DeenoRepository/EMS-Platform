@@ -255,15 +255,17 @@ export default function LoginPage() {
 
         <CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
           <Box sx={{ mb: 2.5, textAlign: 'center' }}>
-            <Typography variant="subtitle1" fontWeight={700} sx={{ color: '#0f172a' }}>
-              Вход в учетную запись
+            <Typography variant="subtitle1" fontWeight={700} sx={{ color: isInfrastructureReady ? '#0f172a' : '#991b1b' }}>
+              {isInfrastructureReady ? 'Вход в учетную запись' : 'Сервис временно недоступен'}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem', mt: 0.25 }}>
-              Введите корпоративные учетные данные
+              {isInfrastructureReady
+                ? 'Введите корпоративные учетные данные'
+                : 'Один из узлов инфраструктуры отключен или не отвечает'}
             </Typography>
           </Box>
 
-          {error && (
+          {error && isInfrastructureReady && (
             <Fade in={Boolean(error)}>
               <Alert
                 severity="error"
@@ -286,238 +288,238 @@ export default function LoginPage() {
             </Fade>
           )}
 
-          {/* Real-time Infrastructure & Database Health Warning Banner */}
-          <InfrastructureHealthBanner
-            hideWhenHealthy={true}
-            onHealthChange={handleHealthChange}
-            autoRefreshIntervalMs={5000}
-          />
-
-          <Box
-            component="form"
-            onSubmit={(e) => {
-              e.preventDefault();
-              performLogin(username, password);
-            }}
-            aria-label="Форма входа в учетную запись EMS"
-          >
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="username"
-              label="Корпоративный логин (LDAP)"
-              name="username"
-              autoComplete="username"
-              autoFocus
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={loading}
-              size="medium"
-              aria-required="true"
-              aria-invalid={Boolean(error)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <PersonOutlineIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                  </InputAdornment>
-                ),
-                endAdornment: username && !loading ? (
-                  <InputAdornment position="end">
-                    <Tooltip title="Очистить логин">
-                      <IconButton
-                        aria-label="Очистить поле логина"
-                        onClick={handleClearUsername}
-                        edge="end"
-                        size="small"
-                      >
-                        <ClearIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </InputAdornment>
-                ) : null,
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  backgroundColor: '#ffffff',
-                },
-              }}
+          {/* Full Infrastructure Offline Diagnostic Panel */}
+          {!isInfrastructureReady ? (
+            <InfrastructureHealthBanner
+              variant="full"
+              hideWhenHealthy={true}
+              onHealthChange={handleHealthChange}
+              autoRefreshIntervalMs={5000}
             />
-
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label="Пароль"
-              type={showPassword ? 'text' : 'password'}
-              id="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onKeyUp={handleKeyDown}
-              disabled={loading}
-              size="medium"
-              aria-required="true"
-              aria-invalid={Boolean(error)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <LockOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <Tooltip title={showPassword ? 'Скрыть пароль' : 'Показать пароль'}>
-                      <IconButton
-                        aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
-                        onClick={() => setShowPassword(!showPassword)}
-                        edge="end"
-                        size="small"
-                      >
-                        {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
-                      </IconButton>
-                    </Tooltip>
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  backgroundColor: '#ffffff',
-                },
-              }}
-            />
-
-            {capsLockActive && (
-              <Fade in={capsLockActive}>
-                <Box
-                  role="status"
-                  aria-live="polite"
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 0.75,
-                    mt: 1,
-                    px: 1.25,
-                    py: 0.5,
-                    borderRadius: 1.5,
-                    backgroundColor: '#fffbeb',
-                    border: '1px solid #fde68a',
-                    color: '#b45309',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                  }}
-                >
-                  <WarningAmberIcon sx={{ fontSize: 16 }} aria-hidden="true" />
-                  <span>Внимание: включена клавиша Caps Lock</span>
-                </Box>
-              </Fade>
-            )}
-
-            {(/[а-яёА-ЯЁ]/.test(password) || /[а-яёА-ЯЁ]/.test(username)) && (
-              <Fade in={true}>
-                <Box
-                  role="status"
-                  aria-live="polite"
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 0.75,
-                    mt: 1,
-                    px: 1.25,
-                    py: 0.5,
-                    borderRadius: 1.5,
-                    backgroundColor: '#eff6ff',
-                    border: '1px solid #bfdbfe',
-                    color: '#1e40af',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                  }}
-                >
-                  <LanguageIcon sx={{ fontSize: 16 }} aria-hidden="true" />
-                  <span>Русская раскладка (RU): система автоматически сопоставит символы в EN</span>
-                </Box>
-              </Fade>
-            )}
-
-
+          ) : (
             <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                mt: 1.25,
-                mb: 1.75,
+              component="form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                performLogin(username, password);
               }}
+              aria-label="Форма входа в учетную запись EMS"
             >
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    size="small"
-                    color="primary"
-                    inputProps={{ 'aria-label': 'Запомнить логин на этом компьютере' }}
-                  />
-                }
-                label={
-                  <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
-                    Запомнить логин
-                  </Typography>
-                }
-              />
-              <Button
-                variant="text"
-                size="small"
-                onClick={() => setHelpDialogOpen(true)}
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                id="username"
+                label="Корпоративный логин (LDAP)"
+                name="username"
+                autoComplete="username"
+                autoFocus
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={loading}
+                size="medium"
+                aria-required="true"
+                aria-invalid={Boolean(error)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PersonOutlineIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: username && !loading ? (
+                    <InputAdornment position="end">
+                      <Tooltip title="Очистить логин">
+                        <IconButton
+                          aria-label="Очистить поле логина"
+                          onClick={handleClearUsername}
+                          edge="end"
+                          size="small"
+                        >
+                          <ClearIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </InputAdornment>
+                  ) : null,
+                }}
                 sx={{
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  color: 'primary.main',
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    backgroundColor: '#ffffff',
+                  },
+                }}
+              />
+
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                name="password"
+                label="Пароль"
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onKeyUp={handleKeyDown}
+                disabled={loading}
+                size="medium"
+                aria-required="true"
+                aria-invalid={Boolean(error)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LockOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <Tooltip title={showPassword ? 'Скрыть пароль' : 'Показать пароль'}>
+                        <IconButton
+                          aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end"
+                          size="small"
+                        >
+                          {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                        </IconButton>
+                      </Tooltip>
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    backgroundColor: '#ffffff',
+                  },
+                }}
+              />
+
+              {capsLockActive && (
+                <Fade in={capsLockActive}>
+                  <Box
+                    role="status"
+                    aria-live="polite"
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.75,
+                      mt: 1,
+                      px: 1.25,
+                      py: 0.5,
+                      borderRadius: 1.5,
+                      backgroundColor: '#fffbeb',
+                      border: '1px solid #fde68a',
+                      color: '#b45309',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                    }}
+                  >
+                    <WarningAmberIcon sx={{ fontSize: 16 }} aria-hidden="true" />
+                    <span>Внимание: включена клавиша Caps Lock</span>
+                  </Box>
+                </Fade>
+              )}
+
+              {(/[а-яёА-ЯЁ]/.test(password) || /[а-яёА-ЯЁ]/.test(username)) && (
+                <Fade in={true}>
+                  <Box
+                    role="status"
+                    aria-live="polite"
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.75,
+                      mt: 1,
+                      px: 1.25,
+                      py: 0.5,
+                      borderRadius: 1.5,
+                      backgroundColor: '#eff6ff',
+                      border: '1px solid #bfdbfe',
+                      color: '#1e40af',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                    }}
+                  >
+                    <LanguageIcon sx={{ fontSize: 16 }} aria-hidden="true" />
+                    <span>Русская раскладка (RU): система автоматически сопоставит символы в EN</span>
+                  </Box>
+                </Fade>
+              )}
+
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  mt: 1.25,
+                  mb: 1.75,
+                }}
+              >
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      size="small"
+                      color="primary"
+                      inputProps={{ 'aria-label': 'Запомнить логин на этом компьютере' }}
+                    />
+                  }
+                  label={
+                    <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                      Запомнить логин
+                    </Typography>
+                  }
+                />
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={() => setHelpDialogOpen(true)}
+                  sx={{
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    color: 'primary.main',
+                    textTransform: 'none',
+                    p: 0.5,
+                    minWidth: 'auto',
+                    '&:hover': {
+                      backgroundColor: 'transparent',
+                      textDecoration: 'underline',
+                    },
+                  }}
+                >
+                  Забыли пароль?
+                </Button>
+              </Box>
+
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                size="large"
+                disabled={loading}
+                sx={{
+                  py: 1.25,
+                  fontWeight: 700,
+                  fontSize: '0.875rem',
+                  borderRadius: 2,
                   textTransform: 'none',
-                  p: 0.5,
-                  minWidth: 'auto',
+                  boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
                   '&:hover': {
-                    backgroundColor: 'transparent',
-                    textDecoration: 'underline',
+                    boxShadow: '0 6px 18px rgba(2, 132, 199, 0.45)',
                   },
                 }}
               >
-                Забыли пароль?
+                {loading ? (
+                  <CircularProgress size={22} color="inherit" />
+                ) : (
+                  'Войти в систему'
+                )}
               </Button>
             </Box>
-
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              size="large"
-              disabled={loading || !isInfrastructureReady}
-              sx={{
-                py: 1.25,
-                fontWeight: 700,
-                fontSize: '0.875rem',
-                borderRadius: 2,
-                textTransform: 'none',
-                boxShadow: !isInfrastructureReady ? 'none' : '0 4px 14px rgba(2, 132, 199, 0.35)',
-                '&:hover': {
-                  boxShadow: !isInfrastructureReady ? 'none' : '0 6px 18px rgba(2, 132, 199, 0.45)',
-                },
-              }}
-            >
-              {loading ? (
-                <CircularProgress size={22} color="inherit" />
-              ) : !isInfrastructureReady ? (
-                'База данных недоступна'
-              ) : (
-                'Войти в систему'
-              )}
-            </Button>
-          </Box>
+          )}
         </CardContent>
       </Card>
 

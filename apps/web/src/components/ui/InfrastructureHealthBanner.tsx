@@ -16,6 +16,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckIcon from '@mui/icons-material/Check';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import DnsOutlinedIcon from '@mui/icons-material/DnsOutlined';
 
 export interface ServiceHealthInfo {
   status: 'healthy' | 'unreachable' | 'degraded' | 'disabled';
@@ -39,6 +40,7 @@ export interface SystemHealthReport {
 }
 
 export interface InfrastructureHealthBannerProps {
+  variant?: 'banner' | 'full';
   hideWhenHealthy?: boolean;
   onHealthChange?: (isReady: boolean, report: SystemHealthReport | null) => void;
   autoRefreshIntervalMs?: number;
@@ -46,6 +48,7 @@ export interface InfrastructureHealthBannerProps {
 }
 
 export function InfrastructureHealthBanner({
+  variant = 'full',
   hideWhenHealthy = true,
   onHealthChange,
   autoRefreshIntervalMs = 0,
@@ -154,6 +157,114 @@ export function InfrastructureHealthBanner({
   const isDbDown = db.status === 'unreachable';
   const defaultCommand = db.command || 'docker compose up -d postgres ldap';
 
+  // 1. FULL VIEW (Replaces login inputs completely when infrastructure is down)
+  if (variant === 'full') {
+    return (
+      <Box sx={{ textAlign: 'center', py: 0.5 }} className={className}>
+        <Box
+          sx={{
+            width: 54,
+            height: 54,
+            borderRadius: '50%',
+            backgroundColor: '#fee2e2',
+            color: '#dc2626',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            mb: 1.75,
+            boxShadow: '0 4px 14px rgba(220, 38, 38, 0.18)',
+          }}
+        >
+          <DnsOutlinedIcon sx={{ fontSize: 30 }} />
+        </Box>
+
+        <Typography variant="h6" fontWeight={700} sx={{ color: '#991b1b', fontSize: '1.05rem', mb: 0.75 }}>
+          Сервис в данный момент недоступен
+        </Typography>
+
+        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem', mb: 2.25, lineHeight: 1.5 }}>
+          {db.error || `Один из обязательных узлов инфраструктуры (База данных PostgreSQL на ${db.host || '127.0.0.1:5432'}) отключен. Ввод учетных данных заблокирован до восстановления связи.`}
+        </Typography>
+
+        {/* Command Box */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 1.5,
+            mb: 2.5,
+            borderRadius: '10px',
+            backgroundColor: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            textAlign: 'left',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.75 }}>
+            <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, fontSize: '0.72rem' }}>
+              Команда для запуска базы данных:
+            </Typography>
+            <Tooltip title={copied ? 'Скопировано!' : 'Скопировать'}>
+              <IconButton
+                size="small"
+                onClick={() => handleCopyCommand(defaultCommand)}
+                sx={{
+                  color: copied ? '#16a34a' : '#64748b',
+                  backgroundColor: copied ? '#dcfce7' : '#e2e8f0',
+                  p: 0.5,
+                  borderRadius: '5px',
+                  '&:hover': { backgroundColor: copied ? '#bbf7d0' : '#cbd5e1' },
+                }}
+              >
+                {copied ? <CheckIcon sx={{ fontSize: 14 }} /> : <ContentCopyIcon sx={{ fontSize: 14 }} />}
+              </IconButton>
+            </Tooltip>
+          </Box>
+          <Typography
+            variant="caption"
+            sx={{
+              fontFamily: 'monospace',
+              fontWeight: 700,
+              color: '#0f172a',
+              fontSize: '0.8rem',
+              wordBreak: 'break-all',
+              display: 'block',
+              backgroundColor: '#ffffff',
+              p: 1,
+              borderRadius: '6px',
+              border: '1px solid #cbd5e1',
+            }}
+          >
+            {defaultCommand}
+          </Typography>
+        </Paper>
+
+        <Button
+          fullWidth
+          variant="contained"
+          size="large"
+          onClick={checkHealth}
+          disabled={loading}
+          startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <RefreshIcon sx={{ fontSize: 18 }} />}
+          sx={{
+            py: 1.25,
+            fontWeight: 700,
+            fontSize: '0.875rem',
+            borderRadius: 2,
+            textTransform: 'none',
+            backgroundColor: '#0284c7',
+            boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
+            '&:hover': {
+              backgroundColor: '#0369a1',
+              boxShadow: '0 6px 18px rgba(2, 132, 199, 0.45)',
+            },
+          }}
+        >
+          {loading ? 'Проверка подключения...' : 'Проверить доступность сервиса'}
+        </Button>
+      </Box>
+    );
+  }
+
+  // 2. BANNER VIEW
   return (
     <Collapse in={!isHealthy} timeout="auto">
       <Paper
@@ -223,7 +334,6 @@ export function InfrastructureHealthBanner({
               {db.error || `Не удается установить соединение с сервером БД (${db.host || '127.0.0.1:5432'}). Авторизация и операции с данными заблокированы.`}
             </Typography>
 
-            {/* Instruction / Run Command Card */}
             <Box
               sx={{
                 p: 1.2,
