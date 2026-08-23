@@ -339,22 +339,38 @@ export default function Sidebar({
     {
       id: 'srm',
       label: 'Подача заявок (SRM)',
-      path: '/srm',
       icon: <BugReportOutlinedIcon sx={{ fontSize: 18 }} />,
-      badge: srmOpenCount && srmOpenCount > 0 ? srmOpenCount : null,
-      badgeColor: srmOpenCount && srmOpenCount > 0 ? 'warning' : 'default',
-      badgeTooltip: srmOpenCount && srmOpenCount > 0 ? `${srmOpenCount} активных сервисных заявок` : undefined,
       permission: PERMISSIONS.SRM_DASHBOARD_VIEW,
+      children: [
+        {
+          label: 'Реестр заявок',
+          path: '/srm',
+          icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} />,
+          badge: srmOpenCount && srmOpenCount > 0 ? srmOpenCount : null,
+          badgeColor: srmOpenCount && srmOpenCount > 0 ? 'warning' : 'default',
+          badgeTooltip: srmOpenCount && srmOpenCount > 0 ? `${srmOpenCount} активных сервисных заявок` : undefined,
+        },
+        { label: 'Аналитика надежности', path: '/srm/analytics', icon: <TimelineIcon sx={{ fontSize: 15 }} /> },
+        { label: 'Гарантии и рекламации', path: '/srm/warranties', icon: <ShieldOutlinedIcon sx={{ fontSize: 15 }} /> },
+      ],
     },
     {
       id: 'mro',
       label: 'ТО и Ремонт (MRO)',
-      path: '/mro',
       icon: <BuildOutlinedIcon sx={{ fontSize: 18 }} />,
-      badge: mroOverdueCount && mroOverdueCount > 0 ? mroOverdueCount : null,
-      badgeColor: mroOverdueCount && mroOverdueCount > 0 ? 'error' : 'default',
-      badgeTooltip: mroOverdueCount && mroOverdueCount > 0 ? `${mroOverdueCount} просроченных регламентов ТО` : undefined,
       permission: PERMISSIONS.MRO_SCHEDULE_VIEW,
+      children: [
+        {
+          label: 'График ТО и ППР',
+          path: '/mro',
+          icon: <CalendarMonthIcon sx={{ fontSize: 15 }} />,
+          badge: mroOverdueCount && mroOverdueCount > 0 ? mroOverdueCount : null,
+          badgeColor: mroOverdueCount && mroOverdueCount > 0 ? 'error' : 'default',
+          badgeTooltip: mroOverdueCount && mroOverdueCount > 0 ? `${mroOverdueCount} просроченных регламентов ТО` : undefined,
+        },
+        { label: 'Технологические карты', path: '/mro/checklists', icon: <ChecklistIcon sx={{ fontSize: 15 }} /> },
+        { label: 'Журнал выполненных ТО', path: '/mro/history', icon: <FactCheckOutlinedIcon sx={{ fontSize: 15 }} /> },
+      ],
     },
   ];
 
