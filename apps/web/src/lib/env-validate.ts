@@ -60,7 +60,12 @@ function assertEnv(name: string, value: string | undefined, rules: {
  * Safe to call multiple times — validation only runs in production or when explicitly forced.
  */
 export function validateEnv(force = false): void {
-  // Only enforce in production unless forced (e.g., from tests)
+  // Do not fail during static page generation / build step
+  if ((process.env.NEXT_PHASE === 'phase-production-build' || process.env.npm_lifecycle_event === 'build') && !force) {
+    return;
+  }
+
+  // Only enforce in production runtime unless forced (e.g., from tests)
   if (process.env.NODE_ENV !== 'production' && !force) {
     return;
   }
