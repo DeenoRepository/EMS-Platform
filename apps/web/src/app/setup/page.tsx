@@ -9,6 +9,9 @@ import {
   Stepper,
   Step,
   StepLabel,
+  StepConnector,
+  stepConnectorClasses,
+  styled,
   Button,
   TextField,
   Grid,
@@ -25,6 +28,7 @@ import {
   IconButton,
   LinearProgress,
   Radio,
+  Avatar,
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -34,18 +38,73 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import LanIcon from '@mui/icons-material/Lan';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
-import KeyIcon from '@mui/icons-material/Key';
 import SecurityIcon from '@mui/icons-material/Security';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import MemoryIcon from '@mui/icons-material/Memory';
+import TerminalIcon from '@mui/icons-material/Terminal';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import { PageLoading } from '@/components/ui';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import HubIcon from '@mui/icons-material/Hub';
+import { PageLoading, StatusBadge } from '@/components/ui';
+
+// Custom Modern Stepper Connector
+const ModernConnector = styled(StepConnector)(() => ({
+  [`&.${stepConnectorClasses.alternativeLabel}`]: {
+    top: 22,
+  },
+  [`&.${stepConnectorClasses.active}`]: {
+    [`& .${stepConnectorClasses.line}`]: {
+      backgroundImage: 'linear-gradient(95deg, #0284c7 0%, #38bdf8 100%)',
+    },
+  },
+  [`&.${stepConnectorClasses.completed}`]: {
+    [`& .${stepConnectorClasses.line}`]: {
+      backgroundImage: 'linear-gradient(95deg, #10b981 0%, #34d399 100%)',
+    },
+  },
+  [`& .${stepConnectorClasses.line}`]: {
+    height: 3,
+    border: 0,
+    backgroundColor: '#e2e8f0',
+    borderRadius: 1,
+  },
+}));
+
+// Custom Step Icon
+function ModernStepIcon(props: { active?: boolean; completed?: boolean; icon: React.ReactNode }) {
+  const { active, completed, icon } = props;
+
+  return (
+    <Box
+      sx={{
+        width: 44,
+        height: 44,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: '12px',
+        fontWeight: 800,
+        fontSize: '0.95rem',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        bgcolor: completed ? '#10b981' : active ? '#0284c7' : '#f1f5f9',
+        color: completed || active ? '#ffffff' : '#64748b',
+        boxShadow: active
+          ? '0 0 0 4px rgba(2, 132, 199, 0.2), 0 8px 16px -4px rgba(2, 132, 199, 0.4)'
+          : completed
+          ? '0 4px 12px -2px rgba(16, 185, 129, 0.3)'
+          : 'none',
+      }}
+    >
+      {completed ? <CheckCircleIcon sx={{ fontSize: 22 }} /> : icon}
+    </Box>
+  );
+}
 
 const STEPS = [
   'Системные зависимости',
@@ -88,8 +147,9 @@ export default function SetupWizardPage() {
   const [dbName, setDbName] = useState('ems_db');
   const [dbUser, setDbUser] = useState('postgres');
   const [dbPassword, setDbPassword] = useState('postgrespassword');
-  const [dbTestResult, setDbTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [dbTestResult, setDbTestResult] = useState<{ success: boolean; message: string; latencyMs?: number } | null>(null);
   const [isTestingDb, setIsTestingDb] = useState(false);
+  const [showDbPass, setShowDbPass] = useState(false);
 
   // Step 3: Admin & LDAP Config
   const [authMode, setAuthMode] = useState<'local' | 'ldap'>('local');
@@ -110,12 +170,12 @@ export default function SetupWizardPage() {
   const [ldapAuthVerified, setLdapAuthVerified] = useState(false);
   const [isTestingLdap, setIsTestingLdap] = useState(false);
 
-  // Step 4: Storage & Jira Config
+  // Step 4: Storage & SRM Integration Config
   const [storageDir, setStorageDir] = useState('./uploads');
-  const [jiraHost, setJiraHost] = useState('');
-  const [jiraEmail, setJiraEmail] = useState('');
-  const [jiraToken, setJiraToken] = useState('');
-  const [jiraProjectKey, setJiraProjectKey] = useState('EMS');
+  const [srmProvider, setSrmProvider] = useState<'DISABLED' | 'JIRA' | 'REDMINE' | 'GITLAB' | 'GENERIC_REST'>('DISABLED');
+  const [srmUrl, setSrmUrl] = useState('');
+  const [srmProjectKey, setSrmProjectKey] = useState('EMS');
+  const [srmApiKey, setSrmApiKey] = useState('');
 
   // Step 5: Execution State
   const [isExecuting, setIsExecuting] = useState(false);
@@ -160,6 +220,7 @@ export default function SetupWizardPage() {
   const handleTestDatabase = async () => {
     setIsTestingDb(true);
     setDbTestResult(null);
+    const startTime = Date.now();
     try {
       const res = await fetch('/api/setup/test-db', {
         method: 'POST',
@@ -173,13 +234,14 @@ export default function SetupWizardPage() {
         }),
       });
       const json = await res.json();
+      const latencyMs = Date.now() - startTime;
       if (res.ok && json.success) {
-        setDbTestResult({ success: true, message: json.message });
+        setDbTestResult({ success: true, message: json.message, latencyMs });
       } else {
         setDbTestResult({ success: false, message: json.error || 'Ошибка подключения к БД' });
       }
     } catch (err) {
-      setDbTestResult({ success: false, message: 'Ошибка сети при проверке подключения' });
+      setDbTestResult({ success: false, message: 'Ошибка сети при проверке подключения к СУБД' });
     } finally {
       setIsTestingDb(false);
     }
@@ -216,11 +278,11 @@ export default function SetupWizardPage() {
           }
         }
       } else {
-        setLdapTestResult({ success: false, message: json.error || 'Ошибка аутентификации в LDAP' });
+        setLdapTestResult({ success: false, message: json.error || 'Ошибка аутентификации в каталоге LDAP' });
         setLdapAuthVerified(false);
       }
     } catch (err) {
-      setLdapTestResult({ success: false, message: 'Ошибка сети при проверке LDAP' });
+      setLdapTestResult({ success: false, message: 'Ошибка сети при проверке службы LDAP' });
       setLdapAuthVerified(false);
     } finally {
       setIsTestingLdap(false);
@@ -290,10 +352,10 @@ export default function SetupWizardPage() {
           dir: storageDir,
         },
         jiraConfig: {
-          host: jiraHost,
-          email: jiraEmail,
-          apiToken: jiraToken,
-          projectKey: jiraProjectKey,
+          host: srmUrl,
+          email: '',
+          apiToken: srmApiKey,
+          projectKey: srmProjectKey,
         },
       };
 
@@ -308,7 +370,7 @@ export default function SetupWizardPage() {
         setExecSuccess(true);
         setTimeout(() => {
           router.push('/login');
-        }, 2000);
+        }, 1500);
       } else {
         setExecError(json.error || 'Ошибка установки');
       }
@@ -319,10 +381,27 @@ export default function SetupWizardPage() {
     }
   };
 
+  const getDependencyCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'runtime':
+        return <TerminalIcon sx={{ fontSize: 20, color: '#0284c7' }} />;
+      case 'database':
+        return <StorageIcon sx={{ fontSize: 20, color: '#0284c7' }} />;
+      case 'storage':
+        return <FolderOpenIcon sx={{ fontSize: 20, color: '#0284c7' }} />;
+      case 'security':
+        return <SecurityIcon sx={{ fontSize: 20, color: '#0284c7' }} />;
+      case 'system':
+        return <MemoryIcon sx={{ fontSize: 20, color: '#0284c7' }} />;
+      default:
+        return <CheckCircleOutlineIcon sx={{ fontSize: 20, color: '#0284c7' }} />;
+    }
+  };
+
   if (isCheckingStatus) {
     return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0f172a' }}>
-        <PageLoading text="Проверка статуса инициализации системы..." />
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0b1120' }}>
+        <PageLoading text="Проверка статуса инициализации платформы..." />
       </Box>
     );
   }
@@ -336,26 +415,27 @@ export default function SetupWizardPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          bgcolor: '#0f172a',
+          background: 'radial-gradient(1000px circle at 50% 10%, rgba(14, 165, 233, 0.12), transparent 40%), linear-gradient(180deg, #0b1120 0%, #0f172a 100%)',
           p: 3,
         }}
       >
-        <Card sx={{ maxWidth: 540, width: '100%', borderRadius: 3, p: 2, textAlign: 'center' }}>
-          <CardContent>
-            <CheckCircleIcon sx={{ fontSize: 64, color: 'success.main', mb: 2 }} />
-            <Typography variant="h5" fontWeight={800} gutterBottom>
-              Система EMS уже настроена
+        <Card sx={{ maxWidth: 520, width: '100%', borderRadius: 4, p: 2, textAlign: 'center', boxShadow: '0 24px 64px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08)' }}>
+          <CardContent sx={{ p: 4 }}>
+            <Avatar sx={{ width: 72, height: 72, bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', mx: 'auto', mb: 2.5 }}>
+              <CheckCircleIcon sx={{ fontSize: 44 }} />
+            </Avatar>
+            <Typography variant="h5" fontWeight={800} gutterBottom sx={{ letterSpacing: -0.3 }}>
+              Платформа EMS уже настроена
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Первоначальная конфигурация успешно выполнена и мастер установки заблокирован в целях безопасности.
-              Для изменения параметров используйте раздел «Администрирование ➔ Настройки».
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3.5, lineHeight: 1.6 }}>
+              Первоначальная конфигурация базы данных и администратора успешно выполнена. В целях безопасности мастер настройки заблокирован.
             </Typography>
             <Button
               variant="contained"
               size="large"
               onClick={() => router.push('/login')}
               endIcon={<ArrowForwardIcon />}
-              sx={{ px: 4, py: 1.2, fontWeight: 700 }}
+              sx={{ px: 4, py: 1.3, fontWeight: 700, borderRadius: '10px', textTransform: 'none', fontSize: '0.95rem' }}
             >
               Перейти к авторизации
             </Button>
@@ -369,9 +449,8 @@ export default function SetupWizardPage() {
     <Box
       sx={{
         minHeight: '100vh',
-        bgcolor: '#0f172a',
-        backgroundImage: 'radial-gradient(at 50% 0%, rgba(2, 132, 199, 0.2) 0px, transparent 60%)',
-        py: 6,
+        background: 'radial-gradient(1200px circle at 50% 0%, rgba(14, 165, 233, 0.15), transparent 50%), linear-gradient(180deg, #0b1120 0%, #0f172a 100%)',
+        py: { xs: 4, md: 6 },
         px: { xs: 2, md: 4 },
         display: 'flex',
         flexDirection: 'column',
@@ -379,47 +458,79 @@ export default function SetupWizardPage() {
       }}
     >
       {/* Brand Header */}
-      <Box sx={{ textAlign: 'center', mb: 4 }}>
-        <Box
-          component="img"
-          src="/logo.png"
-          alt="EMS Logo"
-          sx={{ width: 64, height: 64, objectFit: 'contain', mb: 1, filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.3))' }}
-        />
-        <Typography variant="h4" fontWeight={900} color="white" letterSpacing={-0.5}>
-          EMS Platform — Мастер настройки
+      <Box sx={{ textAlign: 'center', mb: 4, maxWidth: 640 }}>
+        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+          <Box
+            component="img"
+            src="/logo.png"
+            alt="EMS Logo"
+            sx={{ width: 48, height: 48, objectFit: 'contain', filter: 'drop-shadow(0 4px 16px rgba(14, 165, 233, 0.4))' }}
+          />
+          <Typography variant="h4" fontWeight={900} color="white" letterSpacing={-0.5} sx={{ display: 'inline-block' }}>
+            EMS Platform
+          </Typography>
+        </Box>
+        <Typography variant="subtitle1" fontWeight={700} sx={{ color: 'sky.300', mb: 0.5 }}>
+          Мастер первоначальной настройки и развертывания
         </Typography>
-        <Typography variant="body2" sx={{ color: 'slate.400', mt: 0.5 }}>
-          Пошаговая конфигурация базы данных, безопасности и интеграций производственной платформы
+        <Typography variant="body2" sx={{ color: '#94a3b8', fontSize: '0.875rem' }}>
+          Пошаговая конфигурация базы данных PostgreSQL, системы безопасности и производственных модулей
         </Typography>
       </Box>
 
-      {/* Main Wizard Card */}
-      <Card sx={{ maxWidth: 840, width: '100%', borderRadius: 3, boxShadow: '0 20px 40px rgba(0,0,0,0.4)', overflow: 'hidden' }}>
+      {/* Main Wizard Container */}
+      <Card
+        sx={{
+          maxWidth: 900,
+          width: '100%',
+          borderRadius: 4,
+          boxShadow: '0 24px 64px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+          overflow: 'hidden',
+          bgcolor: '#ffffff',
+        }}
+      >
         {/* Stepper Header */}
-        <Box sx={{ bgcolor: 'grey.50', p: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
-          <Stepper activeStep={activeStep} alternativeLabel>
-            {STEPS.map((label) => (
+        <Box sx={{ bgcolor: '#f8fafc', px: 4, py: 3.5, borderBottom: '1px solid #e2e8f0' }}>
+          <Stepper activeStep={activeStep} alternativeLabel connector={<ModernConnector />}>
+            {STEPS.map((label, index) => (
               <Step key={label}>
-                <StepLabel>{label}</StepLabel>
+                <StepLabel
+                  StepIconComponent={(props) => (
+                    <ModernStepIcon active={props.active} completed={props.completed} icon={index + 1} />
+                  )}
+                >
+                  <Typography
+                    variant="caption"
+                    fontWeight={activeStep === index ? 800 : 600}
+                    color={activeStep === index ? 'primary.main' : 'text.secondary'}
+                    sx={{ fontSize: '0.8rem', mt: 0.5, display: 'block', lineHeight: 1.25 }}
+                  >
+                    {label}
+                  </Typography>
+                </StepLabel>
               </Step>
             ))}
           </Stepper>
         </Box>
 
-        <CardContent sx={{ p: 4 }}>
-          {/* STEP 1: System Checks & Dependencies */}
+        <CardContent sx={{ p: { xs: 3, md: 4.5 } }}>
+          {/* =========================================================================
+              STEP 1: System Checks & Dependencies
+             ========================================================================= */}
           {activeStep === 0 && (
             <Stack spacing={3}>
+              {/* Header Title */}
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <RocketLaunchIcon color="primary" sx={{ fontSize: 28 }} />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Avatar sx={{ bgcolor: 'rgba(2, 132, 199, 0.1)', color: 'primary.main', width: 44, height: 44 }}>
+                    <RocketLaunchIcon sx={{ fontSize: 24 }} />
+                  </Avatar>
                   <Box>
-                    <Typography variant="h6" fontWeight={700}>
-                      Шаг 1: Проверка системных зависимостей и требований
+                    <Typography variant="h6" fontWeight={800} color="text.primary">
+                      Шаг 1: Диагностика системных зависимостей
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Автоматическая проверка готовности окружения перед установкой платформы
+                    <Typography variant="body2" color="text.secondary">
+                      Автоматическая проверка готовности программного окружения перед запуском
                     </Typography>
                   </Box>
                 </Box>
@@ -427,49 +538,74 @@ export default function SetupWizardPage() {
                 <Button
                   variant="outlined"
                   size="small"
-                  startIcon={isRefreshingDeps ? <CircularProgress size={16} color="inherit" /> : <RefreshIcon />}
+                  startIcon={isRefreshingDeps ? <CircularProgress size={14} color="inherit" /> : <RefreshIcon sx={{ fontSize: 18 }} />}
                   disabled={isRefreshingDeps || isCheckingStatus}
                   onClick={handleRefreshDependencies}
-                  sx={{ textTransform: 'none', fontWeight: 600, borderRadius: '8px' }}
+                  sx={{
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    borderRadius: '8px',
+                    px: 2,
+                    py: 0.8,
+                    borderColor: '#cbd5e1',
+                    color: 'text.primary',
+                    '&:hover': { borderColor: 'primary.main', bgcolor: 'rgba(2, 132, 199, 0.04)' },
+                  }}
                 >
-                  {isRefreshingDeps ? 'Проверка...' : 'Повторить проверку'}
+                  {isRefreshingDeps ? 'Диагностика...' : 'Повторить проверку'}
                 </Button>
               </Box>
 
-              {/* Blocking vs Ready Banner */}
+              {/* Status Alert Banner */}
               {dependencies && !dependencies.allCriticalPassed && (
                 <Alert
                   severity="error"
-                  icon={<ErrorOutlineIcon fontSize="inherit" />}
-                  sx={{ borderRadius: 2 }}
+                  icon={<ErrorOutlineIcon sx={{ fontSize: 24 }} />}
+                  sx={{
+                    borderRadius: 3,
+                    border: '1px solid #fecaca',
+                    bgcolor: '#fef2f2',
+                    '& .MuiAlert-message': { width: '100%' },
+                  }}
                 >
-                  <AlertTitle sx={{ fontWeight: 700 }}>
-                    Установка заблокирована: обнаружены неисправные или отсутствующие зависимости ({dependencies.failedCount})
+                  <AlertTitle sx={{ fontWeight: 800, fontSize: '0.95rem', mb: 0.5 }}>
+                    Установка заблокирована: обнаружены неисправные зависимости ({dependencies.failedCount})
                   </AlertTitle>
-                  Дальнейшая установка остановлена. Исправьте выявленные первопричины (отмечены красным) и нажмите кнопку <b>«Повторить проверку»</b> для разблокировки мастера.
+                  <Typography variant="body2" sx={{ color: '#991b1b', lineHeight: 1.5 }}>
+                    Дальнейшая установка остановлена для предотвращения сбоев в работе БД и хранилища. Устраните выявленные причины (отмечены красным) и нажмите кнопку <b>«Повторить проверку»</b>.
+                  </Typography>
                 </Alert>
               )}
 
               {dependencies && dependencies.allCriticalPassed && (
                 <Alert
                   severity="success"
-                  icon={<CheckCircleOutlineIcon fontSize="inherit" />}
-                  sx={{ borderRadius: 2 }}
+                  icon={<CheckCircleOutlineIcon sx={{ fontSize: 24 }} />}
+                  sx={{
+                    borderRadius: 3,
+                    border: '1px solid #bbf7d0',
+                    bgcolor: '#f0fdf4',
+                    '& .MuiAlert-message': { width: '100%' },
+                  }}
                 >
-                  <AlertTitle sx={{ fontWeight: 700 }}>Все системные зависимости успешно проверены</AlertTitle>
-                  Среда Node.js, служба PostgreSQL, файловое хранилище и модуль криптографии исправны и готовы к работе. Нажмите <b>«Далее»</b> для настройки БД.
+                  <AlertTitle sx={{ fontWeight: 800, fontSize: '0.95rem', mb: 0.5 }}>
+                    Все системные зависимости успешно проверены
+                  </AlertTitle>
+                  <Typography variant="body2" sx={{ color: '#166534', lineHeight: 1.5 }}>
+                    Среда Node.js, сокет PostgreSQL, каталог файлов и криптографическая подсистема исправны. Нажмите <b>«Далее»</b> для перехода к настройке базы данных.
+                  </Typography>
                 </Alert>
               )}
 
-              {/* Dependency Checks Grid */}
+              {/* Dependencies Grid */}
               <Grid container spacing={2}>
                 {dependencies?.checks.map((check) => {
                   const isPass = check.status === 'PASS';
                   const isWarn = check.status === 'WARN';
                   const isFail = check.status === 'FAIL';
 
-                  const borderColor = isFail ? '#ef4444' : isWarn ? '#f59e0b' : '#10b981';
-                  const bgColor = isFail ? 'rgba(239, 68, 68, 0.04)' : isWarn ? 'rgba(245, 158, 11, 0.04)' : 'rgba(16, 185, 129, 0.03)';
+                  const badgeStatus = isPass ? 'APPROVED' : isWarn ? 'PENDING' : 'REJECTED';
+                  const badgeLabel = isPass ? 'Готов к работе' : isWarn ? 'Предупреждение' : 'Требует исправления';
 
                   return (
                     <Grid item xs={12} key={check.id}>
@@ -477,62 +613,100 @@ export default function SetupWizardPage() {
                         variant="outlined"
                         sx={{
                           p: 2.5,
-                          borderRadius: 2,
-                          borderLeft: `4px solid ${borderColor}`,
-                          backgroundColor: bgColor,
+                          borderRadius: 3,
+                          borderColor: isFail ? '#fca5a5' : isWarn ? '#fde68a' : '#e2e8f0',
+                          backgroundColor: isFail ? '#fff8f8' : isWarn ? '#fffdf7' : '#ffffff',
+                          transition: 'all 0.2s ease-in-out',
+                          '&:hover': {
+                            boxShadow: '0 4px 16px -2px rgba(0, 0, 0, 0.06)',
+                            borderColor: isFail ? '#f87171' : isWarn ? '#f59e0b' : '#cbd5e1',
+                          },
                         }}
                       >
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, mb: 1 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            {isPass && <CheckCircleIcon color="success" fontSize="small" />}
-                            {isWarn && <WarningAmberIcon color="warning" fontSize="small" />}
-                            {isFail && <ErrorOutlineIcon color="error" fontSize="small" />}
-                            <Typography variant="subtitle1" fontWeight={700}>
-                              {check.name}
-                            </Typography>
-                            {check.isCritical && (
-                              <Chip label="Критическая зависимость" size="small" variant="outlined" color="primary" sx={{ height: 20, fontSize: '0.65rem' }} />
-                            )}
+                        {/* Card Header */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5, mb: 1.5 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Avatar
+                              sx={{
+                                width: 36,
+                                height: 36,
+                                bgcolor: isFail ? 'rgba(239, 68, 68, 0.1)' : isWarn ? 'rgba(245, 158, 11, 0.1)' : 'rgba(2, 132, 199, 0.08)',
+                                borderRadius: '10px',
+                              }}
+                            >
+                              {getDependencyCategoryIcon(check.category)}
+                            </Avatar>
+                            <Box>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Typography variant="subtitle1" fontWeight={800} color="text.primary">
+                                  {check.name}
+                                </Typography>
+                                {check.isCritical && (
+                                  <Chip
+                                    label="Обязательно"
+                                    size="small"
+                                    sx={{
+                                      height: 20,
+                                      fontSize: '0.65rem',
+                                      fontWeight: 700,
+                                      bgcolor: 'rgba(2, 132, 199, 0.08)',
+                                      color: 'primary.main',
+                                      borderRadius: '6px',
+                                    }}
+                                  />
+                                )}
+                              </Box>
+                              {check.message && (
+                                <Typography variant="caption" color={isFail ? 'error.main' : 'text.secondary'}>
+                                  {check.message}
+                                </Typography>
+                              )}
+                            </Box>
                           </Box>
-                          <Chip
-                            label={isPass ? 'ИСПРАВНО' : isWarn ? 'ПРЕДУПРЕЖДЕНИЕ' : 'ОШИБКА / НЕДОСТУПНО'}
-                            size="small"
-                            color={isPass ? 'success' : isWarn ? 'warning' : 'error'}
-                            sx={{ fontWeight: 700, fontSize: '0.7rem' }}
+
+                          <StatusBadge
+                            status={badgeStatus}
+                            label={badgeLabel}
+                            variant="subtle"
+                            size="medium"
                           />
                         </Box>
 
-                        <Grid container spacing={1} sx={{ mt: 0.5 }}>
+                        {/* Card Values Grid */}
+                        <Grid container spacing={1.5} sx={{ mt: 0.5, bgcolor: '#f8fafc', p: 1.5, borderRadius: 2, border: '1px solid #f1f5f9' }}>
                           <Grid item xs={12} sm={6}>
-                            <Typography variant="caption" color="text.secondary" display="block">
-                              Текущее состояние:
+                            <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, display: 'block', mb: 0.25 }}>
+                              Текущее значение в системе:
                             </Typography>
-                            <Typography variant="body2" fontWeight={600} fontFamily={check.id === 'node_runtime' ? 'monospace' : 'inherit'}>
+                            <Typography
+                              variant="body2"
+                              fontWeight={700}
+                              sx={{
+                                color: isFail ? 'error.dark' : 'text.primary',
+                                fontFamily: check.id === 'node_runtime' || check.id === 'postgres_service' ? 'monospace' : 'inherit',
+                                fontSize: '0.875rem',
+                              }}
+                            >
                               {check.currentValue}
                             </Typography>
                           </Grid>
                           <Grid item xs={12} sm={6}>
-                            <Typography variant="caption" color="text.secondary" display="block">
+                            <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, display: 'block', mb: 0.25 }}>
                               Требование платформы:
                             </Typography>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" sx={{ color: '#475569', fontSize: '0.875rem' }}>
                               {check.requiredValue}
                             </Typography>
                           </Grid>
                         </Grid>
 
-                        {check.message && (
-                          <Typography variant="caption" color={isFail ? 'error.main' : 'text.secondary'} sx={{ display: 'block', mt: 1 }}>
-                            {check.message}
-                          </Typography>
-                        )}
-
+                        {/* Troubleshooting Guide */}
                         {isFail && check.troubleshooting && (
-                          <Box sx={{ mt: 1.5, p: 1.5, bgcolor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 1.5 }}>
-                            <Typography variant="caption" fontWeight={700} color="error.dark" display="block">
-                              Решение и устранение первопричины:
+                          <Box sx={{ mt: 1.5, p: 1.5, bgcolor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 2 }}>
+                            <Typography variant="caption" fontWeight={800} color="error.dark" display="block" sx={{ mb: 0.25 }}>
+                              Инструкция по устранению первопричины:
                             </Typography>
-                            <Typography variant="caption" color="error.dark">
+                            <Typography variant="caption" color="error.dark" sx={{ lineHeight: 1.4 }}>
                               {check.troubleshooting}
                             </Typography>
                           </Box>
@@ -545,30 +719,44 @@ export default function SetupWizardPage() {
             </Stack>
           )}
 
-          {/* STEP 2: Database Config */}
+          {/* =========================================================================
+              STEP 2: Database Configuration
+             ========================================================================= */}
           {activeStep === 1 && (
             <Stack spacing={3}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <StorageIcon color="primary" sx={{ fontSize: 28 }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Avatar sx={{ bgcolor: 'rgba(2, 132, 199, 0.1)', color: 'primary.main', width: 44, height: 44 }}>
+                  <StorageIcon sx={{ fontSize: 24 }} />
+                </Avatar>
                 <Box>
-                  <Typography variant="h6" fontWeight={700}>
-                    Шаг 2: Параметры базы данных PostgreSQL
+                  <Typography variant="h6" fontWeight={800} color="text.primary">
+                    Шаг 2: Параметры подключения к PostgreSQL
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Укажите реквизиты доступа к СУБД PostgreSQL
+                  <Typography variant="body2" color="text.secondary">
+                    Укажите реквизиты доступа к промышленной СУБД PostgreSQL
                   </Typography>
                 </Box>
               </Box>
 
-              <Grid container spacing={2}>
+              <Grid container spacing={2.5}>
                 <Grid item xs={12} sm={8}>
                   <TextField
                     fullWidth
                     required
                     label="Хост сервера PostgreSQL"
                     value={dbHost}
-                    onChange={(e) => setDbHost(e.target.value)}
-                    placeholder="127.0.0.1 или db.company.local"
+                    onChange={(e) => {
+                      setDbHost(e.target.value);
+                      setDbTestResult(null);
+                    }}
+                    placeholder="postgres или 127.0.0.1"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <StorageIcon sx={{ color: '#94a3b8', fontSize: 20 }} />
+                        </InputAdornment>
+                      ),
+                    }}
                   />
                 </Grid>
                 <Grid item xs={12} sm={4}>
@@ -577,18 +765,25 @@ export default function SetupWizardPage() {
                     required
                     label="Порт"
                     value={dbPort}
-                    onChange={(e) => setDbPort(e.target.value)}
+                    onChange={(e) => {
+                      setDbPort(e.target.value);
+                      setDbTestResult(null);
+                    }}
                     placeholder="5432"
                   />
                 </Grid>
-                <Grid item xs={12} sm={12}>
+                <Grid item xs={12}>
                   <TextField
                     fullWidth
                     required
-                    label="Имя базы данных"
+                    label="Имя рабочей базы данных"
                     value={dbName}
-                    onChange={(e) => setDbName(e.target.value)}
+                    onChange={(e) => {
+                      setDbName(e.target.value);
+                      setDbTestResult(null);
+                    }}
                     placeholder="ems_db"
+                    helperText="Если база данных отсутствует, установщик автоматически создаст её"
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -597,18 +792,34 @@ export default function SetupWizardPage() {
                     required
                     label="Пользователь БД"
                     value={dbUser}
-                    onChange={(e) => setDbUser(e.target.value)}
+                    onChange={(e) => {
+                      setDbUser(e.target.value);
+                      setDbTestResult(null);
+                    }}
                     placeholder="postgres"
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
-                    type="password"
+                    required
+                    type={showDbPass ? 'text' : 'password'}
                     label="Пароль пользователя БД"
                     value={dbPassword}
-                    onChange={(e) => setDbPassword(e.target.value)}
+                    onChange={(e) => {
+                      setDbPassword(e.target.value);
+                      setDbTestResult(null);
+                    }}
                     placeholder="••••••••"
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton onClick={() => setShowDbPass(!showDbPass)} edge="end" size="small">
+                            {showDbPass ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
                   />
                 </Grid>
               </Grid>
@@ -617,18 +828,34 @@ export default function SetupWizardPage() {
                 <Alert
                   severity={dbTestResult.success ? 'success' : 'error'}
                   icon={dbTestResult.success ? <CheckCircleIcon /> : <ErrorOutlineIcon />}
-                  sx={{ borderRadius: 2 }}
+                  sx={{ borderRadius: 3 }}
                 >
+                  <AlertTitle sx={{ fontWeight: 700 }}>
+                    {dbTestResult.success ? 'Связь с базой данных установлена' : 'Ошибка соединения с БД'}
+                  </AlertTitle>
                   {dbTestResult.message}
+                  {dbTestResult.latencyMs && (
+                    <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
+                      Время отклика сокета: {dbTestResult.latencyMs} мс
+                    </Typography>
+                  )}
                 </Alert>
               )}
 
               <Box>
                 <Button
                   variant="outlined"
+                  size="medium"
                   startIcon={isTestingDb ? <CircularProgress size={18} /> : <PlayArrowIcon />}
                   onClick={handleTestDatabase}
-                  disabled={isTestingDb}
+                  disabled={isTestingDb || !dbHost.trim() || !dbUser.trim() || !dbName.trim()}
+                  sx={{
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    borderRadius: '8px',
+                    px: 3,
+                    py: 1.1,
+                  }}
                 >
                   {isTestingDb ? 'Проверка соединения...' : 'Проверить подключение к PostgreSQL'}
                 </Button>
@@ -636,25 +863,29 @@ export default function SetupWizardPage() {
             </Stack>
           )}
 
-          {/* STEP 3: Admin & LDAP Config */}
+          {/* =========================================================================
+              STEP 3: Admin & LDAP Authentication
+             ========================================================================= */}
           {activeStep === 2 && (
             <Stack spacing={3}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <AdminPanelSettingsIcon color="primary" sx={{ fontSize: 28 }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Avatar sx={{ bgcolor: 'rgba(2, 132, 199, 0.1)', color: 'primary.main', width: 44, height: 44 }}>
+                  <AdminPanelSettingsIcon sx={{ fontSize: 24 }} />
+                </Avatar>
                 <Box>
-                  <Typography variant="h6" fontWeight={700}>
-                    Шаг 3: Авторизация и учетная запись Супер-Администратора
+                  <Typography variant="h6" fontWeight={800} color="text.primary">
+                    Шаг 3: Авторизация и учетная запись Главного Администратора
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Выберите режим аутентификации в системе и настройте главного администратора
+                  <Typography variant="body2" color="text.secondary">
+                    Выберите режим управления пользователями и настройте супер-администратора
                   </Typography>
                 </Box>
               </Box>
 
-              {/* Mode Selection */}
+              {/* Mode Selection Cards */}
               <Box>
-                <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5 }}>
-                  Режим аутентификации:
+                <Typography variant="subtitle2" fontWeight={800} sx={{ mb: 1.5, color: '#334155' }}>
+                  Режим аутентификации главного администратора:
                 </Typography>
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
@@ -665,24 +896,24 @@ export default function SetupWizardPage() {
                       }}
                       variant="outlined"
                       sx={{
-                        p: 2,
+                        p: 2.5,
                         cursor: 'pointer',
-                        borderRadius: 2,
+                        borderRadius: 3,
                         border: '2px solid',
-                        borderColor: authMode === 'local' ? 'primary.main' : 'divider',
-                        bgcolor: authMode === 'local' ? 'rgba(2, 132, 199, 0.04)' : 'background.paper',
-                        transition: 'all 0.2s',
+                        borderColor: authMode === 'local' ? 'primary.main' : '#e2e8f0',
+                        bgcolor: authMode === 'local' ? 'rgba(2, 132, 199, 0.04)' : '#ffffff',
+                        transition: 'all 0.2s ease-in-out',
                         '&:hover': { borderColor: 'primary.light' },
                       }}
                     >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.75 }}>
                         <Radio checked={authMode === 'local'} size="small" />
-                        <Typography variant="subtitle2" fontWeight={700}>
+                        <Typography variant="subtitle2" fontWeight={800} color="text.primary">
                           Локальная база данных
                         </Typography>
                       </Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ pl: 3.5, display: 'block' }}>
-                        Создание локального администратора с хранением хеша пароля в PostgreSQL
+                      <Typography variant="body2" color="text.secondary" sx={{ pl: 4, fontSize: '0.8rem', lineHeight: 1.4 }}>
+                        Создание независимого администратора с хранением криптостойкого хеша пароля в PostgreSQL
                       </Typography>
                     </Paper>
                   </Grid>
@@ -692,34 +923,34 @@ export default function SetupWizardPage() {
                       onClick={() => setAuthMode('ldap')}
                       variant="outlined"
                       sx={{
-                        p: 2,
+                        p: 2.5,
                         cursor: 'pointer',
-                        borderRadius: 2,
+                        borderRadius: 3,
                         border: '2px solid',
-                        borderColor: authMode === 'ldap' ? 'primary.main' : 'divider',
-                        bgcolor: authMode === 'ldap' ? 'rgba(2, 132, 199, 0.04)' : 'background.paper',
-                        transition: 'all 0.2s',
+                        borderColor: authMode === 'ldap' ? 'primary.main' : '#e2e8f0',
+                        bgcolor: authMode === 'ldap' ? 'rgba(2, 132, 199, 0.04)' : '#ffffff',
+                        transition: 'all 0.2s ease-in-out',
                         '&:hover': { borderColor: 'primary.light' },
                       }}
                     >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.75 }}>
                         <Radio checked={authMode === 'ldap'} size="small" />
-                        <Typography variant="subtitle2" fontWeight={700}>
-                          LDAP / Active Directory (User Binding)
+                        <Typography variant="subtitle2" fontWeight={800} color="text.primary">
+                          Active Directory / LDAP
                         </Typography>
                       </Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ pl: 3.5, display: 'block' }}>
-                        Аутентификация через привязку к каталогу. Пароль НЕ сохраняется в базе данных
+                      <Typography variant="body2" color="text.secondary" sx={{ pl: 4, fontSize: '0.8rem', lineHeight: 1.4 }}>
+                        Прямая привязка (User Binding). Пароль НЕ сохраняется в базе данных платформы
                       </Typography>
                     </Paper>
                   </Grid>
                 </Grid>
               </Box>
 
-              {/* Mode 1: Local DB */}
+              {/* Mode 1: Local DB Form */}
               {authMode === 'local' && (
                 <Stack spacing={2.5}>
-                  <Grid container spacing={2}>
+                  <Grid container spacing={2.5}>
                     <Grid item xs={12} sm={6}>
                       <TextField
                         fullWidth
@@ -728,6 +959,13 @@ export default function SetupWizardPage() {
                         value={adminLogin}
                         onChange={(e) => setAdminLogin(e.target.value)}
                         placeholder="admin"
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <LockOutlinedIcon sx={{ color: '#94a3b8', fontSize: 18 }} />
+                            </InputAdornment>
+                          ),
+                        }}
                       />
                     </Grid>
                     <Grid item xs={12} sm={6}>
@@ -760,7 +998,7 @@ export default function SetupWizardPage() {
                         InputProps={{
                           endAdornment: (
                             <InputAdornment position="end">
-                              <IconButton onClick={() => setShowAdminPass(!showAdminPass)} edge="end">
+                              <IconButton onClick={() => setShowAdminPass(!showAdminPass)} edge="end" size="small">
                                 {showAdminPass ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
                               </IconButton>
                             </InputAdornment>
@@ -788,24 +1026,24 @@ export default function SetupWizardPage() {
 
                   <Divider sx={{ my: 1 }} />
 
-                  {/* Optional secondary LDAP toggle for regular users */}
+                  {/* Secondary LDAP toggle */}
                   <Box>
                     <FormControlLabel
                       control={<Switch checked={ldapEnabled} onChange={(e) => setLdapEnabled(e.target.checked)} color="primary" />}
                       label={
                         <Box>
                           <Typography variant="subtitle2" fontWeight={700}>
-                            Включить дополнительную интеграцию с Active Directory / LDAP
+                            Включить доменную авторизацию LDAP для остальных сотрудников
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            Для авторизации остальных сотрудников предприятия через корпоративный домен
+                            Позволяет инженерам и МОЛ входить под своими доменными учетными записями Windows
                           </Typography>
                         </Box>
                       }
                     />
 
                     {ldapEnabled && (
-                      <Stack spacing={2} sx={{ mt: 2, p: 2.5, bgcolor: 'grey.50', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                      <Stack spacing={2} sx={{ mt: 2, p: 2.5, bgcolor: '#f8fafc', borderRadius: 3, border: '1px solid #e2e8f0' }}>
                         <TextField
                           fullWidth
                           label="LDAP URL"
@@ -858,6 +1096,7 @@ export default function SetupWizardPage() {
                             startIcon={isTestingLdap ? <CircularProgress size={16} /> : <LanIcon />}
                             onClick={handleTestLdap}
                             disabled={isTestingLdap}
+                            sx={{ textTransform: 'none', fontWeight: 700, borderRadius: '8px' }}
                           >
                             {isTestingLdap ? 'Проверка связи...' : 'Проверить связь с LDAP/AD'}
                           </Button>
@@ -868,17 +1107,13 @@ export default function SetupWizardPage() {
                 </Stack>
               )}
 
-              {/* Mode 2: LDAP User Binding */}
+              {/* Mode 2: LDAP User Binding Form */}
               {authMode === 'ldap' && (
                 <Stack spacing={2.5}>
-                  <Alert severity="info" sx={{ borderRadius: 2 }}>
-                    <AlertTitle sx={{ fontWeight: 700 }}>Режим сквозной авторизации LDAP Binding</AlertTitle>
-                    В этом режиме пароль администратора <strong>НЕ сохраняется в базе данных</strong> платформы. Аутентификация производится напрямую через запрос привязки (User Bind) к каталогу Active Directory / LDAP. Для продолжения установки необходимо подтвердить учетные данные.
+                  <Alert severity="info" sx={{ borderRadius: 3 }}>
+                    <AlertTitle sx={{ fontWeight: 800 }}>Режим сквозной авторизации LDAP Binding</AlertTitle>
+                    В этом режиме пароль администратора <strong>НЕ сохраняется в базе данных</strong>. Для продолжения установки подтвердите доменные учетные данные.
                   </Alert>
-
-                  <Typography variant="subtitle2" fontWeight={700}>
-                    1. Параметры подключения к серверу каталога LDAP:
-                  </Typography>
 
                   <TextField
                     fullWidth
@@ -890,7 +1125,7 @@ export default function SetupWizardPage() {
                       setLdapUrl(e.target.value);
                       setLdapAuthVerified(false);
                     }}
-                    helperText="Адрес службы каталога (порт 389 для LDAP, 636 для LDAPS)"
+                    helperText="Адрес службы каталога (389 для LDAP, 636 для защищенного LDAPS)"
                   />
 
                   <Grid container spacing={2}>
@@ -910,7 +1145,7 @@ export default function SetupWizardPage() {
                     <Grid item xs={12} sm={6}>
                       <TextField
                         fullWidth
-                        label="Фильтр поиска пользователей"
+                        label="Фильтр поиска"
                         placeholder="(|(sAMAccountName={{username}})(uid={{username}}))"
                         value={ldapSearchFilter}
                         onChange={(e) => {
@@ -921,38 +1156,10 @@ export default function SetupWizardPage() {
                     </Grid>
                   </Grid>
 
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        fullWidth
-                        label="Bind DN (Служебный аккаунт, опционально)"
-                        placeholder="CN=EMS_Service,OU=Services,DC=company,DC=local"
-                        value={ldapBindDn}
-                        onChange={(e) => {
-                          setLdapBindDn(e.target.value);
-                          setLdapAuthVerified(false);
-                        }}
-                        helperText="Оставьте пустым для прямого User Binding"
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        fullWidth
-                        type="password"
-                        label="Bind Password (пароль служебного аккаунта)"
-                        value={ldapBindPassword}
-                        onChange={(e) => {
-                          setLdapBindPassword(e.target.value);
-                          setLdapAuthVerified(false);
-                        }}
-                      />
-                    </Grid>
-                  </Grid>
-
                   <Divider sx={{ my: 1 }} />
 
-                  <Typography variant="subtitle2" fontWeight={700}>
-                    2. Учетные данные супер-администратора в домене / каталоге:
+                  <Typography variant="subtitle2" fontWeight={800}>
+                    Учетные данные супер-администратора в домене / каталоге:
                   </Typography>
 
                   <Grid container spacing={2}>
@@ -960,14 +1167,13 @@ export default function SetupWizardPage() {
                       <TextField
                         fullWidth
                         required
-                        label="Логин администратора в LDAP"
+                        label="Логин в LDAP"
                         value={adminLogin}
                         onChange={(e) => {
                           setAdminLogin(e.target.value);
                           setLdapAuthVerified(false);
                         }}
                         placeholder="admin"
-                        helperText="Имя пользователя (sAMAccountName / uid)"
                       />
                     </Grid>
                     <Grid item xs={12} sm={6}>
@@ -975,41 +1181,21 @@ export default function SetupWizardPage() {
                         fullWidth
                         required
                         type={showAdminPass ? 'text' : 'password'}
-                        label="Пароль администратора в LDAP"
+                        label="Пароль в LDAP"
                         value={adminPassword}
                         onChange={(e) => {
                           setAdminPassword(e.target.value);
                           setLdapAuthVerified(false);
                         }}
-                        helperText="Для тестовой проверки связывания (НЕ сохранится в БД)"
                         InputProps={{
                           endAdornment: (
                             <InputAdornment position="end">
-                              <IconButton onClick={() => setShowAdminPass(!showAdminPass)} edge="end">
+                              <IconButton onClick={() => setShowAdminPass(!showAdminPass)} edge="end" size="small">
                                 {showAdminPass ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
                               </IconButton>
                             </InputAdornment>
                           ),
                         }}
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        fullWidth
-                        label="ФИО / Отображаемое имя"
-                        value={adminDisplayName}
-                        onChange={(e) => setAdminDisplayName(e.target.value)}
-                        placeholder="Главный Администратор"
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        fullWidth
-                        label="Email администратора"
-                        type="email"
-                        value={adminEmail}
-                        onChange={(e) => setAdminEmail(e.target.value)}
-                        placeholder="admin@company.local"
                       />
                     </Grid>
                   </Grid>
@@ -1020,23 +1206,20 @@ export default function SetupWizardPage() {
                       icon={ldapTestResult.success ? <CheckCircleIcon /> : <ErrorOutlineIcon />}
                       sx={{ borderRadius: 2 }}
                     >
-                      <AlertTitle sx={{ fontWeight: 700 }}>
-                        {ldapTestResult.success ? 'Аутентификация LDAP подтверждена' : 'Ошибка аутентификации в LDAP'}
-                      </AlertTitle>
                       {ldapTestResult.message}
                     </Alert>
                   )}
 
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box>
                     <Button
                       variant="contained"
                       color={ldapAuthVerified ? 'success' : 'primary'}
                       startIcon={isTestingLdap ? <CircularProgress size={18} color="inherit" /> : (ldapAuthVerified ? <CheckCircleIcon /> : <LanIcon />)}
                       onClick={handleTestLdapAuth}
                       disabled={isTestingLdap || !adminLogin.trim() || !adminPassword || !ldapUrl.trim()}
-                      sx={{ py: 1.2, px: 3, fontWeight: 700 }}
+                      sx={{ py: 1.2, px: 3, fontWeight: 700, borderRadius: '8px', textTransform: 'none' }}
                     >
-                      {isTestingLdap ? 'Проверка соединения и bind...' : (ldapAuthVerified ? 'Учетные данные в LDAP подтверждены' : 'Проверить соединение и пароль в LDAP')}
+                      {isTestingLdap ? 'Проверка связывания...' : (ldapAuthVerified ? 'Учетные данные в LDAP подтверждены' : 'Проверить соединение и пароль в LDAP')}
                     </Button>
                   </Box>
                 </Stack>
@@ -1044,136 +1227,176 @@ export default function SetupWizardPage() {
             </Stack>
           )}
 
-          {/* STEP 4: Storage & Jira Config */}
+          {/* =========================================================================
+              STEP 4: Storage & SRM Integrations
+             ========================================================================= */}
           {activeStep === 3 && (
             <Stack spacing={3}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <FolderOpenIcon color="primary" sx={{ fontSize: 28 }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Avatar sx={{ bgcolor: 'rgba(2, 132, 199, 0.1)', color: 'primary.main', width: 44, height: 44 }}>
+                  <FolderOpenIcon sx={{ fontSize: 24 }} />
+                </Avatar>
                 <Box>
-                  <Typography variant="h6" fontWeight={700}>
-                    Шаг 4: Хранилище файлов и интеграция с Jira (SRM)
+                  <Typography variant="h6" fontWeight={800} color="text.primary">
+                    Шаг 4: Хранилище файлов и внешние интеграции
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Настройка директории для паспортов, чертежей и связи с заявками Jira
+                  <Typography variant="body2" color="text.secondary">
+                    Настройка директории для паспортов, чертежей и связи с заявками ServiceDesk
                   </Typography>
                 </Box>
               </Box>
 
               <TextField
                 fullWidth
-                label="Директория хранения файлов и документов"
+                label="Директория хранения файлов, паспортов и чертежей"
                 value={storageDir}
                 onChange={(e) => setStorageDir(e.target.value)}
-                helperText="Локальный путь для сохранения сканов, PDF и фото оборудования"
+                helperText="Локальный каталог сервера или путь внутри Docker-тома (/app/uploads)"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <FolderOpenIcon sx={{ color: '#94a3b8', fontSize: 20 }} />
+                    </InputAdornment>
+                  ),
+                }}
               />
 
               <Divider />
 
               <Box>
-                <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5 }}>
-                  Интеграция с Atlassian Jira (Модуль SRM) — опционально
-                </Typography>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="Jira Host URL"
-                      placeholder="https://company.atlassian.net"
-                      value={jiraHost}
-                      onChange={(e) => setJiraHost(e.target.value)}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="Jira Project Key"
-                      placeholder="EMS"
-                      value={jiraProjectKey}
-                      onChange={(e) => setJiraProjectKey(e.target.value)}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="Email учетной записи Jira"
-                      placeholder="service@company.com"
-                      value={jiraEmail}
-                      onChange={(e) => setJiraEmail(e.target.value)}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      type="password"
-                      label="Jira API Token"
-                      placeholder="••••••••••••"
-                      value={jiraToken}
-                      onChange={(e) => setJiraToken(e.target.value)}
-                    />
-                  </Grid>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+                  <HubIcon sx={{ color: 'primary.main', fontSize: 22 }} />
+                  <Typography variant="subtitle1" fontWeight={800}>
+                    Интеграция с внешней системой ServiceDesk (SRM) — опционально
+                  </Typography>
+                </Box>
+
+                <Grid container spacing={2} sx={{ mb: 2 }}>
+                  {[
+                    { id: 'DISABLED', label: 'Отключено', desc: 'Автономная работа' },
+                    { id: 'JIRA', label: 'Atlassian Jira', desc: 'Jira Cloud / Server' },
+                    { id: 'REDMINE', label: 'Redmine', desc: 'REST API' },
+                    { id: 'GITLAB', label: 'GitLab Issues', desc: 'GitLab API' },
+                    { id: 'GENERIC_REST', label: 'Custom REST API', desc: 'Универсальный вебхук' },
+                  ].map((prov) => (
+                    <Grid item xs={12} sm={4} key={prov.id}>
+                      <Paper
+                        onClick={() => setSrmProvider(prov.id as any)}
+                        variant="outlined"
+                        sx={{
+                          p: 1.5,
+                          cursor: 'pointer',
+                          borderRadius: 2.5,
+                          border: '2px solid',
+                          borderColor: srmProvider === prov.id ? 'primary.main' : '#e2e8f0',
+                          bgcolor: srmProvider === prov.id ? 'rgba(2, 132, 199, 0.04)' : '#ffffff',
+                          transition: 'all 0.15s ease-in-out',
+                          '&:hover': { borderColor: 'primary.light' },
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Radio checked={srmProvider === prov.id} size="small" />
+                          <Typography variant="subtitle2" fontWeight={700}>
+                            {prov.label}
+                          </Typography>
+                        </Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ pl: 3.5, display: 'block' }}>
+                          {prov.desc}
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                  ))}
                 </Grid>
+
+                {srmProvider !== 'DISABLED' && (
+                  <Grid container spacing={2} sx={{ p: 2.5, bgcolor: '#f8fafc', borderRadius: 3, border: '1px solid #e2e8f0' }}>
+                    <Grid item xs={12} sm={8}>
+                      <TextField
+                        fullWidth
+                        label="URL внешней системы"
+                        placeholder="https://jira.company.com или https://redmine.local"
+                        value={srmUrl}
+                        onChange={(e) => setSrmUrl(e.target.value)}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        fullWidth
+                        label="Ключ проекта"
+                        placeholder="EMS"
+                        value={srmProjectKey}
+                        onChange={(e) => setSrmProjectKey(e.target.value)}
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        type="password"
+                        label="API Token / Ключ доступа"
+                        placeholder="••••••••••••"
+                        value={srmApiKey}
+                        onChange={(e) => setSrmApiKey(e.target.value)}
+                      />
+                    </Grid>
+                  </Grid>
+                )}
               </Box>
             </Stack>
           )}
 
-          {/* STEP 5: Execution */}
+          {/* =========================================================================
+              STEP 5: Final Review & Execution
+             ========================================================================= */}
           {activeStep === 4 && (
             <Stack spacing={3}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <RocketLaunchIcon color="primary" sx={{ fontSize: 28 }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Avatar sx={{ bgcolor: 'rgba(2, 132, 199, 0.1)', color: 'primary.main', width: 44, height: 44 }}>
+                  <RocketLaunchIcon sx={{ fontSize: 24 }} />
+                </Avatar>
                 <Box>
-                  <Typography variant="h6" fontWeight={700}>
-                    Шаг 5: Проверка параметров и запуск
+                  <Typography variant="h6" fontWeight={800} color="text.primary">
+                    Шаг 5: Проверка параметров и инициализация
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Финальное подтверждение конфигурации перед инициализацией
+                  <Typography variant="body2" color="text.secondary">
+                    Финальное подтверждение параметров перед созданием базы данных и запуском платформы
                   </Typography>
                 </Box>
               </Box>
 
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
-                <Grid container spacing={2}>
+              <Paper variant="outlined" sx={{ p: 3, borderRadius: 3, bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <Grid container spacing={2.5}>
                   <Grid item xs={12} sm={6}>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, display: 'block' }}>
                       База данных PostgreSQL
                     </Typography>
-                    <Typography variant="body2" fontWeight={700}>
-                      {dbHost}:{dbPort}/{dbName} ({dbUser})
+                    <Typography variant="body2" fontWeight={800} sx={{ mt: 0.25 }}>
+                      {dbHost}:{dbPort}/{dbName} (пользователь: {dbUser})
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
+                    <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, display: 'block' }}>
+                      Главный Администратор
+                    </Typography>
+                    <Typography variant="body2" fontWeight={800} sx={{ mt: 0.25 }}>
+                      {adminLogin} ({adminDisplayName})
+                    </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      Режим авторизации & Администратор
-                    </Typography>
-                    <Typography variant="body2" fontWeight={700}>
-                      {authMode === 'ldap' ? 'LDAP User Binding (без пароля в БД)' : 'Локальная база данных'}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      Логин: {adminLogin} ({adminDisplayName})
+                      {authMode === 'ldap' ? 'Доменная учетная запись LDAP Binding' : 'Локальная учетная запись'}
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, display: 'block' }}>
                       Служба каталогов LDAP
                     </Typography>
-                    <Typography variant="body2" fontWeight={700}>
-                      {authMode === 'ldap' || ldapEnabled ? `Включен (${ldapUrl})` : 'Выключен (локальные пароли)'}
+                    <Typography variant="body2" fontWeight={800} sx={{ mt: 0.25 }}>
+                      {authMode === 'ldap' || ldapEnabled ? `Включена (${ldapUrl})` : 'Отключена (локальная БД)'}
                     </Typography>
-                    {authMode === 'ldap' && (
-                      <Chip
-                        size="small"
-                        color="success"
-                        icon={<CheckCircleIcon />}
-                        label="Пароль в LDAP проверен"
-                        sx={{ mt: 0.5, fontWeight: 600, height: 24 }}
-                      />
-                    )}
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, display: 'block' }}>
                       Хранилище файлов
                     </Typography>
-                    <Typography variant="body2" fontWeight={700}>
+                    <Typography variant="body2" fontWeight={800} sx={{ mt: 0.25 }}>
                       {storageDir}
                     </Typography>
                   </Grid>
@@ -1181,36 +1404,48 @@ export default function SetupWizardPage() {
               </Paper>
 
               {isExecuting && (
-                <Box sx={{ width: '100%' }}>
-                  <Typography variant="body2" color="primary" fontWeight={600} sx={{ mb: 1 }}>
-                    Применение конфигурации, создание таблиц и супер-администратора...
+                <Box sx={{ width: '100%', p: 2, bgcolor: 'rgba(2, 132, 199, 0.04)', borderRadius: 3, border: '1px solid rgba(2, 132, 199, 0.2)' }}>
+                  <Typography variant="body2" color="primary.main" fontWeight={700} sx={{ mb: 1 }}>
+                    Применение схемы данных, создание таблиц и учетной записи администратора...
                   </Typography>
-                  <LinearProgress sx={{ borderRadius: 1, height: 8 }} />
+                  <LinearProgress sx={{ borderRadius: 1.5, height: 8 }} />
                 </Box>
               )}
 
               {execError && (
-                <Alert severity="error" sx={{ borderRadius: 2 }}>
-                  <AlertTitle sx={{ fontWeight: 700 }}>Ошибка установки</AlertTitle>
+                <Alert severity="error" sx={{ borderRadius: 3 }}>
+                  <AlertTitle sx={{ fontWeight: 800 }}>Ошибка при установке</AlertTitle>
                   {execError}
                 </Alert>
               )}
 
               {execSuccess && (
-                <Alert severity="success" sx={{ borderRadius: 2 }}>
-                  <AlertTitle sx={{ fontWeight: 700 }}>Установка успешно завершена!</AlertTitle>
-                  Конфигурация сохранена. Перенаправление на страницу входа...
+                <Alert severity="success" sx={{ borderRadius: 3 }}>
+                  <AlertTitle sx={{ fontWeight: 800 }}>Установка успешно завершена!</AlertTitle>
+                  Конфигурация сохранена. Перенаправление на страницу авторизации...
                 </Alert>
               )}
             </Stack>
           )}
 
-          {/* Navigation Controls */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+          {/* =========================================================================
+              Wizard Navigation Footer
+             ========================================================================= */}
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              mt: 5,
+              pt: 3,
+              borderTop: '1px solid #e2e8f0',
+            }}
+          >
             <Button
               disabled={activeStep === 0 || isExecuting || execSuccess}
               onClick={() => setActiveStep((prev) => prev - 1)}
               startIcon={<ArrowBackIcon />}
+              sx={{ textTransform: 'none', fontWeight: 700, px: 3, py: 1, borderRadius: '8px', color: 'text.secondary' }}
             >
               Назад
             </Button>
@@ -1229,6 +1464,14 @@ export default function SetupWizardPage() {
                       : (!adminLogin.trim() || !adminPassword || !ldapAuthVerified)
                   ))
                 }
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  px: 3.5,
+                  py: 1.1,
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)',
+                }}
               >
                 Далее
               </Button>
@@ -1240,9 +1483,17 @@ export default function SetupWizardPage() {
                 startIcon={<RocketLaunchIcon />}
                 onClick={handleExecuteSetup}
                 disabled={isExecuting || execSuccess}
-                sx={{ px: 3, fontWeight: 700 }}
+                sx={{
+                  px: 4,
+                  py: 1.2,
+                  fontWeight: 800,
+                  borderRadius: '8px',
+                  textTransform: 'none',
+                  fontSize: '0.95rem',
+                  boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
+                }}
               >
-                {isExecuting ? 'Установка...' : 'Завершить установку и запустить'}
+                {isExecuting ? 'Инициализация...' : 'Завершить установку и запустить'}
               </Button>
             )}
           </Box>
