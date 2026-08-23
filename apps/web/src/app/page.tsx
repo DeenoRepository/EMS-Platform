@@ -12,6 +12,8 @@ import {
   Stack,
   Paper,
   Divider,
+  ToggleButtonGroup,
+  ToggleButton,
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import PageHeader from '@/components/layout/PageHeader';
@@ -27,6 +29,8 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import MoveToInboxIcon from '@mui/icons-material/MoveToInbox';
 import SpeedIcon from '@mui/icons-material/Speed';
+import BusinessIcon from '@mui/icons-material/Business';
+import PersonIcon from '@mui/icons-material/Person';
 import {
   StatCard,
   StatusBadge,
@@ -42,6 +46,14 @@ import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS, formatDate } from '@ems/shared';
 
 interface DashboardStats {
+  scope?: 'ENTERPRISE' | 'PERSONAL';
+  canToggleScope?: boolean;
+  user?: {
+    userId: string;
+    displayName: string;
+    ldapLogin: string;
+    roles: string[];
+  };
   eps: {
     total: number;
     active: number;
@@ -50,6 +62,7 @@ interface DashboardStats {
     decommissioned: number;
   };
   wms: {
+    accessible?: boolean;
     warehousesCount: number;
     nomenclatureCount: number;
     lowStockCount: number;
@@ -94,21 +107,26 @@ interface DashboardStats {
   };
   approvals: {
     pending: number;
+    toReview?: number;
+    myPending?: number;
   };
 }
 
 const DEFAULT_STATS: DashboardStats = {
+  scope: 'ENTERPRISE',
+  canToggleScope: false,
   eps: { total: 0, active: 0, underRepair: 0, inStorage: 0, decommissioned: 0 },
-  wms: { warehousesCount: 0, nomenclatureCount: 0, lowStockCount: 0, activeInventoriesCount: 0, lowStockItems: [] },
+  wms: { accessible: true, warehousesCount: 0, nomenclatureCount: 0, lowStockCount: 0, activeInventoriesCount: 0, lowStockItems: [] },
   srm: { openIssues: 0, inProgressIssues: 0, resolvedIssues: 0, totalIssues: 0, recentIssues: [] },
   mro: { overdueCount: 0, plannedCount: 0, completedCount: 0, totalCount: 0, nextSchedules: [] },
-  approvals: { pending: 0 },
+  approvals: { pending: 0, toReview: 0, myPending: 0 },
 };
 
 function ExecutiveDashboardContent() {
   const router = useRouter();
-  const { hasPermission } = useAuth();
+  const { user: authUser, hasPermission } = useAuth();
 
+  const [selectedScope, setSelectedScope] = useState<'enterprise' | 'personal'>('enterprise');
   const [stats, setStats] = useState<DashboardStats>(DEFAULT_STATS);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -118,119 +136,19 @@ function ExecutiveDashboardContent() {
   const [isSrmDialogOpen, setIsSrmDialogOpen] = useState(false);
   const [isWmsWizardOpen, setIsWmsWizardOpen] = useState(false);
 
-  const fetchDashboardData = useCallback(async () => {
+  const fetchDashboardData = useCallback(async (scopeOverride?: string) => {
     try {
-      const [eqRes, wmsRes, srmStatsRes, srmIssuesRes, mroRes, appRes] = await Promise.allSettled([
-        fetch('/api/eps/equipment?pageSize=1'),
-        fetch('/api/wms/stats'),
-        fetch('/api/srm/stats'),
-        fetch('/api/srm/issues?pageSize=4'),
-        fetch('/api/mro/schedules'),
-        fetch('/api/eps/approvals?pageSize=1'),
-      ]);
-
-      const newStats: DashboardStats = {
-        eps: { total: 0, active: 0, underRepair: 0, inStorage: 0, decommissioned: 0 },
-        wms: { warehousesCount: 0, nomenclatureCount: 0, lowStockCount: 0, activeInventoriesCount: 0, lowStockItems: [] },
-        srm: { openIssues: 0, inProgressIssues: 0, resolvedIssues: 0, totalIssues: 0, recentIssues: [] },
-        mro: { overdueCount: 0, plannedCount: 0, completedCount: 0, totalCount: 0, nextSchedules: [] },
-        approvals: { pending: 0 },
-      };
-
-      if (eqRes.status === 'fulfilled' && eqRes.value.ok) {
-        const json = await eqRes.value.json();
+      const scopeToQuery = scopeOverride || selectedScope;
+      const res = await fetch(`/api/dashboard/stats?scope=${scopeToQuery}`);
+      if (res.ok) {
+        const json = await res.json();
         if (json.success && json.data) {
-          const sc = json.data.statusCounts || {};
-          newStats.eps = {
-            total: json.data.total || (sc.active || 0) + (sc.underRepair || 0) + (sc.inStorage || 0) + (sc.decommissioned || 0),
-            active: sc.active || 0,
-            underRepair: sc.underRepair || 0,
-            inStorage: sc.inStorage || 0,
-            decommissioned: sc.decommissioned || 0,
-          };
+          setStats(json.data);
+          if (json.data.scope) {
+            setSelectedScope(json.data.scope.toLowerCase() as any);
+          }
         }
       }
-
-      if (wmsRes.status === 'fulfilled' && wmsRes.value.ok) {
-        const json = await wmsRes.value.json();
-        if (json.success && json.data) {
-          newStats.wms = {
-            warehousesCount: json.data.warehousesCount || 0,
-            nomenclatureCount: json.data.nomenclatureCount || 0,
-            lowStockCount: json.data.lowStockCount || 0,
-            activeInventoriesCount: json.data.activeInventoriesCount || 0,
-            lowStockItems: (json.data.lowStockItems || []).slice(0, 4),
-          };
-        }
-      }
-
-      if (srmStatsRes.status === 'fulfilled' && srmStatsRes.value.ok) {
-        const json = await srmStatsRes.value.json();
-        if (json.success && json.data) {
-          newStats.srm.openIssues = json.data.openIssues || 0;
-          newStats.srm.inProgressIssues = json.data.inProgressIssues || 0;
-          newStats.srm.resolvedIssues = json.data.resolvedIssues || 0;
-          newStats.srm.totalIssues = json.data.totalIssues || 0;
-        }
-      }
-
-      if (srmIssuesRes.status === 'fulfilled' && srmIssuesRes.value.ok) {
-        const json = await srmIssuesRes.value.json();
-        if (json.success && json.data) {
-          const rawItems = json.data.items || json.data || [];
-          newStats.srm.recentIssues = rawItems.map((item: any) => ({
-            id: item.id,
-            key: item.issueKey || item.id,
-            title: item.summary || item.title || 'Без названия',
-            status: item.status || 'OPEN',
-            priority: item.priority || 'MEDIUM',
-            createdAt: item.createdDate || item.createdAt || new Date().toISOString(),
-            equipment: item.equipment ? { name: item.equipment.name, inventoryNumber: item.equipment.inventoryNumber || null } : null,
-          })).slice(0, 4);
-        }
-      }
-
-      if (mroRes.status === 'fulfilled' && mroRes.value.ok) {
-        const json = await mroRes.value.json();
-        if (json.success && Array.isArray(json.data)) {
-          const now = new Date();
-          const overdue = json.data.filter(
-            (s: any) => s.status === 'MISSED' || (s.status === 'PLANNED' && new Date(s.scheduledDate) < now)
-          ).length;
-          const planned = json.data.filter(
-            (s: any) => s.status === 'PLANNED' && new Date(s.scheduledDate) >= now
-          ).length;
-          const completed = json.data.filter((s: any) => s.status === 'COMPLETED').length;
-
-          newStats.mro = {
-            overdueCount: overdue,
-            plannedCount: planned,
-            completedCount: completed,
-            totalCount: json.data.length,
-            nextSchedules: json.data
-              .filter((s: any) => s.status === 'PLANNED')
-              .sort((a: any, b: any) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime())
-              .slice(0, 4)
-              .map((s: any) => ({
-                id: s.id,
-                equipmentName: s.equipment?.name || 'Оборудование',
-                title: s.plan?.name || 'Регламент ТО',
-                scheduledDate: s.scheduledDate,
-                periodicity: s.plan?.periodicity || 'MONTHLY',
-                status: s.status,
-              })),
-          };
-        }
-      }
-
-      if (appRes.status === 'fulfilled' && appRes.value.ok) {
-        const json = await appRes.value.json();
-        if (json.success && json.data?.stats) {
-          newStats.approvals.pending = json.data.stats.pending || json.data.stats.toReview || 0;
-        }
-      }
-
-      setStats(newStats);
     } catch {
       // keep default
     } finally {
@@ -238,7 +156,7 @@ function ExecutiveDashboardContent() {
       setRefreshing(false);
       setHasLoadedOnce(true);
     }
-  }, []);
+  }, [selectedScope]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -249,9 +167,19 @@ function ExecutiveDashboardContent() {
     fetchDashboardData();
   };
 
+  const handleScopeChange = (_: any, newScope: 'enterprise' | 'personal' | null) => {
+    if (newScope && newScope !== selectedScope) {
+      setSelectedScope(newScope);
+      setRefreshing(true);
+      fetchDashboardData(newScope);
+    }
+  };
+
   if (loading && !hasLoadedOnce) {
     return <PageLoading text="Загрузка панели управления EMS-Platform..." />;
   }
+
+  const isPersonalScope = stats.scope === 'PERSONAL';
 
   // Calculate Operational Readiness Score (KTG / Availability)
   const totalEquip = stats?.eps.total || 0;
@@ -265,18 +193,22 @@ function ExecutiveDashboardContent() {
       id: 'eps-repair',
       severity: 'CRITICAL',
       title: `${stats.eps.underRepair} ед. оборудования в неисправном состоянии (в ремонте)`,
-      description: 'Требуется контроль проведения ремонтных работ и восстановления работоспособности.',
+      description: isPersonalScope
+        ? 'В вашей зоне ответственности оборудование требует завершения ремонтных работ.'
+        : 'Требуется контроль проведения ремонтных работ и восстановления работоспособности.',
       count: stats.eps.underRepair,
       actionLabel: 'К ремонту',
       onAction: () => router.push('/eps?status=UNDER_REPAIR'),
     });
   }
-  if (stats?.wms.lowStockCount && stats.wms.lowStockCount > 0) {
+  if (stats?.wms.accessible !== false && stats?.wms.lowStockCount && stats.wms.lowStockCount > 0) {
     criticalAlerts.push({
       id: 'wms-deficit',
       severity: 'CRITICAL',
       title: `${stats.wms.lowStockCount} позиций ТМЦ ниже неснижаемого остатка (дефицит)`,
-      description: 'Критический дефицит расходных материалов и ЗИП на складах предприятия.',
+      description: isPersonalScope
+        ? 'Критический дефицит расходных материалов и ЗИП на ваших ответственных складах.'
+        : 'Критический дефицит расходных материалов и ЗИП на складах предприятия.',
       count: stats.wms.lowStockCount,
       actionLabel: 'К остаткам',
       onAction: () => router.push('/wms/stock'),
@@ -287,17 +219,22 @@ function ExecutiveDashboardContent() {
       id: 'mro-overdue',
       severity: 'WARNING',
       title: `${stats.mro.overdueCount} просроченных регламентов ТОиР`,
-      description: 'Превышен плановый срок выполнения планово-предупредительных ремонтов.',
+      description: isPersonalScope
+        ? 'Превышен плановый срок выполнения ТО по оборудованию в вашей зоне ответственности.'
+        : 'Превышен плановый срок выполнения планово-предупредительных ремонтов.',
       count: stats.mro.overdueCount,
       actionLabel: 'К графику ППР',
       onAction: () => router.push('/mro'),
     });
   }
   if (stats?.approvals.pending && stats.approvals.pending > 0) {
+    const toReview = stats.approvals.toReview || 0;
     criticalAlerts.push({
       id: 'eps-approvals',
       severity: 'WARNING',
-      title: `${stats.approvals.pending} заявок ожидает утверждения`,
+      title: toReview > 0
+        ? `${toReview} заявок требует вашего утверждения`
+        : `${stats.approvals.pending} заявок ожидает утверждения`,
       description: 'Заявки на ввод, изменение статуса или списание оборудования в очереди согласования.',
       count: stats.approvals.pending,
       actionLabel: 'Согласовать',
@@ -306,28 +243,71 @@ function ExecutiveDashboardContent() {
   }
 
   const hasCriticalRepairs = (stats?.eps.underRepair || 0) > 0;
-  const hasDeficit = (stats?.wms.lowStockCount || 0) > 0;
+  const hasDeficit = stats.wms.accessible !== false && (stats?.wms.lowStockCount || 0) > 0;
   const hasOverdueMro = (stats?.mro.overdueCount || 0) > 0;
   const hasPendingApprovals = (stats?.approvals.pending || 0) > 0;
   const hasOpenIncidents = (stats?.srm.openIssues || 0) > 0;
 
+  const currentDisplayName = stats.user?.displayName || authUser?.displayName || 'Сотрудник';
+
   return (
     <Box sx={{ width: '100%', pb: 4 }}>
-      {/* 1. Header */}
+      {/* 1. Header with Role & Scope Controls */}
       <PageHeader
         title="Панель управления"
-        subtitle="Единый центр мониторинга парка оборудования, складских запасов, регламентов ТО и инцидентов"
+        subtitle={
+          isPersonalScope
+            ? `Персональная зона ответственности сотрудника: ${currentDisplayName}`
+            : 'Сводный обзор показателей оборудования, складских запасов и регламентов ТО предприятия'
+        }
         breadcrumbs={[{ label: 'Главная', href: '/' }, { label: 'Панель управления' }]}
         actions={
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={handleRefresh}
-            startIcon={<RefreshIcon className={refreshing ? 'animate-spin' : ''} sx={{ fontSize: 16 }} />}
-            sx={{ fontWeight: 600, borderRadius: '8px', minHeight: 36 }}
-          >
-            Обновить данные
-          </Button>
+          <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+            {stats.canToggleScope && (
+              <ToggleButtonGroup
+                value={selectedScope}
+                exclusive
+                onChange={handleScopeChange}
+                size="small"
+                sx={{
+                  bgcolor: '#ffffff',
+                  height: 36,
+                  '& .MuiToggleButton-root': {
+                    px: 1.75,
+                    fontSize: '0.8125rem',
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    borderRadius: '8px',
+                    borderColor: '#cbd5e1',
+                    '&.Mui-selected': {
+                      bgcolor: 'primary.main',
+                      color: '#ffffff',
+                      '&:hover': { bgcolor: 'primary.dark' },
+                    },
+                  },
+                }}
+              >
+                <ToggleButton value="enterprise">
+                  <BusinessIcon sx={{ fontSize: 16, mr: 0.75 }} />
+                  Все предприятие
+                </ToggleButton>
+                <ToggleButton value="personal">
+                  <PersonIcon sx={{ fontSize: 16, mr: 0.75 }} />
+                  Моя зона
+                </ToggleButton>
+              </ToggleButtonGroup>
+            )}
+
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleRefresh}
+              startIcon={<RefreshIcon className={refreshing ? 'animate-spin' : ''} sx={{ fontSize: 16 }} />}
+              sx={{ fontWeight: 600, borderRadius: '8px', minHeight: 36 }}
+            >
+              Обновить данные
+            </Button>
+          </Stack>
         }
       />
 
@@ -343,7 +323,7 @@ function ExecutiveDashboardContent() {
         {/* EPS */}
         <Grid item xs={12} sm={6} lg={3}>
           <StatCard
-            title="Парк оборудования (EPS)"
+            title={isPersonalScope ? 'Мое оборудование (EPS)' : 'Парк оборудования (EPS)'}
             value={stats?.eps.total || 0}
             subtitle={`${stats?.eps.active || 0} в работе • ${stats?.eps.underRepair || 0} в ремонте`}
             icon={<BadgeOutlinedIcon sx={{ fontSize: 24 }} />}
@@ -353,7 +333,7 @@ function ExecutiveDashboardContent() {
             trend={{
               value: `${availabilityRate}% готовность`,
               direction: availabilityRate >= 85 ? 'up' : 'down',
-              label: 'КТГ парка',
+              label: 'КТГ зоны',
             }}
           />
         </Grid>
@@ -361,9 +341,13 @@ function ExecutiveDashboardContent() {
         {/* WMS */}
         <Grid item xs={12} sm={6} lg={3}>
           <StatCard
-            title="Складской учёт (WMS)"
-            value={stats?.wms.nomenclatureCount || 0}
-            subtitle={`${stats?.wms.warehousesCount || 0} складов • ${stats?.wms.lowStockCount || 0} дефицит ТМЦ`}
+            title={isPersonalScope ? 'Ответственные склады (WMS)' : 'Складской учёт (WMS)'}
+            value={stats?.wms.accessible !== false ? stats?.wms.nomenclatureCount || 0 : '—'}
+            subtitle={
+              stats?.wms.accessible !== false
+                ? `${stats?.wms.warehousesCount || 0} складов • ${stats?.wms.lowStockCount || 0} дефицит ТМЦ`
+                : 'Нет закрепленных складов'
+            }
             icon={<WarehouseOutlinedIcon sx={{ fontSize: 24 }} />}
             iconColor="#0f766e"
             iconBgColor="rgba(15, 118, 110, 0.08)"
@@ -375,7 +359,7 @@ function ExecutiveDashboardContent() {
         {/* SRM */}
         <Grid item xs={12} sm={6} lg={3}>
           <StatCard
-            title="Сервисные заявки (SRM)"
+            title={isPersonalScope ? 'Мои сервисные заявки (SRM)' : 'Сервисные заявки (SRM)'}
             value={stats?.srm.totalIssues || 0}
             subtitle={`${stats?.srm.openIssues || 0} открыто • ${stats?.srm.inProgressIssues || 0} в работе`}
             icon={<BugReportOutlinedIcon sx={{ fontSize: 24 }} />}
@@ -389,7 +373,7 @@ function ExecutiveDashboardContent() {
         {/* MRO */}
         <Grid item xs={12} sm={6} lg={3}>
           <StatCard
-            title="График ППР и ТО (MRO)"
+            title={isPersonalScope ? 'Мой график ТОиР (MRO)' : 'График ППР и ТО (MRO)'}
             value={stats?.mro.plannedCount || 0}
             subtitle={`${stats?.mro.overdueCount || 0} просрочено • ${stats?.mro.completedCount || 0} выполнено`}
             icon={<BuildOutlinedIcon sx={{ fontSize: 24 }} />}
@@ -437,194 +421,195 @@ function ExecutiveDashboardContent() {
               Быстрые действия
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              Оперативное создание документов, заявок и перемещений без лишних переходов
+              Оперативное создание документов, заявок и перемещений в вашей зоне
             </Typography>
           </Box>
         </Box>
 
-        <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ gap: 1 }}>
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<BugReportOutlinedIcon sx={{ fontSize: 16 }} />}
-            onClick={() => setIsSrmDialogOpen(true)}
-            sx={{ borderRadius: '8px', fontWeight: 600, fontSize: '0.75rem', borderColor: '#e2e8f0' }}
-          >
-            Подать заявку в ServiceDesk
-          </Button>
+        <Stack direction="row" spacing={1.5} flexWrap="wrap" sx={{ gap: { xs: 1, sm: 0 } }}>
+          {hasPermission(PERMISSIONS.EPS_EQUIPMENT_CREATE) && (
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<AddIcon />}
+              onClick={() => router.push('/eps/new')}
+              sx={{ fontWeight: 600, borderRadius: '8px', textTransform: 'none' }}
+            >
+              Добавить оборудование
+            </Button>
+          )}
 
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<MoveToInboxIcon sx={{ fontSize: 16 }} />}
-            onClick={() => setIsWmsWizardOpen(true)}
-            sx={{ borderRadius: '8px', fontWeight: 600, fontSize: '0.75rem', borderColor: '#e2e8f0' }}
-          >
-            Оформить приход ТМЦ
-          </Button>
+          {hasPermission(PERMISSIONS.SRM_REQUESTS_CREATE) && (
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<BugReportOutlinedIcon />}
+              onClick={() => setIsSrmDialogOpen(true)}
+              sx={{ fontWeight: 600, borderRadius: '8px', textTransform: 'none', color: '#d97706', borderColor: '#fed7aa' }}
+            >
+              Подать заявку
+            </Button>
+          )}
 
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<BuildOutlinedIcon sx={{ fontSize: 16 }} />}
-            onClick={() => router.push('/mro')}
-            sx={{ borderRadius: '8px', fontWeight: 600, fontSize: '0.75rem', borderColor: '#e2e8f0' }}
-          >
-            Запланировать ТО
-          </Button>
+          {hasPermission(PERMISSIONS.WMS_OPERATIONS_CREATE) && (
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<MoveToInboxIcon />}
+              onClick={() => setIsWmsWizardOpen(true)}
+              sx={{ fontWeight: 600, borderRadius: '8px', textTransform: 'none', color: '#0f766e', borderColor: '#99f6e4' }}
+            >
+              Складская операция
+            </Button>
+          )}
 
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<FactCheckOutlinedIcon sx={{ fontSize: 16 }} />}
-            onClick={() => router.push('/eps/approvals')}
-            sx={{ borderRadius: '8px', fontWeight: 600, fontSize: '0.75rem', borderColor: '#e2e8f0' }}
-          >
-            Согласования ({stats?.approvals.pending || 0})
-          </Button>
+          {hasPermission(PERMISSIONS.MRO_EXECUTION_COMPLETE) && (
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<BuildOutlinedIcon />}
+              onClick={() => router.push('/mro')}
+              sx={{ fontWeight: 700, borderRadius: '8px', textTransform: 'none', bgcolor: '#7c3aed', '&:hover': { bgcolor: '#6d28d9' } }}
+            >
+              Провести ТО
+            </Button>
+          )}
         </Stack>
       </Paper>
 
-      {/* 5. Main 2-Column Operational Grid */}
+      {/* 5. Main Operational Split (Left 7 Cols, Right 5 Cols) */}
       <Grid container spacing={3}>
-        {/* Left Column: Urgent ServiceDesk Issues & Maintenance Schedules */}
+        {/* Left Column: Recent SRM Incidents & Upcoming MRO Schedules */}
         <Grid item xs={12} lg={7}>
           <Stack spacing={3}>
-            {/* Service Requests Card */}
+            {/* SRM Recent Issues Feed */}
             <Card sx={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}>
               <CardContent sx={{ p: 2.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <BugReportOutlinedIcon sx={{ color: '#0284c7', fontSize: 20 }} />
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                    <BugReportOutlinedIcon sx={{ color: '#d97706', fontSize: 22 }} />
                     <Typography variant="subtitle1" fontWeight={700} color="#0f172a">
-                      Оперативные сервисные заявки и инциденты
+                      {isPersonalScope ? 'Мои обращения и инциденты (SRM)' : 'Оперативные инциденты и заявки (SRM)'}
                     </Typography>
                   </Box>
                   <Button
                     size="small"
-                    endIcon={<ArrowForwardIcon sx={{ fontSize: 14 }} />}
+                    endIcon={<ArrowForwardIcon />}
                     onClick={() => router.push('/srm')}
-                    sx={{ fontSize: '0.75rem', fontWeight: 600 }}
+                    sx={{ fontWeight: 600, textTransform: 'none' }}
                   >
-                    Все заявки
+                    Все заявки ({stats?.srm.totalIssues || 0})
                   </Button>
                 </Box>
 
-                {stats?.srm.recentIssues && stats.srm.recentIssues.length > 0 ? (
-                  <Stack spacing={1.25}>
-                    {stats.srm.recentIssues.map((issue) => (
+                {stats?.srm.recentIssues.length === 0 ? (
+                  <EmptyState
+                    title="Нет открытых инцидентов"
+                    description={isPersonalScope ? 'В вашей зоне ответственности активных заявок нет.' : 'Все сервисные заявки и инциденты успешно закрыты.'}
+                    minHeight={160}
+                  />
+                ) : (
+                  <Stack spacing={1.5}>
+                    {stats?.srm.recentIssues.map((issue) => (
                       <Paper
                         key={issue.id}
                         variant="outlined"
                         onClick={() => router.push('/srm')}
                         sx={{
-                          p: 1.5,
+                          p: 1.75,
                           borderRadius: '8px',
-                          borderColor: '#f1f5f9',
                           cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
+                          borderColor: '#f1f5f9',
                           transition: 'all 0.15s ease',
-                          '&:hover': {
-                            bgcolor: '#f8fafc',
-                            borderColor: '#cbd5e1',
-                          },
+                          '&:hover': { bgcolor: '#f8fafc', borderColor: '#cbd5e1' },
                         }}
                       >
-                        <Box sx={{ minWidth: 0, flex: 1, mr: 1 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25 }}>
-                            <Typography variant="caption" sx={{ fontFamily: 'monospace', fontWeight: 700, color: '#0284c7' }}>
-                              {issue.key}
-                            </Typography>
-                            <Typography variant="body2" fontWeight={600} noWrap color="#0f172a">
-                              {issue.title}
-                            </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}>
+                          <Box sx={{ minWidth: 0, flex: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                              <Chip
+                                label={issue.key}
+                                size="small"
+                                sx={{ height: 20, fontSize: '0.6875rem', fontWeight: 800, bgcolor: '#f1f5f9', color: '#475569' }}
+                              />
+                              <Typography variant="subtitle2" fontWeight={700} noWrap color="#0f172a">
+                                {issue.title}
+                              </Typography>
+                            </Box>
+                            {issue.equipment && (
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                Оборудование: <strong>{issue.equipment.name}</strong> ({issue.equipment.inventoryNumber || 'Б/Н'})
+                              </Typography>
+                            )}
                           </Box>
-                          <Typography variant="caption" color="text.secondary">
-                            {issue.equipment ? `${issue.equipment.name} (${issue.equipment.inventoryNumber || '—'})` : 'Общесистемная заявка'} • {formatDate(issue.createdAt)}
-                          </Typography>
+                          <Stack direction="row" spacing={1} alignItems="center" flexShrink={0}>
+                            <StatusBadge status={issue.priority} label={issue.priority} size="small" />
+                            <StatusBadge status={issue.status} label={issue.status} size="small" />
+                          </Stack>
                         </Box>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <StatusBadge status={issue.priority} size="small" />
-                          <StatusBadge status={issue.status} size="small" />
-                        </Stack>
                       </Paper>
                     ))}
                   </Stack>
-                ) : (
-                  <EmptyState
-                    icon={<CheckCircleOutlineIcon sx={{ fontSize: 36, color: '#16a34a' }} />}
-                    title="Все заявки урегулированы"
-                    description="Нет открытых инцидентов, требующих немедленного вмешательства."
-                  />
                 )}
               </CardContent>
             </Card>
 
-            {/* MRO Schedules Card */}
+            {/* MRO Upcoming Maintenance Feed */}
             <Card sx={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}>
               <CardContent sx={{ p: 2.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <BuildOutlinedIcon sx={{ color: '#0f766e', fontSize: 20 }} />
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                    <BuildOutlinedIcon sx={{ color: '#7c3aed', fontSize: 22 }} />
                     <Typography variant="subtitle1" fontWeight={700} color="#0f172a">
-                      Ближайшие регламенты ТО и ППР
+                      {isPersonalScope ? 'Мои ближайшие регламенты ТО (MRO)' : 'Ближайшие регламенты ТО и ППР (MRO)'}
                     </Typography>
                   </Box>
                   <Button
                     size="small"
-                    endIcon={<ArrowForwardIcon sx={{ fontSize: 14 }} />}
+                    endIcon={<ArrowForwardIcon />}
                     onClick={() => router.push('/mro')}
-                    sx={{ fontSize: '0.75rem', fontWeight: 600 }}
+                    sx={{ fontWeight: 600, textTransform: 'none' }}
                   >
-                    График ТОиР
+                    График ППР ({stats?.mro.totalCount || 0})
                   </Button>
                 </Box>
 
-                {stats?.mro.nextSchedules && stats.mro.nextSchedules.length > 0 ? (
-                  <Stack spacing={1.25}>
-                    {stats.mro.nextSchedules.map((sch) => (
+                {stats?.mro.nextSchedules.length === 0 ? (
+                  <EmptyState
+                    title="График ТО свободен"
+                    description={isPersonalScope ? 'В вашей зоне ответственности нет запланированных ТО на ближайшее время.' : 'Все регламенты ТОиР выполнены в срок.'}
+                    minHeight={160}
+                  />
+                ) : (
+                  <Stack spacing={1.5}>
+                    {stats?.mro.nextSchedules.map((schedule) => (
                       <Paper
-                        key={sch.id}
+                        key={schedule.id}
                         variant="outlined"
                         onClick={() => router.push('/mro')}
                         sx={{
-                          p: 1.5,
+                          p: 1.75,
                           borderRadius: '8px',
-                          borderColor: '#f1f5f9',
                           cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
+                          borderColor: '#f1f5f9',
                           transition: 'all 0.15s ease',
-                          '&:hover': {
-                            bgcolor: '#f8fafc',
-                            borderColor: '#cbd5e1',
-                          },
+                          '&:hover': { bgcolor: '#f8fafc', borderColor: '#cbd5e1' },
                         }}
                       >
-                        <Box sx={{ minWidth: 0, flex: 1, mr: 1 }}>
-                          <Typography variant="body2" fontWeight={600} noWrap color="#0f172a">
-                            {sch.title}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Оборудование: {sch.equipmentName} • План: {formatDate(sch.scheduledDate)}
-                          </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="subtitle2" fontWeight={700} color="#0f172a" noWrap>
+                              {schedule.title}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {schedule.equipmentName} • Срок: <strong>{formatDate(schedule.scheduledDate)}</strong>
+                            </Typography>
+                          </Box>
+                          <StatusBadge status={schedule.status} label={schedule.status} size="small" />
                         </Box>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <StatusBadge status={sch.periodicity} size="small" variant="outlined" />
-                          <StatusBadge status={sch.status} size="small" />
-                        </Stack>
                       </Paper>
                     ))}
                   </Stack>
-                ) : (
-                  <EmptyState
-                    icon={<CheckCircleOutlineIcon sx={{ fontSize: 36, color: '#16a34a' }} />}
-                    title="График ТО в актуальном состоянии"
-                    description="Нет запланированных регламентов на ближайшие дни."
-                  />
                 )}
               </CardContent>
             </Card>
@@ -637,11 +622,13 @@ function ExecutiveDashboardContent() {
             {/* Equipment Readiness & Health Gauge */}
             <Card sx={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}>
               <CardContent sx={{ p: 2.5, textAlign: 'center' }}>
-                <Typography variant="subtitle1" fontWeight={700} color="#0f172a" sx={{ mb: 1, textAlign: 'left' }}>
-                  Коэффициент технической готовности (КТГ)
+                <Typography variant="subtitle1" fontWeight={700} color="#0f172a" sx={{ mb: 0.5, textAlign: 'left' }}>
+                  {isPersonalScope ? 'КТГ в зоне ответственности' : 'Коэффициент технической готовности (КТГ)'}
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2, textAlign: 'left' }}>
-                  Доля исправного оборудования, готового к бесперебойной эксплуатации
+                  {isPersonalScope
+                    ? 'Доля исправного оборудования в вашей зоне ответственности'
+                    : 'Доля исправного оборудования, готового к бесперебойной эксплуатации'}
                 </Typography>
 
                 <Box sx={{ py: 1 }}>
@@ -675,105 +662,106 @@ function ExecutiveDashboardContent() {
               </CardContent>
             </Card>
 
-            {/* WMS Critical Stock Deficit */}
-            <Card sx={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-              <CardContent sx={{ p: 2.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <WarningAmberIcon sx={{ color: '#dc2626', fontSize: 20 }} />
-                    <Typography variant="subtitle1" fontWeight={700} color="#0f172a">
-                      Критический дефицит ТМЦ (WMS)
-                    </Typography>
+            {/* WMS Critical Stock Deficit (if accessible) */}
+            {stats.wms.accessible !== false && (
+              <Card sx={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <CardContent sx={{ p: 2.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                      <WarehouseOutlinedIcon sx={{ color: '#0f766e', fontSize: 22 }} />
+                      <Typography variant="subtitle1" fontWeight={700} color="#0f172a">
+                        {isPersonalScope ? 'Дефицит ТМЦ (мои склады)' : 'Критический дефицит ТМЦ (WMS)'}
+                      </Typography>
+                    </Box>
+                    <Button
+                      size="small"
+                      endIcon={<ArrowForwardIcon />}
+                      onClick={() => router.push('/wms/stock')}
+                      sx={{ fontWeight: 600, textTransform: 'none' }}
+                    >
+                      Остатки ({stats?.wms.lowStockCount || 0})
+                    </Button>
                   </Box>
-                  <Button
-                    size="small"
-                    endIcon={<ArrowForwardIcon sx={{ fontSize: 14 }} />}
-                    onClick={() => router.push('/wms/stock')}
-                    sx={{ fontSize: '0.75rem', fontWeight: 600 }}
-                  >
-                    Все остатки
-                  </Button>
-                </Box>
 
-                {stats?.wms.lowStockItems && stats.wms.lowStockItems.length > 0 ? (
-                  <Stack spacing={1.25}>
-                    {stats.wms.lowStockItems.map((item) => {
-                      const fillPct = item.minStock > 0 ? Math.min((item.quantity / item.minStock) * 100, 100) : 0;
-                      return (
-                        <Box
+                  {stats?.wms.lowStockItems.length === 0 ? (
+                    <EmptyState
+                      title="Дефицит ТМЦ отсутствует"
+                      description={isPersonalScope ? 'На ваших складах все остатки в пределах нормы.' : 'Все складские позиции превышают уровень неснижаемого запаса.'}
+                      minHeight={140}
+                    />
+                  ) : (
+                    <Stack spacing={1.25}>
+                      {stats?.wms.lowStockItems.map((item) => (
+                        <Paper
                           key={item.id}
+                          variant="outlined"
+                          onClick={() => router.push('/wms/stock')}
                           sx={{
-                            p: 1.25,
+                            p: 1.5,
                             borderRadius: '8px',
-                            border: '1px solid #fecaca',
+                            cursor: 'pointer',
+                            borderColor: '#fee2e2',
                             bgcolor: '#fff5f5',
+                            transition: 'all 0.15s ease',
+                            '&:hover': { bgcolor: '#fee2e2' },
                           }}
                         >
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                            <Typography variant="body2" fontWeight={600} color="#0f172a" noWrap sx={{ maxWidth: 220 }}>
-                              {item.name}
-                            </Typography>
-                            <Chip
-                              label={item.warehouseCode}
-                              size="small"
-                              sx={{ height: 18, fontSize: '0.625rem', fontWeight: 700, bgcolor: '#ffffff' }}
-                            />
-                          </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Box sx={{ flex: 1, height: 4, borderRadius: 2, bgcolor: '#fee2e2', overflow: 'hidden' }}>
-                              <Box sx={{ width: `${fillPct}%`, height: '100%', bgcolor: '#ef4444' }} />
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Box sx={{ minWidth: 0, flex: 1 }}>
+                              <Typography variant="subtitle2" fontWeight={700} color="#991b1b" noWrap>
+                                {item.name}
+                              </Typography>
+                              <Typography variant="caption" color="#b91c1c">
+                                Склад: <strong>{item.warehouseCode}</strong>
+                              </Typography>
                             </Box>
-                            <Typography variant="caption" sx={{ fontFamily: 'monospace', fontWeight: 700, color: '#dc2626' }}>
-                              {item.quantity} / {item.minStock} {item.unit}
-                            </Typography>
+                            <Box sx={{ textAlign: 'right' }}>
+                              <Typography variant="body2" fontWeight={800} color="#dc2626">
+                                {item.quantity} {item.unit}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Мин: {item.minStock} {item.unit}
+                              </Typography>
+                            </Box>
                           </Box>
-                        </Box>
-                      );
-                    })}
-                  </Stack>
-                ) : (
-                  <EmptyState
-                    icon={<CheckCircleOutlineIcon sx={{ fontSize: 36, color: '#16a34a' }} />}
-                    title="Все запасы в норме"
-                    description="Нет ТМЦ ниже неснижаемого уровня остатков."
-                  />
-                )}
-              </CardContent>
-            </Card>
+                        </Paper>
+                      ))}
+                    </Stack>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </Stack>
         </Grid>
       </Grid>
 
-      {/* Dialogs */}
-      {isSrmDialogOpen && (
-        <CreateServiceRequestDialog
-          open={isSrmDialogOpen}
-          onClose={() => setIsSrmDialogOpen(false)}
-          onSuccess={() => {
-            setIsSrmDialogOpen(false);
-            fetchDashboardData();
-          }}
-        />
-      )}
+      {/* SRM Create Dialog */}
+      <CreateServiceRequestDialog
+        open={isSrmDialogOpen}
+        onClose={() => setIsSrmDialogOpen(false)}
+        onSuccess={() => {
+          setIsSrmDialogOpen(false);
+          handleRefresh();
+        }}
+      />
 
-      {isWmsWizardOpen && (
-        <WmsOperationWizardDialog
-          open={isWmsWizardOpen}
-          initialType="RECEIPT"
-          onClose={() => setIsWmsWizardOpen(false)}
-          onSuccess={() => {
-            setIsWmsWizardOpen(false);
-            fetchDashboardData();
-          }}
-        />
-      )}
+      {/* WMS Quick Wizard */}
+      <WmsOperationWizardDialog
+        open={isWmsWizardOpen}
+        initialType="RECEIPT"
+        onClose={() => setIsWmsWizardOpen(false)}
+        onSuccess={() => {
+          setIsWmsWizardOpen(false);
+          handleRefresh();
+        }}
+      />
     </Box>
   );
 }
 
-export default function ExecutiveDashboardPage() {
+export default function DashboardPage() {
   return (
-    <ErrorBoundary title="Ошибка панели управления" description="Произошла непредвиденная ошибка при отображении сводной панели. Попробуйте обновить страницу.">
+    <ErrorBoundary>
       <ExecutiveDashboardContent />
     </ErrorBoundary>
   );
