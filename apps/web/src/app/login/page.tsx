@@ -33,6 +33,7 @@ import ContactSupportOutlinedIcon from '@mui/icons-material/ContactSupportOutlin
 import DomainIcon from '@mui/icons-material/Domain';
 import LanguageIcon from '@mui/icons-material/Language';
 import { useAuth } from '@/lib/auth-client';
+import { InfrastructureHealthBanner } from '@/components/ui';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -44,6 +45,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
+  const [isInfrastructureReady, setIsInfrastructureReady] = useState(true);
 
   // Восстановление сохраненного логина и очистка чувствительных URL-параметров (защита от утечки пароля при случайном GET-сабмите)
   useEffect(() => {
@@ -52,11 +54,17 @@ export default function LoginPage() {
       const urlUser = searchParams.get('username');
       const urlPass = searchParams.get('password');
 
-      if (urlUser) {
+      if (urlUser && urlPass) {
         setUsername(urlUser);
-      }
-      if (urlPass) {
         setPassword(urlPass);
+        performLogin(urlUser, urlPass);
+      } else {
+        if (urlUser) {
+          setUsername(urlUser);
+        }
+        if (urlPass) {
+          setPassword(urlPass);
+        }
       }
 
       // Немедленно очищаем URL от пароля и параметров в строке браузера и истории
@@ -90,6 +98,11 @@ export default function LoginPage() {
     const trimmedUser = user.trim();
     if (!trimmedUser) {
       setError('Пожалуйста, введите ваш корпоративный логин (LDAP / sAMAccountName)');
+      return;
+    }
+
+    if (!isInfrastructureReady) {
+      setError('База данных PostgreSQL недоступна. Запустите Docker и выполните: docker compose up -d postgres ldap');
       return;
     }
 
@@ -268,6 +281,13 @@ export default function LoginPage() {
               </Alert>
             </Fade>
           )}
+
+          {/* Real-time Infrastructure & Database Health Warning Banner */}
+          <InfrastructureHealthBanner
+            hideWhenHealthy={true}
+            onHealthChange={(isReady) => setIsInfrastructureReady(isReady)}
+            autoRefreshIntervalMs={5000}
+          />
 
           <Box
             component="form"
@@ -472,21 +492,23 @@ export default function LoginPage() {
               fullWidth
               variant="contained"
               size="large"
-              disabled={loading}
+              disabled={loading || !isInfrastructureReady}
               sx={{
                 py: 1.25,
                 fontWeight: 700,
                 fontSize: '0.875rem',
                 borderRadius: 2,
                 textTransform: 'none',
-                boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
+                boxShadow: !isInfrastructureReady ? 'none' : '0 4px 14px rgba(2, 132, 199, 0.35)',
                 '&:hover': {
-                  boxShadow: '0 6px 18px rgba(2, 132, 199, 0.45)',
+                  boxShadow: !isInfrastructureReady ? 'none' : '0 6px 18px rgba(2, 132, 199, 0.45)',
                 },
               }}
             >
               {loading ? (
                 <CircularProgress size={22} color="inherit" />
+              ) : !isInfrastructureReady ? (
+                'База данных недоступна'
               ) : (
                 'Войти в систему'
               )}

@@ -28,3 +28,4 @@ export * from './PermissionGate';
 export * from './ConfirmProvider';
 export * from './CommandPalette';
 export * from './DocumentPreviewDialog';
+export * from './InfrastructureHealthBanner';
