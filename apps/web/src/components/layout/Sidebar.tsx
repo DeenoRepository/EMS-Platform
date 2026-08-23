@@ -58,6 +58,7 @@ interface NavChild {
   path: string;
   icon?: React.ReactNode;
   badge?: number | null;
+  badgeText?: string;
   badgeColor?: 'warning' | 'error' | 'primary' | 'default';
   badgeTooltip?: string;
 }
@@ -68,6 +69,7 @@ interface NavItemDef {
   path?: string;
   icon: React.ReactNode;
   badge?: number | null;
+  badgeText?: string;
   badgeColor?: 'warning' | 'error' | 'primary' | 'default';
   badgeTooltip?: string;
   permission?: string;
@@ -326,58 +328,21 @@ export default function Sidebar({
     },
     {
       id: 'srm',
-      label: 'Система подачи заявок (SRM)',
+      label: 'Подача заявок (SRM)',
+      path: '/srm',
       icon: <BugReportOutlinedIcon sx={{ fontSize: 18 }} />,
+      badgeText: 'Скоро',
+      badgeTooltip: 'Модуль SRM находится в разработке (Скоро)',
       permission: PERMISSIONS.SRM_DASHBOARD_VIEW,
-      children: [
-        { label: 'Обзор и дашборд', path: '/srm?tab=metrics', icon: <SpeedIcon sx={{ fontSize: 15 }} /> },
-        {
-          label: 'Инциденты и заявки',
-          path: '/srm?tab=issues',
-          icon: <TimelineIcon sx={{ fontSize: 15 }} />,
-          badge:
-            (srmOpenCount || 0) + (srmInProgressCount || 0) > 0
-              ? (srmOpenCount || 0) + (srmInProgressCount || 0)
-              : null,
-          badgeColor: (srmOpenCount || 0) > 0 ? 'error' : 'warning',
-          badgeTooltip:
-            (srmOpenCount || 0) > 0
-              ? `${srmOpenCount} новых открытых инцидентов требуют назначения`
-              : (srmInProgressCount || 0) > 0
-              ? `${srmInProgressCount} инцидентов в процессе решения`
-              : undefined,
-        },
-        { label: 'RAMS & Анализ отказов', path: '/srm?tab=reliability', icon: <AssessmentOutlinedIcon sx={{ fontSize: 15 }} /> },
-        { label: 'Гарантии и подрядчики', path: '/srm?tab=warranty', icon: <ShieldOutlinedIcon sx={{ fontSize: 15 }} /> },
-      ],
     },
     {
       id: 'mro',
       label: 'ТО и Ремонт (MRO)',
+      path: '/mro',
       icon: <BuildOutlinedIcon sx={{ fontSize: 18 }} />,
+      badgeText: 'Скоро',
+      badgeTooltip: 'Модуль MRO находится в разработке (Скоро)',
       permission: PERMISSIONS.MRO_SCHEDULE_VIEW,
-      children: [
-        {
-          label: 'Графики ППР',
-          path: '/mro',
-          icon: <CalendarMonthIcon sx={{ fontSize: 15 }} />,
-          badge:
-            mroOverdueCount && mroOverdueCount > 0
-              ? mroOverdueCount
-              : mroPlannedCount && mroPlannedCount > 0
-              ? mroPlannedCount
-              : null,
-          badgeColor: mroOverdueCount && mroOverdueCount > 0 ? 'error' : 'primary',
-          badgeTooltip:
-            mroOverdueCount && mroOverdueCount > 0
-              ? `${mroOverdueCount} регламентов ТО просрочено!`
-              : mroPlannedCount && mroPlannedCount > 0
-              ? `${mroPlannedCount} регламентов ТО запланировано к выполнению`
-              : undefined,
-        },
-        { label: 'Журнал регламентов', path: '/mro?tab=logs', icon: <AssignmentTurnedInIcon sx={{ fontSize: 15 }} /> },
-        { label: 'Технологические карты', path: '/mro?tab=checklists', icon: <ChecklistIcon sx={{ fontSize: 15 }} /> },
-      ],
     },
   ];
 
@@ -483,7 +448,8 @@ export default function Sidebar({
     })();
 
     const badgeColors = getBadgeColors(effectiveBadgeColor);
-    const hasBadge = parentBadgeCount !== null && parentBadgeCount !== undefined && parentBadgeCount > 0;
+    const parentBadgeDisplay = item.badgeText || (parentBadgeCount && parentBadgeCount > 0 ? parentBadgeCount : null);
+    const hasBadge = Boolean(parentBadgeDisplay);
 
     if (collapsed) {
       return (
@@ -528,25 +494,25 @@ export default function Sidebar({
             {item.icon}
 
             {hasBadge && (
-              <Tooltip title={effectiveBadgeTooltip || `${parentBadgeCount} событий`} arrow placement="right">
+              <Tooltip title={effectiveBadgeTooltip || (item.badgeText ? item.badgeText : `${parentBadgeCount} событий`)} arrow placement="right">
                 <Box
                   sx={{
                     position: 'absolute',
                     top: 4,
-                    right: 4,
-                    minWidth: 15,
+                    right: 2,
+                    minWidth: item.badgeText ? 24 : 15,
                     height: 15,
                     borderRadius: '8px',
-                    backgroundColor: badgeColors.text,
-                    color: '#0f172a',
-                    fontSize: '0.625rem',
+                    backgroundColor: item.badgeText ? '#475569' : badgeColors.text,
+                    color: item.badgeText ? '#f8fafc' : '#0f172a',
+                    fontSize: item.badgeText ? '0.55rem' : '0.625rem',
                     fontWeight: 800,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    px: 0.3,
-                    fontFamily: 'monospace',
-                    animation: badgeColors.animation,
+                    px: item.badgeText ? 0.4 : 0.3,
+                    fontFamily: item.badgeText ? 'inherit' : 'monospace',
+                    animation: item.badgeText ? 'none' : badgeColors.animation,
                     '@keyframes badgePulse': {
                       '0%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(239, 68, 68, 0.6)' },
                       '70%': { transform: 'scale(1.1)', boxShadow: '0 0 0 4px rgba(239, 68, 68, 0)' },
@@ -554,7 +520,7 @@ export default function Sidebar({
                     },
                   }}
                 >
-                  {parentBadgeCount}
+                  {parentBadgeDisplay}
                 </Box>
               </Tooltip>
             )}
@@ -648,12 +614,11 @@ export default function Sidebar({
               </Box>
             )}
 
-            {/* Badge Slot: Standardized 20px width for pixel-perfect vertical alignment */}
+            {/* Badge Slot: Standardized width for pixel-perfect vertical alignment */}
             {(hasChildren || hasBadge) && (
               <Box
                 sx={{
-                  width: 20,
-                  minWidth: 20,
+                  minWidth: item.badgeText ? 42 : 20,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -661,25 +626,25 @@ export default function Sidebar({
                 }}
               >
                 {(!hasChildren || !isExpanded) && hasBadge && (
-                  <Tooltip title={effectiveBadgeTooltip || ''} arrow placement="right">
+                  <Tooltip title={effectiveBadgeTooltip || (item.badgeText ? item.badgeText : '')} arrow placement="right">
                     <Box
                       sx={{
-                        px: 0.4,
+                        px: item.badgeText ? 0.75 : 0.4,
                         height: 17,
                         minWidth: 17,
                         borderRadius: '8.5px',
-                        backgroundColor: badgeColors.bg,
-                        color: badgeColors.text,
-                        border: `1px solid ${badgeColors.border}`,
-                        fontSize: '0.65rem',
+                        backgroundColor: item.badgeText ? 'rgba(148, 163, 184, 0.15)' : badgeColors.bg,
+                        color: item.badgeText ? '#94a3b8' : badgeColors.text,
+                        border: item.badgeText ? '1px solid rgba(148, 163, 184, 0.3)' : `1px solid ${badgeColors.border}`,
+                        fontSize: item.badgeText ? '0.625rem' : '0.65rem',
                         fontWeight: 700,
-                        fontFamily: 'monospace',
+                        fontFamily: item.badgeText ? 'inherit' : 'monospace',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         lineHeight: 1,
                         boxSizing: 'border-box',
-                        animation: badgeColors.animation,
+                        animation: item.badgeText ? 'none' : badgeColors.animation,
                         '@keyframes badgePulse': {
                           '0%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(239, 68, 68, 0.4)' },
                           '70%': { transform: 'scale(1.08)', boxShadow: '0 0 0 4px rgba(239, 68, 68, 0)' },
@@ -687,7 +652,7 @@ export default function Sidebar({
                         },
                       }}
                     >
-                      {parentBadgeCount}
+                      {parentBadgeDisplay}
                     </Box>
                   </Tooltip>
                 )}
