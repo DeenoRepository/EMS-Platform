@@ -23,6 +23,7 @@ import {
   Tooltip,
   Paper,
   Checkbox,
+  Alert,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ViewListIcon from '@mui/icons-material/ViewList';
@@ -53,10 +54,12 @@ import {
   CriticalAlertBanner,
   BulkActionBar,
   PageLoading,
+  ModuleMaintenanceState,
   type TableDensity,
   type TableColumnOption,
 } from '@/components/ui';
 import { EquipmentWizardDialog } from '@/components/eps';
+import { PlatformMaintenanceStatus } from '@ems/shared';
 
 interface EquipmentItem {
   id: string;
@@ -116,7 +119,7 @@ const EPS_COLUMNS: TableColumnOption[] = [
 function EquipmentListContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { hasPermission } = useAuth();
+  const { user, hasPermission } = useAuth();
   const { enqueueSnackbar } = useSnackbar();
 
   const [items, setItems] = useState<EquipmentItem[]>([]);
@@ -145,6 +148,19 @@ function EquipmentListContent() {
     inStorage: 0,
     decommissioned: 0,
   });
+
+  const [maintStatus, setMaintStatus] = useState<PlatformMaintenanceStatus | null>(null);
+
+  useEffect(() => {
+    fetch('/api/system/maintenance')
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && json.data) {
+          setMaintStatus(json.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const fetchTags = async () => {
     try {
@@ -431,8 +447,38 @@ function EquipmentListContent() {
     window.print();
   };
 
+  const isAdmin = user?.roles?.includes('admin') || user?.roles?.includes('administrator');
+  const isModuleInMaintenance = Boolean(maintStatus?.modules.eps?.enabled);
+
+  if (isModuleInMaintenance && !isAdmin) {
+    return (
+      <ModuleMaintenanceState
+        moduleName="Паспортизация оборудования (EPS)"
+        message={maintStatus?.modules.eps.message}
+        estimatedUntil={maintStatus?.modules.eps.estimatedUntil}
+        onRefresh={fetchEquipment}
+      />
+    );
+  }
+
   return (
     <Box sx={{ pb: 2 }}>
+      {/* Admin Maintenance Preview Banner */}
+      {isModuleInMaintenance && (
+        <Alert
+          severity="warning"
+          sx={{
+            mb: 2.5,
+            borderRadius: '12px',
+            border: '1px solid #fed7aa',
+            backgroundColor: '#fffbeb',
+            fontWeight: 500,
+          }}
+        >
+          <strong>Режим предпросмотра администратора:</strong> Модуль переведен в режим технического обслуживания. Для обычных пользователей модуль временно закрыт.
+        </Alert>
+      )}
+
       {/* Page Header */}
       <PageHeader
         title="Оборудование"

@@ -63,6 +63,29 @@ export async function requireAuth(
     return { errorResponse: unauthorizedResponse() };
   }
 
+  const isAdmin = user.roles?.includes('admin') || user.roles?.includes('administrator');
+
+  if (!isAdmin) {
+    try {
+      const { prisma } = await import('@ems/database');
+      const maintSetting = await prisma.systemSetting.findUnique({
+        where: { key: 'SYSTEM_MAINTENANCE_STATUS' },
+      });
+      if (maintSetting && maintSetting.value) {
+        const maint = JSON.parse(maintSetting.value);
+        if (maint.system?.enabled) {
+          return {
+            errorResponse: forbiddenResponse(
+              maint.system.message || 'Платформа переведена в режим технического обслуживания. Доступ открыт только администраторам.'
+            ),
+          };
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   if (requiredPermission) {
     if (Array.isArray(requiredPermission)) {
       if (!hasAnyPermission(user, requiredPermission)) {

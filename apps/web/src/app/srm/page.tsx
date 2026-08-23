@@ -19,6 +19,7 @@ import {
   Paper,
   IconButton,
   Tooltip,
+  Alert,
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import PageHeader from '@/components/layout/PageHeader';
@@ -42,6 +43,7 @@ import {
   EmptyState,
   DataTableWrapper,
   PageLoading,
+  ModuleMaintenanceState,
   type TableColumnOption,
 } from '@/components/ui';
 import {
@@ -49,7 +51,7 @@ import {
   SrmIssueDetailsDrawer,
   SrmIntegrationWizardDialog,
 } from '@/components/srm';
-import { formatDateTime, formatDate, PERMISSIONS } from '@ems/shared';
+import { formatDateTime, formatDate, PERMISSIONS, PlatformMaintenanceStatus } from '@ems/shared';
 import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
 
@@ -150,13 +152,24 @@ function SrmPageContent() {
     SRM_COLUMNS.filter((c) => c.defaultVisible !== false).map((c) => c.id)
   );
 
+  const [maintStatus, setMaintStatus] = useState<PlatformMaintenanceStatus | null>(null);
+
   const fetchStats = useCallback(async () => {
     try {
-      const res = await fetch('/api/srm/stats');
-      if (res.ok) {
-        const json = await res.json();
+      const [statsRes, maintRes] = await Promise.all([
+        fetch('/api/srm/stats'),
+        fetch('/api/system/maintenance'),
+      ]);
+      if (statsRes.ok) {
+        const json = await statsRes.json();
         if (json.success && json.data) {
           setStats(json.data);
+        }
+      }
+      if (maintRes.ok) {
+        const maintJson = await maintRes.json();
+        if (maintJson.success && maintJson.data) {
+          setMaintStatus(maintJson.data);
         }
       }
     } catch {
@@ -272,8 +285,39 @@ function SrmPageContent() {
     setIsDrawerOpen(true);
   };
 
+  const { user } = useAuth();
+  const isAdmin = user?.roles?.includes('admin') || user?.roles?.includes('administrator');
+  const isModuleInMaintenance = Boolean(maintStatus?.modules.srm?.enabled);
+
+  if (isModuleInMaintenance && !isAdmin) {
+    return (
+      <ModuleMaintenanceState
+        moduleName="Подача заявок (SRM)"
+        message={maintStatus?.modules.srm.message}
+        estimatedUntil={maintStatus?.modules.srm.estimatedUntil}
+        onRefresh={handleRefresh}
+      />
+    );
+  }
+
   return (
     <Box sx={{ width: '100%', pb: 4 }}>
+      {/* Admin Maintenance Preview Banner */}
+      {isModuleInMaintenance && (
+        <Alert
+          severity="warning"
+          sx={{
+            mb: 2.5,
+            borderRadius: '12px',
+            border: '1px solid #fed7aa',
+            backgroundColor: '#fffbeb',
+            fontWeight: 500,
+          }}
+        >
+          <strong>Режим предпросмотра администратора:</strong> Модуль SRM переведен в режим технического обслуживания. Для обычных пользователей доступ временно закрыт.
+        </Alert>
+      )}
+
       {/* 1. Header */}
       <PageHeader
         title="Реестр заявок и инцидентов"

@@ -32,8 +32,10 @@ import ClearIcon from '@mui/icons-material/Clear';
 import ContactSupportOutlinedIcon from '@mui/icons-material/ContactSupportOutlined';
 import DomainIcon from '@mui/icons-material/Domain';
 import LanguageIcon from '@mui/icons-material/Language';
+import EngineeringIcon from '@mui/icons-material/Engineering';
 import { useAuth } from '@/lib/auth-client';
 import { useSystemHealth, ServiceUnavailableCard } from '@/components/ui';
+import { PlatformMaintenanceStatus } from '@ems/shared';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -48,6 +50,19 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
+  const [maintenance, setMaintenance] = useState<PlatformMaintenanceStatus | null>(null);
+
+  // Получение статуса тех. обслуживания
+  useEffect(() => {
+    fetch('/api/system/maintenance')
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && json.data) {
+          setMaintenance(json.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Очистка чувствительных параметров URL и восстановление сохраненного логина
   useEffect(() => {
@@ -249,6 +264,40 @@ export default function LoginPage() {
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem', mt: 0.25 }}>
                 Введите корпоративные учетные данные
+              </Typography>
+            </Box>
+          )}
+
+          {/* Режим технического обслуживания платформы */}
+          {maintenance?.system?.enabled && !isOffline && (
+            <Box
+              sx={{
+                mb: 2.5,
+                p: 2,
+                borderRadius: '12px',
+                border: '1px solid #fed7aa',
+                backgroundColor: '#fffbeb',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 0.75,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <EngineeringIcon sx={{ color: '#ea580c', fontSize: 20 }} />
+                <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#9a3412' }}>
+                  Техническое обслуживание платформы
+                </Typography>
+              </Box>
+              <Typography variant="body2" sx={{ color: '#7c2d12', fontSize: '0.8125rem', lineHeight: 1.5 }}>
+                {maintenance.system.message || 'В настоящее время на платформе проводятся регламентные работы.'}
+              </Typography>
+              {maintenance.system.estimatedUntil && (
+                <Typography variant="caption" sx={{ color: '#ea580c', fontWeight: 600 }}>
+                  Плановое завершение: {maintenance.system.estimatedUntil}
+                </Typography>
+              )}
+              <Typography variant="caption" sx={{ color: '#9a3412', fontStyle: 'italic', mt: 0.25 }}>
+                Вход в систему разрешен только администраторам.
               </Typography>
             </Box>
           )}

@@ -47,7 +47,7 @@ import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useAuth } from '@/lib/auth-client';
-import { PERMISSIONS } from '@ems/shared';
+import { PERMISSIONS, PlatformMaintenanceStatus } from '@ems/shared';
 import { StatusBadge } from '@/components/ui';
 
 export const SIDEBAR_WIDTH_EXPANDED = 300;
@@ -253,6 +253,19 @@ export default function Sidebar({
 
   const canAccessAdmin = user?.roles?.includes('admin') || hasPermission(PERMISSIONS.ADMIN_USERS_MANAGE);
 
+  const [maintenanceStatus, setMaintenanceStatus] = useState<PlatformMaintenanceStatus | null>(null);
+
+  useEffect(() => {
+    fetch('/api/system/maintenance')
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && json.data) {
+          setMaintenanceStatus(json.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // Главное (Панель управления)
   const mainItems: NavItemDef[] = [
     {
@@ -270,6 +283,9 @@ export default function Sidebar({
       label: 'Паспортизация (EPS)',
       icon: <BadgeOutlinedIcon sx={{ fontSize: 18 }} />,
       permission: PERMISSIONS.EPS_EQUIPMENT_VIEW,
+      badgeText: maintenanceStatus?.modules.eps?.enabled ? 'ТО' : undefined,
+      badgeColor: maintenanceStatus?.modules.eps?.enabled ? 'warning' : undefined,
+      badgeTooltip: maintenanceStatus?.modules.eps?.enabled ? 'Модуль EPS находится на техническом обслуживании' : undefined,
       children: [
         {
           label: 'Реестр оборудования',
@@ -307,6 +323,9 @@ export default function Sidebar({
       label: 'Складской учёт (WMS)',
       icon: <WarehouseOutlinedIcon sx={{ fontSize: 18 }} />,
       permission: PERMISSIONS.WMS_STOCK_VIEW,
+      badgeText: maintenanceStatus?.modules.wms?.enabled ? 'ТО' : undefined,
+      badgeColor: maintenanceStatus?.modules.wms?.enabled ? 'warning' : undefined,
+      badgeTooltip: maintenanceStatus?.modules.wms?.enabled ? 'Модуль WMS находится на техническом обслуживании' : undefined,
       children: [
         { label: 'Обзор и аналитика', path: '/wms', icon: <AnalyticsOutlinedIcon sx={{ fontSize: 15 }} /> },
         {
@@ -341,6 +360,9 @@ export default function Sidebar({
       label: 'Подача заявок (SRM)',
       icon: <BugReportOutlinedIcon sx={{ fontSize: 18 }} />,
       permission: PERMISSIONS.SRM_DASHBOARD_VIEW,
+      badgeText: maintenanceStatus?.modules.srm?.enabled ? 'ТО' : undefined,
+      badgeColor: maintenanceStatus?.modules.srm?.enabled ? 'warning' : undefined,
+      badgeTooltip: maintenanceStatus?.modules.srm?.enabled ? 'Модуль SRM находится на техническом обслуживании' : undefined,
       children: [
         {
           label: 'Реестр заявок',
@@ -358,6 +380,9 @@ export default function Sidebar({
       label: 'ТО и Ремонт (MRO)',
       icon: <BuildOutlinedIcon sx={{ fontSize: 18 }} />,
       permission: PERMISSIONS.MRO_SCHEDULE_VIEW,
+      badgeText: maintenanceStatus?.modules.mro?.enabled ? 'ТО' : undefined,
+      badgeColor: maintenanceStatus?.modules.mro?.enabled ? 'warning' : undefined,
+      badgeTooltip: maintenanceStatus?.modules.mro?.enabled ? 'Модуль MRO находится на техническом обслуживании' : undefined,
       children: [
         {
           label: 'График ТО и ППР',

@@ -19,6 +19,7 @@ import {
   Paper,
   IconButton,
   Tooltip,
+  Alert,
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import PageHeader from '@/components/layout/PageHeader';
@@ -38,10 +39,11 @@ import {
   EmptyState,
   DataTableWrapper,
   PageLoading,
+  ModuleMaintenanceState,
   type TableColumnOption,
 } from '@/components/ui';
 import { MroExecutionWizardDialog } from '@/components/mro';
-import { formatDateTime, formatDate, PERMISSIONS } from '@ems/shared';
+import { formatDateTime, formatDate, PERMISSIONS, PlatformMaintenanceStatus } from '@ems/shared';
 import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
 
@@ -115,19 +117,30 @@ function MroPageContent() {
     MRO_COLUMNS.filter((c) => c.defaultVisible !== false).map((c) => c.id)
   );
 
+  const [maintStatus, setMaintStatus] = useState<PlatformMaintenanceStatus | null>(null);
+
   const fetchSchedules = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
       if (statusFilter) params.append('status', statusFilter);
 
-      const res = await fetch(`/api/mro/schedules?${params.toString()}`);
+      const [res, maintRes] = await Promise.all([
+        fetch(`/api/mro/schedules?${params.toString()}`),
+        fetch('/api/system/maintenance'),
+      ]);
       if (res.ok) {
         const json = await res.json();
         if (json.success && Array.isArray(json.data)) {
           setSchedules(json.data);
         } else {
           setSchedules([]);
+        }
+      }
+      if (maintRes.ok) {
+        const maintJson = await maintRes.json();
+        if (maintJson.success && maintJson.data) {
+          setMaintStatus(maintJson.data);
         }
       }
     } catch {
@@ -227,8 +240,39 @@ function MroPageContent() {
     setIsExecutionWizardOpen(true);
   };
 
+  const { user } = useAuth();
+  const isAdmin = user?.roles?.includes('admin') || user?.roles?.includes('administrator');
+  const isModuleInMaintenance = Boolean(maintStatus?.modules.mro?.enabled);
+
+  if (isModuleInMaintenance && !isAdmin) {
+    return (
+      <ModuleMaintenanceState
+        moduleName="ТО и Ремонт (MRO)"
+        message={maintStatus?.modules.mro.message}
+        estimatedUntil={maintStatus?.modules.mro.estimatedUntil}
+        onRefresh={fetchSchedules}
+      />
+    );
+  }
+
   return (
     <Box sx={{ width: '100%', pb: 4 }}>
+      {/* Admin Maintenance Preview Banner */}
+      {isModuleInMaintenance && (
+        <Alert
+          severity="warning"
+          sx={{
+            mb: 2.5,
+            borderRadius: '12px',
+            border: '1px solid #fed7aa',
+            backgroundColor: '#fffbeb',
+            fontWeight: 500,
+          }}
+        >
+          <strong>Режим предпросмотра администратора:</strong> Модуль MRO переведен в режим технического обслуживания. Для обычных пользователей доступ временно закрыт.
+        </Alert>
+      )}
+
       {/* 1. Header */}
       <PageHeader
         title="График ТО и ППР"

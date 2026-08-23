@@ -465,3 +465,31 @@ export function formatBytes(bytes: number, decimals = 2): string {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
+
+// ==========================================
+// 6. ТЕХНИЧЕСКОЕ ОБСЛУЖИВАНИЕ (MAINTENANCE)
+// ==========================================
+
+export interface SystemMaintenanceConfig {
+  enabled: boolean;
+  message?: string;
+  estimatedUntil?: string | null;
+  allowedRoles?: string[];
+}
+
+export interface ModuleMaintenanceConfig {
+  enabled: boolean;
+  message?: string;
+  estimatedUntil?: string | null;
+}
+
+export interface PlatformMaintenanceStatus {
+  system: SystemMaintenanceConfig;
+  modules: {
+    eps: ModuleMaintenanceConfig;
+    wms: ModuleMaintenanceConfig;
+    srm: ModuleMaintenanceConfig;
+    mro: ModuleMaintenanceConfig;
+  };
+}
+

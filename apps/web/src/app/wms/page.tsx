@@ -17,6 +17,7 @@ import {
   Skeleton,
   Stack,
   Paper,
+  Alert,
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import PageHeader from '@/components/layout/PageHeader';
@@ -42,9 +43,11 @@ import {
   EmptyState,
   DataTableWrapper,
   CriticalAlertBanner,
+  ModuleMaintenanceState,
 } from '@/components/ui';
 import { WmsOperationWizardDialog, type OperationType } from '@/components/wms';
 import { useAuth } from '@/lib/auth-client';
+import { PlatformMaintenanceStatus } from '@ems/shared';
 
 
 interface WmsStats {
@@ -165,26 +168,35 @@ function DeficitItem({
 /* ─── WMS Dashboard Page ─── */
 export default function WmsDashboardPage() {
   const router = useRouter();
-  const { hasPermission } = useAuth();
+  const { user, hasPermission } = useAuth();
   const [stats, setStats] = useState<WmsStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [wizardType, setWizardType] = useState<OperationType>('RECEIPT');
+  const [maintStatus, setMaintStatus] = useState<PlatformMaintenanceStatus | null>(null);
 
   const handleOpenWizard = (type: OperationType = 'RECEIPT') => {
     setWizardType(type);
     setIsWizardOpen(true);
   };
 
-
   const fetchStats = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/wms/stats');
-      if (res.ok) {
-        const json = await res.json();
+      const [statsRes, maintRes] = await Promise.all([
+        fetch('/api/wms/stats'),
+        fetch('/api/system/maintenance'),
+      ]);
+      if (statsRes.ok) {
+        const json = await statsRes.json();
         if (json.success) {
           setStats(json.data);
+        }
+      }
+      if (maintRes.ok) {
+        const maintJson = await maintRes.json();
+        if (maintJson.success && maintJson.data) {
+          setMaintStatus(maintJson.data);
         }
       }
     } catch (err) {
@@ -198,8 +210,38 @@ export default function WmsDashboardPage() {
     fetchStats();
   }, []);
 
+  const isAdmin = user?.roles?.includes('admin') || user?.roles?.includes('administrator');
+  const isModuleInMaintenance = Boolean(maintStatus?.modules.wms?.enabled);
+
+  if (isModuleInMaintenance && !isAdmin) {
+    return (
+      <ModuleMaintenanceState
+        moduleName="Складской учёт (WMS)"
+        message={maintStatus?.modules.wms.message}
+        estimatedUntil={maintStatus?.modules.wms.estimatedUntil}
+        onRefresh={fetchStats}
+      />
+    );
+  }
+
   return (
     <Box sx={{ pb: 2 }}>
+      {/* Admin Maintenance Preview Banner */}
+      {isModuleInMaintenance && (
+        <Alert
+          severity="warning"
+          sx={{
+            mb: 2.5,
+            borderRadius: '12px',
+            border: '1px solid #fed7aa',
+            backgroundColor: '#fffbeb',
+            fontWeight: 500,
+          }}
+        >
+          <strong>Режим предпросмотра администратора:</strong> Модуль WMS переведен в режим технического обслуживания. Для обычных пользователей доступ временно закрыт.
+        </Alert>
+      )}
+
       <PageHeader
         title="Складской учёт (WMS)"
         subtitle="Мониторинг остатков, дефицита ТМЦ, операций прихода, списания и инвентаризаций"

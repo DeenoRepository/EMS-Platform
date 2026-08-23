@@ -111,6 +111,35 @@ export async function POST(req: NextRequest) {
     // Получаем актуальные роли и права из БД
     const { roles, permissions } = await getUserRolesAndPermissions(authenticatedUser.id);
 
+    // Проверка режима технического обслуживания (ТО) платформы
+    try {
+      const maintSetting = await prisma.systemSetting.findUnique({
+        where: { key: 'SYSTEM_MAINTENANCE_STATUS' },
+      });
+      if (maintSetting && maintSetting.value) {
+        const maintConfig = JSON.parse(maintSetting.value);
+        if (maintConfig.system?.enabled) {
+          const isAdmin = roles.includes('admin') || roles.includes('administrator');
+          if (!isAdmin) {
+            const untilStr = maintConfig.system.estimatedUntil
+              ? ` (плановое завершение: ${maintConfig.system.estimatedUntil})`
+              : '';
+            const msg = maintConfig.system.message || 'В настоящее время на платформе проводятся регламентные технические работы.';
+            return NextResponse.json(
+              {
+                success: false,
+                error: `${msg}${untilStr} Вход в систему разрешен только администраторам.`,
+                code: 'MAINTENANCE_MODE',
+              },
+              { status: 403 }
+            );
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+
     const payload: JwtUserPayload = {
       userId: authenticatedUser.id,
       ldapLogin: authenticatedUser.ldapLogin,
