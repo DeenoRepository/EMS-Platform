@@ -74,7 +74,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(data.data.user);
         if (typeof window !== 'undefined') {
           const searchParams = new URLSearchParams(window.location.search);
-          const from = searchParams.get('from') || '/eps';
+          const rawFrom = searchParams.get('from');
+          const from = rawFrom && !rawFrom.startsWith('/login') && rawFrom.startsWith('/') ? rawFrom : '/eps';
           window.location.href = from;
         } else {
           router.push('/eps');

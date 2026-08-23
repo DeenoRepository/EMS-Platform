@@ -491,6 +491,10 @@ export default function LoginPage() {
                 variant="contained"
                 size="large"
                 disabled={loading}
+                onClick={(e) => {
+                  e.preventDefault();
+                  performLogin(username, password);
+                }}
                 sx={{
                   py: 1.25,
                   fontWeight: 700,
