@@ -83,6 +83,9 @@ cp scripts/baremetal-install.sh "$PACKAGE_DIR/install.sh"
 cp scripts/ems-platform.service "$PACKAGE_DIR/scripts/ems-platform.service"
 cp scripts/ems-baremetal.nginx.conf "$PACKAGE_DIR/scripts/ems-baremetal.nginx.conf"
 cp scripts/backup.sh "$PACKAGE_DIR/scripts/backup.sh"
+if [ -f "temp/init_custom_sections.sql" ]; then
+    cp temp/init_custom_sections.sql "$PACKAGE_DIR/scripts/init_custom_sections.sql"
+fi
 cp docs/BAREMETAL_OFFLINE_DEPLOYMENT.md "$PACKAGE_DIR/docs/"
 cp docs/BAREMETAL_OFFLINE_DEPLOYMENT.md "$PACKAGE_DIR/README.md"
 
