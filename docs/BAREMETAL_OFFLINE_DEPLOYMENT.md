@@ -197,7 +197,7 @@ sudo /opt/ems-platform/scripts/backup.sh
 5. Распакуйте новые файлы поверх `/opt/ems-platform` (файл `.env.production` и папка `uploads/` сохраняются).
 6. Примените новые миграции БД:
    ```bash
-   sudo su -s /bin/sh ems -c "cd /opt/ems-platform && node node_modules/prisma/build/index.js db push --schema=packages/database/prisma/schema.prisma --accept-data-loss"
+   sudo su -s /bin/sh ems -c "cd /opt/ems-platform && node \$(find node_modules -wholename '*prisma/build/index.js' | head -n 1) db push --schema=packages/database/prisma/schema.prisma --accept-data-loss"
    ```
 7. Запустите службу:
    ```bash
