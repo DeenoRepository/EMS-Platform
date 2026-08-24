@@ -265,8 +265,13 @@ async function main() {
   const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
   console.log(`Найдено строк в файле: ${rows.length}`);
 
+  // Очищаем существующее оборудование перед чистым импортом всех 187 единиц
+  console.log('Очистка устаревших записей оборудования...');
+  await prisma.equipmentTag.deleteMany();
+  await prisma.document.deleteMany();
+  await prisma.equipment.deleteMany();
+
   let createdEq = 0;
-  let updatedEq = 0;
 
   for (const r of rows) {
     const name = String(r['Наименование оборудования'] || '').trim();
@@ -300,54 +305,25 @@ async function main() {
     if (r['Утвержденный график ТО на 2026 год']) customFields.maintenance_schedule_year = String(r['Утвержденный график ТО на 2026 год']).trim();
     if (r['Количество ТО по графику'] !== undefined) customFields.to_count_scheduled = parseNum(r['Количество ТО по графику']);
 
-    // Ищем существующее оборудование
-    let existing = null;
-    if (inv) {
-      existing = await prisma.equipment.findUnique({ where: { inventoryNumber: inv } });
-    }
-    if (!existing && sn) {
-      existing = await prisma.equipment.findFirst({ where: { serialNumber: sn } });
-    }
-    if (!existing && model) {
-      existing = await prisma.equipment.findFirst({ where: { name, model } });
-    }
-
-    if (existing) {
-      await prisma.equipment.update({
-        where: { id: existing.id },
-        data: {
-          name,
-          inventoryNumber: inv || existing.inventoryNumber,
-          serialNumber: sn || existing.serialNumber,
-          manufacturer: mfg || existing.manufacturer,
-          model: model || existing.model,
-          location: loc || existing.location,
-          commissionDate: commDate || existing.commissionDate,
-          customFields,
-        },
-      });
-      updatedEq++;
-    } else {
-      await prisma.equipment.create({
-        data: {
-          name,
-          inventoryNumber: inv,
-          serialNumber: sn,
-          manufacturer: mfg,
-          model,
-          location: loc,
-          commissionDate: commDate,
-          status: 'ACTIVE',
-          customFields,
-          createdById: adminUser.id,
-        },
-      });
-      createdEq++;
-    }
+    await prisma.equipment.create({
+      data: {
+        name,
+        inventoryNumber: inv,
+        serialNumber: sn,
+        manufacturer: mfg,
+        model,
+        location: loc,
+        commissionDate: commDate,
+        status: 'ACTIVE',
+        customFields: Object.keys(customFields).length > 0 ? customFields : undefined,
+        createdById: adminUser.id,
+      },
+    });
+    createdEq++;
   }
 
   const totalInDb = await prisma.equipment.count({ where: { deletedAt: null } });
-  console.log(`✅ Оборудование импортировано: создано ${createdEq}, обновлено ${updatedEq}. Всего в базе: ${totalInDb}`);
+  console.log(`✅ Оборудование импортировано: создано ${createdEq}. Всего в базе: ${totalInDb}`);
 
   // 4. Привязка документов
   console.log('\n📄 3. Привязка документов из temp/documents_equipment_registry.csv и temp/uploads...');
@@ -375,9 +351,11 @@ async function main() {
       const storagePath = cols[8]?.trim(); // local://2026/07/...
       const origFileName = cols[10]?.trim() || fileName;
 
-      // Ищем оборудование
+      // Ищем оборудование строго: сначала по инв. номеру, если нет инв. номера — по модели и имени
       const eq = allEquipments.find((e) => {
-        if (inv && inv !== '--' && inv !== '-' && e.inventoryNumber === inv) return true;
+        if (inv && inv !== '--' && inv !== '-') {
+          return e.inventoryNumber === inv;
+        }
         if (model && e.model === model) return true;
         if (name && e.name.toLowerCase() === name.toLowerCase()) return true;
         return false;
