@@ -22,12 +22,16 @@ const KNOWN_BASE_FIELDS: ColumnMatchRule[] = [
   {
     targetKey: 'inventoryNumber',
     targetName: 'Инвентарный номер',
-    aliases: ['инвентарный номер', 'инвентарный', 'инв. номер', 'инв номер', 'инв. №', 'инв №', 'инв.', 'инв', 'inventorynumber', 'inventory number', 'inv number', 'inv no'],
+    aliases: ['инвентарный номер', 'инвентарный №', 'инвентарный no', 'инвентарный', 'инв. номер', 'инв номер', 'инв. №', 'инв №', 'инв.', 'инв', 'inventorynumber', 'inventory number', 'inv number', 'inv no'],
   },
   {
     targetKey: 'serialNumber',
     targetName: 'Заводской / Серийный номер',
-    aliases: ['заводской / серийный номер', 'заводской номер', 'серийный номер', 'заводской №', 'заводской', 'зав. номер', 'зав. №', 'зав №', 'зав.', 'серийный', 'serialnumber', 'serial number', 'serial', 'sn'],
+    aliases: [
+      'заводской / серийный номер', 'заводской / серийный №', 'заводской/серийный номер', 'заводской/серийный №',
+      'заводской номер', 'серийный номер', 'заводской №', 'заводской no', 'заводской', 'зав. номер', 'зав. №', 'зав №', 'зав.',
+      'серийный №', 'серийный no', 'серийный', 'serialnumber', 'serial number', 'serial', 'sn'
+    ],
   },
   {
     targetKey: 'manufacturer',
@@ -37,12 +41,16 @@ const KNOWN_BASE_FIELDS: ColumnMatchRule[] = [
   {
     targetKey: 'model',
     targetName: 'Модель / Модификация',
-    aliases: ['модель / модификация', 'модель', 'модификация', 'марка', 'model', 'type'],
+    aliases: ['модель / модификация', 'модель/модификация', 'модель модификация', 'модель', 'модификация', 'марка', 'model', 'type'],
   },
   {
     targetKey: 'location',
     targetName: 'Место установки (Локация)',
-    aliases: ['расположение (улица, корпус, этаж, участок)', 'место установки (локация)', 'расположение', 'место установки', 'локация', 'цех', 'участок', 'местоположение', 'помещение', 'location', 'site', 'placement'],
+    aliases: [
+      'расположение (улица, корпус, этаж, участок)', 'расположение улица, корпус, этаж, участок', 'расположение улица корпус этаж участок',
+      'место установки (локация)', 'место установки', 'расположение', 'локация', 'цех', 'участок', 'местоположение', 'помещение',
+      'location', 'site', 'placement'
+    ],
   },
   {
     targetKey: 'status',
@@ -103,13 +111,19 @@ const CANONICAL_FIELD_DICTIONARY: Record<string, { key: string; name: string; se
   'децимальный номер': { key: 'decimal_number', name: 'Децимальный номер', sectionCode: 'classifiers', fieldType: 'TEXT' },
   'код по окоф ок 013 2014': { key: 'okof_code', name: 'Код по ОКОФ (ОК 013-2014)', sectionCode: 'classifiers', fieldType: 'TEXT' },
   'код по окоф': { key: 'okof_code', name: 'Код по ОКОФ (ОК 013-2014)', sectionCode: 'classifiers', fieldType: 'TEXT' },
+  'код окоф 2': { key: 'okof_code', name: 'Код по ОКОФ (ОК 013-2014)', sectionCode: 'classifiers', fieldType: 'TEXT' },
   'окоф': { key: 'okof_code', name: 'Код по ОКОФ (ОК 013-2014)', sectionCode: 'classifiers', fieldType: 'TEXT' },
   'код по окпд2 ок 034 2014': { key: 'okpd2_code', name: 'Код по ОКПД2 (ОК 034-2014)', sectionCode: 'classifiers', fieldType: 'TEXT' },
   'код по окпд2': { key: 'okpd2_code', name: 'Код по ОКПД2 (ОК 034-2014)', sectionCode: 'classifiers', fieldType: 'TEXT' },
+  'код окпд 2': { key: 'okpd2_code', name: 'Код по ОКПД2 (ОК 034-2014)', sectionCode: 'classifiers', fieldType: 'TEXT' },
   'окпд2': { key: 'okpd2_code', name: 'Код по ОКПД2 (ОК 034-2014)', sectionCode: 'classifiers', fieldType: 'TEXT' },
   'код технологического классификатора': { key: 'process_classifier_code', name: 'Код технологического классификатора', sectionCode: 'classifiers', fieldType: 'TEXT' },
+  'классификатор техпроцесса код': { key: 'process_classifier_code', name: 'Код технологического классификатора', sectionCode: 'classifiers', fieldType: 'TEXT' },
+  'классификатор техпроцесса': { key: 'process_classifier_code', name: 'Код технологического классификатора', sectionCode: 'classifiers', fieldType: 'TEXT' },
   'технологический классификатор': { key: 'process_classifier_code', name: 'Код технологического классификатора', sectionCode: 'classifiers', fieldType: 'TEXT' },
   'группа оборудования': { key: 'equipment_group', name: 'Группа оборудования', sectionCode: 'classifiers', fieldType: 'TEXT' },
+  'комплекс группа': { key: 'equipment_group', name: 'Группа оборудования', sectionCode: 'classifiers', fieldType: 'TEXT' },
+  'комплекс': { key: 'equipment_group', name: 'Группа оборудования', sectionCode: 'classifiers', fieldType: 'TEXT' },
   'тип оборудования установка': { key: 'equipment_type', name: 'Тип оборудования (Установка)', sectionCode: 'classifiers', fieldType: 'TEXT' },
   'тип оборудования': { key: 'equipment_type', name: 'Тип оборудования (Установка)', sectionCode: 'classifiers', fieldType: 'TEXT' },
   'установка': { key: 'equipment_type', name: 'Тип оборудования (Установка)', sectionCode: 'classifiers', fieldType: 'TEXT' },
@@ -125,6 +139,8 @@ const CANONICAL_FIELD_DICTIONARY: Record<string, { key: string; name: string; se
   'возраст оборудования': { key: 'equipment_age', name: 'Возраст оборудования', sectionCode: 'condition_wear', fieldType: 'NUMBER', unit: 'лет' },
   'возраст': { key: 'equipment_age', name: 'Возраст оборудования', sectionCode: 'condition_wear', fieldType: 'NUMBER', unit: 'лет' },
   'фактический процент износа': { key: 'actual_wear_percentage', name: 'Фактический процент износа', sectionCode: 'condition_wear', fieldType: 'NUMBER', unit: '%' },
+  'фактический износ': { key: 'actual_wear_percentage', name: 'Фактический процент износа', sectionCode: 'condition_wear', fieldType: 'NUMBER', unit: '%' },
+  'фактический износ %': { key: 'actual_wear_percentage', name: 'Фактический процент износа', sectionCode: 'condition_wear', fieldType: 'NUMBER', unit: '%' },
   'процент износа': { key: 'actual_wear_percentage', name: 'Фактический процент износа', sectionCode: 'condition_wear', fieldType: 'NUMBER', unit: '%' },
   'износ': { key: 'actual_wear_percentage', name: 'Фактический процент износа', sectionCode: 'condition_wear', fieldType: 'NUMBER', unit: '%' },
   'категория критичности': { key: 'criticality', name: 'Категория критичности', sectionCode: 'condition_wear', fieldType: 'TEXT' },
@@ -141,13 +157,17 @@ const CANONICAL_FIELD_DICTIONARY: Record<string, { key: string; name: string; se
 
   // 3. Регламент ТОиР и график обслуживания
   'периодичность регламентного то': { key: 'maintenance_periodicity', name: 'Периодичность регламентного ТО', sectionCode: 'maintenance_regulations', fieldType: 'TEXT' },
+  'периодичность технического обслуживания': { key: 'maintenance_periodicity', name: 'Периодичность регламентного ТО', sectionCode: 'maintenance_regulations', fieldType: 'TEXT' },
   'периодичность то': { key: 'maintenance_periodicity', name: 'Периодичность регламентного ТО', sectionCode: 'maintenance_regulations', fieldType: 'TEXT' },
   'регламент то': { key: 'maintenance_periodicity', name: 'Периодичность регламентного ТО', sectionCode: 'maintenance_regulations', fieldType: 'TEXT' },
   'утвержденный график то на 2026 год': { key: 'maintenance_schedule_year', name: 'Утвержденный график ТО на 2026 год', sectionCode: 'maintenance_regulations', fieldType: 'TEXT' },
+  'техническое обслуживание 2026': { key: 'maintenance_schedule_year', name: 'Утвержденный график ТО на 2026 год', sectionCode: 'maintenance_regulations', fieldType: 'TEXT' },
   'утвержденный график то': { key: 'maintenance_schedule_year', name: 'Утвержденный график ТО на 2026 год', sectionCode: 'maintenance_regulations', fieldType: 'TEXT' },
   'график то на 2026 год': { key: 'maintenance_schedule_year', name: 'Утвержденный график ТО на 2026 год', sectionCode: 'maintenance_regulations', fieldType: 'TEXT' },
   'график то': { key: 'maintenance_schedule_year', name: 'Утвержденный график ТО на 2026 год', sectionCode: 'maintenance_regulations', fieldType: 'TEXT' },
   'количество то по графику': { key: 'to_count_scheduled', name: 'Количество ТО по графику', sectionCode: 'maintenance_regulations', fieldType: 'NUMBER' },
+  'кол во то по графику': { key: 'to_count_scheduled', name: 'Количество ТО по графику', sectionCode: 'maintenance_regulations', fieldType: 'NUMBER' },
+  'колво то по графику': { key: 'to_count_scheduled', name: 'Количество ТО по графику', sectionCode: 'maintenance_regulations', fieldType: 'NUMBER' },
   'количество то': { key: 'to_count_scheduled', name: 'Количество ТО по графику', sectionCode: 'maintenance_regulations', fieldType: 'NUMBER' },
   'ответственное лицо фио должность': { key: 'responsible_person_name', name: 'Ответственное лицо (ФИО / Должность)', sectionCode: 'maintenance_regulations', fieldType: 'TEXT' },
   'ответственное лицо': { key: 'responsible_person_name', name: 'Ответственное лицо (ФИО / Должность)', sectionCode: 'maintenance_regulations', fieldType: 'TEXT' },
