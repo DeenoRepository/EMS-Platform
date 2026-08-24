@@ -24,22 +24,24 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    // Ensure standard sections exist
-    const standardSections = [
-      { code: 'classifiers', name: 'Общероссийские и отраслевые классификаторы', description: 'Коды ОКОФ, ОКПД2, классификаторы техпроцесса и децимальные номера', icon: 'Category', sortOrder: 1 },
-      { code: 'condition_wear', name: 'Техническое состояние, износ и критичность', description: 'Процент износа, критичность для производства, класс чистоты ISO, признаки уникальности и импорта', icon: 'Speed', sortOrder: 2 },
-      { code: 'maintenance_regulations', name: 'Регламент ТОиР и график обслуживания', description: 'Периодичность ТО, график на текущий год, ответственные лица и связь с 1С', icon: 'Shield', sortOrder: 3 },
-      { code: 'electrical', name: 'Электротехнические параметры', description: 'Характеристики электропитания, мощности, напряжения и фазности', icon: 'Bolt', sortOrder: 4 },
-      { code: 'mechanics', name: 'Механика, гидравлика и среда', description: 'Рабочие среды, давление, обороты и смазочные материалы', icon: 'WaterDrop', sortOrder: 5 },
-      { code: 'operational', name: 'Эксплуатационные требования и метрология', description: 'Непрерывность процесса, поверки датчиков и регламентные условия', icon: 'Straighten', sortOrder: 6 },
-    ];
+    // Bootstrap standard sections ONLY if database has no sections at all
+    if (sections.length === 0) {
+      const standardSections = [
+        { code: 'classifiers', name: 'Общероссийские и отраслевые классификаторы', description: 'Коды ОКОФ, ОКПД2, классификаторы техпроцесса и децимальные номера', icon: 'Category', sortOrder: 1 },
+        { code: 'condition_wear', name: 'Техническое состояние, износ и критичность', description: 'Процент износа, критичность для производства, класс чистоты ISO, признаки уникальности и импорта', icon: 'Speed', sortOrder: 2 },
+        { code: 'maintenance_regulations', name: 'Регламент ТОиР и график обслуживания', description: 'Периодичность ТО, график на текущий год, ответственные лица и связь с 1С', icon: 'Shield', sortOrder: 3 },
+        { code: 'electrical', name: 'Электротехнические параметры', description: 'Характеристики электропитания, мощности, напряжения и фазности', icon: 'Bolt', sortOrder: 4 },
+        { code: 'mechanics', name: 'Механика, гидравлика и среда', description: 'Рабочие среды, давление, обороты и смазочные материалы', icon: 'WaterDrop', sortOrder: 5 },
+        { code: 'operational', name: 'Эксплуатационные требования и метрология', description: 'Непрерывность процесса, поверки датчиков и регламентные условия', icon: 'Straighten', sortOrder: 6 },
+      ];
 
-    for (const s of standardSections) {
-      await prisma.customSection.upsert({
-        where: { code: s.code },
-        create: s,
-        update: { name: s.name, sortOrder: s.sortOrder },
-      });
+      for (const s of standardSections) {
+        await prisma.customSection.upsert({
+          where: { code: s.code },
+          create: s,
+          update: { name: s.name, sortOrder: s.sortOrder },
+        });
+      }
     }
 
     const allSections = await prisma.customSection.findMany();
@@ -367,9 +369,22 @@ export async function DELETE(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
+    const deleteFields = searchParams.get('deleteFields') === 'true';
 
     if (!id) {
       return NextResponse.json({ success: false, error: 'ID раздела обязателен' }, { status: 400 });
+    }
+
+    // Unassign or delete child fields before deleting section
+    if (deleteFields) {
+      await prisma.customFieldDefinition.deleteMany({
+        where: { sectionId: id },
+      });
+    } else {
+      await prisma.customFieldDefinition.updateMany({
+        where: { sectionId: id },
+        data: { sectionId: null },
+      });
     }
 
     const deleted = await prisma.customSection.delete({
@@ -381,12 +396,12 @@ export async function DELETE(req: NextRequest) {
       action: 'DELETE',
       entityType: 'CustomSection',
       entityId: id,
-      changes: { deletedName: deleted.name },
+      changes: { deletedName: deleted.name, deleteFields },
     });
 
     return NextResponse.json({ success: true, message: 'Раздел удален' });
   } catch (error: any) {
     console.error('Ошибка DELETE /api/eps/custom-sections:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка удаления раздела' }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message || 'Ошибка удаления раздела' }, { status: 500 });
   }
 }
