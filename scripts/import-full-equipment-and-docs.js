@@ -5,8 +5,46 @@
 
 const fs = require('fs');
 const path = require('path');
-const XLSX = require('./apps/web/node_modules/xlsx');
-const { PrismaClient } = require('@prisma/client');
+
+// Load environment variables if available
+const envFiles = ['.env.production', '.env', '../.env.production', '../.env'];
+for (const envFile of envFiles) {
+  const envPath = path.resolve(process.cwd(), envFile);
+  if (fs.existsSync(envPath)) {
+    try {
+      require('dotenv').config({ path: envPath });
+    } catch {}
+    break;
+  }
+}
+
+function resolveModule(moduleName, fallbacks = []) {
+  try {
+    return require(moduleName);
+  } catch (e) {
+    for (const fb of fallbacks) {
+      try {
+        return require(path.resolve(process.cwd(), fb));
+      } catch {}
+      try {
+        return require(path.resolve(__dirname, '..', fb));
+      } catch {}
+    }
+    throw e;
+  }
+}
+
+const XLSX = resolveModule('xlsx', [
+  'node_modules/xlsx',
+  'apps/web/node_modules/xlsx',
+  'packages/shared/node_modules/xlsx',
+]);
+
+const { PrismaClient } = resolveModule('@prisma/client', [
+  'node_modules/@prisma/client',
+  'packages/database/node_modules/@prisma/client',
+  'apps/web/node_modules/@prisma/client',
+]);
 
 const prisma = new PrismaClient();
 
