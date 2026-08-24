@@ -31,6 +31,7 @@ import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined';
 import PrintIcon from '@mui/icons-material/Print';
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import EditLocationAltIcon from '@mui/icons-material/EditLocationAlt';
 import { StatusBadge, EmptyState } from '@/components/ui';
 import { formatDateTime, PERMISSIONS } from '@ems/shared';
@@ -46,8 +47,10 @@ export interface StockDetailData {
   nomenclatureId: string;
   name: string;
   article: string;
+  description?: string | null;
   unit: string;
   category: string;
+  categoryId?: string | null;
   quantity: number;
   minStock: number | string;
   isLowStock: boolean;
@@ -68,6 +71,7 @@ interface StockDetailDrawerProps {
   stockItem: StockDetailData | null;
   onChangeLocation?: (item: StockDetailData) => void;
   onPrintLabel?: (item: StockDetailData) => void;
+  onEdit?: (item: StockDetailData) => void;
 }
 
 export default function StockDetailDrawer({
@@ -76,6 +80,7 @@ export default function StockDetailDrawer({
   stockItem,
   onChangeLocation,
   onPrintLabel,
+  onEdit,
 }: StockDetailDrawerProps) {
   const router = useRouter();
   const { user, hasPermission } = useAuth();
@@ -91,6 +96,12 @@ export default function StockDetailDrawer({
       hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE) ||
       (Boolean(user?.userId) && stockItem.warehouseResponsibleUserId === user?.userId)
     )
+  );
+
+  const canEditNomenclature = Boolean(
+    user?.roles?.includes('admin') ||
+    hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) ||
+    hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE)
   );
 
   useEffect(() => {
@@ -178,9 +189,22 @@ export default function StockDetailDrawer({
           </Box>
         </Box>
 
-        <IconButton onClick={onClose} size="small" sx={{ color: 'text.disabled' }}>
-          <CloseIcon fontSize="small" />
-        </IconButton>
+        <Stack direction="row" spacing={0.5} alignItems="center">
+          {canEditNomenclature && onEdit && (
+            <Tooltip title="Редактировать параметры ТМЦ">
+              <IconButton
+                size="small"
+                onClick={() => onEdit(stockItem)}
+                sx={{ color: 'primary.main', bgcolor: 'rgba(2, 132, 199, 0.08)' }}
+              >
+                <EditOutlinedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          <IconButton onClick={onClose} size="small" sx={{ color: 'text.disabled' }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Stack>
       </Box>
 
       {/* Tabs Bar */}

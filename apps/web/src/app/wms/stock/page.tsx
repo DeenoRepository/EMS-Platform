@@ -36,7 +36,15 @@ import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import CreateNomenclatureDialog from '@/components/wms/CreateNomenclatureDialog';
-import { StockDetailDrawer, PrintBarcodeModal, WarehouseSelect, WmsOperationWizardDialog, type PrintableLabelItem, type OperationType } from '@/components/wms';
+import {
+  StockDetailDrawer,
+  PrintBarcodeModal,
+  WarehouseSelect,
+  WmsOperationWizardDialog,
+  EditNomenclatureDialog,
+  type PrintableLabelItem,
+  type OperationType,
+} from '@/components/wms';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import PrintIcon from '@mui/icons-material/Print';
 import { useSnackbar } from 'notistack';
@@ -178,6 +186,10 @@ function WmsStockContent() {
   // Modal: Operation Wizard
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [wizardType, setWizardType] = useState<OperationType>('RECEIPT');
+
+  // Modal: Edit Nomenclature (ТМЦ)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editItem, setEditItem] = useState<any>(null);
 
   // Load dictionaries once on mount
   useEffect(() => {
@@ -1205,6 +1217,21 @@ function WmsStockContent() {
         stockItem={selectedDrawerItem}
         onChangeLocation={(item) => handleOpenLocationModal(item)}
         onPrintLabel={(item) => handleOpenPrintSingle(item)}
+        onEdit={(item) => {
+          setEditItem(item);
+          setIsEditDialogOpen(true);
+        }}
+      />
+
+      {/* Модальное окно редактирования ТМЦ */}
+      <EditNomenclatureDialog
+        open={isEditDialogOpen}
+        onClose={() => setIsEditDialogOpen(false)}
+        onSaved={() => {
+          fetchStock();
+          setIsDrawerOpen(false);
+        }}
+        item={editItem}
       />
 
       {/* Модальное окно печати термоэтикеток и штрихкодов */}
