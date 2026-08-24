@@ -1062,7 +1062,7 @@ function EquipmentPassportContent() {
                             Ответственное лицо (МОЛ)
                           </TableCell>
                           <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            {respPerson || equipment.createdBy?.displayName || <Typography component="span" variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>}
+                            {respPerson || <Typography component="span" variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>}
                           </TableCell>
                         </TableRow>
                         <TableRow>
