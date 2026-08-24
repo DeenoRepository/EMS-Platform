@@ -439,80 +439,80 @@ export default function WmsInventoryListPage() {
           <TableHead>
             <TableRow sx={{ backgroundColor: 'background.paper' }}>
               {visibleColumns.includes('code') && (
-                <TableCell sx={{ fontWeight: 700, width: 140, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 140 }}>
                   <TableSortLabel
                     active={sortField === 'code'}
                     direction={sortField === 'code' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('code')}
                   >
-                    НОМЕР / АКТ
+                    Номер / Акт
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('warehouse') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 160 }}>
                   <TableSortLabel
                     active={sortField === 'warehouse'}
                     direction={sortField === 'warehouse' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('warehouse')}
                   >
-                    СКЛАД
+                    Склад проведения
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('status') && (
-                <TableCell sx={{ fontWeight: 700, width: 130, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 140 }}>
                   <TableSortLabel
                     active={sortField === 'status'}
                     direction={sortField === 'status' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('status')}
                   >
-                    СТАТУС
+                    Статус
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('count') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 130 }}>
                   <TableSortLabel
                     active={sortField === 'count'}
                     direction={sortField === 'count' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('count')}
                   >
-                    ПОЗИЦИЙ В АКТЕ
+                    Позиций в акте
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('date') && (
-                <TableCell sx={{ fontWeight: 700, width: 160, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 150 }}>
                   <TableSortLabel
                     active={sortField === 'date'}
                     direction={sortField === 'date' ? sortDirection : 'desc'}
                     onClick={() => handleRequestSort('date')}
                   >
-                    ДАТА СОЗДАНИЯ
+                    Дата создания
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('author') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 160 }}>
                   <TableSortLabel
                     active={sortField === 'author'}
                     direction={sortField === 'author' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('author')}
                   >
-                    ОТВЕТСТВЕННЫЙ
+                    Ответственный
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('actions') && (
-                <TableCell align="right" sx={{ fontWeight: 700, width: 140, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
-                  ДЕЙСТВИЯ
+                <TableCell align="right" sx={{ minWidth: 120 }}>
+                  Действия
                 </TableCell>
               )}
             </TableRow>

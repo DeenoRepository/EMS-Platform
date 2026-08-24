@@ -9,10 +9,7 @@ import {
   Box,
   Typography,
   Paper,
-  InputAdornment,
 } from '@mui/material';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
 import { useSnackbar } from 'notistack';
 import { FormDialog } from '@/components/ui';
 
@@ -39,6 +36,22 @@ interface EditNomenclatureDialogProps {
   onSaved: (updatedItem: any) => void;
   item: EditNomenclatureItem | null;
 }
+
+const inputStyle = {
+  '& .MuiOutlinedInput-root': {
+    borderRadius: '8px',
+    fontSize: '0.875rem',
+    backgroundColor: '#ffffff',
+    '& fieldset': { borderColor: '#e2e8f0' },
+    '&:hover fieldset': { borderColor: '#94a3b8' },
+    '&.Mui-focused fieldset': { borderColor: '#0284c7' },
+  },
+  '& .MuiFormHelperText-root': {
+    fontSize: '0.75rem',
+    mt: 0.5,
+    color: '#64748b',
+  },
+};
 
 export default function EditNomenclatureDialog({
   open,
@@ -108,7 +121,7 @@ export default function EditNomenclatureDialog({
 
       const json = await res.json();
       if (res.ok && json.success) {
-        enqueueSnackbar('Карточка ТМЦ успешно обновлена', { variant: 'success' });
+        enqueueSnackbar('Карточка ТМЦ успешно сохранена', { variant: 'success' });
         onSaved(json.data);
         onClose();
       } else {
@@ -126,58 +139,74 @@ export default function EditNomenclatureDialog({
       open={open}
       onClose={onClose}
       title="Редактирование карточки ТМЦ"
-      subtitle="Изменение параметров номенклатурной позиции, модели и лимитов"
+      subtitle="Изменение параметров номенклатурной позиции, модели и нормативов"
       submitLabel="Сохранить изменения"
       loading={isSubmitting}
       onSubmit={handleSubmit}
       maxWidth="sm"
     >
-      <Stack spacing={2.5}>
-        <TextField
-          label="Наименование ТМЦ / Материала"
-          required
-          fullWidth
-          size="small"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Например: Подшипник 623ZZ, Сверло 4.8мм"
-          helperText="Полное наименование номенклатуры для отображения в реестрах и накладных"
-        />
+      <Stack spacing={2.25} sx={{ pt: 0.5 }}>
+        {/* Наименование */}
+        <Box>
+          <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.75, display: 'block' }}>
+            Наименование ТМЦ / Материала <Box component="span" sx={{ color: 'error.main' }}>*</Box>
+          </Typography>
+          <TextField
+            fullWidth
+            size="small"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Например: Подшипник 623ZZ, Сверло 4.8мм"
+            helperText="Полное наименование номенклатуры для отображения в реестрах и накладных"
+            sx={inputStyle}
+          />
+        </Box>
 
+        {/* Артикул / Модель + Ед. измерения */}
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={7}>
+            <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.75, display: 'block' }}>
+              Артикул / Модель
+            </Typography>
             <TextField
-              label="Артикул / Модель"
               fullWidth
               size="small"
               value={article}
               onChange={(e) => setArticle(e.target.value)}
               placeholder="Например: 623ZZ, КУТ61-35-100-15"
               helperText="Уникальный заводской артикул или модель"
+              sx={inputStyle}
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={5}>
+            <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.75, display: 'block' }}>
+              Единица измерения <Box component="span" sx={{ color: 'error.main' }}>*</Box>
+            </Typography>
             <TextField
-              label="Единица измерения"
-              required
               fullWidth
               size="small"
               value={unit}
               onChange={(e) => setUnit(e.target.value)}
               placeholder="шт, кг, м, л, компл"
+              sx={inputStyle}
             />
           </Grid>
         </Grid>
 
+        {/* Категория + Мин. остаток */}
         <Grid container spacing={2}>
           <Grid item xs={12} sm={7}>
+            <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.75, display: 'block' }}>
+              Товарная группа / Категория
+            </Typography>
             <TextField
               select
-              label="Товарная группа / Категория"
               fullWidth
               size="small"
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
+              SelectProps={{ displayEmpty: true }}
+              sx={inputStyle}
             >
               <MenuItem value="">Без категории</MenuItem>
               {categories.map((c) => (
@@ -188,29 +217,38 @@ export default function EditNomenclatureDialog({
             </TextField>
           </Grid>
           <Grid item xs={12} sm={5}>
+            <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.75, display: 'block' }}>
+              Мин. остаток (норматив)
+            </Typography>
             <TextField
-              label="Мин. остаток (норматив)"
               fullWidth
               size="small"
               type="number"
               value={minStock}
               onChange={(e) => setMinStock(e.target.value)}
               placeholder="0"
-              helperText="Порог для оповещения о дефиците"
+              helperText="Порог для контроля дефицита"
+              sx={inputStyle}
             />
           </Grid>
         </Grid>
 
-        <TextField
-          label="Описание / Спецификация"
-          fullWidth
-          multiline
-          rows={2}
-          size="small"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Дополнительные характеристики, завод-изготовитель, параметры..."
-        />
+        {/* Описание */}
+        <Box>
+          <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.75, display: 'block' }}>
+            Описание / Спецификация
+          </Typography>
+          <TextField
+            fullWidth
+            multiline
+            rows={2.5}
+            size="small"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Дополнительные характеристики, завод-изготовитель, параметры применения..."
+            sx={inputStyle}
+          />
+        </Box>
       </Stack>
     </FormDialog>
   );

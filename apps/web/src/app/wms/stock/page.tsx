@@ -739,104 +739,104 @@ function WmsStockContent() {
               </TableCell>
 
               {visibleColumns.includes('warehouse') && (
-                <TableCell sx={{ width: 140, fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 140 }}>
                   <TableSortLabel
                     active={sortField === 'warehouse'}
                     direction={sortField === 'warehouse' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('warehouse')}
                   >
-                    СКЛАД
+                    Склад хранения
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('zone') && (
-                <TableCell sx={{ width: 160, fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 160 }}>
                   <TableSortLabel
                     active={sortField === 'zone'}
                     direction={sortField === 'zone' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('zone')}
                   >
-                    МЕСТО (ЯЧЕЙКА)
+                    Место (ячейка)
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('sku') && (
-                <TableCell sx={{ width: 140, fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 140 }}>
                   <TableSortLabel
                     active={sortField === 'sku'}
                     direction={sortField === 'sku' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('sku')}
                   >
-                    АРТИКУЛ / МОДЕЛЬ
+                    Артикул / Модель
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('name') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 220 }}>
                   <TableSortLabel
                     active={sortField === 'name'}
                     direction={sortField === 'name' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('name')}
                   >
-                    НОМЕНКЛАТУРА (ТМЦ)
+                    Номенклатура (ТМЦ)
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('category') && (
-                <TableCell sx={{ width: 140, fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 150 }}>
                   <TableSortLabel
                     active={sortField === 'category'}
                     direction={sortField === 'category' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('category')}
                   >
-                    КАТЕГОРИЯ
+                    Категория
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('quantity') && (
-                <TableCell align="right" sx={{ width: 140, fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell align="right" sx={{ minWidth: 140 }}>
                   <TableSortLabel
                     active={sortField === 'quantity'}
                     direction={sortField === 'quantity' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('quantity')}
                   >
-                    ОСТАТОК НА СКЛАДЕ
+                    Остаток на складе
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('minQuantity') && (
-                <TableCell align="center" sx={{ width: 110, fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell align="center" sx={{ minWidth: 120 }}>
                   <TableSortLabel
                     active={sortField === 'minQuantity'}
                     direction={sortField === 'minQuantity' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('minQuantity')}
                   >
-                    МИН. ОСТАТОК
+                    Мин. остаток
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('status') && (
-                <TableCell align="center" sx={{ width: 120, fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell align="center" sx={{ minWidth: 130 }}>
                   <TableSortLabel
                     active={sortField === 'status'}
                     direction={sortField === 'status' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('status')}
                   >
-                    СТАТУС
+                    Статус
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('equipment') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
-                  СОВМЕСТИМОЕ ОБОРУДОВАНИЕ
+                <TableCell sx={{ minWidth: 180 }}>
+                  Совместимое оборудование
                 </TableCell>
               )}
             </TableRow>
