@@ -47,26 +47,23 @@ cd "$INSTALL_DIR"
 # 5. Setup Production Environment (.env.production)
 if [ ! -f ".env.production" ]; then
     echo "⚙️ Создание файла конфигурации .env.production..."
-    if [ -f ".env.production.example" ]; then
-        cp .env.production.example .env.production
-    else
-        cat << 'EOF' > .env.production
+    RANDOM_JWT="ems_jwt_secret_$(openssl rand -hex 24 2>/dev/null || echo 'default_secure_secret_key_ems_32chars')"
+    cat << EOF > .env.production
 DATABASE_URL="postgresql://ems_user:ems_secure_password@localhost:5432/ems_db?schema=public"
-JWT_SECRET="super_secret_jwt_key_ems_platform_production_change_me_32chars"
+POSTGRES_USER=ems_user
+POSTGRES_PASSWORD=ems_secure_password
+POSTGRES_DB=ems_db
+JWT_SECRET="${RANDOM_JWT}"
 PORT=3000
 NODE_ENV=production
 UPLOAD_DIR="/opt/ems-platform/uploads"
 EOF
-    fi
-
-    # Generate random JWT Secret
-    if command -v openssl &> /dev/null; then
-        RANDOM_JWT=$(openssl rand -base64 36 | tr -dc 'a-zA-Z0-9' | head -c 48)
-        sed -i "s/GENERATE_RANDOM_SECRET_KEY_MINIMUM_32_CHARACTERS_HERE/$RANDOM_JWT/" .env.production 2>/dev/null || true
-    fi
-    echo "✅ Файл .env.production сформирован."
-    echo "ℹ️ Проверьте настройки подключения к PostgreSQL в файле ${INSTALL_DIR}/.env.production"
+    cp .env.production .env
+    echo "✅ Файл .env.production сформирован (DATABASE_URL настроен на localhost:5432/ems_db)."
 fi
+
+# Ensure .env exists for Prisma CLI auto-discovery
+cp -n .env.production .env 2>/dev/null || true
 
 # 6. Prepare uploads directory
 mkdir -p "$INSTALL_DIR/uploads"
@@ -76,7 +73,7 @@ chmod -R 755 "$INSTALL_DIR"
 # 7. Push Database Schema via local Prisma Engine
 echo "🗄️ Синхронизация схемы базы данных PostgreSQL..."
 set +e
-su -s /bin/sh ems -c "cd '$INSTALL_DIR' && ./packages/database/node_modules/.bin/prisma db push --schema=packages/database/prisma/schema.prisma --accept-data-loss"
+su -s /bin/sh ems -c "cd '$INSTALL_DIR' && export \$(grep -v '^#' .env.production | xargs) && ./packages/database/node_modules/.bin/prisma db push --schema=packages/database/prisma/schema.prisma --accept-data-loss"
 PRISMA_STATUS=$?
 set -e
 
