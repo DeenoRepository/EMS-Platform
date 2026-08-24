@@ -46,6 +46,7 @@ export async function GET(req: NextRequest) {
         OR: [
           { name: { contains: search, mode: 'insensitive' } },
           { article: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } },
         ],
       };
     }
@@ -106,6 +107,7 @@ export async function GET(req: NextRequest) {
             nomenclatureId: item.nomenclatureId,
             name: item.nomenclature.name,
             article: item.nomenclature.article || '—',
+            description: item.nomenclature.description || null,
             unit: item.nomenclature.unit,
             category: item.nomenclature.category?.name || 'Без категории',
             quantity: qty,
@@ -176,6 +178,7 @@ export async function GET(req: NextRequest) {
           nomenclatureId: item.nomenclatureId,
           name: item.nomenclature.name,
           article: item.nomenclature.article || '—',
+          description: item.nomenclature.description || null,
           unit: item.nomenclature.unit,
           category: item.nomenclature.category?.name || 'Без категории',
           quantity: qty,

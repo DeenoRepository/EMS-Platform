@@ -165,6 +165,21 @@ async function main() {
 
   console.log(`👤 Привязка операций к пользователю: ${adminUser.ldapLogin || adminUser.id}`);
 
+  // 0. Очистка старых данных WMS для чистого и точного импорта
+  console.log('🧹 Очистка старых данных WMS перед импортом...');
+  await prisma.stockOperationItem.deleteMany().catch(() => {});
+  await prisma.stockOperation.deleteMany().catch(() => {});
+  await prisma.stockTransferItem.deleteMany().catch(() => {});
+  await prisma.stockTransfer.deleteMany().catch(() => {});
+  await prisma.stockItem.deleteMany().catch(() => {});
+  await prisma.equipmentSparePart.deleteMany().catch(() => {});
+  await prisma.inventoryItem.deleteMany().catch(() => {});
+  await prisma.inventory.deleteMany().catch(() => {});
+  await prisma.nomenclature.deleteMany().catch(() => {});
+  await prisma.storageCell.deleteMany().catch(() => {});
+  await prisma.storageZone.deleteMany().catch(() => {});
+  await prisma.warehouse.deleteMany().catch(() => {});
+
   // 1. Импорт складов (Warehouse)
   console.log('\n🏬 1. Импорт складов...');
   const dwmsWarehouses = parseCopyTable(sqlContent, 'warehouses');
@@ -176,26 +191,16 @@ async function main() {
     const name = wh._data?.Name || wh.name || `Склад №${whIndex}`;
     const code = `WH-${slugify(name).toUpperCase() || String(whIndex).padStart(2, '0')}`;
 
-    let warehouse = await prisma.warehouse.findFirst({
-      where: {
-        OR: [{ id: rawId }, { code }, { name }],
+    const warehouse = await prisma.warehouse.create({
+      data: {
+        id: rawId,
+        name,
+        code,
+        location: 'г. Новосибирск',
+        isActive: true,
       },
     });
-
-    if (!warehouse) {
-      warehouse = await prisma.warehouse.create({
-        data: {
-          id: rawId,
-          name,
-          code,
-          location: 'г. Новосибирск',
-          isActive: true,
-        },
-      });
-      console.log(`  ➕ Создан склад: "${name}" (${code})`);
-    } else {
-      console.log(`  ✔ Склад уже существует: "${warehouse.name}" (${warehouse.code})`);
-    }
+    console.log(`  ➕ Создан склад: "${name}" (${code})`);
     warehouseIdMap.set(rawId, warehouse.id);
     whIndex++;
   }
@@ -228,73 +233,65 @@ async function main() {
   const dwmsAssets = parseCopyTable(sqlContent, 'assets');
   const assetIdMap = new Map(); // oldId -> newId
   let createdNomenclatures = 0;
-  let updatedNomenclatures = 0;
 
   for (const a of dwmsAssets) {
     const rawId = a.id;
-    const name = a._data?.Name || a.name;
-    if (!name) continue;
+    const baseName = (a._data?.Name || a.name || 'Без названия').trim();
+    if (!baseName || baseName === 'null') continue;
 
-    const model = a._data?.Model || a.model || null;
-    const articul = a._data?.Articul || a.articul || null;
-    const serial = a._data?.SerialNumber || a.serial_number || null;
+    const model = (a._data?.Model || a.model || '').trim();
+    const articul = (a._data?.Articul || a.articul || '').trim();
+    const serial = (a._data?.SerialNumber || a.serial_number || '').trim();
     const unit = a._data?.UnitOfMeasure || a.unit_of_measure || 'шт.';
     const minLimit = a._data?.MinLimit !== undefined ? Number(a._data.MinLimit) : Number(a.min_limit || 0);
 
+    // Формируем понятное и полное наименование ТМЦ с моделью
+    let fullName = baseName;
+    if (model && model !== 'null' && !baseName.toLowerCase().includes(model.toLowerCase())) {
+      fullName = `${baseName} ${model}`;
+    }
+
     // Подбираем категорию
     let categoryId = categoryMap.get('consumables');
-    const lowerName = name.toLowerCase();
-    if (lowerName.includes('сверло') || lowerName.includes('фреза') || lowerName.includes('ключ') || lowerName.includes('отвертк') || lowerName.includes('инструмент')) {
+    const lowerName = fullName.toLowerCase();
+    if (lowerName.includes('сверло') || lowerName.includes('фреза') || lowerName.includes('ключ') || lowerName.includes('отвертк') || lowerName.includes('инструмент') || lowerName.includes('круг полировочный')) {
       categoryId = categoryMap.get('tools');
-    } else if (lowerName.includes('винт') || lowerName.includes('болт') || lowerName.includes('гайка') || lowerName.includes('шайба')) {
+    } else if (lowerName.includes('винт') || lowerName.includes('болт') || lowerName.includes('гайка') || lowerName.includes('шайба') || lowerName.includes('заклёпка') || lowerName.includes('заклепка')) {
       categoryId = categoryMap.get('fasteners');
-    } else if (lowerName.includes('микросхем') || lowerName.includes('резистор') || lowerName.includes('конденсатор') || lowerName.includes('диод') || lowerName.includes('транзистор')) {
+    } else if (lowerName.includes('микросхем') || lowerName.includes('резистор') || lowerName.includes('конденсатор') || lowerName.includes('диод') || lowerName.includes('транзистор') || lowerName.includes('термодат') || lowerName.includes('реле')) {
       categoryId = categoryMap.get('electronics');
-    } else if (model || serial || lowerName.includes('узел') || lowerName.includes('плата') || lowerName.includes('датчик') || lowerName.includes('блок')) {
+    } else if (model || serial || lowerName.includes('узел') || lowerName.includes('плата') || lowerName.includes('датчик') || lowerName.includes('блок') || lowerName.includes('электродвигатель') || lowerName.includes('подшипник') || lowerName.includes('капиляр') || lowerName.includes('клапан')) {
       categoryId = categoryMap.get('spare-parts');
     }
 
-    let existingNom = await prisma.nomenclature.findFirst({
-      where: {
-        OR: [
-          { id: rawId },
-          { name },
-          ...(articul ? [{ article: articul }] : []),
-        ],
+    // Артикул: используем артикул или модель, если уникален
+    let articleVal = articul && articul !== 'null' ? articul : (model && model !== 'null' ? model : null);
+
+    // Проверяем уникальность артикула в базе
+    if (articleVal) {
+      const existsArt = await prisma.nomenclature.findFirst({ where: { article: articleVal } });
+      if (existsArt) {
+        articleVal = `${articleVal}-${rawId.substring(0, 4)}`;
+      }
+    }
+
+    const newNom = await prisma.nomenclature.create({
+      data: {
+        id: rawId,
+        name: fullName,
+        article: articleVal || undefined,
+        unit: unit.replace(/\.$/, '') || 'шт',
+        minStock: minLimit,
+        description: model && model !== 'null' ? `Модель: ${model}` : (serial && serial !== 'null' ? `Серийный №: ${serial}` : null),
+        categoryId,
       },
     });
 
-    if (existingNom) {
-      await prisma.nomenclature.update({
-        where: { id: existingNom.id },
-        data: {
-          name,
-          unit: unit.replace(/\.$/, ''),
-          minStock: minLimit,
-          description: model ? `Модель: ${model}` : existingNom.description,
-          categoryId,
-        },
-      });
-      assetIdMap.set(rawId, existingNom.id);
-      updatedNomenclatures++;
-    } else {
-      const newNom = await prisma.nomenclature.create({
-        data: {
-          id: rawId,
-          name,
-          article: articul || undefined,
-          unit: unit.replace(/\.$/, '') || 'шт',
-          minStock: minLimit,
-          description: model ? `Модель: ${model}` : (serial ? `Серийный №: ${serial}` : null),
-          categoryId,
-        },
-      });
-      assetIdMap.set(rawId, newNom.id);
-      createdNomenclatures++;
-    }
+    assetIdMap.set(rawId, newNom.id);
+    createdNomenclatures++;
   }
 
-  console.log(`✅ Номенклатура обработана: создано ${createdNomenclatures}, обновлено ${updatedNomenclatures}. Всего: ${dwmsAssets.length}`);
+  console.log(`✅ Номенклатура импортирована: создано ${createdNomenclatures} уникальных позиций ТМЦ с моделями.`);
 
   // 4. Импорт локаций, зон и ячеек адресного хранения (locations & stock cells)
   console.log('\n📍 4. Настройка зон и ячеек хранения...');

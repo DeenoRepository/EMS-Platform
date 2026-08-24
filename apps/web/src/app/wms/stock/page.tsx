@@ -67,6 +67,7 @@ interface StockRow {
   nomenclatureId: string;
   name: string;
   article: string;
+  description?: string | null;
   unit: string;
   category: string;
   quantity: number;
@@ -104,7 +105,7 @@ interface ZoneOption {
 const STOCK_COLUMNS: TableColumnOption[] = [
   { id: 'warehouse', label: 'Склад хранения', defaultVisible: true },
   { id: 'zone', label: 'Адресная ячейка хранения', defaultVisible: true },
-  { id: 'sku', label: 'Номенклатурный артикул', defaultVisible: true },
+  { id: 'sku', label: 'Артикул / Модель', defaultVisible: true },
   { id: 'name', label: 'Наименование ТМЦ', defaultVisible: true, required: true },
   { id: 'category', label: 'Товарная группа / Категория', defaultVisible: true },
   { id: 'quantity', label: 'Фактический остаток', defaultVisible: true },
@@ -750,13 +751,13 @@ function WmsStockContent() {
               )}
 
               {visibleColumns.includes('sku') && (
-                <TableCell sx={{ width: 120, fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ width: 140, fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
                   <TableSortLabel
                     active={sortField === 'sku'}
                     direction={sortField === 'sku' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('sku')}
                   >
-                    АРТИКУЛ
+                    АРТИКУЛ / МОДЕЛЬ
                   </TableSortLabel>
                 </TableCell>
               )}
@@ -944,8 +945,25 @@ function WmsStockContent() {
                   )}
 
                   {visibleColumns.includes('sku') && (
-                    <TableCell sx={{ fontFamily: 'monospace', fontWeight: 500, fontSize: '0.8125rem', color: 'text.secondary' }}>
-                      {row.article || '—'}
+                    <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600, fontSize: '0.8125rem', color: 'text.secondary' }}>
+                      {row.article && row.article !== '—' ? (
+                        <Chip
+                          label={row.article}
+                          size="small"
+                          sx={{
+                            borderRadius: '4px',
+                            fontWeight: 600,
+                            fontSize: '0.75rem',
+                            fontFamily: 'monospace',
+                            backgroundColor: '#f1f5f9',
+                            color: '#334155',
+                            border: '1px solid #cbd5e1',
+                            height: 22,
+                          }}
+                        />
+                      ) : (
+                        '—'
+                      )}
                     </TableCell>
                   )}
 
@@ -960,7 +978,14 @@ function WmsStockContent() {
                         '&:hover': { textDecoration: 'underline' },
                       }}
                     >
-                      {row.name}
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main', fontSize: '0.8125rem' }}>
+                        {row.name}
+                      </Typography>
+                      {row.description && !row.name.includes(row.description.replace('Модель: ', '')) && (
+                        <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', fontSize: '0.75rem', fontWeight: 500, mt: 0.25 }}>
+                          {row.description}
+                        </Typography>
+                      )}
                     </TableCell>
                   )}
 
