@@ -30,17 +30,10 @@ mkdir -p "$PACKAGE_DIR/scripts"
 mkdir -p "$PACKAGE_DIR/docs"
 mkdir -p "$PACKAGE_DIR/uploads"
 
-# 4. Copy Web App (excluding .next/cache to reduce archive size by 70%)
+# 4. Copy Web App (including all Next.js App Router manifests, excluding cache/trace)
 echo "📄 Копирование скомпилированного Next.js приложения..."
-mkdir -p "$PACKAGE_DIR/apps/web/.next"
-cp -r apps/web/.next/server "$PACKAGE_DIR/apps/web/.next/"
-cp -r apps/web/.next/static "$PACKAGE_DIR/apps/web/.next/"
-cp apps/web/.next/BUILD_ID "$PACKAGE_DIR/apps/web/.next/" 2>/dev/null || true
-cp apps/web/.next/prerender-manifest.json "$PACKAGE_DIR/apps/web/.next/" 2>/dev/null || true
-cp apps/web/.next/routes-manifest.json "$PACKAGE_DIR/apps/web/.next/" 2>/dev/null || true
-cp apps/web/.next/required-server-files.json "$PACKAGE_DIR/apps/web/.next/" 2>/dev/null || true
-cp apps/web/.next/build-manifest.json "$PACKAGE_DIR/apps/web/.next/" 2>/dev/null || true
-cp apps/web/.next/react-loadable-manifest.json "$PACKAGE_DIR/apps/web/.next/" 2>/dev/null || true
+cp -r apps/web/.next "$PACKAGE_DIR/apps/web/.next"
+rm -rf "$PACKAGE_DIR/apps/web/.next/cache" "$PACKAGE_DIR/apps/web/.next/trace"
 
 if [ -d "apps/web/public" ]; then
     cp -r apps/web/public "$PACKAGE_DIR/apps/web/public"
