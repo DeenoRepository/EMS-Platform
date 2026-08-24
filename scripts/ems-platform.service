@@ -1,0 +1,35 @@
+[Unit]
+Description=EMS Platform — Equipment Management System
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=ems
+Group=ems
+WorkingDirectory=/opt/ems-platform
+EnvironmentFile=/opt/ems-platform/.env.production
+Environment=NODE_ENV=production
+Environment=PORT=3000
+
+# Push / verify database schema on start
+ExecStartPre=-/bin/sh -c 'cd /opt/ems-platform && node node_modules/prisma/build/index.js db push --schema=packages/database/prisma/schema.prisma --accept-data-loss || true'
+
+# Start Next.js Web server
+ExecStart=/usr/bin/node /opt/ems-platform/node_modules/next/dist/bin/next start /opt/ems-platform/apps/web -p 3000
+
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ems-platform
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
