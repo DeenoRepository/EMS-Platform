@@ -17,7 +17,7 @@ const KNOWN_BASE_FIELDS: ColumnMatchRule[] = [
   {
     targetKey: 'name',
     targetName: 'Наименование оборудования',
-    aliases: ['наименование оборудования', 'наименование', 'название', 'оборудование', 'name', 'title', 'equipment name'],
+    aliases: ['наименование оборудования', 'название оборудования', 'оборудование', 'наименование', 'название', 'name', 'title', 'equipment name', 'equipment_name'],
   },
   {
     targetKey: 'inventoryNumber',
@@ -27,27 +27,27 @@ const KNOWN_BASE_FIELDS: ColumnMatchRule[] = [
   {
     targetKey: 'serialNumber',
     targetName: 'Заводской / Серийный номер',
-    aliases: ['заводской номер', 'серийный номер', 'заводской / серийный номер', 'зав. номер', 'зав. №', 'зав №', 'серийный', 'serialnumber', 'serial number', 'serial', 'sn'],
+    aliases: ['заводской / серийный номер', 'заводской номер', 'серийный номер', 'заводской №', 'заводской', 'зав. номер', 'зав. №', 'зав №', 'зав.', 'серийный', 'serialnumber', 'serial number', 'serial', 'sn'],
   },
   {
     targetKey: 'manufacturer',
     targetName: 'Производитель',
-    aliases: ['производитель', 'изготовитель', 'бренд', 'завод-изготовитель', 'вендор', 'manufacturer', 'vendor', 'brand', 'make'],
+    aliases: ['наименование производителя', 'производитель', 'изготовитель', 'бренд', 'завод-изготовитель', 'завод изготовитель', 'вендор', 'производитель / бренд', 'страна / производитель', 'manufacturer', 'vendor', 'brand', 'make'],
   },
   {
     targetKey: 'model',
     targetName: 'Модель / Модификация',
-    aliases: ['модель', 'модификация', 'модель / модификация', 'марка', 'тип оборудования', 'model', 'type'],
+    aliases: ['модель / модификация', 'модель', 'модификация', 'марка', 'model', 'type'],
   },
   {
     targetKey: 'location',
     targetName: 'Место установки (Локация)',
-    aliases: ['место установки', 'локация', 'цех', 'участок', 'местоположение', 'помещение', 'location', 'site', 'placement'],
+    aliases: ['расположение (улица, корпус, этаж, участок)', 'место установки (локация)', 'расположение', 'место установки', 'локация', 'цех', 'участок', 'местоположение', 'помещение', 'location', 'site', 'placement'],
   },
   {
     targetKey: 'status',
     targetName: 'Рабочий статус',
-    aliases: ['статус', 'рабочий статус', 'состояние', 'текущий статус', 'status', 'state'],
+    aliases: ['рабочий статус', 'статус', 'состояние', 'текущий статус', 'status', 'state'],
   },
   {
     targetKey: 'commissionDate',
@@ -57,7 +57,7 @@ const KNOWN_BASE_FIELDS: ColumnMatchRule[] = [
   {
     targetKey: 'tags',
     targetName: 'Теги / Классификаторы',
-    aliases: ['теги', 'классификаторы', 'категории', 'метки', 'tags', 'categories', 'labels'],
+    aliases: ['теги / классификаторы', 'теги', 'классификаторы', 'категории', 'метки', 'tags', 'categories', 'labels'],
   },
 ];
 
@@ -65,6 +65,7 @@ function normalizeHeader(str: string): string {
   return str
     .toLowerCase()
     .replace(/[*[\]()]/g, '')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
@@ -161,10 +162,31 @@ export async function POST(req: NextRequest) {
     fileHeaders.forEach((header) => {
       const norm = normalizeHeader(header);
 
-      // Check base fields
-      const matchedBase = KNOWN_BASE_FIELDS.find((rule) =>
-        rule.aliases.some((alias) => norm === alias || norm.startsWith(alias) || alias.startsWith(norm))
+      // 1. Exact match against base field aliases
+      let matchedBase = KNOWN_BASE_FIELDS.find((rule) =>
+        rule.aliases.some((alias) => norm === alias)
       );
+
+      // 2. If no exact match, find best match prioritized by alias length (longest alias first)
+      if (!matchedBase) {
+        let bestTargetKey: string | null = null;
+        let longestMatch = 0;
+
+        for (const rule of KNOWN_BASE_FIELDS) {
+          for (const alias of rule.aliases) {
+            if (norm.includes(alias) || alias.includes(norm)) {
+              if (alias.length > longestMatch && alias.length >= 4) {
+                longestMatch = alias.length;
+                bestTargetKey = rule.targetKey;
+              }
+            }
+          }
+        }
+
+        if (bestTargetKey) {
+          matchedBase = KNOWN_BASE_FIELDS.find((r) => r.targetKey === bestTargetKey);
+        }
+      }
 
       if (matchedBase) {
         mappedColumns[header] = matchedBase.targetKey;
