@@ -565,7 +565,7 @@ export function DataTableWrapper({
       ) : (
         <TableContainer
           sx={{
-            maxHeight: maxHeight || (stickyHeader ? 600 : 'none'),
+            maxHeight: maxHeight || 'none',
             '&::-webkit-scrollbar': { height: 6, width: 6 },
             '&::-webkit-scrollbar-track': { backgroundColor: '#f8fafc' },
             '&::-webkit-scrollbar-thumb': { backgroundColor: '#cbd5e1', borderRadius: 3 },
