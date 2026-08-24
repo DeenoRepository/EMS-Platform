@@ -372,11 +372,19 @@ async function main() {
     // 1. Классификаторы
     {
       sectionId: sectionClassifiers.id,
+      key: 'decimal_number',
+      name: 'Децимальный номер',
+      fieldType: FieldType.TEXT,
+      defaultValue: '',
+      sortOrder: 1,
+    },
+    {
+      sectionId: sectionClassifiers.id,
       key: 'okof_code',
       name: 'Код по ОКОФ (ОК 013-2014)',
       fieldType: FieldType.TEXT,
       defaultValue: '330.28.99.39',
-      sortOrder: 1,
+      sortOrder: 2,
     },
     {
       sectionId: sectionClassifiers.id,
@@ -384,7 +392,7 @@ async function main() {
       name: 'Код по ОКПД2 (ОК 034-2014)',
       fieldType: FieldType.TEXT,
       defaultValue: '28.99.39.190',
-      sortOrder: 2,
+      sortOrder: 3,
     },
     {
       sectionId: sectionClassifiers.id,

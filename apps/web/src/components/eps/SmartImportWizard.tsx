@@ -150,7 +150,7 @@ export function SmartImportWizard() {
         setErrorCount(json.data.errorCount);
 
         const initialResolutions: Record<string, MissingFieldResolution> = {};
-        (json.data.missingFields || []).forEach((mf: MissingFieldItem) => {
+        (json.data.missingFields || []).forEach((mf: any) => {
           initialResolutions[mf.header] = {
             header: mf.header,
             action: 'CREATE',
@@ -158,8 +158,10 @@ export function SmartImportWizard() {
             key: mf.suggestedKey,
             fieldType: mf.suggestedType,
             unit: mf.suggestedUnit || '',
-            sectionId: '',
-          };
+            sectionId: mf.sectionId || '',
+            ...(mf.suggestedSectionName ? { sectionName: mf.suggestedSectionName } : {}),
+            ...(mf.suggestedSectionCode ? { sectionCode: mf.suggestedSectionCode } : {}),
+          } as any;
         });
         setResolutions(initialResolutions);
 
@@ -206,13 +208,15 @@ export function SmartImportWizard() {
 
     const newFieldDefs = Object.values(resolutions)
       .filter((r) => r.action === 'CREATE')
-      .map((r) => ({
+      .map((r: any) => ({
         header: r.header,
         key: r.key,
         name: r.name,
         fieldType: r.fieldType,
         unit: r.unit || undefined,
         sectionId: r.sectionId || undefined,
+        sectionName: r.sectionName || undefined,
+        sectionCode: r.sectionCode || undefined,
       }));
 
     const ignoredHeaders = Object.values(resolutions)
