@@ -17,7 +17,11 @@ const KNOWN_BASE_FIELDS: ColumnMatchRule[] = [
   {
     targetKey: 'name',
     targetName: 'Наименование оборудования',
-    aliases: ['наименование оборудования', 'название оборудования', 'оборудование', 'наименование', 'название', 'name', 'title', 'equipment name', 'equipment_name'],
+    aliases: [
+      'наименование оборудования', 'название оборудования', 'наименование', 'название',
+      'наименование актива', 'название актива', 'наименование объекта',
+      'name', 'title', 'equipment name', 'equipment_name'
+    ],
   },
   {
     targetKey: 'inventoryNumber',
@@ -72,7 +76,7 @@ const KNOWN_BASE_FIELDS: ColumnMatchRule[] = [
 function normalizeHeader(str: string): string {
   return str
     .toLowerCase()
-    .replace(/[*[\]()]/g, '')
+    .replace(/[*[\]()/,\\-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -362,38 +366,17 @@ export async function POST(req: NextRequest) {
     fileHeaders.forEach((header) => {
       const norm = normalizeHeader(header);
 
-      // 1. Exact match against base field aliases
-      let matchedBase = KNOWN_BASE_FIELDS.find((rule) =>
+      // 1. Exact match against known base fields
+      const matchedBaseExact = KNOWN_BASE_FIELDS.find((rule) =>
         rule.aliases.some((alias) => norm === alias)
       );
 
-      // 2. If no exact match, find best match prioritized by alias length (longest alias first)
-      if (!matchedBase) {
-        let bestTargetKey: string | null = null;
-        let longestMatch = 0;
-
-        for (const rule of KNOWN_BASE_FIELDS) {
-          for (const alias of rule.aliases) {
-            if (norm.includes(alias) || alias.includes(norm)) {
-              if (alias.length > longestMatch && alias.length >= 4) {
-                longestMatch = alias.length;
-                bestTargetKey = rule.targetKey;
-              }
-            }
-          }
-        }
-
-        if (bestTargetKey) {
-          matchedBase = KNOWN_BASE_FIELDS.find((r) => r.targetKey === bestTargetKey);
-        }
-      }
-
-      if (matchedBase) {
-        mappedColumns[header] = matchedBase.targetKey;
+      if (matchedBaseExact) {
+        mappedColumns[header] = matchedBaseExact.targetKey;
         return;
       }
 
-      // Check existing custom fields
+      // 2. Check existing custom fields in DB (by name, key, or name+unit)
       const matchedCustom = existingCustomFields.find(
         (cf) =>
           normalizeHeader(cf.name) === norm ||
@@ -406,10 +389,31 @@ export async function POST(req: NextRequest) {
         return;
       }
 
-      // If not matched -> Missing field!
+      // 3. Check Canonical Field Dictionary (e.g. is_unique, is_imported, country_origin, etc.)
+      const canonicalMatch = CANONICAL_FIELD_DICTIONARY[norm] || Object.values(CANONICAL_FIELD_DICTIONARY).find((c) => normalizeHeader(c.name) === norm);
+      if (canonicalMatch) {
+        // Check if this canonical field already exists in DB by key
+        const existingDef = existingCustomFields.find((cf) => cf.key === canonicalMatch.key);
+        if (existingDef) {
+          mappedColumns[header] = `custom_${existingDef.key}`;
+          return;
+        }
+      }
+
+      // 4. Controlled prefix/fuzzy match for base fields (excluding 'name' to avoid false positives on 'оборудование')
+      const matchedBaseFuzzy = KNOWN_BASE_FIELDS.find((rule) => {
+        if (rule.targetKey === 'name') return false; // Name must only match exact aliases!
+        return rule.aliases.some((alias) => norm.startsWith(alias) || alias.startsWith(norm));
+      });
+
+      if (matchedBaseFuzzy) {
+        mappedColumns[header] = matchedBaseFuzzy.targetKey;
+        return;
+      }
+
+      // 5. If not matched -> Missing field!
       const sampleVals = rawJsonRows.slice(0, 5).map((r) => r[header]);
-      const suggestedKey = makeEnglishSlug(header);
-      const canonicalMatch = CANONICAL_FIELD_DICTIONARY[norm] || Object.values(CANONICAL_FIELD_DICTIONARY).find((c) => c.key === suggestedKey);
+      const suggestedKey = canonicalMatch?.key || makeEnglishSlug(header);
       const guessedType = canonicalMatch?.fieldType || guessFieldType(sampleVals);
 
       // Intelligent section inference
