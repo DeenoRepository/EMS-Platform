@@ -1826,20 +1826,6 @@ function EquipmentPassportContent() {
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Критичность (A/B/C)"
-                  select
-                  fullWidth
-                  size="small"
-                  value={editForm.criticality || 'B'}
-                  onChange={(e) => setEditForm({ ...editForm, criticality: e.target.value })}
-                >
-                  <MenuItem value="A">Класс A (Критическое)</MenuItem>
-                  <MenuItem value="B">Класс B (Основное)</MenuItem>
-                  <MenuItem value="C">Класс C (Вспомогательное)</MenuItem>
-                </TextField>
-              </Grid>
-              <Grid item xs={12} sm={6}>
                 <FormControl fullWidth size="small">
                   <InputLabel id="edit-status-label">Статус оборудования</InputLabel>
                   <Select
@@ -1919,12 +1905,12 @@ function EquipmentPassportContent() {
                   return (
                     <Grid item xs={12} sm={6} key={f.key}>
                       <TextField
-                        label={f.name}
+                        label={f.unit ? `${f.name} (${f.unit})` : f.name}
                         type={f.fieldType === 'NUMBER' ? 'number' : f.fieldType === 'DATE' ? 'date' : 'text'}
                         InputLabelProps={f.fieldType === 'DATE' ? { shrink: true } : undefined}
                         fullWidth
                         size="small"
-                        value={editCustomFields[f.key] || ''}
+                        value={editCustomFields[f.key] ?? ''}
                         onChange={(e) =>
                           setEditCustomFields({ ...editCustomFields, [f.key]: e.target.value })
                         }
@@ -1935,6 +1921,32 @@ function EquipmentPassportContent() {
               </Grid>
             </Box>
           ))}
+
+          {/* Section 3: Unassigned Custom Fields (if any) */}
+          {unassignedFields.length > 0 && (
+            <Box>
+              <Typography variant="subtitle1" fontWeight={700} color="text.secondary" sx={{ mb: 2 }}>
+                Дополнительные характеристики
+              </Typography>
+              <Grid container spacing={2}>
+                {unassignedFields.map((f) => (
+                  <Grid item xs={12} sm={6} key={f.key}>
+                    <TextField
+                      label={f.unit ? `${f.name} (${f.unit})` : f.name}
+                      type={f.fieldType === 'NUMBER' ? 'number' : f.fieldType === 'DATE' ? 'date' : 'text'}
+                      InputLabelProps={f.fieldType === 'DATE' ? { shrink: true } : undefined}
+                      fullWidth
+                      size="small"
+                      value={editCustomFields[f.key] ?? ''}
+                      onChange={(e) =>
+                        setEditCustomFields({ ...editCustomFields, [f.key]: e.target.value })
+                      }
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
+          )}
         </Box>
       </FormDialog>
 
