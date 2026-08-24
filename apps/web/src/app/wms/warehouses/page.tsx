@@ -214,6 +214,14 @@ export default function WmsWarehousesPage() {
     );
   }, [warehouses, search]);
 
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+
+  const paginatedWarehouses = useMemo(() => {
+    return filteredWarehouses.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
+  }, [filteredWarehouses, page, rowsPerPage]);
+
   const totalWarehouses = warehouses.length;
   const activeWarehouses = warehouses.filter((w) => w.isActive).length;
   const totalStockItems = warehouses.reduce((acc, w) => acc + (w._count?.stockItems || 0), 0);
@@ -534,21 +542,32 @@ export default function WmsWarehousesPage() {
           ))}
         </Grid>
       ) : (
-        <DataTableWrapper total={filteredWarehouses.length}>
+        <DataTableWrapper
+          page={page}
+          pageSize={rowsPerPage}
+          total={filteredWarehouses.length}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          onPageSizeChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
+            setPage(0);
+          }}
+          pageSizeOptions={[15, 25, 50, 100]}
+          stickyHeader
+        >
           <Table size="small">
             <TableHead sx={{ bgcolor: '#f8fafc' }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Наименование</TableCell>
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Код</TableCell>
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Статус</TableCell>
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Ответственный</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Позиций ТМЦ</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Операций</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Действия</TableCell>
+                <TableCell sx={{ minWidth: 160 }}>Наименование</TableCell>
+                <TableCell sx={{ minWidth: 100 }}>Код</TableCell>
+                <TableCell sx={{ minWidth: 120 }}>Статус</TableCell>
+                <TableCell sx={{ minWidth: 160 }}>Ответственный</TableCell>
+                <TableCell align="right" sx={{ minWidth: 120 }}>Позиций ТМЦ</TableCell>
+                <TableCell align="right" sx={{ minWidth: 100 }}>Операций</TableCell>
+                <TableCell align="center" sx={{ minWidth: 100 }}>Действия</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredWarehouses.map((w) => (
+              {paginatedWarehouses.map((w) => (
                 <TableRow key={w.id} hover>
                   <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>{w.name}</TableCell>
                   <TableCell>

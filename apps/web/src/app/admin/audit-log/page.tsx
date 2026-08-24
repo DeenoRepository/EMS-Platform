@@ -119,12 +119,14 @@ export default function AdminAuditLogPage() {
   // JSON viewer modal
   const [selectedChanges, setSelectedChanges] = useState<any | null>(null);
 
+  const [pageSize, setPageSize] = useState(25);
+
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
         page: String(page),
-        pageSize: '20',
+        pageSize: String(pageSize),
       });
       if (actionFilter) params.append('action', actionFilter);
       if (entityTypeFilter) params.append('entityType', entityTypeFilter);
@@ -144,7 +146,7 @@ export default function AdminAuditLogPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, actionFilter, entityTypeFilter, search, enqueueSnackbar]);
+  }, [page, pageSize, actionFilter, entityTypeFilter, search, enqueueSnackbar]);
 
   useEffect(() => {
     fetchLogs();
@@ -268,9 +270,14 @@ export default function AdminAuditLogPage() {
       <DataTableWrapper
         loading={loading}
         page={page - 1}
-        pageSize={20}
+        pageSize={pageSize}
         total={total}
         onPageChange={(_, newPage) => setPage(newPage + 1)}
+        onPageSizeChange={(e) => {
+          setPageSize(parseInt(e.target.value, 10));
+          setPage(1);
+        }}
+        pageSizeOptions={[15, 20, 25, 50, 100]}
         columns={AUDIT_COLUMNS}
         visibleColumns={visibleColumns}
         onVisibleColumnsChange={setVisibleColumns}

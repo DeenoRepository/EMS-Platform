@@ -241,7 +241,7 @@ function WmsStockContent() {
     try {
       const params = new URLSearchParams({
         page: (page + 1).toString(),
-        limit: rowsPerPage.toString(),
+        pageSize: rowsPerPage.toString(),
       });
 
       if (selectedWarehouse) params.append('warehouseId', selectedWarehouse);

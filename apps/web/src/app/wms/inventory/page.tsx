@@ -247,6 +247,14 @@ export default function WmsInventoryListPage() {
     });
   }, [filteredInventories, sortField, sortDirection]);
 
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+
+  const paginatedInventories = useMemo(() => {
+    return sortedInventories.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
+  }, [sortedInventories, page, rowsPerPage]);
+
   const totalInventories = inventories.length;
   const inProgressCount = inventories.filter((i) => i.status === 'IN_PROGRESS' || i.status === 'DRAFT').length;
   const completedCount = inventories.filter((i) => i.status === 'COMPLETED').length;
@@ -331,7 +339,15 @@ export default function WmsInventoryListPage() {
       {/* Main Inventory Acts Registry Table */}
       <DataTableWrapper
         loading={isLoading}
+        page={page}
+        pageSize={rowsPerPage}
         total={sortedInventories.length}
+        onPageChange={(_, newPage) => setPage(newPage)}
+        onPageSizeChange={(e) => {
+          setRowsPerPage(parseInt(e.target.value, 10));
+          setPage(0);
+        }}
+        pageSizeOptions={[15, 25, 50, 100]}
         columns={INVENTORY_COLUMNS}
         visibleColumns={visibleColumns}
         onVisibleColumnsChange={setVisibleColumns}
@@ -518,7 +534,7 @@ export default function WmsInventoryListPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedInventories.map((inv) => (
+            {paginatedInventories.map((inv) => (
               <TableRow
                 key={inv.id}
                 hover

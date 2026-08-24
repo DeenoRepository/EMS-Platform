@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   Box,
   Grid,
@@ -225,6 +225,14 @@ export default function AdminRolesPage() {
     return acc;
   }, {} as Record<string, PermissionItem[]>);
 
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+
+  const paginatedRoles = useMemo(() => {
+    return roles.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
+  }, [roles, page, rowsPerPage]);
+
   const totalRoles = roles.length;
   const systemRoles = roles.filter((r) => r.isSystem).length;
   const customRoles = roles.filter((r) => !r.isSystem).length;
@@ -303,22 +311,30 @@ export default function AdminRolesPage() {
       ) : (
         <DataTableWrapper
           loading={loading}
+          page={page}
+          pageSize={rowsPerPage}
           total={roles.length}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          onPageSizeChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
+            setPage(0);
+          }}
+          pageSizeOptions={[15, 25, 50, 100]}
           stickyHeader
         >
           <Table size="small" aria-label="Таблица ролей и прав доступа">
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 700 }}>Название роли</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 160 }}>Системный код</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Описание</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 140 }}>Пользователей</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 160 }}>Количество прав</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, width: 120 }}>Действия</TableCell>
+                <TableCell sx={{ minWidth: 180 }}>Название роли</TableCell>
+                <TableCell sx={{ minWidth: 140 }}>Системный код</TableCell>
+                <TableCell sx={{ minWidth: 200 }}>Описание</TableCell>
+                <TableCell sx={{ minWidth: 120 }}>Пользователей</TableCell>
+                <TableCell sx={{ minWidth: 140 }}>Количество прав</TableCell>
+                <TableCell align="right" sx={{ minWidth: 120 }}>Действия</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {roles.map((r) => (
+              {paginatedRoles.map((r) => (
                 <TableRow key={r.id} hover>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

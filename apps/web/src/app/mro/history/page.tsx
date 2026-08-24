@@ -159,6 +159,14 @@ export default function MroHistoryPage() {
     return list;
   }, [schedules, search, sortField, sortDirection]);
 
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+
+  const paginatedHistory = useMemo(() => {
+    return filteredHistory.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
+  }, [filteredHistory, page, rowsPerPage]);
+
   return (
     <Box sx={{ width: '100%', pb: 4 }}>
       {/* 1. Header */}
@@ -225,6 +233,16 @@ export default function MroHistoryPage() {
         title="Архив протоколов и актов выполненного ТО"
         subtitle={`Всего выполненных записей: ${filteredHistory.length}`}
         loading={loading}
+        page={page}
+        pageSize={rowsPerPage}
+        total={filteredHistory.length}
+        onPageChange={(_, newPage) => setPage(newPage)}
+        onPageSizeChange={(e) => {
+          setRowsPerPage(parseInt(e.target.value, 10));
+          setPage(0);
+        }}
+        pageSizeOptions={[15, 25, 50, 100]}
+        stickyHeader
         emptyState={
           <EmptyState
             icon={<FactCheckOutlinedIcon sx={{ fontSize: 44, color: '#94a3b8' }} />}
@@ -236,11 +254,20 @@ export default function MroHistoryPage() {
         visibleColumns={visibleColumns}
         onVisibleColumnsChange={setVisibleColumns}
         toolbar={
-          <FilterToolbar activeFilterCount={search ? 1 : 0} onResetFilters={() => setSearch('')}>
+          <FilterToolbar
+            activeFilterCount={search ? 1 : 0}
+            onResetFilters={() => {
+              setSearch('');
+              setPage(0);
+            }}
+          >
             <Box sx={{ width: { xs: '100%', sm: 300 } }}>
               <SearchInput
                 value={search}
-                onSearch={setSearch}
+                onSearch={(val) => {
+                  setSearch(val);
+                  setPage(0);
+                }}
                 placeholder="Поиск по оборудованию, регламенту, исполнителю..."
               />
             </Box>
@@ -288,7 +315,7 @@ export default function MroHistoryPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredHistory.map((sch) => (
+            {paginatedHistory.map((sch) => (
               <TableRow key={sch.id} hover>
                 {visibleColumns.includes('actualDate') && (
                   <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600 }}>

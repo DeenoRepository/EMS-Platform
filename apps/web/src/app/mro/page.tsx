@@ -117,6 +117,10 @@ function MroPageContent() {
     MRO_COLUMNS.filter((c) => c.defaultVisible !== false).map((c) => c.id)
   );
 
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+
   const [maintStatus, setMaintStatus] = useState<PlatformMaintenanceStatus | null>(null);
 
   const fetchSchedules = useCallback(async () => {
@@ -227,6 +231,10 @@ function MroPageContent() {
     return list;
   }, [schedules, search, periodicityFilter, statusFilter, sortField, sortDirection]);
 
+  const paginatedSchedules = useMemo(() => {
+    return sortedSchedules.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
+  }, [sortedSchedules, page, rowsPerPage]);
+
   const activeFilterCount = (search ? 1 : 0) + (statusFilter ? 1 : 0) + (periodicityFilter ? 1 : 0);
 
   const handleResetFilters = () => {
@@ -327,6 +335,10 @@ function MroPageContent() {
             iconBgColor="rgba(2, 132, 199, 0.08)"
             loading={loading}
             subtitle="Запланированных и выполненных"
+            onClick={() => {
+              setStatusFilter('');
+              setPage(0);
+            }}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -338,7 +350,10 @@ function MroPageContent() {
             iconBgColor="rgba(220, 38, 38, 0.08)"
             loading={loading}
             subtitle="Требуют немедленного проведения"
-            onClick={() => setStatusFilter('OVERDUE')}
+            onClick={() => {
+              setStatusFilter('OVERDUE');
+              setPage(0);
+            }}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -350,7 +365,10 @@ function MroPageContent() {
             iconBgColor="rgba(2, 132, 199, 0.08)"
             loading={loading}
             subtitle="Ожидают наступления срока"
-            onClick={() => setStatusFilter('PLANNED')}
+            onClick={() => {
+              setStatusFilter('PLANNED');
+              setPage(0);
+            }}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -362,7 +380,10 @@ function MroPageContent() {
             iconBgColor="rgba(22, 163, 74, 0.08)"
             loading={loading}
             subtitle="Проведено с фиксацией акта"
-            onClick={() => setStatusFilter('COMPLETED')}
+            onClick={() => {
+              setStatusFilter('COMPLETED');
+              setPage(0);
+            }}
           />
         </Grid>
       </Grid>
@@ -372,6 +393,15 @@ function MroPageContent() {
         title="Календарный график планово-предупредительных работ"
         subtitle={`Всего позиций в графике: ${sortedSchedules.length}`}
         loading={loading}
+        page={page}
+        pageSize={rowsPerPage}
+        total={sortedSchedules.length}
+        onPageChange={(_, newPage) => setPage(newPage)}
+        onPageSizeChange={(e) => {
+          setRowsPerPage(parseInt(e.target.value, 10));
+          setPage(0);
+        }}
+        pageSizeOptions={[15, 25, 50, 100]}
         emptyState={
           <EmptyState
             icon={<CalendarMonthIcon sx={{ fontSize: 44, color: '#94a3b8' }} />}
@@ -393,7 +423,10 @@ function MroPageContent() {
             <Box sx={{ width: { xs: '100%', sm: 260 } }}>
               <SearchInput
                 value={search}
-                onSearch={setSearch}
+                onSearch={(val) => {
+                  setSearch(val);
+                  setPage(0);
+                }}
                 placeholder="Поиск по оборудованию, инв. №..."
               />
             </Box>
@@ -402,7 +435,10 @@ function MroPageContent() {
               size="small"
               label="Статус"
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(0);
+              }}
               sx={{ minWidth: 160 }}
             >
               <MenuItem value="">Все статусы</MenuItem>
@@ -415,7 +451,10 @@ function MroPageContent() {
               size="small"
               label="Периодичность"
               value={periodicityFilter}
-              onChange={(e) => setPeriodicityFilter(e.target.value)}
+              onChange={(e) => {
+                setPeriodicityFilter(e.target.value);
+                setPage(0);
+              }}
               sx={{ minWidth: 160 }}
             >
               <MenuItem value="">Любая периодичность</MenuItem>
@@ -472,7 +511,7 @@ function MroPageContent() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedSchedules.map((sch) => {
+            {paginatedSchedules.map((sch) => {
               const isOverdue =
                 sch.status === 'MISSED' || (sch.status === 'PLANNED' && new Date(sch.scheduledDate) < new Date());
               const effectiveStatus = isOverdue && sch.status === 'PLANNED' ? 'MISSED' : sch.status;
