@@ -198,12 +198,25 @@ export async function POST(req: NextRequest) {
       data: { user: payload, token },
     });
 
-    // Устанавливаем cookie со сроком 8 часов
+    // Проверяем HTTPS: cookie secure устанавливается только если соединение реально идет по HTTPS
+    const isHttps = req.headers.get('x-forwarded-proto') === 'https' || req.nextUrl.protocol === 'https:';
+
+    // Устанавливаем cookie со сроком 8 часов (ems_session и ems_token)
     response.cookies.set({
       name: 'ems_session',
       value: token,
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isHttps,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 8 * 60 * 60,
+    });
+
+    response.cookies.set({
+      name: 'ems_token',
+      value: token,
+      httpOnly: true,
+      secure: isHttps,
       sameSite: 'lax',
       path: '/',
       maxAge: 8 * 60 * 60,

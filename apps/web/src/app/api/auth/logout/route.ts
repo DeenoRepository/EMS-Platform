@@ -20,10 +20,12 @@ export async function POST(req: NextRequest) {
 
     const response = NextResponse.json({ success: true, message: 'Вы успешно вышли из системы' });
     response.cookies.delete('ems_session');
+    response.cookies.delete('ems_token');
     return response;
   } catch (error) {
     const response = NextResponse.json({ success: true });
     response.cookies.delete('ems_session');
+    response.cookies.delete('ems_token');
     return response;
   }
 }
