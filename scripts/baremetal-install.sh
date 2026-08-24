@@ -57,6 +57,7 @@ JWT_SECRET="${RANDOM_JWT}"
 PORT=3000
 NODE_ENV=production
 UPLOAD_DIR="/opt/ems-platform/uploads"
+STORAGE_LOCAL_DIR="/opt/ems-platform/uploads"
 EOF
     cp .env.production .env
     echo "✅ Файл .env.production сформирован (DATABASE_URL настроен на localhost:5432/ems_db)."
@@ -65,8 +66,11 @@ fi
 # Ensure .env exists for Prisma CLI auto-discovery
 cp -n .env.production .env 2>/dev/null || true
 
-# 6. Prepare uploads directory
-mkdir -p "$INSTALL_DIR/uploads"
+# 6. Prepare uploads directory and copy query engine binaries
+mkdir -p "$INSTALL_DIR/uploads" "$INSTALL_DIR/apps/web/.next/server" "$INSTALL_DIR/apps/web/.prisma/client"
+find "$INSTALL_DIR/node_modules" -name "libquery_engine*.so.node" -exec cp {} "$INSTALL_DIR/apps/web/.next/server/" \; 2>/dev/null || true
+find "$INSTALL_DIR/node_modules" -name "libquery_engine*.so.node" -exec cp {} "$INSTALL_DIR/apps/web/.prisma/client/" \; 2>/dev/null || true
+
 chown -R ems:ems "$INSTALL_DIR"
 chmod -R 755 "$INSTALL_DIR"
 

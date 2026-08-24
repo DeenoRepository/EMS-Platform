@@ -35,6 +35,11 @@ echo "📄 Копирование скомпилированного Next.js п�
 cp -r apps/web/.next "$PACKAGE_DIR/apps/web/.next"
 rm -rf "$PACKAGE_DIR/apps/web/.next/cache" "$PACKAGE_DIR/apps/web/.next/trace"
 
+# Copy Prisma query engine binaries directly next to Next.js server bundle for runtime resolution
+find node_modules -name "libquery_engine*.so.node" -exec cp {} "$PACKAGE_DIR/apps/web/.next/server/" \; 2>/dev/null || true
+mkdir -p "$PACKAGE_DIR/apps/web/.prisma/client"
+find node_modules -name "libquery_engine*.so.node" -exec cp {} "$PACKAGE_DIR/apps/web/.prisma/client/" \; 2>/dev/null || true
+
 if [ -d "apps/web/public" ]; then
     cp -r apps/web/public "$PACKAGE_DIR/apps/web/public"
 fi
