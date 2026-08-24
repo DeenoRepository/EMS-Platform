@@ -6,17 +6,46 @@
 const fs = require('fs');
 const path = require('path');
 
-// Load environment variables if available
-const envFiles = ['.env.production', '.env', '../.env.production', '../.env'];
-for (const envFile of envFiles) {
-  const envPath = path.resolve(process.cwd(), envFile);
-  if (fs.existsSync(envPath)) {
-    try {
-      require('dotenv').config({ path: envPath });
-    } catch {}
-    break;
+function loadEnvFiles() {
+  const possiblePaths = [
+    path.resolve(process.cwd(), '.env.production'),
+    path.resolve(process.cwd(), '.env'),
+    path.resolve(__dirname, '../.env.production'),
+    path.resolve(__dirname, '../.env'),
+    '/opt/ems-platform/.env.production',
+    '/opt/ems-platform/.env',
+    '/etc/ems-platform.env',
+  ];
+
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      try {
+        const content = fs.readFileSync(p, 'utf8');
+        content.split('\n').forEach((line) => {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith('#')) return;
+          const eqIdx = trimmed.indexOf('=');
+          if (eqIdx > 0) {
+            const key = trimmed.substring(0, eqIdx).trim();
+            let val = trimmed.substring(eqIdx + 1).trim();
+            if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+              val = val.substring(1, val.length - 1);
+            }
+            if (!process.env[key]) {
+              process.env[key] = val;
+            }
+          }
+        });
+      } catch (e) {}
+    }
+  }
+
+  if (!process.env.DATABASE_URL) {
+    process.env.DATABASE_URL = 'postgresql://ems_user:ems_secure_password@localhost:5432/ems_db?schema=public';
   }
 }
+
+loadEnvFiles();
 
 function resolveModule(moduleName, fallbacks = []) {
   try {
