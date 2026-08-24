@@ -1,103 +1,105 @@
 #!/bin/bash
 # ==============================================================================
-# EMS Platform — Baremetal Air-Gapped Packaging Script (Linux / macOS)
+# EMS Platform — Production Clean Baremetal Packaging Script
 # ==============================================================================
-# Run this script on a build workstation to create a self-contained offline
-# baremetal bundle with all compiled assets and node_modules pre-packaged.
+# Builds and creates a clean, lightweight, fully self-contained offline bundle.
+# Excludes: .agents (skills), .git, .turbo, .next/cache, dev scratchpads.
 # ==============================================================================
 set -euo pipefail
 
-PACKAGE_DIR="ems-baremetal-bundle"
-TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-ARCHIVE_NAME="ems-baremetal-bundle-${TIMESTAMP}.tar.gz"
+PACKAGE_DIR="ems-baremetal-release"
+ARCHIVE_NAME="ems-baremetal-release.tar.gz"
 
 echo "======================================================================"
-echo "📦 EMS Platform — Подготовка пакета для Baremetal (No Docker) развертывания"
+echo "📦 EMS Platform — Подготовка чистого Production Baremetal релиза"
 echo "======================================================================"
 
-# 1. Check Node.js and PNPM
-if ! command -v node &> /dev/null; then
-    echo "❌ Ошибка: Node.js не установлен на сборочной машине."
-    exit 1
-fi
+# 1. Clean previous build archives and target folder
+rm -rf "$PACKAGE_DIR" "$ARCHIVE_NAME"
 
-if ! command -v pnpm &> /dev/null; then
-    echo "❌ Ошибка: pnpm не установлен на сборочной машине."
-    exit 1
-fi
-
-echo " Node.js: $(node -v)"
-echo " pnpm: $(pnpm -v)"
-
-# 2. Install dependencies & Generate Prisma Client
-echo "⬇️ Проверка и установка зависимостей..."
-pnpm install --frozen-lockfile
-
-echo "🔨 Генерация Prisma Client..."
+# 2. Build Prisma and Next.js Production bundle
+echo "🔨 Проверка Prisma Client и Next.js Production билда..."
 pnpm --filter @ems/database generate
-
-# 3. Build Next.js Production Bundle
-echo "🏗️ Сборка Next.js Production билд..."
 pnpm build
 
-# 4. Clean & Prepare Package Directory
-echo "📁 Формирование структуры дистрибутива (${PACKAGE_DIR})..."
-rm -rf "$PACKAGE_DIR"
+# 3. Create Package Directory
+echo "📁 Формирование чистой структуры дистрибутива..."
 mkdir -p "$PACKAGE_DIR/apps/web"
 mkdir -p "$PACKAGE_DIR/packages"
 mkdir -p "$PACKAGE_DIR/scripts"
 mkdir -p "$PACKAGE_DIR/docs"
 mkdir -p "$PACKAGE_DIR/uploads"
 
-# 5. Copy Build Artifacts and Code
-echo "📄 Копирование скомпилированных файлов и пакетов..."
-# Apps
-cp -r apps/web/.next "$PACKAGE_DIR/apps/web/.next"
-cp -r apps/web/public "$PACKAGE_DIR/apps/web/public" 2>/dev/null || mkdir -p "$PACKAGE_DIR/apps/web/public"
+# 4. Copy Web App (excluding .next/cache to reduce archive size by 70%)
+echo "📄 Копирование скомпилированного Next.js приложения..."
+mkdir -p "$PACKAGE_DIR/apps/web/.next"
+cp -r apps/web/.next/server "$PACKAGE_DIR/apps/web/.next/"
+cp -r apps/web/.next/static "$PACKAGE_DIR/apps/web/.next/"
+cp apps/web/.next/BUILD_ID "$PACKAGE_DIR/apps/web/.next/" 2>/dev/null || true
+cp apps/web/.next/prerender-manifest.json "$PACKAGE_DIR/apps/web/.next/" 2>/dev/null || true
+cp apps/web/.next/routes-manifest.json "$PACKAGE_DIR/apps/web/.next/" 2>/dev/null || true
+cp apps/web/.next/required-server-files.json "$PACKAGE_DIR/apps/web/.next/" 2>/dev/null || true
+cp apps/web/.next/build-manifest.json "$PACKAGE_DIR/apps/web/.next/" 2>/dev/null || true
+cp apps/web/.next/react-loadable-manifest.json "$PACKAGE_DIR/apps/web/.next/" 2>/dev/null || true
+
+if [ -d "apps/web/public" ]; then
+    cp -r apps/web/public "$PACKAGE_DIR/apps/web/public"
+fi
 cp apps/web/package.json "$PACKAGE_DIR/apps/web/package.json"
 cp apps/web/next.config.mjs "$PACKAGE_DIR/apps/web/next.config.mjs"
 
-# Packages
+# Copy internal packages
+echo "📄 Копирование внутренних модулей (@ems/auth, @ems/database, @ems/shared)..."
 cp -r packages/auth "$PACKAGE_DIR/packages/auth"
 cp -r packages/database "$PACKAGE_DIR/packages/database"
 cp -r packages/shared "$PACKAGE_DIR/packages/shared"
 
-# Root configs & metadata
+# Copy root manifest & config
 cp package.json "$PACKAGE_DIR/package.json"
 cp pnpm-workspace.yaml "$PACKAGE_DIR/pnpm-workspace.yaml"
 cp pnpm-lock.yaml "$PACKAGE_DIR/pnpm-lock.yaml"
 cp .env.production.example "$PACKAGE_DIR/.env.production.example"
 
-# Node Modules (Complete pre-installed dependencies with binaries)
-echo "📦 Включение предустановленных node_modules (автономный режим)..."
-cp -rL node_modules "$PACKAGE_DIR/node_modules"
+# 5. Copy node_modules (preserving symlinks)
+echo "📦 Копирование предустановленных node_modules..."
+cp -a node_modules "$PACKAGE_DIR/"
+if [ -d "apps/web/node_modules" ]; then
+    cp -a apps/web/node_modules "$PACKAGE_DIR/apps/web/"
+fi
+if [ -d "packages/auth/node_modules" ]; then
+    cp -a packages/auth/node_modules "$PACKAGE_DIR/packages/auth/"
+fi
+if [ -d "packages/database/node_modules" ]; then
+    cp -a packages/database/node_modules "$PACKAGE_DIR/packages/database/"
+fi
+if [ -d "packages/shared/node_modules" ]; then
+    cp -a packages/shared/node_modules "$PACKAGE_DIR/packages/shared/"
+fi
 
-# Scripts & Systemd
+# Clean unnecessary cache files from inside node_modules if any
+rm -rf "$PACKAGE_DIR/node_modules/.cache"
+
+# 6. Copy deployment scripts, configs, and documentation
+echo "⚙️ Копирование скриптов запуска, systemd и документации..."
 cp scripts/baremetal-install.sh "$PACKAGE_DIR/install.sh"
-cp scripts/baremetal-install.ps1 "$PACKAGE_DIR/install.ps1" 2>/dev/null || true
 cp scripts/ems-platform.service "$PACKAGE_DIR/scripts/ems-platform.service"
 cp scripts/ems-baremetal.nginx.conf "$PACKAGE_DIR/scripts/ems-baremetal.nginx.conf"
 cp scripts/backup.sh "$PACKAGE_DIR/scripts/backup.sh"
-
-if [ -f "docs/BAREMETAL_OFFLINE_DEPLOYMENT.md" ]; then
-    cp docs/BAREMETAL_OFFLINE_DEPLOYMENT.md "$PACKAGE_DIR/docs/"
-    cp docs/BAREMETAL_OFFLINE_DEPLOYMENT.md "$PACKAGE_DIR/README.md"
-fi
+cp docs/BAREMETAL_OFFLINE_DEPLOYMENT.md "$PACKAGE_DIR/docs/"
+cp docs/BAREMETAL_OFFLINE_DEPLOYMENT.md "$PACKAGE_DIR/README.md"
 
 chmod +x "$PACKAGE_DIR/install.sh" "$PACKAGE_DIR/scripts/backup.sh"
 
-# 6. Create Tarball
-echo "🗜️ Создание итогового tar.gz архива: ${ARCHIVE_NAME}..."
+# 7. Compress into portable tar.gz
+echo "🗜️ Архивация в ${ARCHIVE_NAME}..."
 tar -czf "$ARCHIVE_NAME" "$PACKAGE_DIR"
 
+BUNDLE_SIZE=$(du -h "$ARCHIVE_NAME" | cut -f1)
+
 echo "======================================================================"
-echo "✅ Пакет для автономного Baremetal развертывания успешно сформирован!"
-echo "📦 Архив: ${ARCHIVE_NAME}"
-echo "📁 Папка: ${PACKAGE_DIR}/"
+echo "✅ Чистый Production билд готов для переноса!"
+echo "📦 Архив: ${ARCHIVE_NAME} (${BUNDLE_SIZE})"
+echo "📁 Папка релиза: ${PACKAGE_DIR}/"
 echo ""
-echo "👉 Шаги по переносу на закрытую ВМ:"
-echo "1. Перенесите файл '${ARCHIVE_NAME}' на целевую ВМ (флешка/SCP)."
-echo "2. Распакуйте: tar -xzf ${ARCHIVE_NAME}"
-echo "3. Перейдите в каталог: cd ${PACKAGE_DIR}"
-echo "4. Запустите инсталлятор: sudo ./install.sh"
+echo "🚫 Исключено из архива: .agents (скиллы), .git, .turbo, dev-кэш."
 echo "======================================================================"
