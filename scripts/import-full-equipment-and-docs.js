@@ -184,7 +184,7 @@ async function main() {
 
   // 1. Получаем администратора для аудита
   let adminUser = await prisma.user.findFirst({
-    where: { roles: { some: { role: { code: 'admin' } } } },
+    where: { roles: { some: { role: { name: 'admin' } } } },
     select: { id: true },
   });
   if (!adminUser) {
