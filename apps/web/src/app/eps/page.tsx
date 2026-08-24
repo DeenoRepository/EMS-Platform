@@ -635,6 +635,7 @@ function EquipmentListContent() {
           setPage(1);
         }}
         stickyHeader
+        storageKey="eps_equipment_table"
         columns={EPS_COLUMNS}
         visibleColumns={visibleColumns}
         onVisibleColumnsChange={setVisibleColumns}

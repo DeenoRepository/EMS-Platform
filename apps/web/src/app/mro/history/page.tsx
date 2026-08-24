@@ -250,6 +250,7 @@ export default function MroHistoryPage() {
             description="В системе пока нет завершенных регламентных работ."
           />
         }
+        storageKey="mro_history_table"
         columns={HISTORY_COLUMNS}
         visibleColumns={visibleColumns}
         onVisibleColumnsChange={setVisibleColumns}

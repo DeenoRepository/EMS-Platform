@@ -56,6 +56,8 @@ export interface DataTableWrapperProps {
   onDensityChange?: (density: TableDensity) => void;
   /** Показывать переключатель плотности */
   showDensityToggle?: boolean;
+  /** Ключ для автоматического сохранения выбранных колонок и плотности в localStorage */
+  storageKey?: string;
   /** Список доступных колонок для настройки видимости */
   columns?: TableColumnOption[];
   /** Массив ID видимых колонок */
@@ -113,6 +115,7 @@ export function DataTableWrapper({
   density: controlledDensity,
   onDensityChange,
   showDensityToggle = false,
+  storageKey,
   columns,
   visibleColumns: controlledVisibleColumns,
   onVisibleColumnsChange,
@@ -148,6 +151,54 @@ export function DataTableWrapper({
 
   const currentVisibleColumns = controlledVisibleColumns !== undefined ? controlledVisibleColumns : internalVisibleColumns;
 
+  // Compute a fallback storage key based on column signatures if explicit storageKey is not passed
+  const computedStorageKey = storageKey || (
+    columns && columns.length > 0
+      ? `auto_${columns.map((c) => c.id).slice(0, 3).join('_')}_len${columns.length}`
+      : undefined
+  );
+
+  // Restore saved column choices and density from localStorage on mount
+  React.useEffect(() => {
+    if (!computedStorageKey || typeof window === 'undefined') return;
+    try {
+      const savedColsRaw = localStorage.getItem(`ems_cols_${computedStorageKey}`);
+      if (savedColsRaw) {
+        const savedCols: string[] = JSON.parse(savedColsRaw);
+        if (Array.isArray(savedCols) && savedCols.length > 0) {
+          const validCols = columns
+            ? savedCols.filter((id) => columns.some((c) => c.id === id))
+            : savedCols;
+          if (validCols.length > 0) {
+            setInternalVisibleColumns(validCols);
+            if (onVisibleColumnsChange) {
+              onVisibleColumnsChange(validCols);
+            }
+          }
+        }
+      }
+
+      const savedDensity = localStorage.getItem(`ems_density_${computedStorageKey}`) as TableDensity | null;
+      if (savedDensity && ['compact', 'standard', 'comfortable'].includes(savedDensity)) {
+        setInternalDensity(savedDensity);
+        if (onDensityChange) {
+          onDensityChange(savedDensity);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load table settings from localStorage:', e);
+    }
+  }, [computedStorageKey]);
+
+  const persistColumns = (cols: string[]) => {
+    if (!computedStorageKey || typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(`ems_cols_${computedStorageKey}`, JSON.stringify(cols));
+    } catch (e) {
+      console.error('Failed to save visible columns to localStorage:', e);
+    }
+  };
+
   const handleToggleColumn = (colId: string) => {
     const isCurrentlyVisible = currentVisibleColumns.includes(colId);
     if (isCurrentlyVisible && currentVisibleColumns.length === 1) return;
@@ -156,6 +207,7 @@ export function DataTableWrapper({
       ? currentVisibleColumns.filter((id) => id !== colId)
       : [...currentVisibleColumns, colId];
 
+    persistColumns(updated);
     if (onVisibleColumnsChange) {
       onVisibleColumnsChange(updated);
     } else {
@@ -166,6 +218,7 @@ export function DataTableWrapper({
   const handleSelectAllColumns = () => {
     if (!columns) return;
     const all = columns.map((c) => c.id);
+    persistColumns(all);
     if (onVisibleColumnsChange) {
       onVisibleColumnsChange(all);
     } else {
@@ -176,6 +229,11 @@ export function DataTableWrapper({
   const handleResetColumns = () => {
     if (!columns) return;
     const defaultCols = columns.filter((c) => c.defaultVisible !== false).map((c) => c.id);
+    if (computedStorageKey && typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem(`ems_cols_${computedStorageKey}`);
+      } catch (e) {}
+    }
     if (onVisibleColumnsChange) {
       onVisibleColumnsChange(defaultCols);
     } else {
@@ -184,6 +242,11 @@ export function DataTableWrapper({
   };
 
   const handleDensityChange = (newDensity: TableDensity) => {
+    if (computedStorageKey && typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`ems_density_${computedStorageKey}`, newDensity);
+      } catch (e) {}
+    }
     if (onDensityChange) {
       onDensityChange(newDensity);
     } else {

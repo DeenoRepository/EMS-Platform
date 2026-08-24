@@ -522,6 +522,7 @@ function ApprovalsListContent() {
           setPageSize(parseInt(e.target.value, 10));
           setPage(1);
         }}
+        storageKey="eps_approvals_table"
         columns={APPROVAL_COLUMNS}
         visibleColumns={visibleColumns}
         onVisibleColumnsChange={setVisibleColumns}

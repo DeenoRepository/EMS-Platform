@@ -578,6 +578,7 @@ function WmsStockContent() {
           setPage(0);
         }}
         stickyHeader
+        storageKey="wms_stock_table"
         columns={STOCK_COLUMNS}
         visibleColumns={visibleColumns}
         onVisibleColumnsChange={setVisibleColumns}

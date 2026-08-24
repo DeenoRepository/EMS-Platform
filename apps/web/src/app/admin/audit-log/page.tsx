@@ -278,6 +278,7 @@ export default function AdminAuditLogPage() {
           setPage(1);
         }}
         pageSizeOptions={[15, 20, 25, 50, 100]}
+        storageKey="admin_audit_table"
         columns={AUDIT_COLUMNS}
         visibleColumns={visibleColumns}
         onVisibleColumnsChange={setVisibleColumns}

@@ -415,6 +415,7 @@ function MroPageContent() {
             onAction={activeFilterCount > 0 ? handleResetFilters : () => setIsExecutionWizardOpen(true)}
           />
         }
+        storageKey="mro_schedules_table"
         columns={MRO_COLUMNS}
         visibleColumns={visibleColumns}
         onVisibleColumnsChange={setVisibleColumns}

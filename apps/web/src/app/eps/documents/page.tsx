@@ -471,6 +471,7 @@ function DocumentsListContent() {
           setPageSize(parseInt(e.target.value, 10));
           setPage(1);
         }}
+        storageKey="eps_documents_table"
         columns={DOCUMENT_COLUMNS}
         visibleColumns={visibleColumns}
         onVisibleColumnsChange={setVisibleColumns}

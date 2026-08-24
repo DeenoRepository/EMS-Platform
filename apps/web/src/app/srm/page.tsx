@@ -449,6 +449,7 @@ function SrmPageContent() {
             onAction={activeFilterCount > 0 ? handleResetFilters : () => setIsCreateDialogOpen(true)}
           />
         }
+        storageKey="srm_issues_table"
         columns={SRM_COLUMNS}
         visibleColumns={visibleColumns}
         onVisibleColumnsChange={setVisibleColumns}

@@ -348,6 +348,7 @@ export default function WmsInventoryListPage() {
           setPage(0);
         }}
         pageSizeOptions={[15, 25, 50, 100]}
+        storageKey="wms_inventory_table"
         columns={INVENTORY_COLUMNS}
         visibleColumns={visibleColumns}
         onVisibleColumnsChange={setVisibleColumns}
