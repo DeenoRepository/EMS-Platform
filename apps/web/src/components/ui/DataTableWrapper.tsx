@@ -158,6 +158,16 @@ export function DataTableWrapper({
       : undefined
   );
 
+  const onVisibleColumnsChangeRef = React.useRef(onVisibleColumnsChange);
+  React.useEffect(() => {
+    onVisibleColumnsChangeRef.current = onVisibleColumnsChange;
+  });
+
+  const onDensityChangeRef = React.useRef(onDensityChange);
+  React.useEffect(() => {
+    onDensityChangeRef.current = onDensityChange;
+  });
+
   // Restore saved column choices and density from localStorage on mount
   React.useEffect(() => {
     if (!computedStorageKey || typeof window === 'undefined') return;
@@ -171,9 +181,7 @@ export function DataTableWrapper({
             : savedCols;
           if (validCols.length > 0) {
             setInternalVisibleColumns(validCols);
-            if (onVisibleColumnsChange) {
-              onVisibleColumnsChange(validCols);
-            }
+            onVisibleColumnsChangeRef.current?.(validCols);
           }
         }
       }
@@ -181,9 +189,7 @@ export function DataTableWrapper({
       const savedDensity = localStorage.getItem(`ems_density_${computedStorageKey}`) as TableDensity | null;
       if (savedDensity && ['compact', 'standard', 'comfortable'].includes(savedDensity)) {
         setInternalDensity(savedDensity);
-        if (onDensityChange) {
-          onDensityChange(savedDensity);
-        }
+        onDensityChangeRef.current?.(savedDensity);
       }
     } catch (e) {
       console.error('Failed to load table settings from localStorage:', e);

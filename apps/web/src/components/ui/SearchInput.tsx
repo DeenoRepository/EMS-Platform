@@ -33,19 +33,36 @@ export function SearchInput({
   const debouncedValue = useDebounce(internalValue, delay);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const onSearchRef = useRef(onSearch);
+  useEffect(() => {
+    onSearchRef.current = onSearch;
+  });
+
+  const isMounted = useRef(false);
+  const prevDebouncedValue = useRef(debouncedValue);
+
   useEffect(() => {
     if (controlledValue !== undefined) {
       setInternalValue(controlledValue);
+      prevDebouncedValue.current = controlledValue;
     }
   }, [controlledValue]);
 
   useEffect(() => {
-    onSearch(debouncedValue);
-  }, [debouncedValue, onSearch]);
+    if (!isMounted.current) {
+      isMounted.current = true;
+      return;
+    }
+    if (prevDebouncedValue.current !== debouncedValue) {
+      prevDebouncedValue.current = debouncedValue;
+      onSearchRef.current(debouncedValue);
+    }
+  }, [debouncedValue]);
 
   const handleClear = () => {
     setInternalValue('');
-    onSearch('');
+    prevDebouncedValue.current = '';
+    onSearchRef.current('');
     inputRef.current?.focus();
   };
 
