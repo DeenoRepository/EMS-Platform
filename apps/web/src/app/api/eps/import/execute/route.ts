@@ -59,11 +59,47 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Нет данных для импорта' }, { status: 400 });
     }
 
-    // Step 1: Create new Custom Field Definitions in Dictionary if requested
+    // Step 1: Create or find Custom Sections & Fields in Dictionary
     const newlyCreatedFields: any[] = [];
+    const sectionCache = new Map<string, string>(); // code/name -> id
+
+    // Preload sections
+    const existingSections = await prisma.customSection.findMany();
+    existingSections.forEach((s) => {
+      sectionCache.set(s.code.toLowerCase(), s.id);
+      sectionCache.set(s.name.toLowerCase(), s.id);
+    });
+
     for (const def of newFieldDefinitions) {
       if (def && def.key && def.name) {
         try {
+          let sectionId = def.sectionId || null;
+
+          // If no direct sectionId, check sectionName / sectionCode or infer from field name
+          if (!sectionId && (def.sectionName || def.sectionCode)) {
+            const secLookupKey = (def.sectionCode || def.sectionName).toLowerCase().trim();
+            sectionId = sectionCache.get(secLookupKey) || null;
+
+            if (!sectionId && def.sectionName) {
+              const secCode = (def.sectionCode || def.sectionName)
+                .toLowerCase()
+                .replace(/[^a-z0-9а-яё]+/gi, '_')
+                .replace(/^_+|_+$/g, '');
+
+              const newSec = await prisma.customSection.create({
+                data: {
+                  code: secCode || 'custom_section_' + Date.now(),
+                  name: def.sectionName.trim(),
+                  sortOrder: 50,
+                },
+              });
+              sectionId = newSec.id;
+              sectionCache.set(secLookupKey, newSec.id);
+              sectionCache.set(newSec.code.toLowerCase(), newSec.id);
+              sectionCache.set(newSec.name.toLowerCase(), newSec.id);
+            }
+          }
+
           const existing = await prisma.customFieldDefinition.findUnique({
             where: { key: def.key },
           });
@@ -75,7 +111,7 @@ export async function POST(req: NextRequest) {
                 name: def.name.trim(),
                 fieldType: (def.fieldType as FieldType) || 'TEXT',
                 unit: def.unit?.trim() || null,
-                sectionId: def.sectionId || null,
+                sectionId: sectionId,
               },
             });
             newlyCreatedFields.push(created);
@@ -85,7 +121,13 @@ export async function POST(req: NextRequest) {
               action: 'CREATE',
               entityType: 'CustomField',
               entityId: created.id,
-              changes: { name: created.name, key: created.key, fieldType: created.fieldType, createdFromImport: true },
+              changes: { name: created.name, key: created.key, fieldType: created.fieldType, sectionId, createdFromImport: true },
+            });
+          } else if (!existing.sectionId && sectionId) {
+            // Update section if field was previously unassigned
+            await prisma.customFieldDefinition.update({
+              where: { id: existing.id },
+              data: { sectionId },
             });
           }
         } catch (err) {

@@ -211,12 +211,37 @@ export async function POST(req: NextRequest) {
       const guessedType = guessFieldType(sampleVals);
       const suggestedKey = makeSlug(header);
 
+      // Intelligent section inference
+      let suggestedSectionName = 'Общероссийские и отраслевые классификаторы';
+      let suggestedSectionCode = 'classifiers';
+
+      if (/износ|критичност|чистот|уникальн|импортн|стран|год|возраст/i.test(header)) {
+        suggestedSectionName = 'Техническое состояние, износ и критичность';
+        suggestedSectionCode = 'condition_wear';
+      } else if (/то|регламент|график|обслуживан|ответствен/i.test(header)) {
+        suggestedSectionName = 'Регламент ТОиР и график обслуживания';
+        suggestedSectionCode = 'maintenance_regulations';
+      } else if (/напряжен|мощност|ток|фаз|ибп|электр/i.test(header)) {
+        suggestedSectionName = 'Электротехнические параметры';
+        suggestedSectionCode = 'electrical';
+      } else if (/давлен|хладагент|скорост|механ|гидравлик/i.test(header)) {
+        suggestedSectionName = 'Механика, гидравлика и среда';
+        suggestedSectionCode = 'mechanics';
+      }
+
+      const targetSection = sections.find(
+        (s) => s.code === suggestedSectionCode || s.name.toLowerCase() === suggestedSectionName.toLowerCase()
+      );
+
       missingFields.push({
         header,
         suggestedName: header.replace(/[*[\]()]/g, '').trim(),
         suggestedKey,
         suggestedType: guessedType,
         suggestedUnit: header.match(/\[(.*?)\]/)?.[1] || null,
+        suggestedSectionName,
+        suggestedSectionCode,
+        sectionId: targetSection ? targetSection.id : null,
         sampleValues: sampleVals.filter((v) => v !== null && v !== undefined),
       });
     });
