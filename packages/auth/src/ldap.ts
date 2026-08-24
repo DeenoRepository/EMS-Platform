@@ -84,48 +84,58 @@ export async function authenticateLdap(
 
   const client = new Client({ url: ldapUrl, timeout: 5000, connectTimeout: 5000 });
 
+  const hasServiceAccount = Boolean(bindDn && bindDn.trim() && bindPassword && bindPassword.trim());
+
   try {
-    // Mode 1: Search & Bind with Service Account
-    if (bindDn && bindPassword && searchBase) {
-      await client.bind(bindDn, bindPassword);
+    // Mode 1: Search & Bind with Service Account (only if valid service credentials configured)
+    if (hasServiceAccount && searchBase) {
+      try {
+        await client.bind(bindDn!, bindPassword!);
 
-      const sanitizedUsername = escapeLdapFilter(username);
-      const filter = filterTemplate.replace(/\{\{username\}\}/g, sanitizedUsername);
-      const { searchEntries } = await client.search(searchBase, {
-        filter,
-        scope: 'sub' as const,
-        attributes: ['dn', 'displayName', 'cn', 'mail', 'sAMAccountName', 'userPrincipalName'],
-      });
+        const sanitizedUsername = escapeLdapFilter(username);
+        const filter = filterTemplate.replace(/\{\{username\}\}/g, sanitizedUsername);
+        const { searchEntries } = await client.search(searchBase, {
+          filter,
+          scope: 'sub' as const,
+          attributes: ['dn', 'displayName', 'cn', 'mail', 'sAMAccountName', 'userPrincipalName'],
+        });
 
-      if (searchEntries.length > 0 && searchEntries[0]?.dn) {
-        const userEntry = searchEntries[0];
-        const userClient = new Client({ url: ldapUrl, timeout: 5000 });
-        try {
-          await userClient.bind(userEntry.dn, password);
-          await userClient.unbind();
-          await client.unbind();
+        if (searchEntries.length > 0 && searchEntries[0]?.dn) {
+          const userEntry = searchEntries[0];
+          const userClient = new Client({ url: ldapUrl, timeout: 5000 });
+          try {
+            await userClient.bind(userEntry.dn, password);
+            await userClient.unbind();
+            await client.unbind();
 
-          const displayName = userEntry.displayName || userEntry.cn || userEntry.sAMAccountName || username;
-          const email = userEntry.mail || undefined;
+            const displayName = userEntry.displayName || userEntry.cn || userEntry.sAMAccountName || username;
+            const email = userEntry.mail || undefined;
 
-          return {
-            ldapLogin: username,
-            displayName: String(displayName),
-            email: email ? String(email) : undefined,
-          };
-        } catch {
-          try { await userClient.unbind(); } catch {}
-          try { await client.unbind(); } catch {}
-          return null;
+            return {
+              ldapLogin: username,
+              displayName: String(displayName),
+              email: email ? String(email) : undefined,
+            };
+          } catch (bindErr: any) {
+            console.warn('[LDAP USER BIND ERROR]:', bindErr?.message);
+            try { await userClient.unbind(); } catch {}
+            try { await client.unbind(); } catch {}
+            return null;
+          }
         }
+        await client.unbind();
+        return null;
+      } catch (svcErr: any) {
+        console.warn('[LDAP SERVICE BIND FAILED, FALLING BACK TO DIRECT BIND]:', svcErr?.message);
+        try { await client.unbind(); } catch {}
       }
-      await client.unbind();
-      return null;
     }
 
     // Mode 2: Direct Single Bind with Constructed UPN (Safe: Exactly 1 single attempt, no lockout risk)
     const exactAccount = constructUserPrincipalName(username, searchBase, ldapUrl);
-    await client.bind(exactAccount, password);
+    console.log('[LDAP DIRECT BIND ATTEMPT]:', { username, exactAccount, ldapUrl });
+    const directClient = new Client({ url: ldapUrl, timeout: 5000, connectTimeout: 5000 });
+    await directClient.bind(exactAccount, password);
 
     let displayName = username;
     let email: string | undefined;
@@ -133,7 +143,7 @@ export async function authenticateLdap(
     if (searchBase) {
       try {
         const rawUser = username.includes('\\') ? username.split('\\')[1] : (username.includes('@') ? username.split('@')[0] : username);
-        const { searchEntries } = await client.search(searchBase, {
+        const { searchEntries } = await directClient.search(searchBase, {
           filter: `(|(sAMAccountName=${escapeLdapFilter(rawUser)})(uid=${escapeLdapFilter(rawUser)})(cn=${escapeLdapFilter(rawUser)})(userPrincipalName=${escapeLdapFilter(exactAccount)}))`,
           scope: 'sub',
           attributes: ['displayName', 'cn', 'mail'],
@@ -146,14 +156,15 @@ export async function authenticateLdap(
       } catch {}
     }
 
-    await client.unbind();
+    await directClient.unbind();
 
     return {
       ldapLogin: username,
       displayName,
       email,
     };
-  } catch (error) {
+  } catch (error: any) {
+    console.error('[LDAP AUTH ERROR]:', error?.message || error);
     try { await client.unbind(); } catch {}
     return null;
   }

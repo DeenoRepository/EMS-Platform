@@ -32,6 +32,8 @@ export async function POST(req: NextRequest) {
     const ldapUrl = sysSettings.LDAP_URL || process.env.LDAP_URL;
     const searchBase = sysSettings.LDAP_SEARCH_BASE || process.env.LDAP_SEARCH_BASE;
 
+    console.log('[LOGIN ROUTE] Попытка входа:', { username: trimmedUsername, isLdapEnabled, ldapUrl, searchBase });
+
     let ldapResult = null;
     if (isLdapEnabled && ldapUrl) {
       try {
@@ -40,8 +42,9 @@ export async function POST(req: NextRequest) {
           ldapUrl,
           searchBase,
         });
+        console.log('[LOGIN ROUTE] Результат authenticateLdap:', ldapResult ? `Успешно (${ldapResult.ldapLogin})` : 'null / ошибка');
       } catch (err: any) {
-        logger.warn(`Ошибка аутентификации LDAP для пользователя ${trimmedUsername}: ${err.message}`);
+        console.error('[LOGIN ROUTE] Ошибка вызова authenticateLdap:', err?.message || err);
       }
     }
 
@@ -59,6 +62,7 @@ export async function POST(req: NextRequest) {
           ],
         },
       });
+      console.log('[LOGIN ROUTE] Поиск пользователя в базе данных:', user ? `Найден (id=${user.id}, login=${user.ldapLogin})` : 'Не найден, создается новая запись');
 
       if (!user) {
         // Создаем пользователя и присваиваем базовую роль guest
