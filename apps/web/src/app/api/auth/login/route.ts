@@ -28,15 +28,36 @@ export async function POST(req: NextRequest) {
 
     // 1. Попытка аутентификации через LDAP с учетом динамических настроек из БД
     const sysSettings = await getSystemSettings();
-    const ldapResult = await authenticateLdap(trimmedUsername, password || '', {
-      ldapUrl: sysSettings.LDAP_URL,
-      searchBase: sysSettings.LDAP_SEARCH_BASE,
-    });
+    const isLdapEnabled = sysSettings.LDAP_ENABLED === true || process.env.LDAP_ENABLED === 'true';
+    const ldapUrl = sysSettings.LDAP_URL || process.env.LDAP_URL;
+    const searchBase = sysSettings.LDAP_SEARCH_BASE || process.env.LDAP_SEARCH_BASE;
+
+    let ldapResult = null;
+    if (isLdapEnabled && ldapUrl) {
+      try {
+        ldapResult = await authenticateLdap(trimmedUsername, password || '', {
+          ldapEnabled: true,
+          ldapUrl,
+          searchBase,
+        });
+      } catch (err: any) {
+        logger.warn(`Ошибка аутентификации LDAP для пользователя ${trimmedUsername}: ${err.message}`);
+      }
+    }
 
     if (ldapResult) {
       // Пользователь аутентифицирован через LDAP. Находим или создаем запись в БД
-      let user = await prisma.user.findUnique({
-        where: { ldapLogin: ldapResult.ldapLogin },
+      const cleanLogin = ldapResult.ldapLogin.trim().toLowerCase();
+      const rawCleanLogin = trimmedUsername.trim().toLowerCase();
+      let user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { ldapLogin: cleanLogin },
+            { ldapLogin: rawCleanLogin },
+            { ldapLogin: { equals: cleanLogin, mode: 'insensitive' } },
+            { ldapLogin: { equals: rawCleanLogin, mode: 'insensitive' } },
+          ],
+        },
       });
 
       if (!user) {
