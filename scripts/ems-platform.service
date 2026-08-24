@@ -13,10 +13,10 @@ Environment=NODE_ENV=production
 Environment=PORT=3000
 
 # Push / verify database schema on start
-ExecStartPre=-/bin/sh -c 'cd /opt/ems-platform && node node_modules/prisma/build/index.js db push --schema=packages/database/prisma/schema.prisma --accept-data-loss || true'
+ExecStartPre=-/bin/sh -c 'cd /opt/ems-platform && ./packages/database/node_modules/.bin/prisma db push --schema=packages/database/prisma/schema.prisma --accept-data-loss || true'
 
 # Start Next.js Web server
-ExecStart=/usr/bin/node /opt/ems-platform/node_modules/next/dist/bin/next start /opt/ems-platform/apps/web -p 3000
+ExecStart=/opt/ems-platform/apps/web/node_modules/.bin/next start /opt/ems-platform/apps/web -p 3000
 
 Restart=always
 RestartSec=5

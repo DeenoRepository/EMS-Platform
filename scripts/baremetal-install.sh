@@ -76,7 +76,7 @@ chmod -R 755 "$INSTALL_DIR"
 # 7. Push Database Schema via local Prisma Engine
 echo "🗄️ Синхронизация схемы базы данных PostgreSQL..."
 set +e
-su -s /bin/sh ems -c "cd '$INSTALL_DIR' && node node_modules/prisma/build/index.js db push --schema=packages/database/prisma/schema.prisma --accept-data-loss"
+su -s /bin/sh ems -c "cd '$INSTALL_DIR' && ./packages/database/node_modules/.bin/prisma db push --schema=packages/database/prisma/schema.prisma --accept-data-loss"
 PRISMA_STATUS=$?
 set -e
 
