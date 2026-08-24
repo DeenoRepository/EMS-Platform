@@ -98,20 +98,200 @@ function guessFieldType(values: any[]): 'NUMBER' | 'DATE' | 'BOOLEAN' | 'TEXT' {
   return 'TEXT';
 }
 
-function makeSlug(str: string): string {
-  const ruToEn: Record<string, string> = {
-    а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'yo', ж: 'zh', з: 'z', и: 'i',
-    й: 'y', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't',
-    у: 'u', ф: 'f', х: 'h', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'sch', ъ: '', ы: 'y', ь: '',
-    э: 'e', ю: 'yu', я: 'ya',
-  };
+const CANONICAL_FIELD_DICTIONARY: Record<string, { key: string; name: string; sectionCode: string; fieldType?: 'NUMBER' | 'DATE' | 'BOOLEAN' | 'TEXT'; unit?: string }> = {
+  // 1. Классификаторы
+  'децимальный номер': { key: 'decimal_number', name: 'Децимальный номер', sectionCode: 'classifiers', fieldType: 'TEXT' },
+  'код по окоф ок 013 2014': { key: 'okof_code', name: 'Код по ОКОФ (ОК 013-2014)', sectionCode: 'classifiers', fieldType: 'TEXT' },
+  'код по окоф': { key: 'okof_code', name: 'Код по ОКОФ (ОК 013-2014)', sectionCode: 'classifiers', fieldType: 'TEXT' },
+  'окоф': { key: 'okof_code', name: 'Код по ОКОФ (ОК 013-2014)', sectionCode: 'classifiers', fieldType: 'TEXT' },
+  'код по окпд2 ок 034 2014': { key: 'okpd2_code', name: 'Код по ОКПД2 (ОК 034-2014)', sectionCode: 'classifiers', fieldType: 'TEXT' },
+  'код по окпд2': { key: 'okpd2_code', name: 'Код по ОКПД2 (ОК 034-2014)', sectionCode: 'classifiers', fieldType: 'TEXT' },
+  'окпд2': { key: 'okpd2_code', name: 'Код по ОКПД2 (ОК 034-2014)', sectionCode: 'classifiers', fieldType: 'TEXT' },
+  'код технологического классификатора': { key: 'process_classifier_code', name: 'Код технологического классификатора', sectionCode: 'classifiers', fieldType: 'TEXT' },
+  'технологический классификатор': { key: 'process_classifier_code', name: 'Код технологического классификатора', sectionCode: 'classifiers', fieldType: 'TEXT' },
+  'группа оборудования': { key: 'equipment_group', name: 'Группа оборудования', sectionCode: 'classifiers', fieldType: 'TEXT' },
+  'тип оборудования установка': { key: 'equipment_type', name: 'Тип оборудования (Установка)', sectionCode: 'classifiers', fieldType: 'TEXT' },
+  'тип оборудования': { key: 'equipment_type', name: 'Тип оборудования (Установка)', sectionCode: 'classifiers', fieldType: 'TEXT' },
+  'установка': { key: 'equipment_type', name: 'Тип оборудования (Установка)', sectionCode: 'classifiers', fieldType: 'TEXT' },
 
-  let slug = str
-    .toLowerCase()
-    .split('')
-    .map((char) => ruToEn[char] || char)
-    .join('')
-    .replace(/[^a-z0-9]+/g, '_')
+  // 2. Состояние, износ и критичность
+  'страна производитель': { key: 'country_origin', name: 'Страна производитель', sectionCode: 'condition_wear', fieldType: 'TEXT' },
+  'страна происхождения': { key: 'country_origin', name: 'Страна производитель', sectionCode: 'condition_wear', fieldType: 'TEXT' },
+  'страна': { key: 'country_origin', name: 'Страна производитель', sectionCode: 'condition_wear', fieldType: 'TEXT' },
+  'год выпуска': { key: 'prod_year', name: 'Год выпуска', sectionCode: 'condition_wear', fieldType: 'NUMBER' },
+  'год производства': { key: 'prod_year', name: 'Год выпуска', sectionCode: 'condition_wear', fieldType: 'NUMBER' },
+  'год ввода': { key: 'comm_year', name: 'Год ввода', sectionCode: 'condition_wear', fieldType: 'NUMBER' },
+  'год ввода в эксплуатацию': { key: 'comm_year', name: 'Год ввода', sectionCode: 'condition_wear', fieldType: 'NUMBER' },
+  'возраст оборудования': { key: 'equipment_age', name: 'Возраст оборудования', sectionCode: 'condition_wear', fieldType: 'NUMBER', unit: 'лет' },
+  'возраст': { key: 'equipment_age', name: 'Возраст оборудования', sectionCode: 'condition_wear', fieldType: 'NUMBER', unit: 'лет' },
+  'фактический процент износа': { key: 'actual_wear_percentage', name: 'Фактический процент износа', sectionCode: 'condition_wear', fieldType: 'NUMBER', unit: '%' },
+  'процент износа': { key: 'actual_wear_percentage', name: 'Фактический процент износа', sectionCode: 'condition_wear', fieldType: 'NUMBER', unit: '%' },
+  'износ': { key: 'actual_wear_percentage', name: 'Фактический процент износа', sectionCode: 'condition_wear', fieldType: 'NUMBER', unit: '%' },
+  'категория критичности': { key: 'criticality', name: 'Категория критичности', sectionCode: 'condition_wear', fieldType: 'TEXT' },
+  'критичность': { key: 'criticality', name: 'Категория критичности', sectionCode: 'condition_wear', fieldType: 'TEXT' },
+  'класс чистоты помещения iso': { key: 'clean_room_class', name: 'Класс чистоты помещения (ISO)', sectionCode: 'condition_wear', fieldType: 'TEXT' },
+  'класс чистоты помещения': { key: 'clean_room_class', name: 'Класс чистоты помещения (ISO)', sectionCode: 'condition_wear', fieldType: 'TEXT' },
+  'класс чистоты iso': { key: 'clean_room_class', name: 'Класс чистоты помещения (ISO)', sectionCode: 'condition_wear', fieldType: 'TEXT' },
+  'класс чистоты': { key: 'clean_room_class', name: 'Класс чистоты помещения (ISO)', sectionCode: 'condition_wear', fieldType: 'TEXT' },
+  'уникальное единичное оборудование': { key: 'is_unique', name: 'Уникальное / единичное оборудование', sectionCode: 'condition_wear', fieldType: 'BOOLEAN' },
+  'уникальное оборудование': { key: 'is_unique', name: 'Уникальное / единичное оборудование', sectionCode: 'condition_wear', fieldType: 'BOOLEAN' },
+  'признак уникальности': { key: 'is_unique', name: 'Уникальное / единичное оборудование', sectionCode: 'condition_wear', fieldType: 'BOOLEAN' },
+  'импортное оборудование': { key: 'is_imported', name: 'Импортное оборудование', sectionCode: 'condition_wear', fieldType: 'BOOLEAN' },
+  'признак импорта': { key: 'is_imported', name: 'Импортное оборудование', sectionCode: 'condition_wear', fieldType: 'BOOLEAN' },
+
+  // 3. Регламент ТОиР и график обслуживания
+  'периодичность регламентного то': { key: 'maintenance_periodicity', name: 'Периодичность регламентного ТО', sectionCode: 'maintenance_regulations', fieldType: 'TEXT' },
+  'периодичность то': { key: 'maintenance_periodicity', name: 'Периодичность регламентного ТО', sectionCode: 'maintenance_regulations', fieldType: 'TEXT' },
+  'регламент то': { key: 'maintenance_periodicity', name: 'Периодичность регламентного ТО', sectionCode: 'maintenance_regulations', fieldType: 'TEXT' },
+  'утвержденный график то на 2026 год': { key: 'maintenance_schedule_year', name: 'Утвержденный график ТО на 2026 год', sectionCode: 'maintenance_regulations', fieldType: 'TEXT' },
+  'утвержденный график то': { key: 'maintenance_schedule_year', name: 'Утвержденный график ТО на 2026 год', sectionCode: 'maintenance_regulations', fieldType: 'TEXT' },
+  'график то на 2026 год': { key: 'maintenance_schedule_year', name: 'Утвержденный график ТО на 2026 год', sectionCode: 'maintenance_regulations', fieldType: 'TEXT' },
+  'график то': { key: 'maintenance_schedule_year', name: 'Утвержденный график ТО на 2026 год', sectionCode: 'maintenance_regulations', fieldType: 'TEXT' },
+  'количество то по графику': { key: 'to_count_scheduled', name: 'Количество ТО по графику', sectionCode: 'maintenance_regulations', fieldType: 'NUMBER' },
+  'количество то': { key: 'to_count_scheduled', name: 'Количество ТО по графику', sectionCode: 'maintenance_regulations', fieldType: 'NUMBER' },
+  'ответственное лицо фио должность': { key: 'responsible_person_name', name: 'Ответственное лицо (ФИО / Должность)', sectionCode: 'maintenance_regulations', fieldType: 'TEXT' },
+  'ответственное лицо': { key: 'responsible_person_name', name: 'Ответственное лицо (ФИО / Должность)', sectionCode: 'maintenance_regulations', fieldType: 'TEXT' },
+  'ответственный': { key: 'responsible_person_name', name: 'Ответственное лицо (ФИО / Должность)', sectionCode: 'maintenance_regulations', fieldType: 'TEXT' },
+  'фио ответственного': { key: 'responsible_person_name', name: 'Ответственное лицо (ФИО / Должность)', sectionCode: 'maintenance_regulations', fieldType: 'TEXT' },
+  'идентификатор во внешней системе 1с erp': { key: 'external_system_id', name: 'Идентификатор во внешней системе (1С / ERP)', sectionCode: 'maintenance_regulations', fieldType: 'TEXT' },
+  'идентификатор во внешней системе': { key: 'external_system_id', name: 'Идентификатор во внешней системе (1С / ERP)', sectionCode: 'maintenance_regulations', fieldType: 'TEXT' },
+  'код 1с erp': { key: 'external_system_id', name: 'Идентификатор во внешней системе (1С / ERP)', sectionCode: 'maintenance_regulations', fieldType: 'TEXT' },
+  'код 1с': { key: 'external_system_id', name: 'Идентификатор во внешней системе (1С / ERP)', sectionCode: 'maintenance_regulations', fieldType: 'TEXT' },
+
+  // 4. Электротехнические параметры
+  'рабочее напряжение': { key: 'operating_voltage', name: 'Рабочее напряжение', sectionCode: 'electrical', fieldType: 'TEXT' },
+  'напряжение питания': { key: 'operating_voltage', name: 'Рабочее напряжение', sectionCode: 'electrical', fieldType: 'TEXT' },
+  'напряжение': { key: 'operating_voltage', name: 'Рабочее напряжение', sectionCode: 'electrical', fieldType: 'TEXT' },
+  'номинальная мощность': { key: 'power_kw', name: 'Номинальная мощность', sectionCode: 'electrical', fieldType: 'NUMBER', unit: 'кВт' },
+  'мощность': { key: 'power_kw', name: 'Номинальная мощность', sectionCode: 'electrical', fieldType: 'NUMBER', unit: 'кВт' },
+  'номинальный ток': { key: 'nominal_current', name: 'Номинальный ток', sectionCode: 'electrical', fieldType: 'NUMBER', unit: 'А' },
+  'ток': { key: 'nominal_current', name: 'Номинальный ток', sectionCode: 'electrical', fieldType: 'NUMBER', unit: 'А' },
+  'количество фаз': { key: 'phase_count', name: 'Количество фаз', sectionCode: 'electrical', fieldType: 'NUMBER' },
+  'фазность': { key: 'phase_count', name: 'Количество фаз', sectionCode: 'electrical', fieldType: 'NUMBER' },
+  'требование к наличию ибп': { key: 'ups_required', name: 'Требование к наличию ИБП', sectionCode: 'electrical', fieldType: 'TEXT' },
+  'наличие ибп': { key: 'ups_required', name: 'Требование к наличию ИБП', sectionCode: 'electrical', fieldType: 'TEXT' },
+  'ибп': { key: 'ups_required', name: 'Требование к наличию ИБП', sectionCode: 'electrical', fieldType: 'TEXT' },
+
+  // 5. Механика, гидравлика и среда
+  'рабочее давление': { key: 'operating_pressure', name: 'Рабочее давление', sectionCode: 'mechanics', fieldType: 'NUMBER', unit: 'МПа' },
+  'давление': { key: 'operating_pressure', name: 'Рабочее давление', sectionCode: 'mechanics', fieldType: 'NUMBER', unit: 'МПа' },
+  'тип смазки хладагента': { key: 'coolant_type', name: 'Тип смазки / хладагента', sectionCode: 'mechanics', fieldType: 'TEXT' },
+  'тип смазки': { key: 'coolant_type', name: 'Тип смазки / хладагента', sectionCode: 'mechanics', fieldType: 'TEXT' },
+  'хладагент': { key: 'coolant_type', name: 'Тип смазки / хладагента', sectionCode: 'mechanics', fieldType: 'TEXT' },
+  'смазка': { key: 'coolant_type', name: 'Тип смазки / хладагента', sectionCode: 'mechanics', fieldType: 'TEXT' },
+  'частота вращения вала': { key: 'rotation_speed', name: 'Частота вращения вала', sectionCode: 'mechanics', fieldType: 'NUMBER', unit: 'об/мин' },
+  'частота вращения': { key: 'rotation_speed', name: 'Частота вращения вала', sectionCode: 'mechanics', fieldType: 'NUMBER', unit: 'об/мин' },
+  'скорость вращения': { key: 'rotation_speed', name: 'Частота вращения вала', sectionCode: 'mechanics', fieldType: 'NUMBER', unit: 'об/мин' },
+  'обороты': { key: 'rotation_speed', name: 'Частота вращения вала', sectionCode: 'mechanics', fieldType: 'NUMBER', unit: 'об/мин' },
+
+  // 6. Эксплуатационные требования и метрология
+  'влияет на непрерывность процесса': { key: 'is_critical_path', name: 'Влияет на непрерывность процесса', sectionCode: 'operational', fieldType: 'BOOLEAN' },
+  'непрерывность процесса': { key: 'is_critical_path', name: 'Влияет на непрерывность процесса', sectionCode: 'operational', fieldType: 'BOOLEAN' },
+  'критический путь': { key: 'is_critical_path', name: 'Влияет на непрерывность процесса', sectionCode: 'operational', fieldType: 'BOOLEAN' },
+  'периодичность поверки датчиков': { key: 'calibration_interval', name: 'Периодичность поверки датчиков', sectionCode: 'operational', fieldType: 'NUMBER', unit: 'мес.' },
+  'поверка датчиков': { key: 'calibration_interval', name: 'Периодичность поверки датчиков', sectionCode: 'operational', fieldType: 'NUMBER', unit: 'мес.' },
+  'интервал поверки': { key: 'calibration_interval', name: 'Периодичность поверки датчиков', sectionCode: 'operational', fieldType: 'NUMBER', unit: 'мес.' },
+};
+
+const RU_WORD_TRANSLATE: Record<string, string> = {
+  код: 'code',
+  номер: 'number',
+  группа: 'group',
+  тип: 'type',
+  вид: 'kind',
+  статус: 'status',
+  состояние: 'condition',
+  износ: 'wear',
+  процент: 'percentage',
+  критичность: 'criticality',
+  чистота: 'cleanliness',
+  помещение: 'room',
+  класс: 'class',
+  периодичность: 'periodicity',
+  регламент: 'regulation',
+  график: 'schedule',
+  количество: 'count',
+  ответственный: 'responsible',
+  лицо: 'person',
+  фио: 'name',
+  должность: 'position',
+  система: 'system',
+  напряжение: 'voltage',
+  мощность: 'power',
+  ток: 'current',
+  фаза: 'phase',
+  фазы: 'phases',
+  давление: 'pressure',
+  скорость: 'speed',
+  температура: 'temperature',
+  габариты: 'dimensions',
+  длина: 'length',
+  ширина: 'width',
+  высота: 'height',
+  вес: 'weight',
+  масса: 'weight',
+  страна: 'country',
+  город: 'city',
+  год: 'year',
+  дата: 'date',
+  описание: 'description',
+  примечание: 'notes',
+  комментарий: 'comment',
+  производитель: 'manufacturer',
+  модель: 'model',
+  серийный: 'serial',
+  заводской: 'factory',
+  инвентарный: 'inventory',
+  локация: 'location',
+  участок: 'site',
+  цех: 'workshop',
+  этаж: 'floor',
+  корпус: 'building',
+  поверка: 'calibration',
+  интервал: 'interval',
+  смазка: 'grease',
+  хладагент: 'coolant',
+  обороты: 'rpm',
+  вращение: 'rotation',
+  среда: 'medium',
+  уникальный: 'unique',
+  импортный: 'imported',
+};
+
+function makeEnglishSlug(str: string): string {
+  const norm = normalizeHeader(str);
+
+  // 1. Check exact or partial match in canonical dictionary
+  if (CANONICAL_FIELD_DICTIONARY[norm]) {
+    return CANONICAL_FIELD_DICTIONARY[norm].key;
+  }
+
+  for (const [phrase, def] of Object.entries(CANONICAL_FIELD_DICTIONARY)) {
+    if (norm === phrase || norm.startsWith(phrase) || norm.includes(phrase)) {
+      return def.key;
+    }
+  }
+
+  // 2. Word-by-word intelligent dictionary translation
+  const words = norm.split(/[\s_\-./\\]+/).filter(Boolean);
+  const translatedWords = words.map((w) => {
+    if (RU_WORD_TRANSLATE[w]) return RU_WORD_TRANSLATE[w];
+    // fallback to Latin transliteration for unknown proper nouns
+    const ruToEn: Record<string, string> = {
+      а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'yo', ж: 'zh', з: 'z', и: 'i',
+      й: 'y', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't',
+      у: 'u', ф: 'f', х: 'h', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'sch', ъ: '', ы: 'y', ь: '',
+      э: 'e', ю: 'yu', я: 'ya',
+    };
+    return w
+      .split('')
+      .map((c) => ruToEn[c] || c)
+      .join('');
+  });
+
+  const slug = translatedWords
+    .join('_')
+    .replace(/[^a-z0-9_]+/g, '_')
     .replace(/^_+|_+$/g, '');
 
   return slug || 'custom_field_' + Math.floor(Math.random() * 1000);
@@ -208,14 +388,22 @@ export async function POST(req: NextRequest) {
 
       // If not matched -> Missing field!
       const sampleVals = rawJsonRows.slice(0, 5).map((r) => r[header]);
-      const guessedType = guessFieldType(sampleVals);
-      const suggestedKey = makeSlug(header);
+      const suggestedKey = makeEnglishSlug(header);
+      const canonicalMatch = CANONICAL_FIELD_DICTIONARY[norm] || Object.values(CANONICAL_FIELD_DICTIONARY).find((c) => c.key === suggestedKey);
+      const guessedType = canonicalMatch?.fieldType || guessFieldType(sampleVals);
 
       // Intelligent section inference
       let suggestedSectionName = 'Общероссийские и отраслевые классификаторы';
-      let suggestedSectionCode = 'classifiers';
+      let suggestedSectionCode = canonicalMatch?.sectionCode || 'classifiers';
 
-      if (/износ|критичност|чистот|уникальн|импортн|стран|год|возраст/i.test(header)) {
+      if (canonicalMatch?.sectionCode) {
+        suggestedSectionCode = canonicalMatch.sectionCode;
+        if (suggestedSectionCode === 'condition_wear') suggestedSectionName = 'Техническое состояние, износ и критичность';
+        else if (suggestedSectionCode === 'maintenance_regulations') suggestedSectionName = 'Регламент ТОиР и график обслуживания';
+        else if (suggestedSectionCode === 'electrical') suggestedSectionName = 'Электротехнические параметры';
+        else if (suggestedSectionCode === 'mechanics') suggestedSectionName = 'Механика, гидравлика и среда';
+        else if (suggestedSectionCode === 'operational') suggestedSectionName = 'Эксплуатационные требования и метрология';
+      } else if (/износ|критичност|чистот|уникальн|импортн|стран|год|возраст/i.test(header)) {
         suggestedSectionName = 'Техническое состояние, износ и критичность';
         suggestedSectionCode = 'condition_wear';
       } else if (/то|регламент|график|обслуживан|ответствен/i.test(header)) {
@@ -235,10 +423,10 @@ export async function POST(req: NextRequest) {
 
       missingFields.push({
         header,
-        suggestedName: header.replace(/[*[\]()]/g, '').trim(),
+        suggestedName: canonicalMatch?.name || header.replace(/[*[\]()]/g, '').trim(),
         suggestedKey,
         suggestedType: guessedType,
-        suggestedUnit: header.match(/\[(.*?)\]/)?.[1] || null,
+        suggestedUnit: canonicalMatch?.unit || header.match(/\[(.*?)\]/)?.[1] || null,
         suggestedSectionName,
         suggestedSectionCode,
         sectionId: targetSection ? targetSection.id : null,
