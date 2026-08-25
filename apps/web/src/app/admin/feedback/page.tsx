@@ -292,11 +292,16 @@ export default function AdminFeedbackPage() {
   };
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: 1600, mx: 'auto' }}>
+    <Box sx={{ width: '100%', pb: 2 }}>
       {/* Page Header */}
       <PageHeader
         title="Центр обратной связи и техподдержки"
         subtitle="Обработка обращений пользователей, баг-репортов и предложений по развитию платформы"
+        breadcrumbs={[
+          { label: 'Главная', href: '/' },
+          { label: 'Администрирование', href: '/admin/settings' },
+          { label: 'Обратная связь' },
+        ]}
         actions={
           <Button
             variant="outlined"
@@ -313,7 +318,7 @@ export default function AdminFeedbackPage() {
       />
 
       {/* KPI Stats Block */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
+      <Grid container spacing={1.75} sx={{ mb: 2.5 }}>
         <Grid item xs={12} sm={6} md={2}>
           <StatCard
             title="Всего обращений"
