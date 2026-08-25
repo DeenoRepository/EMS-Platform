@@ -84,6 +84,7 @@ cp scripts/ems-platform.service "$PACKAGE_DIR/scripts/ems-platform.service"
 cp scripts/ems-baremetal.nginx.conf "$PACKAGE_DIR/scripts/ems-baremetal.nginx.conf"
 cp scripts/backup.sh "$PACKAGE_DIR/scripts/backup.sh"
 cp scripts/*.js "$PACKAGE_DIR/scripts/" 2>/dev/null || true
+cp scripts/*.sql "$PACKAGE_DIR/scripts/" 2>/dev/null || true
 if [ -d "temp" ]; then
     mkdir -p "$PACKAGE_DIR/temp"
     cp -r temp/* "$PACKAGE_DIR/temp/" 2>/dev/null || true
