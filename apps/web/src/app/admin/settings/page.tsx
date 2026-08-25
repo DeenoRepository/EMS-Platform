@@ -720,12 +720,23 @@ export default function AdminSettingsPage() {
 
                         <TextField
                           label="Ключ проекта Jira"
-                          placeholder="EMS"
+                          placeholder="SD"
                           fullWidth
                           size="small"
                           value={settings.SRM_PROJECT_KEY}
                           onChange={(e) => handleChange('SRM_PROJECT_KEY', e.target.value)}
-                          helperText="Ключ проекта для сервисных заявок"
+                          helperText="Короткий префикс проекта Jira (например: SD, IT, EMS)"
+                        />
+
+                        <TextField
+                          label="API-токен / Personal Access Token (PAT)"
+                          placeholder="Укажите токен доступа Jira"
+                          fullWidth
+                          size="small"
+                          type="password"
+                          value={settings.SRM_API_KEY}
+                          onChange={(e) => handleChange('SRM_API_KEY', e.target.value)}
+                          helperText="Персональный токен доступа (PAT) для Jira Data Center или API-токен"
                         />
 
                         <TextField
