@@ -106,30 +106,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const hasPermission = useCallback((permissionCode: string) => {
     if (!user) return false;
     if (user.roles?.includes('admin') || user.roles?.includes('administrator')) return true;
-
-    // Заведующий складом / Кладовщик
-    if (
-      user.roles?.includes('warehouse_manager') ||
-      user.roles?.includes('storekeeper') ||
-      user.roles?.includes('wms_manager')
-    ) {
-      if (permissionCode.startsWith('wms.')) return true;
-      if (permissionCode.endsWith('.view')) return true;
-    }
-
-    // Сквозной просмотр всех сущностей
-    if (permissionCode.endsWith('.view')) {
-      return true;
-    }
-
     return user.permissions?.includes(permissionCode) || false;
   }, [user]);
 
   const hasAnyPermission = useCallback((permissionCodes: string[]) => {
     if (!user) return false;
     if (user.roles?.includes('admin') || user.roles?.includes('administrator')) return true;
-    return permissionCodes.some((p) => hasPermission(p));
-  }, [user, hasPermission]);
+    return permissionCodes.some((p) => user.permissions?.includes(p)) || false;
+  }, [user]);
 
   return (
     <AuthContext.Provider
