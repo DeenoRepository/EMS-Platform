@@ -46,6 +46,7 @@ export const PERMISSIONS = {
   ADMIN_ROLES_MANAGE: 'admin.roles.manage',
   ADMIN_AUDIT_VIEW: 'admin.audit.view',
   ADMIN_SETTINGS_MANAGE: 'admin.settings.manage',
+  ADMIN_FEEDBACK_MANAGE: 'admin.feedback.manage',
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -82,6 +83,12 @@ export const PERMISSION_DEFINITIONS: Record<PermissionCode, PermissionDefinition
     displayName: 'Конфигурация системы и интеграций',
     module: 'admin',
     description: 'Настройка параметров платформы, LDAP/Active Directory, Jira и системных политик',
+  },
+  'admin.feedback.manage': {
+    code: 'admin.feedback.manage',
+    displayName: 'Центр обратной связи и техподдержки',
+    module: 'admin',
+    description: 'Просмотр всех обращений, модерация, смена статусов, назначение ответственных и переписка',
   },
 
   // EPS
@@ -492,4 +499,112 @@ export interface PlatformMaintenanceStatus {
     mro: ModuleMaintenanceConfig;
   };
 }
+
+// ==========================================
+// 7. СИСТЕМА ОБРАТНОЙ СВЯЗИ (FEEDBACK HUB)
+// ==========================================
+
+export type FeedbackType = 'BUG' | 'FEATURE_REQUEST' | 'QUESTION' | 'OTHER';
+export type FeedbackModule = 'EPS' | 'WMS' | 'SRM' | 'MRO' | 'ADMIN' | 'GENERAL';
+export type FeedbackPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export type FeedbackStatus = 'NEW' | 'IN_REVIEW' | 'IN_PROGRESS' | 'RESOLVED' | 'REJECTED' | 'DUPLICATE';
+
+export const FEEDBACK_TYPE_LABELS: Record<FeedbackType, { label: string; color: string }> = {
+  BUG: { label: 'Неисправность / Ошибка', color: '#ef4444' },
+  FEATURE_REQUEST: { label: 'Предложение по улучшению', color: '#3b82f6' },
+  QUESTION: { label: 'Вопрос / Консультация', color: '#8b5cf6' },
+  OTHER: { label: 'Другое', color: '#64748b' },
+};
+
+export const FEEDBACK_MODULE_LABELS: Record<FeedbackModule, string> = {
+  EPS: 'EPS — Оборудование',
+  WMS: 'WMS — Складской учет',
+  SRM: 'SRM — Сервис-деск',
+  MRO: 'MRO — ТОиР',
+  ADMIN: 'Администрирование',
+  GENERAL: 'Общая функциональность',
+};
+
+export const FEEDBACK_PRIORITY_LABELS: Record<FeedbackPriority, { label: string; color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' }> = {
+  LOW: { label: 'Низкий', color: 'info' },
+  MEDIUM: { label: 'Средний', color: 'primary' },
+  HIGH: { label: 'Высокий', color: 'warning' },
+  CRITICAL: { label: 'Критический', color: 'error' },
+};
+
+export const FEEDBACK_STATUS_LABELS: Record<FeedbackStatus, { label: string; color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' }> = {
+  NEW: { label: 'Новое', color: 'info' },
+  IN_REVIEW: { label: 'На рассмотрении', color: 'warning' },
+  IN_PROGRESS: { label: 'В работе', color: 'primary' },
+  RESOLVED: { label: 'Решено / Реализовано', color: 'success' },
+  REJECTED: { label: 'Отклонено', color: 'error' },
+  DUPLICATE: { label: 'Дубликат', color: 'default' },
+};
+
+export interface FeedbackTicketDto {
+  id: string;
+  ticketNumber: string;
+  type: FeedbackType;
+  module: FeedbackModule;
+  priority: FeedbackPriority;
+  status: FeedbackStatus;
+  title: string;
+  description: string;
+  pageUrl?: string | null;
+  browserInfo?: {
+    userAgent?: string;
+    screenResolution?: string;
+    os?: string;
+    browser?: string;
+    language?: string;
+  } | null;
+  resolution?: string | null;
+  resolvedAt?: string | null;
+  createdById: string;
+  assignedToId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: {
+    id: string;
+    displayName: string;
+    ldapLogin: string;
+    email?: string | null;
+  };
+  assignedTo?: {
+    id: string;
+    displayName: string;
+    ldapLogin: string;
+  } | null;
+  commentsCount?: number;
+  attachmentsCount?: number;
+  comments?: FeedbackCommentDto[];
+  attachments?: FeedbackAttachmentDto[];
+}
+
+export interface FeedbackCommentDto {
+  id: string;
+  ticketId: string;
+  userId: string;
+  message: string;
+  isInternal: boolean;
+  createdAt: string;
+  user: {
+    id: string;
+    displayName: string;
+    ldapLogin: string;
+  };
+}
+
+export interface FeedbackAttachmentDto {
+  id: string;
+  ticketId: string;
+  fileName: string;
+  originalName: string;
+  filePath: string;
+  fileType: string;
+  fileSize: number;
+  uploadedById: string;
+  createdAt: string;
+}
+
 

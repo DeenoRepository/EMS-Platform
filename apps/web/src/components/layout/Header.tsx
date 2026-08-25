@@ -8,10 +8,13 @@ import {
   Box,
   Typography,
   Chip,
+  Tooltip,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
+import FeedbackOutlinedIcon from '@mui/icons-material/FeedbackOutlined';
 import NotificationCenter from './NotificationCenter';
+import FeedbackDialog from '@/components/feedback/FeedbackDialog';
 import { useRouter } from 'next/navigation';
 
 interface HeaderProps {
@@ -21,6 +24,33 @@ interface HeaderProps {
 
 export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProps) {
   const router = useRouter();
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleOpenFeedback = (e: any) => {
+      if (e.detail?.ticketId) {
+        setSelectedTicketId(e.detail.ticketId);
+      } else {
+        setSelectedTicketId(null);
+      }
+      setFeedbackOpen(true);
+    };
+
+    window.addEventListener('open-feedback-dialog', handleOpenFeedback);
+    return () => window.removeEventListener('open-feedback-dialog', handleOpenFeedback);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const ticketIdParam = params.get('feedbackTicketId');
+      if (ticketIdParam) {
+        setSelectedTicketId(ticketIdParam);
+        setFeedbackOpen(true);
+      }
+    }
+  }, []);
 
   const handleOpenCommandPalette = () => {
     window.dispatchEvent(new CustomEvent('open-command-palette'));
@@ -177,13 +207,46 @@ export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProp
             </Box>
           </Box>
 
-          {/* Right: Notifications */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          {/* Right: Feedback & Notifications */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {/* Feedback Button */}
+            <Tooltip title="Обратная связь и техподдержка (сообщить об ошибке)">
+              <IconButton
+                onClick={() => {
+                  setSelectedTicketId(null);
+                  setFeedbackOpen(true);
+                }}
+                sx={{
+                  color: '#475569',
+                  backgroundColor: '#f1f5f9',
+                  borderRadius: '10px',
+                  p: 1,
+                  transition: 'all 0.15s ease',
+                  '&:hover': {
+                    color: '#0284c7',
+                    backgroundColor: '#e0f2fe',
+                  },
+                }}
+              >
+                <FeedbackOutlinedIcon sx={{ fontSize: 20 }} />
+              </IconButton>
+            </Tooltip>
+
             {/* Notification Center */}
             <NotificationCenter />
           </Box>
         </Toolbar>
       </AppBar>
+
+      {/* Global Feedback Dialog */}
+      <FeedbackDialog
+        open={feedbackOpen}
+        onClose={() => {
+          setFeedbackOpen(false);
+          setSelectedTicketId(null);
+        }}
+        initialTicketId={selectedTicketId}
+      />
     </>
   );
 }

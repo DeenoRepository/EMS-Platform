@@ -46,6 +46,7 @@ import BugReportOutlinedIcon from '@mui/icons-material/BugReportOutlined';
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import LogoutIcon from '@mui/icons-material/Logout';
+import FeedbackOutlinedIcon from '@mui/icons-material/FeedbackOutlined';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS, PlatformMaintenanceStatus } from '@ems/shared';
 import { StatusBadge } from '@/components/ui';
@@ -532,6 +533,13 @@ export default function Sidebar({
       path: '/admin/audit-log',
       icon: <ReceiptLongOutlinedIcon sx={{ fontSize: 18 }} />,
       permission: PERMISSIONS.ADMIN_AUDIT_VIEW,
+    },
+    {
+      id: 'admin-feedback',
+      label: 'Центр обратной связи и техподдержки',
+      path: '/admin/feedback',
+      icon: <FeedbackOutlinedIcon sx={{ fontSize: 18 }} />,
+      permission: PERMISSIONS.ADMIN_FEEDBACK_MANAGE,
     },
     {
       id: 'settings',
