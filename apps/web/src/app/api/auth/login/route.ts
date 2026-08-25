@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     const ldapUrl = sysSettings.LDAP_URL || process.env.LDAP_URL;
     const searchBase = sysSettings.LDAP_SEARCH_BASE || process.env.LDAP_SEARCH_BASE;
 
-    console.log('[LOGIN ROUTE] Попытка входа:', { username: trimmedUsername, isLdapEnabled, ldapUrl, searchBase });
+    logger.debug('[LOGIN ROUTE] Попытка входа', { username: trimmedUsername, isLdapEnabled, hasLdapUrl: !!ldapUrl, hasSearchBase: !!searchBase });
 
     let ldapResult = null;
     if (isLdapEnabled && ldapUrl) {
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
           ldapUrl,
           searchBase,
         });
-        console.log('[LOGIN ROUTE] Результат authenticateLdap:', ldapResult ? `Успешно (${ldapResult.ldapLogin})` : 'null / ошибка');
+        logger.debug('[LOGIN ROUTE] Результат authenticateLdap', { success: !!ldapResult });
       } catch (err: any) {
         console.error('[LOGIN ROUTE] Ошибка вызова authenticateLdap:', err?.message || err);
       }
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
           ],
         },
       });
-      console.log('[LOGIN ROUTE] Поиск пользователя в базе данных:', user ? `Найден (id=${user.id}, login=${user.ldapLogin})` : 'Не найден, создается новая запись');
+      logger.debug('[LOGIN ROUTE] Поиск пользователя в базе данных', { found: !!user });
 
       if (!user) {
         // Создаем пользователя и присваиваем базовую роль guest

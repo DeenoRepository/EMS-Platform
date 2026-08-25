@@ -339,8 +339,8 @@ export async function POST(req: NextRequest) {
     // Генерируем уникальный номер перемещения
     const prefix = isRequest ? 'REQ' : 'TR';
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const rand = Math.floor(1000 + Math.random() * 9000);
-    const transferNumber = `${prefix}-${dateStr}-${rand}`;
+    const uniqueSuffix = crypto.randomUUID().replace(/-/g, '').slice(0, 6).toUpperCase();
+    const transferNumber = `${prefix}-${dateStr}-${uniqueSuffix}`;
 
     // Если это прямое перемещение (отгрузка), проверяем остатки и сразу списываем
     if (!isRequest) {

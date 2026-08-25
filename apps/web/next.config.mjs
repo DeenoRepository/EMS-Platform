@@ -6,6 +6,35 @@ const nextConfig = {
   poweredByHeader: false,
   compress: true,
   transpilePackages: ['@ems/database', '@ems/shared', '@ems/auth'],
+  async redirects() {
+    return [
+      {
+        source: '/wms/transfers',
+        destination: '/wms/operations?tab=transfers',
+        permanent: false,
+      },
+      {
+        source: '/eps/custom-fields',
+        destination: '/eps/settings?tab=fields',
+        permanent: false,
+      },
+      {
+        source: '/eps/import',
+        destination: '/admin/module-settings?tab=eps&subtab=import',
+        permanent: false,
+      },
+      {
+        source: '/eps/tags',
+        destination: '/eps/settings?tab=tags',
+        permanent: false,
+      },
+      {
+        source: '/eps/settings',
+        destination: '/admin/module-settings?tab=eps',
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       {

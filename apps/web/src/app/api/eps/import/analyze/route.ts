@@ -318,7 +318,7 @@ function makeEnglishSlug(str: string): string {
     .replace(/[^a-z0-9_]+/g, '_')
     .replace(/^_+|_+$/g, '');
 
-  return slug || 'custom_field_' + Math.floor(Math.random() * 1000);
+  return slug || 'custom_field_' + crypto.randomUUID().replace(/-/g, '').slice(0, 8);
 }
 
 export async function POST(req: NextRequest) {
