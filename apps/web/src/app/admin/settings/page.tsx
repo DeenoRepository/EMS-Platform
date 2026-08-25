@@ -36,6 +36,12 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import NetworkCheckIcon from '@mui/icons-material/NetworkCheck';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import StorageIcon from '@mui/icons-material/Storage';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import Radio from '@mui/material/Radio';
+import RadioGroup from '@mui/material/RadioGroup';
+import FormControl from '@mui/material/FormControl';
+import FormLabel from '@mui/material/FormLabel';
 import PageHeader from '@/components/layout/PageHeader';
 import { useSnackbar } from 'notistack';
 import { StatusBadge, PageLoading, ConfirmDialog } from '@/components/ui';
@@ -99,6 +105,49 @@ export default function AdminSettingsPage() {
 
   const [confirmGlobalDialogOpen, setConfirmGlobalDialogOpen] = useState(false);
   const [pendingGlobalEnabled, setPendingGlobalEnabled] = useState(false);
+
+  // Database Backup States
+  const [dumpMode, setDumpMode] = useState<'full' | 'data' | 'schema'>('full');
+  const [downloadingDump, setDownloadingDump] = useState(false);
+  const [confirmDumpDialogOpen, setConfirmDumpDialogOpen] = useState(false);
+
+  const handleDownloadDump = async () => {
+    setConfirmDumpDialogOpen(false);
+    setDownloadingDump(true);
+    enqueueSnackbar('Формирование дампа базы данных начато. Пожалуйста, подождите...', { variant: 'info' });
+
+    try {
+      const res = await fetch(`/api/admin/database/dump?mode=${dumpMode}`);
+      if (!res.ok) {
+        const errorJson = await res.json().catch(() => ({}));
+        throw new Error(errorJson.error || `HTTP error ${res.status}`);
+      }
+
+      const blob = await res.blob();
+      const contentDisposition = res.headers.get('content-disposition');
+      let filename = `ems_database_${dumpMode}_${new Date().toISOString().slice(0, 10)}.sql.gz`;
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (match && match[1]) filename = match[1];
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      enqueueSnackbar(`Дамп базы данных успешно сформирован и скачан (${(blob.size / 1024 / 1024).toFixed(2)} МБ)`, { variant: 'success' });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Ошибка скачивания дампа БД';
+      enqueueSnackbar(msg, { variant: 'error' });
+    } finally {
+      setDownloadingDump(false);
+    }
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -917,8 +966,90 @@ export default function AdminSettingsPage() {
             </Grid>
           </Grid>
 
+          {/* Database Backup and Dump Export Card */}
+          <Card sx={{ mt: 3 }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Box
+                    sx={{
+                      p: 1,
+                      borderRadius: '8px',
+                      bgcolor: 'rgba(2, 132, 199, 0.08)',
+                      color: 'primary.main',
+                      display: 'flex',
+                    }}
+                  >
+                    <StorageIcon />
+                  </Box>
+                  <Box>
+                    <Typography variant="h6" fontWeight={700}>
+                      Резервное копирование и дамп базы данных
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Экспорт структуры и данных PostgreSQL в архивном формате .sql.gz для переноса и резервного хранения
+                    </Typography>
+                  </Box>
+                </Box>
+                <StatusBadge status="ACTIVE" label="PostgreSQL" size="small" />
+              </Box>
+
+              <Divider sx={{ mb: 2.5 }} />
+
+              <Grid container spacing={3} alignItems="center">
+                <Grid item xs={12} md={7}>
+                  <FormControl component="fieldset">
+                    <FormLabel component="legend" sx={{ fontWeight: 700, fontSize: '0.875rem', mb: 1, color: 'text.primary' }}>
+                      Выберите режим выгрузки дампа:
+                    </FormLabel>
+                    <RadioGroup
+                      row
+                      value={dumpMode}
+                      onChange={(e) => setDumpMode(e.target.value as 'full' | 'data' | 'schema')}
+                    >
+                      <FormControlLabel
+                        value="full"
+                        control={<Radio size="small" />}
+                        label={<Typography variant="body2" fontWeight={dumpMode === 'full' ? 700 : 400}>Полный дамп (Схема + Данные)</Typography>}
+                      />
+                      <FormControlLabel
+                        value="data"
+                        control={<Radio size="small" />}
+                        label={<Typography variant="body2" fontWeight={dumpMode === 'data' ? 700 : 400}>Только данные (INSERTs)</Typography>}
+                      />
+                      <FormControlLabel
+                        value="schema"
+                        control={<Radio size="small" />}
+                        label={<Typography variant="body2" fontWeight={dumpMode === 'schema' ? 700 : 400}>Только структура (DDL)</Typography>}
+                      />
+                    </RadioGroup>
+                  </FormControl>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                    {dumpMode === 'full' && '• Создается полный самодостаточный дамп с удалением и созданием всех таблиц, связей и записей.'}
+                    {dumpMode === 'data' && '• Экспортируются только строки таблиц для восстановления поверх существующей структуры.'}
+                    {dumpMode === 'schema' && '• Экспортируется DDL-структура таблиц, индексов и ограничений без бизнес-данных.'}
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12} md={5} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    size="medium"
+                    startIcon={downloadingDump ? <CircularProgress size={18} color="inherit" /> : <CloudDownloadIcon />}
+                    disabled={downloadingDump || loading}
+                    onClick={() => setConfirmDumpDialogOpen(true)}
+                    sx={{ px: 3, py: 1.2, fontWeight: 700 }}
+                  >
+                    {downloadingDump ? 'Формирование дампа...' : 'Скачать дамп БД (.sql.gz)'}
+                  </Button>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+
           {/* Submit Button */}
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
             <Button
               type="submit"
               variant="contained"
@@ -947,6 +1078,18 @@ export default function AdminSettingsPage() {
         variant={pendingGlobalEnabled ? 'warning' : 'info'}
         onConfirm={handleConfirmGlobalMaint}
         onClose={() => setConfirmGlobalDialogOpen(false)}
+      />
+
+      {/* Confirmation Dialog for Database Dump Export */}
+      <ConfirmDialog
+        open={confirmDumpDialogOpen}
+        title="Подтверждение скачивания дампа базы данных"
+        message={`Будет сформирован и скачан сжатый архив дампа PostgreSQL (режим: ${dumpMode === 'full' ? 'Полный' : dumpMode === 'data' ? 'Только данные' : 'Только структура'}). Операция будет зафиксирована в журнале аудита.`}
+        confirmText="Сформировать и скачать"
+        cancelText="Отмена"
+        variant="info"
+        onConfirm={handleDownloadDump}
+        onClose={() => setConfirmDumpDialogOpen(false)}
       />
     </Box>
   );
