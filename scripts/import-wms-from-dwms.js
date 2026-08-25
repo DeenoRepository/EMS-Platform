@@ -77,34 +77,62 @@ function getPrismaClient() {
 
 const prisma = getPrismaClient();
 
+function robustJsonParse(jsonStr) {
+  if (!jsonStr) return null;
+  try {
+    return JSON.parse(jsonStr);
+  } catch (e) {
+    const result = {};
+    const extractField = (field) => {
+      const regex = new RegExp(`"${field}":\\s*(?:"((?:[^"\\\\]|\\\\.)*)"|null|([0-9.]+))`);
+      const m = jsonStr.match(regex);
+      if (m) {
+        if (m[1] !== undefined) return m[1].replace(/\\\\/g, '\\').replace(/\\"/g, '"');
+        if (m[2] !== undefined) return Number(m[2]);
+      }
+      return null;
+    };
+
+    const nameMatch = jsonStr.match(/"Name":\s*"([^"]+)"/);
+    if (nameMatch) result.Name = nameMatch[1];
+
+    const modelMatch = jsonStr.match(/"Model":\s*"(.+?)(?=",\s*"(?:Articul|MinLimit|SerialNumber|UnitOfMeasure)")/);
+    if (modelMatch) {
+      result.Model = modelMatch[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/"+$/, '"');
+    }
+
+    result.Articul = extractField('Articul');
+    result.MinLimit = extractField('MinLimit') || 0;
+    result.SerialNumber = extractField('SerialNumber');
+    result.UnitOfMeasure = extractField('UnitOfMeasure') || 'шт.';
+
+    return result;
+  }
+}
+
 // 3. Парсер SQL COPY блоков из дампа
 function parseCopyTable(sqlContent, tableName) {
-  const marker = `COPY public.${tableName} `;
+  const marker = 'COPY public.' + tableName;
   const start = sqlContent.indexOf(marker);
   if (start === -1) return [];
   const afterHeader = sqlContent.substring(start);
-  const end = afterHeader.indexOf('\\.\n');
-  const tableContent = afterHeader.substring(0, end);
-  const lines = tableContent.split('\n');
+  const lines = afterHeader.split(/\r?\n/);
   const header = lines[0];
   const colNamesMatch = header.match(/\(([^)]+)\)/);
   const colNames = colNamesMatch ? colNamesMatch[1].split(',').map((c) => c.trim().replace(/"/g, '')) : [];
 
   const dataRows = [];
   for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
+    const line = lines[i];
+    if (line.trim() === '\\.') break;
+    if (!line.trim()) continue;
     const parts = line.split('\t');
     const row = {};
     colNames.forEach((col, idx) => {
       row[col] = parts[idx] === '\\N' ? null : parts[idx];
     });
     if (row.data) {
-      try {
-        row._data = JSON.parse(row.data);
-      } catch (e) {
-        // ignore json parse error
-      }
+      row._data = robustJsonParse(row.data);
     }
     dataRows.push(row);
   }
