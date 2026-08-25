@@ -44,84 +44,37 @@ export async function GET(req: NextRequest) {
       where.status = status;
     }
 
-    if (isAdmin) {
-      if (warehouseId) {
-        if (mode === 'inbound') {
-          where.targetWarehouseId = warehouseId;
-          where.status = StockTransferStatus.IN_TRANSIT;
-        } else if (mode === 'requests') {
-          where.sourceWarehouseId = warehouseId;
-          where.status = StockTransferStatus.REQUESTED;
-        } else if (mode === 'outbound') {
-          where.sourceWarehouseId = warehouseId;
-          where.status = StockTransferStatus.IN_TRANSIT;
-        } else if (mode === 'my_requests') {
-          where.OR = [
-            { targetWarehouseId: warehouseId },
-            { createdById: user.userId },
-          ];
-          if (!status) where.status = StockTransferStatus.REQUESTED;
-        } else {
-          where.OR = [
-            { sourceWarehouseId: warehouseId },
-            { targetWarehouseId: warehouseId },
-          ];
-        }
+    if (warehouseId) {
+      if (mode === 'inbound') {
+        where.targetWarehouseId = warehouseId;
+        where.status = StockTransferStatus.IN_TRANSIT;
+      } else if (mode === 'requests') {
+        where.sourceWarehouseId = warehouseId;
+        where.status = StockTransferStatus.REQUESTED;
+      } else if (mode === 'outbound') {
+        where.sourceWarehouseId = warehouseId;
+        where.status = StockTransferStatus.IN_TRANSIT;
+      } else if (mode === 'my_requests') {
+        where.createdById = user.userId;
+        if (!status) where.status = StockTransferStatus.REQUESTED;
       } else {
-        // Администратор в режиме глобального обзора (все склады)
-        if (mode === 'inbound') {
-          where.status = StockTransferStatus.IN_TRANSIT;
-        } else if (mode === 'requests') {
-          where.status = StockTransferStatus.REQUESTED;
-        } else if (mode === 'outbound') {
-          where.status = StockTransferStatus.IN_TRANSIT;
-        } else if (mode === 'my_requests') {
-          where.createdById = user.userId;
-        }
-        // mode === 'all' -> без ограничений по статусу/направлению
+        where.OR = [
+          { sourceWarehouseId: warehouseId },
+          { targetWarehouseId: warehouseId },
+        ];
       }
     } else {
-      // Пользователь МОЛ или рядовой сотрудник
-      if (userWarehouseIds.length > 0) {
-        const targetWhFilter = warehouseId
-          ? (userWarehouseIds.includes(warehouseId) ? [warehouseId] : [])
-          : userWarehouseIds;
-
-        if (mode === 'inbound') {
-          // Входящие на приемку: я получатель, статус В пути
-          where.targetWarehouseId = { in: targetWhFilter };
-          where.status = StockTransferStatus.IN_TRANSIT;
-        } else if (mode === 'requests') {
-          // Входящие запросы ко мне: я отправитель, статус Запрошено
-          where.sourceWarehouseId = { in: targetWhFilter };
-          where.status = StockTransferStatus.REQUESTED;
-        } else if (mode === 'outbound') {
-          // Исходящие отправления от меня: я отправитель, статус В пути
-          where.sourceWarehouseId = { in: targetWhFilter };
-          where.status = StockTransferStatus.IN_TRANSIT;
-        } else if (mode === 'my_requests') {
-          // Мои запросы к другим
-          where.OR = [
-            { targetWarehouseId: { in: targetWhFilter }, status: StockTransferStatus.REQUESTED },
-            { createdById: user.userId, status: StockTransferStatus.REQUESTED },
-          ];
-        } else {
-          // Все операции моих складов
-          where.OR = [
-            { sourceWarehouseId: { in: targetWhFilter } },
-            { targetWarehouseId: { in: targetWhFilter } },
-            { createdById: user.userId },
-          ];
-        }
-      } else {
-        // У пользователя нет привязанных складов: показываем его личные заявки
-        if (mode === 'my_requests') {
-          where.createdById = user.userId;
-          where.status = StockTransferStatus.REQUESTED;
-        } else {
-          where.createdById = user.userId;
-        }
+      if (mode === 'inbound') {
+        where.status = StockTransferStatus.IN_TRANSIT;
+      } else if (mode === 'requests') {
+        where.status = StockTransferStatus.REQUESTED;
+      } else if (mode === 'outbound') {
+        where.status = StockTransferStatus.IN_TRANSIT;
+      } else if (mode === 'my_requests') {
+        where.createdById = user.userId;
+        if (!status) where.status = StockTransferStatus.REQUESTED;
       }
+      // mode === 'all' -> без ограничений
     }
 
     if (search) {

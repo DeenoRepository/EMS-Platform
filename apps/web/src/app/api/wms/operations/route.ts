@@ -23,33 +23,8 @@ export async function GET(req: NextRequest) {
       user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
       user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
 
-    let userWarehouseIds: string[] = [];
-    if (!isAdmin) {
-      const userWhs = await prisma.warehouse.findMany({
-        where: { responsibleUserId: user.userId },
-        select: { id: true },
-      });
-      userWarehouseIds = userWhs.map((w) => w.id);
-    }
-
     const where: any = {};
-    if (!isAdmin) {
-      if (userWarehouseIds.length > 0) {
-        if (warehouseId) {
-          if (!userWarehouseIds.includes(warehouseId)) {
-            return forbiddenResponse('Вы можете просматривать операции только по закрепленным за вами складам.');
-          }
-          where.warehouseId = warehouseId;
-        } else {
-          where.OR = [
-            { warehouseId: { in: userWarehouseIds } },
-            { createdById: user.userId },
-          ];
-        }
-      } else {
-        where.createdById = user.userId;
-      }
-    } else if (warehouseId) {
+    if (warehouseId) {
       where.warehouseId = warehouseId;
     }
 

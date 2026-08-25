@@ -46,25 +46,6 @@ export async function GET(req: NextRequest) {
       ];
     }
 
-    const canManageApprovals = hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) || user.roles.includes('admin');
-
-    if (!canManageApprovals) {
-      if (!status) {
-        const existingAnd = Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : [];
-        where.AND = [
-          ...existingAnd,
-          {
-            OR: [
-              { status: { not: 'DRAFT' } },
-              { status: 'DRAFT', createdById: user.userId },
-            ],
-          },
-        ];
-      } else if (status === 'DRAFT') {
-        where.createdById = user.userId;
-      }
-    }
-
     const [total, items, statusGroup] = await Promise.all([
       prisma.equipment.count({ where }),
       prisma.equipment.findMany({
@@ -93,14 +74,6 @@ export async function GET(req: NextRequest) {
       prisma.equipment.groupBy({
         by: ['status'],
         _count: { status: true },
-        where: !canManageApprovals
-          ? {
-              OR: [
-                { status: { not: 'DRAFT' } },
-                { status: 'DRAFT', createdById: user.userId },
-              ],
-            }
-          : undefined,
       }),
     ]);
 

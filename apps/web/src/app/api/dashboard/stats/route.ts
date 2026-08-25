@@ -19,8 +19,8 @@ export async function GET(req: NextRequest) {
       user.roles?.includes('administrator') ||
       hasPermission(user, PERMISSIONS.ADMIN_USERS_MANAGE);
 
-    // Effective scope determination
-    const isEnterprise = scopeParam === 'enterprise' ? isAdmin : scopeParam === 'personal' ? false : isAdmin;
+    // Effective scope determination (default to enterprise-wide visibility)
+    const isEnterprise = scopeParam === 'personal' ? false : true;
     const scope = isEnterprise ? 'ENTERPRISE' : 'PERSONAL';
 
     // 1. EPS: EQUIPMENT IN SCOPE
