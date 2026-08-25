@@ -43,18 +43,35 @@ export async function getUserRolesAndPermissions(userId: string): Promise<{ role
 
 export function hasPermission(user: JwtUserPayload | null | undefined, permissionCode: string): boolean {
   if (!user) return false;
-  if (user.roles?.includes('admin') || user.roles?.includes('administrator')) return true; // Суперпользователь имеет полный доступ
+  // Суперпользователь имеет полный доступ
+  if (user.roles?.includes('admin') || user.roles?.includes('administrator')) return true;
+
+  // Заведующий складом / Кладовщик имеет полный доступ к модулю WMS
+  if (
+    user.roles?.includes('warehouse_manager') ||
+    user.roles?.includes('storekeeper') ||
+    user.roles?.includes('wms_manager')
+  ) {
+    if (permissionCode.startsWith('wms.')) return true;
+    if (permissionCode.endsWith('.view')) return true;
+  }
+
+  // Сквозной просмотр всех сущностей предприятия для авторизованных сотрудников
+  if (permissionCode.endsWith('.view')) {
+    return true;
+  }
+
   return user.permissions?.includes(permissionCode) || false;
 }
 
 export function hasAnyPermission(user: JwtUserPayload | null | undefined, permissionCodes: string[]): boolean {
   if (!user) return false;
   if (user.roles?.includes('admin') || user.roles?.includes('administrator')) return true;
-  return permissionCodes.some((code) => user.permissions?.includes(code)) || false;
+  return permissionCodes.some((code) => hasPermission(user, code));
 }
 
 export function hasAllPermissions(user: JwtUserPayload | null | undefined, permissionCodes: string[]): boolean {
   if (!user) return false;
   if (user.roles?.includes('admin') || user.roles?.includes('administrator')) return true;
-  return permissionCodes.every((code) => user.permissions?.includes(code)) || false;
+  return permissionCodes.every((code) => hasPermission(user, code));
 }
