@@ -106,7 +106,7 @@ export default function WmsWarehousesPage() {
     setIsLoading(true);
     try {
       const [whRes, usersRes] = await Promise.all([
-        fetch('/api/wms/warehouses'),
+        fetch('/api/wms/warehouses?forManage=true'),
         fetch('/api/users'),
       ]);
 
