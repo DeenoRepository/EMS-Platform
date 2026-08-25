@@ -13,7 +13,8 @@ import { SrmReliabilityAnalytics } from '@/components/srm';
 import { PageLoading, EmptyState } from '@/components/ui';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
-import { PERMISSIONS } from '@ems/shared';
+import { PERMISSIONS, SrmReliabilityAnalyticsDto } from '@ems/shared';
+import { fetchApi } from '@/lib/api-client';
 
 export default function SrmAnalyticsPage() {
   const { enqueueSnackbar } = useSnackbar();
@@ -23,26 +24,20 @@ export default function SrmAnalyticsPage() {
     hasPermission(PERMISSIONS.SRM_RELIABILITY_VIEW) ||
     hasPermission(PERMISSIONS.SRM_REPORTS_EXPORT);
 
-  const [reliabilityData, setReliabilityData] = useState<any>(null);
+  const [reliabilityData, setReliabilityData] = useState<SrmReliabilityAnalyticsDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchAnalytics = useCallback(async () => {
     setLoading(true);
-    try {
-      const res = await fetch('/api/srm/analytics/reliability');
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success) {
-          setReliabilityData(json.data);
-        }
-      }
-    } catch {
-      enqueueSnackbar('Ошибка при загрузке аналитики надежности', { variant: 'error' });
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+    const json = await fetchApi<SrmReliabilityAnalyticsDto>('/api/srm/analytics/reliability');
+    if (json.success && json.data) {
+      setReliabilityData(json.data);
+    } else {
+      enqueueSnackbar(json.error || 'Ошибка при загрузке аналитики надежности', { variant: 'error' });
     }
+    setLoading(false);
+    setRefreshing(false);
   }, [enqueueSnackbar]);
 
   useEffect(() => {

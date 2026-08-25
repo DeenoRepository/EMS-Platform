@@ -7,7 +7,7 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
-    "test": "tsx --test packages/auth/src/*.test.ts apps/web/src/lib/__tests__/rate-limit.test.ts apps/web/src/lib/__tests__/auth-guard.test.ts",
+    "test": "tsx --test packages/auth/src/*.test.ts apps/web/src/lib/__tests__/rate-limit.test.ts apps/web/src/lib/__tests__/auth-guard.test.ts apps/web/src/lib/__tests__/wms-transfers.test.ts",
     "start:prod": "pnpm --filter @ems/web start",
     "prod:up": "docker compose -f docker-compose.prod.yml up -d --build",
     "prod:down": "docker compose -f docker-compose.prod.yml down",

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { fetchApi } from '@/lib/api-client';
 import {
   Box,
   Grid,
@@ -34,13 +35,14 @@ import {
   FormDialog,
   type TableColumnOption,
 } from '@/components/ui';
+import { AuditChangeDto } from '@ems/shared';
 
 interface AuditItem {
   id: string;
   action: string;
   entityType: string;
   entityId: string;
-  changes: any;
+  changes: AuditChangeDto | null;
   ipAddress: string | null;
   userAgent: string | null;
   createdAt: string;
@@ -75,8 +77,8 @@ export default function AdminAuditLogPage() {
   const sortedLogs = useMemo(() => {
     if (!sortField) return logs;
     return [...logs].sort((a, b) => {
-      let aVal: any = '';
-      let bVal: any = '';
+      let aVal: string | number = '';
+      let bVal: string | number = '';
       switch (sortField) {
         case 'createdAt':
           aVal = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -102,9 +104,12 @@ export default function AdminAuditLogPage() {
           aVal = a.ipAddress || '';
           bVal = b.ipAddress || '';
           break;
-        default:
-          aVal = (a as unknown as Record<string, unknown>)[sortField] ?? '';
-          bVal = (b as unknown as Record<string, unknown>)[sortField] ?? '';
+        default: {
+          const rawA = (a as unknown as Record<string, unknown>)[sortField];
+          const rawB = (b as unknown as Record<string, unknown>)[sortField];
+          aVal = typeof rawA === 'number' ? rawA : String(rawA ?? '');
+          bVal = typeof rawB === 'number' ? rawB : String(rawB ?? '');
+        }
       }
 
       if (typeof aVal === 'number' && typeof bVal === 'number') {
@@ -123,29 +128,25 @@ export default function AdminAuditLogPage() {
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
-    try {
-      const params = new URLSearchParams({
-        page: String(page),
-        pageSize: String(pageSize),
-      });
-      if (actionFilter) params.append('action', actionFilter);
-      if (entityTypeFilter) params.append('entityType', entityTypeFilter);
-      if (search) params.append('search', search);
+    const params = new URLSearchParams({
+      page: String(page),
+      pageSize: String(pageSize),
+    });
+    if (actionFilter) params.append('action', actionFilter);
+    if (entityTypeFilter) params.append('entityType', entityTypeFilter);
+    if (search) params.append('search', search);
 
-      const res = await fetch(`/api/admin/audit-log?${params.toString()}`);
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success) {
-          setLogs(json.data.items || []);
-          setTotal(json.data.total || 0);
-          setTotalPages(json.data.totalPages || 1);
-        }
-      }
-    } catch {
-      enqueueSnackbar('Ошибка загрузки журнала аудита', { variant: 'error' });
-    } finally {
-      setLoading(false);
+    const json = await fetchApi<{ items: AuditItem[]; total: number; totalPages: number }>(
+      `/api/admin/audit-log?${params.toString()}`
+    );
+    if (json.success && json.data) {
+      setLogs(json.data.items || []);
+      setTotal(json.data.total || 0);
+      setTotalPages(json.data.totalPages || 1);
+    } else {
+      enqueueSnackbar(json.error || 'Ошибка загрузки журнала аудита', { variant: 'error' });
     }
+    setLoading(false);
   }, [page, pageSize, actionFilter, entityTypeFilter, search, enqueueSnackbar]);
 
   useEffect(() => {

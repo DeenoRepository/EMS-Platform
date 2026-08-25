@@ -607,4 +607,118 @@ export interface FeedbackAttachmentDto {
   createdAt: string;
 }
 
+// ==========================================
+// ДОМЕННЫЕ ТИПЫ: SRM (Service Request Mgmt)
+// ==========================================
 
+export interface SrmIssueDto {
+  id: string;
+  issueKey?: string;
+  key?: string;
+  summary?: string;
+  title?: string;
+  description?: string | null;
+  status: string;
+  priority?: string | null;
+  failureCategory?: string | null;
+  source?: string | null;
+  externalKey?: string | null;
+  externalUrl?: string | null;
+  equipmentId?: string | null;
+  equipment?: {
+    id: string;
+    name: string;
+    inventoryNumber?: string | null;
+    model?: string | null;
+    manufacturer?: string | null;
+    location?: string | null;
+    status?: string | null;
+  } | null;
+  reportedBy?: {
+    displayName: string;
+    ldapLogin: string;
+  } | null;
+  assignedTo?: {
+    displayName: string;
+    ldapLogin: string;
+  } | null;
+  assignee?: string | null;
+  reporterName?: string | null;
+  contractorName?: string | null;
+  resolutionNotes?: string | null;
+  downtimeMinutes?: number | null;
+  slaDeadline?: string | null;
+  slaBreached?: boolean;
+  warrantyClaim?: boolean;
+  mroScheduleId?: string | null;
+  integration?: {
+    id: string;
+    name: string;
+    providerType: string;
+  } | null;
+  rawData?: Record<string, unknown> | null;
+  createdAt?: string;
+  updatedAt?: string;
+  resolvedAt?: string | null;
+  jiraIssues?: Array<{ status: string; key?: string; [key: string]: unknown }>;
+  maintenancePlans?: Array<{ id: string; status: string; [key: string]: unknown }>;
+  repairDescription?: string | null;
+}
+
+export interface SrmReliabilityAnalyticsDto {
+  totalIncidents?: number;
+  resolvedCount?: number;
+  totalDowntimeHours?: number;
+  mttrHours?: number | null;
+  mtbfDays?: number | null;
+  availabilityPercent?: number | null;
+  slaComplianceRate?: number | null;
+  mttr?: number | null;
+  mtbf?: number | null;
+  slaCompliance?: number | null;
+  totalIssues?: number;
+  openIssues?: number;
+  resolvedIssues?: number;
+  failureCategoryCounts?: Record<string, number>;
+  statusCounts?: Record<string, number>;
+  priorityCounts?: Record<string, number>;
+  sourceCounts?: Record<string, number>;
+  warrantyIncidentsCount?: number;
+  paretoAnalysis?: Array<{
+    category: string;
+    count: number;
+    cumulativePercent: number;
+    equipmentId?: string;
+    equipmentName?: string;
+    failureCount?: number;
+    totalDowntime?: number;
+  }>;
+  topEquipment?: Array<{
+    id?: string;
+    name: string;
+    count: number;
+    downtimeHours: number;
+    failureCount?: number;
+    mttr?: number | null;
+    mtbf?: number | null;
+  }>;
+}
+
+// ==========================================
+// ДОМЕННЫЕ ТИПЫ: EPS (Equipment Park System)
+// ==========================================
+
+export interface EpsProposedChangeDto {
+  fieldKey: string;
+  oldValue: unknown;
+  newValue: unknown;
+  label?: string;
+}
+
+// ==========================================
+// ДОМЕННЫЕ ТИПЫ: Admin / Audit
+// ==========================================
+
+export interface AuditChangeDto {
+  [key: string]: unknown;
+}

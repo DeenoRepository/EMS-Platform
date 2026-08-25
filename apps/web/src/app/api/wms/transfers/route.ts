@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
-import { prisma, StockTransferStatus, OperationType } from '@ems/database';
+import { prisma, StockTransferStatus, OperationType, Prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
       userWarehouseIds = userWhs.map((w) => w.id);
     }
 
-    const where: any = {};
+    const where: Prisma.StockTransferWhereInput = {};
 
     if (status && Object.values(StockTransferStatus).includes(status)) {
       where.status = status;
@@ -77,28 +77,31 @@ export async function GET(req: NextRequest) {
       // mode === 'all' -> без ограничений
     }
 
+    const andConditions: Prisma.StockTransferWhereInput[] = [];
+
     if (search) {
-      where.AND = [
-        ...(where.AND || []),
-        {
-          OR: [
-            { transferNumber: { contains: search, mode: 'insensitive' } },
-            { requestReason: { contains: search, mode: 'insensitive' } },
-            { rejectionReason: { contains: search, mode: 'insensitive' } },
-            { sourceWarehouse: { name: { contains: search, mode: 'insensitive' } } },
-            { targetWarehouse: { name: { contains: search, mode: 'insensitive' } } },
-            {
-              items: {
-                some: {
-                  nomenclature: {
-                    name: { contains: search, mode: 'insensitive' },
-                  },
+      andConditions.push({
+        OR: [
+          { transferNumber: { contains: search, mode: 'insensitive' } },
+          { requestReason: { contains: search, mode: 'insensitive' } },
+          { rejectionReason: { contains: search, mode: 'insensitive' } },
+          { sourceWarehouse: { name: { contains: search, mode: 'insensitive' } } },
+          { targetWarehouse: { name: { contains: search, mode: 'insensitive' } } },
+          {
+            items: {
+              some: {
+                nomenclature: {
+                  name: { contains: search, mode: 'insensitive' },
                 },
               },
             },
-          ],
-        },
-      ];
+          },
+        ],
+      });
+    }
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
     }
 
     const [total, items] = await Promise.all([
