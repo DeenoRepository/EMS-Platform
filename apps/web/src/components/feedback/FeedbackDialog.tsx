@@ -277,8 +277,8 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
         sx={{
           m: 0,
           p: 2.5,
-          backgroundColor: '#0f172a',
-          color: '#ffffff',
+          backgroundColor: '#ffffff',
+          borderBottom: '1px solid #e2e8f0',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -287,21 +287,44 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Box
             sx={{
-              p: 1,
+              width: 42,
+              height: 42,
               borderRadius: '10px',
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              backgroundColor: 'rgba(2, 132, 199, 0.08)',
+              border: '1px solid rgba(2, 132, 199, 0.18)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              color: '#0284c7',
+              flexShrink: 0,
             }}
           >
-            <BugReportIcon sx={{ color: '#38bdf8', fontSize: 24 }} />
+            <BugReportIcon sx={{ fontSize: 24 }} />
           </Box>
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.125rem', lineHeight: 1.2 }}>
+            <Typography
+              component="div"
+              sx={{
+                fontWeight: 800,
+                fontSize: '1.125rem',
+                lineHeight: 1.3,
+                color: '#0f172a',
+                letterSpacing: '-0.015em',
+              }}
+            >
               Обратная связь и техподдержка
             </Typography>
-            <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '0.75rem' }}>
+            <Typography
+              component="div"
+              variant="caption"
+              sx={{
+                color: '#64748b',
+                fontSize: '0.8125rem',
+                display: 'block',
+                lineHeight: 1.2,
+                mt: 0.25,
+              }}
+            >
               Сообщите о неисправности или предложите улучшение платформы
             </Typography>
           </Box>
@@ -311,11 +334,14 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
           aria-label="close"
           onClick={onClose}
           sx={{
-            color: '#94a3b8',
-            '&:hover': { color: '#ffffff', backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+            color: '#64748b',
+            borderRadius: '8px',
+            p: 1,
+            transition: 'all 0.15s ease',
+            '&:hover': { color: '#0f172a', backgroundColor: '#f1f5f9' },
           }}
         >
-          <CloseIcon />
+          <CloseIcon sx={{ fontSize: 20 }} />
         </IconButton>
       </DialogTitle>
 
@@ -368,32 +394,76 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
                 </Typography>
                 <Grid container spacing={1.5}>
                   {[
-                    { id: 'BUG', label: 'Неисправность / Ошибка', icon: <BugReportIcon sx={{ color: '#ef4444' }} />, border: '#ef4444' },
-                    { id: 'FEATURE_REQUEST', label: 'Предложение по улучшению', icon: <LightbulbOutlinedIcon sx={{ color: '#0284c7' }} />, border: '#0284c7' },
-                    { id: 'QUESTION', label: 'Вопрос / Консультация', icon: <HelpOutlineIcon sx={{ color: '#8b5cf6' }} />, border: '#8b5cf6' },
-                    { id: 'OTHER', label: 'Другое', icon: <MoreHorizIcon sx={{ color: '#64748b' }} />, border: '#64748b' },
+                    {
+                      id: 'BUG',
+                      label: 'Неисправность / Ошибка',
+                      icon: <BugReportIcon sx={{ fontSize: 22, color: '#ef4444' }} />,
+                      border: '#ef4444',
+                      bgLight: '#fef2f2',
+                    },
+                    {
+                      id: 'FEATURE_REQUEST',
+                      label: 'Предложение по улучшению',
+                      icon: <LightbulbOutlinedIcon sx={{ fontSize: 22, color: '#0284c7' }} />,
+                      border: '#0284c7',
+                      bgLight: '#eff6ff',
+                    },
+                    {
+                      id: 'QUESTION',
+                      label: 'Вопрос / Консультация',
+                      icon: <HelpOutlineIcon sx={{ fontSize: 22, color: '#8b5cf6' }} />,
+                      border: '#8b5cf6',
+                      bgLight: '#f5f3ff',
+                    },
+                    {
+                      id: 'OTHER',
+                      label: 'Другое',
+                      icon: <MoreHorizIcon sx={{ fontSize: 22, color: '#64748b' }} />,
+                      border: '#64748b',
+                      bgLight: '#f8fafc',
+                    },
                   ].map((item) => (
                     <Grid item xs={6} sm={3} key={item.id}>
                       <Paper
                         onClick={() => setType(item.id as FeedbackType)}
                         elevation={0}
                         sx={{
-                          p: 1.5,
+                          height: 84,
+                          p: 1.25,
                           borderRadius: '10px',
-                          border: type === item.id ? `2px solid ${item.border}` : '1px solid #e2e8f0',
-                          backgroundColor: type === item.id ? '#f8fafc' : '#ffffff',
+                          border: '1.5px solid',
+                          borderColor: type === item.id ? item.border : '#e2e8f0',
+                          backgroundColor: type === item.id ? item.bgLight : '#ffffff',
+                          boxShadow: type === item.id ? `0 2px 8px ${item.border}20` : 'none',
                           cursor: 'pointer',
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
+                          justifyContent: 'center',
                           textAlign: 'center',
-                          gap: 0.75,
+                          gap: 0.5,
                           transition: 'all 0.15s ease',
-                          '&:hover': { borderColor: item.border, backgroundColor: '#f8fafc' },
+                          boxSizing: 'border-box',
+                          '&:hover': {
+                            borderColor: item.border,
+                            backgroundColor: item.bgLight,
+                          },
                         }}
                       >
                         {item.icon}
-                        <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.8125rem', color: '#1e293b' }}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight: type === item.id ? 700 : 600,
+                            fontSize: '0.8125rem',
+                            color: '#1e293b',
+                            lineHeight: 1.2,
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                          }}
+                        >
                           {item.label}
                         </Typography>
                       </Paper>
