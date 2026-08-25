@@ -64,6 +64,8 @@ interface EquipmentOption {
   id: string;
   name: string;
   inventoryNumber: string;
+  model?: string | null;
+  location?: string | null;
 }
 
 interface NomenclatureOption {
@@ -168,6 +170,7 @@ export function WmsOperationWizardDialog({
   const [searchInputValue, setSearchInputValue] = useState('');
   const [itemQty, setItemQty] = useState('1');
   const [itemEquipmentId, setItemEquipmentId] = useState('');
+  const [selectedItemEquipment, setSelectedItemEquipment] = useState<EquipmentOption | null>(null);
   const [itemWriteOffType, setItemWriteOffType] = useState<'EQUIPMENT' | 'DEFECT' | 'SCRAP' | 'OTHER'>('EQUIPMENT');
 
   // Nomenclature creation dialog state
@@ -261,6 +264,7 @@ export function WmsOperationWizardDialog({
       setSearchInputValue('');
       setItemQty('1');
       setItemEquipmentId('');
+      setSelectedItemEquipment(null);
       setRecipientName('');
       setEquipmentId('');
       setTargetWarehouseId('');
@@ -271,7 +275,7 @@ export function WmsOperationWizardDialog({
       Promise.all([
         fetch('/api/wms/warehouses').then((r) => r.json()),
         fetch('/api/wms/warehouses?forTransfer=true').then((r) => r.json()),
-        fetch('/api/eps/equipment?limit=200').then((r) => r.json()),
+        fetch('/api/eps/equipment?pageSize=1000').then((r) => r.json()),
         fetch('/api/wms/nomenclature?limit=500').then((r) => r.json()),
         fetch('/api/wms/categories').then((r) => r.json()).catch(() => ({ success: false })),
       ])
@@ -418,6 +422,7 @@ export function WmsOperationWizardDialog({
     setSearchInputValue('');
     setItemQty('1');
     setItemEquipmentId('');
+    setSelectedItemEquipment(null);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -887,23 +892,48 @@ export function WmsOperationWizardDialog({
                       </Box>
 
                       {itemWriteOffType === 'EQUIPMENT' && (
-                        <TextField
-                          select
+                        <Autocomplete
                           size="small"
                           fullWidth
-                          label="Целевое оборудование (из реестра EPS)"
-                          value={itemEquipmentId}
-                          onChange={(e) => setItemEquipmentId(e.target.value)}
-                          helperText="Укажите единицу оборудования, на которую монтируется деталь, или оставьте пустым для общего списания"
-                          sx={{ bgcolor: 'background.paper' }}
-                        >
-                          <MenuItem value="">— Не привязано к конкретному оборудованию (Общий монтаж) —</MenuItem>
-                          {equipmentList.map((eq) => (
-                            <MenuItem key={eq.id} value={eq.id}>
-                              {eq.name} ({eq.inventoryNumber})
-                            </MenuItem>
-                          ))}
-                        </TextField>
+                          options={equipmentList}
+                          value={selectedItemEquipment}
+                          onChange={(_, val) => {
+                            setSelectedItemEquipment(val);
+                            setItemEquipmentId(val ? val.id : '');
+                          }}
+                          getOptionLabel={(option) => `[${option.inventoryNumber || '—'}] ${option.name}${option.model ? ` (${option.model})` : ''}`}
+                          isOptionEqualToValue={(option, value) => option.id === value.id}
+                          renderOption={(props, option) => (
+                            <Box component="li" {...props} key={option.id}>
+                              <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%', py: 0.5 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>
+                                    {option.name}
+                                  </Typography>
+                                  <Chip
+                                    label={option.inventoryNumber || 'Без инв. №'}
+                                    size="small"
+                                    sx={{ height: 18, fontSize: '0.6875rem', fontWeight: 700, bgcolor: 'action.selected' }}
+                                  />
+                                </Box>
+                                {(option.model || option.location) && (
+                                  <Typography variant="caption" sx={{ color: 'text.secondary', mt: 0.25 }}>
+                                    {[option.model, option.location].filter(Boolean).join(' • ')}
+                                  </Typography>
+                                )}
+                              </Box>
+                            </Box>
+                          )}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              label="Целевое оборудование (из реестра EPS)"
+                              placeholder="Поиск оборудования по инв. №, наименованию или модели..."
+                              helperText="Укажите единицу оборудования, на которую монтируется деталь, или оставьте пустым для общего списания"
+                              sx={{ bgcolor: 'background.paper' }}
+                            />
+                          )}
+                        />
                       )}
                     </Stack>
                   </Grid>
