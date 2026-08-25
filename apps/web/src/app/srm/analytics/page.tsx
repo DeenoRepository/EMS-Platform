@@ -8,12 +8,21 @@ import {
 } from '@mui/material';
 import PageHeader from '@/components/layout/PageHeader';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import TimelineIcon from '@mui/icons-material/Timeline';
 import { SrmReliabilityAnalytics } from '@/components/srm';
-import { PageLoading } from '@/components/ui';
+import { PageLoading, EmptyState } from '@/components/ui';
 import { useSnackbar } from 'notistack';
+import { useAuth } from '@/lib/auth-client';
+import { PERMISSIONS } from '@ems/shared';
 
 export default function SrmAnalyticsPage() {
   const { enqueueSnackbar } = useSnackbar();
+  const { user, hasPermission } = useAuth();
+  const canAccessAnalytics =
+    user?.roles?.includes('admin') ||
+    hasPermission(PERMISSIONS.SRM_RELIABILITY_VIEW) ||
+    hasPermission(PERMISSIONS.SRM_REPORTS_EXPORT);
+
   const [reliabilityData, setReliabilityData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -37,13 +46,36 @@ export default function SrmAnalyticsPage() {
   }, [enqueueSnackbar]);
 
   useEffect(() => {
-    fetchAnalytics();
-  }, [fetchAnalytics]);
+    if (canAccessAnalytics) {
+      fetchAnalytics();
+    }
+  }, [canAccessAnalytics, fetchAnalytics]);
 
   const handleRefresh = () => {
     setRefreshing(true);
     fetchAnalytics();
   };
+
+  if (!canAccessAnalytics) {
+    return (
+      <Box sx={{ width: '100%', pb: 4 }}>
+        <PageHeader
+          title="Аналитика надежности (MTTR / MTBF)"
+          subtitle="Сквозной расчет показателей ремонтопригодности, безотказности парка и соблюдения SLA"
+          breadcrumbs={[
+            { label: 'Главная', href: '/' },
+            { label: 'Подача заявок', href: '/srm' },
+            { label: 'Аналитика надежности' },
+          ]}
+        />
+        <EmptyState
+          title="Доступ ограничен"
+          description="У вашей учетной записи нет прав на просмотр аналитики надежности оборудования (требуется право srm.reliability.view)."
+          icon={<TimelineIcon sx={{ fontSize: 48, color: 'text.secondary' }} />}
+        />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ width: '100%', pb: 4 }}>

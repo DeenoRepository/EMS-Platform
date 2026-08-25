@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -61,6 +61,8 @@ interface NavChild {
   badgeText?: string;
   badgeColor?: 'warning' | 'error' | 'primary' | 'default';
   badgeTooltip?: string;
+  permission?: string;
+  permissions?: string[];
 }
 
 interface NavItemDef {
@@ -73,6 +75,7 @@ interface NavItemDef {
   badgeColor?: 'warning' | 'error' | 'primary' | 'default';
   badgeTooltip?: string;
   permission?: string;
+  permissions?: string[];
   children?: NavChild[];
 }
 
@@ -251,7 +254,27 @@ export default function Sidebar({
     await logout();
   };
 
-  const canAccessAdmin = user?.roles?.includes('admin') || hasPermission(PERMISSIONS.ADMIN_USERS_MANAGE);
+  const canAccessAdmin =
+    user?.roles?.includes('admin') ||
+    hasPermission(PERMISSIONS.ADMIN_USERS_MANAGE) ||
+    hasPermission(PERMISSIONS.ADMIN_ROLES_MANAGE) ||
+    hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
+    hasPermission(PERMISSIONS.ADMIN_AUDIT_VIEW);
+
+  const canAccess = useCallback(
+    (nav?: { permission?: string; permissions?: string[] } | null) => {
+      if (!nav) return true;
+      if (user?.roles?.includes('admin')) return true;
+      if (nav.permissions && nav.permissions.length > 0) {
+        return nav.permissions.some((p) => hasPermission(p));
+      }
+      if (nav.permission) {
+        return hasPermission(nav.permission);
+      }
+      return true;
+    },
+    [user, hasPermission]
+  );
 
   const [maintenanceStatus, setMaintenanceStatus] = useState<PlatformMaintenanceStatus | null>(null);
 
@@ -282,7 +305,15 @@ export default function Sidebar({
       id: 'eps',
       label: 'Паспортизация оборудования (EPS)',
       icon: <BadgeOutlinedIcon sx={{ fontSize: 18 }} />,
-      permission: PERMISSIONS.EPS_EQUIPMENT_VIEW,
+      permissions: [
+        PERMISSIONS.EPS_EQUIPMENT_VIEW,
+        PERMISSIONS.EPS_EQUIPMENT_CREATE,
+        PERMISSIONS.EPS_DOCUMENTS_VIEW,
+        PERMISSIONS.EPS_APPROVALS_VIEW,
+        PERMISSIONS.EPS_APPROVALS_CREATE,
+        PERMISSIONS.EPS_HISTORY_VIEW,
+        PERMISSIONS.EPS_REPORTS_VIEW,
+      ],
       badgeText: maintenanceStatus?.modules.eps?.enabled ? 'ТО' : undefined,
       badgeColor: maintenanceStatus?.modules.eps?.enabled ? 'warning' : undefined,
       badgeTooltip: maintenanceStatus?.modules.eps?.enabled ? 'Модуль EPS находится на техническом обслуживании' : undefined,
@@ -291,15 +322,22 @@ export default function Sidebar({
           label: 'Реестр оборудования',
           path: '/eps',
           icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} />,
+          permissions: [PERMISSIONS.EPS_EQUIPMENT_VIEW, PERMISSIONS.EPS_EQUIPMENT_CREATE, PERMISSIONS.EPS_EQUIPMENT_EDIT],
           badge: repairCount && repairCount > 0 ? repairCount : null,
           badgeColor: 'error',
           badgeTooltip: repairCount && repairCount > 0 ? `${repairCount} ед. оборудования в неисправном состоянии (в ремонте)` : undefined,
         },
-        { label: 'Техническая документация', path: '/eps/documents', icon: <ArticleOutlinedIcon sx={{ fontSize: 15 }} /> },
+        {
+          label: 'Техническая документация',
+          path: '/eps/documents',
+          icon: <ArticleOutlinedIcon sx={{ fontSize: 15 }} />,
+          permissions: [PERMISSIONS.EPS_DOCUMENTS_VIEW, PERMISSIONS.EPS_DOCUMENTS_UPLOAD],
+        },
         {
           label: 'Журнал согласований',
           path: '/eps/approvals',
           icon: <FactCheckOutlinedIcon sx={{ fontSize: 15 }} />,
+          permissions: [PERMISSIONS.EPS_APPROVALS_VIEW, PERMISSIONS.EPS_APPROVALS_CREATE, PERMISSIONS.EPS_APPROVALS_MANAGE],
           badge:
             pendingApprovalsCount && pendingApprovalsCount > 0
               ? pendingApprovalsCount
@@ -314,24 +352,47 @@ export default function Sidebar({
               ? `${rejectedApprovalsCount} отклоненных заявок требует доработки`
               : undefined,
         },
-        { label: 'История изменений и аудит', path: '/eps/history', icon: <HistoryOutlinedIcon sx={{ fontSize: 15 }} /> },
-        { label: 'Генератор отчетов и ведомостей', path: '/eps/reports', icon: <AssessmentOutlinedIcon sx={{ fontSize: 15 }} /> },
+        {
+          label: 'История изменений и аудит',
+          path: '/eps/history',
+          icon: <HistoryOutlinedIcon sx={{ fontSize: 15 }} />,
+          permission: PERMISSIONS.EPS_HISTORY_VIEW,
+        },
+        {
+          label: 'Генератор отчетов и ведомостей',
+          path: '/eps/reports',
+          icon: <AssessmentOutlinedIcon sx={{ fontSize: 15 }} />,
+          permissions: [PERMISSIONS.EPS_REPORTS_VIEW, PERMISSIONS.EPS_REPORTS_MANAGE],
+        },
       ],
     },
     {
       id: 'wms',
       label: 'Складской учёт ТМЦ (WMS)',
       icon: <WarehouseOutlinedIcon sx={{ fontSize: 18 }} />,
-      permission: PERMISSIONS.WMS_STOCK_VIEW,
+      permissions: [
+        PERMISSIONS.WMS_STOCK_VIEW,
+        PERMISSIONS.WMS_OPERATIONS_CREATE,
+        PERMISSIONS.WMS_NOMENCLATURE_MANAGE,
+        PERMISSIONS.WMS_WAREHOUSES_MANAGE,
+        PERMISSIONS.WMS_ZONES_MANAGE,
+        PERMISSIONS.WMS_INVENTORY_MANAGE,
+      ],
       badgeText: maintenanceStatus?.modules.wms?.enabled ? 'ТО' : undefined,
       badgeColor: maintenanceStatus?.modules.wms?.enabled ? 'warning' : undefined,
       badgeTooltip: maintenanceStatus?.modules.wms?.enabled ? 'Модуль WMS находится на техническом обслуживании' : undefined,
       children: [
-        { label: 'Панель материальных потоков', path: '/wms', icon: <AnalyticsOutlinedIcon sx={{ fontSize: 15 }} /> },
+        {
+          label: 'Панель материальных потоков',
+          path: '/wms',
+          icon: <AnalyticsOutlinedIcon sx={{ fontSize: 15 }} />,
+          permission: PERMISSIONS.WMS_STOCK_VIEW,
+        },
         {
           label: 'Номенклатура и остатки ТМЦ',
           path: '/wms/stock',
           icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} />,
+          permissions: [PERMISSIONS.WMS_STOCK_VIEW, PERMISSIONS.WMS_NOMENCLATURE_MANAGE],
           badge: wmsLowStockCount && wmsLowStockCount > 0 ? wmsLowStockCount : null,
           badgeColor: 'error',
           badgeTooltip: wmsLowStockCount && wmsLowStockCount > 0 ? `${wmsLowStockCount} поз. ТМЦ ниже неснижаемого остатка (дефицит)` : undefined,
@@ -340,6 +401,7 @@ export default function Sidebar({
           label: 'Складские операции и перемещения',
           path: '/wms/operations',
           icon: <SwapHorizIcon sx={{ fontSize: 15 }} />,
+          permissions: [PERMISSIONS.WMS_STOCK_VIEW, PERMISSIONS.WMS_OPERATIONS_CREATE],
           badge: wmsPendingTransfersCount && wmsPendingTransfersCount > 0 ? wmsPendingTransfersCount : null,
           badgeColor: 'warning',
           badgeTooltip: wmsPendingTransfersCount && wmsPendingTransfersCount > 0 ? `${wmsPendingTransfersCount} перемещений ожидает приемки / отгрузки` : undefined,
@@ -348,18 +410,29 @@ export default function Sidebar({
           label: 'Инвентаризационные описи',
           path: '/wms/inventory',
           icon: <FactCheckOutlinedIcon sx={{ fontSize: 15 }} />,
+          permissions: [PERMISSIONS.WMS_INVENTORY_MANAGE, PERMISSIONS.WMS_STOCK_VIEW],
           badge: wmsActiveInventoriesCount && wmsActiveInventoriesCount > 0 ? wmsActiveInventoriesCount : null,
           badgeColor: 'primary',
           badgeTooltip: wmsActiveInventoriesCount && wmsActiveInventoriesCount > 0 ? `${wmsActiveInventoriesCount} инвентаризаций в процессе` : undefined,
         },
-        { label: 'Топология складов и ячеек', path: '/wms/warehouses', icon: <WarehouseOutlinedIcon sx={{ fontSize: 15 }} /> },
+        {
+          label: 'Топология складов и ячеек',
+          path: '/wms/warehouses',
+          icon: <WarehouseOutlinedIcon sx={{ fontSize: 15 }} />,
+          permissions: [PERMISSIONS.WMS_WAREHOUSES_MANAGE, PERMISSIONS.WMS_ZONES_MANAGE],
+        },
       ],
     },
     {
       id: 'srm',
       label: 'Управление инцидентами (SRM)',
       icon: <BugReportOutlinedIcon sx={{ fontSize: 18 }} />,
-      permission: PERMISSIONS.SRM_DASHBOARD_VIEW,
+      permissions: [
+        PERMISSIONS.SRM_DASHBOARD_VIEW,
+        PERMISSIONS.SRM_REQUESTS_CREATE,
+        PERMISSIONS.SRM_REQUESTS_MANAGE,
+        PERMISSIONS.SRM_RELIABILITY_VIEW,
+      ],
       badgeText: maintenanceStatus?.modules.srm?.enabled ? 'ТО' : undefined,
       badgeColor: maintenanceStatus?.modules.srm?.enabled ? 'warning' : undefined,
       badgeTooltip: maintenanceStatus?.modules.srm?.enabled ? 'Модуль SRM находится на техническом обслуживании' : undefined,
@@ -368,18 +441,28 @@ export default function Sidebar({
           label: 'Журнал инцидентов и заявок',
           path: '/srm',
           icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} />,
+          permissions: [PERMISSIONS.SRM_DASHBOARD_VIEW, PERMISSIONS.SRM_REQUESTS_CREATE, PERMISSIONS.SRM_REQUESTS_MANAGE],
           badge: srmOpenCount && srmOpenCount > 0 ? srmOpenCount : null,
           badgeColor: srmOpenCount && srmOpenCount > 0 ? 'warning' : 'default',
           badgeTooltip: srmOpenCount && srmOpenCount > 0 ? `${srmOpenCount} активных сервисных заявок` : undefined,
         },
-        { label: 'Аналитика надежности и RAMS', path: '/srm/analytics', icon: <TimelineIcon sx={{ fontSize: 15 }} /> },
+        {
+          label: 'Аналитика надежности и RAMS',
+          path: '/srm/analytics',
+          icon: <TimelineIcon sx={{ fontSize: 15 }} />,
+          permissions: [PERMISSIONS.SRM_RELIABILITY_VIEW, PERMISSIONS.SRM_REPORTS_EXPORT],
+        },
       ],
     },
     {
       id: 'mro',
       label: 'Техническое обслуживание (MRO)',
       icon: <BuildOutlinedIcon sx={{ fontSize: 18 }} />,
-      permission: PERMISSIONS.MRO_SCHEDULE_VIEW,
+      permissions: [
+        PERMISSIONS.MRO_SCHEDULE_VIEW,
+        PERMISSIONS.MRO_SCHEDULE_MANAGE,
+        PERMISSIONS.MRO_EXECUTION_COMPLETE,
+      ],
       badgeText: maintenanceStatus?.modules.mro?.enabled ? 'ТО' : undefined,
       badgeColor: maintenanceStatus?.modules.mro?.enabled ? 'warning' : undefined,
       badgeTooltip: maintenanceStatus?.modules.mro?.enabled ? 'Модуль MRO находится на техническом обслуживании' : undefined,
@@ -388,12 +471,23 @@ export default function Sidebar({
           label: 'График ППР и наряды на ТО',
           path: '/mro',
           icon: <CalendarMonthIcon sx={{ fontSize: 15 }} />,
+          permissions: [PERMISSIONS.MRO_SCHEDULE_VIEW, PERMISSIONS.MRO_SCHEDULE_MANAGE, PERMISSIONS.MRO_EXECUTION_COMPLETE],
           badge: mroOverdueCount && mroOverdueCount > 0 ? mroOverdueCount : null,
           badgeColor: mroOverdueCount && mroOverdueCount > 0 ? 'error' : 'default',
           badgeTooltip: mroOverdueCount && mroOverdueCount > 0 ? `${mroOverdueCount} просроченных регламентов ТО` : undefined,
         },
-        { label: 'Технологические карты и регламенты', path: '/mro/checklists', icon: <ChecklistIcon sx={{ fontSize: 15 }} /> },
-        { label: 'Журнал выполненных работ', path: '/mro/history', icon: <FactCheckOutlinedIcon sx={{ fontSize: 15 }} /> },
+        {
+          label: 'Технологические карты и регламенты',
+          path: '/mro/checklists',
+          icon: <ChecklistIcon sx={{ fontSize: 15 }} />,
+          permissions: [PERMISSIONS.MRO_SCHEDULE_VIEW, PERMISSIONS.MRO_SCHEDULE_MANAGE],
+        },
+        {
+          label: 'Журнал выполненных работ',
+          path: '/mro/history',
+          icon: <FactCheckOutlinedIcon sx={{ fontSize: 15 }} />,
+          permissions: [PERMISSIONS.MRO_SCHEDULE_VIEW, PERMISSIONS.MRO_EXECUTION_COMPLETE],
+        },
       ],
     },
   ];
@@ -404,15 +498,27 @@ export default function Sidebar({
       id: 'access',
       label: 'Управление доступом и правами',
       icon: <AdminPanelSettingsOutlinedIcon sx={{ fontSize: 18 }} />,
+      permissions: [PERMISSIONS.ADMIN_USERS_MANAGE, PERMISSIONS.ADMIN_ROLES_MANAGE],
       children: [
-        { label: 'Учетные записи пользователей', path: '/admin/users', icon: <GroupOutlinedIcon sx={{ fontSize: 15 }} /> },
-        { label: 'Матрица ролей и полномочий', path: '/admin/roles', icon: <AdminPanelSettingsOutlinedIcon sx={{ fontSize: 15 }} /> },
+        {
+          label: 'Учетные записи пользователей',
+          path: '/admin/users',
+          icon: <GroupOutlinedIcon sx={{ fontSize: 15 }} />,
+          permission: PERMISSIONS.ADMIN_USERS_MANAGE,
+        },
+        {
+          label: 'Матрица ролей и полномочий',
+          path: '/admin/roles',
+          icon: <AdminPanelSettingsOutlinedIcon sx={{ fontSize: 15 }} />,
+          permission: PERMISSIONS.ADMIN_ROLES_MANAGE,
+        },
       ],
     },
     {
       id: 'module-settings',
       label: 'Конфигурация модулей',
       icon: <TuneOutlinedIcon sx={{ fontSize: 18 }} />,
+      permission: PERMISSIONS.ADMIN_SETTINGS_MANAGE,
       children: [
         { label: 'Паспортизация оборудования (EPS)', path: '/admin/module-settings?tab=eps', icon: <BadgeOutlinedIcon sx={{ fontSize: 15 }} /> },
         { label: 'Складской учёт ТМЦ (WMS)', path: '/admin/module-settings?tab=wms', icon: <WarehouseOutlinedIcon sx={{ fontSize: 15 }} /> },
@@ -425,12 +531,14 @@ export default function Sidebar({
       label: 'Журнал аудита безопасности',
       path: '/admin/audit-log',
       icon: <ReceiptLongOutlinedIcon sx={{ fontSize: 18 }} />,
+      permission: PERMISSIONS.ADMIN_AUDIT_VIEW,
     },
     {
       id: 'settings',
       label: 'Системные параметры платформы',
       path: '/admin/settings',
       icon: <SettingsOutlinedIcon sx={{ fontSize: 18 }} />,
+      permission: PERMISSIONS.ADMIN_SETTINGS_MANAGE,
     },
   ];
 
@@ -461,37 +569,43 @@ export default function Sidebar({
   };
 
   const renderNavBlock = (item: NavItemDef) => {
-    if (item.permission && !hasPermission(item.permission)) return null;
+    if (!canAccess(item)) return null;
 
     // If an operational module is disabled in system settings, hide it from operational menu
     if (operationalItems.some((op) => op.id === item.id) && moduleStatus[item.id] === false) {
       return null;
     }
 
+    const visibleChildren = item.children ? item.children.filter((c) => canAccess(c)) : [];
+    const hasChildren = visibleChildren.length > 0;
+
+    if (item.children && item.children.length > 0 && visibleChildren.length === 0 && !item.path) {
+      return null;
+    }
+
     const active = isItemActive(item);
-    const hasChildren = item.children && item.children.length > 0;
     const isExpanded = expandedItems[item.id] || false;
 
-    // Aggregate badge count from children or item
+    // Aggregate badge count from visible children or item
     const parentBadgeCount =
-      hasChildren && item.children
-        ? item.children.reduce((acc, c) => acc + (c.badge && c.badge > 0 ? c.badge : 0), 0) || item.badge
+      hasChildren
+        ? visibleChildren.reduce((acc, c) => acc + (c.badge && c.badge > 0 ? c.badge : 0), 0) || item.badge
         : item.badge;
 
     // Derive badge color
     const effectiveBadgeColor = (() => {
-      if (hasChildren && item.children) {
-        if (item.children.some((c) => c.badge && c.badge > 0 && c.badgeColor === 'error')) return 'error';
-        if (item.children.some((c) => c.badge && c.badge > 0 && c.badgeColor === 'warning')) return 'warning';
-        const firstWithBadge = item.children.find((c) => c.badge && c.badge > 0);
+      if (hasChildren) {
+        if (visibleChildren.some((c) => c.badge && c.badge > 0 && c.badgeColor === 'error')) return 'error';
+        if (visibleChildren.some((c) => c.badge && c.badge > 0 && c.badgeColor === 'warning')) return 'warning';
+        const firstWithBadge = visibleChildren.find((c) => c.badge && c.badge > 0);
         if (firstWithBadge?.badgeColor) return firstWithBadge.badgeColor;
       }
       return item.badgeColor || 'default';
     })();
 
     const effectiveBadgeTooltip = (() => {
-      if (hasChildren && item.children) {
-        const activeChildrenWithBadge = item.children.filter((c) => c.badge && c.badge > 0 && c.badgeTooltip);
+      if (hasChildren) {
+        const activeChildrenWithBadge = visibleChildren.filter((c) => c.badge && c.badge > 0 && c.badgeTooltip);
         if (activeChildrenWithBadge.length > 0) {
           return activeChildrenWithBadge.map((c) => c.badgeTooltip).join(' • ');
         }
@@ -728,7 +842,7 @@ export default function Sidebar({
                 gap: 0.25,
               }}
             >
-              {item.children?.map((child) => {
+              {visibleChildren.map((child) => {
                 const isChildActive = pathname === child.path;
                 const childHasBadge = child.badge !== null && child.badge !== undefined && child.badge > 0;
                 const childBadgeColors = getBadgeColors(child.badgeColor);
@@ -1173,7 +1287,7 @@ export default function Sidebar({
 
             {/* Flyout Children List */}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-              {activeFlyoutItem.children?.map((child) => {
+              {activeFlyoutItem.children?.filter((c) => canAccess(c)).map((child) => {
                 const isChildActive = pathname === child.path;
                 const childHasBadge = child.badge !== null && child.badge !== undefined && child.badge > 0;
                 const childBadgeColors = getBadgeColors(child.badgeColor);

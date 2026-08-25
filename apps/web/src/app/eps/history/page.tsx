@@ -40,8 +40,10 @@ import {
   APPROVAL_TYPE_MAP,
   APPROVAL_STATUS_MAP,
   formatDateTime,
+  PERMISSIONS,
 } from '@ems/shared';
 import { useSnackbar } from 'notistack';
+import { useAuth } from '@/lib/auth-client';
 
 import {
   StatCard,
@@ -170,6 +172,9 @@ function HistoryListContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { enqueueSnackbar } = useSnackbar();
+  const { user, hasPermission } = useAuth();
+
+  const canAccessHistory = user?.roles?.includes('admin') || hasPermission(PERMISSIONS.EPS_HISTORY_VIEW);
 
   const [items, setItems] = useState<AuditLogItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -341,8 +346,26 @@ function HistoryListContent() {
     (equipmentFilter ? 1 : 0) +
     (startDate ? 1 : 0) +
     (endDate ? 1 : 0);
-    (startDate ? 1 : 0) +
-    (endDate ? 1 : 0);
+  if (!canAccessHistory) {
+    return (
+      <Box sx={{ pb: 4 }}>
+        <PageHeader
+          title="История изменений и аудит (EPS)"
+          subtitle="Неизменяемый реестр всех операций создания, изменения реквизитов, согласований и списаний оборудования"
+          breadcrumbs={[
+            { label: 'Главная', href: '/' },
+            { label: 'Оборудование', href: '/eps' },
+            { label: 'История изменений' },
+          ]}
+        />
+        <EmptyState
+          title="Доступ ограничен"
+          description="У вашей учетной записи нет полномочий для просмотра истории изменений и аудита оборудования (требуется право eps.history.view)."
+          icon={<HistoryOutlinedIcon sx={{ fontSize: 48, color: 'text.secondary' }} />}
+        />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ pb: 4 }}>

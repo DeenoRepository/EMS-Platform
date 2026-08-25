@@ -210,13 +210,17 @@ function EquipmentListContent() {
     }
   }, [page, pageSize, search, statusFilter, tagFilter, viewMode, enqueueSnackbar]);
 
-  useEffect(() => {
-    fetchTags();
-  }, []);
+  const canAccessEquipment =
+    user?.roles?.includes('admin') ||
+    hasPermission(PERMISSIONS.EPS_EQUIPMENT_VIEW) ||
+    hasPermission(PERMISSIONS.EPS_EQUIPMENT_CREATE);
 
   useEffect(() => {
-    fetchEquipment();
-  }, [fetchEquipment]);
+    if (canAccessEquipment) {
+      fetchTags();
+      fetchEquipment();
+    }
+  }, [canAccessEquipment, fetchEquipment]);
 
   // Reset Filters
   const handleResetFilters = () => {
@@ -458,6 +462,26 @@ function EquipmentListContent() {
         estimatedUntil={maintStatus?.modules.eps.estimatedUntil}
         onRefresh={fetchEquipment}
       />
+    );
+  }
+
+  if (!canAccessEquipment) {
+    return (
+      <Box sx={{ pb: 4 }}>
+        <PageHeader
+          title="Реестр технологического оборудования"
+          subtitle="Паспортизация, технические характеристики, эксплуатационный статус и жизненный цикл оборудования"
+          breadcrumbs={[
+            { label: 'Главная', href: '/' },
+            { label: 'Реестр оборудования' },
+          ]}
+        />
+        <EmptyState
+          title="Доступ ограничен"
+          description="У вашей учетной записи нет полномочий для просмотра реестра и паспортов оборудования (требуется право eps.equipment.view)."
+          icon={<PrecisionManufacturingIcon sx={{ fontSize: 48, color: 'text.secondary' }} />}
+        />
+      </Box>
     );
   }
 

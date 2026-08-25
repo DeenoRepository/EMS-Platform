@@ -34,8 +34,9 @@ import {
   type TableColumnOption,
 } from '@/components/ui';
 import { MroExecutionWizardDialog } from '@/components/mro';
-import { formatDateTime, formatDate } from '@ems/shared';
+import { formatDateTime, formatDate, PERMISSIONS } from '@ems/shared';
 import { useSnackbar } from 'notistack';
+import { useAuth } from '@/lib/auth-client';
 
 interface MaintenanceHistoryItem {
   id: string;
@@ -83,6 +84,11 @@ const HISTORY_COLUMNS: TableColumnOption[] = [
 
 export default function MroHistoryPage() {
   const { enqueueSnackbar } = useSnackbar();
+  const { user, hasPermission } = useAuth();
+  const canAccessHistory =
+    user?.roles?.includes('admin') ||
+    hasPermission(PERMISSIONS.MRO_SCHEDULE_VIEW) ||
+    hasPermission(PERMISSIONS.MRO_EXECUTION_COMPLETE);
 
   const [schedules, setSchedules] = useState<MaintenanceHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -120,8 +126,10 @@ export default function MroHistoryPage() {
   }, [enqueueSnackbar]);
 
   useEffect(() => {
-    fetchHistory();
-  }, [fetchHistory]);
+    if (canAccessHistory) {
+      fetchHistory();
+    }
+  }, [canAccessHistory, fetchHistory]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -166,6 +174,27 @@ export default function MroHistoryPage() {
   const paginatedHistory = useMemo(() => {
     return filteredHistory.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
   }, [filteredHistory, page, rowsPerPage]);
+
+  if (!canAccessHistory) {
+    return (
+      <Box sx={{ width: '100%', pb: 4 }}>
+        <PageHeader
+          title="Журнал выполненных ТО"
+          subtitle="Архив и протоколы проведенных регламентных работ, списания ТМЦ и фиксации исполнителей"
+          breadcrumbs={[
+            { label: 'Главная', href: '/' },
+            { label: 'ТО и Ремонт', href: '/mro' },
+            { label: 'Журнал выполненных ТО' },
+          ]}
+        />
+        <EmptyState
+          title="Доступ ограничен"
+          description="У вашей учетной записи нет прав на просмотр журнала выполненных работ (требуется право mro.schedule.view)."
+          icon={<FactCheckOutlinedIcon sx={{ fontSize: 48, color: 'text.secondary' }} />}
+        />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ width: '100%', pb: 4 }}>

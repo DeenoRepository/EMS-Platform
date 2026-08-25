@@ -183,6 +183,12 @@ function ApprovalsListContent() {
     });
   }, [items, sortField, sortDirection]);
 
+  const canAccessApprovals =
+    user?.roles?.includes('admin') ||
+    hasPermission(PERMISSIONS.EPS_APPROVALS_VIEW) ||
+    hasPermission(PERMISSIONS.EPS_APPROVALS_CREATE) ||
+    hasPermission(PERMISSIONS.EPS_APPROVALS_MANAGE);
+
   // Scope Tab: 'all' | 'to_review' | 'my_requests'
   const [scopeTab, setScopeTab] = useState<'all' | 'to_review' | 'my_requests'>('all');
 
@@ -280,12 +286,11 @@ function ApprovalsListContent() {
   }, [page, pageSize, search, statusFilter, typeFilter, equipmentFilter, scopeTab, enqueueSnackbar]);
 
   useEffect(() => {
-    fetchEquipmentList();
-  }, []);
-
-  useEffect(() => {
-    fetchApprovals();
-  }, [fetchApprovals]);
+    if (canAccessApprovals) {
+      fetchEquipmentList();
+      fetchApprovals();
+    }
+  }, [canAccessApprovals, fetchApprovals]);
 
   const handleKpiFilter = (status: string) => {
     if (statusFilter === status) {
@@ -422,6 +427,27 @@ function ApprovalsListContent() {
   const canCreate = hasPermission(PERMISSIONS.EPS_APPROVALS_CREATE) || hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT);
   const canManage = hasPermission(PERMISSIONS.EPS_APPROVALS_MANAGE) || hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT);
   const canReview = canManage;
+
+  if (!canAccessApprovals) {
+    return (
+      <Box sx={{ pb: 4 }}>
+        <PageHeader
+          title="Согласование изменений оборудования"
+          subtitle="Процедура рассмотрения, утверждения и отклонения запросов на регистрацию, изменение реквизитов, списание и документы"
+          breadcrumbs={[
+            { label: 'Главная', href: '/' },
+            { label: 'Оборудование', href: '/eps' },
+            { label: 'Согласования' },
+          ]}
+        />
+        <EmptyState
+          title="Доступ ограничен"
+          description="У вашей учетной записи нет полномочий для доступа к журналу согласований оборудования (требуется право eps.approvals.view или eps.approvals.create)."
+          icon={<FactCheckOutlinedIcon sx={{ fontSize: 48, color: 'text.secondary' }} />}
+        />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ pb: 4 }}>

@@ -119,27 +119,34 @@ export default function WmsInventoryListPage() {
     }
   }, [enqueueSnackbar]);
 
+  const canAccessInventory =
+    user?.roles?.includes('admin') ||
+    hasPermission(PERMISSIONS.WMS_INVENTORY_MANAGE) ||
+    hasPermission(PERMISSIONS.WMS_STOCK_VIEW);
+
   useEffect(() => {
-    fetchInventories();
-    async function loadWarehouses() {
-      try {
-        const res = await fetch('/api/wms/warehouses');
-        if (res.ok) {
-          const json = await res.json();
-          if (json.success && Array.isArray(json.data)) {
-            setWarehouses(json.data);
-            const myWh = json.data.find((w: any) => w.responsibleUserId === user?.userId) || json.data[0];
-            if (myWh) {
-              setSelectedWarehouseId(myWh.id);
+    if (canAccessInventory) {
+      fetchInventories();
+      async function loadWarehouses() {
+        try {
+          const res = await fetch('/api/wms/warehouses');
+          if (res.ok) {
+            const json = await res.json();
+            if (json.success && Array.isArray(json.data)) {
+              setWarehouses(json.data);
+              const myWh = json.data.find((w: any) => w.responsibleUserId === user?.userId) || json.data[0];
+              if (myWh) {
+                setSelectedWarehouseId(myWh.id);
+              }
             }
           }
+        } catch (err) {
+          console.error('Ошибка загрузки складов:', err);
         }
-      } catch (err) {
-        console.error('Ошибка загрузки складов:', err);
       }
+      loadWarehouses();
     }
-    loadWarehouses();
-  }, [fetchInventories, user?.userId]);
+  }, [canAccessInventory, fetchInventories, user?.userId]);
 
   const handleCreateInventory = async () => {
     if (!selectedWarehouseId) {
@@ -258,6 +265,27 @@ export default function WmsInventoryListPage() {
   const totalInventories = inventories.length;
   const inProgressCount = inventories.filter((i) => i.status === 'IN_PROGRESS' || i.status === 'DRAFT').length;
   const completedCount = inventories.filter((i) => i.status === 'COMPLETED').length;
+
+  if (!canAccessInventory) {
+    return (
+      <Box sx={{ pb: 4 }}>
+        <PageHeader
+          title="Инвентаризация складов"
+          subtitle="Сверка фактического наличия ТМЦ с учетными остатками и автоматическая корректировка"
+          breadcrumbs={[
+            { label: 'Главная', href: '/' },
+            { label: 'Складской учёт', href: '/wms' },
+            { label: 'Инвентаризация' },
+          ]}
+        />
+        <EmptyState
+          title="Доступ ограничен"
+          description="У вашей учетной записи нет полномочий для доступа к разделу инвентаризации (требуется право wms.inventory.manage или wms.stock.view)."
+          icon={<FactCheckOutlinedIcon sx={{ fontSize: 48, color: 'text.secondary' }} />}
+        />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ pb: 4 }}>

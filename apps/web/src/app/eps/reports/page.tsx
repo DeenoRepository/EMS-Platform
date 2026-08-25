@@ -43,7 +43,9 @@ import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import LayersIcon from '@mui/icons-material/Layers';
 import PageHeader from '@/components/layout/PageHeader';
 import { useSnackbar } from 'notistack';
-import { EQUIPMENT_STATUS_MAP } from '@ems/shared';
+import { EQUIPMENT_STATUS_MAP, PERMISSIONS } from '@ems/shared';
+import { useAuth } from '@/lib/auth-client';
+import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import * as XLSX from 'xlsx';
 import {
   EmptyState,
@@ -145,6 +147,13 @@ const INDUSTRY_PRESETS = [
 
 export default function ReportBuilderPage() {
   const { enqueueSnackbar } = useSnackbar();
+  const { user, hasPermission } = useAuth();
+
+  const canAccessReports =
+    user?.roles?.includes('admin') ||
+    hasPermission(PERMISSIONS.EPS_REPORTS_VIEW) ||
+    hasPermission(PERMISSIONS.EPS_REPORTS_MANAGE);
+  const canManageTemplates = user?.roles?.includes('admin') || hasPermission(PERMISSIONS.EPS_REPORTS_MANAGE);
 
   // Columns & Data state
   const [availableColumns, setAvailableColumns] = useState<ReportColumn[]>([]);
@@ -259,12 +268,11 @@ export default function ReportBuilderPage() {
   ]);
 
   useEffect(() => {
-    fetchTemplates();
-  }, [fetchTemplates]);
-
-  useEffect(() => {
-    generateReport();
-  }, [generateReport]);
+    if (canAccessReports) {
+      fetchTemplates();
+      generateReport();
+    }
+  }, [canAccessReports, fetchTemplates, generateReport]);
 
   // Group columns by category
   const columnsByCategory = useMemo(() => {
@@ -594,6 +602,27 @@ export default function ReportBuilderPage() {
     URL.revokeObjectURL(url);
     enqueueSnackbar('JSON файл успешно выгружен', { variant: 'success' });
   };
+
+  if (!canAccessReports) {
+    return (
+      <Box sx={{ width: '100%', pb: 4 }}>
+        <PageHeader
+          title="EPS — Конструктор отчетов оборудования"
+          subtitle="Интерактивный конструктор ведомостей, выборка параметров по паспортам и экспорт в Excel, CSV и JSON"
+          breadcrumbs={[
+            { label: 'Главная', href: '/' },
+            { label: 'Оборудование', href: '/eps' },
+            { label: 'Конструктор отчетов' },
+          ]}
+        />
+        <EmptyState
+          title="Доступ ограничен"
+          description="У вашей учетной записи нет прав на просмотр и формирование отчетов (требуется право eps.reports.view)."
+          icon={<AssessmentOutlinedIcon sx={{ fontSize: 48, color: 'text.secondary' }} />}
+        />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ width: '100%', pb: 2 }}>

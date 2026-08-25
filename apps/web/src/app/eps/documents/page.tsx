@@ -92,7 +92,7 @@ interface EquipmentOption {
 function DocumentsListContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { hasPermission } = useAuth();
+  const { user, hasPermission } = useAuth();
   const { enqueueSnackbar } = useSnackbar();
 
   const [items, setItems] = useState<DocumentItem[]>([]);
@@ -239,9 +239,16 @@ function DocumentsListContent() {
     }
   }, [page, pageSize, search, docTypeFilter, equipmentFilter, enqueueSnackbar]);
 
+  const canAccessDocs =
+    user?.roles?.includes('admin') ||
+    hasPermission(PERMISSIONS.EPS_DOCUMENTS_VIEW) ||
+    hasPermission(PERMISSIONS.EPS_DOCUMENTS_UPLOAD);
+
   useEffect(() => {
-    fetchDocuments();
-  }, [fetchDocuments]);
+    if (canAccessDocs) {
+      fetchDocuments();
+    }
+  }, [canAccessDocs, fetchDocuments]);
 
   const handleKpiFilter = (docType: string) => {
     if (docTypeFilter === docType) {
@@ -347,6 +354,27 @@ function DocumentsListContent() {
   const [visibleColumns, setVisibleColumns] = useState<string[]>(() =>
     DOCUMENT_COLUMNS.map((c) => c.id)
   );
+
+  if (!canAccessDocs) {
+    return (
+      <Box sx={{ pb: 4 }}>
+        <PageHeader
+          title="Электронный архив технической документации"
+          subtitle="Конструкторская и эксплуатационная документация (ЕСКД): паспорта, чертежи, схемы, руководства по эксплуатации (РЭ) и акты"
+          breadcrumbs={[
+            { label: 'Главная', href: '/' },
+            { label: 'Реестр оборудования', href: '/eps' },
+            { label: 'Электронный архив документации' },
+          ]}
+        />
+        <EmptyState
+          title="Доступ ограничен"
+          description="У вашей учетной записи нет полномочий для доступа к технической документации (требуется право eps.documents.view или eps.documents.upload)."
+          icon={<DescriptionOutlinedIcon sx={{ fontSize: 48, color: 'text.secondary' }} />}
+        />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ pb: 4 }}>
