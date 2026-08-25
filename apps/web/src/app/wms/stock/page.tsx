@@ -269,20 +269,23 @@ function WmsStockContent() {
     fetchStock();
   }, [fetchStock]);
 
-  // Проверка права на редактирование ячеек ТМЦ
+  // Проверка права на редактирование ячеек ТМЦ конкретного склада
   const canEditStockLocation = useCallback(
     (row?: StockRow | null) => {
       if (!row) return false;
-      if (
+      const isAdmin =
         user?.roles?.includes('admin') ||
         hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-        hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE) ||
+        hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+
+      if (isAdmin) return true;
+
+      const isResponsible = Boolean(user?.userId && row.warehouseResponsibleUserId === user.userId);
+      const hasZonePermission =
         hasPermission(PERMISSIONS.WMS_ZONES_MANAGE) ||
-        hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE)
-      ) {
-        return true;
-      }
-      return Boolean(user?.userId && row.warehouseResponsibleUserId === user.userId);
+        hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE);
+
+      return isResponsible && hasZonePermission;
     },
     [user, hasPermission]
   );
@@ -291,7 +294,7 @@ function WmsStockContent() {
   const handleOpenLocationModal = async (row: StockRow) => {
     if (!canEditStockLocation(row)) {
       enqueueSnackbar(
-        'Недостаточно прав для изменения ячейки хранения (требуется право «Конфигурация зон и ячеек»)',
+        `Вы не являетесь ответственным лицом за склад "${row.warehouseName}". Назначение ячеек чужого склада запрещено.`,
         { variant: 'warning' }
       );
       return;
@@ -318,7 +321,7 @@ function WmsStockContent() {
     if (!locStockItem) return;
     if (!canEditStockLocation(locStockItem)) {
       enqueueSnackbar(
-        'Недостаточно прав для изменения ячейки хранения (требуется право «Конфигурация зон и ячеек»)',
+        `Вы не являетесь ответственным лицом за склад "${locStockItem.warehouseName}". Назначение ячеек чужого склада запрещено.`,
         { variant: 'error' }
       );
       return;
@@ -899,7 +902,7 @@ function WmsStockContent() {
                               title={
                                 canEdit
                                   ? 'Нажмите, чтобы изменить ячейку хранения'
-                                  : 'Недостаточно прав: требуется право «Конфигурация зон и ячеек» или назначение МОЛ склада'
+                                  : 'Чужой склад: назначение ячейки разрешено только назначенному МОЛ склада или администратору'
                               }
                             >
                               <span>
@@ -948,7 +951,7 @@ function WmsStockContent() {
                         }
 
                         return (
-                          <Tooltip title="Недостаточно прав: требуется право «Конфигурация зон и ячеек» или назначение МОЛ склада">
+                          <Tooltip title="Чужой склад: назначение ячейки разрешено только назначенному МОЛ склада или администратору">
                             <Typography variant="caption" sx={{ color: 'text.disabled', fontStyle: 'italic', cursor: 'default' }}>
                               —
                             </Typography>

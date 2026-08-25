@@ -65,15 +65,25 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Зона не найдена' }, { status: 404 });
     }
 
-    const canManage =
+    const isAdmin =
       user.roles.includes('admin') ||
       hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-      hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE) ||
+      hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+
+    const isResponsible = Boolean(
+      zone.warehouse.responsibleUserId && zone.warehouse.responsibleUserId === user.userId
+    );
+
+    const hasZonePermission =
       hasPermission(user, PERMISSIONS.WMS_ZONES_MANAGE) ||
-      Boolean(zone.warehouse.responsibleUserId && zone.warehouse.responsibleUserId === user.userId);
+      hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE);
+
+    const canManage = isAdmin || (isResponsible && hasZonePermission);
 
     if (!canManage) {
-      return forbiddenResponse(`Недостаточно прав для создания ячеек на складе "${zone.warehouse.name}".`);
+      return forbiddenResponse(
+        `Вы не являетесь ответственным лицом за склад "${zone.warehouse.name}". Создание ячеек чужого склада запрещено.`
+      );
     }
 
     // Bulk creation mode
@@ -173,15 +183,25 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'Зона не найдена' }, { status: 404 });
     }
 
-    const canManage =
+    const isAdmin =
       user.roles.includes('admin') ||
       hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-      hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE) ||
+      hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+
+    const isResponsible = Boolean(
+      zone.warehouse.responsibleUserId && zone.warehouse.responsibleUserId === user.userId
+    );
+
+    const hasZonePermission =
       hasPermission(user, PERMISSIONS.WMS_ZONES_MANAGE) ||
-      Boolean(zone.warehouse.responsibleUserId && zone.warehouse.responsibleUserId === user.userId);
+      hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE);
+
+    const canManage = isAdmin || (isResponsible && hasZonePermission);
 
     if (!canManage) {
-      return forbiddenResponse(`Недостаточно прав для удаления ячейки на складе "${zone.warehouse.name}".`);
+      return forbiddenResponse(
+        `Вы не являетесь ответственным лицом за склад "${zone.warehouse.name}". Удаление ячеек чужого склада запрещено.`
+      );
     }
 
     const { searchParams } = new URL(req.url);

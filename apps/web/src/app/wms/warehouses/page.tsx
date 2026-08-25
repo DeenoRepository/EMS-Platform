@@ -202,17 +202,30 @@ export default function WmsWarehousesPage() {
     }
   };
 
+  const isAdmin = useMemo(() => {
+    return Boolean(
+      user?.roles?.includes('admin') ||
+      hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
+      hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE)
+    );
+  }, [user, hasPermission]);
+
+  const visibleWarehouses = useMemo(() => {
+    if (isAdmin) return warehouses;
+    return warehouses.filter((w) => w.responsibleUserId === user?.userId);
+  }, [warehouses, isAdmin, user?.userId]);
+
   const filteredWarehouses = useMemo(() => {
-    if (!search.trim()) return warehouses;
+    if (!search.trim()) return visibleWarehouses;
     const q = search.toLowerCase();
-    return warehouses.filter(
+    return visibleWarehouses.filter(
       (w) =>
         w.name.toLowerCase().includes(q) ||
         w.code.toLowerCase().includes(q) ||
         (w.location && w.location.toLowerCase().includes(q)) ||
         (w.responsibleUser && w.responsibleUser.displayName.toLowerCase().includes(q))
     );
-  }, [warehouses, search]);
+  }, [visibleWarehouses, search]);
 
   // Pagination state
   const [page, setPage] = useState(0);
@@ -222,10 +235,10 @@ export default function WmsWarehousesPage() {
     return filteredWarehouses.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
   }, [filteredWarehouses, page, rowsPerPage]);
 
-  const totalWarehouses = warehouses.length;
-  const activeWarehouses = warehouses.filter((w) => w.isActive).length;
-  const totalStockItems = warehouses.reduce((acc, w) => acc + (w._count?.stockItems || 0), 0);
-  const totalOperations = warehouses.reduce((acc, w) => acc + (w._count?.operations || 0), 0);
+  const totalWarehouses = visibleWarehouses.length;
+  const activeWarehouses = visibleWarehouses.filter((w) => w.isActive).length;
+  const totalStockItems = visibleWarehouses.reduce((acc, w) => acc + (w._count?.stockItems || 0), 0);
+  const totalOperations = visibleWarehouses.reduce((acc, w) => acc + (w._count?.operations || 0), 0);
 
   return (
     <Box sx={{ width: '100%', pb: 2 }}>

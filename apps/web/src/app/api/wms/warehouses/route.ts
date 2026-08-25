@@ -21,6 +21,9 @@ export async function GET(req: NextRequest) {
       user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
 
     const where: any = {};
+    if (!isAdmin && !forTransfer) {
+      where.responsibleUserId = user.userId;
+    }
 
     const warehouses = await prisma.warehouse.findMany({
       where,

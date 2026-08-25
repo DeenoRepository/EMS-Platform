@@ -55,15 +55,23 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Склад не найден' }, { status: 404 });
     }
 
-    const canManage =
+    const isAdmin =
       user.roles.includes('admin') ||
       hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-      hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE) ||
+      hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+
+    const isResponsible = Boolean(
+      warehouse.responsibleUserId && warehouse.responsibleUserId === user.userId
+    );
+
+    const hasZonePermission =
       hasPermission(user, PERMISSIONS.WMS_ZONES_MANAGE) ||
-      Boolean(warehouse.responsibleUserId && warehouse.responsibleUserId === user.userId);
+      hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE);
+
+    const canManage = isAdmin || (isResponsible && hasZonePermission);
 
     if (!canManage) {
-      return forbiddenResponse(`Недостаточно прав для создания зон на складе "${warehouse.name}".`);
+      return forbiddenResponse(`Вы не являетесь ответственным лицом за склад "${warehouse.name}". Создание зон разрешено только назначенному МОЛ.`);
     }
 
     const body = await req.json();

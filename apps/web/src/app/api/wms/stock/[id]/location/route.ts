@@ -24,16 +24,25 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: 'Позиция остатка не найдена' }, { status: 404 });
     }
 
-    const canManage =
+    const isAdmin =
       user.roles.includes('admin') ||
       hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-      hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE) ||
+      hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+
+    const isResponsible = Boolean(
+      stockItem.warehouse.responsibleUserId && stockItem.warehouse.responsibleUserId === user.userId
+    );
+
+    const hasZonePermission =
       hasPermission(user, PERMISSIONS.WMS_ZONES_MANAGE) ||
-      hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE) ||
-      Boolean(stockItem.warehouse.responsibleUserId && stockItem.warehouse.responsibleUserId === user.userId);
+      hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE);
+
+    const canManage = isAdmin || (isResponsible && hasZonePermission);
 
     if (!canManage) {
-      return forbiddenResponse(`Недостаточно прав для изменения ячейки хранения ТМЦ на складе "${stockItem.warehouse.name}".`);
+      return forbiddenResponse(
+        `Вы не являетесь ответственным лицом за склад "${stockItem.warehouse.name}". Назначение и изменение ячеек чужого склада запрещено.`
+      );
     }
 
     const body = await req.json();
