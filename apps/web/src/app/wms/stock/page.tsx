@@ -269,15 +269,16 @@ function WmsStockContent() {
     fetchStock();
   }, [fetchStock]);
 
-  // Проверка права на редактирование ячеек ТМЦ конкретного склада
+  // Проверка права на редактирование ячеек ТМЦ
   const canEditStockLocation = useCallback(
     (row?: StockRow | null) => {
       if (!row) return false;
-      if (!hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE)) return false;
       if (
         user?.roles?.includes('admin') ||
         hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-        hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE)
+        hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE) ||
+        hasPermission(PERMISSIONS.WMS_ZONES_MANAGE) ||
+        hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE)
       ) {
         return true;
       }
@@ -290,7 +291,7 @@ function WmsStockContent() {
   const handleOpenLocationModal = async (row: StockRow) => {
     if (!canEditStockLocation(row)) {
       enqueueSnackbar(
-        `Вы не являетесь ответственным лицом за склад "${row.warehouseName}". Установка и изменение ячеек чужих складов запрещены.`,
+        'Недостаточно прав для изменения ячейки хранения (требуется право «Конфигурация зон и ячеек»)',
         { variant: 'warning' }
       );
       return;
@@ -317,7 +318,7 @@ function WmsStockContent() {
     if (!locStockItem) return;
     if (!canEditStockLocation(locStockItem)) {
       enqueueSnackbar(
-        `Вы не являетесь ответственным лицом за склад "${locStockItem.warehouseName}". Изменение ячеек чужих складов запрещено.`,
+        'Недостаточно прав для изменения ячейки хранения (требуется право «Конфигурация зон и ячеек»)',
         { variant: 'error' }
       );
       return;
@@ -898,7 +899,7 @@ function WmsStockContent() {
                               title={
                                 canEdit
                                   ? 'Нажмите, чтобы изменить ячейку хранения'
-                                  : 'Чужой склад: смена ячейки разрешена только назначенному МОЛ склада или администратору'
+                                  : 'Недостаточно прав: требуется право «Конфигурация зон и ячеек» или назначение МОЛ склада'
                               }
                             >
                               <span>
@@ -947,7 +948,7 @@ function WmsStockContent() {
                         }
 
                         return (
-                          <Tooltip title="Чужой склад: назначение ячейки разрешено только назначенному МОЛ склада или администратору">
+                          <Tooltip title="Недостаточно прав: требуется право «Конфигурация зон и ячеек» или назначение МОЛ склада">
                             <Typography variant="caption" sx={{ color: 'text.disabled', fontStyle: 'italic', cursor: 'default' }}>
                               —
                             </Typography>
@@ -1124,7 +1125,7 @@ function WmsStockContent() {
           {!canEditStockLocation(locStockItem) && (
             <Box sx={{ p: 1.5, bgcolor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 1.5 }}>
               <Typography variant="body2" color="error.main" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
-                Изменение ячеек запрещено: вы не являетесь ответственным лицом за склад «{locStockItem?.warehouseName}».
+                Изменение ячеек недоступно: требуется право «Конфигурация зон и ячеек» или назначение МОЛ склада.
               </Typography>
             </Box>
           )}

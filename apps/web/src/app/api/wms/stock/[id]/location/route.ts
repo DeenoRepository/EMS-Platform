@@ -14,10 +14,6 @@ export async function PATCH(
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE)) return forbiddenResponse();
-
-    const body = await req.json();
-    const { cellId } = body;
 
     const stockItem = await prisma.stockItem.findUnique({
       where: { id: params.id },
@@ -28,14 +24,20 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: 'Позиция остатка не найдена' }, { status: 404 });
     }
 
-    const isAdmin =
+    const canManage =
       user.roles.includes('admin') ||
-      user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-      user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+      hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
+      hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE) ||
+      hasPermission(user, PERMISSIONS.WMS_ZONES_MANAGE) ||
+      hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE) ||
+      Boolean(stockItem.warehouse.responsibleUserId && stockItem.warehouse.responsibleUserId === user.userId);
 
-    if (!isAdmin && (!stockItem.warehouse.responsibleUserId || stockItem.warehouse.responsibleUserId !== user.userId)) {
-      return forbiddenResponse(`Вы не являетесь ответственным лицом за склад "${stockItem.warehouse.name}". Назначение и изменение ячеек чужого склада запрещено.`);
+    if (!canManage) {
+      return forbiddenResponse(`Недостаточно прав для изменения ячейки хранения ТМЦ на складе "${stockItem.warehouse.name}".`);
     }
+
+    const body = await req.json();
+    const { cellId } = body;
 
     // Verify cell if provided
     if (cellId) {

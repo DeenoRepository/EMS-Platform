@@ -65,13 +65,15 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Зона не найдена' }, { status: 404 });
     }
 
-    const isAdmin =
+    const canManage =
       user.roles.includes('admin') ||
-      user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-      user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+      hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
+      hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE) ||
+      hasPermission(user, PERMISSIONS.WMS_ZONES_MANAGE) ||
+      Boolean(zone.warehouse.responsibleUserId && zone.warehouse.responsibleUserId === user.userId);
 
-    if (!isAdmin && zone.warehouse.responsibleUserId && zone.warehouse.responsibleUserId !== user.userId) {
-      return forbiddenResponse(`Вы не являетесь ответственным лицом за склад "${zone.warehouse.name}". Создание ячеек запрещено.`);
+    if (!canManage) {
+      return forbiddenResponse(`Недостаточно прав для создания ячеек на складе "${zone.warehouse.name}".`);
     }
 
     // Bulk creation mode
@@ -90,47 +92,47 @@ export async function POST(
                 code: itemCode,
               },
             },
+            update: {
+              name: itemName || undefined,
+            },
             create: {
               zoneId: params.id,
               code: itemCode,
-              name: itemName || null,
-            },
-            update: {
-              name: itemName !== undefined ? itemName : undefined,
+              name: itemName || undefined,
             },
           });
           createdCells.push(cell);
-        } catch {
-          // ignore duplicates
+        } catch (e) {
+          console.error('Error creating cell in bulk:', itemCode, e);
         }
       }
 
       return NextResponse.json({
         success: true,
         data: createdCells,
-        message: `Создано/обновлено ячеек: ${createdCells.length}`,
+        count: createdCells.length,
       });
     }
 
-    // Single cell creation mode
-    if (!code || typeof code !== 'string') {
+    // Single creation mode
+    if (!code) {
       return NextResponse.json({ success: false, error: 'Код ячейки обязателен' }, { status: 400 });
     }
 
-    const formattedCode = code.trim();
+    const cleanCode = String(code).trim().toUpperCase();
 
     const existing = await prisma.storageCell.findUnique({
       where: {
         zoneId_code: {
           zoneId: params.id,
-          code: formattedCode,
+          code: cleanCode,
         },
       },
     });
 
     if (existing) {
       return NextResponse.json(
-        { success: false, error: `Ячейка с кодом "${formattedCode}" уже существует в этой зоне` },
+        { success: false, error: `Ячейка с кодом ${cleanCode} уже существует в этой зоне` },
         { status: 400 }
       );
     }
@@ -138,7 +140,7 @@ export async function POST(
     const cell = await prisma.storageCell.create({
       data: {
         zoneId: params.id,
-        code: formattedCode,
+        code: cleanCode,
         name: name ? String(name).trim() : null,
       },
     });
@@ -153,7 +155,7 @@ export async function POST(
   }
 }
 
-// DELETE /api/wms/zones/[id]/cells?cellId=... - Delete a cell
+// DELETE /api/wms/zones/[id]/cells?cellId=... - Delete a cell from zone
 export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -161,13 +163,6 @@ export async function DELETE(
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
-    if (
-      !hasPermission(user, PERMISSIONS.WMS_ZONES_MANAGE) &&
-      !hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE) &&
-      !user.roles.includes('admin')
-    ) {
-      return forbiddenResponse();
-    }
 
     const zone = await prisma.storageZone.findUnique({
       where: { id: params.id },
@@ -178,13 +173,15 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'Зона не найдена' }, { status: 404 });
     }
 
-    const isAdmin =
+    const canManage =
       user.roles.includes('admin') ||
-      user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-      user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+      hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
+      hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE) ||
+      hasPermission(user, PERMISSIONS.WMS_ZONES_MANAGE) ||
+      Boolean(zone.warehouse.responsibleUserId && zone.warehouse.responsibleUserId === user.userId);
 
-    if (!isAdmin && zone.warehouse.responsibleUserId && zone.warehouse.responsibleUserId !== user.userId) {
-      return forbiddenResponse(`Вы не являетесь ответственным лицом за склад "${zone.warehouse.name}". Удаление ячейки запрещено.`);
+    if (!canManage) {
+      return forbiddenResponse(`Недостаточно прав для удаления ячейки на складе "${zone.warehouse.name}".`);
     }
 
     const { searchParams } = new URL(req.url);
