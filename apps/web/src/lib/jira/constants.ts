@@ -1,0 +1,14 @@
+export const MILLISECONDS_PER_HOUR = 60 * 60 * 1000;
+export const MILLISECONDS_PER_DAY = 24 * MILLISECONDS_PER_HOUR;
+export const SLA_TARGET_HOURS = 48;
+export const DEFAULT_MTBF_DAYS = 30;
+export const DEFAULT_ADVANCED_MTTR_HOURS = 4.2;
+export const DEFAULT_ADVANCED_MTBF_DAYS = 45;
+export const MIN_AVAILABILITY_PERCENT = 80;
+export const MAX_AVAILABILITY_PERCENT = 99.9;
+export const ROUNDING_PRECISION = 10;
+export const INTERNAL_INCIDENT_SEQUENCE_PADDING = 4;
+export const DEFAULT_SLA_HOURS = 24;
+export const CRITICAL_SLA_HOURS = 4;
+export const HIGH_SLA_HOURS = 12;
+export const LOW_SLA_HOURS = 72;
