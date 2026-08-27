@@ -104,6 +104,20 @@ interface EquipmentOption {
   status: string;
 }
 
+type ApprovalReviewDecision = 'APPROVED' | 'REJECTED' | 'CANCELLED';
+
+const APPROVAL_PROPOSED_DATA_BY_TYPE: Record<string, { targetStatus: string } | null> = {
+  STATUS_CHANGE: null,
+  DECOMMISSIONING: { targetStatus: 'DECOMMISSIONED' },
+  COMMISSIONING: { targetStatus: 'ACTIVE' },
+};
+
+const APPROVAL_REVIEW_FEEDBACK: Record<ApprovalReviewDecision, { message: string; variant: 'success' | 'info' }> = {
+  APPROVED: { message: 'Заявка успешно согласована. Статус оборудования обновлен!', variant: 'success' },
+  REJECTED: { message: 'Заявка отклонена', variant: 'info' },
+  CANCELLED: { message: 'Заявка отозвана', variant: 'info' },
+};
+
 function ApprovalsListContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -322,14 +336,10 @@ function ApprovalsListContent() {
 
     setSubmittingCreate(true);
     try {
-      let proposedData: any = null;
-      if (createType === 'STATUS_CHANGE') {
-        proposedData = { targetStatus: createTargetStatus };
-      } else if (createType === 'DECOMMISSIONING') {
-        proposedData = { targetStatus: 'DECOMMISSIONED' };
-      } else if (createType === 'COMMISSIONING') {
-        proposedData = { targetStatus: 'ACTIVE' };
-      }
+      const proposedData =
+        createType === 'STATUS_CHANGE'
+          ? { targetStatus: createTargetStatus }
+          : APPROVAL_PROPOSED_DATA_BY_TYPE[createType] ?? null;
 
       const res = await fetch('/api/eps/approvals', {
         method: 'POST',
@@ -361,7 +371,7 @@ function ApprovalsListContent() {
     }
   };
 
-  const handleProcessReview = async (decision: 'APPROVED' | 'REJECTED' | 'CANCELLED') => {
+  const handleProcessReview = async (decision: ApprovalReviewDecision) => {
     if (!selectedApprovalForReview) return;
     if (decision === 'REJECTED' && !resolutionComment.trim()) {
       enqueueSnackbar('Для отклонения заявки обязательно укажите причину в комментарии', { variant: 'warning' });
@@ -380,13 +390,8 @@ function ApprovalsListContent() {
 
       const json = await res.json();
       if (res.ok && json.success) {
-        const msg =
-          decision === 'APPROVED'
-            ? 'Заявка успешно согласована. Статус оборудования обновлен!'
-            : decision === 'REJECTED'
-            ? 'Заявка отклонена'
-            : 'Заявка отозвана';
-        enqueueSnackbar(msg, { variant: decision === 'APPROVED' ? 'success' : 'info' });
+        const feedback = APPROVAL_REVIEW_FEEDBACK[decision];
+        enqueueSnackbar(feedback.message, { variant: feedback.variant });
         setReviewModalOpen(false);
         setSelectedApprovalForReview(null);
         setResolutionComment('');
