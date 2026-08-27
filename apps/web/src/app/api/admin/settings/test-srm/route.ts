@@ -4,10 +4,18 @@ import { PERMISSIONS } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
 import { getSrmAdapter } from '@/lib/srm-providers';
 import { SrmProviderType, SrmAuthType } from '@ems/database';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  const rateLimitError = await enforceRateLimit(req, {
+    limit: 5,
+    windowMs: 60 * 1000,
+    prefix: 'admin-test-srm',
+  });
+  if (rateLimitError) return rateLimitError;
+
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
