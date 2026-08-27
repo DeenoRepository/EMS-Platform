@@ -28,7 +28,6 @@ import {
   InputLabel,
   Select,
   Tooltip,
-  LinearProgress,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -87,6 +86,7 @@ import {
   type LifecycleEvent,
 } from '@/components/ui';
 import { CreateServiceRequestDialog } from '@/components/srm';
+import { CustomFieldValueRenderer } from '@/components/eps/CustomFieldValueRenderer';
 
 interface CustomFieldDef {
   id: string;
@@ -623,109 +623,6 @@ function EquipmentPassportContent() {
     });
   };
 
-  const renderCustomFieldValue = (f: CustomFieldDef, val: any) => {
-    if (val === undefined || val === null || val === '') {
-      return <Typography variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>;
-    }
-
-    if (f.fieldType === 'BOOLEAN' || typeof val === 'boolean') {
-      const boolVal = Boolean(val);
-      let label = boolVal ? 'Да' : 'Нет';
-      if (f.key.includes('import')) label = boolVal ? 'Да (Импорт)' : 'Нет (Отечественное)';
-      else if (f.key.includes('unique')) label = boolVal ? 'Да (Уникальное)' : 'Нет (Серийное)';
-      else if (f.key.includes('critical_path')) label = boolVal ? 'Да (Критический путь)' : 'Нет';
-
-      return (
-        <StatusBadge
-          status={boolVal ? (f.key.includes('critical_path') ? 'ERROR' : 'SUCCESS') : 'DEFAULT'}
-          label={label}
-          size="small"
-        />
-      );
-    }
-
-    if (f.key === 'criticality' || f.key === 'kategoriya_kritichnosti') {
-      const sVal = String(val);
-      const isA = sVal === 'A' || sVal.includes('Высокая') || sVal.includes('А');
-      const isB = sVal === 'B' || sVal.includes('Средняя') || sVal.includes('В');
-      return (
-        <StatusBadge
-          status={isA ? 'ERROR' : isB ? 'WARNING' : 'INFO'}
-          label={sVal.startsWith('Категория') ? sVal : `Категория ${sVal}`}
-          size="small"
-        />
-      );
-    }
-
-    if (f.key === 'actual_wear_percentage' || f.key === 'fakticheskiy_protsent_iznosa' || (f.unit === '%' && !isNaN(Number(val)))) {
-      const num = Number(val);
-      return (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, maxWidth: 260 }}>
-          <Typography variant="body2" fontWeight={700} sx={{ minWidth: 38 }}>
-            {num}%
-          </Typography>
-          <Box sx={{ flexGrow: 1 }}>
-            <LinearProgress
-              variant="determinate"
-              value={Math.min(100, Math.max(0, num))}
-              color={num > 70 ? 'error' : num > 30 ? 'warning' : 'success'}
-              sx={{ height: 7, borderRadius: 4 }}
-            />
-          </Box>
-        </Box>
-      );
-    }
-
-    if (f.key.includes('code') || f.key.includes('number') || f.key.includes('kod') || f.key.includes('nomer')) {
-      return (
-        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
-          <Paper
-            variant="outlined"
-            sx={{
-              px: 1,
-              py: 0.2,
-              fontFamily: 'monospace',
-              fontWeight: 700,
-              bgcolor: 'background.default',
-              fontSize: '0.8125rem',
-              borderRadius: '5px',
-              color: 'text.primary',
-              borderColor: 'grey.400',
-              lineHeight: 1.4,
-            }}
-          >
-            {String(val)}
-          </Paper>
-          <Tooltip title={`Скопировать ${f.name}`}>
-            <IconButton
-              size="small"
-              sx={{ p: 0.5, color: 'text.disabled', '&:hover': { color: 'primary.main' } }}
-              onClick={() => handleCopy(String(val), f.name)}
-            >
-              <ContentCopyIcon sx={{ fontSize: 15 }} />
-            </IconButton>
-          </Tooltip>
-        </Box>
-      );
-    }
-
-    return (
-      <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
-        <Typography variant="body2" fontWeight={600}>
-          {String(val)}
-        </Typography>
-        {f.unit && (
-          <Chip
-            label={f.unit}
-            size="small"
-            variant="outlined"
-            sx={{ height: 19, fontSize: '0.65rem', fontWeight: 700 }}
-          />
-        )}
-      </Box>
-    );
-  };
-
   return (
     <Box sx={{ width: '100%', pb: 2 }}>
       {/* Official Print Header (Visible strictly when printing / PDF export) */}
@@ -1169,7 +1066,7 @@ function EquipmentPassportContent() {
                                     {f.name}
                                   </TableCell>
                                   <TableCell sx={{ py: 1, borderBottom: isLast ? 0 : '1px solid #f1f5f9' }}>
-                                    {renderCustomFieldValue(f, val)}
+                                    <CustomFieldValueRenderer field={f} value={val} onCopy={handleCopy} />
                                   </TableCell>
                                 </TableRow>
                               );
@@ -1206,7 +1103,7 @@ function EquipmentPassportContent() {
                                   {f.name}
                                 </TableCell>
                                 <TableCell sx={{ py: 1, borderBottom: isLast ? 0 : '1px solid #f1f5f9' }}>
-                                  {renderCustomFieldValue(f, val)}
+                                  <CustomFieldValueRenderer field={f} value={val} onCopy={handleCopy} />
                                 </TableCell>
                               </TableRow>
                             );
