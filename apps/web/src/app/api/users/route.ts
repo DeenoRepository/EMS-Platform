@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse } from '@/lib/auth-guard';
+import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { hasPermission } from '@ems/auth';
 import { prisma } from '@ems/database';
+import { PERMISSIONS } from '@ems/shared';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +11,18 @@ export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
+
+    const canViewUsers =
+      user.roles.includes('admin') ||
+      user.roles.includes('administrator') ||
+      hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_VIEW) ||
+      hasPermission(user, PERMISSIONS.WMS_STOCK_VIEW) ||
+      hasPermission(user, PERMISSIONS.MRO_SCHEDULE_VIEW) ||
+      hasPermission(user, PERMISSIONS.SRM_DASHBOARD_VIEW);
+
+    if (!canViewUsers) {
+      return forbiddenResponse('Недостаточно прав для просмотра списка пользователей');
+    }
 
     const users = await prisma.user.findMany({
       where: { isActive: true },
