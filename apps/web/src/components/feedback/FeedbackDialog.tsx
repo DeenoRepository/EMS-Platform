@@ -505,7 +505,7 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
                   {Object.entries(FEEDBACK_PRIORITY_LABELS).map(([k, v]) => (
                     <MenuItem key={k} value={k}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Chip label={v.label} color={v.color} size="small" sx={{ height: 20, fontSize: '0.75rem', fontWeight: 600 }} />
+                        <StatusBadge status={k} label={v.label} size="small" />
                       </Box>
                     </MenuItem>
                   ))}
@@ -681,11 +681,10 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
                           size="small"
                           sx={{ height: 22, fontSize: '0.75rem' }}
                         />
-                        <Chip
+                        <StatusBadge
+                          status={selectedTicket.priority}
                           label={`Приоритет: ${FEEDBACK_PRIORITY_LABELS[selectedTicket.priority]?.label || selectedTicket.priority}`}
-                          color={FEEDBACK_PRIORITY_LABELS[selectedTicket.priority]?.color || 'default'}
                           size="small"
-                          sx={{ height: 22, fontSize: '0.75rem', fontWeight: 600 }}
                         />
                         <Typography variant="caption" sx={{ color: 'text.disabled', alignSelf: 'center' }}>
                           Создано: {formatDateTime(selectedTicket.createdAt)}

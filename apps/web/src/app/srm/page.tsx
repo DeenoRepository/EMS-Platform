@@ -6,7 +6,6 @@ import {
   Grid,
   Typography,
   Button,
-  Chip,
   MenuItem,
   TextField,
   Table,
@@ -641,7 +640,7 @@ function SrmPageContent() {
                 )}
                 {visibleColumns.includes('source') && (
                   <TableCell>
-                    <Chip label={issue.source} size="small" sx={{ fontSize: '0.6875rem' }} />
+                    <StatusBadge status={issue.source || 'INTERNAL'} size="small" />
                   </TableCell>
                 )}
                 {visibleColumns.includes('reportedBy') && (

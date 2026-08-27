@@ -7,11 +7,11 @@ import {
   Paper,
   Button,
   CircularProgress,
-  Chip,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import EngineeringOutlinedIcon from '@mui/icons-material/EngineeringOutlined';
 import ContactSupportOutlinedIcon from '@mui/icons-material/ContactSupportOutlined';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 
 export interface ServiceHealthInfo {
   status: 'healthy' | 'unreachable' | 'degraded' | 'disabled';
@@ -146,34 +146,7 @@ export function ServiceUnavailableCard({
       </Box>
 
       {/* Status Badge */}
-      <Chip
-        label="Технические работы"
-        size="small"
-        sx={{
-          mb: 1.5,
-          fontWeight: 700,
-          fontSize: '0.72rem',
-          letterSpacing: 0.3,
-          backgroundColor: '#fff1f2',
-          color: '#be123c',
-          border: '1px solid #fecdd3',
-          height: 24,
-          '& .MuiChip-label': {
-            px: 1.25,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.6,
-            '&::before': {
-              content: '""',
-              width: 6,
-              height: 6,
-              borderRadius: '50%',
-              backgroundColor: '#e11d48',
-              boxShadow: '0 0 0 2px rgba(225, 29, 72, 0.2)',
-            },
-          },
-        }}
-      />
+      <StatusBadge status="MAINTENANCE" label="Технические работы" size="small" />
 
       {/* Subtitle / Description */}
       <Typography

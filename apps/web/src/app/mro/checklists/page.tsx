@@ -26,6 +26,7 @@ import {
   FilterToolbar,
   EmptyState,
   PageLoading,
+  StatusBadge,
 } from '@/components/ui';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
@@ -267,7 +268,7 @@ export default function MroChecklistsPage() {
                         {item.description}
                       </Typography>
                       {item.isRequired && (
-                        <Chip label="Обязательно" size="small" sx={{ height: 18, fontSize: '0.625rem', bgcolor: '#fef2f2', color: '#dc2626' }} />
+                        <StatusBadge status="REQUIRED" label="Обязательно" size="small" />
                       )}
                     </Box>
                   ))}

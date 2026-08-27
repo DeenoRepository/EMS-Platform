@@ -1,12 +1,13 @@
 'use client';
 
 import React from 'react';
-import { Box, Paper, Typography, Button, Stack, Chip } from '@mui/material';
+import { Box, Paper, Typography, Button, Stack } from '@mui/material';
 import EngineeringIcon from '@mui/icons-material/Engineering';
 import HomeIcon from '@mui/icons-material/Home';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { useRouter } from 'next/navigation';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 
 export interface ModuleMaintenanceStateProps {
   moduleName?: string;
@@ -67,19 +68,9 @@ export function ModuleMaintenanceState({
           <EngineeringIcon sx={{ fontSize: 38 }} />
         </Box>
 
-        <Chip
-          label="Техническое обслуживание"
-          size="small"
-          sx={{
-            mb: 2,
-            fontWeight: 700,
-            fontSize: '0.75rem',
-            backgroundColor: '#ea580c',
-            color: '#ffffff',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-          }}
-        />
+        <Box sx={{ mb: 2 }}>
+          <StatusBadge status="MAINTENANCE" label="Техническое обслуживание" size="small" />
+        </Box>
 
         <Typography variant="h5" component="h1" fontWeight={700} color="#9a3412" gutterBottom>
           {moduleName} на регламентных работах

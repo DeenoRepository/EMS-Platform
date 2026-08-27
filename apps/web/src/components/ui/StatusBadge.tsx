@@ -437,6 +437,13 @@ const STATUS_CONFIG_MAP: Record<string, StatusTheme> = {
   },
 
   // Feedback & Bug Hub Statuses
+  CRITICAL: {
+    label: 'Критический',
+    color: '#dc2626',
+    bg: '#fef2f2',
+    border: '#fecaca',
+    icon: <PriorityHighIcon sx={{ fontSize: 13 }} />,
+  },
   NEW: {
     label: 'Новое',
     color: '#0284c7',
@@ -471,6 +478,20 @@ const STATUS_CONFIG_MAP: Record<string, StatusTheme> = {
     bg: '#f0f9ff',
     border: '#bae6fd',
     icon: <BuildCircleIcon sx={{ fontSize: 13 }} />,
+  },
+  REQUIRED: {
+    label: 'Обязательно',
+    color: '#dc2626',
+    bg: '#fef2f2',
+    border: '#fecaca',
+    icon: <PriorityHighIcon sx={{ fontSize: 13 }} />,
+  },
+  READY: {
+    label: 'Готово к отправке',
+    color: '#15803d',
+    bg: '#ecfdf5',
+    border: '#a7f3d0',
+    icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
   },
   QUESTION: {
     label: 'Вопрос',

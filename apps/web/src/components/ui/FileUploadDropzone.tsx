@@ -11,7 +11,6 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
-  Chip,
   Alert,
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
@@ -20,6 +19,7 @@ import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import ImageIcon from '@mui/icons-material/Image';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { formatBytes } from '@ems/shared';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 
 export interface FileUploadDropzoneProps {
   accept?: string;
@@ -270,18 +270,7 @@ export function FileUploadDropzone({
                     <Typography component="span" variant="caption" sx={{ color: '#64748b', fontSize: '0.6875rem' }}>
                       {formatBytes(file.size)}
                     </Typography>
-                    <Chip
-                      label="Готов к отправке"
-                      size="small"
-                      sx={{
-                        height: 18,
-                        fontSize: '0.625rem',
-                        fontWeight: 600,
-                        backgroundColor: '#ecfdf5',
-                        color: '#15803d',
-                        borderRadius: '4px',
-                      }}
-                    />
+                    <StatusBadge status="READY" label="Готов к отправке" size="small" />
                   </Box>
                 }
               />

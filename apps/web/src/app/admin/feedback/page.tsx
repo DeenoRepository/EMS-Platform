@@ -548,11 +548,10 @@ export default function AdminFeedbackPage() {
                     ) : null}
                   </TableCell>
                   <TableCell>
-                    <Chip
+                    <StatusBadge
+                      status={ticket.priority}
                       label={FEEDBACK_PRIORITY_LABELS[ticket.priority]?.label || ticket.priority}
-                      color={FEEDBACK_PRIORITY_LABELS[ticket.priority]?.color || 'default'}
                       size="small"
-                      sx={{ height: 22, fontSize: '0.75rem', fontWeight: 600 }}
                     />
                   </TableCell>
                   <TableCell>
