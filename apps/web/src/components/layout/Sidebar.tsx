@@ -554,23 +554,23 @@ export default function Sidebar({
     switch (type) {
       case 'warning':
         return {
-          bg: 'rgba(245, 158, 11, 0.2)',
-          text: '#fbbf24',
-          border: 'rgba(245, 158, 11, 0.45)',
+          bg: 'warning.light',
+          text: 'warning.main',
+          border: 'warning.dark',
           animation: 'none',
         };
       case 'error':
         return {
-          bg: 'rgba(239, 68, 68, 0.25)',
-          text: '#f87171',
-          border: 'rgba(239, 68, 68, 0.55)',
+          bg: 'error.light',
+          text: 'error.main',
+          border: 'error.dark',
           animation: 'badgePulse 2s infinite',
         };
       default:
         return {
-          bg: 'rgba(56, 189, 248, 0.18)',
-          text: '#38bdf8',
-          border: 'rgba(56, 189, 248, 0.35)',
+          bg: 'primary.light',
+          text: 'primary.main',
+          border: 'primary.dark',
           animation: 'none',
         };
     }
@@ -641,12 +641,12 @@ export default function Sidebar({
               my: 0.25,
               borderRadius: '8px',
               cursor: 'pointer',
-              color: active ? '#38bdf8' : '#94a3b8',
-              backgroundColor: active ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
+              color: active ? 'primary.light' : 'text.disabled',
+              backgroundColor: active ? 'action.selected' : 'transparent',
               transition: 'all 0.15s ease',
               '&:hover': {
-                backgroundColor: active ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255, 255, 255, 0.06)',
-                color: '#38bdf8',
+                backgroundColor: active ? 'action.selected' : 'action.hover',
+                color: 'primary.light',
               },
             }}
           >
@@ -660,7 +660,7 @@ export default function Sidebar({
                   bottom: 8,
                   width: 3,
                   borderRadius: '0 3px 3px 0',
-                  backgroundColor: '#38bdf8',
+                  backgroundColor: 'primary.light',
                 }}
               />
             )}
@@ -677,8 +677,8 @@ export default function Sidebar({
                     minWidth: item.badgeText ? 24 : 15,
                     height: 15,
                     borderRadius: '8px',
-                    backgroundColor: item.badgeText ? '#475569' : badgeColors.text,
-                    color: item.badgeText ? '#f8fafc' : '#0f172a',
+                    backgroundColor: item.badgeText ? 'grey.700' : badgeColors.text,
+                    color: item.badgeText ? 'grey.50' : 'text.primary',
                     fontSize: item.badgeText ? '0.55rem' : '0.625rem',
                     fontWeight: 800,
                     display: 'flex',
@@ -688,9 +688,9 @@ export default function Sidebar({
                     fontFamily: item.badgeText ? 'inherit' : 'monospace',
                     animation: item.badgeText ? 'none' : badgeColors.animation,
                     '@keyframes badgePulse': {
-                      '0%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(239, 68, 68, 0.6)' },
-                      '70%': { transform: 'scale(1.1)', boxShadow: '0 0 0 4px rgba(239, 68, 68, 0)' },
-                      '100%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(239, 68, 68, 0)' },
+                      '0%': { transform: 'scale(1)', boxShadow: '0 0 0 0 transparent' },
+                      '70%': { transform: 'scale(1.1)', boxShadow: '0 0 0 4px transparent' },
+                      '100%': { transform: 'scale(1)', boxShadow: '0 0 0 0 transparent' },
                     },
                   }}
                 >
@@ -724,12 +724,12 @@ export default function Sidebar({
             py: 0.7,
             borderRadius: '6px',
             cursor: 'pointer',
-            color: active ? '#38bdf8' : '#cbd5e1',
-            backgroundColor: active && !hasChildren ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
+            color: active ? 'primary.light' : 'grey.300',
+            backgroundColor: active && !hasChildren ? 'action.selected' : 'transparent',
             transition: 'all 0.12s ease',
             '&:hover': {
-              backgroundColor: active && !hasChildren ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255, 255, 255, 0.06)',
-              color: '#ffffff',
+              backgroundColor: active && !hasChildren ? 'action.selected' : 'action.hover',
+              color: 'common.white',
             },
           }}
         >
@@ -743,14 +743,14 @@ export default function Sidebar({
                 bottom: 5,
                 width: 3,
                 borderRadius: '0 3px 3px 0',
-                backgroundColor: '#38bdf8',
+                backgroundColor: 'primary.light',
               }}
             />
           )}
 
           {/* Left: Icon & Label */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, overflow: 'hidden', minWidth: 0, flexGrow: 1, mr: 0.25 }}>
-            <Box sx={{ color: active ? '#38bdf8' : '#94a3b8', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+            <Box sx={{ color: active ? 'primary.light' : 'text.disabled', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
               {item.icon}
             </Box>
             <Typography
@@ -759,7 +759,7 @@ export default function Sidebar({
               sx={{
                 fontSize: '0.78125rem', // 12.5px
                 fontWeight: active ? 600 : 500,
-                color: active ? '#ffffff' : 'inherit',
+                color: active ? 'common.white' : 'inherit',
                 letterSpacing: '-0.01em',
               }}
             >
@@ -772,7 +772,7 @@ export default function Sidebar({
             {hasChildren && (
               <Box
                 sx={{
-                  color: '#64748b',
+                  color: 'text.secondary',
                   width: 16,
                   height: 16,
                   display: 'flex',
@@ -808,9 +808,10 @@ export default function Sidebar({
                         height: 17,
                         minWidth: 17,
                         borderRadius: '8.5px',
-                        backgroundColor: item.badgeText ? 'rgba(148, 163, 184, 0.15)' : badgeColors.bg,
-                        color: item.badgeText ? '#94a3b8' : badgeColors.text,
-                        border: item.badgeText ? '1px solid rgba(148, 163, 184, 0.3)' : `1px solid ${badgeColors.border}`,
+                        backgroundColor: item.badgeText ? 'action.selected' : badgeColors.bg,
+                        color: item.badgeText ? 'text.disabled' : badgeColors.text,
+                        border: item.badgeText ? '1px solid' : `1px solid ${badgeColors.border}`,
+                        borderColor: item.badgeText ? 'grey.700' : badgeColors.border,
                         fontSize: item.badgeText ? '0.625rem' : '0.65rem',
                         fontWeight: 700,
                         fontFamily: item.badgeText ? 'inherit' : 'monospace',
@@ -821,9 +822,9 @@ export default function Sidebar({
                         boxSizing: 'border-box',
                         animation: item.badgeText ? 'none' : badgeColors.animation,
                         '@keyframes badgePulse': {
-                          '0%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(239, 68, 68, 0.4)' },
-                          '70%': { transform: 'scale(1.08)', boxShadow: '0 0 0 4px rgba(239, 68, 68, 0)' },
-                          '100%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(239, 68, 68, 0)' },
+                          '0%': { transform: 'scale(1)', boxShadow: '0 0 0 0 transparent' },
+                          '70%': { transform: 'scale(1.08)', boxShadow: '0 0 0 4px transparent' },
+                          '100%': { transform: 'scale(1)', boxShadow: '0 0 0 0 transparent' },
                         },
                       }}
                     >
@@ -843,7 +844,8 @@ export default function Sidebar({
               sx={{
                 ml: '14px',
                 pl: '8px',
-                borderLeft: '1.5px solid rgba(255, 255, 255, 0.1)',
+                borderLeft: '1.5px solid',
+                borderLeftColor: 'action.disabledBackground',
                 my: 0.25,
                 display: 'flex',
                 flexDirection: 'column',
@@ -866,17 +868,17 @@ export default function Sidebar({
                       borderRadius: '5px',
                       cursor: 'pointer',
                       fontSize: '0.75rem', // 12px
-                      color: isChildActive ? '#38bdf8' : '#94a3b8',
+                      color: isChildActive ? 'primary.light' : 'text.disabled',
                       fontWeight: isChildActive ? 600 : 500,
-                      backgroundColor: isChildActive ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
+                      backgroundColor: isChildActive ? 'action.selected' : 'transparent',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       gap: 0.75,
                       transition: 'all 0.12s ease',
                       '&:hover': {
-                        backgroundColor: isChildActive ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-                        color: '#ffffff',
+                        backgroundColor: isChildActive ? 'action.selected' : 'action.hover',
+                        color: 'common.white',
                       },
                     }}
                   >
@@ -919,9 +921,9 @@ export default function Sidebar({
                               boxSizing: 'border-box',
                               animation: childBadgeColors.animation,
                               '@keyframes badgePulse': {
-                                '0%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(239, 68, 68, 0.4)' },
-                                '70%': { transform: 'scale(1.08)', boxShadow: '0 0 0 4px rgba(239, 68, 68, 0)' },
-                                '100%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(239, 68, 68, 0)' },
+                                '0%': { transform: 'scale(1)', boxShadow: '0 0 0 0 transparent' },
+                                '70%': { transform: 'scale(1.08)', boxShadow: '0 0 0 4px transparent' },
+                                '100%': { transform: 'scale(1)', boxShadow: '0 0 0 0 transparent' },
                               },
                             }}
                           >
@@ -953,9 +955,10 @@ export default function Sidebar({
         top: 0,
         boxSizing: 'border-box',
         transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-        backgroundColor: '#0f172a',
-        backgroundImage: 'linear-gradient(180deg, #0f172a 0%, #0b1120 100%)',
-        borderRight: '1px solid #1e293b',
+        backgroundColor: 'grey.900',
+        backgroundImage: 'linear-gradient(180deg, var(--mui-palette-grey-900) 0%, var(--mui-palette-grey-800) 100%)',
+        borderRight: '1px solid',
+        borderRightColor: 'grey.800',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -971,7 +974,8 @@ export default function Sidebar({
           justifyContent: collapsed ? 'center' : 'space-between',
           mb: 2.5,
           pb: 1.5,
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          borderBottom: '1px solid',
+          borderBottomColor: 'action.disabledBackground',
           minHeight: 42,
         }}
       >
@@ -984,12 +988,12 @@ export default function Sidebar({
                 width: 38,
                 height: 38,
                 borderRadius: '8px',
-                color: '#94a3b8',
+                color: 'text.disabled',
                 backgroundColor: 'transparent',
                 transition: 'all 0.15s ease',
                 '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                  color: '#ffffff',
+                  backgroundColor: 'action.hover',
+                  color: 'common.white',
                 },
               }}
             >
@@ -1018,7 +1022,7 @@ export default function Sidebar({
                   width: 34,
                   height: 34,
                   objectFit: 'contain',
-                  filter: 'drop-shadow(0 2px 8px rgba(56, 189, 248, 0.4))',
+                  filter: 'drop-shadow(0 2px 8px var(--mui-palette-primary-light))',
                   flexShrink: 0,
                   transition: 'transform 0.15s ease',
                   '&:hover': {
@@ -1035,7 +1039,7 @@ export default function Sidebar({
                       fontSize: '1.0625rem',
                       lineHeight: 1.1,
                       letterSpacing: '-0.02em',
-                      color: '#ffffff',
+                      color: 'common.white',
                     }}
                   >
                     EMS
@@ -1046,7 +1050,7 @@ export default function Sidebar({
                       fontWeight: 700,
                       fontSize: '0.9375rem',
                       lineHeight: 1.1,
-                      color: '#38bdf8',
+                      color: 'primary.light',
                       letterSpacing: '-0.01em',
                     }}
                   >
@@ -1056,7 +1060,7 @@ export default function Sidebar({
                 <Typography
                   variant="caption"
                   sx={{
-                    color: '#94a3b8',
+                    color: 'text.disabled',
                     fontWeight: 500,
                     fontSize: '0.6875rem',
                     display: 'block',
@@ -1077,10 +1081,10 @@ export default function Sidebar({
               onClick={onToggleCollapse}
               title="Свернуть меню"
               sx={{
-                color: '#94a3b8',
+                color: 'text.disabled',
                 p: 0.5,
                 borderRadius: '6px',
-                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.08)', color: '#ffffff' },
+                '&:hover': { backgroundColor: 'action.hover', color: 'common.white' },
               }}
             >
               <MenuOpenIcon sx={{ fontSize: 20 }} />
@@ -1104,14 +1108,14 @@ export default function Sidebar({
             backgroundColor: 'transparent',
           },
           '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(255, 255, 255, 0.14)',
+            backgroundColor: 'action.disabledBackground',
             borderRadius: '4px',
             '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.28)',
+              backgroundColor: 'action.disabled',
             },
           },
           scrollbarWidth: 'thin',
-          scrollbarColor: 'rgba(255, 255, 255, 0.14) transparent',
+          scrollbarColor: 'action.disabledBackground transparent',
         }}
       >
         {/* Блок «Главное» */}
@@ -1125,7 +1129,7 @@ export default function Sidebar({
                 mb: 0.75,
                 fontSize: '0.6875rem',
                 fontWeight: 700,
-                color: '#64748b',
+                color: 'text.secondary',
                 letterSpacing: '0.06em',
               }}
             >
@@ -1146,7 +1150,7 @@ export default function Sidebar({
                 mb: 0.75,
                 fontSize: '0.6875rem',
                 fontWeight: 700,
-                color: '#64748b',
+                color: 'text.secondary',
                 letterSpacing: '0.06em',
               }}
             >
@@ -1168,7 +1172,7 @@ export default function Sidebar({
                   mb: 0.5,
                   fontSize: '0.6875rem',
                   fontWeight: 700,
-                  color: '#64748b',
+                  color: 'text.secondary',
                   letterSpacing: '0.06em',
                 }}
               >
@@ -1186,7 +1190,8 @@ export default function Sidebar({
         sx={{
           pt: 1.25,
           mt: 'auto',
-          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+          borderTop: '1px solid',
+          borderTopColor: 'action.disabledBackground',
           display: 'flex',
           alignItems: 'center',
           justifyContent: collapsed ? 'center' : 'flex-start',
@@ -1196,7 +1201,7 @@ export default function Sidebar({
           borderRadius: '8px',
           transition: 'background-color 0.15s ease',
           '&:hover': {
-            backgroundColor: 'rgba(255, 255, 255, 0.06)',
+            backgroundColor: 'action.hover',
           },
         }}
       >
@@ -1206,8 +1211,8 @@ export default function Sidebar({
           variant="dot"
           sx={{
             '& .MuiBadge-badge': {
-              backgroundColor: '#22c55e',
-              boxShadow: '0 0 0 2px #0f172a',
+              backgroundColor: 'success.main',
+              boxShadow: '0 0 0 2px grey.900',
               width: 8,
               height: 8,
               borderRadius: '4px',
@@ -1218,10 +1223,10 @@ export default function Sidebar({
             sx={{
               width: 32,
               height: 32,
-              backgroundColor: '#0284c7',
+              backgroundColor: 'primary.main',
               fontSize: '0.8125rem',
               fontWeight: 700,
-              color: '#ffffff',
+              color: 'common.white',
             }}
           >
             {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'A'}
@@ -1230,10 +1235,10 @@ export default function Sidebar({
 
         {!collapsed && (
           <Box sx={{ overflow: 'hidden', flexGrow: 1, minWidth: 0 }}>
-            <Typography variant="subtitle2" fontWeight={700} noWrap fontSize="0.78125rem" color="#f8fafc" lineHeight={1.2}>
+            <Typography variant="subtitle2" fontWeight={700} noWrap fontSize="0.78125rem" color="grey.50" lineHeight={1.2}>
               {user?.displayName || 'Администратор'}
             </Typography>
-            <Typography variant="caption" color="#94a3b8" noWrap display="block" fontSize="0.6875rem">
+            <Typography variant="caption" color="text.disabled" noWrap display="block" fontSize="0.6875rem">
               {user?.roles?.[0] || 'Инженер'}
             </Typography>
           </Box>
@@ -1262,18 +1267,19 @@ export default function Sidebar({
             p: 1.25,
             minWidth: 200,
             borderRadius: '8px',
-            boxShadow: '0 10px 25px -5px rgba(0,0,0,0.5)',
-            backgroundColor: '#0f172a',
-            border: '1px solid #334155',
-            color: '#cbd5e1',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
+            backgroundColor: 'grey.900',
+            border: '1px solid',
+            borderColor: 'grey.700',
+            color: 'grey.300',
           },
         }}
       >
         {activeFlyoutItem && (
           <Box>
             {/* Flyout Header */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 0.75, mb: 0.75, borderBottom: '1px solid #1e293b' }}>
-              <Typography variant="subtitle2" fontWeight={700} color="#38bdf8" fontSize="0.78125rem">
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 0.75, mb: 0.75, borderBottom: '1px solid', borderBottomColor: 'grey.800' }}>
+              <Typography variant="subtitle2" fontWeight={700} color="primary.light" fontSize="0.78125rem">
                 {activeFlyoutItem.label}
               </Typography>
               {activeFlyoutItem.badge && (
@@ -1282,8 +1288,8 @@ export default function Sidebar({
                     px: 0.6,
                     py: 0.05,
                     borderRadius: '5px',
-                    backgroundColor: 'rgba(56, 189, 248, 0.2)',
-                    color: '#38bdf8',
+                    backgroundColor: 'action.selected',
+                    color: 'primary.light',
                     fontSize: '0.65rem',
                     fontWeight: 700,
                   }}
@@ -1310,17 +1316,17 @@ export default function Sidebar({
                       borderRadius: '5px',
                       cursor: 'pointer',
                       fontSize: '0.78125rem',
-                      color: isChildActive ? '#38bdf8' : '#94a3b8',
+                      color: isChildActive ? 'primary.light' : 'text.disabled',
                       fontWeight: isChildActive ? 600 : 500,
-                      backgroundColor: isChildActive ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
+                      backgroundColor: isChildActive ? 'action.selected' : 'transparent',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       gap: 1,
                       transition: 'all 0.12s ease',
                       '&:hover': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                        color: '#ffffff',
+                        backgroundColor: 'action.hover',
+                        color: 'common.white',
                       },
                     }}
                   >
@@ -1375,8 +1381,9 @@ export default function Sidebar({
             minWidth: 220,
             ml: 1,
             borderRadius: '10px',
-            boxShadow: '0 10px 25px -5px rgba(0,0,0,0.15)',
-            border: '1px solid #e2e8f0',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.15)',
+            border: '1px solid',
+            borderColor: 'divider',
             p: 0.5,
           },
         }}
