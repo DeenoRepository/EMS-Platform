@@ -39,8 +39,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         req.headers.get('authorization')?.replace(/^Bearer\s+/, '');
 
       const providedToken = tokenParam || headerSecret;
-      if (providedToken && providedToken !== webhookSecret) {
-        return NextResponse.json({ success: false, error: 'Неверный секретный токен вебхука' }, { status: 401 });
+      // SECURITY FIX: If webhookSecret is configured, ALWAYS require a matching token.
+      // Previously, missing token (providedToken === undefined/null) would bypass the check entirely
+      // due to the truthy guard `if (providedToken && ...)`. Now: reject if token absent OR wrong.
+      if (!providedToken || providedToken !== webhookSecret) {
+        return NextResponse.json({ success: false, error: 'Неверный или отсутствующий секретный токен вебхука' }, { status: 401 });
       }
     }
 
