@@ -209,8 +209,8 @@ def convert_row(row: tuple) -> dict:
     }
 
 
-# Второй выходной файл — оборудование без инвентарного номера
-DST_FILE_NO_INV = BASE_DIR / "temp" / "equipment" / "import_petrov_no_inv.csv"
+# Префикс для временных инвентарных номеров (TEMP = временный, PAA = Петров А.А.)
+TEMP_INV_PREFIX = "TEMP-PAA"
 
 
 def main():
@@ -218,19 +218,16 @@ def main():
     wb = openpyxl.load_workbook(str(SRC_FILE), data_only=True)
     ws = wb["Реестр оборудования"]
 
-    rows_written  = 0   # строки с инв. № → основной файл
-    rows_no_inv   = 0   # строки без инв. №, но с зав. № → отдельный файл
-    rows_skipped  = 0   # строки без имени или без обоих номеров
-    seen_inv: set = set()
-    dup_inv: list = []
+    rows_written     = 0   # строки с инв. № (реальным или временным)
+    rows_temp_inv    = 0   # строки, которым назначен временный инв. №
+    rows_skipped     = 0   # строки без имени или без обоих номеров
+    temp_counter     = 0   # счётчик для генерации TEMP-PAA-XXXX
+    seen_inv: set    = set()
+    dup_inv: list    = []
 
-    with open(DST_FILE, "w", newline="", encoding="utf-8-sig") as f_main, \
-         open(DST_FILE_NO_INV, "w", newline="", encoding="utf-8-sig") as f_noinv:
-
-        writer_main  = csv.DictWriter(f_main,  fieldnames=TARGET_HEADERS, quoting=csv.QUOTE_ALL)
-        writer_noinv = csv.DictWriter(f_noinv, fieldnames=TARGET_HEADERS, quoting=csv.QUOTE_ALL)
+    with open(DST_FILE, "w", newline="", encoding="utf-8-sig") as f_main:
+        writer_main = csv.DictWriter(f_main, fieldnames=TARGET_HEADERS, quoting=csv.QUOTE_ALL)
         writer_main.writeheader()
-        writer_noinv.writeheader()
 
         for row in ws.iter_rows(min_row=5, max_row=ws.max_row, values_only=True):
             # Пропускаем строки без наименования
@@ -253,25 +250,30 @@ def main():
                 continue
 
             record = convert_row(row)
+
+            if not inv:
+                # Назначаем временный инвентарный номер с префиксом TEMP-PAA-XXXX.
+                # Номера сгенерированы автоматически и ОБЯЗАТЕЛЬНЫ К ЗАМЕНЕ
+                # на реальные после постановки на учёт.
+                temp_counter += 1
+                inv = f"{TEMP_INV_PREFIX}-{temp_counter:04d}"
+                rows_temp_inv += 1
+
             record["Инвентарный номер"] = inv
 
-            if inv:
-                # Фиксируем дубль инвентарного номера (ошибка данных источника)
-                if inv in seen_inv:
-                    dup_inv.append((inv, name, serial))
-                seen_inv.add(inv)
-                writer_main.writerow(record)
-                rows_written += 1
-            else:
-                # Нет инв. № — пишем в отдельный файл для ручной обработки
-                writer_noinv.writerow(record)
-                rows_no_inv += 1
+            # Фиксируем дубль инвентарного номера (ошибка данных источника)
+            if inv in seen_inv:
+                dup_inv.append((inv, name, serial))
+            seen_inv.add(inv)
 
-    print(f"✅ Основной файл:    {DST_FILE}")
-    print(f"   Записей с инв. №: {rows_written}")
-    print()
-    print(f"📋 Файл без инв. №: {DST_FILE_NO_INV}")
-    print(f"   Записей без инв. (нужна ручная проверка): {rows_no_inv}")
+            writer_main.writerow(record)
+            rows_written += 1
+
+    print(f"✅ Файл для импорта: {DST_FILE}")
+    print(f"   Всего записей:    {rows_written}")
+    print(f"   С реальным инв. №:    {rows_written - rows_temp_inv}")
+    print(f"   С временным инв. №:   {rows_temp_inv}  "
+          f"(префикс {TEMP_INV_PREFIX}-XXXX, обязательны к замене!)")
     print()
     print(f"⏭  Пропущено (нет имени/обоих номеров): {rows_skipped}")
 
