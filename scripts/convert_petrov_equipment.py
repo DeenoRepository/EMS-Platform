@@ -266,9 +266,13 @@ def main():
 
             record["Инвентарный номер"] = inv
 
-            # Фиксируем дубль инвентарного номера (ошибка данных источника)
+            # Обрабатываем дубль инвентарного номера:
+            # второй экземпляр получает префикс DUP- для создания отдельной записи
             if inv in seen_inv:
-                dup_inv.append((inv, name, serial))
+                orig_inv = inv
+                inv = f"DUP-{inv}"
+                record["Инвентарный номер"] = inv
+                dup_inv.append((orig_inv, inv, name, serial))
             seen_inv.add(inv)
 
             writer_main.writerow(record)
@@ -284,9 +288,9 @@ def main():
 
     if dup_inv:
         print()
-        print(f"⚠️  Дубли инвентарных номеров в источнике ({len(dup_inv)} шт.) — требуют уточнения:")
-        for inv_num, eq_name, ser in dup_inv:
-            print(f"   инв. {inv_num!r}  |  {eq_name!r}  |  зав. {ser!r}")
+        print(f"⚠️  Дубли инвентарных номеров в источнике ({len(dup_inv)} шт.) — переименованы с префиксом DUP-:")
+        for orig_inv, new_inv, eq_name, ser in dup_inv:
+            print(f"   {orig_inv!r} → {new_inv!r}  |  {eq_name!r}  |  зав. {ser!r}")
 
 
 if __name__ == "__main__":
