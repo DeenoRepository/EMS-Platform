@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { alpha } from '@mui/material/styles';
 import {
   Dialog,
   DialogTitle,
@@ -264,12 +265,12 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
       maxWidth="md"
       fullWidth
       PaperProps={{
-        sx: {
+        sx: (theme) => ({
           borderRadius: '16px',
-          boxShadow: '0 20px 40px rgba(15, 23, 42, 0.15)',
+          boxShadow: `0 20px 40px ${alpha(theme.palette.text.primary, 0.15)}`,
           overflow: 'hidden',
           minHeight: 620,
-        },
+        }),
       }}
     >
       {/* Dialog Header */}
@@ -277,8 +278,9 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
         sx={{
           m: 0,
           p: 2.5,
-          backgroundColor: '#ffffff',
-          borderBottom: '1px solid #e2e8f0',
+          backgroundColor: 'background.paper',
+          borderBottom: '1px solid',
+          borderBottomColor: 'divider',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -286,18 +288,19 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Box
-            sx={{
+            sx={(theme) => ({
               width: 42,
               height: 42,
               borderRadius: '10px',
-              backgroundColor: 'rgba(2, 132, 199, 0.08)',
-              border: '1px solid rgba(2, 132, 199, 0.18)',
+              backgroundColor: alpha(theme.palette.primary.main, 0.08),
+              border: '1px solid',
+              borderColor: alpha(theme.palette.primary.main, 0.18),
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#0284c7',
+              color: 'primary.main',
               flexShrink: 0,
-            }}
+            })}
           >
             <BugReportIcon sx={{ fontSize: 24 }} />
           </Box>
@@ -308,7 +311,7 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
                 fontWeight: 800,
                 fontSize: '1.125rem',
                 lineHeight: 1.3,
-                color: '#0f172a',
+                color: 'text.primary',
                 letterSpacing: '-0.015em',
               }}
             >
@@ -318,7 +321,7 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
               component="div"
               variant="caption"
               sx={{
-                color: '#64748b',
+                color: 'text.disabled',
                 fontSize: '0.8125rem',
                 display: 'block',
                 lineHeight: 1.2,
@@ -334,11 +337,11 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
           aria-label="close"
           onClick={onClose}
           sx={{
-            color: '#64748b',
+            color: 'text.disabled',
             borderRadius: '8px',
             p: 1,
             transition: 'all 0.15s ease',
-            '&:hover': { color: '#0f172a', backgroundColor: '#f1f5f9' },
+            '&:hover': { color: 'text.primary', backgroundColor: 'action.hover' },
           }}
         >
           <CloseIcon sx={{ fontSize: 20 }} />
@@ -346,7 +349,7 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
       </DialogTitle>
 
       {/* Navigation Tabs */}
-      <Box sx={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc', px: 2 }}>
+      <Box sx={{ borderBottom: '1px solid', borderBottomColor: 'divider', backgroundColor: 'background.default', px: 2 }}>
         <Tabs
           value={tabIndex}
           onChange={(_, val) => {
@@ -372,7 +375,7 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
                   <Chip
                     label={myTickets.length}
                     size="small"
-                    sx={{ height: 20, fontSize: '0.7rem', fontWeight: 700, backgroundColor: '#e2e8f0' }}
+                    sx={{ height: 20, fontSize: '0.7rem', fontWeight: 700, backgroundColor: 'divider' }}
                   />
                 )}
               </Box>
@@ -382,14 +385,14 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
       </Box>
 
       {/* Dialog Body */}
-      <DialogContent sx={{ p: 3, backgroundColor: '#ffffff' }}>
+      <DialogContent sx={{ p: 3, backgroundColor: 'background.paper' }}>
         {tabIndex === 0 ? (
           /* Tab 0: New Ticket Form */
           <Box component="form" onSubmit={handleSubmit}>
             <Grid container spacing={2.5}>
               {/* Type Selection */}
               <Grid item xs={12}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: '#334155' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: 'text.primary' }}>
                   Тип обращения
                 </Typography>
                 <Grid container spacing={1.5}>
@@ -397,30 +400,30 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
                     {
                       id: 'BUG',
                       label: 'Неисправность / Ошибка',
-                      icon: <BugReportIcon sx={{ fontSize: 22, color: '#ef4444' }} />,
-                      border: '#ef4444',
-                      bgLight: '#fef2f2',
+                      icon: <BugReportIcon sx={{ fontSize: 22, color: 'error.main' }} />,
+                      border: 'error.main',
+                      bgLight: 'error.light',
                     },
                     {
                       id: 'FEATURE_REQUEST',
                       label: 'Предложение по улучшению',
-                      icon: <LightbulbOutlinedIcon sx={{ fontSize: 22, color: '#0284c7' }} />,
-                      border: '#0284c7',
-                      bgLight: '#eff6ff',
+                      icon: <LightbulbOutlinedIcon sx={{ fontSize: 22, color: 'primary.main' }} />,
+                      border: 'primary.main',
+                      bgLight: 'info.light',
                     },
                     {
                       id: 'QUESTION',
                       label: 'Вопрос / Консультация',
-                      icon: <HelpOutlineIcon sx={{ fontSize: 22, color: '#8b5cf6' }} />,
-                      border: '#8b5cf6',
-                      bgLight: '#f5f3ff',
+                      icon: <HelpOutlineIcon sx={{ fontSize: 22, color: 'secondary.main' }} />,
+                      border: 'secondary.main',
+                      bgLight: 'secondary.light',
                     },
                     {
                       id: 'OTHER',
                       label: 'Другое',
-                      icon: <MoreHorizIcon sx={{ fontSize: 22, color: '#64748b' }} />,
-                      border: '#64748b',
-                      bgLight: '#f8fafc',
+                      icon: <MoreHorizIcon sx={{ fontSize: 22, color: 'text.secondary' }} />,
+                      border: 'text.secondary',
+                      bgLight: 'background.default',
                     },
                   ].map((item) => (
                     <Grid item xs={6} sm={3} key={item.id}>
@@ -432,8 +435,8 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
                           p: 1.25,
                           borderRadius: '10px',
                           border: '1.5px solid',
-                          borderColor: type === item.id ? item.border : '#e2e8f0',
-                          backgroundColor: type === item.id ? item.bgLight : '#ffffff',
+                          borderColor: type === item.id ? item.border : 'divider',
+                          backgroundColor: type === item.id ? item.bgLight : 'background.paper',
                           boxShadow: type === item.id ? `0 2px 8px ${item.border}20` : 'none',
                           cursor: 'pointer',
                           display: 'flex',
@@ -456,7 +459,7 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
                           sx={{
                             fontWeight: type === item.id ? 700 : 600,
                             fontSize: '0.8125rem',
-                            color: '#1e293b',
+                            color: 'text.primary',
                             lineHeight: 1.2,
                             display: '-webkit-box',
                             WebkitLineClamp: 2,
@@ -542,14 +545,15 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
                 <Box
                   onClick={() => fileInputRef.current?.click()}
                   sx={{
-                    border: '2px dashed #cbd5e1',
+                    border: '2px dashed',
+                    borderColor: 'grey.300',
                     borderRadius: '12px',
                     p: 2,
                     textAlign: 'center',
-                    backgroundColor: '#f8fafc',
+                    backgroundColor: 'background.default',
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
-                    '&:hover': { borderColor: '#0284c7', backgroundColor: '#f0f9ff' },
+                    '&:hover': { borderColor: 'primary.main', backgroundColor: 'info.light' },
                   }}
                 >
                   <input
@@ -560,13 +564,13 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
                     onChange={handleFileChange}
                     accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.log,.zip"
                   />
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, color: '#0284c7', mb: 0.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, color: 'primary.main', mb: 0.5 }}>
                     <CloudUploadOutlinedIcon />
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>
                       Прикрепить файлы или скриншоты
                     </Typography>
                   </Box>
-                  <Typography variant="caption" sx={{ color: '#64748b' }}>
+                  <Typography variant="caption" sx={{ color: 'text.disabled' }}>
                     Нажмите для выбора файлов или вставьте скриншот из буфера (Ctrl+V)
                   </Typography>
                 </Box>
@@ -583,7 +587,7 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
                         deleteIcon={<DeleteOutlineIcon />}
                         sx={{
                           borderRadius: '8px',
-                          backgroundColor: '#f1f5f9',
+                          backgroundColor: 'grey.100',
                           fontWeight: 500,
                         }}
                       />
@@ -599,8 +603,9 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
                   sx={{
                     p: 1.5,
                     borderRadius: '10px',
-                    backgroundColor: '#f8fafc',
-                    border: '1px solid #e2e8f0',
+                    backgroundColor: 'background.default',
+                    border: '1px solid',
+                    borderColor: 'divider',
                     display: 'flex',
                     flexWrap: 'wrap',
                     alignItems: 'center',
@@ -609,16 +614,16 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
                   }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <LinkIcon sx={{ color: '#64748b', fontSize: 18 }} />
-                    <Typography variant="caption" sx={{ color: '#475569', fontWeight: 500 }}>
+                    <LinkIcon sx={{ color: 'text.disabled', fontSize: 18 }} />
+                    <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
                       Страница: <strong>{pageUrl || '/'}</strong>
                     </Typography>
                   </Box>
 
                   {browserInfo && (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <DevicesIcon sx={{ color: '#64748b', fontSize: 18 }} />
-                      <Typography variant="caption" sx={{ color: '#64748b' }}>
+                      <DevicesIcon sx={{ color: 'text.disabled', fontSize: 18 }} />
+                      <Typography variant="caption" sx={{ color: 'text.disabled' }}>
                         Экран: {browserInfo.screenResolution}
                       </Typography>
                     </Box>
@@ -654,14 +659,15 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
                       sx={{
                         p: 2,
                         borderRadius: '12px',
-                        border: '1px solid #e2e8f0',
-                        backgroundColor: '#f8fafc',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        backgroundColor: 'background.default',
                         mb: 2.5,
                       }}
                     >
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#0f172a' }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'text.primary' }}>
                             {selectedTicket.ticketNumber} — {selectedTicket.title}
                           </Typography>
                         </Box>
@@ -681,19 +687,19 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
                           size="small"
                           sx={{ height: 22, fontSize: '0.75rem', fontWeight: 600 }}
                         />
-                        <Typography variant="caption" sx={{ color: '#64748b', alignSelf: 'center' }}>
+                        <Typography variant="caption" sx={{ color: 'text.disabled', alignSelf: 'center' }}>
                           Создано: {formatDateTime(selectedTicket.createdAt)}
                         </Typography>
                       </Box>
 
-                      <Typography variant="body2" sx={{ color: '#334155', whiteSpace: 'pre-wrap' }}>
+                      <Typography variant="body2" sx={{ color: 'text.primary', whiteSpace: 'pre-wrap' }}>
                         {selectedTicket.description}
                       </Typography>
 
                       {/* Attached files */}
                       {selectedTicket.attachments && selectedTicket.attachments.length > 0 && (
-                        <Box sx={{ mt: 2, pt: 1.5, borderTop: '1px dashed #cbd5e1' }}>
-                          <Typography variant="caption" sx={{ fontWeight: 600, color: '#475569', display: 'block', mb: 1 }}>
+                        <Box sx={{ mt: 2, pt: 1.5, borderTop: '1px dashed', borderTopColor: 'grey.300' }}>
+                          <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', display: 'block', mb: 1 }}>
                             Прикрепленные файлы:
                           </Typography>
                           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
@@ -707,7 +713,7 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
                                 icon={<AttachFileIcon sx={{ fontSize: 16 }} />}
                                 label={`${att.originalName} (${formatBytes(att.fileSize)})`}
                                 size="small"
-                                sx={{ borderRadius: '6px', backgroundColor: '#ffffff', border: '1px solid #cbd5e1' }}
+                                sx={{ borderRadius: '6px', backgroundColor: 'background.paper', border: '1px solid', borderColor: 'grey.300' }}
                               />
                             ))}
                           </Box>
@@ -726,13 +732,13 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
                     </Paper>
 
                     {/* Chat / Comments Thread */}
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0f172a', mb: 1.5 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary', mb: 1.5 }}>
                       История переписки ({selectedTicket.comments?.length || 0})
                     </Typography>
 
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, maxHeight: 280, overflowY: 'auto', p: 1 }}>
                       {(!selectedTicket.comments || selectedTicket.comments.length === 0) && (
-                        <Typography variant="body2" sx={{ color: '#94a3b8', textAlign: 'center', py: 2 }}>
+                        <Typography variant="body2" sx={{ color: 'text.disabled', textAlign: 'center', py: 2 }}>
                           Пока нет сообщений в переписке
                         </Typography>
                       )}
@@ -743,20 +749,20 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
                           sx={{
                             p: 1.5,
                             borderRadius: '10px',
-                            backgroundColor: c.user?.id === selectedTicket.createdById ? '#f0f9ff' : '#f8fafc',
+                            backgroundColor: c.user?.id === selectedTicket.createdById ? 'info.light' : 'background.default',
                             border: '1px solid',
-                            borderColor: c.user?.id === selectedTicket.createdById ? '#bae6fd' : '#e2e8f0',
+                            borderColor: c.user?.id === selectedTicket.createdById ? 'info.main' : 'divider',
                           }}
                         >
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                            <Typography variant="caption" sx={{ fontWeight: 700, color: '#0f172a' }}>
+                            <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.primary' }}>
                               {c.user?.displayName || 'Пользователь'}
                             </Typography>
-                            <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '0.7rem' }}>
+                            <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.7rem' }}>
                               {formatDateTime(c.createdAt)}
                             </Typography>
                           </Box>
-                          <Typography variant="body2" sx={{ color: '#334155', whiteSpace: 'pre-wrap' }}>
+                          <Typography variant="body2" sx={{ color: 'text.primary', whiteSpace: 'pre-wrap' }}>
                             {c.message}
                           </Typography>
                         </Box>
@@ -784,7 +790,7 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
                           disabled={!replyMessage.trim() || sendingReply}
                           onClick={handleSendReply}
                           sx={{
-                            backgroundColor: '#0284c7',
+                            backgroundColor: 'primary.main',
                             px: 2.5,
                             borderRadius: '8px',
                             textTransform: 'none',
@@ -829,20 +835,21 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
                         sx={{
                           p: 2,
                           borderRadius: '12px',
-                          border: '1px solid #e2e8f0',
+                          border: '1px solid',
+                          borderColor: 'divider',
                           cursor: 'pointer',
                           transition: 'all 0.15s ease',
                           '&:hover': {
-                            borderColor: '#0284c7',
-                            backgroundColor: '#f8fafc',
+                            borderColor: 'primary.main',
+                            backgroundColor: 'background.default',
                             transform: 'translateY(-1px)',
-                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                            boxShadow: (theme) => `0 4px 12px ${alpha(theme.palette.common.black, 0.05)}`,
                           },
                         }}
                       >
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0284c7' }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main' }}>
                               {ticket.ticketNumber}
                             </Typography>
                             <StatusBadge status={ticket.type} />
@@ -850,12 +857,12 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
                           <StatusBadge status={ticket.status} />
                         </Box>
 
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#0f172a', mb: 0.5 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', mb: 0.5 }}>
                           {ticket.title}
                         </Typography>
 
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
-                          <Typography variant="caption" sx={{ color: '#64748b' }}>
+                          <Typography variant="caption" sx={{ color: 'text.disabled' }}>
                             {FEEDBACK_MODULE_LABELS[ticket.module] || ticket.module} • {formatDateTime(ticket.createdAt)}
                           </Typography>
 
@@ -863,7 +870,7 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
                             <Chip
                               label={`${ticket.commentsCount} сообщений`}
                               size="small"
-                              sx={{ height: 20, fontSize: '0.7rem', fontWeight: 600, backgroundColor: '#e0f2fe', color: '#0369a1' }}
+                              sx={{ height: 20, fontSize: '0.7rem', fontWeight: 600, backgroundColor: 'info.light', color: 'info.dark' }}
                             />
                           ) : null}
                         </Box>
@@ -879,8 +886,8 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
 
       {/* Dialog Footer Actions */}
       {tabIndex === 0 && (
-        <DialogActions sx={{ p: 2.5, backgroundColor: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
-          <Button onClick={onClose} sx={{ textTransform: 'none', color: '#64748b', fontWeight: 600 }}>
+        <DialogActions sx={{ p: 2.5, backgroundColor: 'background.default', borderTop: '1px solid', borderTopColor: 'divider' }}>
+          <Button onClick={onClose} sx={{ textTransform: 'none', color: 'text.disabled', fontWeight: 600 }}>
             Отмена
           </Button>
           <Button
@@ -890,12 +897,12 @@ export default function FeedbackDialog({ open, onClose, initialTicketId }: Feedb
             disabled={submitting}
             startIcon={submitting ? <CircularProgress size={18} color="inherit" /> : <SendIcon />}
             sx={{
-              backgroundColor: '#0284c7',
+              backgroundColor: 'primary.main',
               borderRadius: '8px',
               px: 3,
               textTransform: 'none',
               fontWeight: 700,
-              '&:hover': { backgroundColor: '#0369a1' },
+              '&:hover': { backgroundColor: 'primary.dark' },
             }}
           >
             {submitting ? 'Отправка...' : 'Отправить обращение'}
