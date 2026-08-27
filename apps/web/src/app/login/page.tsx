@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { alpha } from '@mui/material/styles';
 import {
   Box,
   Card,
@@ -152,48 +153,50 @@ export default function LoginPage() {
       component="main"
       role="main"
       aria-label="Страница авторизации EMS Platform"
-      sx={{
+      sx={(theme) => ({
         minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#0b1120',
+        backgroundColor: 'grey.900',
         backgroundImage: `
-          radial-gradient(ellipse 80% 50% at 50% -20%, rgba(2, 132, 199, 0.25), transparent),
-          radial-gradient(ellipse 60% 40% at 100% 100%, rgba(15, 118, 110, 0.18), transparent),
-          linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px)
+          radial-gradient(ellipse 80% 50% at 50% -20%, ${alpha(theme.palette.primary.main, 0.25)}, transparent),
+          radial-gradient(ellipse 60% 40% at 100% 100%, ${alpha(theme.palette.secondary.main, 0.18)}, transparent),
+          linear-gradient(${alpha(theme.palette.common.white, 0.025)} 1px, transparent 1px),
+          linear-gradient(90deg, ${alpha(theme.palette.common.white, 0.025)} 1px, transparent 1px)
         `,
         backgroundSize: '100% 100%, 100% 100%, 36px 36px, 36px 36px',
         p: { xs: 2, sm: 3 },
-      }}
+      })}
     >
       {/* Main Authentication Card */}
       <Card
-        sx={{
+        sx={(theme) => ({
           maxWidth: 440,
           width: '100%',
-          boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08)',
+          boxShadow: `0 25px 60px -15px ${alpha(theme.palette.common.black, 0.7)}, 0 0 0 1px ${alpha(theme.palette.common.white, 0.08)}`,
           borderRadius: 3,
           overflow: 'hidden',
-          backgroundColor: '#ffffff',
-          border: '1px solid #e2e8f0',
-        }}
+          backgroundColor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'divider',
+        })}
       >
         {/* Brand Banner */}
         <Box
           component="header"
-          sx={{
-            color: 'white',
+          sx={(theme) => ({
+            color: 'common.white',
             px: 3.5,
             pt: 3.5,
             pb: 3,
             textAlign: 'center',
-            background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
             position: 'relative',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
-          }}
+            borderBottom: '1px solid',
+            borderBottomColor: alpha(theme.palette.common.white, 0.12),
+          })}
         >
           <Box
             component="img"
@@ -218,7 +221,7 @@ export default function LoginPage() {
               fontWeight: 800,
               letterSpacing: 0.5,
               fontSize: '1.35rem',
-              color: '#ffffff',
+              color: 'common.white',
               lineHeight: 1.2,
             }}
           >
@@ -226,31 +229,32 @@ export default function LoginPage() {
           </Typography>
           <Typography
             variant="body2"
-            sx={{
-              color: 'rgba(255, 255, 255, 0.92)',
+            sx={(theme) => ({
+              color: alpha(theme.palette.common.white, 0.92),
               mt: 0.5,
               fontSize: '0.8125rem',
               fontWeight: 500,
-            }}
+            })}
           >
             Система управления оборудованием
           </Typography>
 
           <Box
-            sx={{
+            sx={(theme) => ({
               mt: 1.75,
               display: 'inline-flex',
               alignItems: 'center',
               gap: 0.75,
-              backgroundColor: 'rgba(0, 0, 0, 0.22)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
+              backgroundColor: alpha(theme.palette.common.black, 0.22),
+              border: '1px solid',
+              borderColor: alpha(theme.palette.common.white, 0.15),
               px: 1.5,
               py: 0.4,
               borderRadius: '16px',
-            }}
+            })}
           >
-            <LanOutlinedIcon sx={{ fontSize: 14, color: '#bae6fd' }} aria-hidden="true" />
-            <Typography variant="caption" sx={{ color: '#f0f9ff', fontSize: '0.7rem', fontWeight: 600 }}>
+            <LanOutlinedIcon sx={{ fontSize: 14, color: 'primary.light' }} aria-hidden="true" />
+            <Typography variant="caption" sx={{ color: 'common.white', fontSize: '0.7rem', fontWeight: 600 }}>
               Active Directory / LDAP
             </Typography>
           </Box>
@@ -259,7 +263,7 @@ export default function LoginPage() {
         <CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
           {!isOffline && (
             <Box sx={{ mb: 2.5, textAlign: 'center' }}>
-              <Typography variant="subtitle1" fontWeight={700} sx={{ color: '#0f172a' }}>
+              <Typography variant="subtitle1" fontWeight={700} sx={{ color: 'text.primary' }}>
                 Вход в учетную запись
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem', mt: 0.25 }}>
@@ -275,28 +279,29 @@ export default function LoginPage() {
                 mb: 2.5,
                 p: 2,
                 borderRadius: '12px',
-                border: '1px solid #fed7aa',
-                backgroundColor: '#fffbeb',
+                border: '1px solid',
+                borderColor: 'warning.light',
+                backgroundColor: 'warning.light',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 0.75,
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <EngineeringIcon sx={{ color: '#ea580c', fontSize: 20 }} />
-                <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#9a3412' }}>
+                <EngineeringIcon sx={{ color: 'warning.main', fontSize: 20 }} />
+                <Typography variant="subtitle2" fontWeight={700} sx={{ color: 'warning.dark' }}>
                   Техническое обслуживание платформы
                 </Typography>
               </Box>
-              <Typography variant="body2" sx={{ color: '#7c2d12', fontSize: '0.8125rem', lineHeight: 1.5 }}>
+              <Typography variant="body2" sx={{ color: 'warning.dark', fontSize: '0.8125rem', lineHeight: 1.5 }}>
                 {maintenance.system.message || 'В настоящее время на платформе проводятся регламентные работы.'}
               </Typography>
               {maintenance.system.estimatedUntil && (
-                <Typography variant="caption" sx={{ color: '#ea580c', fontWeight: 600 }}>
+                <Typography variant="caption" sx={{ color: 'warning.main', fontWeight: 600 }}>
                   Плановое завершение: {maintenance.system.estimatedUntil}
                 </Typography>
               )}
-              <Typography variant="caption" sx={{ color: '#9a3412', fontStyle: 'italic', mt: 0.25 }}>
+              <Typography variant="caption" sx={{ color: 'warning.dark', fontStyle: 'italic', mt: 0.25 }}>
                 Вход в систему разрешен только администраторам.
               </Typography>
             </Box>
@@ -385,7 +390,7 @@ export default function LoginPage() {
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
-                    backgroundColor: '#ffffff',
+                    backgroundColor: 'background.paper',
                   },
                 }}
               />
@@ -431,7 +436,7 @@ export default function LoginPage() {
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
-                    backgroundColor: '#ffffff',
+                    backgroundColor: 'background.paper',
                   },
                 }}
               />
@@ -449,9 +454,10 @@ export default function LoginPage() {
                       px: 1.25,
                       py: 0.5,
                       borderRadius: 1.5,
-                      backgroundColor: '#fffbeb',
-                      border: '1px solid #fde68a',
-                      color: '#b45309',
+                      backgroundColor: 'warning.light',
+                      border: '1px solid',
+                      borderColor: 'warning.main',
+                      color: 'warning.dark',
                       fontSize: '0.75rem',
                       fontWeight: 600,
                     }}
@@ -475,9 +481,10 @@ export default function LoginPage() {
                       px: 1.25,
                       py: 0.5,
                       borderRadius: 1.5,
-                      backgroundColor: '#eff6ff',
-                      border: '1px solid #bfdbfe',
-                      color: '#1e40af',
+                      backgroundColor: 'info.light',
+                      border: '1px solid',
+                      borderColor: 'info.main',
+                      color: 'info.dark',
                       fontSize: '0.75rem',
                       fontWeight: 600,
                     }}
@@ -550,9 +557,9 @@ export default function LoginPage() {
                   fontSize: '0.875rem',
                   borderRadius: 2,
                   textTransform: 'none',
-                  boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
+                  boxShadow: (theme) => `0 4px 14px ${alpha(theme.palette.primary.main, 0.35)}`,
                   '&:hover': {
-                    boxShadow: '0 6px 18px rgba(2, 132, 199, 0.45)',
+                    boxShadow: (theme) => `0 6px 18px ${alpha(theme.palette.primary.main, 0.45)}`,
                   },
                 }}
               >
@@ -583,7 +590,7 @@ export default function LoginPage() {
             gap: 1.25,
             fontWeight: 700,
             fontSize: '1.05rem',
-            color: '#0f172a',
+            color: 'text.primary',
             pb: 1,
           }}
         >
@@ -591,7 +598,7 @@ export default function LoginPage() {
           Восстановление доступа
         </DialogTitle>
         <DialogContent dividers sx={{ py: 2.5 }}>
-          <Typography variant="body2" sx={{ color: '#334155', mb: 2, lineHeight: 1.55 }}>
+          <Typography variant="body2" sx={{ color: 'text.primary', mb: 2, lineHeight: 1.55 }}>
             Для восстановления доступа, сброса пароля или разблокировки учетной записи необходимо обратиться к <b>системному администратору</b> вашего предприятия или в службу технической поддержки (ИТ-отдел).
           </Typography>
 
@@ -599,8 +606,9 @@ export default function LoginPage() {
             sx={{
               p: 2,
               borderRadius: 2,
-              backgroundColor: '#f8fafc',
-              border: '1px solid #e2e8f0',
+              backgroundColor: 'background.default',
+              border: '1px solid',
+              borderColor: 'divider',
               display: 'flex',
               alignItems: 'flex-start',
               gap: 1.5,
@@ -608,7 +616,7 @@ export default function LoginPage() {
           >
             <DomainIcon sx={{ fontSize: 22, color: 'primary.main', mt: 0.2, flexShrink: 0 }} />
             <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0f172a', mb: 0.5 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
                 Корпоративный домен Active Directory
               </Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8125rem', lineHeight: 1.45 }}>
