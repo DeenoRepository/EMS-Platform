@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@ems/database';
 import { applyJiraFieldMapping, getJiraFieldMapping, JiraFieldMappingConfig, notifySrmIncident } from '@/lib/jira-service';
 import { extractIssueFromWebhookPayload } from '@/lib/srm-providers';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,9 +11,15 @@ export const dynamic = 'force-dynamic';
  * Прием входящих Push-событий от Jira, Redmine, GitLab и кастомных вебхуков
  */
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const integrationId = params.id;
+  const integrationId = params.id;
+  const rateLimitError = await enforceRateLimit(
+    req,
+    { limit: 60, windowMs: 60 * 1000, prefix: 'srm-webhook' },
+    integrationId
+  );
+  if (rateLimitError) return rateLimitError;
 
+  try {
     const integration = await prisma.srmIntegration.findUnique({
       where: { id: integrationId },
     });
