@@ -6,7 +6,6 @@ import {
   Typography,
   IconButton,
   Avatar,
-  Badge,
   Menu,
   MenuItem,
   ListItemIcon,
@@ -552,12 +551,7 @@ export default function Sidebar({
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 0 }}>
-            <Badge
-              overlap="circular"
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-              variant="dot"
-              color="success"
-            >
+            <Box sx={{ position: 'relative', display: 'inline-flex' }}>
               <Avatar
                 sx={{
                   width: 32,
@@ -569,7 +563,22 @@ export default function Sidebar({
               >
                 {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}
               </Avatar>
-            </Badge>
+              <Box
+                component="span"
+                role="status"
+                aria-label="Пользователь онлайн"
+                sx={{
+                  position: 'absolute',
+                  right: -2,
+                  bottom: -2,
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  bgcolor: 'success.main',
+                  border: '2px solid background.paper',
+                }}
+              />
+            </Box>
             {!collapsed && (
               <Box sx={{ minWidth: 0 }}>
                 <Typography
