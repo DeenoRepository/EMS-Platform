@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { getAbsoluteFilePath } from '@/lib/storage';
+import { findStoredFileResource, canReadStoredFile, normalizeStoredFilePath } from '@/lib/file-access';
 
 import { getCurrentUser, unauthorizedResponse } from '@/lib/auth-guard';
 
@@ -16,7 +17,16 @@ export async function GET(
       return unauthorizedResponse();
     }
 
-    const relativePath = params.path.join('/');
+    const relativePath = normalizeStoredFilePath(params.path);
+    if (!relativePath) {
+      return NextResponse.json({ success: false, error: 'Доступ запрещен' }, { status: 403 });
+    }
+
+    const resource = await findStoredFileResource(relativePath);
+    if (!resource || !(await canReadStoredFile(user, resource))) {
+      return NextResponse.json({ success: false, error: 'Доступ запрещен' }, { status: 403 });
+    }
+
     const fullPath = getAbsoluteFilePath(relativePath);
 
     // 2. Предотвращение Directory Traversal
@@ -73,7 +83,7 @@ export async function GET(
           : `attachment; filename="${encodeURIComponent(fileName)}"`,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({ success: false, error: 'Ошибка чтения файла' }, { status: 500 });
   }
 }
