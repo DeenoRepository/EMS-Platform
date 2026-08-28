@@ -66,6 +66,8 @@ import {
 } from '@/components/ui';
 import { CreateServiceRequestDialog } from '@/components/srm';
 import { EquipmentPassportOverview } from '@/components/eps/EquipmentPassportOverview';
+import { EquipmentDocumentsTab } from '@/components/eps/EquipmentDocumentsTab';
+import { EquipmentApprovalsTab } from '@/components/eps/EquipmentApprovalsTab';
 
 export interface CustomFieldDef {
   id: string;
@@ -703,219 +705,21 @@ function EquipmentPassportContent() {
         onCopy={handleCopy}
       />
 
-      {/* TAB 1: Документация */}
-      {activeTab === 1 && (
-        <Card sx={{ p: 3 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h6" fontWeight={700}>
-              Документация и чертежи ({equipment.documents.length})
-            </Typography>
-            {hasPermission(PERMISSIONS.EPS_DOCUMENTS_UPLOAD) && (
-              <Button
-                variant="contained"
-                startIcon={<UploadFileIcon />}
-                onClick={() => setDocModalOpen(true)}
-                sx={{
-                  height: 38,
-                  borderRadius: '8px',
-                  fontWeight: 600,
-                  fontSize: '0.875rem',
-                  textTransform: 'none',
-                  px: 2.25,
-                  boxSizing: 'border-box',
-                  backgroundColor: 'primary.main',
-                  '&:hover': {
-                    backgroundColor: 'primary.dark',
-                  },
-                }}
-              >
-                Прикрепить документ
-              </Button>
-            )}
-          </Box>
+      <EquipmentDocumentsTab
+        activeTab={activeTab}
+        documents={equipment.documents}
+        canUpload={hasPermission(PERMISSIONS.EPS_DOCUMENTS_UPLOAD)}
+        canDelete={canEdit}
+        onUpload={() => setDocModalOpen(true)}
+        onDelete={handleDeleteDoc}
+      />
 
-          {equipment.documents.length === 0 ? (
-            <EmptyState
-              title="Документы не загружены"
-              description="В паспорте оборудования пока нет прикрепленных руководств, чертежей и сертификатов."
-              actionText={canEdit ? "Прикрепить документ" : undefined}
-              onAction={canEdit ? () => setDocModalOpen(true) : undefined}
-              minHeight={180}
-            />
-          ) : (
-            <DataTableWrapper>
-              <Table>
-                <TableHead sx={{ backgroundColor: 'rgba(0,0,0,0.02)' }}>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 600 }}>Имя файла</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Тип документа</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Описание</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Размер</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Загрузил</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Дата</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 600 }}>Действия</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {equipment.documents.map((doc) => (
-                    <TableRow key={doc.id} hover>
-                      <TableCell>
-                        <Typography variant="subtitle2" fontWeight={600}>
-                          {doc.originalName}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Версия {doc.version}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge
-                          status={doc.docType}
-                          label={DOCUMENT_TYPE_MAP[doc.docType] || doc.docType}
-                          size="small"
-                          variant="outlined"
-                        />
-                      </TableCell>
-                      <TableCell>{doc.description || '—'}</TableCell>
-                      <TableCell sx={{ fontSize: '0.8125rem' }}>{formatBytes(doc.fileSize)}</TableCell>
-                      <TableCell sx={{ fontSize: '0.8125rem' }}>{doc.uploadedBy?.displayName}</TableCell>
-                      <TableCell sx={{ fontSize: '0.8125rem' }}>{formatDate(doc.createdAt)}</TableCell>
-                      <TableCell align="right">
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          component="a"
-                          href={`/api/files/${doc.filePath}`}
-                          target="_blank"
-                          title="Просмотреть / Скачать"
-                        >
-                          <DownloadIcon fontSize="small" />
-                        </IconButton>
-                        {canEdit && (
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => handleDeleteDoc(doc.id)}
-                            title="Удалить"
-                          >
-                            <DeleteOutlineIcon fontSize="small" />
-                          </IconButton>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </DataTableWrapper>
-          )}
-        </Card>
-      )}
-
-      {/* TAB 2: Согласования */}
-      {activeTab === 2 && (
-        <Card sx={{ p: 3 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Box>
-              <Typography variant="h6" fontWeight={700}>
-                Заявки на согласование ({equipment.approvals?.length || 0})
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                История и статус заявок на ввод в эксплуатацию, списание и изменение характеристик
-              </Typography>
-            </Box>
-            {hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT) && (
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setCreateApprovalModalOpen(true)}
-              >
-                Создать заявку
-              </Button>
-            )}
-          </Box>
-
-          {(!equipment.approvals || equipment.approvals.length === 0) ? (
-            <EmptyState
-              title="Заявок на согласование нет"
-              description="По данному оборудованию еще не зарегистрировано заявок на списание, вывод из эксплуатации или модернизацию."
-              actionText={hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT) ? "Создать заявку" : undefined}
-              onAction={hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT) ? () => setCreateApprovalModalOpen(true) : undefined}
-              minHeight={180}
-            />
-          ) : (
-            <DataTableWrapper>
-              <Table>
-                <TableHead sx={{ backgroundColor: 'rgba(0,0,0,0.02)' }}>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 600 }}>Тема заявки</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Тип согласования</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Статус</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Инициатор</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Дата создания</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Решение / Согласующий</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {equipment.approvals.map((app) => {
-                    const statusInfo = APPROVAL_STATUS_MAP[app.status] || { label: app.status, color: 'default' };
-                    return (
-                      <TableRow key={app.id} hover>
-                        <TableCell>
-                          <Typography variant="subtitle2" fontWeight={600}>
-                            {app.title}
-                          </Typography>
-                          {app.description && (
-                            <Typography variant="caption" color="text.secondary" display="block">
-                              {app.description}
-                            </Typography>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge
-                            status={app.type}
-                            label={APPROVAL_TYPE_MAP[app.type] || app.type}
-                            size="small"
-                            variant="outlined"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge
-                            status={app.status}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell sx={{ fontSize: '0.8125rem' }}>
-                          {app.requester.displayName}
-                        </TableCell>
-                        <TableCell sx={{ fontSize: '0.8125rem' }}>
-                          {formatDateTime(app.createdAt)}
-                        </TableCell>
-                        <TableCell sx={{ fontSize: '0.8125rem' }}>
-                          {app.reviewer ? (
-                            <Box>
-                              <Typography variant="caption" fontWeight={600} display="block">
-                                {app.reviewer.displayName} ({formatDate(app.reviewedAt)})
-                              </Typography>
-                              {app.resolutionComment && (
-                                <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                                  «{app.resolutionComment}»
-                                </Typography>
-                              )}
-                            </Box>
-                          ) : (
-                            <Typography variant="caption" color="text.secondary">
-                              На рассмотрении
-                            </Typography>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </DataTableWrapper>
-          )}
-        </Card>
-      )}
+      <EquipmentApprovalsTab
+        activeTab={activeTab}
+        approvals={equipment.approvals}
+        canCreate={hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT)}
+        onCreate={() => setCreateApprovalModalOpen(true)}
+      />
 
       {/* TAB 3: Комплектующие и ЗИП */}
       {activeTab === 3 && (
