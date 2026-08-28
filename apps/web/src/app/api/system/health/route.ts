@@ -175,9 +175,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        status: overallStatus,
-        isReady,
-        timestamp: new Date().toISOString(),
+        data: {
+          isReady,
+          status: overallStatus,
+          timestamp: new Date().toISOString(),
+        },
       },
       { status: isReady ? 200 : 503, headers: responseHeaders }
     );

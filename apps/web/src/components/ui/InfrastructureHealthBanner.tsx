@@ -46,9 +46,10 @@ export function useSystemHealth(autoRefreshIntervalMs = 3000) {
         signal: controller.signal,
       });
       const data = await res.json();
-      if (data.success && data.data) {
-        setHealth(data.data);
-        setIsReady(data.data.isReady);
+      if (data.success) {
+        const payload = data.data || data;
+        setHealth(data.data || null);
+        setIsReady(payload.isReady !== undefined ? payload.isReady : true);
       } else {
         setHealth(null);
         setIsReady(false);
