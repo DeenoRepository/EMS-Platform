@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/auth-guard';
 import { PERMISSIONS } from '@ems/shared';
 import { getSrmAdapter } from '@/lib/srm-providers';
 import { SrmProviderType, SrmAuthType } from '@ems/database';
+import { validateOutboundUrl } from '@/lib/outbound-url';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,18 +35,25 @@ export async function POST(req: NextRequest) {
       queryConfig: any;
     } = body;
 
-    if (!baseUrl || !providerType) {
+    if (!baseUrl || !providerType || typeof baseUrl !== 'string') {
       return NextResponse.json(
         { success: false, error: 'Укажите тип провайдера и базовый URL сервера' },
         { status: 400 }
       );
     }
 
+    const validatedUrl = await validateOutboundUrl(baseUrl, {
+      allowedSchemes: ['http:', 'https:'],
+    });
+    if (!validatedUrl.ok) {
+      return NextResponse.json({ success: false, error: validatedUrl.error }, { status: 400 });
+    }
+
     const mockIntegration: any = {
       id: 'transient-test-connection',
       name: 'Transient Test Connection',
       providerType,
-      baseUrl: baseUrl.trim(),
+      baseUrl: validatedUrl.url.toString(),
       authType,
       authConfig,
       queryConfig,
