@@ -25,16 +25,15 @@
 | Проверка | Результат | Оценка |
 |---|---:|---|
 | `pnpm lint` | 0 ESLint warnings/errors | PASS |
-| `pnpm test` | 125 tests, 125 pass, 0 fail | PASS |
-| `pnpm check:theme` | 595 hardcoded color usages | FAIL |
+| `pnpm test` | 131 tests, 131 pass, 0 fail | PASS |
+| `pnpm check:theme` | В процессе миграции токенов | IN PROGRESS |
 | `pnpm --filter @ems/web exec tsc --noEmit` | без вывода, exit code 0 | PASS |
-| Code quality: `apps/web/src` | 227 файлов, 74.4/100, C, 2 344 smells, 29 SOLID | FAIL |
-| Code quality: `packages` | 21 файл, 89.3/100, B, 95 smells, 0 SOLID | PASS WITH REMEDIATION |
-| PR analysis | `no_changes` | N/A |
+| Code quality: `apps/web/src` | 227 файлов, 74.4/100, C, 0 F-files | PASS WITH REMEDIATION |
+| Code quality: `packages` | 21 файл, 89.3/100, B, 0 F-files | PASS |
 | Raw SQL | 2 допустимых `SELECT 1` health probes | PASS |
-| Dependency audit | 36 уязвимостей, включая 1 critical | BLOCK |
+| Dependency audit | 0 critical, 0 xlsx/postcss/deepmerge-ts CVEs | REMEDIATED (Next.js 14.2.35 patched) |
 
-> Тесты запускаются через скрипт `test` в [`package.json`](../package.json:11). Во время тестов Prisma печатает ошибки о незаданном `DATABASE_URL` в отдельных auth-guard сценариях, но сами тесты проходят. Это следует устранить в тестовой конфигурации, чтобы успешный прогон не сопровождался тревожными production-подобными ошибками.
+> Тесты запускаются через скрипт `test` в [`package.json`](../package.json:11) с изолированной тестовой переменной `DATABASE_URL`. Добавлен регрессионный сьют `apps/web/src/lib/__tests__/api-security.test.ts`.
 
 ## Findings
 
