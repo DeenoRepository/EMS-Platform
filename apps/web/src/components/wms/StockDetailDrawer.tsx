@@ -37,6 +37,8 @@ import { StatusBadge, EmptyState } from '@/components/ui';
 import { formatDateTime, PERMISSIONS } from '@ems/shared';
 import { useAuth } from '@/lib/auth-client';
 import { useRouter } from 'next/navigation';
+import { StockDetailOperationsTab } from './StockDetailOperationsTab';
+import { StockDetailLabelTab } from './StockDetailLabelTab';
 
 export interface StockDetailData {
   id: string;
@@ -493,109 +495,18 @@ export default function StockDetailDrawer({
           </Stack>
         )}
 
-        {/* TAB 2: История движения ТМЦ */}
-        {tabIndex === 2 && (
-          <Box>
-            {isLoadingOps ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                <CircularProgress size={28} />
-              </Box>
-            ) : operations.length === 0 ? (
-              <EmptyState
-                icon={<HistoryIcon sx={{ fontSize: 32, color: 'text.disabled' }} />}
-                title="История операций пуста"
-                description="По данной позиции пока нет записей о движении на этом складе"
-                minHeight={160}
-              />
-            ) : (
-              <Table size="small">
-                <TableHead sx={{ bgcolor: 'background.default' }}>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Тип</TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Дата</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Кол-во</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {operations.map((op) => (
-                    <TableRow key={op.id} hover>
-                      <TableCell sx={{ py: 1 }}>
-                        <StatusBadge status={op.type} />
-                      </TableCell>
-                      <TableCell sx={{ py: 1, fontSize: '0.75rem', color: 'text.disabled' }}>
-                        {formatDateTime(op.date || op.createdAt)}
-                      </TableCell>
-                      <TableCell align="right" sx={{ py: 1, fontWeight: 600, fontSize: '0.8125rem' }}>
-                        {op.items?.[0]?.quantity || '—'} {stockItem.unit}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </Box>
-        )}
+        <StockDetailOperationsTab
+          activeTab={tabIndex}
+          operations={operations}
+          loading={isLoadingOps}
+          unit={stockItem.unit}
+        />
 
-        {/* TAB 3: QR-этикетка */}
-        {tabIndex === 3 && (
-          <Stack spacing={2} alignItems="center" sx={{ pt: 2 }}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 3,
-                width: 220,
-                borderRadius: '8px',
-                border: '2px dashed text.disabled',
-                textAlign: 'center',
-                bgcolor: 'background.paper',
-              }}
-            >
-              <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.primary', display: 'block', mb: 1 }}>
-                EMS WMS LABEL
-              </Typography>
-              {/* QR Code Placeholder Graphic */}
-              <Box
-                sx={{
-                  width: 120,
-                  height: 120,
-                  mx: 'auto',
-                  mb: 1.5,
-                  bgcolor: 'grey.100',
-                  borderRadius: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <QrCode2Icon sx={{ fontSize: 96, color: 'text.primary' }} />
-              </Box>
-              <Typography variant="body2" sx={{ fontWeight: 700, fontSize: '0.8125rem', color: 'text.primary' }} noWrap>
-                {stockItem.name}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block' }}>
-                {stockItem.article || 'SKU-NONE'}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 600, display: 'block', mt: 0.5 }}>
-                {stockItem.cellCode ? `Ячейка: ${stockItem.cellCode}` : `Склад: ${stockItem.warehouseCode}`}
-              </Typography>
-            </Paper>
-
-            <Button
-              variant="contained"
-              startIcon={<PrintIcon />}
-              onClick={() => onPrintLabel && onPrintLabel(stockItem)}
-              sx={{
-                borderRadius: '8px',
-                textTransform: 'none',
-                fontWeight: 600,
-                bgcolor: 'primary.main',
-                px: 4,
-              }}
-            >
-              Распечатать наклейку
-            </Button>
-          </Stack>
-        )}
+        <StockDetailLabelTab
+          activeTab={tabIndex}
+          stockItem={stockItem}
+          onPrintLabel={onPrintLabel}
+        />
       </Box>
     </Drawer>
   );
