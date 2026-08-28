@@ -68,7 +68,7 @@ const ModernConnector = styled(StepConnector)(() => ({
   },
   [`&.${stepConnectorClasses.completed}`]: {
     [`& .${stepConnectorClasses.line}`]: {
-      backgroundImage: 'linear-gradient(95deg, success.main 0%, #34d399 100%)',
+      backgroundImage: 'linear-gradient(95deg, success.main 0%, success.light 100%)',
     },
   },
   [`& .${stepConnectorClasses.line}`]: {

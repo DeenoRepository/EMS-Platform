@@ -43,7 +43,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { SRM_FAILURE_CATEGORY_MAP, SrmReliabilityAnalyticsDto } from '@ems/shared';
 
-const PALETTE = ['error.main', 'warning.main', 'primary.main', '#0d9488', 'success.main', 'secondary.main', 'text.secondary'];
+const PALETTE = ['error.main', 'warning.main', 'primary.main', 'secondary.main', 'success.main', 'secondary.main', 'text.secondary'];
 
 export interface SrmReliabilityAnalyticsProps {
   analytics: SrmReliabilityAnalyticsDto | null | undefined;

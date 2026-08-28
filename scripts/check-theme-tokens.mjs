@@ -3,20 +3,23 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const TARGET_DIR = process.argv[2] || 'apps/web/src';
-
 const HEX_MATCH = /#[0-9a-fA-F]{3,8}/g;
+const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx']);
+const ALLOWED_PATH_SEGMENTS = ['/theme/'];
 
 function scanDirectory(dir, fileList = []) {
   if (!fs.existsSync(dir)) return fileList;
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
 
-  for (const entry of entries) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (entry.name !== 'node_modules' && entry.name !== '.next' && entry.name !== '__tests__') {
+      if (!['node_modules', '.next', '__tests__'].includes(entry.name)) {
         scanDirectory(fullPath, fileList);
       }
-    } else if (entry.isFile() && (entry.name.endsWith('.tsx') || entry.name.endsWith('.ts'))) {
+      continue;
+    }
+
+    if (entry.isFile() && SOURCE_EXTENSIONS.has(path.extname(entry.name))) {
       fileList.push(fullPath);
     }
   }
@@ -25,43 +28,35 @@ function scanDirectory(dir, fileList = []) {
 }
 
 const files = scanDirectory(path.resolve(process.cwd(), TARGET_DIR));
-let violationsCount = 0;
+const violations = [];
 
 for (const filePath of files) {
   const normalizedPath = filePath.replace(/\\/g, '/');
-  // Exclude theme definition files and tests where raw palette definitions or test tokens are defined
-  if (normalizedPath.includes('/theme/') || normalizedPath.includes('__tests__') || normalizedPath.includes('migrate-')) {
-    continue;
-  }
+  if (ALLOWED_PATH_SEGMENTS.some((segment) => normalizedPath.includes(segment))) continue;
 
-  const content = fs.readFileSync(filePath, 'utf-8');
-  const lines = content.split('\n');
+  const content = fs.readFileSync(filePath, 'utf8');
+  const lines = content.split(/\r?\n/);
 
   lines.forEach((line, index) => {
-    // Only check lines that look like styles, JSX props or styling objects
-    if (
-      line.includes('sx=') ||
-      line.includes('iconColor=') ||
-      line.includes('accentColor=') ||
-      line.includes('bgcolor:') ||
-      line.includes('backgroundColor:') ||
-      line.includes('borderColor:') ||
-      line.includes('color:') ||
-      line.includes('background:')
-    ) {
-      const matches = line.match(HEX_MATCH);
-      if (matches) {
-        violationsCount++;
-        console.warn(`[UI Design Code] ${path.relative(process.cwd(), filePath)}:${index + 1} - Found hardcoded hex color: ${matches.join(', ')}`);
-      }
-    }
+    const matches = line.match(HEX_MATCH);
+    if (!matches) return;
+
+    violations.push({
+      filePath,
+      line: index + 1,
+      colors: matches,
+    });
   });
 }
 
-if (violationsCount > 0) {
-  console.error(`\n❌ Found ${violationsCount} hardcoded color usages across scanned files.`);
+if (violations.length > 0) {
+  for (const violation of violations) {
+    console.warn(
+      `[UI Design Code] ${path.relative(process.cwd(), violation.filePath)}:${violation.line} - Hardcoded hex color: ${violation.colors.join(', ')}`
+    );
+  }
+  console.error(`\n❌ Found ${violations.length} hardcoded color usages outside approved theme definition files.`);
   process.exit(1);
-} else {
-  console.log(`\n✅ No hardcoded hex colors found in scanned files. Design code compliance verified.`);
-  process.exit(0);
 }
+
+console.log('\n✅ No hardcoded hex colors found outside approved theme definition files.');

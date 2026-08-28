@@ -118,7 +118,7 @@ const SECTION_ICONS: Record<string, React.ReactNode> = {
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense } from 'react';
 
-const PRESET_COLORS = ['primary.main', 'secondary.main', 'success.main', 'warning.main', 'error.main', 'secondary.main', '#db2777', 'text.secondary'];
+const PRESET_COLORS = ['primary.main', 'secondary.main', 'success.main', 'warning.main', 'error.main', 'secondary.main', 'secondary.main', 'text.secondary'];
 
 const MODULE_KEYS = ['eps', 'wms', 'srm', 'mro'];
 

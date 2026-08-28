@@ -1385,7 +1385,7 @@ function EquipmentListContent() {
                             criticality === 'A'
                               ? 'error.light'
                               : criticality === 'B'
-                              ? '#fde68a'
+                              ? 'warning.light'
                               : 'divider',
                         }}
                       />
