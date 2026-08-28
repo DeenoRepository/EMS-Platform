@@ -6,12 +6,14 @@ overrides:
   postcss: '^8.5.3'
   glob: '^10.5.0'
   deepmerge-ts: '^8.0.0'
+  sharp: '^0.35.0'
 
 allowBuilds:
   '@prisma/client': true
   '@prisma/engines': true
   esbuild: true
   prisma: true
+  sharp: true
   unrs-resolver: true
 
 onlyBuiltDependencies:

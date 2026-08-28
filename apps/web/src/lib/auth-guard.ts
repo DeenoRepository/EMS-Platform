@@ -8,7 +8,7 @@ export async function getCurrentUser(req?: NextRequest): Promise<JwtUserPayload 
   let token: string | undefined;
 
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     token = cookieStore.get('ems_session')?.value;
   } catch {
     // Fallback if called in context where cookies() is not directly available
