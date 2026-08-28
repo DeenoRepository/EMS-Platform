@@ -22,7 +22,7 @@ ENV TEMP_DIR=/app/temp
 
 # Copy compiled JavaScript
 COPY --from=builder /app/dist/server.js ./server.js
-COPY temp /app/temp
+RUN mkdir -p /app/temp
 
 EXPOSE 8080
 
