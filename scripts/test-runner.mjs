@@ -29,12 +29,12 @@ const testFiles = [
   ...findTestFiles(path.join('apps', 'web', 'src', 'lib', '__tests__')),
 ];
 
-const tsxBin = path.resolve('node_modules', '.bin', process.platform === 'win32' ? 'tsx.cmd' : 'tsx');
+const tsxPackagePath = path.dirname(import.meta.resolve('tsx/package.json').replace('file:///', ''));
+const tsxCli = path.join(tsxPackagePath, 'dist', 'cli.mjs');
 
-const child = spawn(tsxBin, ['--test', ...testFiles], {
+const child = spawn(process.execPath, [tsxCli, '--test', ...testFiles], {
   stdio: 'inherit',
   env: process.env,
-  shell: process.platform === 'win32',
 });
 
 child.on('exit', (code) => {

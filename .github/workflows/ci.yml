@@ -12,9 +12,9 @@ concurrency:
 
 jobs:
   validate:
-    name: Lint, Test & Build
+    name: Security, Quality, Test & Build
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
 
     steps:
       - name: Checkout Code
@@ -38,13 +38,37 @@ jobs:
       - name: Generate Prisma Client
         run: pnpm --filter @ems/database generate
 
+      - name: Audit Production Dependencies
+        run: pnpm audit --audit-level=high
+
+      - name: Run TypeScript Typecheck
+        run: pnpm --filter @ems/web exec tsc --noEmit
+
+      - name: Verify Theme Tokens
+        run: pnpm check:theme
+
       - name: Run ESLint
         run: pnpm run lint
+
+      - name: Run Code Quality Gate
+        run: |
+          python .agents/skills/code-reviewer/scripts/code_quality_checker.py apps/web/src --recursive --language typescript --json > quality-web.json
+          python .agents/skills/code-reviewer/scripts/code_quality_checker.py packages --recursive --language typescript --json > quality-packages.json
+          python -c "import json,sys; reports=[json.load(open(p, encoding='utf-8')) for p in ('quality-web.json','quality-packages.json')]; failed=[f['file'] for r in reports for f in r['files'] if f['grade']=='F']; print('F-grade files:', len(failed)); sys.exit(1 if failed else 0)"
+
+      - name: Upload Quality Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-quality-reports
+          path: |
+            quality-web.json
+            quality-packages.json
 
       - name: Run Automated Test Suite (Domain, SecOps, RBAC)
         run: pnpm test
 
-      - name: Build Monorepo (Turborepo & Next.js 14 Production Build)
+      - name: Build Monorepo (Turborepo & Next.js Production Build)
         run: pnpm build
         env:
           NODE_ENV: production
