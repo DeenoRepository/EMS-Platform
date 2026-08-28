@@ -99,11 +99,9 @@ export async function GET(req: NextRequest) {
       };
     } catch (dbErr: any) {
       console.warn('Prisma health probe error:', dbErr?.message);
-      // If TCP socket is open, mark database as ready/healthy
       dbHealth = {
-        status: isTcpOpen ? 'healthy' : 'unreachable',
+        status: 'degraded',
         name: 'Database',
-        latencyMs: 1,
       };
     }
   }
