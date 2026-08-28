@@ -1,151 +1,183 @@
 # Инспекция проекта EMS-Platform
 
 **Дата:** 2026-08-28
+**Ревизия:** рабочее дерево без незакоммиченных изменений; PR-анализатор сообщил `no_changes`
+**Область:** TypeScript/Next.js API, авторизация и безопасность, качество кода, shared UI, lint, типизация, тесты, зависимости и конфигурация.
+**Методика:** правила проекта из [`AGENTS.md`](../AGENTS.md), [`security.md`](../.agents/rules/security.md), [`ui_design_code.md`](../.agents/rules/ui_design_code.md), [`code_quality.md`](../.agents/rules/code_quality.md), а также universal/TypeScript правила code-reviewer, автоматический [`code_quality_checker.py`](../.agents/skills/code-reviewer/scripts/code_quality_checker.py), [`pr_analyzer.py`](../.agents/skills/code-reviewer/scripts/pr_analyzer.py), ручная проверка API-маршрутов и dependency audit.
 
-**Область:** TypeScript/Next.js API, авторизация и безопасность, качество кода, shared UI, lint и тесты.
+## Итоговый вердикт
 
-**Методика:** правила `.agents/rules/*`, статический анализ `code_quality_checker.py`, поиск небезопасных паттернов, ручная проверка критичных маршрутов.
+**Вердикт: Request changes / блокирующие замечания.**
 
-## Итог
+Критические причины:
 
-**Вердикт: замечания P1/P2 и ключевые F-модули P3 успешно устранены.**
+1. `pnpm audit --audit-level=high` обнаружил **1 critical, 16 high, 16 moderate и 3 low** уязвимости.
+2. Прямо используется уязвимая версия Next.js `14.2.24`; audit указывает critical Authorization Bypass in Next.js для диапазона `<14.2.25` и дополнительные исправления до `14.2.35`/`15.5.21` в зависимости от advisory.
+3. Веб-приложение содержит **40 файлов с оценкой F**, средняя оценка `74.4/100 (C)`, **2 344 code smells** и **29 SOLID violations**.
+4. Проверка дизайн-кода обнаруживает **595 нарушений hardcoded color usages**; grep по исходникам находит 1 860 hex-вхождений, часть из которых не попадает под узкий детектор `sx`.
+5. В чувствительных маршрутах отсутствует rate limiting на анализе импорта, шаблонах импорта/отчетов и статусе setup.
+6. Обнаружены production API-ответы, возвращающие `error.message` или производные от него.
 
-Критических обходов webhook-авторизации и raw SQL не обнаружено. Все уязвимости P1 (SSRF в диагностике LDAP/SRM, утечка токенов через env-fallback, неавторизованный доступ к файлам по пути), P2 (утечки деталей ошибок, RBAC на справочниках EPS, rate limit вебхуков, ложный статус healthcheck, theme tokens) и крупные API-модули P3 устранены и зафиксированы атомарными коммитами с unit-тестами.
+Положительные результаты: lint, typecheck и тестовый набор проходят; webhook проверяет обязательный секрет корректно; raw SQL ограничен двумя template-literal health probes; основные ранее исправленные P1-проблемы SSRF/resource-level file access подтверждены текущим кодом и тестами.
 
-## Статус устранения замечаний (Remediation Status)
+## Проверки и результаты
 
-| Замечание | Фаза | Статус | Коммит |
-|---|---|---|---|
-| P1-1. SSRF и утечка токенов в SRM диагностике | P1-A | **Устранено** | `bfbb7f1` |
-| P1-2. SSRF в LDAP диагностике | P1-A | **Устранено** | `9882296`, `6dce472` |
-| P1-3. Доступ к файлам без проверки прав на ресурс | P1-B | **Устранено** | `0ca1f3c` |
-| P2-1. Утечка внутренних деталей ошибок через API | P2-A | **Устранено** | `114f163` |
-| P2-2. RBAC на справочниках EPS (custom fields, tags) | P2-A | **Устранено** | `0efbefb` |
-| P2-3. Rate limiting на SRM webhook endpoint | P1-C | **Устранено** | `7c904df` |
-| P2-4. Ложноположительный статус healthcheck БД | P2-A | **Устранено** | `4af1e9c` |
-| P2-5. Использование theme tokens в StatCard / admin users | P2-B | **Устранено** | `a20e870` |
-| P2-6. Защита от hardcode hex-цветов (`check:theme`) | P2-B | **Устранено** | `a20e870` |
-| P3. Декомпозиция API `eps/custom-sections` | P3 | **Устранено** | `ba7eac7` |
-| P3. Декомпозиция API `wms/transfers` | P3 | **Устранено** | `057ff01` |
+| Проверка | Результат | Оценка |
+|---|---:|---|
+| `pnpm lint` | 0 ESLint warnings/errors | PASS |
+| `pnpm test` | 125 tests, 125 pass, 0 fail | PASS |
+| `pnpm check:theme` | 595 hardcoded color usages | FAIL |
+| `pnpm --filter @ems/web exec tsc --noEmit` | без вывода, exit code 0 | PASS |
+| Code quality: `apps/web/src` | 227 файлов, 74.4/100, C, 2 344 smells, 29 SOLID | FAIL |
+| Code quality: `packages` | 21 файл, 89.3/100, B, 95 smells, 0 SOLID | PASS WITH REMEDIATION |
+| PR analysis | `no_changes` | N/A |
+| Raw SQL | 2 допустимых `SELECT 1` health probes | PASS |
+| Dependency audit | 36 уязвимостей, включая 1 critical | BLOCK |
 
-## Проверки
-
-| Проверка | Результат |
-|---|---|
-| `pnpm lint` | Пройдена: 0 ESLint warnings/errors |
-| `pnpm db:generate` | Пройдена; Prisma Client сгенерирован |
-| `pnpm test` | Пройдена: 125 tests, 0 failures |
-| `pnpm check:theme` | Пройдена; скрипт валидации подключен |
-| Quality: `packages` | 21 файл, 89.3/100, **B**, 95 smells |
-| Raw SQL | Только допустимые health-check template literals (`SELECT 1`) |
-| Webhook auth & rate limit | Защищено проверкой секрета и per-integration rate limit |
-
-> Первичный запуск тестов завершался ошибками, потому что Prisma Client не был сгенерирован (`Cannot find module '.prisma/client/default'`). После `pnpm db:generate` тесты прошли. Генерация Prisma Client должна быть обязательным шагом чистой CI-среды до запуска тестов.
+> Тесты запускаются через скрипт `test` в [`package.json`](../package.json:11). Во время тестов Prisma печатает ошибки о незаданном `DATABASE_URL` в отдельных auth-guard сценариях, но сами тесты проходят. Это следует устранить в тестовой конфигурации, чтобы успешный прогон не сопровождался тревожными production-подобными ошибками.
 
 ## Findings
 
+### P0 — критический приоритет
+
+#### P0-1. Уязвимые production dependencies: Next.js ниже исправленной версии
+
+- **Подтверждение:** [`apps/web/package.json`](../apps/web/package.json:22) фиксирует `next: 14.2.24`.
+- **Audit:** `next@14.2.24` попадает под critical advisory Authorization Bypass in Next.js (`>=14.0.0 <14.2.25`), а также под ряд high/moderate advisories, исправленные в более новых версиях.
+- **Риск:** обход middleware-авторизации и дополнительные SSRF/DoS/cache/XSS риски в зависимости от затронутого сценария Next.js.
+- **Действие:** обновить Next.js и согласованный `eslint-config-next` до версии, закрывающей весь применимый набор advisories; регенерировать lockfile, выполнить build, lint, typecheck, tests и smoke-тест авторизации.
+- **Дополнительные зависимости:** `xlsx@0.18.5` имеет high Prototype Pollution и ReDoS advisories; `postcss@8.4.31` имеет high arbitrary file read/path traversal advisories; `deepmerge-ts@7.1.5` приходит транзитивно через Prisma и имеет high stack exhaustion advisory. Обновить прямые/транзитивные зависимости либо зафиксировать утвержденные исключения с компенсирующими мерами.
+
 ### P1 — высокий приоритет
 
-#### P1-1. SSRF и возможная передача служебных токенов через тест внешней SRM-интеграции
+#### P1-1. Rate limiting не покрывает все чувствительные маршруты
 
-- **Расположение:** `apps/web/src/app/api/admin/settings/test-srm/route.ts:34`, `apps/web/src/app/api/admin/settings/test-srm/route.ts:61`, `apps/web/src/app/api/admin/settings/test-srm/route.ts:69`, `apps/web/src/app/api/admin/settings/test-srm/route.ts:86-110`.
-- **Проблема:** администратор передаёт произвольный `providerUrl`; сервер выполняет исходящее соединение через адаптер. Если API-ключ не передан, маршрут подставляет секреты из переменных окружения (`REDMINE_API_KEY`, `GITLAB_TOKEN`, `JIRA_API_TOKEN`) в конфигурацию запроса.
-- **Риск:** SSRF к внутренним сервисам и возможная пересылка системных токенов на контролируемый URL. Наличие RBAC не отменяет риск для скомпрометированной административной сессии.
-- **Исправление:** разрешить только `https`, блокировать loopback/private/link-local/metadata IP после DNS-resolution, ограничить allowlist доменов интеграций, запретить redirects, не подставлять env-секреты в тест произвольного URL.
+Правила проекта требуют `enforceRateLimit()` на setup, import и reports endpoints.
 
-#### P1-2. SSRF через административную LDAP-диагностику
+- [`apps/web/src/app/api/eps/import/analyze/route.ts`](../apps/web/src/app/api/eps/import/analyze/route.ts:324) принимает и разбирает пользовательский файл, но не вызывает `enforceRateLimit()`.
+- [`apps/web/src/app/api/eps/import/template/route.ts`](../apps/web/src/app/api/eps/import/template/route.ts:10) выполняет запрос к БД и генерацию XLSX без rate limit.
+- [`apps/web/src/app/api/eps/reports/templates/route.ts`](../apps/web/src/app/api/eps/reports/templates/route.ts:9) не ограничивает `GET`/`POST` частотой.
+- [`apps/web/src/app/api/eps/reports/templates/[id]/route.ts`](../apps/web/src/app/api/eps/reports/templates/[id]/route.ts:1) не ограничивает операции с шаблонами.
+- [`apps/web/src/app/api/setup/status/route.ts`](../apps/web/src/app/api/setup/status/route.ts:75) выполняет сетевые и файловые проверки без rate limit.
+- Также inventory выявил отсутствие rate limit на [`apps/web/src/app/api/auth/logout/route.ts`](../apps/web/src/app/api/auth/logout/route.ts:1) и [`apps/web/src/app/api/auth/me/route.ts`](../apps/web/src/app/api/auth/me/route.ts:1); эти маршруты не указаны в минимальной таблице правил, но их следует оценить отдельно.
 
-- **Расположение:** `apps/web/src/app/api/admin/settings/test-ldap/route.ts:22-41`.
-- **Проблема:** `ldapUrl` полностью контролируется клиентом и передаётся в LDAP-клиент без allowlist/проверки IP-адреса.
-- **Риск:** сканирование и обращения к внутренним LDAP-сервисам от имени приложения.
-- **Исправление:** принимать только `ldap:`/`ldaps:`, проверять hostname и разрешённые сети, запрещать loopback/link-local/private targets, применять timeout и DNS-rebinding-safe проверку конечного IP.
+**Риск:** DoS через повторную обработку XLSX, генерацию файлов, запросы к БД и сетевые probes.
+**Действие:** добавить endpoint-specific лимиты с уникальными prefix; для import analyze ограничить размер и частоту multipart-запросов; для template/report операций добавить лимиты на пользователя/IP.
 
-#### P1-3. Файлы доступны любому аутентифицированному пользователю при знании пути
+#### P1-2. Публичный health endpoint раскрывает инфраструктурные параметры
 
-- **Расположение:** `apps/web/src/app/api/files/[...path]/route.ts:13-27`, `apps/web/src/app/api/files/[...path]/route.ts:29-75`.
-- **Проблема:** есть проверка аутентификации и directory traversal, но отсутствует проверка прав на документ/фото/вложение, которому принадлежит файл.
-- **Риск:** пользователь с валидной сессией может получить чужой файл, если угадает или получит URL. Путь к файлу не является авторизационным механизмом.
-- **Исправление:** находить метаданные ресурса по пути, проверять владельца и domain permissions до выдачи потока; хранить файлы по непрогнозируемому ID; добавить тесты изоляции файлов между пользователями.
+- [`apps/web/src/app/api/system/health/route.ts`](../apps/web/src/app/api/system/health/route.ts:54) не выполняет auth/RBAC и не имеет rate limit.
+- При `!isInstalled || isAdmin` endpoint возвращает `cwd`, `dbHost`, `dbPort`, `uploadDirPath` и системные сведения ([`apps/web/src/app/api/system/health/route.ts`](../apps/web/src/app/api/system/health/route.ts:212)).
+- Хотя диагностические детали скрываются для установленной системы без admin, сам маршрут выполняет TCP probe и Prisma probe для любого вызывающего.
+
+**Риск:** раскрытие топологии, путей файловой системы и availability-информации; возможность дешевого сетевого probing.
+**Действие:** разделить public liveness и authenticated/admin diagnostics; не возвращать host/path в public response; добавить rate limiting и корректные cache headers.
+
+#### P1-3. Небезопасная передача внутренних ошибок в отдельных API
+
+Подтверждено прямое включение `error.message` в ответы:
+
+- [`apps/web/src/app/api/mro/schedules/[id]/route.ts`](../apps/web/src/app/api/mro/schedules/[id]/route.ts:168) возвращает `error.message` с HTTP 500.
+- [`apps/web/src/app/api/admin/database/dump/route.ts`](../apps/web/src/app/api/admin/database/dump/route.ts:47) возвращает переменную `message`, производную от исключения.
+- [`apps/web/src/app/api/srm/issues/route.ts`](../apps/web/src/app/api/srm/issues/route.ts:153) возвращает `error.message`.
+- [`apps/web/src/app/api/eps/documents/route.ts`](../apps/web/src/app/api/eps/documents/route.ts:209) возвращает `error.message` и определяет статус по тексту исключения.
+- [`apps/web/src/app/api/eps/custom-sections/route.ts`](../apps/web/src/app/api/eps/custom-sections/route.ts:110) и [`apps/web/src/app/api/eps/custom-sections/route.ts`](../apps/web/src/app/api/eps/custom-sections/route.ts:201) возвращают `error.message`.
+- [`apps/web/src/app/api/setup/status/route.ts`](../apps/web/src/app/api/setup/status/route.ts:238) возвращает `details: error.message`.
+
+**Риск:** раскрытие URL, структуры интеграций, SQL/ORM/драйверных деталей, путей и внутренних причин отказа.
+**Действие:** использовать [`toSafeErrorDetails()`](../apps/web/src/lib/safe-error.ts:1) или единый безопасный response helper; логировать полную причину с correlation ID, клиенту возвращать стабильное обобщенное сообщение. Валидационные ошибки 400 разрешать только после фильтрации безопасных полей.
 
 ### P2 — средний приоритет
 
-#### P2-1. Утечка внутренних деталей ошибок через API
+#### P2-1. API inventory показывает публичные маршруты без очевидной auth-сигнатуры
 
-В production-ответы передаются `error.message`, диагностика внешних систем и детали исключений:
+Статический inventory не нашел `requireAuth`, `getCurrentUser`, `hasPermission` или `verifySetupAccess` в:
 
-- `apps/web/src/app/api/srm/webhooks/[id]/route.ts:123-127`;
-- `apps/web/src/app/api/srm/test-connection/route.ts:67-75`;
-- `apps/web/src/app/api/srm/integrations/[id]/test/route.ts:30-35`;
-- `apps/web/src/app/api/feedback/route.ts:284-287`;
-- `apps/web/src/app/api/eps/equipment/route.ts:272-274`.
+- [`apps/web/src/app/api/admin/settings/test-jira/route.ts`](../apps/web/src/app/api/admin/settings/test-jira/route.ts:6) — это thin wrapper, делегирующий в [`apps/web/src/app/api/admin/settings/test-srm/route.ts`](../apps/web/src/app/api/admin/settings/test-srm/route.ts:1), поэтому фактическая проверка есть, но защиту трудно обнаружить статическим правилом.
+- [`apps/web/src/app/api/auth/login/route.ts`](../apps/web/src/app/api/auth/login/route.ts:1) — публичный маршрут по назначению, защищен rate limit.
+- [`apps/web/src/app/api/srm/webhooks/[id]/route.ts`](../apps/web/src/app/api/srm/webhooks/[id]/route.ts:15) — публичный по назначению, защищен секретом интеграции и rate limit.
+- [`apps/web/src/app/api/system/health/route.ts`](../apps/web/src/app/api/system/health/route.ts:54) — public health/diagnostics, требует отдельной политики из P1-2.
 
-Это может раскрывать URL, структуру интеграций, ошибки драйверов и служебные данные. Логируйте причину на сервере с correlation ID, а клиенту возвращайте обобщённое сообщение. Детали валидации (`ZodError.issues`) допустимы для `400` после фильтрации.
+**Действие:** добавить явные route-level комментарии/общие wrappers для intentional public endpoints и автоматический тест inventory, проверяющий фактические auth/rate-limit invariants.
 
-#### P2-2. Несоответствие требованию RBAC на части защищённых read-маршрутов
+#### P2-2. Чрезмерное использование `any` в production API
 
-- `apps/web/src/app/api/eps/custom-fields/route.ts:9-21` — только аутентификация, без `PERMISSIONS.*`;
-- `apps/web/src/app/api/eps/tags/route.ts:7-28` — только аутентификация, без `PERMISSIONS.*`.
+Inventory обнаружил **178 вхождений `any`** в [`apps/web/src/app/api`](../apps/web/src/app/api). Примеры: [`apps/web/src/app/api/eps/import/analyze/route.ts`](../apps/web/src/app/api/eps/import/analyze/route.ts:84), [`apps/web/src/app/api/eps/reports/generate/route.ts`](../apps/web/src/app/api/eps/reports/generate/route.ts:106), [`apps/web/src/app/api/dashboard/stats/route.ts`](../apps/web/src/app/api/dashboard/stats/route.ts:27).
 
-Правило проекта требует проверку разрешения для каждого защищённого API route. Назначить permission уровня просмотра, например `EPS_EQUIPMENT_VIEW`, либо специально выделенное разрешение на чтение настроек/справочников.
+**Риск:** отсутствие type narrowing для пользовательских JSON/XLSX данных, скрытые runtime-ошибки и слабая проверка контрактов API.
+**Действие:** заменить `any` на `unknown`, Zod/typed DTO и Prisma input types; оставить исключения только для действительно нестабильных внешних схем с локальным адаптером.
 
-#### P2-3. Webhook не ограничен по частоте
+#### P2-3. Дизайн-система нарушена массовым hardcode цветов
 
-- `apps/web/src/app/api/srm/webhooks/[id]/route.ts:12-129`.
+- [`scripts/check-theme-tokens.mjs`](../scripts/check-theme-tokens.mjs:7) проверяет только hex в пределах одной строки с `sx=`, `iconColor=`, `accentColor=` или `bgcolor:` и возвращает exit code 0 даже при найденных нарушениях ([`scripts/check-theme-tokens.mjs`](../scripts/check-theme-tokens.mjs:49)). Поэтому `pnpm check:theme` информирует, но не блокирует CI.
+- Проверка обнаружила 595 usages; примеры: [`apps/web/src/app/admin/audit-log/page.tsx`](../apps/web/src/app/admin/audit-log/page.tsx:206), [`apps/web/src/components/ui/ErrorState.tsx`](../apps/web/src/components/ui/ErrorState.tsx:70), [`apps/web/src/components/wms/WarehouseTopologyModal.tsx`](../apps/web/src/components/wms/WarehouseTopologyModal.tsx:367).
+- Общий grep исходников обнаружил 1 860 hex-вхождений, включая места вне текущего узкого шаблона.
 
-Проверка секрета реализована корректно, но публичный endpoint выполняет тяжёлые операции (`findMany` оборудования, mapping, upsert, notification) без rate limit. Добавить лимит по integration ID/IP и защиту от replay (event ID / idempotency key).
+**Риск:** нарушение themeability, несогласованный UX и невозможность надежно контролировать правило в CI.
+**Действие:** сделать checker fail-fast с ненулевым exit code, исключить только утвержденные theme definition files, мигрировать shared UI и высокопосещаемые страницы на `theme.palette.*`/semantic tokens, добавить CI gate.
 
-#### P2-4. Отчёт healthcheck маскирует ошибку Prisma как healthy
+#### P2-4. Обслуживание файлов требует повторной проверки resource-level authorization
 
-- `apps/web/src/app/api/system/health/route.ts:100-107`.
+Текущий audit подтвердил наличие directory traversal защиты и отдельные тесты в [`apps/web/src/lib/file-access.ts`](../apps/web/src/lib/file-access.ts:1) и [`apps/web/src/lib/__tests__/file-access.test.ts`](../apps/web/src/lib/__tests__/file-access.test.ts:1). Однако при изменениях маршрута необходимо сохранять проверку принадлежности файла ресурсу в [`apps/web/src/app/api/files/[...path]/route.ts`](../apps/web/src/app/api/files/[...path]/route.ts:1), а не только authentication/path safety.
 
-При успешном TCP-соединении, но ошибке Prisma, БД маркируется `healthy`. Это даёт ложноположительный readiness-status. Возвращать `degraded`/`unreachable` и отдельно отражать ошибку query-probe.
-
-#### P2-5. Нарушение дизайн-кода: hex/RGBA-цвета передаются в shared `StatCard`
-
-- `apps/web/src/app/admin/users/page.tsx:207-209`;
-- `apps/web/src/app/admin/users/page.tsx:219-221`;
-- `apps/web/src/app/admin/users/page.tsx:231-233`.
-
-Правила запрещают hex в UI и требуют MUI семантические токены. Заменить на `primary.main`, `success.main`, `secondary.main` и theme-aware варианты фона; при необходимости доработать API `StatCard`, чтобы он принимал семантические варианты, а не сырые строки цветов.
-
-#### P2-6. Массовый hardcode UI-цветов
-
-Поиск выявил **1 708** hex-значений в TypeScript/TSX и затронутые **83** исходных файла. Это прямо противоречит `.agents/rules/ui_design_code.md`. Приоритизировать сначала страницы с высокой посещаемостью и shared-компоненты, затем включить ESLint-правило/CI-check, запрещающий `#[0-9a-fA-F]{3,8}` в `sx`.
+**Действие:** держать regression tests для чужого document/photo/attachment, traversal, symlink и deleted resource; проверять, что route использует централизованный helper и domain permissions.
 
 ### P3 — качество и сопровождаемость
 
-Quality tool зафиксировал 2 325 smells во frontend-коде. Кандидаты для первоочередной декомпозиции:
+#### P3-1. 40 frontend-файлов получили оценку F и нарушают обязательные пороги
 
-| Файл | Наблюдение |
-|---|---|
-| `apps/web/src/app/eps/[id]/page.tsx` | 2 024 строки; `handleCopy` complexity 79; `handleDeleteDoc` complexity 53 |
-| `apps/web/src/app/eps/page.tsx` | 1 623 строки; `handleBulkPrint` complexity 95 |
-| `apps/web/src/app/eps/approvals/page.tsx` | 1 298 строк; `handleProcessReview` complexity 74 |
-| `apps/web/src/components/layout/Sidebar.tsx` | 1 429 строк; `loadData` complexity 47 |
-| `apps/web/src/app/wms/operations/page.tsx` | 1 072 строки; `renderRecipientBadge` complexity 49 |
-| `apps/web/src/components/eps/EquipmentWizardForm.tsx` | 843 строки; `handleSave` complexity 17 |
-| `apps/web/src/components/eps/SmartImportWizard.tsx` | 820 строк; handlers > 50 строк |
-| `apps/web/src/app/api/eps/custom-sections/route.ts` | GET 341 строка, complexity 36 |
-| `apps/web/src/app/api/wms/transfers/route.ts` | GET 238 строк, complexity 42 |
-| `packages/auth/src/ldap.ts` | `authenticateLdap` 105 строк, complexity 36 |
+Наиболее тяжелые файлы по автоматическому анализу:
 
-Все указанные метрики превышают проектные пороги: функция >50 строк, сложность >10, файл >500 строк. Декомпозировать по domain hooks/services/render components, внедрять typed DTO вместо `any`, а общие типы интеграций вынести из route handlers.
+| Файл | Метрики | Приоритет |
+|---|---|---|
+| [`apps/web/src/app/eps/[id]/page.tsx`](../apps/web/src/app/eps/%5Bid%5D/page.tsx:1) | 2 024 строки; `handleCopy` 1 401 строка; 102 smells | P1 refactor |
+| [`apps/web/src/app/eps/page.tsx`](../apps/web/src/app/eps/page.tsx:1) | 1 623 строки; `handleBulkPrint` 1 167 строк; complexity 95 | P1 refactor |
+| [`apps/web/src/app/eps/approvals/page.tsx`](../apps/web/src/app/eps/approvals/page.tsx:1) | 1 298 строк; `handleProcessReview` 918 строк; complexity 40 | P1 refactor |
+| [`apps/web/src/components/layout/Sidebar.tsx`](../apps/web/src/components/layout/Sidebar.tsx:1) | 1 429 строк; `handleLogout` 301 строк; complexity 47 | P1 refactor |
+| [`apps/web/src/app/wms/operations/page.tsx`](../apps/web/src/app/wms/operations/page.tsx:1) | 1 072 строки; `renderRecipientBadge` 730 строк; complexity 49 | P1 refactor |
+| [`apps/web/src/app/setup/page.tsx`](../apps/web/src/app/setup/page.tsx:1) | 856 строк; handlers >50 строк | P2 refactor |
+| [`apps/web/src/components/eps/EquipmentWizardForm.tsx`](../apps/web/src/components/eps/EquipmentWizardForm.tsx:1) | 843 строки; render/handler >50 строк | P2 refactor |
+| [`apps/web/src/components/eps/SmartImportWizard.tsx`](../apps/web/src/components/eps/SmartImportWizard.tsx:1) | 820 строк; handlers >50 строк | P2 refactor |
+| [`packages/database/src/seed.ts`](../packages/database/src/seed.ts:1) | 968 строк; grade F | P2 refactor |
+| [`packages/auth/src/eps.test.ts`](../packages/auth/src/eps.test.ts:1) | 549 строк; grade F | P3 test refactor |
+| [`packages/auth/src/ldap.ts`](../packages/auth/src/ldap.ts:1) | 408 строк; grade F, 52/100 | P1 security refactor |
 
-## Положительные наблюдения
+**Действие:** декомпозировать по hooks/services/render components, ограничить функции 50 строками и complexity 10, передавать конфигурацию объектом при >5 параметрах, устранять deep nesting и `any`. Для [`packages/auth/src/ldap.ts`](../packages/auth/src/ldap.ts:1) сохранить текущие `escapeLdapFilter()` regression tests при выделении transport/config/filter helpers.
 
-- `apps/web/src/app/api/srm/webhooks/[id]/route.ts:41-47` использует корректную проверку: секрет обязателен, если сконфигурирован.
-- `packages/auth/src/ldap.ts:95-99`, `packages/auth/src/ldap.ts:147-150`, `packages/auth/src/ldap.ts:212-220`, `packages/auth/src/ldap.ts:321-325` экранируют значения LDAP-фильтров через `escapeLdapFilter()`.
-- Raw SQL ограничен template-literal health checks: `apps/web/src/app/api/setup/test-db/route.ts:60`, `apps/web/src/app/api/system/health/route.ts:86`.
-- Обязательные rate limits присутствуют на login, setup, import и report generation.
-- Библиотека shared UI содержит обязательные компоненты и экспортирует их из `apps/web/src/components/ui/index.ts:1-32`.
-- `pnpm lint` и тестовый набор успешны после генерации Prisma Client.
+#### P3-2. Large unbounded reads и тяжёлые операции требуют budget controls
 
-## План устранения
+В webhook [`apps/web/src/app/api/srm/webhooks/[id]/route.ts`](../apps/web/src/app/api/srm/webhooks/%5Bid%5D/route.ts:69) используется `findMany` оборудования без видимого limit; import/report маршруты работают с пользовательскими файлами и большими коллекциями. Сейчас webhook защищен rate limit и обязательным secret ([`apps/web/src/app/api/srm/webhooks/[id]/route.ts`](../apps/web/src/app/api/srm/webhooks/%5Bid%5D/route.ts:17), [`apps/web/src/app/api/srm/webhooks/[id]/route.ts`](../apps/web/src/app/api/srm/webhooks/%5Bid%5D/route.ts:54)), но защита от payload-size/replay и bounded processing не зафиксирована.
 
-1. Закрыть P1 SSRF и resource-level authorization файлов; добавить регрессионные integration tests.
-2. Убрать внутренние error details из 5xx-ответов; централизовать safe API errors.
-3. Добавить permission checks на EPS справочники и rate limiting/idempotency на webhook.
-4. Исправить healthcheck, чтобы ошибка ORM не считалась здоровой БД.
-5. Ввести автоматический запрет hex в `sx` и мигрировать UI на theme tokens.
-6. Разбивать F-файлы по одному домену за PR, сохраняя тесты и пороги качества.
-7. В CI выполнять `pnpm db:generate` перед `pnpm test`.
+**Действие:** ввести максимальный размер body/file, лимит строк/колонок, pagination/selection для lookup, idempotency/event ID для webhook и timeout budget для внешних вызовов.
+
+## Security controls, которые подтверждены
+
+- [`apps/web/src/app/api/srm/webhooks/[id]/route.ts`](../apps/web/src/app/api/srm/webhooks/%5Bid%5D/route.ts:41) использует корректную проверку обязательного token: отсутствующий или несовпадающий секрет дает 401.
+- [`apps/web/src/app/api/srm/webhooks/[id]/route.ts`](../apps/web/src/app/api/srm/webhooks/%5Bid%5D/route.ts:17) имеет per-integration rate limit.
+- LDAP filter values экранируются через `escapeLdapFilter()` в [`packages/auth/src/ldap.ts`](../packages/auth/src/ldap.ts:95), [`packages/auth/src/ldap.ts`](../packages/auth/src/ldap.ts:147), [`packages/auth/src/ldap.ts`](../packages/auth/src/ldap.ts:212) и [`packages/auth/src/ldap.ts`](../packages/auth/src/ldap.ts:321).
+- Raw SQL ограничен template-literal health checks в [`apps/web/src/app/api/setup/test-db/route.ts`](../apps/web/src/app/api/setup/test-db/route.ts:60) и [`apps/web/src/app/api/system/health/route.ts`](../apps/web/src/app/api/system/health/route.ts:86).
+- JWT реализован через `jose` и env secret в [`packages/auth/src/jwt.ts`](../packages/auth/src/jwt.ts:1); root [`tsconfig.json`](../tsconfig.json:1) включает `strict: true`.
+- Shared UI exports централизованы в [`apps/web/src/components/ui/index.ts`](../apps/web/src/components/ui/index.ts:1), включая `StatusBadge`, `StatCard`, `SearchInput`, `FilterToolbar`, `EmptyState`, `ConfirmDialog` и `DataTableWrapper`.
+- Предыдущие исправления SSRF/resource-level file access/safe errors покрыты актуальными regression tests, включая [`apps/web/src/lib/__tests__/outbound-url.test.ts`](../apps/web/src/lib/__tests__/outbound-url.test.ts:1), [`apps/web/src/lib/__tests__/file-access.test.ts`](../apps/web/src/lib/__tests__/file-access.test.ts:1) и [`apps/web/src/lib/__tests__/safe-error.test.ts`](../apps/web/src/lib/__tests__/safe-error.test.ts:1).
+
+## План remediation
+
+1. **Немедленно:** обновить Next.js, `eslint-config-next`, PostCSS и `xlsx`; повторить `pnpm audit` и проверить lockfile. Для транзитивного `deepmerge-ts` обновить Prisma-цепочку либо документировать временное исключение.
+2. **P1:** добавить rate limit на все sensitive routes из inventory; закрыть public health diagnostics и стабилизировать public liveness contract.
+3. **P1:** убрать все 5xx `error.message`/`details` из API response и унифицировать safe error handling.
+4. **P2:** сделать [`scripts/check-theme-tokens.mjs`](../scripts/check-theme-tokens.mjs:1) CI-blocking и начать миграцию hardcoded colors с shared UI и admin/audit/WMS экранов.
+5. **P1/P2:** декомпозировать F-файлы, начиная с EPS detail/list/approvals, Sidebar, LDAP и наиболее сложных WMS компонентов.
+6. **P2:** заменить `any` в API boundary на `unknown` + schemas/DTO; добавить bounded processing для XLSX, reports и webhooks.
+7. **CI:** выполнять `pnpm db:generate` до тестов, затем `pnpm lint`, `pnpm --filter @ems/web exec tsc --noEmit`, `pnpm test`, `pnpm check:theme`, quality checker и `pnpm audit --audit-level=high`.
+8. **Regression:** сохранить тесты webhook secret absence, rate-limit exhaustion, safe errors, LDAP escaping, SSRF/private IP rejection и resource-level file isolation.
+
+## Требуемый критерий повторной приемки
+
+Инспекция может быть закрыта только после:
+
+- отсутствия critical/high dependency vulnerabilities либо утвержденного security exception;
+- нулевого exit code всех обязательных CI gates, включая theme checker;
+- отсутствия новых F-файлов в измененном scope;
+- наличия rate limit на всех маршрутах из security matrix;
+- отсутствия внутренних exception details в 5xx API responses;
+- прохождения полного тестового набора и regression tests для auth, webhook, LDAP, SSRF и file access.
