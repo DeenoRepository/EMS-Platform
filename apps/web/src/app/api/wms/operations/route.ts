@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
 import { prisma, OperationType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
@@ -373,11 +374,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: operation });
-  } catch (error: any) {
-    console.error('Ошибка проведения складской операции:', error);
-    return NextResponse.json(
-      { success: false, error: error.message || 'Ошибка проведения складской операции' },
-      { status: error.message?.includes('Недостаточно') || error.message?.includes('больше нуля') ? 400 : 500 }
-    );
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка проведения складской операции', 500, { endpoint: 'wms-operations' });
   }
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
@@ -61,12 +62,8 @@ export async function POST(
     });
 
     return NextResponse.json({ success: true, data: photo });
-  } catch (error: any) {
-    console.error('Ошибка загрузки фото:', error);
-    return NextResponse.json(
-      { success: false, error: error.message || 'Ошибка загрузки фото' },
-      { status: error.message?.includes('Недопустимый') || error.message?.includes('превышает') ? 400 : 500 }
-    );
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка загрузки фото', 500, { endpoint: 'equipment-photo-upload' });
   }
 }
 

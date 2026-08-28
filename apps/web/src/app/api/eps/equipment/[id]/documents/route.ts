@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
 import { prisma, DocumentType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
@@ -57,12 +58,8 @@ export async function POST(
     });
 
     return NextResponse.json({ success: true, data: document });
-  } catch (error: any) {
-    console.error('Ошибка загрузки документа:', error);
-    return NextResponse.json(
-      { success: false, error: error.message || 'Ошибка загрузки документа' },
-      { status: error.message?.includes('Недопустимый') || error.message?.includes('превышает') ? 400 : 500 }
-    );
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка загрузки документа', 500, { endpoint: 'equipment-document-upload' });
   }
 }
 

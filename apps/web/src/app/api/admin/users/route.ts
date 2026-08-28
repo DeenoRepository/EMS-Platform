@@ -125,10 +125,6 @@ export async function PATCH(req: NextRequest) {
         { status: 400 }
       );
     }
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json(
-      { success: false, error: message || 'Ошибка обновления пользователя' },
-      { status: 400 }
-    );
+    return safeErrorResponse(error, 'Ошибка обновления пользователя', 500, { endpoint: 'admin-users-update' });
   }
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
 import { prisma, StockTransferStatus } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
@@ -131,11 +132,7 @@ export async function POST(
       data: updatedTransfer,
       message: `Запрос ${transfer.transferNumber} согласован и отгружен. ТМЦ в пути на склад "${transfer.targetWarehouse.name}".`,
     });
-  } catch (error: any) {
-    console.error('Ошибка отгрузки перемещения:', error);
-    return NextResponse.json(
-      { success: false, error: error.message || 'Ошибка отгрузки перемещения' },
-      { status: 400 }
-    );
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка отгрузки перемещения', 500, { endpoint: 'wms-transfer-dispatch' });
   }
 }

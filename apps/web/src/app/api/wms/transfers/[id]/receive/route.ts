@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
 import { prisma, StockTransferStatus, OperationType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
@@ -176,11 +177,7 @@ export async function POST(
       data: updatedTransfer,
       message: `Приемка перемещения ${transfer.transferNumber} успешно подтверждена. ТМЦ зачислены на склад "${transfer.targetWarehouse.name}".`,
     });
-  } catch (error: any) {
-    console.error('Ошибка подтверждения приемки:', error);
-    return NextResponse.json(
-      { success: false, error: error.message || 'Ошибка подтверждения приемки' },
-      { status: 400 }
-    );
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка подтверждения приемки', 500, { endpoint: 'wms-transfer-receive' });
   }
 }

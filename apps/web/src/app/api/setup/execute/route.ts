@@ -8,6 +8,7 @@ import { hashPassword } from '@ems/auth';
 import { PERMISSIONS, PERMISSION_DEFINITIONS } from '@ems/shared';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { getCurrentUser } from '@/lib/auth-guard';
+import { safeErrorResponse } from '@/lib/safe-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -340,15 +341,8 @@ export async function POST(req: NextRequest) {
       message: 'Система EMS успешно установлена и готова к работе!',
       redirect: '/login',
     });
-  } catch (error: any) {
-    console.error('Setup execution error:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error.message || 'Ошибка во время выполнения установки',
-      },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка во время выполнения установки', 500, { endpoint: 'setup-execute' });
   } finally {
     if (client) {
       await client.$disconnect().catch(() => {});

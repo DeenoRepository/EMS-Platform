@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { requireAuth } from '@/lib/auth-guard';
 import { PERMISSIONS } from '@ems/shared';
 import { createMroWorkOrderFromIssue } from '@/lib/jira-service';
@@ -24,11 +25,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       data: result,
       message: `Заказ-наряд ТОиР успешно сформирован на основе заявки ${result.issue.issueKey}`,
     });
-  } catch (error: any) {
-    console.error('Ошибка создания заказ-наряда из SRM:', error);
-    return NextResponse.json(
-      { success: false, error: error.message || 'Ошибка создания заказ-наряда' },
-      { status: 400 }
-    );
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка создания заказ-наряда', 500, { endpoint: 'srm-create-mro-order' });
   }
 }

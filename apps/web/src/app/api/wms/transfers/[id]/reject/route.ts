@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
 import { prisma, StockTransferStatus } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
@@ -160,11 +161,7 @@ export async function POST(
         ? `Приемка перемещения ${transfer.transferNumber} отклонена. ТМЦ возвращены на склад-отправитель "${transfer.sourceWarehouse.name}". Причина: ${reason}`
         : `Запрос на перемещение ${transfer.transferNumber} отклонен. Причина: ${reason}`,
     });
-  } catch (error: any) {
-    console.error('Ошибка отклонения перемещения:', error);
-    return NextResponse.json(
-      { success: false, error: error.message || 'Ошибка отклонения перемещения' },
-      { status: 400 }
-    );
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка отклонения перемещения', 500, { endpoint: 'wms-transfer-reject' });
   }
 }

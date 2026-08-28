@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
@@ -22,6 +23,9 @@ export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
+    if (!hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE) && !user.roles.includes('admin')) {
+      return forbiddenResponse();
+    }
 
     const setting = await prisma.systemSetting.findUnique({
       where: { key: 'SYSTEM_MODULES_STATUS' },
@@ -41,11 +45,8 @@ export async function GET(req: NextRequest) {
       success: true,
       data: status,
     });
-  } catch (error: any) {
-    return NextResponse.json(
-      { success: false, error: 'Ошибка получения статуса модулей' },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка получения статуса модулей');
   }
 }
 
@@ -110,10 +111,7 @@ export async function PATCH(req: NextRequest) {
       data: status,
       message: `Модуль ${moduleId.toUpperCase()} ${enabled ? 'включен' : 'отключен'}`,
     });
-  } catch (error: any) {
-    return NextResponse.json(
-      { success: false, error: error.message || 'Ошибка обновления статуса модуля' },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка обновления статуса модуля');
   }
 }

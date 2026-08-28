@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
 import { prisma, StockTransferStatus, OperationType, Prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
@@ -386,11 +387,7 @@ export async function POST(req: NextRequest) {
         message: `Запрос на перемещение ${transferNumber} успешно создан и направлен МОЛ склада-отправителя "${sourceWh.name}".`,
       });
     }
-  } catch (error: any) {
-    console.error('Ошибка создания перемещения:', error);
-    return NextResponse.json(
-      { success: false, error: error.message || 'Ошибка создания перемещения' },
-      { status: 400 }
-    );
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка создания перемещения', 500, { endpoint: 'wms-transfers-create' });
   }
 }
