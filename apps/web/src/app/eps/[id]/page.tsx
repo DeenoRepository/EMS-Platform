@@ -70,6 +70,7 @@ import { EquipmentDocumentsTab } from '@/components/eps/EquipmentDocumentsTab';
 import { EquipmentApprovalsTab } from '@/components/eps/EquipmentApprovalsTab';
 import { EquipmentOperationalTabs } from '@/components/eps/EquipmentOperationalTabs';
 import { EquipmentEditDialog } from '@/components/eps/EquipmentEditDialog';
+import { EquipmentPassportAuxiliaryDialogs } from '@/components/eps/EquipmentPassportAuxiliaryDialogs';
 
 export interface CustomFieldDef {
   id: string;
@@ -745,149 +746,33 @@ function EquipmentPassportContent() {
         onCustomFieldChange={(key, value) => setEditCustomFields((previous) => ({ ...previous, [key]: value }))}
       />
 
-      {/* Upload Document Dialog */}
-      <FormDialog
-        open={docModalOpen}
-        onClose={() => setDocModalOpen(false)}
-        title="Прикрепление документа"
-        maxWidth="xs"
-        loading={uploading}
-        submitLabel={uploading ? 'Прикрепление...' : 'Прикрепить документ'}
-        onSubmit={handleUploadDocument}
-        submitDisabled={!selectedFile || uploading}
-      >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-          <FileUploadDropzone
-            files={selectedFile ? [selectedFile] : []}
-            onChange={(files) => setSelectedFile(files[0] || null)}
-            compact
-            title="Перетащите файл документа или выберите"
-            description="PDF, DOCX, XLSX, чертежи (до 15 МБ)"
-          />
-
-          <TextField
-            select
-            size="small"
-            label="Тип документа"
-            value={docType}
-            onChange={(e) => setDocType(e.target.value)}
-          >
-            {Object.entries(DOCUMENT_TYPE_MAP).map(([k, label]) => (
-              <MenuItem key={k} value={k}>
-                {label}
-              </MenuItem>
-            ))}
-          </TextField>
-
-          <TextField
-            size="small"
-            label="Примечание / Описание"
-            value={docDescription}
-            onChange={(e) => setDocDescription(e.target.value)}
-            multiline
-            rows={2}
-          />
-        </Box>
-      </FormDialog>
-
-      {/* Create Approval Request Dialog */}
-      <FormDialog
-        open={createApprovalModalOpen}
-        onClose={() => setCreateApprovalModalOpen(false)}
-        title="Создание заявки на согласование"
-        icon={<FactCheckOutlinedIcon color="primary" />}
-        maxWidth="sm"
-        loading={submittingApproval}
-        submitLabel={submittingApproval ? 'Отправка...' : 'Подать заявку'}
-        onSubmit={handleCreateApproval}
-        submitDisabled={!createApprovalTitle.trim() || submittingApproval}
-      >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-          <Paper variant="outlined" sx={{ p: 1.5, backgroundColor: 'action.hover' }}>
-            <Typography variant="caption" color="text.secondary" display="block">
-              Оборудование:
-            </Typography>
-            <Typography variant="subtitle2" fontWeight={700}>
-              {equipment.name} • Инв. №: {equipment.inventoryNumber || 'Б/Н'}
-            </Typography>
-          </Paper>
-
-          <TextField
-            select
-            size="small"
-            label="Тип согласования"
-            value={createApprovalType}
-            onChange={(e) => setCreateApprovalType(e.target.value)}
-            fullWidth
-            required
-          >
-            {Object.entries(APPROVAL_TYPE_MAP).map(([k, label]) => (
-              <MenuItem key={k} value={k}>
-                {label}
-              </MenuItem>
-            ))}
-          </TextField>
-
-          {createApprovalType === 'STATUS_CHANGE' && (
-            <TextField
-              select
-              size="small"
-              label="Целевой рабочий статус"
-              value={createApprovalTargetStatus}
-              onChange={(e) => setCreateApprovalTargetStatus(e.target.value)}
-              fullWidth
-              required
-            >
-              {Object.entries(EQUIPMENT_STATUS_MAP).map(([k, info]) => (
-                <MenuItem key={k} value={k}>
-                  {info.label}
-                </MenuItem>
-              ))}
-            </TextField>
-          )}
-
-          <TextField
-            label="Тема заявки"
-            value={createApprovalTitle}
-            onChange={(e) => setCreateApprovalTitle(e.target.value)}
-            size="small"
-            fullWidth
-            required
-            placeholder="Например: Согласование акта списания в связи с износом"
-          />
-
-          <TextField
-            label="Обоснование / Описание"
-            value={createApprovalDescription}
-            onChange={(e) => setCreateApprovalDescription(e.target.value)}
-            multiline
-            rows={3}
-            size="small"
-            fullWidth
-            placeholder="Укажите подробную причину, номер служебной записки или дефектной ведомости..."
-          />
-        </Box>
-      </FormDialog>
-
-      {/* Image Lightbox Preview Modal */}
-      <FormDialog
-        open={Boolean(previewDocUrl)}
-        onClose={() => setPreviewDocUrl(null)}
-        title="Просмотр документа"
-        maxWidth="md"
-        hideActions
-      >
-        <Box sx={{ display: 'flex', justifyContent: 'center', bgcolor: 'black', borderRadius: 1, overflow: 'hidden' }}>
-          {previewDocUrl && (
-            <Box
-              component="img"
-              src={previewDocUrl}
-              alt="Preview"
-              sx={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain' }}
-            />
-          )}
-        </Box>
-      </FormDialog>
+      <EquipmentPassportAuxiliaryDialogs
+        equipment={equipment}
+        documentDialogOpen={docModalOpen}
+        selectedFile={selectedFile}
+        documentType={docType}
+        documentDescription={docDescription}
+        uploading={uploading}
+        onCloseDocumentDialog={() => setDocModalOpen(false)}
+        onSelectedFileChange={setSelectedFile}
+        onDocumentTypeChange={setDocType}
+        onDocumentDescriptionChange={setDocDescription}
+        onUploadDocument={handleUploadDocument}
+        approvalDialogOpen={createApprovalModalOpen}
+        approvalType={createApprovalType}
+        approvalTitle={createApprovalTitle}
+        approvalDescription={createApprovalDescription}
+        approvalTargetStatus={createApprovalTargetStatus}
+        submittingApproval={submittingApproval}
+        onCloseApprovalDialog={() => setCreateApprovalModalOpen(false)}
+        onApprovalTypeChange={setCreateApprovalType}
+        onApprovalTitleChange={setCreateApprovalTitle}
+        onApprovalDescriptionChange={setCreateApprovalDescription}
+        onApprovalTargetStatusChange={setCreateApprovalTargetStatus}
+        onCreateApproval={handleCreateApproval}
+        previewDocumentUrl={previewDocUrl}
+        onClosePreview={() => setPreviewDocUrl(null)}
+      />
 
       <ConfirmDialog
         open={confirmState.open}
