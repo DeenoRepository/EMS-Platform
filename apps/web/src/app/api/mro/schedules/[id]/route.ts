@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@ems/database';
 import { requireAuth } from '@/lib/auth-guard';
 import { safeErrorResponse } from '@/lib/safe-error';
+import { enforceRateLimit } from '@/lib/rate-limit';
 import { PERMISSIONS } from '@ems/shared';
 
 export const dynamic = 'force-dynamic';
 
 // GET /api/mro/schedules/[id] - Детали работы ТО
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 120, windowMs: 60 * 1000, prefix: 'mro-sched-id-get' });
+  if (rateLimitError) return rateLimitError;
+
   const auth = await requireAuth(req, PERMISSIONS.MRO_SCHEDULE_VIEW);
   if (auth.errorResponse) return auth.errorResponse;
 
@@ -52,6 +56,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // PATCH /api/mro/schedules/[id] - Обновление / Завершение работы ТО с чек-листом и списанием запчастей
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 60, windowMs: 60 * 1000, prefix: 'mro-sched-id-patch' });
+  if (rateLimitError) return rateLimitError;
+
   const auth = await requireAuth(req, [PERMISSIONS.MRO_SCHEDULE_MANAGE, PERMISSIONS.MRO_EXECUTION_COMPLETE]);
   if (auth.errorResponse) return auth.errorResponse;
 

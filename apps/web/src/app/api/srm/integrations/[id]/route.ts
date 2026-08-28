@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth-guard';
+import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { sanitizeAuthConfig, mergeAuthConfig } from '@/lib/srm-providers';
@@ -7,6 +8,9 @@ import { sanitizeAuthConfig, mergeAuthConfig } from '@/lib/srm-providers';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 60, windowMs: 60 * 1000, prefix: 'srm-integration-id-get' });
+  if (rateLimitError) return rateLimitError;
+
   const auth = await requireAuth(req, PERMISSIONS.SRM_DASHBOARD_VIEW);
   if (auth.errorResponse) return auth.errorResponse;
 
@@ -37,6 +41,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 30, windowMs: 60 * 1000, prefix: 'srm-integration-id-put' });
+  if (rateLimitError) return rateLimitError;
+
   const auth = await requireAuth(req, [PERMISSIONS.ADMIN_SETTINGS_MANAGE, PERMISSIONS.SRM_SYNC_TRIGGER]);
   if (auth.errorResponse) return auth.errorResponse;
 
@@ -100,6 +107,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 20, windowMs: 60 * 1000, prefix: 'srm-integration-id-delete' });
+  if (rateLimitError) return rateLimitError;
+
   const auth = await requireAuth(req, [PERMISSIONS.ADMIN_SETTINGS_MANAGE, PERMISSIONS.SRM_SYNC_TRIGGER]);
   if (auth.errorResponse) return auth.errorResponse;
 

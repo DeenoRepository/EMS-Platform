@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@ems/database';
 import { requireAuth } from '@/lib/auth-guard';
+import { enforceRateLimit } from '@/lib/rate-limit';
 import { PERMISSIONS } from '@ems/shared';
 
 export const dynamic = 'force-dynamic';
@@ -11,6 +12,9 @@ interface RouteContext {
 
 // GET /api/srm/issues/[id] - Детали инцидента
 export async function GET(req: NextRequest, { params }: RouteContext) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 120, windowMs: 60 * 1000, prefix: 'srm-issue-id-get' });
+  if (rateLimitError) return rateLimitError;
+
   const auth = await requireAuth(req, PERMISSIONS.SRM_DASHBOARD_VIEW);
   if (auth.errorResponse) return auth.errorResponse;
 
@@ -77,6 +81,9 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
 
 // PATCH /api/srm/issues/[id] - Обновление заявки (статус, резолюция, простой, исполнитель)
 export async function PATCH(req: NextRequest, { params }: RouteContext) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 60, windowMs: 60 * 1000, prefix: 'srm-issue-id-patch' });
+  if (rateLimitError) return rateLimitError;
+
   const auth = await requireAuth(req, PERMISSIONS.SRM_REQUESTS_MANAGE);
   if (auth.errorResponse) return auth.errorResponse;
 
@@ -189,6 +196,9 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
 
 // DELETE /api/srm/issues/[id] - Удаление инцидента
 export async function DELETE(req: NextRequest, { params }: RouteContext) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 30, windowMs: 60 * 1000, prefix: 'srm-issue-id-delete' });
+  if (rateLimitError) return rateLimitError;
+
   const auth = await requireAuth(req, PERMISSIONS.SRM_REQUESTS_MANAGE);
   if (auth.errorResponse) return auth.errorResponse;
 

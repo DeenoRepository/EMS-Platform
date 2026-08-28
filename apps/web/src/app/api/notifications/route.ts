@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse } from '@/lib/auth-guard';
+import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@ems/database';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 120, windowMs: 60 * 1000, prefix: 'notifications-get' });
+  if (rateLimitError) return rateLimitError;
+
   try {
     const user = await getCurrentUser(req);
     if (!user) {

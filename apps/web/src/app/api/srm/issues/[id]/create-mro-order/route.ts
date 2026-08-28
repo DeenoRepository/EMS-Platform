@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { safeErrorResponse } from '@/lib/safe-error';
 import { requireAuth } from '@/lib/auth-guard';
+import { enforceRateLimit } from '@/lib/rate-limit';
 import { PERMISSIONS } from '@ems/shared';
 import { createMroWorkOrderFromIssue } from '@/lib/jira-service';
 
@@ -12,6 +13,9 @@ interface RouteContext {
 
 // POST /api/srm/issues/[id]/create-mro-order - Создание аварийного заказ-наряда в MRO
 export async function POST(req: NextRequest, { params }: RouteContext) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 30, windowMs: 60 * 1000, prefix: 'srm-create-mro-order' });
+  if (rateLimitError) return rateLimitError;
+
   const auth = await requireAuth(req, PERMISSIONS.MRO_SCHEDULE_MANAGE);
   if (auth.errorResponse) return auth.errorResponse;
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth-guard';
+import { enforceRateLimit } from '@/lib/rate-limit';
 import { PERMISSIONS } from '@ems/shared';
 import { getSrmAdapter } from '@/lib/srm-providers';
 import { SrmProviderType, SrmAuthType } from '@ems/database';
@@ -14,6 +15,9 @@ export const dynamic = 'force-dynamic';
  * Проверка соединения с внешним API (Jira, Redmine, GitLab, REST) до сохранения конфигурации
  */
 export async function POST(req: NextRequest) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 10, windowMs: 60 * 1000, prefix: 'srm-test-conn' });
+  if (rateLimitError) return rateLimitError;
+
   const auth = await requireAuth(req, [
     PERMISSIONS.ADMIN_SETTINGS_MANAGE,
     PERMISSIONS.SRM_SYNC_TRIGGER,

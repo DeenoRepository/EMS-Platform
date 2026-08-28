@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth-guard';
 import { safeErrorResponse } from '@/lib/safe-error';
+import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma, SrmProviderType, SrmAuthType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { getAvailableSrmProviders, sanitizeAuthConfig } from '@/lib/srm-providers';
@@ -8,6 +9,9 @@ import { getAvailableSrmProviders, sanitizeAuthConfig } from '@/lib/srm-provider
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 60, windowMs: 60 * 1000, prefix: 'srm-integrations-get' });
+  if (rateLimitError) return rateLimitError;
+
   const auth = await requireAuth(req, PERMISSIONS.SRM_DASHBOARD_VIEW);
   if (auth.errorResponse) return auth.errorResponse;
 
@@ -43,6 +47,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 30, windowMs: 60 * 1000, prefix: 'srm-integrations-post' });
+  if (rateLimitError) return rateLimitError;
+
   const auth = await requireAuth(req, [PERMISSIONS.ADMIN_SETTINGS_MANAGE, PERMISSIONS.SRM_SYNC_TRIGGER]);
   if (auth.errorResponse) return auth.errorResponse;
 

@@ -3,13 +3,16 @@ import fs from 'fs';
 import path from 'path';
 import { getAbsoluteFilePath } from '@/lib/storage';
 import { findStoredFileResource, canReadStoredFile, normalizeStoredFilePath } from '@/lib/file-access';
-
+import { enforceRateLimit } from '@/lib/rate-limit';
 import { getCurrentUser, unauthorizedResponse } from '@/lib/auth-guard';
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 120, windowMs: 60 * 1000, prefix: 'files-get' });
+  if (rateLimitError) return rateLimitError;
+
   const { path: pathSegments } = await params;
   try {
     // 1. Проверка аутентификации

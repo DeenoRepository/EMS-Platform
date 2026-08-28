@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth-guard';
+import { enforceRateLimit } from '@/lib/rate-limit';
 import { PERMISSIONS } from '@ems/shared';
 import { calculateAdvancedRamsMetrics } from '@/lib/jira-service';
 
@@ -7,6 +8,9 @@ export const dynamic = 'force-dynamic';
 
 // GET /api/srm/analytics/reliability - Комплексная RAMS и RCM аналитика надежности оборудования
 export async function GET(req: NextRequest) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 60, windowMs: 60 * 1000, prefix: 'srm-reliability-get' });
+  if (rateLimitError) return rateLimitError;
+
   const auth = await requireAuth(req, PERMISSIONS.SRM_DASHBOARD_VIEW);
   if (auth.errorResponse) return auth.errorResponse;
 

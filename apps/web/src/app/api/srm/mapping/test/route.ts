@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth-guard';
 import { safeErrorResponse } from '@/lib/safe-error';
+import { enforceRateLimit } from '@/lib/rate-limit';
 import { PERMISSIONS } from '@ems/shared';
 import { testJiraFieldMapping, JiraFieldMappingConfig } from '@/lib/jira-service';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 30, windowMs: 60 * 1000, prefix: 'srm-mapping-test' });
+  if (rateLimitError) return rateLimitError;
+
   const auth = await requireAuth(req, PERMISSIONS.SRM_DASHBOARD_VIEW);
   if (auth.errorResponse) return auth.errorResponse;
 

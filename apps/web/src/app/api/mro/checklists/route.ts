@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@ems/database';
 import { requireAuth } from '@/lib/auth-guard';
+import { enforceRateLimit } from '@/lib/rate-limit';
 import { PERMISSIONS } from '@ems/shared';
 
 export const dynamic = 'force-dynamic';
 
 // GET /api/mro/checklists - Список шаблонов чек-листов
 export async function GET(req: NextRequest) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 120, windowMs: 60 * 1000, prefix: 'mro-checklists-get' });
+  if (rateLimitError) return rateLimitError;
+
   const auth = await requireAuth(req, PERMISSIONS.MRO_SCHEDULE_VIEW);
   if (auth.errorResponse) return auth.errorResponse;
 
@@ -32,6 +36,9 @@ export async function GET(req: NextRequest) {
 
 // POST /api/mro/checklists - Создание шаблона чек-листа
 export async function POST(req: NextRequest) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 30, windowMs: 60 * 1000, prefix: 'mro-checklists-post' });
+  if (rateLimitError) return rateLimitError;
+
   const auth = await requireAuth(req, PERMISSIONS.MRO_SCHEDULE_MANAGE);
   if (auth.errorResponse) return auth.errorResponse;
 

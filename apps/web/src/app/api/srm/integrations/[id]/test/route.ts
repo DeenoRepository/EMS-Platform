@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth-guard';
+import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { getSrmAdapter } from '@/lib/srm-providers';
@@ -9,6 +10,9 @@ import { toSafeErrorDetails } from '@/lib/safe-error';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 10, windowMs: 60 * 1000, prefix: 'srm-test-id' });
+  if (rateLimitError) return rateLimitError;
+
   const auth = await requireAuth(req, [PERMISSIONS.SRM_SYNC_TRIGGER, PERMISSIONS.ADMIN_SETTINGS_MANAGE]);
   if (auth.errorResponse) return auth.errorResponse;
 

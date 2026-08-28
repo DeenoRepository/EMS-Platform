@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { enforceRateLimit } from '@/lib/rate-limit';
 import { hasPermission } from '@ems/auth';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
@@ -8,6 +9,9 @@ export const dynamic = 'force-dynamic';
 
 // GET /api/users - Получение списка активных пользователей для селекторов и назначения ответственных
 export async function GET(req: NextRequest) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 120, windowMs: 60 * 1000, prefix: 'users-list-get' });
+  if (rateLimitError) return rateLimitError;
+
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();

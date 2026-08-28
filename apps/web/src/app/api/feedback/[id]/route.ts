@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
 import { safeErrorResponse } from '@/lib/safe-error';
+import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
@@ -13,6 +14,9 @@ interface RouteParams {
 
 // GET /api/feedback/[id] - Детали обращения
 export async function GET(req: NextRequest, { params }: RouteParams) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 120, windowMs: 60 * 1000, prefix: 'feedback-id-get' });
+  if (rateLimitError) return rateLimitError;
+
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
@@ -81,6 +85,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
 // PATCH /api/feedback/[id] - Обновление статуса, ответственного или резолюции
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 60, windowMs: 60 * 1000, prefix: 'feedback-id-patch' });
+  if (rateLimitError) return rateLimitError;
+
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
@@ -198,6 +205,9 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
 // DELETE /api/feedback/[id] - Удаление обращения (Soft delete)
 export async function DELETE(req: NextRequest, { params }: RouteParams) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 20, windowMs: 60 * 1000, prefix: 'feedback-id-delete' });
+  if (rateLimitError) return rateLimitError;
+
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();

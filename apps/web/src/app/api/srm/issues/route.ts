@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@ems/database';
 import { requireAuth } from '@/lib/auth-guard';
 import { safeErrorResponse } from '@/lib/safe-error';
+import { enforceRateLimit } from '@/lib/rate-limit';
 import { PERMISSIONS } from '@ems/shared';
 import { syncJiraIssues, createInternalServiceRequest } from '@/lib/jira-service';
 
@@ -9,6 +10,9 @@ export const dynamic = 'force-dynamic';
 
 // GET /api/srm/issues - Список инцидентов и сервисных заявок с фильтрацией и связями
 export async function GET(req: NextRequest) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 120, windowMs: 60 * 1000, prefix: 'srm-issues-get' });
+  if (rateLimitError) return rateLimitError;
+
   const auth = await requireAuth(req, PERMISSIONS.SRM_DASHBOARD_VIEW);
   if (auth.errorResponse) return auth.errorResponse;
 
@@ -93,6 +97,9 @@ export async function GET(req: NextRequest) {
 
 // POST /api/srm/issues - Создание внутренней сервисной заявки
 export async function POST(req: NextRequest) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 30, windowMs: 60 * 1000, prefix: 'srm-issues-post' });
+  if (rateLimitError) return rateLimitError;
+
   const auth = await requireAuth(req, PERMISSIONS.SRM_REQUESTS_CREATE);
   if (auth.errorResponse) return auth.errorResponse;
 

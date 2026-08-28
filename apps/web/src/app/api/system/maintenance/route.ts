@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@ems/database';
 import { PERMISSIONS, PlatformMaintenanceStatus } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
@@ -48,7 +49,10 @@ async function getMaintenanceStatus(): Promise<PlatformMaintenanceStatus> {
 }
 
 // GET: Публичный статус ТО (доступен без обязательной авторизации)
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 60, windowMs: 60 * 1000, prefix: 'maint-status-get' });
+  if (rateLimitError) return rateLimitError;
+
   try {
     const status = await getMaintenanceStatus();
     return NextResponse.json({
@@ -83,6 +87,9 @@ const updateMaintenanceSchema = z.object({
 
 // PATCH: Обновление статусов ТО (только для администраторов)
 export async function PATCH(req: NextRequest) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 20, windowMs: 60 * 1000, prefix: 'maint-status-patch' });
+  if (rateLimitError) return rateLimitError;
+
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
