@@ -64,9 +64,8 @@ export async function POST(req: NextRequest) {
       message: 'Подключение к базе данных PostgreSQL успешно установлено!',
       testedUrl: connectionUrl.replace(/:[^:@]+@/, ':****@'), // Hide password in response
     });
-  } catch (error: any) {
-    console.error('Database connection test failed:', error);
-    let errorMessage = error.message || 'Не удалось подключиться к базе данных';
+  } catch (error: unknown) {
+    let errorMessage = error instanceof Error ? error.message : 'Не удалось подключиться к базе данных';
     if (errorMessage.includes('authentication failed')) {
       errorMessage = 'Ошибка аутентификации: неверный пользователь или пароль PostgreSQL';
     } else if (errorMessage.includes('ECONNREFUSED')) {
