@@ -67,10 +67,11 @@ export function ErrorState({
           width: 64,
           height: 64,
           borderRadius: '50%',
-          bgcolor: '#fef2f2',
-          color: '#dc2626',
+          bgcolor: 'error.light',
+          color: 'error.main',
           mb: 2.5,
-          border: '1px solid #fee2e2',
+          border: '1px solid',
+          borderColor: 'error.light',
         }}
       >
         {icon || <ErrorOutlineIcon sx={{ fontSize: 36 }} />}
@@ -120,8 +121,6 @@ export function ErrorState({
               px: 2.5,
               py: 0.75,
               borderRadius: '8px',
-              backgroundColor: '#0284c7',
-              '&:hover': { backgroundColor: '#0369a1' },
             }}
           >
             Повторить попытку
@@ -138,11 +137,7 @@ export function ErrorState({
               px: 2.5,
               py: 0.75,
               borderRadius: '8px',
-              borderColor: '#e2e8f0',
-              color: '#334155',
               fontWeight: 600,
-              backgroundColor: '#ffffff',
-              '&:hover': { borderColor: '#cbd5e1', backgroundColor: '#f8fafc' },
             }}
           >
             На главную
@@ -158,11 +153,7 @@ export function ErrorState({
               px: 2.5,
               py: 0.75,
               borderRadius: '8px',
-              borderColor: '#e2e8f0',
-              color: '#334155',
               fontWeight: 600,
-              backgroundColor: '#ffffff',
-              '&:hover': { borderColor: '#cbd5e1', backgroundColor: '#f8fafc' },
             }}
           >
             На главную
@@ -180,9 +171,9 @@ export function ErrorState({
               justifyContent: 'center',
               gap: 0.5,
               cursor: 'pointer',
-              color: '#64748b',
+              color: 'text.secondary',
               userSelect: 'none',
-              '&:hover': { color: '#0f172a' },
+              '&:hover': { color: 'text.primary' },
             }}
           >
             <Typography variant="caption" fontWeight={600}>
@@ -206,8 +197,8 @@ export function ErrorState({
               sx={{
                 mt: 1.5,
                 p: 2,
-                bgcolor: '#0f172a',
-                color: '#f87171',
+                bgcolor: 'text.primary',
+                color: 'error.light',
                 borderRadius: '8px',
                 fontSize: '0.75rem',
                 fontFamily: 'monospace',
@@ -234,8 +225,9 @@ export function ErrorState({
         elevation={0}
         sx={{
           borderRadius: '12px',
-          border: '1px solid #e2e8f0',
-          backgroundColor: '#ffffff',
+          border: '1px solid',
+          borderColor: 'divider',
+          backgroundColor: 'background.paper',
           overflow: 'hidden',
         }}
       >

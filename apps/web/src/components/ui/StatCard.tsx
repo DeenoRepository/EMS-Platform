@@ -56,14 +56,14 @@ export function StatCard({
         borderRadius: '12px',
         backgroundColor: 'background.paper',
         boxShadow: active
-          ? `0 4px 12px 0 ${accentColor ? `${accentColor}20` : 'rgba(2, 132, 199, 0.12)'}`
+          ? `0 4px 12px 0 rgba(2, 132, 199, 0.12)`
           : '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
         transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         cursor: isClickable ? 'pointer' : 'default',
         ...(isClickable && {
           '&:hover': {
             transform: 'translateY(-2px)',
-            boxShadow: '0 6px 16px -2px rgba(15, 23, 42, 0.08)',
+            boxShadow: (theme) => `0 6px 16px -2px rgba(15, 23, 42, 0.08)`,
             borderColor: accentColor || 'primary.main',
           },
           '&:active': {
