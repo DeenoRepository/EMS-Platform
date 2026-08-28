@@ -37,6 +37,7 @@ import AssignmentTurnedInOutlinedIcon from '@mui/icons-material/AssignmentTurned
 import AssignmentOutlinedIcon from '@mui/icons-material/AssignmentOutlined';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import PageHeader from '@/components/layout/PageHeader';
+import { sortApprovals } from '../approval-registry-model';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   APPROVAL_TYPE_MAP,
@@ -143,61 +144,10 @@ function ApprovalsListContent() {
     setSortField(property);
   };
 
-  const sortedItems = useMemo(() => {
-    if (!sortField) return items;
-    return [...items].sort((a, b) => {
-      let aVal: string | number = '';
-      let bVal: string | number = '';
-      switch (sortField) {
-        case 'title':
-          aVal = a.title || '';
-          bVal = b.title || '';
-          break;
-        case 'inventoryNumber':
-          aVal = a.equipment?.inventoryNumber || '';
-          bVal = b.equipment?.inventoryNumber || '';
-          break;
-        case 'equipment':
-          aVal = a.equipment?.name || '';
-          bVal = b.equipment?.name || '';
-          break;
-        case 'manufacturer':
-          aVal = a.equipment?.manufacturer || '';
-          bVal = b.equipment?.manufacturer || '';
-          break;
-        case 'type':
-          aVal = a.type || '';
-          bVal = b.type || '';
-          break;
-        case 'status':
-          aVal = a.status || '';
-          bVal = b.status || '';
-          break;
-        case 'requester':
-          aVal = a.requester?.displayName || '';
-          bVal = b.requester?.displayName || '';
-          break;
-        case 'date':
-          aVal = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-          break;
-        case 'reviewer':
-          aVal = a.reviewer?.displayName || '';
-          bVal = b.reviewer?.displayName || '';
-          break;
-        default:
-          aVal = String((a as unknown as Record<string, unknown>)[sortField] ?? '');
-          bVal = String((b as unknown as Record<string, unknown>)[sortField] ?? '');
-      }
-
-      if (typeof aVal === 'number' && typeof bVal === 'number') {
-        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
-      }
-      return sortDirection === 'asc'
-        ? String(aVal).localeCompare(String(bVal), 'ru')
-        : String(bVal).localeCompare(String(aVal), 'ru');
-    });
-  }, [items, sortField, sortDirection]);
+  const sortedItems = useMemo(
+    () => sortApprovals(items, sortField, sortDirection),
+    [items, sortField, sortDirection]
+  );
 
   const canAccessApprovals =
     user?.roles?.includes('admin') ||
