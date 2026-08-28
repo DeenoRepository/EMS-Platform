@@ -3,6 +3,11 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma, StockTransferStatus, OperationType, Prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import {
+  generateTransferNumber,
+  buildTransferWhereInput,
+  getTransferTabCounts,
+} from '@/lib/wms-transfers-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,71 +43,13 @@ export async function GET(req: NextRequest) {
       userWarehouseIds = userWhs.map((w) => w.id);
     }
 
-    const where: Prisma.StockTransferWhereInput = {};
-
-    if (status && Object.values(StockTransferStatus).includes(status)) {
-      where.status = status;
-    }
-
-    if (warehouseId) {
-      if (mode === 'inbound') {
-        where.targetWarehouseId = warehouseId;
-        where.status = StockTransferStatus.IN_TRANSIT;
-      } else if (mode === 'requests') {
-        where.sourceWarehouseId = warehouseId;
-        where.status = StockTransferStatus.REQUESTED;
-      } else if (mode === 'outbound') {
-        where.sourceWarehouseId = warehouseId;
-        where.status = StockTransferStatus.IN_TRANSIT;
-      } else if (mode === 'my_requests') {
-        where.createdById = user.userId;
-        if (!status) where.status = StockTransferStatus.REQUESTED;
-      } else {
-        where.OR = [
-          { sourceWarehouseId: warehouseId },
-          { targetWarehouseId: warehouseId },
-        ];
-      }
-    } else {
-      if (mode === 'inbound') {
-        where.status = StockTransferStatus.IN_TRANSIT;
-      } else if (mode === 'requests') {
-        where.status = StockTransferStatus.REQUESTED;
-      } else if (mode === 'outbound') {
-        where.status = StockTransferStatus.IN_TRANSIT;
-      } else if (mode === 'my_requests') {
-        where.createdById = user.userId;
-        if (!status) where.status = StockTransferStatus.REQUESTED;
-      }
-      // mode === 'all' -> без ограничений
-    }
-
-    const andConditions: Prisma.StockTransferWhereInput[] = [];
-
-    if (search) {
-      andConditions.push({
-        OR: [
-          { transferNumber: { contains: search, mode: 'insensitive' } },
-          { requestReason: { contains: search, mode: 'insensitive' } },
-          { rejectionReason: { contains: search, mode: 'insensitive' } },
-          { sourceWarehouse: { name: { contains: search, mode: 'insensitive' } } },
-          { targetWarehouse: { name: { contains: search, mode: 'insensitive' } } },
-          {
-            items: {
-              some: {
-                nomenclature: {
-                  name: { contains: search, mode: 'insensitive' },
-                },
-              },
-            },
-          },
-        ],
-      });
-    }
-
-    if (andConditions.length > 0) {
-      where.AND = andConditions;
-    }
+    const where = buildTransferWhereInput({
+      mode,
+      status,
+      warehouseId,
+      search,
+      userId: user.userId,
+    });
 
     const [total, items] = await Promise.all([
       prisma.stockTransfer.count({ where }),
@@ -155,67 +102,12 @@ export async function GET(req: NextRequest) {
       }),
     ]);
 
-    // Подсчет счетчиков для вкладок
-    let counts = { inbound: 0, requests: 0, outbound: 0, total };
-    if (isAdmin) {
-      const [inboundCount, requestsCount, outboundCount] = await Promise.all([
-        prisma.stockTransfer.count({
-          where: {
-            ...(warehouseId ? { targetWarehouseId: warehouseId } : {}),
-            status: StockTransferStatus.IN_TRANSIT,
-          },
-        }),
-        prisma.stockTransfer.count({
-          where: {
-            ...(warehouseId ? { sourceWarehouseId: warehouseId } : {}),
-            status: StockTransferStatus.REQUESTED,
-          },
-        }),
-        prisma.stockTransfer.count({
-          where: {
-            ...(warehouseId ? { sourceWarehouseId: warehouseId } : {}),
-            status: StockTransferStatus.IN_TRANSIT,
-          },
-        }),
-      ]);
-      counts = {
-        inbound: inboundCount,
-        requests: requestsCount,
-        outbound: outboundCount,
-        total,
-      };
-    } else if (userWarehouseIds.length > 0) {
-      const targetWhFilter = warehouseId
-        ? (userWarehouseIds.includes(warehouseId) ? [warehouseId] : [])
-        : userWarehouseIds;
-
-      const [inboundCount, requestsCount, outboundCount] = await Promise.all([
-        prisma.stockTransfer.count({
-          where: {
-            targetWarehouseId: { in: targetWhFilter },
-            status: StockTransferStatus.IN_TRANSIT,
-          },
-        }),
-        prisma.stockTransfer.count({
-          where: {
-            sourceWarehouseId: { in: targetWhFilter },
-            status: StockTransferStatus.REQUESTED,
-          },
-        }),
-        prisma.stockTransfer.count({
-          where: {
-            sourceWarehouseId: { in: targetWhFilter },
-            status: StockTransferStatus.IN_TRANSIT,
-          },
-        }),
-      ]);
-      counts = {
-        inbound: inboundCount,
-        requests: requestsCount,
-        outbound: outboundCount,
-        total,
-      };
-    }
+    const counts = await getTransferTabCounts({
+      isAdmin,
+      warehouseId,
+      userWarehouseIds,
+      total,
+    });
 
     return NextResponse.json({
       success: true,
@@ -340,10 +232,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Генерируем уникальный номер перемещения
-    const prefix = isRequest ? 'REQ' : 'TR';
-    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const uniqueSuffix = crypto.randomUUID().replace(/-/g, '').slice(0, 6).toUpperCase();
-    const transferNumber = `${prefix}-${dateStr}-${uniqueSuffix}`;
+    const transferNumber = generateTransferNumber(isRequest);
 
     // Если это прямое перемещение (отгрузка), проверяем остатки и сразу списываем
     if (!isRequest) {
