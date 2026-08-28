@@ -3,6 +3,7 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, testLdapConnection } from '@ems/auth';
 import { enforceRateLimit } from '@/lib/rate-limit';
+import { validateOutboundUrl } from '@/lib/outbound-url';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,12 +30,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const validatedUrl = await validateOutboundUrl(ldapUrl, {
+      allowedSchemes: ['ldap:', 'ldaps:'],
+    });
+    if (!validatedUrl.ok) {
+      return NextResponse.json({ success: false, error: validatedUrl.error }, { status: 400 });
+    }
+
     const startTime = Date.now();
     const bindDn = process.env.LDAP_BIND_DN;
     const bindPassword = process.env.LDAP_BIND_PASSWORD;
 
     const result = await testLdapConnection({
-      url: ldapUrl.trim(),
+      url: validatedUrl.url.toString(),
       bindDn,
       bindPassword,
       searchBase: searchBase?.trim(),
@@ -48,7 +56,7 @@ export async function POST(req: NextRequest) {
         latencyMs,
         message: result.message || `Подключение к LDAP-серверу успешно установлено (${latencyMs} мс)`,
         details: {
-          url: ldapUrl,
+          url: validatedUrl.url.toString(),
           searchBase: searchBase || 'Не указана',
           authMode: bindDn ? 'Сервисная учетная запись (Bind DN)' : 'Анонимное подключение',
         },

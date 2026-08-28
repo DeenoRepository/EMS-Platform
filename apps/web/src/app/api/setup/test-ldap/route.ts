@@ -5,6 +5,7 @@ import { testLdapConnection } from '@ems/auth';
 import { prisma } from '@ems/database';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { getCurrentUser } from '@/lib/auth-guard';
+import { validateOutboundUrl } from '@/lib/outbound-url';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,15 +32,22 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { url, bindDn, bindPassword, searchBase, searchFilter, testLogin, testPassword } = body;
 
-    if (!url) {
+    if (!url || typeof url !== 'string') {
       return NextResponse.json(
         { success: false, error: 'Укажите URL LDAP-сервера (например, ldap://ad.company.local:389)' },
         { status: 400 }
       );
     }
 
+    const validatedUrl = await validateOutboundUrl(url, {
+      allowedSchemes: ['ldap:', 'ldaps:'],
+    });
+    if (!validatedUrl.ok) {
+      return NextResponse.json({ success: false, error: validatedUrl.error }, { status: 400 });
+    }
+
     const result = await testLdapConnection({
-      url,
+      url: validatedUrl.url.toString(),
       bindDn: bindDn || undefined,
       bindPassword: bindPassword || undefined,
       searchBase: searchBase || undefined,
