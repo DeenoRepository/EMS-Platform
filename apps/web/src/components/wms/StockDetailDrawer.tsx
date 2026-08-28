@@ -39,6 +39,7 @@ import { useAuth } from '@/lib/auth-client';
 import { useRouter } from 'next/navigation';
 import { StockDetailOperationsTab } from './StockDetailOperationsTab';
 import { StockDetailLabelTab } from './StockDetailLabelTab';
+import { StockDetailEquipmentTab } from './StockDetailEquipmentTab';
 
 export interface StockDetailData {
   id: string;
@@ -443,57 +444,11 @@ export default function StockDetailDrawer({
           </Stack>
         )}
 
-        {/* TAB 1: Совместимое оборудование */}
-        {tabIndex === 1 && (
-          <Stack spacing={1.5}>
-            <Typography variant="caption" sx={{ color: 'text.disabled' }}>
-              Оборудование и технологические линии, где устанавливается данная деталь:
-            </Typography>
-
-            {stockItem.compatibleEquipment.length === 0 ? (
-              <EmptyState
-                icon={<PrecisionManufacturingIcon sx={{ fontSize: 32, color: 'text.disabled' }} />}
-                title="Оборудование не привязано"
-                description="В каталоге ТМЦ нет привязки к конкретному оборудованию"
-                minHeight={160}
-              />
-            ) : (
-              stockItem.compatibleEquipment.map((eq) => (
-                <Paper
-                  key={eq.id}
-                  elevation={0}
-                  onClick={() => router.push(`/equipment/${eq.id}`)}
-                  sx={{
-                    p: 1.75,
-                    borderRadius: '8px',
-                    border: '1px solid divider',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    '&:hover': {
-                      borderColor: 'primary.main',
-                      bgcolor: 'background.default',
-                      transform: 'translateY(-1px)',
-                    },
-                  }}
-                >
-                  <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
-                      {eq.name}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: 'text.disabled' }}>
-                      Инв. №: <strong>{eq.inventoryNumber}</strong>
-                    </Typography>
-                  </Box>
-
-                  <StatusBadge status="PASSPORT" size="small" />
-                </Paper>
-              ))
-            )}
-          </Stack>
-        )}
+        <StockDetailEquipmentTab
+          activeTab={tabIndex}
+          stockItem={stockItem}
+          onOpenEquipment={(equipmentId) => router.push(`/equipment/${equipmentId}`)}
+        />
 
         <StockDetailOperationsTab
           activeTab={tabIndex}
