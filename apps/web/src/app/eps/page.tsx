@@ -39,6 +39,7 @@ import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import PageHeader from '@/components/layout/PageHeader';
+import { EPS_COLUMNS, sortEquipmentRegistry, type EquipmentRegistryItem } from '@/components/eps/equipment-registry-model';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { EQUIPMENT_STATUS_MAP, formatDate, PERMISSIONS } from '@ems/shared';
 import * as XLSX from 'xlsx';
@@ -61,28 +62,7 @@ import {
 import { EquipmentWizardDialog } from '@/components/eps';
 import { PlatformMaintenanceStatus } from '@ems/shared';
 
-interface EquipmentCustomFields {
-  [key: string]: string | number | boolean | null | undefined;
-}
-
-interface EquipmentItem {
-  id: string;
-  name: string;
-  inventoryNumber: string | null;
-  serialNumber: string | null;
-  manufacturer: string | null;
-  model: string | null;
-  location: string | null;
-  status: string;
-  commissionDate: string | null;
-  primaryPhoto: string | null;
-  customFields?: EquipmentCustomFields | null;
-  tags: { id: string; name: string; color: string | null }[];
-  counts?: { documents: number; photos: number; maintenancePlans: number; spareParts: number };
-  _count?: { documents?: number; photos?: number; maintenancePlans?: number; spareParts?: number };
-  createdAt: string;
-  updatedAt: string;
-}
+type EquipmentItem = EquipmentRegistryItem;
 
 interface TagItem {
   id: string;
@@ -90,35 +70,6 @@ interface TagItem {
   color: string | null;
 }
 
-const EPS_COLUMNS: TableColumnOption[] = [
-  { id: 'inventoryNumber', label: 'Инвентарный номер', defaultVisible: true },
-  { id: 'name', label: 'Наименование оборудования', defaultVisible: true },
-  { id: 'serialNumber', label: 'Заводской (серийный) номер', defaultVisible: false },
-  { id: 'manufacturer', label: 'Предприятие-изготовитель', defaultVisible: true },
-  { id: 'model', label: 'Модель / Типоразмер', defaultVisible: true },
-  { id: 'location', label: 'Место установки / Технологическая позиция', defaultVisible: true },
-  { id: 'status', label: 'Эксплуатационный статус', defaultVisible: true },
-  { id: 'criticality', label: 'Категория критичности (A / B / C)', defaultVisible: false },
-  { id: 'actualWear', label: 'Степень физического износа (%)', defaultVisible: false },
-  { id: 'eqGroup', label: 'Группа оборудования', defaultVisible: false },
-  { id: 'eqType', label: 'Вид оборудования', defaultVisible: false },
-  { id: 'respPerson', label: 'Ответственное лицо (МОЛ)', defaultVisible: false },
-  { id: 'okofCode', label: 'Код ОКОФ (ОК 013-2014)', defaultVisible: false },
-  { id: 'okpd2Code', label: 'Код ОКПД2 (ОК 034-2014)', defaultVisible: false },
-  { id: 'procCode', label: 'Код технологического процесса', defaultVisible: false },
-  { id: 'maintPeriodicity', label: 'Периодичность регламентного ТО', defaultVisible: false },
-  { id: 'calibrationInterval', label: 'Межповерочный интервал (мес.)', defaultVisible: false },
-  { id: 'cleanRoom', label: 'Класс чистоты помещения (ISO)', defaultVisible: false },
-  { id: 'isCriticalPath', label: 'Влияние на непрерывность процесса', defaultVisible: false },
-  { id: 'isUnique', label: 'Уникальное / единичное оборудование', defaultVisible: false },
-  { id: 'isImported', label: 'Импортное оборудование', defaultVisible: false },
-  { id: 'documentsCount', label: 'Комплект документации (ед.)', defaultVisible: false },
-  { id: 'sparePartsCount', label: 'Комплект ЗИП / Запчасти (ед.)', defaultVisible: false },
-  { id: 'tags', label: 'Технологические метки (теги)', defaultVisible: true },
-  { id: 'commissionDate', label: 'Дата ввода в эксплуатацию', defaultVisible: true },
-  { id: 'updatedAt', label: 'Дата последней корректировки', defaultVisible: false },
-  { id: 'createdAt', label: 'Дата первичной регистрации', defaultVisible: false },
-];
 
 function EquipmentListContent() {
   const router = useRouter();
@@ -269,135 +220,10 @@ function EquipmentListContent() {
     setSortField(property);
   };
 
-  const sortedEquipmentList = useMemo(() => {
-    if (!sortField) return equipmentList;
-    return [...equipmentList].sort((a, b) => {
-      let aVal: string | number | boolean = '';
-      let bVal: string | number | boolean = '';
-      switch (sortField) {
-        case 'inventoryNumber':
-          aVal = a.inventoryNumber || '';
-          bVal = b.inventoryNumber || '';
-          break;
-        case 'name':
-          aVal = a.name || '';
-          bVal = b.name || '';
-          break;
-        case 'serialNumber':
-          aVal = a.serialNumber || '';
-          bVal = b.serialNumber || '';
-          break;
-        case 'manufacturer':
-          aVal = a.manufacturer || '';
-          bVal = b.manufacturer || '';
-          break;
-        case 'model':
-          aVal = a.model || '';
-          bVal = b.model || '';
-          break;
-        case 'location':
-          aVal = a.location || '';
-          bVal = b.location || '';
-          break;
-        case 'status':
-          aVal = a.status || '';
-          bVal = b.status || '';
-          break;
-        case 'criticality':
-          aVal = a.customFields?.criticality || '';
-          bVal = b.customFields?.criticality || '';
-          break;
-        case 'actualWear':
-          aVal = a.customFields?.actual_wear_percentage !== undefined && a.customFields?.actual_wear_percentage !== '' ? Number(a.customFields.actual_wear_percentage) : -1;
-          bVal = b.customFields?.actual_wear_percentage !== undefined && b.customFields?.actual_wear_percentage !== '' ? Number(b.customFields.actual_wear_percentage) : -1;
-          break;
-        case 'eqGroup':
-          aVal = a.customFields?.equipment_group || '';
-          bVal = b.customFields?.equipment_group || '';
-          break;
-        case 'eqType':
-          aVal = a.customFields?.equipment_type || '';
-          bVal = b.customFields?.equipment_type || '';
-          break;
-        case 'respPerson':
-          aVal = a.customFields?.responsible_person_name || '';
-          bVal = b.customFields?.responsible_person_name || '';
-          break;
-        case 'okofCode':
-          aVal = a.customFields?.okof_code || '';
-          bVal = b.customFields?.okof_code || '';
-          break;
-        case 'okpd2Code':
-          aVal = a.customFields?.okpd2_code || '';
-          bVal = b.customFields?.okpd2_code || '';
-          break;
-        case 'procCode':
-          aVal = a.customFields?.process_classifier_code || '';
-          bVal = b.customFields?.process_classifier_code || '';
-          break;
-        case 'maintPeriodicity':
-          aVal = a.customFields?.maintenance_periodicity || '';
-          bVal = b.customFields?.maintenance_periodicity || '';
-          break;
-        case 'calibrationInterval':
-          aVal = a.customFields?.calibration_interval ? Number(a.customFields.calibration_interval) : -1;
-          bVal = b.customFields?.calibration_interval ? Number(b.customFields.calibration_interval) : -1;
-          break;
-        case 'cleanRoom':
-          aVal = a.customFields?.clean_room_class || '';
-          bVal = b.customFields?.clean_room_class || '';
-          break;
-        case 'isCriticalPath':
-          aVal = a.customFields?.is_critical_path ? 1 : 0;
-          bVal = b.customFields?.is_critical_path ? 1 : 0;
-          break;
-        case 'isUnique':
-          aVal = a.customFields?.is_unique ? 1 : 0;
-          bVal = b.customFields?.is_unique ? 1 : 0;
-          break;
-        case 'isImported':
-          aVal = a.customFields?.is_imported ? 1 : 0;
-          bVal = b.customFields?.is_imported ? 1 : 0;
-          break;
-        case 'documentsCount':
-          aVal = a._count?.documents || a.counts?.documents || 0;
-          bVal = b._count?.documents || b.counts?.documents || 0;
-          break;
-        case 'sparePartsCount':
-          aVal = a._count?.spareParts || a.counts?.spareParts || 0;
-          bVal = b._count?.spareParts || b.counts?.spareParts || 0;
-          break;
-        case 'tags':
-          aVal = Array.isArray(a.tags) ? a.tags.map((tag) => tag.name).join(', ') : '';
-          bVal = Array.isArray(b.tags) ? b.tags.map((tag) => tag.name).join(', ') : '';
-          break;
-        case 'commissionDate':
-          aVal = a.commissionDate ? new Date(a.commissionDate).getTime() : 0;
-          bVal = b.commissionDate ? new Date(b.commissionDate).getTime() : 0;
-          break;
-        case 'updatedAt':
-          aVal = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
-          bVal = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
-          break;
-        case 'createdAt':
-          aVal = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-          break;
-        default:
-          aVal = String((a as unknown as Record<string, unknown>)[sortField] ?? '');
-          bVal = String((b as unknown as Record<string, unknown>)[sortField] ?? '');
-      }
-
-      if (typeof aVal === 'number' && typeof bVal === 'number') {
-        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
-      }
-      const aText = typeof aVal === 'boolean' ? String(aVal) : String(aVal);
-      const bText = typeof bVal === 'boolean' ? String(bVal) : String(bVal);
-      return sortDirection === 'asc'
-        ? aText.localeCompare(bText, 'ru')
-        : bText.localeCompare(aText, 'ru');
-    });
-  }, [equipmentList, sortField, sortDirection]);
+  const sortedEquipmentList = useMemo(
+    () => sortEquipmentRegistry(equipmentList, sortField, sortDirection),
+    [equipmentList, sortField, sortDirection]
+  );
 
   const handleRowClick = (eq: EquipmentItem) => {
     router.push(`/eps/${eq.id}`);
