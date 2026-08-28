@@ -62,6 +62,8 @@ import {
 } from '@/components/ui';
 import { ApprovalWizardDialog } from '@/components/eps';
 
+type ApprovalProposedData = { targetStatus?: string } & Record<string, unknown>;
+
 interface ApprovalItem {
   id: string;
   equipmentId: string;
@@ -69,7 +71,7 @@ interface ApprovalItem {
   status: string;
   title: string;
   description: string | null;
-  proposedData: any | null;
+  proposedData: ApprovalProposedData | null;
   requesterId: string;
   reviewerId: string | null;
   reviewedAt: string | null;
@@ -144,8 +146,8 @@ function ApprovalsListContent() {
   const sortedItems = useMemo(() => {
     if (!sortField) return items;
     return [...items].sort((a, b) => {
-      let aVal: any = '';
-      let bVal: any = '';
+      let aVal: string | number = '';
+      let bVal: string | number = '';
       switch (sortField) {
         case 'title':
           aVal = a.title || '';
@@ -184,8 +186,8 @@ function ApprovalsListContent() {
           bVal = b.reviewer?.displayName || '';
           break;
         default:
-          aVal = (a as any)[sortField] || '';
-          bVal = (b as any)[sortField] || '';
+          aVal = String((a as unknown as Record<string, unknown>)[sortField] ?? '');
+          bVal = String((b as unknown as Record<string, unknown>)[sortField] ?? '');
       }
 
       if (typeof aVal === 'number' && typeof bVal === 'number') {
@@ -252,11 +254,11 @@ function ApprovalsListContent() {
         const json = await res.json();
         if (json.success) {
           setEquipmentList(
-            json.data.items.map((eq: any) => ({
-              id: eq.id,
-              name: eq.name,
-              inventoryNumber: eq.inventoryNumber,
-              status: eq.status,
+            (json.data.items as EquipmentOption[]).map((equipment) => ({
+              id: equipment.id,
+              name: equipment.name,
+              inventoryNumber: equipment.inventoryNumber,
+              status: equipment.status,
             }))
           );
         }

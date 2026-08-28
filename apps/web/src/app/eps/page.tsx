@@ -61,6 +61,10 @@ import {
 import { EquipmentWizardDialog } from '@/components/eps';
 import { PlatformMaintenanceStatus } from '@ems/shared';
 
+interface EquipmentCustomFields {
+  [key: string]: string | number | boolean | null | undefined;
+}
+
 interface EquipmentItem {
   id: string;
   name: string;
@@ -72,7 +76,7 @@ interface EquipmentItem {
   status: string;
   commissionDate: string | null;
   primaryPhoto: string | null;
-  customFields?: Record<string, any> | null;
+  customFields?: EquipmentCustomFields | null;
   tags: { id: string; name: string; color: string | null }[];
   counts?: { documents: number; photos: number; maintenancePlans: number; spareParts: number };
   _count?: { documents?: number; photos?: number; maintenancePlans?: number; spareParts?: number };
@@ -268,8 +272,8 @@ function EquipmentListContent() {
   const sortedEquipmentList = useMemo(() => {
     if (!sortField) return equipmentList;
     return [...equipmentList].sort((a, b) => {
-      let aVal: any = '';
-      let bVal: any = '';
+      let aVal: string | number | boolean = '';
+      let bVal: string | number | boolean = '';
       switch (sortField) {
         case 'inventoryNumber':
           aVal = a.inventoryNumber || '';
@@ -364,8 +368,8 @@ function EquipmentListContent() {
           bVal = b._count?.spareParts || b.counts?.spareParts || 0;
           break;
         case 'tags':
-          aVal = Array.isArray(a.tags) ? a.tags.map((t: any) => t.name || t).join(', ') : '';
-          bVal = Array.isArray(b.tags) ? b.tags.map((t: any) => t.name || t).join(', ') : '';
+          aVal = Array.isArray(a.tags) ? a.tags.map((tag) => tag.name).join(', ') : '';
+          bVal = Array.isArray(b.tags) ? b.tags.map((tag) => tag.name).join(', ') : '';
           break;
         case 'commissionDate':
           aVal = a.commissionDate ? new Date(a.commissionDate).getTime() : 0;
@@ -380,16 +384,18 @@ function EquipmentListContent() {
           bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0;
           break;
         default:
-          aVal = (a as unknown as Record<string, unknown>)[sortField] ?? '';
-          bVal = (b as unknown as Record<string, unknown>)[sortField] ?? '';
+          aVal = String((a as unknown as Record<string, unknown>)[sortField] ?? '');
+          bVal = String((b as unknown as Record<string, unknown>)[sortField] ?? '');
       }
 
       if (typeof aVal === 'number' && typeof bVal === 'number') {
         return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
       }
+      const aText = typeof aVal === 'boolean' ? String(aVal) : String(aVal);
+      const bText = typeof bVal === 'boolean' ? String(bVal) : String(bVal);
       return sortDirection === 'asc'
-        ? String(aVal).localeCompare(String(bVal), 'ru')
-        : String(bVal).localeCompare(String(aVal), 'ru');
+        ? aText.localeCompare(bText, 'ru')
+        : bText.localeCompare(aText, 'ru');
     });
   }, [equipmentList, sortField, sortDirection]);
 
