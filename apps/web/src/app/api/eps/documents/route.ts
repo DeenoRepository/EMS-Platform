@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { prisma, DocumentType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
@@ -124,12 +125,8 @@ export async function GET(req: NextRequest) {
         },
       },
     });
-  } catch (error: any) {
-    console.error('Ошибка получения списка документов EPS:', error);
-    return NextResponse.json(
-      { success: false, error: 'Ошибка получения реестра документов' },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка получения реестра документов');
   }
 }
 
@@ -206,8 +203,11 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: document });
-  } catch (error: any) {
-    console.error('Ошибка создания документа:', error);
-    return NextResponse.json({ success: false, error: error.message || 'Ошибка сохранения документа' }, { status: error.message?.includes('Недопустимый') || error.message?.includes('превышает') ? 400 : 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : '';
+    if (message.includes('Недопустимый') || message.includes('превышает')) {
+      return NextResponse.json({ success: false, error: message }, { status: 400 });
+    }
+    return safeErrorResponse(error, 'Ошибка сохранения документа');
   }
 }

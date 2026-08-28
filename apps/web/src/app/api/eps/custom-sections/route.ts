@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@ems/database';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 
@@ -107,9 +108,8 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: section }, { status: 201 });
-  } catch (error: any) {
-    console.error('Ошибка POST /api/eps/custom-sections:', error);
-    return NextResponse.json({ success: false, error: error.message || 'Ошибка сервера' }, { status: 500 });
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка создания раздела');
   }
 }
 
@@ -149,9 +149,8 @@ export async function PATCH(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: updated });
-  } catch (error: any) {
-    console.error('Ошибка PATCH /api/eps/custom-sections:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка обновления раздела' }, { status: 500 });
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка обновления раздела');
   }
 }
 
@@ -198,8 +197,7 @@ export async function DELETE(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, message: 'Раздел удален' });
-  } catch (error: any) {
-    console.error('Ошибка DELETE /api/eps/custom-sections:', error);
-    return NextResponse.json({ success: false, error: error.message || 'Ошибка удаления раздела' }, { status: 500 });
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка удаления раздела');
   }
 }

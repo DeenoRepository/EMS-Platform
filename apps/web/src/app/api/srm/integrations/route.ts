@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth-guard';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { prisma, SrmProviderType, SrmAuthType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { getAvailableSrmProviders, sanitizeAuthConfig } from '@/lib/srm-providers';
@@ -36,12 +37,8 @@ export async function GET(req: NextRequest) {
         providerTemplates,
       },
     });
-  } catch (error: any) {
-    console.error('Ошибка получения списка интеграций SRM:', error);
-    return NextResponse.json(
-      { success: false, error: 'Ошибка получения списка подключений' },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка получения списка подключений');
   }
 }
 
@@ -113,11 +110,7 @@ export async function POST(req: NextRequest) {
         authConfig: sanitizeAuthConfig(integration.authConfig),
       },
     });
-  } catch (error: any) {
-    console.error('Ошибка создания подключения SRM:', error);
-    return NextResponse.json(
-      { success: false, error: `Ошибка создания интеграции: ${error.message || error}` },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка создания интеграции');
   }
 }

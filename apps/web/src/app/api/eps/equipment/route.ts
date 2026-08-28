@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { prisma, EquipmentStatus, Prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
@@ -126,8 +127,7 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    console.error('Ошибка /api/eps/equipment:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка получения реестра оборудования' }, { status: 500 });
+    return safeErrorResponse(error, 'Ошибка получения реестра оборудования');
   }
 }
 
@@ -262,14 +262,12 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    console.error('Ошибка создания оборудования:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Validation error', details: error.issues },
         { status: 400 }
       );
     }
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ success: false, error: 'Ошибка сохранения оборудования', details: message }, { status: 500 });
+    return safeErrorResponse(error, 'Ошибка сохранения оборудования');
   }
 }

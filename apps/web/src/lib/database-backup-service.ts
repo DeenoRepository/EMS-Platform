@@ -27,7 +27,7 @@ export interface DumpResult {
  * Парсит строку подключения PostgreSQL
  */
 export function parseDatabaseUrl(databaseUrl?: string): ParsedDbConfig {
-  const urlStr = databaseUrl || process.env.DATABASE_URL || '';
+  const urlStr = databaseUrl !== undefined ? databaseUrl : (process.env.DATABASE_URL || '');
   if (!urlStr) {
     throw new Error('Переменная окружения DATABASE_URL не задана');
   }

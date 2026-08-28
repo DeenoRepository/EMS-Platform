@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@ems/database';
 import { requireAuth } from '@/lib/auth-guard';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { PERMISSIONS } from '@ems/shared';
 
 export const dynamic = 'force-dynamic';
@@ -165,8 +166,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     });
 
     return NextResponse.json({ success: true, data: updated });
-  } catch (error: any) {
-    console.error('Ошибка обновления наряда ТО:', error);
-    return NextResponse.json({ success: false, error: error.message || 'Не удалось обновить запись ТО' }, { status: 500 });
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Не удалось обновить запись ТО');
   }
 }

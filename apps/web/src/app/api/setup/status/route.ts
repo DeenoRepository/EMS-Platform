@@ -6,6 +6,8 @@ import net from 'net';
 import crypto from 'crypto';
 import { prisma } from '@ems/database';
 import { getCurrentUser } from '@/lib/auth-guard';
+import { enforceRateLimit } from '@/lib/rate-limit';
+import { safeErrorResponse } from '@/lib/safe-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -73,6 +75,13 @@ function checkStorageAccess(dirPath: string): { writable: boolean; error?: strin
 }
 
 export async function GET(req: NextRequest) {
+  const rateLimitRes = await enforceRateLimit(req, {
+    limit: 30,
+    windowMs: 60_000,
+    prefix: 'setup:status',
+  });
+  if (rateLimitRes) return rateLimitRes;
+
   try {
     const rootDir = process.cwd();
     const installedFilePath = path.join(rootDir, '.installed');
@@ -209,13 +218,13 @@ export async function GET(req: NextRequest) {
     const currentUser = await getCurrentUser(req);
     const isAdmin = currentUser?.roles.includes('admin') || false;
 
-    const systemInfo = (!isInstalled || isAdmin)
+    const systemInfo = isAdmin
       ? {
           nodeVersion: process.version,
           platform: `${os.type()} ${os.release()} (${os.arch()})`,
           totalMemory: `${Math.round(totalMemBytes / 1024 / 1024 / 1024)} GB`,
           freeMemory: `${Math.round(freeMemBytes / 1024 / 1024 / 1024)} GB`,
-          cwd: isAdmin ? rootDir : undefined,
+          cwd: rootDir,
           uptime: `${Math.round(process.uptime())} сек`,
           dbHost,
           dbPort,
@@ -230,20 +239,12 @@ export async function GET(req: NextRequest) {
         dependencies: {
           allCriticalPassed,
           failedCount: failedCriticalChecks.length,
-          checks,
+          checks: isAdmin || !isInstalled ? checks : [],
         },
         systemInfo,
       },
     });
-  } catch (error: any) {
-    console.error('Error checking setup status:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Ошибка проверки статуса установки и зависимостей',
-        details: error.message,
-      },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка проверки статуса установки и зависимостей');
   }
 }

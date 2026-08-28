@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { enforceRateLimit } from '@/lib/rate-limit';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
@@ -8,6 +10,13 @@ import * as XLSX from 'xlsx';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
+  const rateLimitRes = await enforceRateLimit(req, {
+    limit: 30,
+    windowMs: 60_000,
+    prefix: 'eps:import:template',
+  });
+  if (rateLimitRes) return rateLimitRes;
+
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
@@ -110,8 +119,7 @@ export async function GET(req: NextRequest) {
         'Content-Disposition': 'attachment; filename="EPS_Equipment_Import_Template.xlsx"',
       },
     });
-  } catch (error: any) {
-    console.error('Ошибка формирования шаблона импорта:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка формирования шаблона' }, { status: 500 });
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка формирования шаблона');
   }
 }

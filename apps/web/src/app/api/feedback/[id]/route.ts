@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
@@ -76,8 +77,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       data: ticket,
     });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ success: false, error: 'Ошибка получения данных обращения', details: message }, { status: 500 });
+    return safeErrorResponse(error, 'Ошибка получения данных обращения');
   }
 }
 
@@ -194,8 +194,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       data: updated,
     });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ success: false, error: 'Ошибка обновления обращения', details: message }, { status: 500 });
+    return safeErrorResponse(error, 'Ошибка обновления обращения');
   }
 }
 
@@ -232,7 +231,6 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
       message: 'Обращение успешно удалено',
     });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ success: false, error: 'Ошибка удаления обращения', details: message }, { status: 500 });
+    return safeErrorResponse(error, 'Ошибка удаления обращения');
   }
 }

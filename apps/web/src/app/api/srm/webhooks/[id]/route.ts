@@ -8,6 +8,8 @@ import { enforceRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
+const MAX_WEBHOOK_BODY_SIZE = 5 * 1024 * 1024; // 5MB
+
 /**
  * POST /api/srm/webhooks/[id]
  * Прием входящих Push-событий от Jira, Redmine, GitLab и кастомных вебхуков
@@ -56,6 +58,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       }
     }
 
+    const contentLength = req.headers.get('content-length');
+    if (contentLength && parseInt(contentLength, 10) > MAX_WEBHOOK_BODY_SIZE) {
+      return NextResponse.json(
+        { success: false, error: 'Размер тела запроса превышает допустимый лимит (5 МБ)' },
+        { status: 413 }
+      );
+    }
+
     const payload = await req.json();
     const rawIssue = extractIssueFromWebhookPayload(payload);
 
@@ -67,6 +77,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }
 
     const allEquipment = await prisma.equipment.findMany({
+      take: 1000,
       select: { id: true, name: true, inventoryNumber: true, serialNumber: true },
     });
 

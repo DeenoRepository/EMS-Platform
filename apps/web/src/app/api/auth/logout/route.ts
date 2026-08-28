@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth-guard';
+import { enforceRateLimit } from '@/lib/rate-limit';
 import { logAuditEvent } from '@ems/auth';
 
 export async function POST(req: NextRequest) {
+  const rateLimitRes = await enforceRateLimit(req, {
+    limit: 60,
+    windowMs: 60_000,
+    prefix: 'auth:logout',
+  });
+  if (rateLimitRes) return rateLimitRes;
+
   try {
     const user = await getCurrentUser(req);
     if (user) {

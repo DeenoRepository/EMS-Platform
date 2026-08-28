@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth-guard';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { syncJiraIssues } from '@/lib/jira-service';
@@ -27,11 +28,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       message: `Синхронизация подключения [${integration.name}] завершена. Импортировано/обновлено: ${result.count} заявок`,
       data: result,
     });
-  } catch (error: any) {
-    console.error('Ошибка синхронизации подключения:', error);
-    return NextResponse.json(
-      { success: false, error: `Ошибка синхронизации: ${error.message || error}` },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка синхронизации подключения');
   }
 }

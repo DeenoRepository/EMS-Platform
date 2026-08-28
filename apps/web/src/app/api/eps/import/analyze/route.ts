@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { enforceRateLimit } from '@/lib/rate-limit';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
 import * as XLSX from 'xlsx';
 
 export const dynamic = 'force-dynamic';
+
+const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024; // 15MB
+const MAX_ROWS = 5000;
+const MAX_COLS = 150;
 
 interface ColumnMatchRule {
   targetKey: string;
@@ -322,6 +328,13 @@ function makeEnglishSlug(str: string): string {
 }
 
 export async function POST(req: NextRequest) {
+  const rateLimitRes = await enforceRateLimit(req, {
+    limit: 10,
+    windowMs: 60_000,
+    prefix: 'eps:import:analyze',
+  });
+  if (rateLimitRes) return rateLimitRes;
+
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
@@ -336,8 +349,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Файл не загружен' }, { status: 400 });
     }
 
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      return NextResponse.json(
+        { success: false, error: `Размер файла превышает допустимый лимит (${MAX_FILE_SIZE_BYTES / 1024 / 1024} МБ)` },
+        { status: 400 }
+      );
+    }
+
     const buffer = Buffer.from(await file.arrayBuffer());
-    const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: true });
+    const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: true, sheetRows: MAX_ROWS + 1 });
 
     const firstSheetName = workbook.SheetNames[0];
     if (!firstSheetName) {
@@ -345,14 +365,27 @@ export async function POST(req: NextRequest) {
     }
 
     const sheet = workbook.Sheets[firstSheetName];
-    const rawJsonRows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: null });
+    const rawJsonRows: Record<string, unknown>[] = XLSX.utils.sheet_to_json(sheet, { defval: null });
 
     if (rawJsonRows.length === 0) {
       return NextResponse.json({ success: false, error: 'Файл пуст или не содержит строк' }, { status: 400 });
     }
 
+    if (rawJsonRows.length > MAX_ROWS) {
+      return NextResponse.json(
+        { success: false, error: `Файл содержит слишком много строк (максимум ${MAX_ROWS})` },
+        { status: 400 }
+      );
+    }
+
     // Extract headers
     const fileHeaders = Object.keys(rawJsonRows[0]);
+    if (fileHeaders.length > MAX_COLS) {
+      return NextResponse.json(
+        { success: false, error: `Файл содержит слишком много колонок (максимум ${MAX_COLS})` },
+        { status: 400 }
+      );
+    }
 
     // Fetch existing dictionary metadata
     const [existingCustomFields, sections] = await Promise.all([
@@ -555,8 +588,7 @@ export async function POST(req: NextRequest) {
         allRows: validatedRows,
       },
     });
-  } catch (error: any) {
-    console.error('Ошибка анализа файла импорта:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка анализа файла импорта' }, { status: 500 });
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка анализа файла импорта');
   }
 }

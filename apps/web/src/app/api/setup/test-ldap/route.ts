@@ -4,6 +4,7 @@ import path from 'path';
 import { testLdapConnection } from '@ems/auth';
 import { prisma } from '@ems/database';
 import { enforceRateLimit } from '@/lib/rate-limit';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { getCurrentUser } from '@/lib/auth-guard';
 import { validateOutboundUrl } from '@/lib/outbound-url';
 
@@ -73,10 +74,7 @@ export async function POST(req: NextRequest) {
       },
       { status: 400 }
     );
-  } catch (error: any) {
-    return NextResponse.json(
-      { success: false, error: error.message || 'Ошибка тестирования LDAP' },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка тестирования LDAP');
   }
 }

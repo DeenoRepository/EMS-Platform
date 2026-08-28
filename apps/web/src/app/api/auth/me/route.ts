@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth-guard';
+import { enforceRateLimit } from '@/lib/rate-limit';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { prisma } from '@ems/database';
 import { getUserRolesAndPermissions } from '@ems/auth';
 import { JwtUserPayload } from '@ems/shared';
@@ -7,6 +9,13 @@ import { JwtUserPayload } from '@ems/shared';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
+  const rateLimitRes = await enforceRateLimit(req, {
+    limit: 120,
+    windowMs: 60_000,
+    prefix: 'auth:me',
+  });
+  if (rateLimitRes) return rateLimitRes;
+
   try {
     const session = await getCurrentUser(req);
     if (!session) {
@@ -36,8 +45,7 @@ export async function GET(req: NextRequest) {
       success: true,
       data: payload,
     });
-  } catch (error: any) {
-    console.error('Ошибка /api/auth/me:', error);
-    return NextResponse.json({ success: false, error: 'Внутренняя ошибка сервера' }, { status: 500 });
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Внутренняя ошибка сервера');
   }
 }

@@ -3,6 +3,7 @@ import { prisma } from '@ems/database';
 import { authenticateLdap, signSessionToken, verifyPassword, fixKeyboardLayout, getUserRolesAndPermissions, logAuditEvent } from '@ems/auth';
 import { JwtUserPayload } from '@ems/shared';
 import { enforceRateLimit } from '@/lib/rate-limit';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { logger } from '@/lib/logger';
 import { getSystemSettings } from '@/lib/system-settings-service';
 import { z } from 'zod';
@@ -233,7 +234,6 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ success: false, error: 'Внутренняя ошибка сервера', details: message }, { status: 500 });
+    return safeErrorResponse(error, 'Внутренняя ошибка сервера');
   }
 }

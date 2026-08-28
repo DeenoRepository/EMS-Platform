@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { enforceRateLimit } from '@/lib/rate-limit';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
@@ -7,6 +9,13 @@ import { hasPermission } from '@ems/auth';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
+  const rateLimitRes = await enforceRateLimit(req, {
+    limit: 60,
+    windowMs: 60_000,
+    prefix: 'eps:reports:templates:get',
+  });
+  if (rateLimitRes) return rateLimitRes;
+
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
@@ -35,13 +44,19 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: templates });
-  } catch (error: any) {
-    console.error('Ошибка получения шаблонов отчетов:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка получения шаблонов отчетов' }, { status: 500 });
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка получения шаблонов отчетов');
   }
 }
 
 export async function POST(req: NextRequest) {
+  const rateLimitRes = await enforceRateLimit(req, {
+    limit: 20,
+    windowMs: 60_000,
+    prefix: 'eps:reports:templates:post',
+  });
+  if (rateLimitRes) return rateLimitRes;
+
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
@@ -77,8 +92,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: template });
-  } catch (error: any) {
-    console.error('Ошибка сохранения шаблона отчета:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка сохранения шаблона отчета' }, { status: 500 });
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка сохранения шаблона отчета');
   }
 }

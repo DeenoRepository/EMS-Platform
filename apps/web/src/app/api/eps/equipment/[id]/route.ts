@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { prisma, EquipmentStatus } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
@@ -79,9 +80,7 @@ export async function GET(
       },
     });
   } catch (error: unknown) {
-    console.error('Ошибка /api/eps/equipment/[id]:', error);
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ success: false, error: 'Ошибка получения паспорта оборудования', details: message }, { status: 500 });
+    return safeErrorResponse(error, 'Ошибка получения паспорта оборудования');
   }
 }
 
@@ -303,18 +302,13 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error: unknown) {
-    console.error('Ошибка обновления оборудования:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Validation error', details: error.issues },
         { status: 400 }
       );
     }
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json(
-      { success: false, error: message || 'Ошибка обновления оборудования' },
-      { status: 500 }
-    );
+    return safeErrorResponse(error, 'Ошибка обновления оборудования');
   }
 }
 
@@ -346,7 +340,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, message: 'Оборудование удалено' });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ success: false, error: 'Ошибка удаления', details: message }, { status: 500 });
+    return safeErrorResponse(error, 'Ошибка удаления оборудования');
   }
 }

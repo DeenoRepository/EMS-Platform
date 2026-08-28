@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth-guard';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { PERMISSIONS } from '@ems/shared';
 import { testJiraFieldMapping, JiraFieldMappingConfig } from '@/lib/jira-service';
 
@@ -27,11 +28,7 @@ export async function POST(req: NextRequest) {
       success: true,
       data: testResult,
     });
-  } catch (error: any) {
-    console.error('Ошибка тестирования сопоставления полей Jira:', error);
-    return NextResponse.json(
-      { success: false, error: `Ошибка при тестировании маппинга: ${error.message || error}` },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка при тестировании маппинга');
   }
 }

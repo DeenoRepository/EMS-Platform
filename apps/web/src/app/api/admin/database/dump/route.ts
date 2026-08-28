@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { createDatabaseBackup, DumpMode } from '@/lib/database-backup-service';
@@ -45,7 +46,6 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Ошибка при формировании дампа базы данных';
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return safeErrorResponse(error, 'Ошибка при формировании дампа базы данных');
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
 import { getSrmAdapter } from '@/lib/srm-providers';
@@ -135,10 +136,7 @@ export async function POST(req: NextRequest) {
         projectKey: projectKey || '—',
       },
     });
-  } catch (error: any) {
-    return NextResponse.json(
-      { success: false, error: error.message || 'Ошибка проверки подключения к внешней системе' },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка проверки подключения к внешней системе');
   }
 }

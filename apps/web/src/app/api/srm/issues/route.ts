@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@ems/database';
 import { requireAuth } from '@/lib/auth-guard';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { PERMISSIONS } from '@ems/shared';
 import { syncJiraIssues, createInternalServiceRequest } from '@/lib/jira-service';
 
@@ -85,9 +86,8 @@ export async function GET(req: NextRequest) {
     }));
 
     return NextResponse.json({ success: true, data: enrichedIssues });
-  } catch (error: any) {
-    console.error('Ошибка получения заявок SRM:', error);
-    return NextResponse.json({ success: false, error: 'Внутренняя ошибка сервера' }, { status: 500 });
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка получения заявок SRM');
   }
 }
 
@@ -150,9 +150,8 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ success: true, data: issue, message: `Заявка ${issue.issueKey} успешно зарегистрирована` }, { status: 201 });
-  } catch (error: any) {
-    console.error('Ошибка создания заявки SRM:', error);
-    return NextResponse.json({ success: false, error: error.message || 'Ошибка создания заявки' }, { status: 500 });
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка создания заявки');
   }
 }
 

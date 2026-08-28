@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, testLdapConnection } from '@ems/auth';
 import { enforceRateLimit } from '@/lib/rate-limit';
@@ -68,10 +69,7 @@ export async function POST(req: NextRequest) {
         error: result.error || 'Не удалось подключиться к LDAP-серверу',
       });
     }
-  } catch (error: any) {
-    return NextResponse.json(
-      { success: false, error: error.message || 'Внутренняя ошибка при проверке LDAP' },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Внутренняя ошибка при проверке LDAP');
   }
 }
