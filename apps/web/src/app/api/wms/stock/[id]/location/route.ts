@@ -16,7 +16,7 @@ export async function PATCH(
     if (!user) return unauthorizedResponse();
 
     const stockItem = await prisma.stockItem.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
       include: { warehouse: true },
     });
 
@@ -69,7 +69,7 @@ export async function PATCH(
     }
 
     const updated = await prisma.stockItem.update({
-      where: { id: params.id },
+      where: { id: (await params).id },
       data: {
         cellId: cellId || null,
       },

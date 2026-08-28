@@ -8,9 +8,7 @@ import { hasPermission, logAuditEvent } from '@ems/auth';
 export const dynamic = 'force-dynamic';
 
 interface RouteParams {
-  params: {
-    id: string;
-  };
+  params: Promise<{ id: string }>;
 }
 
 // POST /api/feedback/[id]/comments - Добавление комментария в переписку
@@ -19,7 +17,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
 
-    const { id: ticketId } = params;
+    const { id: ticketId } = await params;
     const body = await req.json();
     const message = body.message?.trim();
     const isInternal = Boolean(body.isInternal);

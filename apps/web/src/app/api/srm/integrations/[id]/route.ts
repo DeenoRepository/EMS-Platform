@@ -12,7 +12,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   try {
     const integration = await prisma.srmIntegration.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
       include: {
         _count: {
           select: { issues: true },
@@ -55,14 +55,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       syncInterval,
     } = body;
 
-    const existing = await prisma.srmIntegration.findUnique({ where: { id: params.id } });
+    const existing = await prisma.srmIntegration.findUnique({ where: { id: (await params).id } });
     if (!existing) {
       return NextResponse.json({ success: false, error: 'Подключение не найдено' }, { status: 404 });
     }
 
     if (isDefault) {
       await prisma.srmIntegration.updateMany({
-        where: { id: { not: params.id }, isDefault: true },
+        where: { id: { not: (await params).id }, isDefault: true },
         data: { isDefault: false },
       });
     }
@@ -71,7 +71,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const resolvedAuthConfig = authConfig !== undefined ? mergeAuthConfig(authConfig, existing.authConfig) : existing.authConfig;
 
     const updated = await prisma.srmIntegration.update({
-      where: { id: params.id },
+      where: { id: (await params).id },
       data: {
         name: name !== undefined ? name.trim() : existing.name,
         providerType: providerType || existing.providerType,
@@ -105,7 +105,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
   try {
     await prisma.srmIntegration.delete({
-      where: { id: params.id },
+      where: { id: (await params).id },
     });
 
     return NextResponse.json({

@@ -17,7 +17,7 @@ export async function POST(
     if (!user) return unauthorizedResponse();
     if (!hasPermission(user, PERMISSIONS.WMS_OPERATIONS_CREATE)) return forbiddenResponse();
 
-    const transferId = params.id;
+    const transferId = (await params).id;
     const transfer = await prisma.stockTransfer.findUnique({
       where: { id: transferId },
       include: {

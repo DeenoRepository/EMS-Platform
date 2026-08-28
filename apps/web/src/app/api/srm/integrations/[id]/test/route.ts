@@ -15,7 +15,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   try {
 
     const integration = await prisma.srmIntegration.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     });
 
     if (!integration) {
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     });
   } catch (error: unknown) {
     const details = toSafeErrorDetails(error, 'Ошибка при проверке подключения');
-    logger.error('Ошибка проверки соединения SRM', { error: details.logMessage, integrationId: params.id });
+    logger.error('Ошибка проверки соединения SRM', { error: details.logMessage, integrationId: (await params).id });
     return NextResponse.json(
       { success: false, error: details.publicError },
       { status: 500 }

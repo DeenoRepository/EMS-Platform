@@ -14,7 +14,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   try {
 
     const integration = await prisma.srmIntegration.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     });
 
     if (!integration) {

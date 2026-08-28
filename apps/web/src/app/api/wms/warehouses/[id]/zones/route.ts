@@ -17,7 +17,7 @@ export async function GET(
     if (!hasPermission(user, PERMISSIONS.WMS_STOCK_VIEW)) return forbiddenResponse();
 
     const zones = await prisma.storageZone.findMany({
-      where: { warehouseId: params.id },
+      where: { warehouseId: (await params).id },
       include: {
         cells: {
           include: {
@@ -50,7 +50,7 @@ export async function POST(
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
 
-    const warehouse = await prisma.warehouse.findUnique({ where: { id: params.id } });
+    const warehouse = await prisma.warehouse.findUnique({ where: { id: (await params).id } });
     if (!warehouse) {
       return NextResponse.json({ success: false, error: 'Склад не найден' }, { status: 404 });
     }
@@ -90,7 +90,7 @@ export async function POST(
     const existing = await prisma.storageZone.findUnique({
       where: {
         warehouseId_code: {
-          warehouseId: params.id,
+          warehouseId: (await params).id,
           code: cleanCode,
         },
       },
@@ -105,7 +105,7 @@ export async function POST(
 
     const zone = await prisma.storageZone.create({
       data: {
-        warehouseId: params.id,
+        warehouseId: (await params).id,
         name: String(name).trim(),
         code: cleanCode,
         description: description ? String(description).trim() : null,

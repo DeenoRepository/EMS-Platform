@@ -8,9 +8,7 @@ import { hasPermission, logAuditEvent } from '@ems/auth';
 export const dynamic = 'force-dynamic';
 
 interface RouteParams {
-  params: {
-    id: string;
-  };
+  params: Promise<{ id: string }>;
 }
 
 // GET /api/feedback/[id] - Детали обращения

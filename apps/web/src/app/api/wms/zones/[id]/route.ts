@@ -19,7 +19,7 @@ export async function PATCH(
     }
 
     const zone = await prisma.storageZone.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
       include: { warehouse: true },
     });
 
@@ -57,7 +57,7 @@ export async function PATCH(
     if (description !== undefined) data.description = description ? String(description).trim() : null;
 
     const updated = await prisma.storageZone.update({
-      where: { id: params.id },
+      where: { id: (await params).id },
       data,
       include: { cells: true },
     });
@@ -82,7 +82,7 @@ export async function DELETE(
     if (!user) return unauthorizedResponse();
 
     const zone = await prisma.storageZone.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
       include: { warehouse: true },
     });
 
@@ -112,7 +112,7 @@ export async function DELETE(
     }
 
     await prisma.storageZone.delete({
-      where: { id: params.id },
+      where: { id: (await params).id },
     });
 
     return NextResponse.json({ success: true, message: 'Зона успешно удалена' });

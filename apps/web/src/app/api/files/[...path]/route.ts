@@ -8,8 +8,9 @@ import { getCurrentUser, unauthorizedResponse } from '@/lib/auth-guard';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
+  const { path: pathSegments } = await params;
   try {
     // 1. Проверка аутентификации
     const user = await getCurrentUser(req);
@@ -17,7 +18,7 @@ export async function GET(
       return unauthorizedResponse();
     }
 
-    const relativePath = normalizeStoredFilePath(params.path);
+    const relativePath = normalizeStoredFilePath(pathSegments);
     if (!relativePath) {
       return NextResponse.json({ success: false, error: 'Доступ запрещен' }, { status: 403 });
     }

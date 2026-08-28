@@ -17,7 +17,7 @@ export async function GET(
     if (!hasPermission(user, PERMISSIONS.WMS_STOCK_VIEW)) return forbiddenResponse();
 
     const cells = await prisma.storageCell.findMany({
-      where: { zoneId: params.id },
+      where: { zoneId: (await params).id },
       include: {
         _count: {
           select: { stockItems: true },
@@ -57,7 +57,7 @@ export async function POST(
 
     // Check if zone exists with warehouse
     const zone = await prisma.storageZone.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
       include: { warehouse: true },
     });
 
@@ -98,7 +98,7 @@ export async function POST(
           const cell = await prisma.storageCell.upsert({
             where: {
               zoneId_code: {
-                zoneId: params.id,
+                zoneId: (await params).id,
                 code: itemCode,
               },
             },
@@ -106,7 +106,7 @@ export async function POST(
               name: itemName || undefined,
             },
             create: {
-              zoneId: params.id,
+              zoneId: (await params).id,
               code: itemCode,
               name: itemName || undefined,
             },
@@ -134,7 +134,7 @@ export async function POST(
     const existing = await prisma.storageCell.findUnique({
       where: {
         zoneId_code: {
-          zoneId: params.id,
+          zoneId: (await params).id,
           code: cleanCode,
         },
       },
@@ -149,7 +149,7 @@ export async function POST(
 
     const cell = await prisma.storageCell.create({
       data: {
-        zoneId: params.id,
+        zoneId: (await params).id,
         code: cleanCode,
         name: name ? String(name).trim() : null,
       },
@@ -175,7 +175,7 @@ export async function DELETE(
     if (!user) return unauthorizedResponse();
 
     const zone = await prisma.storageZone.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
       include: { warehouse: true },
     });
 
@@ -212,7 +212,7 @@ export async function DELETE(
     }
 
     await prisma.storageCell.delete({
-      where: { id: cellId, zoneId: params.id },
+      where: { id: cellId, zoneId: (await params).id },
     });
 
     return NextResponse.json({ success: true, message: 'Ячейка успешно удалена' });

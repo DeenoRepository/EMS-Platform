@@ -16,7 +16,7 @@ export async function GET(
     if (!hasPermission(user, PERMISSIONS.WMS_STOCK_VIEW)) return forbiddenResponse();
 
     const nomenclature = await prisma.nomenclature.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
       include: {
         category: true,
         stockItems: {
@@ -62,7 +62,7 @@ export async function PUT(
     }
 
     const existing = await prisma.nomenclature.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     });
 
     if (!existing) {
@@ -74,7 +74,7 @@ export async function PUT(
       const duplicate = await prisma.nomenclature.findUnique({
         where: { article: formattedArticle },
       });
-      if (duplicate && duplicate.id !== params.id) {
+      if (duplicate && duplicate.id !== (await params).id) {
         return NextResponse.json(
           { success: false, error: `Номенклатура с артикулом "${formattedArticle}" уже существует (${duplicate.name})` },
           { status: 400 }
@@ -83,7 +83,7 @@ export async function PUT(
     }
 
     const updated = await prisma.nomenclature.update({
-      where: { id: params.id },
+      where: { id: (await params).id },
       data: {
         name: name.trim(),
         article: formattedArticle,

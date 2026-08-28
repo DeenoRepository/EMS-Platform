@@ -13,7 +13,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   try {
     const schedule = await prisma.maintenanceSchedule.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
       include: {
         equipment: true,
         plan: {
@@ -60,7 +60,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const { status, notes, checklistItems, usedParts } = body;
 
     const existingSchedule = await prisma.maintenanceSchedule.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
       include: { equipment: true },
     });
 
@@ -75,9 +75,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       // 1. Сохранение результатов чек-листа
       if (checklistItems && Array.isArray(checklistItems)) {
         await tx.checklistResult.upsert({
-          where: { scheduleId: params.id },
+          where: { scheduleId: (await params).id },
           create: {
-            scheduleId: params.id,
+            scheduleId: (await params).id,
             items: checklistItems,
             completedById: auth.user.userId,
             completedAt: new Date(),
@@ -101,7 +101,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           // Создаем запись об использованной детали в ТО
           await tx.maintenanceUsedPart.create({
             data: {
-              scheduleId: params.id,
+              scheduleId: (await params).id,
               nomenclatureId,
               warehouseId,
               quantity: numQty,
@@ -150,7 +150,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
       // 3. Обновляем статус графика ТО
       return await tx.maintenanceSchedule.update({
-        where: { id: params.id },
+        where: { id: (await params).id },
         data: {
           status: status || existingSchedule.status,
           notes: notes !== undefined ? notes : existingSchedule.notes,
