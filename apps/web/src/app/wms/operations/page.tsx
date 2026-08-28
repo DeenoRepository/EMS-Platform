@@ -146,7 +146,8 @@ function WmsOperationsContent() {
   );
 
   // Transfers sub-tab
-  const [transferTab, setTransferTab] = useState<'inbound' | 'requests' | 'outbound' | 'my_requests' | 'all'>('inbound');
+  type TransferTab = 'inbound' | 'requests' | 'outbound' | 'my_requests' | 'all';
+  const [transferTab, setTransferTab] = useState<TransferTab>('inbound');
 
   // Operations Data State
   const [operations, setOperations] = useState<StockOperation[]>([]);
@@ -791,7 +792,9 @@ function WmsOperationsContent() {
                 tabs={transferSubTabs}
                 value={transferTab}
                 onChange={(val) => {
-                  setTransferTab(val as any);
+                  if (typeof val === 'string' && ['inbound', 'requests', 'outbound', 'my_requests', 'all'].includes(val)) {
+                    setTransferTab(val as TransferTab);
+                  }
                   setTransfersPage(0);
                 }}
               />

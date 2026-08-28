@@ -224,6 +224,7 @@ function ApprovalsListContent() {
     approved: 0,
     rejected: 0,
     cancelled: 0,
+    toReview: 0,
   });
 
   // Create Modal State
@@ -572,8 +573,8 @@ function ApprovalsListContent() {
               {
                 label: 'Требуют рассмотрения',
                 value: 'to_review',
-                badge: (stats as any).toReview ?? (scopeTab === 'to_review' ? stats.pending : undefined),
-                badgeColor: ((stats as any).toReview ?? stats.pending) > 0 ? 'warning' : 'default',
+                badge: stats.toReview || (scopeTab === 'to_review' ? stats.pending : undefined),
+                badgeColor: (stats.toReview || stats.pending) > 0 ? 'warning' : 'default',
               },
               { label: 'Мои заявки', value: 'my_requests' },
             ]}
