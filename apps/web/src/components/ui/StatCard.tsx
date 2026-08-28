@@ -31,7 +31,7 @@ export function StatCard({
   subtitle,
   icon,
   iconBgColor = 'transparent',
-  iconColor = '#0284c7',
+  iconColor = 'primary.main',
   accentColor,
   active = false,
   loading = false,
@@ -51,10 +51,10 @@ export function StatCard({
         overflow: 'hidden',
         border: '1px solid',
         borderColor: active
-          ? (accentColor || '#0284c7')
-          : (accentColor ? `${accentColor}40` : '#e2e8f0'),
+          ? (accentColor || 'primary.main')
+          : (accentColor ? accentColor : 'divider'),
         borderRadius: '12px',
-        backgroundColor: '#ffffff',
+        backgroundColor: 'background.paper',
         boxShadow: active
           ? `0 4px 12px 0 ${accentColor ? `${accentColor}20` : 'rgba(2, 132, 199, 0.12)'}`
           : '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
@@ -64,7 +64,7 @@ export function StatCard({
           '&:hover': {
             transform: 'translateY(-2px)',
             boxShadow: '0 6px 16px -2px rgba(15, 23, 42, 0.08)',
-            borderColor: accentColor || '#0284c7',
+            borderColor: accentColor || 'primary.main',
           },
           '&:active': {
             transform: 'translateY(0)',
@@ -79,7 +79,7 @@ export function StatCard({
             variant="body2"
             sx={{
               fontWeight: 600,
-              color: '#475569',
+              color: 'text.secondary',
               fontSize: '0.8125rem',
               lineHeight: 1.3,
             }}
@@ -116,7 +116,7 @@ export function StatCard({
                 fontSize: '1.875rem', // 30px
                 lineHeight: 1.1,
                 letterSpacing: '-0.03em',
-                color: '#0f172a',
+                color: 'text.primary',
                 fontFeatureSettings: '"tnum"',
               }}
             >
@@ -143,23 +143,23 @@ export function StatCard({
                 fontWeight: 700,
                 backgroundColor:
                   trend.direction === 'up'
-                    ? '#f0fdf4'
+                    ? 'success.light'
                     : trend.direction === 'down'
-                    ? '#fef2f2'
-                    : '#f8fafc',
+                    ? 'error.light'
+                    : 'grey.50',
                 color:
                   trend.direction === 'up'
-                    ? '#16a34a'
+                    ? 'success.main'
                     : trend.direction === 'down'
-                    ? '#dc2626'
-                    : '#64748b',
+                    ? 'error.main'
+                    : 'text.secondary',
                 border: '1px solid',
                 borderColor:
                   trend.direction === 'up'
-                    ? '#bbf7d0'
+                    ? 'success.light'
                     : trend.direction === 'down'
-                    ? '#fecaca'
-                    : '#e2e8f0',
+                    ? 'error.light'
+                    : 'divider',
                 '& .MuiChip-icon': {
                   color: 'inherit',
                   ml: 0.5,
@@ -177,7 +177,7 @@ export function StatCard({
             sx={{
               display: 'block',
               mt: 0.5,
-              color: '#94a3b8',
+              color: 'text.disabled',
               fontSize: '0.75rem',
               fontWeight: 400,
               lineHeight: 1.3,

@@ -204,9 +204,8 @@ export default function AdminUsersPage() {
             value={totalUsers}
             subtitle="Учетных записей LDAP"
             icon={<PersonOutlineIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(2, 132, 199, 0.08)"
-            iconColor="#0284c7"
-            accentColor="#0284c7"
+            iconColor="primary.main"
+            accentColor="primary.main"
             loading={loading}
           />
         </Grid>
@@ -216,9 +215,8 @@ export default function AdminUsersPage() {
             value={activeUsers}
             subtitle="С разрешенным входом"
             icon={<VerifiedUserIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(22, 163, 74, 0.08)"
-            iconColor="#16a34a"
-            accentColor="#16a34a"
+            iconColor="success.main"
+            accentColor="success.main"
             loading={loading}
           />
         </Grid>
@@ -228,9 +226,8 @@ export default function AdminUsersPage() {
             value={adminUsers}
             subtitle="С полным доступом к системе"
             icon={<AdminPanelSettingsIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(124, 58, 237, 0.08)"
-            iconColor="#7c3aed"
-            accentColor="#7c3aed"
+            iconColor="secondary.main"
+            accentColor="secondary.main"
             loading={loading}
           />
         </Grid>
