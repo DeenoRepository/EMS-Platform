@@ -69,6 +69,7 @@ import { EquipmentPassportOverview } from '@/components/eps/EquipmentPassportOve
 import { EquipmentDocumentsTab } from '@/components/eps/EquipmentDocumentsTab';
 import { EquipmentApprovalsTab } from '@/components/eps/EquipmentApprovalsTab';
 import { EquipmentOperationalTabs } from '@/components/eps/EquipmentOperationalTabs';
+import { EquipmentEditDialog } from '@/components/eps/EquipmentEditDialog';
 
 export interface CustomFieldDef {
   id: string;
@@ -731,240 +732,18 @@ function EquipmentPassportContent() {
         onCreateSrmRequest={() => setOpenCreateSrmModal(true)}
       />
 
-      {/* Edit Equipment Dialog with Custom Sections */}
-      <FormDialog
+      <EquipmentEditDialog
         open={editModalOpen}
+        equipment={equipment}
+        sections={sections}
+        unassignedFields={unassignedFields}
+        editForm={editForm}
+        editCustomFields={editCustomFields}
         onClose={() => setEditModalOpen(false)}
-        title="Редактирование паспорта оборудования"
-        icon={<PrecisionManufacturingIcon color="primary" />}
-        maxWidth="md"
-        actions={
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-            <Button
-              variant="text"
-              onClick={() => setEditModalOpen(false)}
-              sx={{ color: 'text.secondary', fontWeight: 600 }}
-            >
-              Отмена
-            </Button>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button
-                variant="outlined"
-                onClick={() => handleSaveEdit(false)}
-                disabled={!editForm.name}
-                sx={{ borderRadius: '8px', fontWeight: 600 }}
-              >
-                Сохранить в черновик
-              </Button>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => handleSaveEdit(true)}
-                disabled={!editForm.name}
-                sx={{ borderRadius: '8px', fontWeight: 700 }}
-              >
-                Отправить на согласование
-              </Button>
-            </Box>
-          </Box>
-        }
-      >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 1 }}>
-          {/* Section 1: Basic specifications */}
-          <Box>
-            <Typography variant="subtitle1" fontWeight={700} color="primary.main" sx={{ mb: 2 }}>
-              Основные параметры
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  label="Наименование оборудования"
-                  fullWidth
-                  size="small"
-                  required
-                  value={editForm.name || ''}
-                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Инвентарный номер"
-                  fullWidth
-                  size="small"
-                  value={editForm.inventoryNumber || ''}
-                  onChange={(e) => setEditForm({ ...editForm, inventoryNumber: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Заводской / Серийный номер"
-                  fullWidth
-                  size="small"
-                  value={editForm.serialNumber || ''}
-                  onChange={(e) => setEditForm({ ...editForm, serialNumber: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Производитель"
-                  fullWidth
-                  size="small"
-                  value={editForm.manufacturer || ''}
-                  onChange={(e) => setEditForm({ ...editForm, manufacturer: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Модель"
-                  fullWidth
-                  size="small"
-                  value={editForm.model || ''}
-                  onChange={(e) => setEditForm({ ...editForm, model: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Место установки (Локация)"
-                  fullWidth
-                  size="small"
-                  value={editForm.location || ''}
-                  onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <DatePickerField
-                  label="Дата ввода в эксплуатацию"
-                  value={editForm.commissionDate ? editForm.commissionDate.substring(0, 10) : ''}
-                  onChange={(val) => setEditForm({ ...editForm, commissionDate: val })}
-                  size="small"
-                  fullWidth
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth size="small">
-                  <InputLabel id="edit-status-label">Статус оборудования</InputLabel>
-                  <Select
-                    labelId="edit-status-label"
-                    label="Статус оборудования"
-                    value={editForm.status || 'ACTIVE'}
-                    onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-                  >
-                    {Object.entries(EQUIPMENT_STATUS_MAP).map(([k]) => (
-                      <MenuItem key={k} value={k}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <StatusBadge status={k} />
-                        </Box>
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-            </Grid>
-          </Box>
-
-          <Divider />
-
-          {/* Section 2: Custom Sections Inputs */}
-          {sections.map((sec) => (
-            <Box key={sec.id}>
-              <Typography variant="subtitle1" fontWeight={700} color="primary.main" sx={{ mb: 2 }}>
-                {sec.name}
-              </Typography>
-              <Grid container spacing={2}>
-                {sec.fields.map((f) => {
-                  if (f.fieldType === 'BOOLEAN') {
-                    return (
-                      <Grid item xs={12} sm={6} key={f.key}>
-                        <Paper variant="outlined" sx={{ p: 1.5, display: 'flex', alignItems: 'center' }}>
-                          <FormControlLabel
-                            control={
-                              <Switch
-                                checked={Boolean(editCustomFields[f.key])}
-                                onChange={(e) =>
-                                  setEditCustomFields({ ...editCustomFields, [f.key]: e.target.checked })
-                                }
-                                color="primary"
-                              />
-                            }
-                            label={<Typography variant="body2">{f.name}</Typography>}
-                          />
-                        </Paper>
-                      </Grid>
-                    );
-                  }
-
-                  if (f.fieldType === 'SELECT' && f.options && Array.isArray(f.options)) {
-                    return (
-                      <Grid item xs={12} sm={6} key={f.key}>
-                        <TextField
-                          select
-                          label={f.name}
-                          fullWidth
-                          size="small"
-                          value={editCustomFields[f.key] || ''}
-                          onChange={(e) =>
-                            setEditCustomFields({ ...editCustomFields, [f.key]: e.target.value })
-                          }
-                        >
-                          <MenuItem value="">— Не выбрано —</MenuItem>
-                          {f.options.map((opt: string) => (
-                            <MenuItem key={opt} value={opt}>
-                              {opt}
-                            </MenuItem>
-                          ))}
-                        </TextField>
-                      </Grid>
-                    );
-                  }
-
-                  return (
-                    <Grid item xs={12} sm={6} key={f.key}>
-                      <TextField
-                        label={f.unit ? `${f.name} (${f.unit})` : f.name}
-                        type={f.fieldType === 'NUMBER' ? 'number' : f.fieldType === 'DATE' ? 'date' : 'text'}
-                        InputLabelProps={f.fieldType === 'DATE' ? { shrink: true } : undefined}
-                        fullWidth
-                        size="small"
-                        value={editCustomFields[f.key] ?? ''}
-                        onChange={(e) =>
-                          setEditCustomFields({ ...editCustomFields, [f.key]: e.target.value })
-                        }
-                      />
-                    </Grid>
-                  );
-                })}
-              </Grid>
-            </Box>
-          ))}
-
-          {/* Section 3: Unassigned Custom Fields (if any) */}
-          {unassignedFields.length > 0 && (
-            <Box>
-              <Typography variant="subtitle1" fontWeight={700} color="text.secondary" sx={{ mb: 2 }}>
-                Дополнительные характеристики
-              </Typography>
-              <Grid container spacing={2}>
-                {unassignedFields.map((f) => (
-                  <Grid item xs={12} sm={6} key={f.key}>
-                    <TextField
-                      label={f.unit ? `${f.name} (${f.unit})` : f.name}
-                      type={f.fieldType === 'NUMBER' ? 'number' : f.fieldType === 'DATE' ? 'date' : 'text'}
-                      InputLabelProps={f.fieldType === 'DATE' ? { shrink: true } : undefined}
-                      fullWidth
-                      size="small"
-                      value={editCustomFields[f.key] ?? ''}
-                      onChange={(e) =>
-                        setEditCustomFields({ ...editCustomFields, [f.key]: e.target.value })
-                      }
-                    />
-                  </Grid>
-                ))}
-              </Grid>
-            </Box>
-          )}
-        </Box>
-      </FormDialog>
-
+        onSave={handleSaveEdit}
+        onFormChange={setEditForm}
+        onCustomFieldChange={(key, value) => setEditCustomFields((previous) => ({ ...previous, [key]: value }))}
+      />
 
       {/* Upload Document Dialog */}
       <FormDialog
