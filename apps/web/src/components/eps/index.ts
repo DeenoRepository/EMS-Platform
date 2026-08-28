@@ -1,3 +1,11 @@
 export { default as EquipmentWizardDialog } from './EquipmentWizardDialog';
 export { default as EquipmentWizardForm } from './EquipmentWizardForm';
 export { default as ApprovalWizardDialog } from './ApprovalWizardDialog';
+export { EquipmentKpiCards } from './EquipmentKpiCards';
+export { EquipmentGridView } from './EquipmentGridView';
+export { EquipmentTableView, EPS_COLUMN_WIDTHS } from './EquipmentTableView';
+export { EquipmentToolbar } from './EquipmentToolbar';
+export { EquipmentHeaderActions } from './EquipmentHeaderActions';
+export { useEquipmentRegistry } from './useEquipmentRegistry';
+export { exportEquipmentToExcel } from './equipment-export';
+export * from './equipment-registry-model';
