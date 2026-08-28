@@ -1,8 +1,16 @@
 import { describe, test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { NextRequest } from 'next/server';
 import { enforceRateLimit, _resetRateLimitStore } from '../rate-limit';
 import { safeErrorResponse, toSafeErrorDetails } from '../safe-error';
+
+const repositoryRoot = path.resolve(process.cwd());
+
+function readRepositoryFile(relativePath: string): string {
+  return readFileSync(path.join(repositoryRoot, relativePath), 'utf8');
+}
 
 describe('API Security and Hardening Regressions', () => {
   beforeEach(() => {
@@ -68,6 +76,64 @@ describe('API Security and Hardening Regressions', () => {
       // Integration 2 is unaffected
       const allowed2 = await enforceRateLimit(req, { limit: 2, windowMs: 60_000, prefix: 'webhook' }, 'integration-2');
       assert.equal(allowed2, null);
+    });
+    test('all sensitive endpoint handlers enforce endpoint-specific rate limits', () => {
+      const sensitiveRoutes = [
+        'apps/web/src/app/api/auth/login/route.ts',
+        'apps/web/src/app/api/auth/logout/route.ts',
+        'apps/web/src/app/api/auth/me/route.ts',
+        'apps/web/src/app/api/setup/execute/route.ts',
+        'apps/web/src/app/api/setup/test-db/route.ts',
+        'apps/web/src/app/api/setup/test-ldap/route.ts',
+        'apps/web/src/app/api/setup/status/route.ts',
+        'apps/web/src/app/api/eps/import/analyze/route.ts',
+        'apps/web/src/app/api/eps/import/execute/route.ts',
+        'apps/web/src/app/api/eps/import/template/route.ts',
+        'apps/web/src/app/api/eps/reports/generate/route.ts',
+        'apps/web/src/app/api/eps/reports/templates/route.ts',
+        'apps/web/src/app/api/eps/reports/templates/[id]/route.ts',
+      ];
+
+      for (const routePath of sensitiveRoutes) {
+        const source = readRepositoryFile(routePath);
+        assert.match(source, /enforceRateLimit\s*\(/, `${routePath} must call enforceRateLimit()`);
+      }
+    });
+  });
+
+  describe('Route Security Policy', () => {
+    test('configured webhook secret cannot be bypassed by an absent token', () => {
+      const source = readRepositoryFile('apps/web/src/app/api/srm/webhooks/[id]/route.ts');
+      assert.match(source, /if\s*\(\s*!providedToken\s*\|\|\s*providedToken\s*!==\s*webhookSecret\s*\)/);
+      assert.doesNotMatch(source, /if\s*\(\s*providedToken\s*&&\s*providedToken\s*!==\s*webhookSecret\s*\)/);
+    });
+
+    test('module status handlers require administrative permission', () => {
+      const source = readRepositoryFile('apps/web/src/app/api/modules/status/route.ts');
+      const permissionChecks = source.match(/hasPermission\(user,\s*PERMISSIONS\.ADMIN_SETTINGS_MANAGE\)/g) ?? [];
+      assert.equal(permissionChecks.length, 2, 'GET and PATCH must both enforce ADMIN_SETTINGS_MANAGE');
+    });
+
+    test('known 5xx handlers use sanitized error responses', () => {
+      const sanitizedRoutes = [
+        'apps/web/src/app/api/modules/status/route.ts',
+        'apps/web/src/app/api/setup/execute/route.ts',
+        'apps/web/src/app/api/wms/operations/route.ts',
+        'apps/web/src/app/api/wms/transfers/route.ts',
+        'apps/web/src/app/api/wms/transfers/[id]/dispatch/route.ts',
+        'apps/web/src/app/api/wms/transfers/[id]/receive/route.ts',
+        'apps/web/src/app/api/wms/transfers/[id]/reject/route.ts',
+        'apps/web/src/app/api/eps/equipment/[id]/documents/route.ts',
+        'apps/web/src/app/api/eps/equipment/[id]/photos/route.ts',
+        'apps/web/src/app/api/srm/issues/[id]/create-mro-order/route.ts',
+        'apps/web/src/app/api/admin/users/route.ts',
+      ];
+
+      for (const routePath of sanitizedRoutes) {
+        const source = readRepositoryFile(routePath);
+        assert.match(source, /safeErrorResponse\s*\(/, `${routePath} must use safeErrorResponse()`);
+        assert.doesNotMatch(source, /error\s*:\s*error\.message/, `${routePath} must not expose error.message`);
+      }
     });
   });
 
