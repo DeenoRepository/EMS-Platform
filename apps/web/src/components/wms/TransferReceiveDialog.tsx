@@ -169,7 +169,7 @@ export default function TransferReceiveDialog({
         {/* Таблица принимаемых позиций */}
         <Paper variant="outlined" sx={{ borderRadius: '8px', overflow: 'hidden' }}>
           <Table size="small">
-            <TableHead sx={{ bgcolor: '#f8fafc' }}>
+            <TableHead sx={{ bgcolor: 'background.default' }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 700 }}>Номенклатура / ТМЦ</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 700, width: 120 }}>
@@ -184,10 +184,10 @@ export default function TransferReceiveDialog({
               {transfer.items.map((item) => (
                 <TableRow key={item.id} hover>
                   <TableCell sx={{ py: 1 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#0f172a' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
                       {item.nomenclature?.name || 'Позиция ТМЦ'}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#64748b' }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                       {item.nomenclature?.article ? `Арт: ${item.nomenclature.article} • ` : ''}
                       {item.nomenclature?.unit || 'шт'}
                     </Typography>

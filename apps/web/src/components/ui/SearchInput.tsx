@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { TextField, InputAdornment, IconButton, Box, Chip } from '@mui/material';
+import { TextField, InputAdornment, IconButton, Chip } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -78,14 +78,14 @@ export function SearchInput({
       InputProps={{
         startAdornment: (
           <InputAdornment position="start">
-            <SearchIcon sx={{ color: '#0284c7', fontSize: 19 }} />
+            <SearchIcon sx={{ color: 'primary.main', fontSize: 19 }} />
           </InputAdornment>
         ),
         endAdornment: (
           <InputAdornment position="end">
             {internalValue ? (
               <IconButton size="small" onClick={handleClear} aria-label="Очистить поиск" sx={{ p: 0.25 }}>
-                <CloseIcon sx={{ fontSize: 16, color: '#94a3b8' }} />
+                <CloseIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
               </IconButton>
             ) : shortcutHint ? (
               <Chip
@@ -95,8 +95,8 @@ export function SearchInput({
                   height: 18,
                   fontSize: '0.625rem',
                   fontWeight: 700,
-                  backgroundColor: '#f1f5f9',
-                  color: '#64748b',
+                  backgroundColor: 'action.hover',
+                  color: 'text.secondary',
                   borderRadius: '4px',
                 }}
               />
@@ -104,17 +104,17 @@ export function SearchInput({
           </InputAdornment>
         ),
         sx: {
-          backgroundColor: '#ffffff',
+          backgroundColor: 'background.paper',
           borderRadius: '8px',
           fontSize: '0.8125rem',
           '& .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#e2e8f0',
+            borderColor: 'divider',
           },
           '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#cbd5e1',
+            borderColor: 'text.disabled',
           },
           '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#0284c7',
+            borderColor: 'primary.main',
             borderWidth: '1.5px',
           },
         },

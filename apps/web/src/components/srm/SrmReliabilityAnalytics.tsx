@@ -43,7 +43,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { SRM_FAILURE_CATEGORY_MAP, SrmReliabilityAnalyticsDto } from '@ems/shared';
 
-const PALETTE = ['#dc2626', '#d97706', '#0284c7', '#0d9488', '#16a34a', '#7c3aed', '#64748b'];
+const PALETTE = ['error.main', 'warning.main', 'primary.main', '#0d9488', 'success.main', 'secondary.main', 'text.secondary'];
 
 export interface SrmReliabilityAnalyticsProps {
   analytics: SrmReliabilityAnalyticsDto | null | undefined;
@@ -104,7 +104,7 @@ export default function SrmReliabilityAnalytics({ analytics, loading }: SrmRelia
             changePercent={-6.4}
             periodLabel="vs пред. период"
             data={[5.8, 5.2, 4.9, 4.6, 4.4, analytics?.mttrHours || 4.2]}
-            color="#0284c7"
+            color="primary.main"
           />
         </Grid>
 
@@ -116,7 +116,7 @@ export default function SrmReliabilityAnalytics({ analytics, loading }: SrmRelia
             changePercent={8.2}
             periodLabel="vs пред. период"
             data={[38, 40, 42, 43, 44, analytics?.mtbfDays || 45]}
-            color="#16a34a"
+            color="success.main"
           />
         </Grid>
 
@@ -127,8 +127,8 @@ export default function SrmReliabilityAnalytics({ analytics, loading }: SrmRelia
             subtitle={`Инцидентов: ${analytics?.totalIncidents || 0} | Решено: ${analytics?.resolvedCount || 0}`}
             icon={<TimerIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(220, 38, 38, 0.08)"
-            iconColor="#dc2626"
-            accentColor="#dc2626"
+            iconColor="error.main"
+            accentColor="error.main"
           />
         </Grid>
       </Grid>
@@ -151,8 +151,8 @@ export default function SrmReliabilityAnalytics({ analytics, loading }: SrmRelia
                   <YAxis yAxisId="right" orientation="right" domain={[0, 100]} unit="%" label={{ value: 'Накопленный %', angle: 90, position: 'insideRight', fontSize: 11 }} />
                   <RechartsTooltip />
                   <Legend verticalAlign="top" height={36} />
-                  <Bar yAxisId="left" dataKey="count" name="Количество отказов" fill="#0284c7" radius={[4, 4, 0, 0]} />
-                  <Line yAxisId="right" type="monotone" dataKey="cumulativePercent" name="Накопленный % (Парето)" stroke="#dc2626" strokeWidth={2.5} dot={{ r: 4 }} />
+                  <Bar yAxisId="left" dataKey="count" name="Количество отказов" fill="primary.main" radius={[4, 4, 0, 0]} />
+                  <Line yAxisId="right" type="monotone" dataKey="cumulativePercent" name="Накопленный % (Парето)" stroke="error.main" strokeWidth={2.5} dot={{ r: 4 }} />
                 </ComposedChart>
               </ResponsiveContainer>
             </CardContent>

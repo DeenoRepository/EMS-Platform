@@ -388,8 +388,8 @@ function HistoryListContent() {
             subtitle="Зафиксировано в аудите"
             icon={<TimelineIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(2, 132, 199, 0.08)"
-            iconColor="#0284c7"
-            accentColor="#0284c7"
+            iconColor="primary.main"
+            accentColor="primary.main"
             active={actionFilter === ''}
             onClick={() => handleKpiFilter('')}
             loading={loading && stats.total === 0}
@@ -402,8 +402,8 @@ function HistoryListContent() {
             subtitle="Новое оборудование / файлы"
             icon={<AddCircleOutlineIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(22, 163, 74, 0.08)"
-            iconColor="#16a34a"
-            accentColor="#16a34a"
+            iconColor="success.main"
+            accentColor="success.main"
             active={actionFilter === 'CREATE'}
             onClick={() => handleKpiFilter('CREATE')}
             loading={loading && stats.total === 0}
@@ -416,8 +416,8 @@ function HistoryListContent() {
             subtitle="Корректировка паспортов"
             icon={<EditNoteIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(2, 132, 199, 0.08)"
-            iconColor="#0284c7"
-            accentColor="#0284c7"
+            iconColor="primary.main"
+            accentColor="primary.main"
             active={actionFilter === 'UPDATE'}
             onClick={() => handleKpiFilter('UPDATE')}
             loading={loading && stats.total === 0}
@@ -430,8 +430,8 @@ function HistoryListContent() {
             subtitle="Удаленные документы и записи"
             icon={<DeleteForeverOutlinedIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(220, 38, 38, 0.08)"
-            iconColor="#dc2626"
-            accentColor="#dc2626"
+            iconColor="error.main"
+            accentColor="error.main"
             active={actionFilter === 'DELETE'}
             onClick={() => handleKpiFilter('DELETE')}
             loading={loading && stats.total === 0}

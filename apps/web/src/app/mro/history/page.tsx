@@ -227,7 +227,7 @@ export default function MroHistoryPage() {
             title="Всего проведено ТО"
             value={schedules.length}
             icon={<CheckCircleOutlineIcon />}
-            iconColor="#16a34a"
+            iconColor="success.main"
             iconBgColor="rgba(22, 163, 74, 0.08)"
             loading={loading}
             subtitle="Зафиксированных актов ТОиР"
@@ -238,7 +238,7 @@ export default function MroHistoryPage() {
             title="Обслужено единиц оборудования"
             value={new Set(schedules.map((s) => s.equipmentId)).size}
             icon={<PrecisionManufacturingIcon />}
-            iconColor="#0284c7"
+            iconColor="primary.main"
             iconBgColor="rgba(2, 132, 199, 0.08)"
             loading={loading}
             subtitle="Уникальных станков и агрегатов"
@@ -249,7 +249,7 @@ export default function MroHistoryPage() {
             title="Задействовано исполнителей"
             value={new Set(schedules.map((s) => s.completedBy?.id).filter(Boolean)).size}
             icon={<PersonIcon />}
-            iconColor="#0284c7"
+            iconColor="primary.main"
             iconBgColor="rgba(2, 132, 199, 0.08)"
             loading={loading}
             subtitle="Слесарей и инженеров в журнале"
@@ -274,7 +274,7 @@ export default function MroHistoryPage() {
         stickyHeader
         emptyState={
           <EmptyState
-            icon={<FactCheckOutlinedIcon sx={{ fontSize: 44, color: '#94a3b8' }} />}
+            icon={<FactCheckOutlinedIcon sx={{ fontSize: 44, color: 'text.disabled' }} />}
             title="Записей пока нет"
             description="В системе пока нет завершенных регламентных работ."
           />
@@ -355,7 +355,7 @@ export default function MroHistoryPage() {
                 {visibleColumns.includes('equipment') && (
                   <TableCell>
                     <Box>
-                      <Typography variant="body2" fontWeight={600} color="#0f172a">
+                      <Typography variant="body2" fontWeight={600} color="text.primary">
                         {sch.equipment.name}
                       </Typography>
                       <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
@@ -366,7 +366,7 @@ export default function MroHistoryPage() {
                 )}
                 {visibleColumns.includes('plan') && (
                   <TableCell>
-                    <Typography variant="body2" color="#0f172a">
+                    <Typography variant="body2" color="text.primary">
                       {sch.plan?.name || 'Плановое регламентное ТО'}
                     </Typography>
                   </TableCell>

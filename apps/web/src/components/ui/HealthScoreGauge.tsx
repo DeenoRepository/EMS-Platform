@@ -11,7 +11,6 @@ import {
   Tooltip,
   useTheme,
 } from '@mui/material';
-import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
@@ -60,21 +59,21 @@ export function HealthScoreGauge({
   const normalizedScore = Math.min(Math.max(Math.round(score || 0), 0), 100);
 
   // Status configuration
-  let color = '#16a34a'; // Emerald
-  let bgGradient = 'linear-gradient(135deg, rgba(22, 163, 74, 0.08) 0%, rgba(22, 163, 74, 0.02) 100%)';
+  let color = theme.palette.success.main;
   let statusLabel = 'Отличное';
   let StatusIcon = CheckCircleOutlineIcon;
+  let statusBg = theme.palette.success.light;
 
   if (normalizedScore < 50) {
-    color = '#dc2626'; // Red
-    bgGradient = 'linear-gradient(135deg, rgba(220, 38, 38, 0.08) 0%, rgba(220, 38, 38, 0.02) 100%)';
+    color = theme.palette.error.main;
     statusLabel = 'Критическое';
     StatusIcon = ErrorOutlineIcon;
+    statusBg = theme.palette.error.light;
   } else if (normalizedScore < 80) {
-    color = '#d97706'; // Amber
-    bgGradient = 'linear-gradient(135deg, rgba(217, 119, 6, 0.08) 0%, rgba(217, 119, 6, 0.02) 100%)';
+    color = theme.palette.warning.main;
     statusLabel = 'Требует внимания';
     StatusIcon = WarningAmberIcon;
+    statusBg = theme.palette.warning.light;
   }
 
   // Size dimensions
@@ -131,7 +130,7 @@ export function HealthScoreGauge({
                 cy={dimensions.svgSize / 2}
                 r={dimensions.radius}
                 fill="transparent"
-                stroke={theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : '#e2e8f0'}
+                stroke={theme.palette.divider}
                 strokeWidth={dimensions.stroke}
                 strokeDasharray={`${arcLength} ${circumference}`}
                 strokeLinecap="round"
@@ -199,10 +198,11 @@ export function HealthScoreGauge({
             px: 1,
             fontSize: '0.75rem',
             fontWeight: 700,
-            bgcolor: `${color}15`,
+            bgcolor: statusBg,
             color,
             borderRadius: '20px',
-            border: `1px solid ${color}30`,
+            border: '1px solid',
+            borderColor: statusBg,
             '& .MuiChip-icon': { color: 'inherit' },
             '& .MuiChip-label': { px: 0.75 },
           }}
@@ -219,12 +219,12 @@ export function HealthScoreGauge({
         ) : (
           <>
             {title && (
-              <Typography variant="subtitle2" fontWeight={700} sx={{ fontSize: '0.875rem', lineHeight: 1.2, color: '#0f172a' }}>
+              <Typography variant="subtitle2" fontWeight={700} sx={{ fontSize: '0.875rem', lineHeight: 1.2, color: 'text.primary' }}>
                 {title}
               </Typography>
             )}
             {subtitle && (
-              <Typography variant="caption" sx={{ display: 'block', mt: 0.25, fontSize: dimensions.subSize, color: '#64748b' }}>
+              <Typography variant="caption" sx={{ display: 'block', mt: 0.25, fontSize: dimensions.subSize, color: 'text.secondary' }}>
                 {subtitle}
               </Typography>
             )}
@@ -240,7 +240,8 @@ export function HealthScoreGauge({
             sx={{
               mt: 1.75,
               pt: 1.5,
-              borderTop: '1px solid #f1f5f9',
+              borderTop: '1px solid',
+              borderColor: 'divider',
               width: '100%',
             }}
           >
@@ -252,14 +253,14 @@ export function HealthScoreGauge({
                     fontWeight={700}
                     sx={{
                       display: 'block',
-                      color: m.color || (m.status === 'critical' ? '#dc2626' : m.status === 'warning' ? '#d97706' : '#0f172a'),
+                      color: m.color || (m.status === 'critical' ? 'error.main' : m.status === 'warning' ? 'warning.main' : 'text.primary'),
                       fontSize: '0.8125rem',
                       fontFamily: 'monospace',
                     }}
                   >
                     {m.value}
                   </Typography>
-                  <Typography variant="caption" sx={{ fontSize: '0.6875rem', color: '#64748b' }}>
+                  <Typography variant="caption" sx={{ fontSize: '0.6875rem', color: 'text.secondary' }}>
                     {m.label}
                   </Typography>
                 </Box>
@@ -276,9 +277,10 @@ export function HealthScoreGauge({
       <Paper
         elevation={0}
         sx={{
-          border: `1px solid ${color}30`,
+          border: '1px solid',
+          borderColor: 'divider',
           borderRadius: '12px',
-          backgroundColor: '#ffffff',
+          backgroundColor: 'background.paper',
           boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
         }}
       >

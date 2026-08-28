@@ -115,12 +115,13 @@ export function ServiceUnavailableCard({
             width: 76,
             height: 76,
             borderRadius: '50%',
-            backgroundColor: 'rgba(239, 68, 68, 0.08)',
+            backgroundColor: 'error.light',
+            opacity: 0.4,
             animation: 'pulseGlow 3s infinite ease-in-out',
             '@keyframes pulseGlow': {
-              '0%': { transform: 'scale(0.95)', opacity: 0.5 },
-              '50%': { transform: 'scale(1.15)', opacity: 1 },
-              '100%': { transform: 'scale(0.95)', opacity: 0.5 },
+              '0%': { transform: 'scale(0.95)', opacity: 0.3 },
+              '50%': { transform: 'scale(1.15)', opacity: 0.6 },
+              '100%': { transform: 'scale(0.95)', opacity: 0.3 },
             },
           }}
         />
@@ -131,9 +132,10 @@ export function ServiceUnavailableCard({
             width: 58,
             height: 58,
             borderRadius: '16px',
-            background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
-            border: '1px solid #fecaca',
-            color: '#dc2626',
+            bgcolor: 'error.light',
+            border: '1px solid',
+            borderColor: 'error.light',
+            color: 'error.main',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -152,7 +154,7 @@ export function ServiceUnavailableCard({
       <Typography
         variant="body2"
         sx={{
-          color: '#475569',
+          color: 'text.secondary',
           fontSize: '0.8125rem',
           lineHeight: 1.55,
           mb: 2.5,
@@ -171,8 +173,9 @@ export function ServiceUnavailableCard({
           p: 1.5,
           mb: 2.75,
           borderRadius: 2,
-          backgroundColor: '#f8fafc',
-          border: '1px solid #e2e8f0',
+          backgroundColor: 'background.default',
+          border: '1px solid',
+          borderColor: 'divider',
           display: 'flex',
           alignItems: 'flex-start',
           gap: 1.25,
@@ -180,12 +183,12 @@ export function ServiceUnavailableCard({
         }}
       >
         <ContactSupportOutlinedIcon
-          sx={{ fontSize: 18, color: '#0284c7', mt: 0.15, flexShrink: 0 }}
+          sx={{ fontSize: 18, color: 'primary.main', mt: 0.15, flexShrink: 0 }}
         />
         <Typography
           variant="caption"
           sx={{
-            color: '#64748b',
+            color: 'text.secondary',
             fontSize: '0.75rem',
             lineHeight: 1.45,
             fontWeight: 500,
@@ -199,6 +202,7 @@ export function ServiceUnavailableCard({
       <Button
         fullWidth
         variant="contained"
+        color="primary"
         size="large"
         onClick={onRefresh}
         disabled={loading}
@@ -215,18 +219,6 @@ export function ServiceUnavailableCard({
           fontSize: '0.875rem',
           borderRadius: 2,
           textTransform: 'none',
-          backgroundColor: '#0284c7',
-          color: '#ffffff',
-          boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)',
-          transition: 'all 0.2s ease',
-          '&:hover': {
-            backgroundColor: '#0369a1',
-            boxShadow: '0 6px 16px rgba(2, 132, 199, 0.35)',
-            transform: 'translateY(-1px)',
-          },
-          '&:active': {
-            transform: 'translateY(0)',
-          },
         }}
       >
         {loading ? 'Проверка подключения...' : 'Проверить доступность сервиса'}

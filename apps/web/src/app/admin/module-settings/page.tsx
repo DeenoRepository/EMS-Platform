@@ -118,7 +118,7 @@ const SECTION_ICONS: Record<string, React.ReactNode> = {
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense } from 'react';
 
-const PRESET_COLORS = ['#0284c7', '#0f766e', '#16a34a', '#d97706', '#dc2626', '#7c3aed', '#db2777', '#475569'];
+const PRESET_COLORS = ['primary.main', 'secondary.main', 'success.main', 'warning.main', 'error.main', 'secondary.main', '#db2777', 'text.secondary'];
 
 const MODULE_KEYS = ['eps', 'wms', 'srm', 'mro'];
 
@@ -210,7 +210,7 @@ function ModuleSettingsContent() {
   // Tag Modal State
   const [tagDialogOpen, setTagDialogOpen] = useState(false);
   const [tagName, setTagName] = useState('');
-  const [tagColor, setTagColor] = useState('#0284c7');
+  const [tagColor, setTagColor] = useState('primary.main');
   const [savingTag, setSavingTag] = useState(false);
 
   // Confirm State
@@ -606,8 +606,8 @@ function ModuleSettingsContent() {
           justifyContent: 'space-between',
           flexWrap: 'wrap',
           gap: 2,
-          backgroundColor: currentModuleEnabled ? 'background.default' : '#fffbeb',
-          borderColor: currentModuleEnabled ? 'divider' : '#fde68a',
+          backgroundColor: currentModuleEnabled ? 'background.default' : 'warning.light',
+          borderColor: currentModuleEnabled ? 'divider' : 'warning.light',
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -705,7 +705,7 @@ function ModuleSettingsContent() {
                           expandIcon={<ExpandMoreIcon />}
                           sx={{
                             backgroundColor: 'background.default',
-                            borderBottom: '1px solid #e2e8f0',
+                            borderBottom: '1px solid divider',
                             px: 2.5,
                           }}
                         >
@@ -751,7 +751,7 @@ function ModuleSettingsContent() {
                         </AccordionSummary>
                         <AccordionDetails sx={{ p: 0 }}>
                           {renderFieldTable(sec.fields)}
-                          <Box sx={{ p: 1.5, display: 'flex', justifyContent: 'flex-end', backgroundColor: '#fafafa', borderTop: '1px solid #f1f5f9' }}>
+                          <Box sx={{ p: 1.5, display: 'flex', justifyContent: 'flex-end', backgroundColor: 'background.default', borderTop: '1px solid', borderColor: 'divider' }}>
                             <Button
                               size="small"
                               startIcon={<AddIcon />}
@@ -767,7 +767,7 @@ function ModuleSettingsContent() {
                     {/* Unassigned Fields Section if any */}
                     {unassignedFields.length > 0 && (
                       <Accordion defaultExpanded variant="outlined" sx={{ borderRadius: '8px !important', overflow: 'hidden' }}>
-                        <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ backgroundColor: '#fffbeb' }}>
+                        <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ backgroundColor: 'warning.light' }}>
                           <Typography variant="subtitle1" fontWeight={700} color="warning.dark">
                             Общие параметры (базовые характеристики)
                           </Typography>
@@ -802,7 +802,7 @@ function ModuleSettingsContent() {
                     startIcon={<AddIcon />}
                     onClick={() => {
                       setTagName('');
-                      setTagColor('#0284c7');
+                      setTagColor('primary.main');
                       setTagDialogOpen(true);
                     }}
                   >
@@ -872,7 +872,7 @@ function ModuleSettingsContent() {
               justifyContent: 'space-between',
               py: 2,
               px: 3,
-              borderBottom: '1px solid #e2e8f0',
+              borderBottom: '1px solid divider',
               backgroundColor: 'background.paper',
             }}
           >
@@ -1204,7 +1204,7 @@ function ModuleSettingsContent() {
                     borderRadius: '50%',
                     backgroundColor: color,
                     cursor: 'pointer',
-                    border: tagColor === color ? '3px solid #0f172a' : '2px solid transparent',
+                    border: tagColor === color ? '3px solid text.primary' : '2px solid transparent',
                     transition: 'transform 0.1s ease',
                     '&:hover': { transform: 'scale(1.15)' },
                   }}

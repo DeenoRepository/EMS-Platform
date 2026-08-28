@@ -62,9 +62,10 @@ export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProp
         position="sticky"
         elevation={0}
         sx={{
-          backgroundColor: '#ffffff',
-          borderBottom: '1px solid #e2e8f0',
-          color: '#0f172a',
+          backgroundColor: 'background.paper',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          color: 'text.primary',
           zIndex: 10,
         }}
       >
@@ -119,7 +120,7 @@ export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProp
                         fontSize: '1.0625rem',
                         lineHeight: 1.1,
                         letterSpacing: '-0.02em',
-                        color: '#0f172a',
+                        color: 'text.primary',
                       }}
                     >
                       EMS
@@ -130,7 +131,7 @@ export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProp
                         fontWeight: 700,
                         fontSize: '0.9375rem',
                         lineHeight: 1.1,
-                        color: '#0284c7',
+                        color: 'primary.main',
                         letterSpacing: '-0.01em',
                       }}
                     >
@@ -140,7 +141,7 @@ export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProp
                   <Typography
                     variant="caption"
                     sx={{
-                      color: '#64748b',
+                      color: 'text.secondary',
                       fontWeight: 500,
                       fontSize: '0.6875rem',
                       display: 'block',
@@ -170,20 +171,21 @@ export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProp
               px: 2,
               py: 0.9,
               borderRadius: '12px',
-              backgroundColor: '#f1f5f9',
-              border: '1px solid #e2e8f0',
+              backgroundColor: 'action.hover',
+              border: '1px solid',
+              borderColor: 'divider',
               cursor: 'pointer',
-              color: '#64748b',
+              color: 'text.secondary',
               transition: 'all 0.15s ease',
               '&:hover': {
-                backgroundColor: '#e2e8f0',
-                borderColor: '#cbd5e1',
-                color: '#0f172a',
+                backgroundColor: 'action.selected',
+                borderColor: 'text.disabled',
+                color: 'text.primary',
               },
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, overflow: 'hidden' }}>
-              <SearchIcon sx={{ fontSize: 20, color: '#0284c7' }} />
+              <SearchIcon sx={{ fontSize: 20, color: 'primary.main' }} />
               <Typography variant="body2" noWrap sx={{ fontSize: '0.875rem', fontWeight: 500 }}>
                 Поиск оборудования, запчастей, документов...
               </Typography>
@@ -197,9 +199,10 @@ export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProp
                   height: 22,
                   fontSize: '0.7rem',
                   fontWeight: 700,
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #cbd5e1',
-                  color: '#475569',
+                  backgroundColor: 'background.paper',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  color: 'text.secondary',
                   borderRadius: '6px',
                   cursor: 'pointer',
                 }}
@@ -217,14 +220,14 @@ export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProp
                   setFeedbackOpen(true);
                 }}
                 sx={{
-                  color: '#475569',
-                  backgroundColor: '#f1f5f9',
+                  color: 'text.secondary',
+                  backgroundColor: 'action.hover',
                   borderRadius: '10px',
                   p: 1,
                   transition: 'all 0.15s ease',
                   '&:hover': {
-                    color: '#0284c7',
-                    backgroundColor: '#e0f2fe',
+                    color: 'primary.main',
+                    backgroundColor: 'primary.light',
                   },
                 }}
               >
@@ -238,14 +241,14 @@ export default function Header({ onToggleSidebar, sidebarCollapsed }: HeaderProp
         </Toolbar>
       </AppBar>
 
-      {/* Global Feedback Dialog */}
+      {/* Global Feedback Dialog Modal */}
       <FeedbackDialog
         open={feedbackOpen}
         onClose={() => {
           setFeedbackOpen(false);
           setSelectedTicketId(null);
         }}
-        initialTicketId={selectedTicketId}
+        initialTicketId={selectedTicketId || undefined}
       />
     </>
   );

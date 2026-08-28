@@ -142,7 +142,7 @@ const OPERATION_TYPES = [
     title: 'Межскладское перемещение',
     description: 'Трансфер с закрепленного склада на другой склад',
     icon: <SwapHorizIcon />,
-    color: '#7c3aed',
+    color: 'secondary.main',
     bgcolor: 'rgba(124, 58, 237, 0.08)',
   },
 ];

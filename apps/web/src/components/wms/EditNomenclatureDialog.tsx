@@ -41,15 +41,15 @@ const inputStyle = {
   '& .MuiOutlinedInput-root': {
     borderRadius: '8px',
     fontSize: '0.875rem',
-    backgroundColor: '#ffffff',
-    '& fieldset': { borderColor: '#e2e8f0' },
-    '&:hover fieldset': { borderColor: '#94a3b8' },
-    '&.Mui-focused fieldset': { borderColor: '#0284c7' },
+    backgroundColor: 'background.paper',
+    '& fieldset': { borderColor: 'divider' },
+    '&:hover fieldset': { borderColor: 'text.disabled' },
+    '&.Mui-focused fieldset': { borderColor: 'primary.main' },
   },
   '& .MuiFormHelperText-root': {
     fontSize: '0.75rem',
     mt: 0.5,
-    color: '#64748b',
+    color: 'text.secondary',
   },
 };
 

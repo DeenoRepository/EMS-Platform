@@ -111,7 +111,7 @@ export default function TransferRejectDialog({
         )}
 
         <Box>
-          <Typography variant="caption" sx={{ color: '#475569', fontWeight: 700, display: 'block', mb: 1, textTransform: 'uppercase' }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 1, textTransform: 'uppercase' }}>
             Причина / основание отклонения (обязательно):
           </Typography>
           <TextField

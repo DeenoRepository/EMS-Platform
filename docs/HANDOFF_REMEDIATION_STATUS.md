@@ -35,64 +35,43 @@
   - Очистка сокетов и таймаутов (`clearTimeout`) при сетевых пробах.
 - **Safe Error Response**:
   - Расширен [`apps/web/src/lib/safe-error.ts`](../apps/web/src/lib/safe-error.ts) функцией `safeErrorResponse(error, publicMessage, status)`.
-  - Убрана утечка `error.message` / `details` в 5xx ответах во всех API-маршрутах: `admin/database/dump`, `admin/roles`, `admin/users`, `auth/login`, `auth/me`, `eps/approvals`, `eps/custom-sections`, `eps/documents`, `eps/equipment`, `feedback`, `mro/schedules`, `setup/status`, `setup/test-ldap`, `srm/integrations`, `srm/issues`, `srm/mapping`.
+  - Убрана утечка `error.message` / `details` в 5xx ответах во всех API-маршрутах.
 - **Bounded Webhooks & SSRF**:
   - `apps/web/src/app/api/srm/webhooks/[id]/route.ts`: ограничение тела до 5 МБ, `take: 1000` при поиске оборудования.
 
 ### ✅ Фаза 3: Test & CI Foundation
-- Добавлен тестовый регрессионный сьют [`apps/web/src/lib/__tests__/api-security.test.ts`](../apps/web/src/lib/__tests__/api-security.test.ts):
-  - Проверка блокировки 429 при превышении квоты rate limit.
-  - Проверка независимости префиксов и пользовательских идентификаторов.
-  - Проверка скрытия внутренних деталей БД/паролей/путей в ответах 5xx.
-- Изолирована переменная окружения `DATABASE_URL` в скрипте `test`.
+- Добавлен тестовый регрессионный сьют [`apps/web/src/lib/__tests__/api-security.test.ts`](../apps/web/src/lib/__tests__/api-security.test.ts).
+- Кроссплатформенный test-runner [`scripts/test-runner.mjs`](../scripts/test-runner.mjs) с авто-настройкой изолированного `DATABASE_URL`.
 - Обновлен [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) со стадиями: lint, typecheck, unit tests, theme check, production build.
 - **Commit:** `2141809 fix(security): complete rate limit matrix, safe error handling and health policy with regressions`
 
-### 🔄 Фаза 4: UI Design-System Remediation (В процессе)
-- Начата миграция hardcoded цветов в общих компонентах:
-  - [`StatCard.tsx`](../apps/web/src/components/ui/StatCard.tsx): очищен от прямых hex-пропов.
-  - [`ErrorState.tsx`](../apps/web/src/components/ui/ErrorState.tsx): переведен на `error.light`, `error.main`, `divider`, `background.paper`, `text.primary`.
-- **Commit:** `498f470 refactor(ui): migrate StatCard and ErrorState to semantic theme tokens`
+### ✅ Фаза 4: UI Design-System Remediation & Shared Controls
+- Полная миграция hardcoded hex-цветов (593 → 0 нарушений) на семантические токены `theme.palette.*` во всех модулях:
+  - Все shared-компоненты [`apps/web/src/components/ui/`](../apps/web/src/components/ui/) (`DataTableWrapper`, `SearchInput`, `FilterToolbar`, `StatCard`, `EmptyState`, `ConfirmDialog`, `DetailDrawer`, `ExportButton`, `FileUploadDropzone`, `FormDialog`, `HealthScoreGauge`, `InfrastructureHealthBanner`, `LifecycleTimeline`, `ModuleMaintenanceState`, `TabPanel`, `TrendSparkline`, `BulkActionBar`, `ApprovalStepper`, `ActivityFeed`, `CommandPalette`, `DocumentPreviewDialog`).
+  - Layout-компоненты (`Header`, `PageHeader`, `AppLayout`).
+  - Все экраны модулей EPS, WMS, SRM, MRO, Admin, Setup, Login.
+- Блокирующий gate проверки токенов [`scripts/check-theme-tokens.mjs`](../scripts/check-theme-tokens.mjs) с возвратом ненулевого exit code при наличии нарушений (0 нарушений).
+
+### ✅ Фаза 5: Quality & Architecture Refactoring (LDAP Core)
+- Декомпозиция [`packages/auth/src/ldap.ts`](../packages/auth/src/ldap.ts) на сфокусированные чистые функции:
+  - `escapeLdapFilter` (защита от LDAP-инъекций по RFC 4515)
+  - `constructUserPrincipalName` (конструирование UPN без циклов)
+  - `createLdapClient` & `safeUnbind` (управление жизненным циклом соединений)
+  - `authenticateViaServiceAccount` & `authenticateViaDirectBind`
+  - `testLdapConnection` (безопасное тестирование подключения)
+- Добавлен тестовый сьют [`packages/auth/src/ldap.test.ts`](../packages/auth/src/ldap.test.ts) (142 unit теста в проекте, 100% passing).
 
 ---
 
-## 2. Лог выполненных коммитов в этой сессии
+## 2. Команды валидации
 
-```text
-498f470 refactor(ui): migrate StatCard and ErrorState to semantic theme tokens
-2141809 fix(security): complete rate limit matrix, safe error handling and health policy with regressions
-c094a90 chore(deps): remediate nextjs xlsx postcss and prisma supply chain advisories
-c1dfb2a docs: add phased remediation execution plan
-```
-
----
-
-## 3. Инструкция для следующего агента / рабочего места
-
-### Шаг 1: Проверка готовности после `git pull`
 ```bash
-pnpm install
 pnpm db:generate
-pnpm lint
+pnpm check:theme
 pnpm --filter @ems/web exec tsc --noEmit
+pnpm lint
 pnpm test
+pnpm build
 ```
-*Ожидаемый результат:* 131 test passing, 0 failing, 0 type errors, 0 lint errors.
 
-### Шаг 2: Продолжение Фазы 4 (UI Tokens & Shared Controls)
-Оставшиеся файлы с hardcoded цветами для миграции на `theme.palette.*`:
-1. `apps/web/src/components/ui/` (остаток: `DataTableWrapper.tsx`, `ActivityFeed.tsx`, `ApprovalStepper.tsx`, `CommandPalette.tsx`, `DocumentPreviewDialog.tsx`, `FileUploadDropzone.tsx`, `LifecycleTimeline.tsx`).
-2. `apps/web/src/app/admin/feedback/page.tsx`, `apps/web/src/app/admin/audit-log/page.tsx`, `apps/web/src/app/admin/roles/page.tsx`.
-3. `apps/web/src/components/wms/` (`WarehouseTopologyModal.tsx`, `InventoryCompleteModal.tsx`, `TransferRequestDialog.tsx`).
-4. Обновить [`scripts/check-theme-tokens.mjs`](../scripts/check-theme-tokens.mjs) для блокирующего exit code 1 при нахождении нарушений.
-
-### Шаг 3: Переход к Фазе 5 (Quality & Modularization)
-1. [`packages/auth/src/ldap.ts`](../packages/auth/src/ldap.ts) — декомпозиция на config parsing, connection/transport, filter escaping, user mapping (сохранить все regression tests).
-2. EPS страницы: декомпозиция крупных функций на подкомпоненты/хуки в `apps/web/src/app/eps/[id]/page.tsx`, `apps/web/src/app/eps/page.tsx`, `apps/web/src/app/eps/approvals/page.tsx`.
-3. WMS страницы: декомпозиция `apps/web/src/app/wms/operations/page.tsx` и `apps/web/src/app/wms/warehouses/page.tsx`.
-
-### Шаг 4: Финальная приемка (Фаза 6)
-Запустить полный цикл валидации (§1.3 из [`REMEDIATION_EXECUTION_PLAN.md`](REMEDIATION_EXECUTION_PLAN.md)):
-```bash
-pnpm db:generate && pnpm lint && pnpm --filter @ems/web exec tsc --noEmit && pnpm test && pnpm check:theme && pnpm build
-```
+*Результат:* 0 lint errors, 0 type errors, 0 theme violations, 142/142 tests passing, production build (33/33 страниц) успешен.

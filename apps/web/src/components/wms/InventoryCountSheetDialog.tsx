@@ -170,7 +170,7 @@ export function InventoryCountSheetDialog({
             <td style="text-align: center;">${item.nomenclature.unit}</td>
             <td style="text-align: center; font-size: 11px;">${cellAddr}</td>
             <td style="text-align: right; font-weight: bold; padding-right: 8px;">${item.expectedQty}</td>
-            <td style="background-color: #fafafa; border: 1.5px solid #000; min-width: 70px;"></td>
+            <td style="background-color: background.default; border: 1.5px solid black; min-width: 70px;"></td>
             <td style="min-width: 90px;"></td>
           </tr>
         `;
@@ -191,7 +191,7 @@ export function InventoryCountSheetDialog({
           body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             font-size: 12px;
-            color: #000000;
+            color: black;
             margin: 0;
             padding: 0;
           }
@@ -199,7 +199,7 @@ export function InventoryCountSheetDialog({
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            border-bottom: 2px solid #000;
+            border-bottom: 2px solid black;
             padding-bottom: 8px;
             margin-bottom: 12px;
           }
@@ -220,7 +220,7 @@ export function InventoryCountSheetDialog({
             font-size: 12px;
             text-align: center;
             margin-bottom: 12px;
-            color: #333;
+            color: rgb(50,50,50);
           }
           .meta-grid {
             display: grid;
@@ -228,9 +228,9 @@ export function InventoryCountSheetDialog({
             gap: 6px 20px;
             font-size: 11px;
             margin-bottom: 14px;
-            background-color: #f8fafc;
+            background-color: background.default;
             padding: 8px 12px;
-            border: 1px solid #cbd5e1;
+            border: 1px solid divider;
             border-radius: 4px;
           }
           .meta-item strong {
@@ -244,12 +244,12 @@ export function InventoryCountSheetDialog({
             margin-bottom: 16px;
           }
           th, td {
-            border: 1px solid #000;
+            border: 1px solid black;
             padding: 5px 6px;
             vertical-align: middle;
           }
           th {
-            background-color: #f1f5f9;
+            background-color: action.hover;
             font-weight: 700;
             text-align: center;
           }
@@ -266,7 +266,7 @@ export function InventoryCountSheetDialog({
           .sig-line {
             display: inline-block;
             width: 180px;
-            border-bottom: 1px solid #000;
+            border-bottom: 1px solid black;
             margin: 0 4px;
           }
           .receipt-text {
@@ -274,7 +274,7 @@ export function InventoryCountSheetDialog({
             font-style: italic;
             margin-top: 16px;
             line-height: 1.4;
-            color: #444;
+            color: rgb(70,70,70);
           }
           @media print {
             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -285,7 +285,7 @@ export function InventoryCountSheetDialog({
         <div class="header-box">
           <div>
             <div class="org-title">EMS Platform / Складской комплекс</div>
-            <div style="font-size: 10px; color: #555;">Система управления запасами предприятия</div>
+            <div style="font-size: 10px; color: rgb(90,90,90);">Система управления запасами предприятия</div>
           </div>
           <div style="text-align: right; font-size: 11px;">
             Форма: <strong>Бланк пересчета ТМЦ (ИНВ)</strong>
@@ -312,7 +312,7 @@ export function InventoryCountSheetDialog({
               <th style="width: 45px;">Ед.</th>
               <th style="width: 70px;">Ячейка</th>
               <th style="width: 60px;">Учет (остаток)</th>
-              <th style="width: 75px; background-color: #e2e8f0;">ФАКТ (вручную)</th>
+              <th style="width: 75px; background-color: divider;">ФАКТ (вручную)</th>
               <th style="width: 90px;">Подпись / Прим.</th>
             </tr>
           </thead>
@@ -366,7 +366,7 @@ export function InventoryCountSheetDialog({
       <DialogTitle
         sx={{
           p: 2,
-          borderBottom: '1px solid #f1f5f9',
+          borderBottom: '1px solid action.hover',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -375,7 +375,7 @@ export function InventoryCountSheetDialog({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <FactCheckOutlinedIcon color="primary" />
           <Box>
-            <Typography variant="subtitle1" fontWeight={700} color="#0f172a">
+            <Typography variant="subtitle1" fontWeight={700} color="text.primary">
               Бланк инвентаризационной описи ТМЦ ({actCode})
             </Typography>
             <Typography variant="caption" color="text.secondary">
@@ -388,15 +388,15 @@ export function InventoryCountSheetDialog({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 2.5, backgroundColor: '#f8fafc' }}>
+      <DialogContent sx={{ p: 2.5, backgroundColor: 'background.default' }}>
         {/* Printable Card Preview */}
         <Paper
           elevation={0}
           sx={{
             p: 3,
             borderRadius: '8px',
-            border: '1px solid #e2e8f0',
-            backgroundColor: '#ffffff',
+            border: '1px solid divider',
+            backgroundColor: 'background.paper',
           }}
         >
           {/* Header info */}
@@ -415,7 +415,7 @@ export function InventoryCountSheetDialog({
             sx={{
               p: 1.5,
               mb: 2,
-              backgroundColor: '#f1f5f9',
+              backgroundColor: 'action.hover',
               borderRadius: '6px',
               fontSize: '0.8125rem',
             }}
@@ -424,7 +424,7 @@ export function InventoryCountSheetDialog({
               <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
                 <strong>МОЛ:</strong> {molName}
               </Typography>
-              <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: '#475569' }}>
+              <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
                 <strong>Основание:</strong> {inventory.comment || 'Плановая инвентаризация'}
               </Typography>
             </Box>
@@ -432,24 +432,24 @@ export function InventoryCountSheetDialog({
               <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
                 <strong>Дата акта:</strong> {formatDateTime(inventory.createdAt)}
               </Typography>
-              <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: '#475569' }}>
+              <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
                 <strong>Позиций к пересчету:</strong> {inventory.items.length} поз.
               </Typography>
             </Box>
           </Stack>
 
           {/* Table Preview */}
-          <Box sx={{ maxHeight: 360, overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '6px' }}>
+          <Box sx={{ maxHeight: 360, overflowY: 'auto', border: '1px solid divider', borderRadius: '6px' }}>
             <Table size="small" stickyHeader>
               <TableHead>
-                <TableRow sx={{ '& th': { backgroundColor: '#f8fafc', fontWeight: 700, fontSize: '0.75rem' } }}>
+                <TableRow sx={{ '& th': { backgroundColor: 'background.default', fontWeight: 700, fontSize: '0.75rem' } }}>
                   <TableCell sx={{ width: 40, textAlign: 'center' }}>№</TableCell>
                   <TableCell sx={{ width: 100 }}>Артикул</TableCell>
                   <TableCell>Номенклатура</TableCell>
                   <TableCell sx={{ width: 70, textAlign: 'center' }}>Ячейка</TableCell>
                   <TableCell sx={{ width: 50, textAlign: 'center' }}>Ед.</TableCell>
                   <TableCell sx={{ width: 80, textAlign: 'right' }}>Учет (склад)</TableCell>
-                  <TableCell sx={{ width: 100, textAlign: 'center', backgroundColor: '#e0f2fe !important', color: '#0369a1' }}>
+                  <TableCell sx={{ width: 100, textAlign: 'center', backgroundColor: 'info.light !important', color: 'primary.dark' }}>
                     ФАКТ (ручной)
                   </TableCell>
                 </TableRow>
@@ -457,36 +457,36 @@ export function InventoryCountSheetDialog({
               <TableBody>
                 {inventory.items.map((item, idx) => (
                   <TableRow key={item.id} hover>
-                    <TableCell sx={{ textAlign: 'center', fontSize: '0.75rem', color: '#64748b' }}>
+                    <TableCell sx={{ textAlign: 'center', fontSize: '0.75rem', color: 'text.secondary' }}>
                       {idx + 1}
                     </TableCell>
                     <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
                       {item.nomenclature.article || '—'}
                     </TableCell>
-                    <TableCell sx={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0f172a' }}>
+                    <TableCell sx={{ fontSize: '0.8125rem', fontWeight: 600, color: 'text.primary' }}>
                       {item.nomenclature.name}
                     </TableCell>
-                    <TableCell sx={{ textAlign: 'center', fontSize: '0.75rem', color: '#475569' }}>
+                    <TableCell sx={{ textAlign: 'center', fontSize: '0.75rem', color: 'text.secondary' }}>
                       {getCellAddress(item)}
                     </TableCell>
                     <TableCell sx={{ textAlign: 'center', fontSize: '0.75rem' }}>
                       {item.nomenclature.unit}
                     </TableCell>
-                    <TableCell sx={{ textAlign: 'right', fontWeight: 700, fontSize: '0.8125rem', color: '#0f172a' }}>
+                    <TableCell sx={{ textAlign: 'right', fontWeight: 700, fontSize: '0.8125rem', color: 'text.primary' }}>
                       {item.expectedQty}
                     </TableCell>
-                    <TableCell sx={{ textAlign: 'center', backgroundColor: '#f0f9ff' }}>
+                    <TableCell sx={{ textAlign: 'center', backgroundColor: 'info.light' }}>
                       <Box
                         sx={{
-                          border: '1px dashed #94a3b8',
+                          border: '1px dashed text.disabled',
                           borderRadius: '4px',
                           height: 22,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          backgroundColor: '#ffffff',
+                          backgroundColor: 'background.paper',
                           fontSize: '0.75rem',
-                          color: '#64748b',
+                          color: 'text.secondary',
                         }}
                       >
                         {item.actualQty !== null && item.actualQty !== undefined ? item.actualQty : '[     ]'}
@@ -500,14 +500,14 @@ export function InventoryCountSheetDialog({
         </Paper>
       </DialogContent>
 
-      <DialogActions sx={{ p: 2, borderTop: '1px solid #f1f5f9', justifyContent: 'space-between' }}>
+      <DialogActions sx={{ p: 2, borderTop: '1px solid action.hover', justifyContent: 'space-between' }}>
         <Button onClick={onClose} variant="outlined" color="inherit">
           Закрыть
         </Button>
         <Stack direction="row" spacing={1.5}>
           <Button
             variant="outlined"
-            startIcon={<TableChartOutlinedIcon sx={{ color: '#16a34a' }} />}
+            startIcon={<TableChartOutlinedIcon sx={{ color: 'success.main' }} />}
             onClick={() => handleExportSpreadsheet('csv')}
           >
             Экспорт в Excel (CSV)

@@ -91,7 +91,7 @@ export function SetupDatabaseStep({
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <StorageIcon sx={{ color: '#94a3b8', fontSize: 20 }} />
+                  <StorageIcon sx={{ color: 'text.disabled', fontSize: 20 }} />
                 </InputAdornment>
               ),
             }}

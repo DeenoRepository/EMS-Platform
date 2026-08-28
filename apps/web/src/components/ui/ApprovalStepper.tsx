@@ -9,8 +9,6 @@ import {
   StepContent,
   Typography,
   Paper,
-  Chip,
-  Tooltip,
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -51,24 +49,24 @@ export function ApprovalStepper({
     switch (status) {
       case 'APPROVED':
       case 'COMPLETED':
-        return <CheckCircleIcon sx={{ fontSize: 20, color: '#16a34a' }} />;
+        return <CheckCircleIcon sx={{ fontSize: 20, color: 'success.main' }} />;
       case 'REJECTED':
-        return <CancelIcon sx={{ fontSize: 20, color: '#dc2626' }} />;
+        return <CancelIcon sx={{ fontSize: 20, color: 'error.main' }} />;
       case 'IN_PROGRESS':
       case 'PENDING':
-        return <HourglassEmptyIcon sx={{ fontSize: 20, color: '#d97706' }} />;
+        return <HourglassEmptyIcon sx={{ fontSize: 20, color: 'warning.main' }} />;
       case 'CANCELLED':
-        return <BlockIcon sx={{ fontSize: 20, color: '#64748b' }} />;
+        return <BlockIcon sx={{ fontSize: 20, color: 'text.secondary' }} />;
       case 'DRAFT':
       default:
-        return <EditNoteIcon sx={{ fontSize: 20, color: '#94a3b8' }} />;
+        return <EditNoteIcon sx={{ fontSize: 20, color: 'text.disabled' }} />;
     }
   };
 
   const content = (
     <Box className={className} sx={{ p: paper ? { xs: 2, sm: 2.5 } : 0 }}>
       {title && (
-        <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2, color: '#0f172a', letterSpacing: '-0.01em' }}>
+        <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2, color: 'text.primary', letterSpacing: '-0.01em' }}>
           {title}
         </Typography>
       )}
@@ -80,7 +78,7 @@ export function ApprovalStepper({
             py: orientation === 'vertical' ? 1 : 0,
           },
           '& .MuiStepConnector-line': {
-            borderColor: '#e2e8f0',
+            borderColor: 'divider',
           },
         }}
       >
@@ -98,21 +96,21 @@ export function ApprovalStepper({
                     borderRadius: '50%',
                     bgcolor:
                       step.status === 'APPROVED' || step.status === 'COMPLETED'
-                        ? '#ecfdf5'
+                        ? 'success.light'
                         : step.status === 'REJECTED'
-                        ? '#fef2f2'
+                        ? 'error.light'
                         : step.status === 'IN_PROGRESS' || step.status === 'PENDING'
-                        ? '#fffbeb'
-                        : '#f8fafc',
+                        ? 'warning.light'
+                        : 'background.default',
                     border: '1px solid',
                     borderColor:
                       step.status === 'APPROVED' || step.status === 'COMPLETED'
-                        ? '#a7f3d0'
+                        ? 'success.light'
                         : step.status === 'REJECTED'
-                        ? '#fecaca'
+                        ? 'error.light'
                         : step.status === 'IN_PROGRESS' || step.status === 'PENDING'
-                        ? '#fde68a'
-                        : '#e2e8f0',
+                        ? 'warning.light'
+                        : 'divider',
                   }}
                 >
                   {getStepIcon(step.status)}
@@ -121,11 +119,11 @@ export function ApprovalStepper({
             >
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
                 <Box>
-                  <Typography variant="body2" fontWeight={600} color="#0f172a">
+                  <Typography variant="body2" fontWeight={600} color="text.primary">
                     {step.label}
                   </Typography>
                   {step.subtitle && (
-                    <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.75rem' }} display="block">
+                    <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.75rem' }} display="block">
                       {step.subtitle}
                     </Typography>
                   )}
@@ -135,15 +133,15 @@ export function ApprovalStepper({
             </StepLabel>
 
             {orientation === 'vertical' && (
-              <StepContent sx={{ borderLeftColor: '#e2e8f0' }}>
-                <Box sx={{ pl: 1, pb: 1, color: '#475569', fontSize: '0.8125rem' }}>
+              <StepContent sx={{ borderLeftColor: 'divider' }}>
+                <Box sx={{ pl: 1, pb: 1, color: 'text.secondary', fontSize: '0.8125rem' }}>
                   {step.user && (
-                    <Typography variant="caption" display="block" sx={{ color: '#475569', fontSize: '0.75rem' }}>
+                    <Typography variant="caption" display="block" sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
                       Ответственный: <Box component="strong" sx={{ color: 'text.primary' }}>{step.user}</Box>
                     </Typography>
                   )}
                   {step.date && (
-                    <Typography variant="caption" display="block" sx={{ color: '#64748b', fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                    <Typography variant="caption" display="block" sx={{ color: 'text.secondary', fontFamily: 'monospace', fontSize: '0.75rem' }}>
                       Дата: {formatDateTime(step.date)}
                     </Typography>
                   )}
@@ -152,18 +150,18 @@ export function ApprovalStepper({
                       sx={{
                         mt: 1,
                         p: 1.25,
-                        bgcolor: '#f8fafc',
+                        bgcolor: 'background.default',
                         borderRadius: '8px',
                         borderLeft: '3px solid',
                         borderColor:
                           step.status === 'APPROVED'
-                            ? '#16a34a'
+                            ? 'success.main'
                             : step.status === 'REJECTED'
-                            ? '#dc2626'
-                            : '#0284c7',
+                            ? 'error.main'
+                            : 'primary.main',
                       }}
                     >
-                      <Typography variant="caption" sx={{ fontStyle: 'italic', display: 'block', color: '#334155' }}>
+                      <Typography variant="caption" sx={{ fontStyle: 'italic', display: 'block', color: 'text.secondary' }}>
                         «{step.comment}»
                       </Typography>
                     </Box>
@@ -179,7 +177,7 @@ export function ApprovalStepper({
 
   if (paper) {
     return (
-      <Paper elevation={0} sx={{ borderRadius: '12px', border: '1px solid #e2e8f0', backgroundColor: '#ffffff' }}>
+      <Paper elevation={0} sx={{ borderRadius: '12px', border: '1px solid', borderColor: 'divider', backgroundColor: 'background.paper' }}>
         {content}
       </Paper>
     );

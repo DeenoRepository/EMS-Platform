@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     const formatted = tags.map((t) => ({
       id: t.id,
       name: t.name,
-      color: t.color || '#0284c7',
+      color: t.color || 'primary.main',
       equipmentCount: t._count.equipment,
     }));
 
@@ -47,8 +47,8 @@ export async function POST(req: NextRequest) {
 
     const tag = await prisma.tag.upsert({
       where: { name: name.trim() },
-      update: { color: color || '#0284c7' },
-      create: { name: name.trim(), color: color || '#0284c7' },
+      update: { color: color || 'primary.main' },
+      create: { name: name.trim(), color: color || 'primary.main' },
     });
 
     return NextResponse.json({ success: true, data: tag });

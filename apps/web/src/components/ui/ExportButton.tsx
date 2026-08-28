@@ -34,22 +34,22 @@ const FORMAT_CONFIG: Record<ExportFormat, { label: string; subLabel: string; ico
   xlsx: {
     label: 'Excel (.xlsx)',
     subLabel: 'Таблица с форматированием',
-    icon: <TableChartOutlinedIcon fontSize="small" sx={{ color: '#16a34a' }} />,
+    icon: <TableChartOutlinedIcon fontSize="small" sx={{ color: 'success.main' }} />,
   },
   csv: {
     label: 'CSV (.csv)',
     subLabel: 'Текстовый формат с разделителями',
-    icon: <DescriptionOutlinedIcon fontSize="small" sx={{ color: '#0284c7' }} />,
+    icon: <DescriptionOutlinedIcon fontSize="small" sx={{ color: 'primary.main' }} />,
   },
   pdf: {
     label: 'PDF (.pdf)',
     subLabel: 'Печатный документ для отчёта',
-    icon: <PictureAsPdfOutlinedIcon fontSize="small" sx={{ color: '#dc2626' }} />,
+    icon: <PictureAsPdfOutlinedIcon fontSize="small" sx={{ color: 'error.main' }} />,
   },
   json: {
     label: 'JSON (.json)',
     subLabel: 'Машиночитаемый формат данных',
-    icon: <DataObjectIcon fontSize="small" sx={{ color: '#8b5cf6' }} />,
+    icon: <DataObjectIcon fontSize="small" sx={{ color: 'secondary.main' }} />,
   },
 };
 
@@ -139,7 +139,8 @@ export function ExportButton({
           sx: {
             minWidth: 220,
             borderRadius: '10px',
-            border: '1px solid #e2e8f0',
+            border: '1px solid',
+            borderColor: 'divider',
             boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.1)',
             mt: 0.5,
           },
@@ -153,8 +154,8 @@ export function ExportButton({
               <ListItemText
                 primary={cfg.label}
                 secondary={cfg.subLabel}
-                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.8125rem', color: '#0f172a' }}
-                secondaryTypographyProps={{ fontSize: '0.6875rem', color: '#64748b' }}
+                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.8125rem', color: 'text.primary' }}
+                secondaryTypographyProps={{ fontSize: '0.6875rem', color: 'text.secondary' }}
               />
             </MenuItem>
           );

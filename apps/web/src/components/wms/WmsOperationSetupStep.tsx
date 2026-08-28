@@ -142,7 +142,7 @@ export function WmsOperationSetupStep({
               p: 2,
               borderRadius: '10px',
               bgcolor: 'background.default',
-              border: '1.5px solid #cbd5e1',
+              border: '1.5px solid divider',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -155,7 +155,7 @@ export function WmsOperationSetupStep({
                   width: 42,
                   height: 42,
                   borderRadius: '8px',
-                  bgcolor: '#e0f2fe',
+                  bgcolor: 'info.light',
                   color: 'primary.main',
                   display: 'flex',
                   alignItems: 'center',
@@ -165,7 +165,7 @@ export function WmsOperationSetupStep({
                 <BusinessIcon />
               </Box>
               <Box>
-                <Typography variant="subtitle1" fontWeight={700} color="#0f172a" sx={{ lineHeight: 1.2 }}>
+                <Typography variant="subtitle1" fontWeight={700} color="text.primary" sx={{ lineHeight: 1.2 }}>
                   {currentWarehouse.name} ({currentWarehouse.code})
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>

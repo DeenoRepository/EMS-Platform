@@ -5,7 +5,6 @@ import {
   Box,
   TextField,
   Button,
-  ButtonGroup,
   Typography,
   IconButton,
   InputAdornment,
@@ -214,22 +213,22 @@ export function DateRangePicker({
             <Button
               variant="outlined"
               size={size}
-              startIcon={<CalendarMonthIcon sx={{ fontSize: 16, color: '#0284c7' }} />}
+              startIcon={<CalendarMonthIcon sx={{ fontSize: 16, color: 'primary.main' }} />}
               onClick={(e) => setAnchorEl(e.currentTarget)}
               disabled={disabled}
               sx={{
                 whiteSpace: 'nowrap',
                 borderRadius: '8px',
-                borderColor: '#e2e8f0',
-                color: '#334155',
-                backgroundColor: '#ffffff',
+                borderColor: 'divider',
+                color: 'text.secondary',
+                backgroundColor: 'background.paper',
                 fontWeight: 600,
                 px: 1.5,
                 py: 0.6,
                 minHeight: 36,
                 '&:hover': {
-                  borderColor: '#cbd5e1',
-                  backgroundColor: '#f8fafc',
+                  borderColor: 'text.disabled',
+                  backgroundColor: 'action.hover',
                 },
               }}
             >
@@ -244,7 +243,8 @@ export function DateRangePicker({
               PaperProps={{
                 sx: {
                   borderRadius: '10px',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid',
+                  borderColor: 'divider',
                   boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.1)',
                   mt: 0.5,
                 },
@@ -263,11 +263,11 @@ export function DateRangePicker({
                       py: 0.6,
                       fontSize: '0.8125rem',
                       fontWeight: 500,
-                      color: '#334155',
+                      color: 'text.secondary',
                       borderRadius: '6px',
                       '&:hover': {
-                        backgroundColor: '#f1f5f9',
-                        color: '#0f172a',
+                        backgroundColor: 'action.hover',
+                        color: 'text.primary',
                       },
                     }}
                   >
@@ -280,7 +280,7 @@ export function DateRangePicker({
         )}
 
         {(value.startDate || value.endDate) && !disabled && (
-          <IconButton size="small" onClick={handleClear} title="Сбросить период" sx={{ color: '#94a3b8', '&:hover': { color: '#dc2626' } }}>
+          <IconButton size="small" onClick={handleClear} title="Сбросить период" sx={{ color: 'text.disabled', '&:hover': { color: 'error.main' } }}>
             <ClearIcon sx={{ fontSize: 16 }} />
           </IconButton>
         )}

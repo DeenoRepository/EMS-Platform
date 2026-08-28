@@ -63,18 +63,18 @@ const ModernConnector = styled(StepConnector)(() => ({
   },
   [`&.${stepConnectorClasses.active}`]: {
     [`& .${stepConnectorClasses.line}`]: {
-      backgroundImage: 'linear-gradient(95deg, #0284c7 0%, #38bdf8 100%)',
+      backgroundImage: 'linear-gradient(95deg, primary.main 0%, primary.light 100%)',
     },
   },
   [`&.${stepConnectorClasses.completed}`]: {
     [`& .${stepConnectorClasses.line}`]: {
-      backgroundImage: 'linear-gradient(95deg, #10b981 0%, #34d399 100%)',
+      backgroundImage: 'linear-gradient(95deg, success.main 0%, #34d399 100%)',
     },
   },
   [`& .${stepConnectorClasses.line}`]: {
     height: 3,
     border: 0,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: 'divider',
     borderRadius: 1,
   },
 }));
@@ -95,8 +95,8 @@ function ModernStepIcon(props: { active?: boolean; completed?: boolean; icon: Re
         fontWeight: 800,
         fontSize: '0.95rem',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        bgcolor: completed ? '#10b981' : active ? '#0284c7' : '#f1f5f9',
-        color: completed || active ? '#ffffff' : '#64748b',
+        bgcolor: completed ? 'success.main' : active ? 'primary.main' : 'action.hover',
+        color: completed || active ? 'background.paper' : 'text.secondary',
         boxShadow: active
           ? '0 0 0 4px rgba(2, 132, 199, 0.2), 0 8px 16px -4px rgba(2, 132, 199, 0.4)'
           : completed
@@ -387,7 +387,7 @@ export default function SetupWizardPage() {
 
   if (isCheckingStatus) {
     return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#0b1120' }}>
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.900' }}>
         <PageLoading text="Проверка статуса инициализации платформы..." />
       </Box>
     );
@@ -402,13 +402,13 @@ export default function SetupWizardPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'radial-gradient(1000px circle at 50% 10%, rgba(14, 165, 233, 0.12), transparent 40%), linear-gradient(180deg, #0b1120 0%, #0f172a 100%)',
+          background: 'radial-gradient(1000px circle at 50% 10%, rgba(14, 165, 233, 0.12), transparent 40%), linear-gradient(180deg, grey.900 0%, text.primary 100%)',
           p: 3,
         }}
       >
         <Card sx={{ maxWidth: 520, width: '100%', borderRadius: 4, p: 2, textAlign: 'center', boxShadow: '0 24px 64px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08)' }}>
           <CardContent sx={{ p: 4 }}>
-            <Avatar sx={{ width: 72, height: 72, bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', mx: 'auto', mb: 2.5 }}>
+            <Avatar sx={{ width: 72, height: 72, bgcolor: 'rgba(16, 185, 129, 0.1)', color: 'success.main', mx: 'auto', mb: 2.5 }}>
               <CheckCircleIcon sx={{ fontSize: 44 }} />
             </Avatar>
             <Typography variant="h5" fontWeight={800} gutterBottom sx={{ letterSpacing: -0.3 }}>
@@ -436,7 +436,7 @@ export default function SetupWizardPage() {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'radial-gradient(1200px circle at 50% 0%, rgba(14, 165, 233, 0.15), transparent 50%), linear-gradient(180deg, #0b1120 0%, #0f172a 100%)',
+        background: 'radial-gradient(1200px circle at 50% 0%, rgba(14, 165, 233, 0.15), transparent 50%), linear-gradient(180deg, grey.900 0%, text.primary 100%)',
         py: { xs: 4, md: 6 },
         px: { xs: 2, md: 4 },
         display: 'flex',
@@ -460,7 +460,7 @@ export default function SetupWizardPage() {
         <Typography variant="subtitle1" fontWeight={700} sx={{ color: 'sky.300', mb: 0.5 }}>
           Мастер первоначальной настройки и развертывания
         </Typography>
-        <Typography variant="body2" sx={{ color: '#94a3b8', fontSize: '0.875rem' }}>
+        <Typography variant="body2" sx={{ color: 'text.disabled', fontSize: '0.875rem' }}>
           Пошаговая конфигурация базы данных PostgreSQL, системы безопасности и производственных модулей
         </Typography>
       </Box>
@@ -473,11 +473,11 @@ export default function SetupWizardPage() {
           borderRadius: 4,
           boxShadow: '0 24px 64px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1)',
           overflow: 'hidden',
-          bgcolor: '#ffffff',
+          bgcolor: 'background.paper',
         }}
       >
         {/* Stepper Header */}
-        <Box sx={{ bgcolor: '#f8fafc', px: 4, py: 3.5, borderBottom: '1px solid #e2e8f0' }}>
+        <Box sx={{ bgcolor: 'background.default', px: 4, py: 3.5, borderBottom: '1px solid divider' }}>
           <Stepper activeStep={activeStep} alternativeLabel connector={<ModernConnector />}>
             {STEPS.map((label, index) => (
               <Step key={label}>
@@ -606,7 +606,7 @@ export default function SetupWizardPage() {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <FolderOpenIcon sx={{ color: '#94a3b8', fontSize: 20 }} />
+                      <FolderOpenIcon sx={{ color: 'text.disabled', fontSize: 20 }} />
                     </InputAdornment>
                   ),
                 }}
@@ -639,8 +639,8 @@ export default function SetupWizardPage() {
                           cursor: 'pointer',
                           borderRadius: 2.5,
                           border: '2px solid',
-                          borderColor: srmProvider === prov.id ? 'primary.main' : '#e2e8f0',
-                          bgcolor: srmProvider === prov.id ? 'rgba(2, 132, 199, 0.04)' : '#ffffff',
+                          borderColor: srmProvider === prov.id ? 'primary.main' : 'divider',
+                          bgcolor: srmProvider === prov.id ? 'rgba(2, 132, 199, 0.04)' : 'background.paper',
                           transition: 'all 0.15s ease-in-out',
                           '&:hover': { borderColor: 'primary.light' },
                         }}
@@ -660,7 +660,7 @@ export default function SetupWizardPage() {
                 </Grid>
 
                 {srmProvider !== 'DISABLED' && (
-                  <Grid container spacing={2} sx={{ p: 2.5, bgcolor: '#f8fafc', borderRadius: 3, border: '1px solid #e2e8f0' }}>
+                  <Grid container spacing={2} sx={{ p: 2.5, bgcolor: 'background.default', borderRadius: 3, border: '1px solid divider' }}>
                     <Grid item xs={12} sm={8}>
                       <TextField
                         fullWidth
@@ -714,10 +714,10 @@ export default function SetupWizardPage() {
                 </Box>
               </Box>
 
-              <Paper variant="outlined" sx={{ p: 3, borderRadius: 3, bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+              <Paper variant="outlined" sx={{ p: 3, borderRadius: 3, bgcolor: 'background.default', border: '1px solid divider' }}>
                 <Grid container spacing={2.5}>
                   <Grid item xs={12} sm={6}>
-                    <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, display: 'block' }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, display: 'block' }}>
                       База данных PostgreSQL
                     </Typography>
                     <Typography variant="body2" fontWeight={800} sx={{ mt: 0.25 }}>
@@ -725,7 +725,7 @@ export default function SetupWizardPage() {
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, display: 'block' }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, display: 'block' }}>
                       Главный Администратор
                     </Typography>
                     <Typography variant="body2" fontWeight={800} sx={{ mt: 0.25 }}>
@@ -736,7 +736,7 @@ export default function SetupWizardPage() {
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, display: 'block' }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, display: 'block' }}>
                       Служба каталогов LDAP
                     </Typography>
                     <Typography variant="body2" fontWeight={800} sx={{ mt: 0.25 }}>
@@ -744,7 +744,7 @@ export default function SetupWizardPage() {
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, display: 'block' }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, display: 'block' }}>
                       Хранилище файлов
                     </Typography>
                     <Typography variant="body2" fontWeight={800} sx={{ mt: 0.25 }}>
@@ -789,7 +789,7 @@ export default function SetupWizardPage() {
               alignItems: 'center',
               mt: 5,
               pt: 3,
-              borderTop: '1px solid #e2e8f0',
+              borderTop: '1px solid divider',
             }}
           >
             <Button

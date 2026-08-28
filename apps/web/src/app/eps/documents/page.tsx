@@ -421,8 +421,8 @@ function DocumentsListContent() {
             subtitle="Файлов в архиве"
             icon={<DescriptionOutlinedIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(2, 132, 199, 0.08)"
-            iconColor="#0284c7"
-            accentColor="#0284c7"
+            iconColor="primary.main"
+            accentColor="primary.main"
             active={docTypeFilter === ''}
             onClick={() => handleKpiFilter('')}
             loading={loading && stats.totalDocuments === 0}
@@ -436,8 +436,8 @@ function DocumentsListContent() {
             subtitle="Занято на сервере"
             icon={<FolderZipOutlinedIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(100, 116, 139, 0.08)"
-            iconColor="#64748b"
-            accentColor="#64748b"
+            iconColor="text.secondary"
+            accentColor="text.secondary"
             loading={loading && stats.totalDocuments === 0}
           />
         </Grid>
@@ -449,8 +449,8 @@ function DocumentsListContent() {
             subtitle="Принципиальные схемы"
             icon={<SchemaOutlinedIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(2, 132, 199, 0.08)"
-            iconColor="#0284c7"
-            accentColor="#0284c7"
+            iconColor="primary.main"
+            accentColor="primary.main"
             active={docTypeFilter === 'SCHEMA'}
             onClick={() => handleKpiFilter('SCHEMA')}
             loading={loading && stats.totalDocuments === 0}
@@ -464,8 +464,8 @@ function DocumentsListContent() {
             subtitle="Руководства и регламенты"
             icon={<MenuBookOutlinedIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(22, 163, 74, 0.08)"
-            iconColor="#16a34a"
-            accentColor="#16a34a"
+            iconColor="success.main"
+            accentColor="success.main"
             active={docTypeFilter === 'MANUAL'}
             onClick={() => handleKpiFilter('MANUAL')}
             loading={loading && stats.totalDocuments === 0}
@@ -479,8 +479,8 @@ function DocumentsListContent() {
             subtitle="Юридические документы"
             icon={<VerifiedOutlinedIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(139, 92, 246, 0.08)"
-            iconColor="#8b5cf6"
-            accentColor="#8b5cf6"
+            iconColor="secondary.main"
+            accentColor="secondary.main"
             active={docTypeFilter === 'CERTIFICATE'}
             onClick={() => handleKpiFilter('CERTIFICATE')}
             loading={loading && stats.totalDocuments === 0}

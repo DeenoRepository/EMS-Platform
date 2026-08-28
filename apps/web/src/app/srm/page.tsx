@@ -312,8 +312,8 @@ function SrmPageContent() {
           sx={{
             mb: 2.5,
             borderRadius: '12px',
-            border: '1px solid #fed7aa',
-            backgroundColor: '#fffbeb',
+            border: '1px solid warning.light',
+            backgroundColor: 'warning.light',
             fontWeight: 500,
           }}
         >
@@ -362,7 +362,7 @@ function SrmPageContent() {
                 fontWeight: 700,
                 borderRadius: '8px',
                 minHeight: 36,
-                backgroundColor: '#0284c7',
+                backgroundColor: 'primary.main',
               }}
             >
               Подать заявку
@@ -378,7 +378,7 @@ function SrmPageContent() {
             title="Всего заявок"
             value={stats.totalIssues}
             icon={<BugReportOutlinedIcon />}
-            iconColor="#0284c7"
+            iconColor="primary.main"
             iconBgColor="rgba(2, 132, 199, 0.08)"
             loading={loading}
             subtitle="Зарегистрировано в системе"
@@ -389,7 +389,7 @@ function SrmPageContent() {
             title="Открыто / Новые"
             value={stats.openIssues}
             icon={<SpeedIcon />}
-            iconColor="#d97706"
+            iconColor="warning.main"
             iconBgColor="rgba(217, 119, 6, 0.08)"
             loading={loading}
             subtitle="Ожидают распределения"
@@ -401,7 +401,7 @@ function SrmPageContent() {
             title="В работе / Диагностика"
             value={stats.inProgressIssues}
             icon={<BuildCircleIcon />}
-            iconColor="#0284c7"
+            iconColor="primary.main"
             iconBgColor="rgba(2, 132, 199, 0.08)"
             loading={loading}
             subtitle="На устранении службой ТО"
@@ -413,7 +413,7 @@ function SrmPageContent() {
             title="Урегулировано"
             value={stats.resolvedIssues}
             icon={<FactCheckOutlinedIcon />}
-            iconColor="#16a34a"
+            iconColor="success.main"
             iconBgColor="rgba(22, 163, 74, 0.08)"
             loading={loading}
             subtitle="Успешно закрытые заявки"
@@ -437,7 +437,7 @@ function SrmPageContent() {
         }}
         emptyState={
           <EmptyState
-            icon={<BugReportOutlinedIcon sx={{ fontSize: 44, color: '#94a3b8' }} />}
+            icon={<BugReportOutlinedIcon sx={{ fontSize: 44, color: 'text.disabled' }} />}
             title="Заявки не найдены"
             description={
               activeFilterCount > 0
@@ -587,13 +587,13 @@ function SrmPageContent() {
                 sx={{ cursor: 'pointer' }}
               >
                 {visibleColumns.includes('key') && (
-                  <TableCell sx={{ fontFamily: 'monospace', fontWeight: 700, color: '#0284c7' }}>
+                  <TableCell sx={{ fontFamily: 'monospace', fontWeight: 700, color: 'primary.main' }}>
                     {issue.key}
                   </TableCell>
                 )}
                 {visibleColumns.includes('title') && (
                   <TableCell>
-                    <Typography variant="body2" fontWeight={600} color="#0f172a">
+                    <Typography variant="body2" fontWeight={600} color="text.primary">
                       {issue.title}
                     </Typography>
                     {issue.externalKey && (
@@ -607,7 +607,7 @@ function SrmPageContent() {
                   <TableCell>
                     {issue.equipment ? (
                       <Box>
-                        <Typography variant="body2" fontWeight={600} color="#0f172a">
+                        <Typography variant="body2" fontWeight={600} color="text.primary">
                           {issue.equipment.name}
                         </Typography>
                         <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>

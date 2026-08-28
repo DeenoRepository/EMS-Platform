@@ -14,8 +14,6 @@ import {
   Typography,
   TextField,
   MenuItem,
-  Pagination,
-  IconButton,
   Button,
 } from '@mui/material';
 import HistoryIcon from '@mui/icons-material/History';
@@ -23,7 +21,7 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PageHeader from '@/components/layout/PageHeader';
-import { formatDateTime, AUDIT_ACTION_MAP } from '@ems/shared';
+import { formatDateTime } from '@ems/shared';
 import { useSnackbar } from 'notistack';
 import {
   StatCard,
@@ -57,7 +55,6 @@ export default function AdminAuditLogPage() {
   const { enqueueSnackbar } = useSnackbar();
   const [logs, setLogs] = useState<AuditItem[]>([]);
   const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
   const [actionFilter, setActionFilter] = useState('');
   const [entityTypeFilter, setEntityTypeFilter] = useState('');
@@ -123,7 +120,6 @@ export default function AdminAuditLogPage() {
 
   // JSON viewer modal
   const [selectedChanges, setSelectedChanges] = useState<any | null>(null);
-
   const [pageSize, setPageSize] = useState(25);
 
   const fetchLogs = useCallback(async () => {
@@ -142,7 +138,6 @@ export default function AdminAuditLogPage() {
     if (json.success && json.data) {
       setLogs(json.data.items || []);
       setTotal(json.data.total || 0);
-      setTotalPages(json.data.totalPages || 1);
     } else {
       enqueueSnackbar(json.error || 'Ошибка загрузки журнала аудита', { variant: 'error' });
     }
@@ -152,12 +147,6 @@ export default function AdminAuditLogPage() {
   useEffect(() => {
     fetchLogs();
   }, [fetchLogs]);
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(1);
-    fetchLogs();
-  };
 
   const handleResetFilters = () => {
     setActionFilter('');
@@ -202,9 +191,9 @@ export default function AdminAuditLogPage() {
             value={total}
             subtitle="Зафиксировано в БД"
             icon={<HistoryIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(2, 132, 199, 0.08)"
-            iconColor="#0284c7"
-            accentColor="#0284c7"
+            iconBgColor="action.hover"
+            iconColor="primary.main"
+            accentColor="primary.main"
             active={actionFilter === '' && entityTypeFilter === ''}
             onClick={() => {
               setActionFilter('');
@@ -220,9 +209,9 @@ export default function AdminAuditLogPage() {
             value={logs.filter((l) => l.action === 'CREATE').length}
             subtitle="Новые записи"
             icon={<AddCircleOutlineIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(22, 163, 74, 0.08)"
-            iconColor="#16a34a"
-            accentColor="#16a34a"
+            iconBgColor="success.light"
+            iconColor="success.main"
+            accentColor="success.main"
             active={actionFilter === 'CREATE'}
             onClick={() => {
               setActionFilter(actionFilter === 'CREATE' ? '' : 'CREATE');
@@ -237,9 +226,9 @@ export default function AdminAuditLogPage() {
             value={logs.filter((l) => l.action === 'UPDATE').length}
             subtitle="Корректировка данных"
             icon={<EditOutlinedIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(217, 119, 6, 0.08)"
-            iconColor="#d97706"
-            accentColor="#d97706"
+            iconBgColor="warning.light"
+            iconColor="warning.main"
+            accentColor="warning.main"
             active={actionFilter === 'UPDATE'}
             onClick={() => {
               setActionFilter(actionFilter === 'UPDATE' ? '' : 'UPDATE');
@@ -254,9 +243,9 @@ export default function AdminAuditLogPage() {
             value={logs.filter((l) => l.action === 'DELETE').length}
             subtitle="Удаленные записи"
             icon={<DeleteOutlineIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(220, 38, 38, 0.08)"
-            iconColor="#dc2626"
-            accentColor="#dc2626"
+            iconBgColor="error.light"
+            iconColor="error.main"
+            accentColor="error.main"
             active={actionFilter === 'DELETE'}
             onClick={() => {
               setActionFilter(actionFilter === 'DELETE' ? '' : 'DELETE');
@@ -324,7 +313,7 @@ export default function AdminAuditLogPage() {
                       fontSize: '0.8125rem',
                       height: 36,
                       '& fieldset': { borderColor: 'divider' },
-                      '&:hover fieldset': { borderColor: 'grey.400' },
+                      '&:hover fieldset': { borderColor: 'text.disabled' },
                     },
                   }}
                 >
@@ -355,7 +344,7 @@ export default function AdminAuditLogPage() {
                       fontSize: '0.8125rem',
                       height: 36,
                       '& fieldset': { borderColor: 'divider' },
-                      '&:hover fieldset': { borderColor: 'grey.400' },
+                      '&:hover fieldset': { borderColor: 'text.disabled' },
                     },
                   }}
                 >

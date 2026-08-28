@@ -28,17 +28,17 @@ export default function NewEquipmentPage() {
             sx={{
               height: 38,
               borderRadius: '8px',
-              borderColor: '#e2e8f0',
-              color: '#334155',
+              borderColor: 'divider',
+              color: 'text.secondary',
               px: 2,
               fontSize: '0.875rem',
               fontWeight: 600,
               textTransform: 'none',
-              backgroundColor: '#ffffff',
+              backgroundColor: 'background.paper',
               boxSizing: 'border-box',
               '&:hover': {
-                borderColor: '#cbd5e1',
-                backgroundColor: '#f8fafc',
+                borderColor: 'divider',
+                backgroundColor: 'background.default',
               },
             }}
           >
@@ -52,8 +52,8 @@ export default function NewEquipmentPage() {
         sx={{
           p: { xs: 2.5, sm: 3.5 },
           borderRadius: '14px',
-          border: '1px solid #e2e8f0',
-          bgcolor: '#ffffff',
+          border: '1px solid divider',
+          bgcolor: 'background.paper',
           boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
         }}
       >

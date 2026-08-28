@@ -7,7 +7,6 @@ import {
   Paper,
   Chip,
   Skeleton,
-  Stack,
   useTheme,
 } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -54,13 +53,14 @@ export function TrendSparkline({
   changePercent,
   periodLabel = 'vs пред. период',
   height = 54,
-  color = '#0284c7',
+  color,
   interactive = true,
   paper = true,
   loading = false,
   className,
 }: TrendSparklineProps) {
   const theme = useTheme();
+  const strokeColor = color || theme.palette.primary.main;
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -119,7 +119,6 @@ export function TrendSparkline({
   // Determine trend direction
   const isPositive = changePercent !== undefined ? changePercent > 0 : false;
   const isNegative = changePercent !== undefined ? changePercent < 0 : false;
-  const isFlat = changePercent !== undefined ? changePercent === 0 : true;
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!interactive || !containerRef.current || coordinates.length === 0) return;
@@ -199,18 +198,18 @@ export function TrendSparkline({
                 fontWeight: 700,
                 borderRadius: '20px',
                 bgcolor: isPositive
-                  ? '#ecfdf5'
+                  ? 'success.light'
                   : isNegative
-                  ? '#fef2f2'
-                  : '#f1f5f9',
-                color: isPositive ? '#15803d' : isNegative ? '#b91c1c' : '#475569',
+                  ? 'error.light'
+                  : 'action.hover',
+                color: isPositive ? 'success.dark' : isNegative ? 'error.dark' : 'text.secondary',
                 border: '1px solid',
-                borderColor: isPositive ? '#a7f3d0' : isNegative ? '#fecaca' : '#e2e8f0',
+                borderColor: isPositive ? 'success.light' : isNegative ? 'error.light' : 'divider',
                 '& .MuiChip-icon': { color: 'inherit' },
               }}
             />
             {periodLabel && (
-              <Typography variant="caption" sx={{ display: 'block', fontSize: '0.625rem', mt: 0.25, color: '#64748b' }}>
+              <Typography variant="caption" sx={{ display: 'block', fontSize: '0.625rem', mt: 0.25, color: 'text.secondary' }}>
                 {periodLabel}
               </Typography>
             )}
@@ -243,8 +242,8 @@ export function TrendSparkline({
             >
               <defs>
                 <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={color} stopOpacity={0.2} />
-                  <stop offset="100%" stopColor={color} stopOpacity={0.0} />
+                  <stop offset="0%" stopColor={strokeColor} stopOpacity={0.2} />
+                  <stop offset="100%" stopColor={strokeColor} stopOpacity={0.0} />
                 </linearGradient>
               </defs>
 
@@ -255,7 +254,7 @@ export function TrendSparkline({
               <path
                 d={pathD}
                 fill="none"
-                stroke={color}
+                stroke={strokeColor}
                 strokeWidth={2.25}
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -267,8 +266,8 @@ export function TrendSparkline({
                   cx={coordinates[coordinates.length - 1].x}
                   cy={coordinates[coordinates.length - 1].y}
                   r={3.5}
-                  fill={color}
-                  stroke="#ffffff"
+                  fill={strokeColor}
+                  stroke={theme.palette.background.paper}
                   strokeWidth={1.5}
                 />
               )}
@@ -281,7 +280,7 @@ export function TrendSparkline({
                     y1={0}
                     x2={activePoint.x}
                     y2={height}
-                    stroke={color}
+                    stroke={strokeColor}
                     strokeWidth={1.2}
                     strokeDasharray="2 2"
                     opacity={0.7}
@@ -290,8 +289,8 @@ export function TrendSparkline({
                     cx={activePoint.x}
                     cy={activePoint.y}
                     r={4.5}
-                    fill={color}
-                    stroke="#ffffff"
+                    fill={strokeColor}
+                    stroke={theme.palette.background.paper}
                     strokeWidth={2}
                   />
                 </>
@@ -306,8 +305,8 @@ export function TrendSparkline({
                   top: -24,
                   left: `${(activePoint.x / 300) * 100}%`,
                   transform: 'translateX(-50%)',
-                  bgcolor: '#0f172a',
-                  color: '#ffffff',
+                  bgcolor: 'grey.900',
+                  color: 'common.white',
                   px: 1,
                   py: 0.25,
                   borderRadius: '6px',
@@ -324,7 +323,7 @@ export function TrendSparkline({
             )}
           </>
         ) : (
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'text.disabled' }}>
             <Typography variant="caption">Недостаточно данных для тренда</Typography>
           </Box>
         )}
@@ -337,13 +336,14 @@ export function TrendSparkline({
       <Paper
         elevation={0}
         sx={{
-          border: '1px solid #e2e8f0',
+          border: '1px solid',
+          borderColor: 'divider',
           borderRadius: '12px',
-          bgcolor: '#ffffff',
+          bgcolor: 'background.paper',
           boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
           transition: 'all 0.2s ease',
           '&:hover': {
-            borderColor: `${color}80`,
+            borderColor: strokeColor,
           },
         }}
       >

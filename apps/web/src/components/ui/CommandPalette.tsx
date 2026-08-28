@@ -13,8 +13,6 @@ import {
   ListItemIcon,
   ListItemText,
   Chip,
-  Divider,
-  Paper,
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import SearchIcon from '@mui/icons-material/Search';
@@ -25,13 +23,11 @@ import HubOutlinedIcon from '@mui/icons-material/HubOutlined';
 import AdminPanelSettingsOutlinedIcon from '@mui/icons-material/AdminPanelSettingsOutlined';
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import MoveToInboxIcon from '@mui/icons-material/MoveToInbox';
-import OutboxIcon from '@mui/icons-material/Outbox';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import PeopleOutlineIcon from '@mui/icons-material/PeopleOutline';
 import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
-import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import KeyboardReturnIcon from '@mui/icons-material/KeyboardReturn';
 
 interface CommandItem {
@@ -215,12 +211,12 @@ const COMMAND_ITEMS: CommandItem[] = [
 ];
 
 const CATEGORY_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  EPS: { label: 'Оборудование (EPS)', color: '#0284c7', bg: '#e0f2fe' },
-  WMS: { label: 'Склад (WMS)', color: '#d97706', bg: '#fef3c7' },
-  MRO: { label: 'ТОиР (MRO)', color: '#059669', bg: '#d1fae5' },
-  SRM: { label: 'Заявки (SRM)', color: '#7c3aed', bg: '#ede9fe' },
-  ADMIN: { label: 'Управление', color: '#475569', bg: '#f1f5f9' },
-  ACTIONS: { label: 'Действия', color: '#dc2626', bg: '#fee2e2' },
+  EPS: { label: 'Оборудование (EPS)', color: 'primary.main', bg: 'primary.light' },
+  WMS: { label: 'Склад (WMS)', color: 'warning.main', bg: 'warning.light' },
+  MRO: { label: 'ТОиР (MRO)', color: 'success.main', bg: 'success.light' },
+  SRM: { label: 'Заявки (SRM)', color: 'secondary.main', bg: 'secondary.light' },
+  ADMIN: { label: 'Управление', color: 'text.secondary', bg: 'action.hover' },
+  ACTIONS: { label: 'Действия', color: 'error.main', bg: 'error.light' },
 };
 
 export interface CommandPaletteProps {
@@ -340,8 +336,9 @@ export function CommandPalette({ open: controlledOpen, onClose: controlledOnClos
         sx: {
           borderRadius: '16px',
           overflow: 'hidden',
-          backgroundColor: '#ffffff',
-          border: '1px solid #e2e8f0',
+          backgroundColor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'divider',
           boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
           mt: { xs: 4, sm: 8 },
           verticalAlign: 'top',
@@ -356,11 +353,12 @@ export function CommandPalette({ open: controlledOpen, onClose: controlledOnClos
           gap: 1.5,
           px: 2.5,
           py: 2,
-          borderBottom: '1px solid #e2e8f0',
-          bgcolor: '#ffffff',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          bgcolor: 'background.paper',
         }}
       >
-        <SearchIcon sx={{ color: '#0284c7', fontSize: 22 }} />
+        <SearchIcon sx={{ color: 'primary.main', fontSize: 22 }} />
         <InputBase
           autoFocus
           fullWidth
@@ -372,10 +370,10 @@ export function CommandPalette({ open: controlledOpen, onClose: controlledOnClos
           placeholder="Поиск по разделам, паспортам, ТМЦ и регламентам..."
           sx={{
             fontSize: '0.9375rem',
-            color: '#0f172a',
+            color: 'text.primary',
             fontWeight: 500,
             '& input::placeholder': {
-              color: '#94a3b8',
+              color: 'text.disabled',
               opacity: 1,
             },
           }}
@@ -389,8 +387,8 @@ export function CommandPalette({ open: controlledOpen, onClose: controlledOnClos
             fontSize: '0.6875rem',
             height: 22,
             borderRadius: '6px',
-            bgcolor: '#f1f5f9',
-            color: '#64748b',
+            bgcolor: 'action.hover',
+            color: 'text.secondary',
             cursor: 'pointer',
           }}
         />
@@ -400,10 +398,10 @@ export function CommandPalette({ open: controlledOpen, onClose: controlledOnClos
       <DialogContent sx={{ p: 1, maxHeight: 420, overflowY: 'auto' }}>
         {filteredItems.length === 0 ? (
           <Box sx={{ py: 6, textAlign: 'center' }}>
-            <Typography variant="body2" color="#64748b" fontWeight={500}>
+            <Typography variant="body2" color="text.secondary" fontWeight={500}>
               По запросу «{query}» ничего не найдено
             </Typography>
-            <Typography variant="caption" color="#94a3b8" sx={{ mt: 0.5, display: 'block' }}>
+            <Typography variant="caption" color="text.disabled" sx={{ mt: 0.5, display: 'block' }}>
               Попробуйте изменить формулировку или ключевые слова
             </Typography>
           </Box>
@@ -411,7 +409,7 @@ export function CommandPalette({ open: controlledOpen, onClose: controlledOnClos
           <List disablePadding>
             {filteredItems.map((item, index) => {
               const isSelected = index === selectedIndex;
-              const cat = CATEGORY_MAP[item.category] || { label: item.category, color: '#64748b', bg: '#f1f5f9' };
+              const cat = CATEGORY_MAP[item.category] || { label: item.category, color: 'text.secondary', bg: 'action.hover' };
 
               return (
                 <ListItem key={item.id} disablePadding sx={{ mb: 0.5 }}>
@@ -425,15 +423,15 @@ export function CommandPalette({ open: controlledOpen, onClose: controlledOnClos
                       px: 1.75,
                       transition: 'all 0.12s ease',
                       '&.Mui-selected': {
-                        backgroundColor: '#f0f9ff',
-                        '&:hover': { backgroundColor: '#e0f2fe' },
+                        backgroundColor: 'action.selected',
+                        '&:hover': { backgroundColor: 'action.hover' },
                       },
                     }}
                   >
                     <ListItemIcon
                       sx={{
                         minWidth: 38,
-                        color: isSelected ? '#0284c7' : '#64748b',
+                        color: isSelected ? 'primary.main' : 'text.secondary',
                       }}
                     >
                       {item.icon}
@@ -445,7 +443,7 @@ export function CommandPalette({ open: controlledOpen, onClose: controlledOnClos
                             variant="body2"
                             sx={{
                               fontWeight: isSelected ? 700 : 600,
-                              color: isSelected ? '#0284c7' : '#0f172a',
+                              color: isSelected ? 'primary.main' : 'text.primary',
                               fontSize: '0.875rem',
                             }}
                           >
@@ -470,7 +468,7 @@ export function CommandPalette({ open: controlledOpen, onClose: controlledOnClos
                           <Typography
                             variant="caption"
                             sx={{
-                              color: '#64748b',
+                              color: 'text.secondary',
                               fontSize: '0.75rem',
                               display: 'block',
                               mt: 0.25,
@@ -483,7 +481,7 @@ export function CommandPalette({ open: controlledOpen, onClose: controlledOnClos
                       }
                     />
                     {isSelected && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#0284c7', flexShrink: 0 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'primary.main', flexShrink: 0 }}>
                         <KeyboardReturnIcon sx={{ fontSize: 16 }} />
                       </Box>
                     )}
@@ -503,26 +501,27 @@ export function CommandPalette({ open: controlledOpen, onClose: controlledOnClos
           justifyContent: 'space-between',
           px: 2.5,
           py: 1.25,
-          borderTop: '1px solid #f1f5f9',
-          bgcolor: '#f8fafc',
+          borderTop: '1px solid',
+          borderColor: 'divider',
+          bgcolor: 'background.default',
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Chip label="↑" size="small" sx={{ height: 18, fontSize: '0.6875rem', bgcolor: '#ffffff', border: '1px solid #cbd5e1' }} />
-            <Chip label="↓" size="small" sx={{ height: 18, fontSize: '0.6875rem', bgcolor: '#ffffff', border: '1px solid #cbd5e1' }} />
-            <Typography variant="caption" color="#64748b" sx={{ fontSize: '0.6875rem', ml: 0.25 }}>
+            <Chip label="↑" size="small" sx={{ height: 18, fontSize: '0.6875rem', bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }} />
+            <Chip label="↓" size="small" sx={{ height: 18, fontSize: '0.6875rem', bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }} />
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6875rem', ml: 0.25 }}>
               Навигация
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Chip label="↵" size="small" sx={{ height: 18, fontSize: '0.6875rem', bgcolor: '#ffffff', border: '1px solid #cbd5e1' }} />
-            <Typography variant="caption" color="#64748b" sx={{ fontSize: '0.6875rem', ml: 0.25 }}>
+            <Chip label="↵" size="small" sx={{ height: 18, fontSize: '0.6875rem', bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }} />
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6875rem', ml: 0.25 }}>
               Выбрать
             </Typography>
           </Box>
         </Box>
-        <Typography variant="caption" color="#94a3b8" sx={{ fontSize: '0.6875rem', fontWeight: 500 }}>
+        <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6875rem', fontWeight: 500 }}>
           EMS Command Palette
         </Typography>
       </Box>

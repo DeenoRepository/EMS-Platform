@@ -266,10 +266,10 @@ function ExecutiveDashboardContent() {
             {stats.canToggleScope && (
               <Box
                 sx={{
-                  bgcolor: '#f1f5f9',
+                  bgcolor: 'action.hover',
                   p: '3px',
                   borderRadius: '10px',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid divider',
                   display: 'inline-flex',
                   alignItems: 'center',
                 }}
@@ -292,19 +292,19 @@ function ExecutiveDashboardContent() {
                       fontSize: '0.8125rem',
                       fontWeight: 600,
                       textTransform: 'none',
-                      color: '#64748b',
+                      color: 'text.secondary',
                       transition: 'all 0.15s ease',
                       '&:hover': {
                         bgcolor: 'rgba(255, 255, 255, 0.6)',
-                        color: '#0f172a',
+                        color: 'text.primary',
                       },
                       '&.Mui-selected': {
-                        bgcolor: '#ffffff',
-                        color: '#0284c7',
+                        bgcolor: 'background.paper',
+                        color: 'primary.main',
                         fontWeight: 700,
                         boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)',
                         '&:hover': {
-                          bgcolor: '#ffffff',
+                          bgcolor: 'background.paper',
                         },
                       },
                     },
@@ -333,14 +333,14 @@ function ExecutiveDashboardContent() {
                 fontSize: '0.8125rem',
                 fontWeight: 600,
                 borderRadius: '10px',
-                borderColor: '#cbd5e1',
-                bgcolor: '#ffffff',
-                color: '#334155',
+                borderColor: 'divider',
+                bgcolor: 'background.paper',
+                color: 'text.secondary',
                 textTransform: 'none',
                 boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)',
                 '&:hover': {
-                  borderColor: '#94a3b8',
-                  bgcolor: '#f8fafc',
+                  borderColor: 'text.disabled',
+                  bgcolor: 'background.default',
                 },
               }}
             >
@@ -366,7 +366,7 @@ function ExecutiveDashboardContent() {
             value={stats?.eps.total || 0}
             subtitle={`${stats?.eps.active || 0} в работе • ${stats?.eps.underRepair || 0} в ремонте`}
             icon={<BadgeOutlinedIcon sx={{ fontSize: 24 }} />}
-            iconColor="#0284c7"
+            iconColor="primary.main"
             iconBgColor="rgba(2, 132, 199, 0.08)"
             onClick={() => router.push('/eps')}
             trend={{
@@ -388,9 +388,9 @@ function ExecutiveDashboardContent() {
                 : 'Нет закрепленных складов'
             }
             icon={<WarehouseOutlinedIcon sx={{ fontSize: 24 }} />}
-            iconColor="#0f766e"
+            iconColor="secondary.main"
             iconBgColor="rgba(15, 118, 110, 0.08)"
-            accentColor={hasDeficit ? '#ef4444' : undefined}
+            accentColor={hasDeficit ? 'error.main' : undefined}
             onClick={() => router.push('/wms/stock')}
           />
         </Grid>
@@ -402,9 +402,9 @@ function ExecutiveDashboardContent() {
             value={stats?.srm.totalIssues || 0}
             subtitle={`${stats?.srm.openIssues || 0} открыто • ${stats?.srm.inProgressIssues || 0} в работе`}
             icon={<BugReportOutlinedIcon sx={{ fontSize: 24 }} />}
-            iconColor="#d97706"
+            iconColor="warning.main"
             iconBgColor="rgba(217, 119, 6, 0.08)"
-            accentColor={hasOpenIncidents ? '#f59e0b' : undefined}
+            accentColor={hasOpenIncidents ? 'warning.main' : undefined}
             onClick={() => router.push('/srm')}
           />
         </Grid>
@@ -416,9 +416,9 @@ function ExecutiveDashboardContent() {
             value={stats?.mro.plannedCount || 0}
             subtitle={`${stats?.mro.overdueCount || 0} просрочено • ${stats?.mro.completedCount || 0} выполнено`}
             icon={<BuildOutlinedIcon sx={{ fontSize: 24 }} />}
-            iconColor="#7c3aed"
+            iconColor="secondary.main"
             iconBgColor="rgba(124, 58, 237, 0.08)"
-            accentColor={hasOverdueMro ? '#ef4444' : undefined}
+            accentColor={hasOverdueMro ? 'error.main' : undefined}
             onClick={() => router.push('/mro')}
           />
         </Grid>
@@ -431,8 +431,8 @@ function ExecutiveDashboardContent() {
           p: 2,
           mb: 3,
           borderRadius: '12px',
-          bgcolor: '#ffffff',
-          borderColor: '#e2e8f0',
+          bgcolor: 'background.paper',
+          borderColor: 'divider',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -447,7 +447,7 @@ function ExecutiveDashboardContent() {
               height: 38,
               borderRadius: '8px',
               bgcolor: 'rgba(2, 132, 199, 0.08)',
-              color: '#0284c7',
+              color: 'primary.main',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -456,7 +456,7 @@ function ExecutiveDashboardContent() {
             <SpeedIcon sx={{ fontSize: 20 }} />
           </Box>
           <Box>
-            <Typography variant="subtitle2" fontWeight={700} color="#0f172a">
+            <Typography variant="subtitle2" fontWeight={700} color="text.primary">
               Быстрые действия
             </Typography>
             <Typography variant="caption" color="text.secondary">
@@ -484,7 +484,7 @@ function ExecutiveDashboardContent() {
               size="small"
               startIcon={<BugReportOutlinedIcon />}
               onClick={() => setIsSrmDialogOpen(true)}
-              sx={{ fontWeight: 600, borderRadius: '8px', textTransform: 'none', color: '#d97706', borderColor: '#fed7aa' }}
+              sx={{ fontWeight: 600, borderRadius: '8px', textTransform: 'none', color: 'warning.main', borderColor: 'warning.light' }}
             >
               Подать заявку
             </Button>
@@ -496,7 +496,7 @@ function ExecutiveDashboardContent() {
               size="small"
               startIcon={<MoveToInboxIcon />}
               onClick={() => setIsWmsWizardOpen(true)}
-              sx={{ fontWeight: 600, borderRadius: '8px', textTransform: 'none', color: '#0f766e', borderColor: '#99f6e4' }}
+              sx={{ fontWeight: 600, borderRadius: '8px', textTransform: 'none', color: 'secondary.main', borderColor: 'secondary.light' }}
             >
               Складская операция
             </Button>
@@ -508,7 +508,7 @@ function ExecutiveDashboardContent() {
               size="small"
               startIcon={<BuildOutlinedIcon />}
               onClick={() => router.push('/mro')}
-              sx={{ fontWeight: 700, borderRadius: '8px', textTransform: 'none', bgcolor: '#7c3aed', '&:hover': { bgcolor: '#6d28d9' } }}
+              sx={{ fontWeight: 700, borderRadius: '8px', textTransform: 'none', bgcolor: 'secondary.main', '&:hover': { bgcolor: 'secondary.dark' } }}
             >
               Провести ТО
             </Button>
@@ -522,12 +522,12 @@ function ExecutiveDashboardContent() {
         <Grid item xs={12} lg={7}>
           <Stack spacing={3}>
             {/* SRM Recent Issues Feed */}
-            <Card sx={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+            <Card sx={{ borderRadius: '12px', border: '1px solid divider' }}>
               <CardContent sx={{ p: 2.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-                    <BugReportOutlinedIcon sx={{ color: '#d97706', fontSize: 22 }} />
-                    <Typography variant="subtitle1" fontWeight={700} color="#0f172a">
+                    <BugReportOutlinedIcon sx={{ color: 'warning.main', fontSize: 22 }} />
+                    <Typography variant="subtitle1" fontWeight={700} color="text.primary">
                       {isPersonalScope ? 'Мои обращения и инциденты (SRM)' : 'Оперативные инциденты и заявки (SRM)'}
                     </Typography>
                   </Box>
@@ -558,9 +558,9 @@ function ExecutiveDashboardContent() {
                           p: 1.75,
                           borderRadius: '8px',
                           cursor: 'pointer',
-                          borderColor: '#f1f5f9',
+                          borderColor: 'action.hover',
                           transition: 'all 0.15s ease',
-                          '&:hover': { bgcolor: '#f8fafc', borderColor: '#cbd5e1' },
+                          '&:hover': { bgcolor: 'background.default', borderColor: 'divider' },
                         }}
                       >
                         <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}>
@@ -569,9 +569,9 @@ function ExecutiveDashboardContent() {
                               <Chip
                                 label={issue.key}
                                 size="small"
-                                sx={{ height: 20, fontSize: '0.6875rem', fontWeight: 800, bgcolor: '#f1f5f9', color: '#475569' }}
+                                sx={{ height: 20, fontSize: '0.6875rem', fontWeight: 800, bgcolor: 'action.hover', color: 'text.secondary' }}
                               />
-                              <Typography variant="subtitle2" fontWeight={700} noWrap color="#0f172a">
+                              <Typography variant="subtitle2" fontWeight={700} noWrap color="text.primary">
                                 {issue.title}
                               </Typography>
                             </Box>
@@ -594,12 +594,12 @@ function ExecutiveDashboardContent() {
             </Card>
 
             {/* MRO Upcoming Maintenance Feed */}
-            <Card sx={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+            <Card sx={{ borderRadius: '12px', border: '1px solid divider' }}>
               <CardContent sx={{ p: 2.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-                    <BuildOutlinedIcon sx={{ color: '#7c3aed', fontSize: 22 }} />
-                    <Typography variant="subtitle1" fontWeight={700} color="#0f172a">
+                    <BuildOutlinedIcon sx={{ color: 'secondary.main', fontSize: 22 }} />
+                    <Typography variant="subtitle1" fontWeight={700} color="text.primary">
                       {isPersonalScope ? 'Мои ближайшие регламенты ТО (MRO)' : 'Ближайшие регламенты ТО и ППР (MRO)'}
                     </Typography>
                   </Box>
@@ -630,14 +630,14 @@ function ExecutiveDashboardContent() {
                           p: 1.75,
                           borderRadius: '8px',
                           cursor: 'pointer',
-                          borderColor: '#f1f5f9',
+                          borderColor: 'action.hover',
                           transition: 'all 0.15s ease',
-                          '&:hover': { bgcolor: '#f8fafc', borderColor: '#cbd5e1' },
+                          '&:hover': { bgcolor: 'background.default', borderColor: 'divider' },
                         }}
                       >
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <Box sx={{ minWidth: 0 }}>
-                            <Typography variant="subtitle2" fontWeight={700} color="#0f172a" noWrap>
+                            <Typography variant="subtitle2" fontWeight={700} color="text.primary" noWrap>
                               {schedule.title}
                             </Typography>
                             <Typography variant="caption" color="text.secondary">
@@ -659,9 +659,9 @@ function ExecutiveDashboardContent() {
         <Grid item xs={12} lg={5}>
           <Stack spacing={3}>
             {/* Equipment Readiness & Health Gauge */}
-            <Card sx={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+            <Card sx={{ borderRadius: '12px', border: '1px solid divider' }}>
               <CardContent sx={{ p: 2.5, textAlign: 'center' }}>
-                <Typography variant="subtitle1" fontWeight={700} color="#0f172a" sx={{ mb: 0.5, textAlign: 'left' }}>
+                <Typography variant="subtitle1" fontWeight={700} color="text.primary" sx={{ mb: 0.5, textAlign: 'left' }}>
                   {isPersonalScope ? 'КТГ в зоне ответственности' : 'Коэффициент технической готовности (КТГ)'}
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2, textAlign: 'left' }}>
@@ -678,21 +678,21 @@ function ExecutiveDashboardContent() {
 
                 <Grid container spacing={1}>
                   <Grid item xs={6}>
-                    <Box sx={{ p: 1, bgcolor: '#f0fdf4', borderRadius: '8px' }}>
-                      <Typography variant="h6" fontWeight={800} color="#15803d">
+                    <Box sx={{ p: 1, bgcolor: 'success.light', borderRadius: '8px' }}>
+                      <Typography variant="h6" fontWeight={800} color="success.dark">
                         {stats?.eps.active || 0}
                       </Typography>
-                      <Typography variant="caption" color="#166534" fontWeight={600}>
+                      <Typography variant="caption" color="success.dark" fontWeight={600}>
                         В работе (Исправно)
                       </Typography>
                     </Box>
                   </Grid>
                   <Grid item xs={6}>
-                    <Box sx={{ p: 1, bgcolor: stats?.eps.underRepair ? '#fef2f2' : '#f8fafc', borderRadius: '8px' }}>
-                      <Typography variant="h6" fontWeight={800} color={stats?.eps.underRepair ? '#dc2626' : '#64748b'}>
+                    <Box sx={{ p: 1, bgcolor: stats?.eps.underRepair ? 'error.light' : 'background.default', borderRadius: '8px' }}>
+                      <Typography variant="h6" fontWeight={800} color={stats?.eps.underRepair ? 'error.main' : 'text.secondary'}>
                         {stats?.eps.underRepair || 0}
                       </Typography>
-                      <Typography variant="caption" color={stats?.eps.underRepair ? '#991b1b' : '#64748b'} fontWeight={600}>
+                      <Typography variant="caption" color={stats?.eps.underRepair ? 'error.dark' : 'text.secondary'} fontWeight={600}>
                         В ремонте / Отказ
                       </Typography>
                     </Box>
@@ -703,12 +703,12 @@ function ExecutiveDashboardContent() {
 
             {/* WMS Critical Stock Deficit (if accessible) */}
             {stats.wms.accessible !== false && (
-              <Card sx={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+              <Card sx={{ borderRadius: '12px', border: '1px solid divider' }}>
                 <CardContent sx={{ p: 2.5 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-                      <WarehouseOutlinedIcon sx={{ color: '#0f766e', fontSize: 22 }} />
-                      <Typography variant="subtitle1" fontWeight={700} color="#0f172a">
+                      <WarehouseOutlinedIcon sx={{ color: 'secondary.main', fontSize: 22 }} />
+                      <Typography variant="subtitle1" fontWeight={700} color="text.primary">
                         {isPersonalScope ? 'Дефицит ТМЦ (мои склады)' : 'Критический дефицит ТМЦ (WMS)'}
                       </Typography>
                     </Box>
@@ -739,23 +739,23 @@ function ExecutiveDashboardContent() {
                             p: 1.5,
                             borderRadius: '8px',
                             cursor: 'pointer',
-                            borderColor: '#fee2e2',
-                            bgcolor: '#fff5f5',
+                            borderColor: 'error.light',
+                            bgcolor: 'error.light',
                             transition: 'all 0.15s ease',
-                            '&:hover': { bgcolor: '#fee2e2' },
+                            '&:hover': { bgcolor: 'error.light' },
                           }}
                         >
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Box sx={{ minWidth: 0, flex: 1 }}>
-                              <Typography variant="subtitle2" fontWeight={700} color="#991b1b" noWrap>
+                              <Typography variant="subtitle2" fontWeight={700} color="error.dark" noWrap>
                                 {item.name}
                               </Typography>
-                              <Typography variant="caption" color="#b91c1c">
+                              <Typography variant="caption" color="error.dark">
                                 Склад: <strong>{item.warehouseCode}</strong>
                               </Typography>
                             </Box>
                             <Box sx={{ textAlign: 'right' }}>
-                              <Typography variant="body2" fontWeight={800} color="#dc2626">
+                              <Typography variant="body2" fontWeight={800} color="error.main">
                                 {item.quantity} {item.unit}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">

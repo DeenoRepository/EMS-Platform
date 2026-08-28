@@ -882,7 +882,7 @@ function WmsStockContent() {
                           fontSize: '0.6875rem',
                           backgroundColor: 'background.paper',
                           color: 'text.secondary',
-                          border: '1px solid #e2e8f0',
+                          border: '1px solid divider',
                           height: 20,
                         }}
                       />
@@ -921,9 +921,9 @@ function WmsStockContent() {
                                     fontWeight: 600,
                                     borderRadius: '4px',
                                     fontSize: '0.75rem',
-                                    backgroundColor: canEdit ? '#f0f9ff' : 'background.default',
+                                    backgroundColor: canEdit ? 'info.light' : 'background.default',
                                     color: canEdit ? 'primary.main' : 'text.disabled',
-                                    border: canEdit ? '1px solid #bae6fd' : '1px solid #e2e8f0',
+                                    border: canEdit ? '1px solid primary.light' : '1px solid divider',
                                     cursor: canEdit ? 'pointer' : 'default',
                                     opacity: canEdit ? 1 : 0.85,
                                   }}
@@ -972,9 +972,9 @@ function WmsStockContent() {
                             fontWeight: 600,
                             fontSize: '0.75rem',
                             fontFamily: 'monospace',
-                            backgroundColor: '#f1f5f9',
-                            color: '#334155',
-                            border: '1px solid #cbd5e1',
+                            backgroundColor: 'action.hover',
+                            color: 'text.secondary',
+                            border: '1px solid divider',
                             height: 22,
                           }}
                         />
@@ -1063,7 +1063,7 @@ function WmsStockContent() {
                                   height: 22,
                                   borderRadius: '4px',
                                   backgroundColor: 'background.paper',
-                                  border: '1px solid #e2e8f0',
+                                  border: '1px solid divider',
                                   color: 'text.secondary',
                                   fontWeight: 500,
                                 }}
@@ -1126,7 +1126,7 @@ function WmsStockContent() {
           <Divider />
 
           {!canEditStockLocation(locStockItem) && (
-            <Box sx={{ p: 1.5, bgcolor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 1.5 }}>
+            <Box sx={{ p: 1.5, bgcolor: 'error.light', border: '1px solid error.light', borderRadius: 1.5 }}>
               <Typography variant="body2" color="error.main" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
                 Изменение ячеек недоступно: требуется право «Конфигурация зон и ячеек» или назначение МОЛ склада.
               </Typography>

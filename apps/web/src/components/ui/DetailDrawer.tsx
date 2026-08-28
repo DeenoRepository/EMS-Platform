@@ -6,7 +6,6 @@ import {
   Box,
   Typography,
   IconButton,
-  Divider,
   LinearProgress,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
@@ -50,8 +49,9 @@ export function DetailDrawer({
           maxWidth: '100vw',
           display: 'flex',
           flexDirection: 'column',
-          backgroundColor: '#ffffff',
-          borderLeft: '1px solid #e2e8f0',
+          backgroundColor: 'background.paper',
+          borderLeft: '1px solid',
+          borderColor: 'divider',
           boxShadow: '-10px 0 30px -10px rgba(15, 23, 42, 0.12)',
         },
       }}
@@ -76,8 +76,9 @@ export function DetailDrawer({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderBottom: '1px solid #f1f5f9',
-          bgcolor: '#ffffff',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          bgcolor: 'background.paper',
           gap: 1.5,
         }}
       >
@@ -87,7 +88,7 @@ export function DetailDrawer({
               <Typography
                 variant="h6"
                 fontWeight={700}
-                color="#0f172a"
+                color="text.primary"
                 sx={{
                   fontSize: { xs: '1rem', sm: '1.125rem' },
                   lineHeight: 1.3,
@@ -103,7 +104,7 @@ export function DetailDrawer({
             {statusBadge}
           </Box>
           {subtitle && (
-            <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.75rem' }} noWrap display="block">
+            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.75rem' }} noWrap display="block">
               {subtitle}
             </Typography>
           )}
@@ -116,10 +117,10 @@ export function DetailDrawer({
             size="small"
             onClick={onClose}
             sx={{
-              color: '#64748b',
+              color: 'text.secondary',
               borderRadius: '6px',
               p: 0.5,
-              '&:hover': { bgcolor: '#f1f5f9', color: '#0f172a' },
+              '&:hover': { bgcolor: 'action.hover', color: 'text.primary' },
             }}
           >
             <CloseIcon fontSize="small" />
@@ -135,7 +136,7 @@ export function DetailDrawer({
           overflowY: 'auto',
           '&::-webkit-scrollbar': { width: 6 },
           '&::-webkit-scrollbar-thumb': {
-            bgcolor: '#cbd5e1',
+            bgcolor: 'divider',
             borderRadius: 3,
           },
         }}
@@ -148,8 +149,9 @@ export function DetailDrawer({
         <Box
           sx={{
             p: { xs: 2, sm: 2 },
-            borderTop: '1px solid #f1f5f9',
-            bgcolor: '#ffffff',
+            borderTop: '1px solid',
+            borderColor: 'divider',
+            bgcolor: 'background.paper',
             display: 'flex',
             justifyContent: 'flex-end',
             gap: 1.25,

@@ -116,7 +116,7 @@ export function SetupAdminLdapStep({
       </Box>
 
       <Box>
-        <Typography variant="subtitle2" fontWeight={800} sx={{ mb: 1.5, color: '#334155' }}>
+        <Typography variant="subtitle2" fontWeight={800} sx={{ mb: 1.5, color: 'text.secondary' }}>
           Режим аутентификации главного администратора:
         </Typography>
         <Grid container spacing={2}>
@@ -129,8 +129,8 @@ export function SetupAdminLdapStep({
                 cursor: 'pointer',
                 borderRadius: 3,
                 border: '2px solid',
-                borderColor: authMode === 'local' ? 'primary.main' : '#e2e8f0',
-                bgcolor: authMode === 'local' ? 'rgba(2, 132, 199, 0.04)' : '#ffffff',
+                borderColor: authMode === 'local' ? 'primary.main' : 'divider',
+                bgcolor: authMode === 'local' ? 'rgba(2, 132, 199, 0.04)' : 'background.paper',
                 transition: 'all 0.2s ease-in-out',
                 '&:hover': { borderColor: 'primary.light' },
               }}
@@ -155,8 +155,8 @@ export function SetupAdminLdapStep({
                 cursor: 'pointer',
                 borderRadius: 3,
                 border: '2px solid',
-                borderColor: authMode === 'ldap' ? 'primary.main' : '#e2e8f0',
-                bgcolor: authMode === 'ldap' ? 'rgba(2, 132, 199, 0.04)' : '#ffffff',
+                borderColor: authMode === 'ldap' ? 'primary.main' : 'divider',
+                bgcolor: authMode === 'ldap' ? 'rgba(2, 132, 199, 0.04)' : 'background.paper',
                 transition: 'all 0.2s ease-in-out',
                 '&:hover': { borderColor: 'primary.light' },
               }}
@@ -182,7 +182,7 @@ export function SetupAdminLdapStep({
               <TextField
                 fullWidth required label="Логин администратора" value={adminLogin}
                 onChange={(event) => onAdminLoginChange(event.target.value)} placeholder="admin"
-                InputProps={{ startAdornment: <InputAdornment position="start"><LockOutlinedIcon sx={{ color: '#94a3b8', fontSize: 18 }} /></InputAdornment> }}
+                InputProps={{ startAdornment: <InputAdornment position="start"><LockOutlinedIcon sx={{ color: 'text.disabled', fontSize: 18 }} /></InputAdornment> }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -214,7 +214,7 @@ export function SetupAdminLdapStep({
               label={<Box><Typography variant="subtitle2" fontWeight={700}>Включить доменную авторизацию LDAP для остальных сотрудников</Typography><Typography variant="caption" color="text.secondary">Позволяет инженерам и МОЛ входить под своими доменными учетными записями Windows</Typography></Box>}
             />
             {ldapEnabled && (
-              <Stack spacing={2} sx={{ mt: 2, p: 2.5, bgcolor: '#f8fafc', borderRadius: 3, border: '1px solid #e2e8f0' }}>
+              <Stack spacing={2} sx={{ mt: 2, p: 2.5, bgcolor: 'background.default', borderRadius: 3, border: '1px solid divider' }}>
                 <TextField fullWidth label="LDAP URL" placeholder="ldap://ad.company.local:389" value={ldapUrl} onChange={(event) => onLdapUrlChange(event.target.value)} />
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}><TextField fullWidth label="Bind DN (Служебный аккаунт)" placeholder="CN=EMS_Service,OU=Services,DC=company,DC=local" value={ldapBindDn} onChange={(event) => onLdapBindDnChange(event.target.value)} /></Grid>

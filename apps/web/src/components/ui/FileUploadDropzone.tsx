@@ -170,13 +170,13 @@ export function FileUploadDropzone({
           cursor: disabled ? 'not-allowed' : 'pointer',
           borderStyle: 'dashed',
           borderWidth: 2,
-          borderColor: isDragActive ? '#0284c7' : displayError ? '#dc2626' : '#cbd5e1',
-          bgcolor: isDragActive ? 'rgba(2, 132, 199, 0.04)' : '#ffffff',
+          borderColor: isDragActive ? 'primary.main' : displayError ? 'error.main' : 'divider',
+          bgcolor: isDragActive ? 'action.hover' : 'background.paper',
           transition: 'all 0.2s ease',
           opacity: disabled ? 0.6 : 1,
           '&:hover': {
-            borderColor: disabled ? '#cbd5e1' : '#0284c7',
-            bgcolor: disabled ? '#ffffff' : '#f8fafc',
+            borderColor: disabled ? 'divider' : 'primary.main',
+            bgcolor: disabled ? 'background.paper' : 'action.hover',
           },
         }}
       >
@@ -188,8 +188,8 @@ export function FileUploadDropzone({
             width: compact ? 40 : 50,
             height: compact ? 40 : 50,
             borderRadius: '50%',
-            bgcolor: isDragActive ? 'rgba(2, 132, 199, 0.12)' : '#f1f5f9',
-            color: isDragActive ? '#0284c7' : '#64748b',
+            bgcolor: isDragActive ? 'action.selected' : 'action.hover',
+            color: isDragActive ? 'primary.main' : 'text.secondary',
             mb: compact ? 1 : 1.25,
           }}
         >
@@ -199,13 +199,13 @@ export function FileUploadDropzone({
         <Typography
           variant="body2"
           fontWeight={600}
-          color="#0f172a"
+          color="text.primary"
           sx={{ mb: 0.5, fontSize: compact ? '0.8125rem' : '0.875rem' }}
         >
           {title}
         </Typography>
 
-        <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.75rem' }} display="block">
+        <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.75rem' }} display="block">
           {description || `Поддерживаемые форматы: ${accept.replace(/\./g, '').toUpperCase()} (до ${maxSizeMb} МБ)`}
         </Typography>
 
@@ -218,9 +218,9 @@ export function FileUploadDropzone({
             pointerEvents: 'none',
             fontWeight: 600,
             borderRadius: '8px',
-            borderColor: '#e2e8f0',
-            color: '#334155',
-            backgroundColor: '#ffffff',
+            borderColor: 'divider',
+            color: 'text.secondary',
+            backgroundColor: 'background.paper',
             px: 2,
             py: 0.5,
           }}
@@ -236,7 +236,7 @@ export function FileUploadDropzone({
       )}
 
       {files.length > 0 && (
-        <List dense sx={{ mt: 1.5, bgcolor: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+        <List dense sx={{ mt: 1.5, bgcolor: 'background.paper', borderRadius: '10px', border: '1px solid', borderColor: 'divider' }}>
           {files.map((file, idx) => (
             <ListItem
               key={idx}
@@ -251,7 +251,7 @@ export function FileUploadDropzone({
                       e.stopPropagation();
                       handleRemoveFile(idx);
                     }}
-                    sx={{ color: '#94a3b8', '&:hover': { color: '#dc2626' } }}
+                    sx={{ color: 'text.disabled', '&:hover': { color: 'error.main' } }}
                   >
                     <DeleteOutlineIcon fontSize="small" />
                   </IconButton>
@@ -261,13 +261,13 @@ export function FileUploadDropzone({
               <ListItemIcon sx={{ minWidth: 36 }}>{getFileIcon(file.name)}</ListItemIcon>
               <ListItemText
                 primary={
-                  <Typography variant="body2" fontWeight={600} color="#0f172a" noWrap sx={{ fontSize: '0.8125rem' }}>
+                  <Typography variant="body2" fontWeight={600} color="text.primary" noWrap sx={{ fontSize: '0.8125rem' }}>
                     {file.name}
                   </Typography>
                 }
                 secondary={
                   <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.25 }}>
-                    <Typography component="span" variant="caption" sx={{ color: '#64748b', fontSize: '0.6875rem' }}>
+                    <Typography component="span" variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6875rem' }}>
                       {formatBytes(file.size)}
                     </Typography>
                     <StatusBadge status="READY" label="Готов к отправке" size="small" />

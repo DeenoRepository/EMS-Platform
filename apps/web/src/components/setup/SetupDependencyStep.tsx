@@ -40,17 +40,17 @@ export interface SetupDependencyStepProps {
 function getDependencyCategoryIcon(category: string) {
   switch (category) {
     case 'runtime':
-      return <TerminalIcon sx={{ fontSize: 20, color: '#0284c7' }} />;
+      return <TerminalIcon sx={{ fontSize: 20, color: 'primary.main' }} />;
     case 'database':
-      return <StorageIcon sx={{ fontSize: 20, color: '#0284c7' }} />;
+      return <StorageIcon sx={{ fontSize: 20, color: 'primary.main' }} />;
     case 'storage':
-      return <FolderOpenIcon sx={{ fontSize: 20, color: '#0284c7' }} />;
+      return <FolderOpenIcon sx={{ fontSize: 20, color: 'primary.main' }} />;
     case 'security':
-      return <SecurityIcon sx={{ fontSize: 20, color: '#0284c7' }} />;
+      return <SecurityIcon sx={{ fontSize: 20, color: 'primary.main' }} />;
     case 'system':
-      return <MemoryIcon sx={{ fontSize: 20, color: '#0284c7' }} />;
+      return <MemoryIcon sx={{ fontSize: 20, color: 'primary.main' }} />;
     default:
-      return <CheckCircleOutlineIcon sx={{ fontSize: 20, color: '#0284c7' }} />;
+      return <CheckCircleOutlineIcon sx={{ fontSize: 20, color: 'primary.main' }} />;
   }
 }
 
@@ -89,7 +89,7 @@ export function SetupDependencyStep({
             borderRadius: '8px',
             px: 2,
             py: 0.8,
-            borderColor: '#cbd5e1',
+            borderColor: 'divider',
             color: 'text.primary',
             '&:hover': { borderColor: 'primary.main', bgcolor: 'rgba(2, 132, 199, 0.04)' },
           }}
@@ -104,15 +104,15 @@ export function SetupDependencyStep({
           icon={<ErrorOutlineIcon sx={{ fontSize: 24 }} />}
           sx={{
             borderRadius: 3,
-            border: '1px solid #fecaca',
-            bgcolor: '#fef2f2',
+            border: '1px solid error.light',
+            bgcolor: 'error.light',
             '& .MuiAlert-message': { width: '100%' },
           }}
         >
           <AlertTitle sx={{ fontWeight: 800, fontSize: '0.95rem', mb: 0.5 }}>
             Установка заблокирована: обнаружены неисправные зависимости ({dependencies.failedCount})
           </AlertTitle>
-          <Typography variant="body2" sx={{ color: '#991b1b', lineHeight: 1.5 }}>
+          <Typography variant="body2" sx={{ color: 'error.dark', lineHeight: 1.5 }}>
             Дальнейшая установка остановлена для предотвращения сбоев в работе БД и хранилища. Устраните выявленные причины (отмечены красным) и нажмите кнопку <b>«Повторить проверку»</b>.
           </Typography>
         </Alert>
@@ -124,15 +124,15 @@ export function SetupDependencyStep({
           icon={<CheckCircleOutlineIcon sx={{ fontSize: 24 }} />}
           sx={{
             borderRadius: 3,
-            border: '1px solid #bbf7d0',
-            bgcolor: '#f0fdf4',
+            border: '1px solid success.light',
+            bgcolor: 'success.light',
             '& .MuiAlert-message': { width: '100%' },
           }}
         >
           <AlertTitle sx={{ fontWeight: 800, fontSize: '0.95rem', mb: 0.5 }}>
             Все системные зависимости успешно проверены
           </AlertTitle>
-          <Typography variant="body2" sx={{ color: '#166534', lineHeight: 1.5 }}>
+          <Typography variant="body2" sx={{ color: 'success.dark', lineHeight: 1.5 }}>
             Среда Node.js, сокет PostgreSQL, каталог файлов и криптографическая подсистема исправны. Нажмите <b>«Далее»</b> для перехода к настройке базы данных.
           </Typography>
         </Alert>
@@ -153,12 +153,12 @@ export function SetupDependencyStep({
                 sx={{
                   p: 2.5,
                   borderRadius: 3,
-                  borderColor: isFail ? '#fca5a5' : isWarn ? '#fde68a' : '#e2e8f0',
-                  backgroundColor: isFail ? '#fff8f8' : isWarn ? '#fffdf7' : '#ffffff',
+                  borderColor: isFail ? 'error.light' : isWarn ? 'warning.light' : 'divider',
+                  backgroundColor: isFail ? 'error.light' : isWarn ? 'warning.light' : 'background.paper',
                   transition: 'all 0.2s ease-in-out',
                   '&:hover': {
                     boxShadow: '0 4px 16px -2px rgba(0, 0, 0, 0.06)',
-                    borderColor: isFail ? '#f87171' : isWarn ? '#f59e0b' : '#cbd5e1',
+                    borderColor: isFail ? 'error.main' : isWarn ? 'warning.main' : 'divider',
                   },
                 }}
               >
@@ -205,9 +205,9 @@ export function SetupDependencyStep({
                   <StatusBadge status={badgeStatus} label={badgeLabel} variant="subtle" size="medium" />
                 </Box>
 
-                <Grid container spacing={1.5} sx={{ mt: 0.5, bgcolor: '#f8fafc', p: 1.5, borderRadius: 2, border: '1px solid #f1f5f9' }}>
+                <Grid container spacing={1.5} sx={{ mt: 0.5, bgcolor: 'background.default', p: 1.5, borderRadius: 2, border: '1px solid action.hover' }}>
                   <Grid item xs={12} sm={6}>
-                    <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, display: 'block', mb: 0.25 }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, display: 'block', mb: 0.25 }}>
                       Текущее значение в системе:
                     </Typography>
                     <Typography
@@ -223,17 +223,17 @@ export function SetupDependencyStep({
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, display: 'block', mb: 0.25 }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, display: 'block', mb: 0.25 }}>
                       Требование платформы:
                     </Typography>
-                    <Typography variant="body2" sx={{ color: '#475569', fontSize: '0.875rem' }}>
+                    <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
                       {check.requiredValue}
                     </Typography>
                   </Grid>
                 </Grid>
 
                 {isFail && check.troubleshooting && (
-                  <Box sx={{ mt: 1.5, p: 1.5, bgcolor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 2 }}>
+                  <Box sx={{ mt: 1.5, p: 1.5, bgcolor: 'error.light', border: '1px solid error.light', borderRadius: 2 }}>
                     <Typography variant="caption" fontWeight={800} color="error.dark" display="block" sx={{ mb: 0.25 }}>
                       Инструкция по устранению первопричины:
                     </Typography>

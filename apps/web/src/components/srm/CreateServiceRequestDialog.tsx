@@ -268,7 +268,7 @@ export default function CreateServiceRequestDialog({
           />
 
           {/* Гарантийный случай */}
-          <Box sx={{ p: 1.5, bgcolor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+          <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: '8px', border: '1px solid divider' }}>
             <FormControlLabel
               control={
                 <Checkbox

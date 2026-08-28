@@ -494,8 +494,8 @@ function EquipmentListContent() {
           sx={{
             mb: 2.5,
             borderRadius: '12px',
-            border: '1px solid #fed7aa',
-            backgroundColor: '#fffbeb',
+            border: '1px solid warning.light',
+            backgroundColor: 'warning.light',
             fontWeight: 500,
           }}
         >
@@ -587,7 +587,7 @@ function EquipmentListContent() {
             value={statusCounts.total}
             subtitle="Единиц в реестре"
             icon={<InventoryIcon sx={{ fontSize: 20 }} />}
-            accentColor="#0284c7"
+            accentColor="primary.main"
             active={!statusFilter}
             onClick={() => handleKpiFilter(null)}
             loading={loading && statusCounts.total === 0}
@@ -600,7 +600,7 @@ function EquipmentListContent() {
             value={statusCounts.active}
             subtitle="В штатной эксплуатации"
             icon={<CheckCircleOutlineIcon sx={{ fontSize: 20 }} />}
-            accentColor="#16a34a"
+            accentColor="success.main"
             active={statusFilter === 'ACTIVE'}
             onClick={() => handleKpiFilter('ACTIVE')}
             loading={loading && statusCounts.total === 0}
@@ -613,7 +613,7 @@ function EquipmentListContent() {
             value={statusCounts.underRepair}
             subtitle="ТО или аварийные работы"
             icon={<BuildCircleOutlinedIcon sx={{ fontSize: 20 }} />}
-            accentColor="#d97706"
+            accentColor="warning.main"
             active={statusFilter === 'UNDER_REPAIR'}
             onClick={() => handleKpiFilter('UNDER_REPAIR')}
             loading={loading && statusCounts.total === 0}
@@ -626,7 +626,7 @@ function EquipmentListContent() {
             value={statusCounts.inStorage}
             subtitle="Резерв и консервация"
             icon={<InventoryIcon sx={{ fontSize: 20 }} />}
-            accentColor="#64748b"
+            accentColor="text.secondary"
             active={statusFilter === 'IN_STORAGE'}
             onClick={() => handleKpiFilter('IN_STORAGE')}
             loading={loading && statusCounts.total === 0}
@@ -639,7 +639,7 @@ function EquipmentListContent() {
             value={statusCounts.decommissioned}
             subtitle="Выведено из эксплуатации"
             icon={<CancelOutlinedIcon sx={{ fontSize: 20 }} />}
-            accentColor="#dc2626"
+            accentColor="error.main"
             active={statusFilter === 'DECOMMISSIONED'}
             onClick={() => handleKpiFilter('DECOMMISSIONED')}
             loading={loading && statusCounts.total === 0}
@@ -789,7 +789,7 @@ function EquipmentListContent() {
                     flexDirection: 'column',
                     cursor: 'pointer',
                     borderRadius: '12px',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid divider',
                     transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                     '&:hover': {
                       transform: 'translateY(-3px)',
@@ -806,7 +806,7 @@ function EquipmentListContent() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      borderBottom: '1px solid #e2e8f0',
+                      borderBottom: '1px solid divider',
                       position: 'relative',
                       overflow: 'hidden',
                     }}
@@ -875,7 +875,7 @@ function EquipmentListContent() {
                     <Box
                       sx={{
                         pt: 1.25,
-                        borderTop: '1px solid #f1f5f9',
+                        borderTop: '1px solid action.hover',
                         display: 'flex',
                         justifyContent: 'space-between',
                         color: 'text.secondary',
@@ -1377,7 +1377,7 @@ function EquipmentListContent() {
                           border: '1px solid',
                           borderColor:
                             criticality === 'A'
-                              ? '#fecaca'
+                              ? 'error.light'
                               : criticality === 'B'
                               ? '#fde68a'
                               : 'divider',
@@ -1473,7 +1473,7 @@ function EquipmentListContent() {
                           backgroundColor: custom.is_critical_path ? 'error.light' : 'background.default',
                           color: custom.is_critical_path ? 'error.main' : 'text.disabled',
                           border: '1px solid',
-                          borderColor: custom.is_critical_path ? '#fecaca' : 'divider',
+                          borderColor: custom.is_critical_path ? 'error.light' : 'divider',
                         }}
                       />
                     </TableCell>
@@ -1488,10 +1488,10 @@ function EquipmentListContent() {
                           height: 20,
                           fontSize: '0.6875rem',
                           fontWeight: 600,
-                          backgroundColor: custom.is_unique ? '#f0f9ff' : 'background.default',
+                          backgroundColor: custom.is_unique ? 'info.light' : 'background.default',
                           color: custom.is_unique ? 'primary.main' : 'text.disabled',
                           border: '1px solid',
-                          borderColor: custom.is_unique ? '#bae6fd' : 'divider',
+                          borderColor: custom.is_unique ? 'primary.light' : 'divider',
                         }}
                       />
                     </TableCell>
@@ -1506,10 +1506,10 @@ function EquipmentListContent() {
                           height: 20,
                           fontSize: '0.6875rem',
                           fontWeight: 600,
-                          backgroundColor: custom.is_imported ? '#faf5ff' : 'background.default',
-                          color: custom.is_imported ? '#9333ea' : 'text.disabled',
+                          backgroundColor: custom.is_imported ? 'secondary.light' : 'background.default',
+                          color: custom.is_imported ? 'secondary.main' : 'text.disabled',
                           border: '1px solid',
-                          borderColor: custom.is_imported ? '#e9d5ff' : 'divider',
+                          borderColor: custom.is_imported ? 'secondary.light' : 'divider',
                         }}
                       />
                     </TableCell>
@@ -1541,7 +1541,7 @@ function EquipmentListContent() {
                                 height: 22,
                                 backgroundColor: 'background.paper',
                                 color: 'text.secondary',
-                                border: '1px solid #e2e8f0',
+                                border: '1px solid divider',
                                 borderRadius: '4px',
                                 fontWeight: 500,
                               }}

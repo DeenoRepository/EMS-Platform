@@ -397,9 +397,9 @@ export default function SrmIntegrationWizardDialog({
         {activeStep === 2 && (
           <Stack spacing={2.5}>
             {/* Test Connection Card */}
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: '10px', bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+            <Paper elevation={0} sx={{ p: 2.5, borderRadius: '10px', bgcolor: 'background.default', border: '1px solid divider' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-                <Typography variant="subtitle2" fontWeight={700} color="#0f172a">
+                <Typography variant="subtitle2" fontWeight={700} color="text.primary">
                   Верификация соединения с API
                 </Typography>
                 <Button
@@ -422,13 +422,13 @@ export default function SrmIntegrationWizardDialog({
             </Paper>
 
             {/* Summary */}
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: '10px', border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
+            <Paper elevation={0} sx={{ p: 2.5, borderRadius: '10px', border: '1px solid divider', bgcolor: 'background.paper' }}>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="caption" color="text.secondary">
                     Название интеграции:
                   </Typography>
-                  <Typography variant="subtitle2" fontWeight={700} color="#0f172a">
+                  <Typography variant="subtitle2" fontWeight={700} color="text.primary">
                     {name}
                   </Typography>
                 </Grid>
@@ -436,7 +436,7 @@ export default function SrmIntegrationWizardDialog({
                   <Typography variant="caption" color="text.secondary">
                     Провайдер:
                   </Typography>
-                  <Typography variant="subtitle2" fontWeight={700} color="#0f172a">
+                  <Typography variant="subtitle2" fontWeight={700} color="text.primary">
                     {selectedProviderMeta.name}
                   </Typography>
                 </Grid>
@@ -444,7 +444,7 @@ export default function SrmIntegrationWizardDialog({
                   <Typography variant="caption" color="text.secondary">
                     URL сервера:
                   </Typography>
-                  <Typography variant="body2" color="#0f172a" sx={{ wordBreak: 'break-all', fontFamily: 'monospace' }}>
+                  <Typography variant="body2" color="text.primary" sx={{ wordBreak: 'break-all', fontFamily: 'monospace' }}>
                     {baseUrl}
                   </Typography>
                 </Grid>
@@ -452,7 +452,7 @@ export default function SrmIntegrationWizardDialog({
                   <Typography variant="caption" color="text.secondary">
                     Авторизация:
                   </Typography>
-                  <Typography variant="body2" fontWeight={600} color="#0f172a">
+                  <Typography variant="body2" fontWeight={600} color="text.primary">
                     {authType}
                   </Typography>
                 </Grid>
@@ -460,7 +460,7 @@ export default function SrmIntegrationWizardDialog({
                   <Typography variant="caption" color="text.secondary">
                     Ключ проекта:
                   </Typography>
-                  <Typography variant="body2" fontWeight={600} color="#0f172a">
+                  <Typography variant="body2" fontWeight={600} color="text.primary">
                     {projectKeyOrId || 'Все'}
                   </Typography>
                 </Grid>
@@ -468,7 +468,7 @@ export default function SrmIntegrationWizardDialog({
                   <Typography variant="caption" color="text.secondary">
                     Интервал синхронизации:
                   </Typography>
-                  <Typography variant="body2" fontWeight={600} color="#0f172a">
+                  <Typography variant="body2" fontWeight={600} color="text.primary">
                     {syncInterval} мин
                   </Typography>
                 </Grid>

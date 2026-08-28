@@ -51,7 +51,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         backgroundColor: 'background.default',
         '@media print': {
           display: 'block !important',
-          backgroundColor: '#ffffff !important',
+          backgroundColor: 'background.paper !important',
           minHeight: 'auto !important',
         },
       }}

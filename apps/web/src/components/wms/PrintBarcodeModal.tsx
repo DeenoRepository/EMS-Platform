@@ -67,7 +67,7 @@ export default function PrintBarcodeModal({
       <Stack spacing={3} sx={{ mt: 1 }}>
         {/* Format Selector */}
         <FormControl>
-          <FormLabel sx={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0f172a', mb: 1 }}>
+          <FormLabel sx={{ fontSize: '0.8125rem', fontWeight: 700, color: 'text.primary', mb: 1 }}>
             Формат этикетки / принтера:
           </FormLabel>
           <RadioGroup
@@ -97,29 +97,29 @@ export default function PrintBarcodeModal({
 
         {/* Live Preview Box */}
         <Box>
-          <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, display: 'block', mb: 1 }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, display: 'block', mb: 1 }}>
             Предпросмотр этикетки (Масштаб 1:1):
           </Typography>
 
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 2, bgcolor: '#f1f5f9', borderRadius: '10px' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 2, bgcolor: 'action.hover', borderRadius: '10px' }}>
             <Paper
               elevation={2}
               sx={{
                 p: 2,
                 width: labelFormat === '80mm' ? 260 : 200,
                 borderRadius: '6px',
-                border: '1px solid #cbd5e1',
-                bgcolor: '#ffffff',
+                border: '1px solid divider',
+                bgcolor: 'background.paper',
                 textAlign: 'center',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
               }}
             >
-              <Typography variant="caption" sx={{ fontWeight: 800, color: '#0f172a', letterSpacing: 1, fontSize: '0.625rem' }}>
+              <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.primary', letterSpacing: 1, fontSize: '0.625rem' }}>
                 EMS ENTERPRISE WMS
               </Typography>
 
               <Box sx={{ display: 'flex', justifyContent: 'center', my: 1 }}>
-                <QrCode2Icon sx={{ fontSize: labelFormat === '80mm' ? 84 : 64, color: '#0f172a' }} />
+                <QrCode2Icon sx={{ fontSize: labelFormat === '80mm' ? 84 : 64, color: 'text.primary' }} />
               </Box>
 
               <Typography
@@ -128,7 +128,7 @@ export default function PrintBarcodeModal({
                   fontWeight: 700,
                   fontSize: '0.75rem',
                   lineHeight: 1.2,
-                  color: '#0f172a',
+                  color: 'text.primary',
                   mb: 0.5,
                 }}
                 noWrap
@@ -136,11 +136,11 @@ export default function PrintBarcodeModal({
                 {previewItem ? previewItem.name : 'Наименование позиции ТМЦ'}
               </Typography>
 
-              <Typography variant="caption" sx={{ color: '#475569', fontWeight: 600, display: 'block', fontSize: '0.6875rem' }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, display: 'block', fontSize: '0.6875rem' }}>
                 SKU: {previewItem?.article || 'BRG-6204-2RS'}
               </Typography>
 
-              <Typography variant="caption" sx={{ color: '#0284c7', fontWeight: 700, display: 'block', mt: 0.5, fontSize: '0.6875rem' }}>
+              <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 700, display: 'block', mt: 0.5, fontSize: '0.6875rem' }}>
                 {previewItem?.cellCode ? `Ячейка: ${previewItem.cellCode}` : previewItem?.warehouseCode ? `Склад: ${previewItem.warehouseCode}` : 'Склад: WH-MAIN'}
               </Typography>
             </Paper>
@@ -148,8 +148,8 @@ export default function PrintBarcodeModal({
         </Box>
 
         {items.length > 1 && (
-          <Paper elevation={0} sx={{ p: 1.5, bgcolor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <Typography variant="caption" sx={{ color: '#64748b' }}>
+          <Paper elevation={0} sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: '8px', border: '1px solid divider' }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
               Будет распечатано этикеток: <strong>{items.length} шт.</strong> на каждую выбранную позицию.
             </Typography>
           </Paper>

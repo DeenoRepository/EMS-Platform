@@ -11,7 +11,6 @@ import {
   IconButton,
   Collapse,
   Button,
-  useTheme,
 } from '@mui/material';
 import Link from 'next/link';
 import BuildCircleOutlinedIcon from '@mui/icons-material/BuildCircleOutlined';
@@ -60,46 +59,54 @@ export interface LifecycleTimelineProps {
 
 const EVENT_CONFIG: Record<
   LifecycleEventType,
-  { label: string; color: string; icon: React.ComponentType<any> }
+  { label: string; color: string; bg: string; icon: React.ComponentType<any> }
 > = {
   COMMISSIONING: {
     label: 'Ввод в эксплуатацию',
-    color: '#16a34a',
+    color: 'success.main',
+    bg: 'success.light',
     icon: PlayCircleOutlineOutlinedIcon,
   },
   MAINTENANCE: {
     label: 'Техническое обслуживание',
-    color: '#0284c7',
+    color: 'primary.main',
+    bg: 'primary.light',
     icon: BuildCircleOutlinedIcon,
   },
   INCIDENT: {
     label: 'Инцидент / Сбой',
-    color: '#dc2626',
+    color: 'error.main',
+    bg: 'error.light',
     icon: ReportProblemOutlinedIcon,
   },
   PARTS_REPLACED: {
     label: 'Замена узлов / ТМЦ',
-    color: '#7c3aed',
+    color: 'secondary.main',
+    bg: 'secondary.light',
     icon: Inventory2OutlinedIcon,
   },
   TRANSFER: {
     label: 'Перемещение',
-    color: '#0f766e',
+    color: 'info.main',
+    bg: 'info.light',
     icon: SwapHorizOutlinedIcon,
   },
   STATUS_CHANGE: {
     label: 'Смена статуса',
-    color: '#d97706',
+    color: 'warning.main',
+    bg: 'warning.light',
     icon: PublishedWithChangesOutlinedIcon,
   },
   DECOMMISSIONING: {
     label: 'Вывод из эксплуатации',
-    color: '#64748b',
+    color: 'text.secondary',
+    bg: 'action.hover',
     icon: StopCircleOutlinedIcon,
   },
   AUDIT: {
     label: 'Инспекция / Аудит',
-    color: '#475569',
+    color: 'text.primary',
+    bg: 'action.hover',
     icon: FactCheckOutlinedIcon,
   },
 };
@@ -113,7 +120,6 @@ export function LifecycleTimeline({
   paper = true,
   className,
 }: LifecycleTimelineProps) {
-  const theme = useTheme();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const displayedEvents = maxItems ? events.slice(0, maxItems) : events;
@@ -126,7 +132,7 @@ export function LifecycleTimeline({
     <Box sx={{ p: paper ? 2.5 : 1 }} className={className}>
       {title && (
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5 }}>
-          <Typography variant="h6" fontWeight={700} sx={{ fontSize: '1rem', color: '#0f172a', letterSpacing: '-0.01em' }}>
+          <Typography variant="h6" fontWeight={700} sx={{ fontSize: '1rem', color: 'text.primary', letterSpacing: '-0.01em' }}>
             {title}
           </Typography>
           <Chip
@@ -136,9 +142,10 @@ export function LifecycleTimeline({
               fontWeight: 600,
               fontSize: '0.6875rem',
               height: 22,
-              backgroundColor: '#f1f5f9',
-              color: '#475569',
-              border: '1px solid #e2e8f0',
+              backgroundColor: 'action.hover',
+              color: 'text.secondary',
+              border: '1px solid',
+              borderColor: 'divider',
               borderRadius: '4px',
             }}
           />
@@ -158,7 +165,7 @@ export function LifecycleTimeline({
           ))}
         </Stack>
       ) : displayedEvents.length === 0 ? (
-        <Box sx={{ py: 4, textAlign: 'center', color: '#64748b' }}>
+        <Box sx={{ py: 4, textAlign: 'center', color: 'text.secondary' }}>
           <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>{emptyMessage}</Typography>
         </Box>
       ) : (
@@ -171,7 +178,7 @@ export function LifecycleTimeline({
               bottom: 14,
               left: 17,
               width: '2px',
-              bgcolor: '#e2e8f0',
+              bgcolor: 'divider',
               zIndex: 0,
             }}
           />
@@ -201,15 +208,15 @@ export function LifecycleTimeline({
                       width: 26,
                       height: 26,
                       borderRadius: '50%',
-                      bgcolor: '#ffffff',
-                      border: `2px solid ${cfg.color}`,
+                      bgcolor: 'background.paper',
+                      border: '2px solid',
+                      borderColor: cfg.color,
                       color: cfg.color,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       flexShrink: 0,
                       mt: 0.25,
-                      boxShadow: `0 0 0 3px ${cfg.color}15`,
                     }}
                   >
                     <IconComponent sx={{ fontSize: 14 }} />
@@ -221,13 +228,14 @@ export function LifecycleTimeline({
                       flex: 1,
                       p: 1.5,
                       borderRadius: '8px',
-                      bgcolor: '#f8fafc',
-                      border: '1px solid #e2e8f0',
+                      bgcolor: 'background.default',
+                      border: '1px solid',
+                      borderColor: 'divider',
                       transition: 'all 0.15s ease',
                       '&:hover': {
-                        borderColor: `${cfg.color}50`,
+                        borderColor: cfg.color,
                         boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)',
-                        bgcolor: '#ffffff',
+                        bgcolor: 'background.paper',
                       },
                     }}
                   >
@@ -241,7 +249,7 @@ export function LifecycleTimeline({
                               height: 18,
                               fontSize: '0.625rem',
                               fontWeight: 700,
-                              bgcolor: `${cfg.color}15`,
+                              bgcolor: cfg.bg,
                               color: cfg.color,
                               borderRadius: '4px',
                             }}
@@ -249,7 +257,7 @@ export function LifecycleTimeline({
                           <Typography
                             variant="caption"
                             sx={{
-                              color: '#64748b',
+                              color: 'text.secondary',
                               fontFamily: 'monospace',
                               fontSize: '0.75rem',
                               fontFeatureSettings: '"tnum"',
@@ -259,7 +267,7 @@ export function LifecycleTimeline({
                           </Typography>
                         </Box>
 
-                        <Typography variant="subtitle2" fontWeight={700} sx={{ fontSize: '0.8125rem', color: '#0f172a' }}>
+                        <Typography variant="subtitle2" fontWeight={700} sx={{ fontSize: '0.8125rem', color: 'text.primary' }}>
                           {evt.title}
                         </Typography>
                       </Box>
@@ -272,7 +280,7 @@ export function LifecycleTimeline({
                             transform: isExpanded ? 'rotate(180deg)' : 'none',
                             transition: 'transform 0.2s ease',
                             p: 0.25,
-                            color: '#64748b',
+                            color: 'text.secondary',
                           }}
                           aria-label="Развернуть детали события"
                         >
@@ -283,16 +291,16 @@ export function LifecycleTimeline({
 
                     {/* Author / Performer info */}
                     {evt.author && (
-                      <Typography variant="caption" sx={{ display: 'block', mt: 0.5, fontSize: '0.75rem', color: '#64748b' }}>
-                        Исполнитель: <Box component="b" sx={{ color: 'text.secondary' }}>{evt.author}</Box>
+                      <Typography variant="caption" sx={{ display: 'block', mt: 0.5, fontSize: '0.75rem', color: 'text.secondary' }}>
+                        Исполнитель: <Box component="b" sx={{ color: 'text.primary' }}>{evt.author}</Box>
                       </Typography>
                     )}
 
                     {/* Collapsible Details */}
                     <Collapse in={isExpanded} timeout="auto" unmountOnExit>
-                      <Box sx={{ mt: 1.25, pt: 1.25, borderTop: '1px solid #e2e8f0' }}>
+                      <Box sx={{ mt: 1.25, pt: 1.25, borderTop: '1px solid', borderColor: 'divider' }}>
                         {evt.description && (
-                          <Typography variant="body2" sx={{ fontSize: '0.8125rem', mb: 1, color: '#475569', lineHeight: 1.45 }}>
+                          <Typography variant="body2" sx={{ fontSize: '0.8125rem', mb: 1, color: 'text.secondary', lineHeight: 1.45 }}>
                             {evt.description}
                           </Typography>
                         )}
@@ -304,18 +312,19 @@ export function LifecycleTimeline({
                               gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
                               gap: 1,
                               p: 1.25,
-                              bgcolor: '#ffffff',
+                              bgcolor: 'background.paper',
                               borderRadius: '6px',
-                              border: '1px solid #e2e8f0',
+                              border: '1px solid',
+                              borderColor: 'divider',
                               mb: 1,
                             }}
                           >
                             {Object.entries(evt.metadata).map(([k, v]) => (
                               <Box key={k}>
-                                <Typography variant="caption" sx={{ fontSize: '0.6875rem', color: '#64748b' }}>
+                                <Typography variant="caption" sx={{ fontSize: '0.6875rem', color: 'text.secondary' }}>
                                   {k}
                                 </Typography>
-                                <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.75rem', color: '#0f172a' }}>
+                                <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.75rem', color: 'text.primary' }}>
                                   {String(v)}
                                 </Typography>
                               </Box>
@@ -330,7 +339,7 @@ export function LifecycleTimeline({
                             size="small"
                             variant="text"
                             endIcon={<ArrowForwardIcon sx={{ fontSize: 14 }} />}
-                            sx={{ p: 0, fontSize: '0.75rem', fontWeight: 600, color: '#0284c7' }}
+                            sx={{ p: 0, fontSize: '0.75rem', fontWeight: 600, color: 'primary.main' }}
                           >
                             {evt.link.label}
                           </Button>
@@ -352,9 +361,10 @@ export function LifecycleTimeline({
       <Paper
         elevation={0}
         sx={{
-          border: '1px solid #e2e8f0',
+          border: '1px solid',
+          borderColor: 'divider',
           borderRadius: '12px',
-          bgcolor: '#ffffff',
+          bgcolor: 'background.paper',
           boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
         }}
       >

@@ -45,8 +45,9 @@ export function ModuleMaintenanceState({
           p: { xs: 3, sm: 5 },
           textAlign: 'center',
           borderRadius: '16px',
-          border: '1px solid #fed7aa',
-          backgroundColor: '#fffbeb',
+          border: '1px solid',
+          borderColor: 'warning.light',
+          backgroundColor: 'background.paper',
           boxShadow: '0 10px 25px -5px rgba(249, 115, 22, 0.08), 0 8px 10px -6px rgba(249, 115, 22, 0.04)',
         }}
       >
@@ -55,14 +56,13 @@ export function ModuleMaintenanceState({
             width: 72,
             height: 72,
             borderRadius: '50%',
-            backgroundColor: '#ffedd5',
-            color: '#ea580c',
+            backgroundColor: 'warning.light',
+            color: 'warning.main',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             mx: 'auto',
             mb: 2.5,
-            boxShadow: '0 0 0 8px rgba(255, 237, 213, 0.5)',
           }}
         >
           <EngineeringIcon sx={{ fontSize: 38 }} />
@@ -72,11 +72,11 @@ export function ModuleMaintenanceState({
           <StatusBadge status="MAINTENANCE" label="Техническое обслуживание" size="small" />
         </Box>
 
-        <Typography variant="h5" component="h1" fontWeight={700} color="#9a3412" gutterBottom>
+        <Typography variant="h5" component="h1" fontWeight={700} color="text.primary" gutterBottom>
           {moduleName} на регламентных работах
         </Typography>
 
-        <Typography variant="body1" color="#7c2d12" sx={{ mb: 3, lineHeight: 1.6 }}>
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 3, lineHeight: 1.6 }}>
           {message}
         </Typography>
 
@@ -89,8 +89,8 @@ export function ModuleMaintenanceState({
               px: 2,
               py: 1,
               borderRadius: '8px',
-              backgroundColor: '#fed7aa',
-              color: '#9a3412',
+              backgroundColor: 'warning.light',
+              color: 'warning.dark',
               fontWeight: 600,
               fontSize: '0.875rem',
               mb: 3.5,
@@ -104,11 +104,10 @@ export function ModuleMaintenanceState({
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} justifyContent="center" sx={{ mt: 1 }}>
           <Button
             variant="contained"
+            color="warning"
             startIcon={<HomeIcon />}
             onClick={() => router.push('/')}
             sx={{
-              backgroundColor: '#ea580c',
-              '&:hover': { backgroundColor: '#c2410c' },
               fontWeight: 600,
               borderRadius: '8px',
               px: 3,
@@ -121,12 +120,10 @@ export function ModuleMaintenanceState({
           {onRefresh ? (
             <Button
               variant="outlined"
+              color="warning"
               startIcon={<RefreshIcon />}
               onClick={onRefresh}
               sx={{
-                borderColor: '#fdba74',
-                color: '#9a3412',
-                '&:hover': { borderColor: '#ea580c', backgroundColor: '#fed7aa' },
                 fontWeight: 600,
                 borderRadius: '8px',
                 px: 2.5,
@@ -138,12 +135,10 @@ export function ModuleMaintenanceState({
           ) : (
             <Button
               variant="outlined"
+              color="warning"
               startIcon={<RefreshIcon />}
               onClick={() => window.location.reload()}
               sx={{
-                borderColor: '#fdba74',
-                color: '#9a3412',
-                '&:hover': { borderColor: '#ea580c', backgroundColor: '#fed7aa' },
                 fontWeight: 600,
                 borderRadius: '8px',
                 px: 2.5,

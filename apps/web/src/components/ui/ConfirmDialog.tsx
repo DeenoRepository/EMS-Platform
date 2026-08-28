@@ -95,37 +95,37 @@ export function ConfirmDialog({
       case 'danger':
         return {
           icon: <ErrorOutlineRoundedIcon sx={{ fontSize: 24 }} />,
-          bg: '#fee2e2',
-          color: '#dc2626',
-          border: '#fecaca',
+          bg: 'error.light',
+          color: 'error.main',
+          border: 'error.light',
         };
       case 'warning':
         return {
           icon: <WarningAmberRoundedIcon sx={{ fontSize: 24 }} />,
-          bg: '#fef3c7',
-          color: '#d97706',
-          border: '#fde68a',
+          bg: 'warning.light',
+          color: 'warning.main',
+          border: 'warning.light',
         };
       case 'success':
         return {
           icon: <CheckCircleOutlineRoundedIcon sx={{ fontSize: 24 }} />,
-          bg: '#dcfce7',
-          color: '#16a34a',
-          border: '#bbf7d0',
+          bg: 'success.light',
+          color: 'success.main',
+          border: 'success.light',
         };
       case 'info':
         return {
           icon: <InfoOutlinedIcon sx={{ fontSize: 24 }} />,
-          bg: '#e0f2fe',
-          color: '#0284c7',
-          border: '#bae6fd',
+          bg: 'info.light',
+          color: 'info.main',
+          border: 'info.light',
         };
       default:
         return {
           icon: <HelpOutlineRoundedIcon sx={{ fontSize: 24 }} />,
-          bg: 'rgba(2, 132, 199, 0.1)',
-          color: '#0284c7',
-          border: 'rgba(2, 132, 199, 0.2)',
+          bg: 'primary.light',
+          color: 'primary.main',
+          border: 'primary.light',
         };
     }
   };
@@ -159,7 +159,8 @@ export function ConfirmDialog({
         sx: {
           borderRadius: '14px',
           p: 0.5,
-          border: '1px solid #e2e8f0',
+          border: '1px solid',
+          borderColor: 'divider',
           boxShadow: '0 20px 30px -10px rgba(15, 23, 42, 0.15), 0 10px 15px -3px rgba(15, 23, 42, 0.08)',
         },
       }}
@@ -176,7 +177,8 @@ export function ConfirmDialog({
               borderRadius: '12px',
               backgroundColor: iconConfig.bg,
               color: iconConfig.color,
-              border: `1px solid ${iconConfig.border}`,
+              border: '1px solid',
+              borderColor: iconConfig.border,
               flexShrink: 0,
             }}
           >
@@ -190,7 +192,7 @@ export function ConfirmDialog({
                 fontWeight: 700,
                 fontSize: '1.0625rem',
                 lineHeight: 1.3,
-                color: '#0f172a',
+                color: 'text.primary',
                 letterSpacing: '-0.015em',
                 display: 'block',
               }}
@@ -201,7 +203,7 @@ export function ConfirmDialog({
               <Typography
                 variant="caption"
                 sx={{
-                  color: '#64748b',
+                  color: 'text.secondary',
                   fontSize: '0.75rem',
                   mt: 0.25,
                   display: 'block',
@@ -215,9 +217,9 @@ export function ConfirmDialog({
       </DialogTitle>
 
       <DialogContent sx={{ px: 2.5, py: 1.5 }}>
-        <Box sx={{ color: '#475569', fontSize: '0.875rem', lineHeight: 1.5, pl: { xs: 0, sm: 7.25 } }}>
+        <Box sx={{ color: 'text.secondary', fontSize: '0.875rem', lineHeight: 1.5, pl: { xs: 0, sm: 7.25 } }}>
           {typeof message === 'string' ? (
-            <Typography variant="body2" sx={{ color: '#475569', fontSize: '0.875rem', lineHeight: 1.6 }}>
+            <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.875rem', lineHeight: 1.6 }}>
               {message}
             </Typography>
           ) : (
@@ -226,10 +228,10 @@ export function ConfirmDialog({
 
           {/* Explicit Word Confirmation Input */}
           {confirmWord && (
-            <Box sx={{ mt: 2.5, p: 1.75, backgroundColor: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-              <Typography variant="caption" fontWeight={600} color="#334155" sx={{ display: 'block', mb: 1 }}>
+            <Box sx={{ mt: 2.5, p: 1.75, backgroundColor: 'background.default', borderRadius: '10px', border: '1px solid', borderColor: 'divider' }}>
+              <Typography variant="caption" fontWeight={600} color="text.primary" sx={{ display: 'block', mb: 1 }}>
                 Для подтверждения введите{' '}
-                <Box component="span" sx={{ px: 0.75, py: 0.2, bgcolor: '#e2e8f0', borderRadius: '4px', fontFamily: 'monospace', fontWeight: 700 }}>
+                <Box component="span" sx={{ px: 0.75, py: 0.2, bgcolor: 'divider', borderRadius: '4px', fontFamily: 'monospace', fontWeight: 700 }}>
                   {confirmWord}
                 </Box>
                 :
@@ -242,7 +244,7 @@ export function ConfirmDialog({
                 placeholder={confirmWordPlaceholder || `Введите "${confirmWord}"`}
                 autoFocus
                 sx={{
-                  backgroundColor: '#ffffff',
+                  backgroundColor: 'background.paper',
                   '& .MuiOutlinedInput-root': {
                     borderRadius: '8px',
                     fontSize: '0.875rem',
@@ -254,7 +256,7 @@ export function ConfirmDialog({
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ px: 2.5, pb: 2, pt: 1.5, gap: 1, justifyContent: 'flex-end', borderTop: '1px solid #f1f5f9' }}>
+      <DialogActions sx={{ px: 2.5, pb: 2, pt: 1.5, gap: 1, justifyContent: 'flex-end', borderTop: '1px solid', borderColor: 'divider' }}>
         <Button
           onClick={onClose}
           disabled={loading}
@@ -262,15 +264,15 @@ export function ConfirmDialog({
           size="medium"
           sx={{
             borderRadius: '8px',
-            borderColor: '#e2e8f0',
-            color: '#334155',
+            borderColor: 'divider',
+            color: 'text.secondary',
             fontWeight: 600,
             px: 2,
             py: 0.7,
             fontSize: '0.8125rem',
             '&:hover': {
-              borderColor: '#cbd5e1',
-              backgroundColor: '#f8fafc',
+              borderColor: 'text.disabled',
+              backgroundColor: 'action.hover',
             },
           }}
         >

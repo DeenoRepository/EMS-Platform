@@ -264,8 +264,8 @@ export default function WmsWarehousesPage() {
                 fontWeight: 600,
                 borderRadius: '8px',
                 textTransform: 'none',
-                bgcolor: '#0284c7',
-                '&:hover': { bgcolor: '#0369a1' },
+                bgcolor: 'primary.main',
+                '&:hover': { bgcolor: 'primary.dark' },
               }}
             >
               Создать склад
@@ -283,8 +283,8 @@ export default function WmsWarehousesPage() {
             subtitle="Зарегистрировано комплексов"
             icon={<WarehouseOutlinedIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(2, 132, 199, 0.08)"
-            iconColor="#0284c7"
-            accentColor="#0284c7"
+            iconColor="primary.main"
+            accentColor="primary.main"
             loading={isLoading}
           />
         </Grid>
@@ -295,8 +295,8 @@ export default function WmsWarehousesPage() {
             subtitle="Готовы к операциям"
             icon={<WarehouseOutlinedIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(22, 163, 74, 0.08)"
-            iconColor="#16a34a"
-            accentColor="#16a34a"
+            iconColor="success.main"
+            accentColor="success.main"
             loading={isLoading}
           />
         </Grid>
@@ -307,8 +307,8 @@ export default function WmsWarehousesPage() {
             subtitle="Позиций на складах"
             icon={<GridViewIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(217, 119, 6, 0.08)"
-            iconColor="#d97706"
-            accentColor="#d97706"
+            iconColor="warning.main"
+            accentColor="warning.main"
             loading={isLoading}
           />
         </Grid>
@@ -319,8 +319,8 @@ export default function WmsWarehousesPage() {
             subtitle="Приход, расход, перемещения"
             icon={<MeetingRoomOutlinedIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(124, 58, 237, 0.08)"
-            iconColor="#7c3aed"
-            accentColor="#7c3aed"
+            iconColor="secondary.main"
+            accentColor="secondary.main"
             loading={isLoading}
           />
         </Grid>
@@ -333,7 +333,7 @@ export default function WmsWarehousesPage() {
           p: 1.5,
           mb: 2.5,
           borderRadius: '10px',
-          border: '1px solid #e2e8f0',
+          border: '1px solid divider',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -355,7 +355,7 @@ export default function WmsWarehousesPage() {
           value={viewMode}
           exclusive
           onChange={(_, next) => next && setViewMode(next)}
-          sx={{ bgcolor: '#f8fafc' }}
+          sx={{ bgcolor: 'background.default' }}
         >
           <ToggleButton value="grid" aria-label="Сетка карточек">
             <GridViewIcon fontSize="small" sx={{ mr: 0.5 }} />
@@ -384,7 +384,7 @@ export default function WmsWarehousesPage() {
       ) : filteredWarehouses.length === 0 ? (
         <EmptyState
           paper
-          icon={<WarehouseOutlinedIcon sx={{ fontSize: 36, color: '#94a3b8' }} />}
+          icon={<WarehouseOutlinedIcon sx={{ fontSize: 36, color: 'text.disabled' }} />}
           title={search ? 'Склады не найдены' : 'Склады еще не зарегистрированы'}
           description={
             search
@@ -404,13 +404,13 @@ export default function WmsWarehousesPage() {
                   borderRadius: '12px',
                   display: 'flex',
                   flexDirection: 'column',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid divider',
                   boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
                   transition: 'all 0.18s ease',
                   '&:hover': {
                     transform: 'translateY(-2px)',
                     boxShadow: '0 8px 24px -4px rgba(15, 23, 42, 0.08)',
-                    borderColor: '#cbd5e1',
+                    borderColor: 'divider',
                   },
                 }}
               >
@@ -423,7 +423,7 @@ export default function WmsWarehousesPage() {
                           height: 36,
                           borderRadius: '8px',
                           bgcolor: 'rgba(2, 132, 199, 0.08)',
-                          color: '#0284c7',
+                          color: 'primary.main',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -431,7 +431,7 @@ export default function WmsWarehousesPage() {
                       >
                         <WarehouseOutlinedIcon sx={{ fontSize: 20 }} />
                       </Box>
-                      <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1rem', color: '#0f172a' }}>
+                      <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1rem', color: 'text.primary' }}>
                         {w.name}
                       </Typography>
                     </Box>
@@ -441,7 +441,7 @@ export default function WmsWarehousesPage() {
                         size="small"
                         onClick={() => handleOpenEdit(w)}
                         aria-label={`Редактировать ${w.name}`}
-                        sx={{ color: '#94a3b8', '&:hover': { color: '#0f172a' } }}
+                        sx={{ color: 'text.disabled', '&:hover': { color: 'text.primary' } }}
                       >
                         <EditOutlinedIcon fontSize="small" />
                       </IconButton>
@@ -461,10 +461,10 @@ export default function WmsWarehousesPage() {
                       gap: 1.25,
                       p: 1.25,
                       mb: 1.5,
-                      bgcolor: w.responsibleUserId === user?.userId ? 'rgba(2, 132, 199, 0.06)' : '#f8fafc',
+                      bgcolor: w.responsibleUserId === user?.userId ? 'rgba(2, 132, 199, 0.06)' : 'background.default',
                       borderRadius: '8px',
                       border: '1px solid',
-                      borderColor: w.responsibleUserId === user?.userId ? '#bae6fd' : '#e2e8f0',
+                      borderColor: w.responsibleUserId === user?.userId ? 'primary.light' : 'divider',
                     }}
                   >
                     <Avatar
@@ -473,13 +473,13 @@ export default function WmsWarehousesPage() {
                         height: 28,
                         fontSize: '0.75rem',
                         fontWeight: 700,
-                        bgcolor: w.responsibleUser ? '#0284c7' : '#94a3b8',
+                        bgcolor: w.responsibleUser ? 'primary.main' : 'text.disabled',
                       }}
                     >
                       {w.responsibleUser ? w.responsibleUser.displayName.charAt(0) : '?'}
                     </Avatar>
                     <Box sx={{ minWidth: 0, flex: 1 }}>
-                      <Typography variant="caption" sx={{ color: '#64748b', display: 'block', lineHeight: 1.1 }}>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', lineHeight: 1.1 }}>
                         Ответственное лицо:
                       </Typography>
                       <Typography
@@ -488,7 +488,7 @@ export default function WmsWarehousesPage() {
                         sx={{
                           fontWeight: 600,
                           fontSize: '0.8125rem',
-                          color: w.responsibleUser ? '#0f172a' : '#94a3b8',
+                          color: w.responsibleUser ? 'text.primary' : 'text.disabled',
                         }}
                       >
                         {w.responsibleUser ? w.responsibleUser.displayName : 'Не назначен'}
@@ -505,16 +505,16 @@ export default function WmsWarehousesPage() {
                   </Box>
 
                   {w.location && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5, color: '#64748b' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5, color: 'text.secondary' }}>
                       <LocationOnOutlinedIcon sx={{ fontSize: 16 }} />
                       <Typography variant="caption" sx={{ fontSize: '0.75rem' }}>{w.location}</Typography>
                     </Box>
                   )}
 
-                  <Box sx={{ mt: 'auto', pt: 1.5, borderTop: '1px solid #f1f5f9' }}>
+                  <Box sx={{ mt: 'auto', pt: 1.5, borderTop: '1px solid action.hover' }}>
                     <Grid container spacing={1} sx={{ mb: 1.5 }}>
                       <Grid item xs={6}>
-                        <Typography variant="caption" sx={{ color: '#64748b' }}>
+                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                           Номенклатурных позиций
                         </Typography>
                         <Typography variant="subtitle2" sx={{ fontWeight: 700, fontFeatureSettings: '"tnum"' }}>
@@ -522,7 +522,7 @@ export default function WmsWarehousesPage() {
                         </Typography>
                       </Grid>
                       <Grid item xs={6}>
-                        <Typography variant="caption" sx={{ color: '#64748b' }}>
+                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                           Всего операций
                         </Typography>
                         <Typography variant="subtitle2" sx={{ fontWeight: 700, fontFeatureSettings: '"tnum"' }}>
@@ -542,8 +542,8 @@ export default function WmsWarehousesPage() {
                         borderRadius: '8px',
                         textTransform: 'none',
                         fontWeight: 600,
-                        bgcolor: '#0284c7',
-                        '&:hover': { bgcolor: '#0369a1' },
+                        bgcolor: 'primary.main',
+                        '&:hover': { bgcolor: 'primary.dark' },
                       }}
                     >
                       Топология и ячейки
@@ -568,7 +568,7 @@ export default function WmsWarehousesPage() {
           stickyHeader
         >
           <Table size="small">
-            <TableHead sx={{ bgcolor: '#f8fafc' }}>
+            <TableHead sx={{ bgcolor: 'background.default' }}>
               <TableRow>
                 <TableCell sx={{ minWidth: 160 }}>Наименование</TableCell>
                 <TableCell sx={{ minWidth: 100 }}>Код</TableCell>
@@ -589,7 +589,7 @@ export default function WmsWarehousesPage() {
                   <TableCell>
                     <StatusBadge status={w.isActive ? 'ACTIVE' : 'DRAFT'} />
                   </TableCell>
-                  <TableCell sx={{ fontSize: '0.75rem', color: '#64748b' }}>
+                  <TableCell sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
                     {w.responsibleUser?.displayName || '—'}
                   </TableCell>
                   <TableCell align="right" sx={{ fontWeight: 700, fontFeatureSettings: '"tnum"' }}>
@@ -660,7 +660,7 @@ export default function WmsWarehousesPage() {
                   <Button
                     size="small"
                     variant="outlined"
-                    startIcon={<AutoAwesomeIcon sx={{ fontSize: 16, color: '#7c3aed' }} />}
+                    startIcon={<AutoAwesomeIcon sx={{ fontSize: 16, color: 'secondary.main' }} />}
                     onClick={handleGenerateWarehouseCode}
                     sx={{
                       height: 36,
@@ -668,12 +668,12 @@ export default function WmsWarehousesPage() {
                       textTransform: 'none',
                       fontWeight: 600,
                       fontSize: '0.8125rem',
-                      borderColor: '#e2e8f0',
-                      color: '#475569',
+                      borderColor: 'divider',
+                      color: 'text.secondary',
                       whiteSpace: 'nowrap',
                       '&:hover': {
-                        borderColor: '#7c3aed',
-                        color: '#7c3aed',
+                        borderColor: 'secondary.main',
+                        color: 'secondary.main',
                         bgcolor: 'rgba(124, 58, 237, 0.04)',
                       },
                     }}
@@ -715,7 +715,7 @@ export default function WmsWarehousesPage() {
           <Box sx={{ pt: 0.5 }}>
             <FormControlLabel
               control={<Switch checked={isActive} onChange={(e) => setIsActive(e.target.checked)} color="primary" />}
-              label={<Typography variant="body2" fontWeight={600} color="#1e293b">Склад активен для проведения операций</Typography>}
+              label={<Typography variant="body2" fontWeight={600} color="text.primary">Склад активен для проведения операций</Typography>}
             />
           </Box>
         </Stack>

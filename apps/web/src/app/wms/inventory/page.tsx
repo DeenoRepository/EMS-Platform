@@ -333,8 +333,8 @@ export default function WmsInventoryListPage() {
             subtitle="За все периоды учета"
             icon={<FactCheckOutlinedIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(2, 132, 199, 0.08)"
-            iconColor="#0284c7"
-            accentColor="#0284c7"
+            iconColor="primary.main"
+            accentColor="primary.main"
             loading={isLoading}
           />
         </Grid>
@@ -345,8 +345,8 @@ export default function WmsInventoryListPage() {
             subtitle="Открытые акты инвентаризации"
             icon={<FactCheckOutlinedIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(217, 119, 6, 0.08)"
-            iconColor="#d97706"
-            accentColor="#d97706"
+            iconColor="warning.main"
+            accentColor="warning.main"
             loading={isLoading}
           />
         </Grid>
@@ -357,8 +357,8 @@ export default function WmsInventoryListPage() {
             subtitle="Успешно сверенные и закрытые"
             icon={<FactCheckOutlinedIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(22, 163, 74, 0.08)"
-            iconColor="#16a34a"
-            accentColor="#16a34a"
+            iconColor="success.main"
+            accentColor="success.main"
             loading={isLoading}
           />
         </Grid>
@@ -590,7 +590,7 @@ export default function WmsInventoryListPage() {
                         fontSize: '0.6875rem',
                         height: 20,
                         backgroundColor: 'background.paper',
-                        border: '1px solid #e2e8f0',
+                        border: '1px solid divider',
                         color: 'text.secondary',
                       }}
                     />
@@ -653,12 +653,12 @@ export default function WmsInventoryListPage() {
                           borderRadius: '6px',
                           py: 0.3,
                           px: 1,
-                          borderColor: '#bae6fd',
+                          borderColor: 'primary.light',
                           color: 'primary.main',
-                          backgroundColor: '#f0f9ff',
+                          backgroundColor: 'info.light',
                           '&:hover': {
-                            backgroundColor: '#e0f2fe',
-                            borderColor: '#7dd3fc',
+                            backgroundColor: 'info.light',
+                            borderColor: 'primary.light',
                           },
                         }}
                       >

@@ -156,7 +156,7 @@ export default function MroChecklistsPage() {
             title="Всего чек-листов"
             value={totalChecklists}
             icon={<ChecklistIcon />}
-            iconColor="#0284c7"
+            iconColor="primary.main"
             iconBgColor="rgba(2, 132, 199, 0.08)"
             loading={loading}
             subtitle="Шаблонов технологических карт"
@@ -167,7 +167,7 @@ export default function MroChecklistsPage() {
             title="Пунктов проверки"
             value={totalItemsCount}
             icon={<FormatListNumberedIcon />}
-            iconColor="#0284c7"
+            iconColor="primary.main"
             iconBgColor="rgba(2, 132, 199, 0.08)"
             loading={loading}
             subtitle="Стандартизированных контрольных операций"
@@ -178,7 +178,7 @@ export default function MroChecklistsPage() {
             title="Связано с планами ТО"
             value={linkedPlansCount}
             icon={<AssignmentTurnedInIcon />}
-            iconColor="#16a34a"
+            iconColor="success.main"
             iconBgColor="rgba(22, 163, 74, 0.08)"
             loading={loading}
             subtitle="Активных регламентов обслуживания"
@@ -202,7 +202,7 @@ export default function MroChecklistsPage() {
         <PageLoading text="Загрузка библиотеки чек-листов..." />
       ) : filteredChecklists.length === 0 ? (
         <EmptyState
-          icon={<ChecklistIcon sx={{ fontSize: 48, color: '#94a3b8' }} />}
+          icon={<ChecklistIcon sx={{ fontSize: 48, color: 'text.disabled' }} />}
           title="Чек-листы не найдены"
           description={
             search
@@ -221,20 +221,20 @@ export default function MroChecklistsPage() {
                 sx={{
                   p: 3,
                   borderRadius: '12px',
-                  borderColor: '#e2e8f0',
+                  borderColor: 'divider',
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
                   transition: 'all 0.2s ease',
                   '&:hover': {
-                    borderColor: '#0284c7',
+                    borderColor: 'primary.main',
                     boxShadow: '0 4px 12px rgba(2, 132, 199, 0.08)',
                   },
                 }}
               >
                 <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5 }}>
                   <Box>
-                    <Typography variant="subtitle1" fontWeight={700} color="#0f172a">
+                    <Typography variant="subtitle1" fontWeight={700} color="text.primary">
                       {cl.name}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
@@ -244,7 +244,7 @@ export default function MroChecklistsPage() {
                   <Chip
                     label={`${cl.items?.length || 0} пунктов`}
                     size="small"
-                    sx={{ fontWeight: 700, bgcolor: '#f0f9ff', color: '#0284c7', borderRadius: '6px' }}
+                    sx={{ fontWeight: 700, bgcolor: 'info.light', color: 'primary.main', borderRadius: '6px' }}
                   />
                 </Box>
 
@@ -254,14 +254,14 @@ export default function MroChecklistsPage() {
 
                 <Divider sx={{ mb: 2 }} />
 
-                <Typography variant="caption" fontWeight={700} color="#64748b" sx={{ mb: 1, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ mb: 1, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Контрольные операции:
                 </Typography>
 
                 <Stack spacing={1} sx={{ flex: 1 }}>
                   {cl.items?.slice(0, 4).map((item, idx) => (
                     <Box key={item.id} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="caption" sx={{ color: '#0284c7', fontFamily: 'monospace', fontWeight: 700, width: 20 }}>
+                      <Typography variant="caption" sx={{ color: 'primary.main', fontFamily: 'monospace', fontWeight: 700, width: 20 }}>
                         {idx + 1}.
                       </Typography>
                       <Typography variant="body2" color="text.primary" sx={{ fontSize: '0.8125rem' }}>

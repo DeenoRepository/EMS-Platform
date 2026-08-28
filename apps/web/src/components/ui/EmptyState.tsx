@@ -3,7 +3,6 @@
 import React from 'react';
 import { Box, Typography, Button, Paper } from '@mui/material';
 import SearchOffOutlinedIcon from '@mui/icons-material/SearchOffOutlined';
-import InboxOutlinedIcon from '@mui/icons-material/InboxOutlined';
 
 export interface EmptyStateProps {
   title?: string;
@@ -28,7 +27,7 @@ export function EmptyState({
   minHeight = 220,
   className,
 }: EmptyStateProps) {
-  const defaultIcon = <SearchOffOutlinedIcon sx={{ fontSize: 32, color: '#94a3b8' }} />;
+  const defaultIcon = <SearchOffOutlinedIcon sx={{ fontSize: 32, color: 'text.disabled' }} />;
 
   const content = (
     <Box
@@ -50,10 +49,11 @@ export function EmptyState({
           width: 56,
           height: 56,
           borderRadius: '50%',
-          backgroundColor: '#f8fafc',
-          border: '1px solid #e2e8f0',
+          backgroundColor: 'background.default',
+          border: '1px solid',
+          borderColor: 'divider',
           mb: 1.75,
-          color: '#64748b',
+          color: 'text.secondary',
         }}
       >
         {icon || defaultIcon}
@@ -63,7 +63,7 @@ export function EmptyState({
         variant="subtitle1"
         sx={{
           fontWeight: 700,
-          color: '#0f172a',
+          color: 'text.primary',
           fontSize: '0.9375rem',
           letterSpacing: '-0.01em',
           mb: 0.5,
@@ -76,7 +76,7 @@ export function EmptyState({
         <Typography
           variant="body2"
           sx={{
-            color: '#64748b',
+            color: 'text.secondary',
             maxWidth: 400,
             fontSize: '0.8125rem',
             lineHeight: 1.45,
@@ -90,6 +90,7 @@ export function EmptyState({
       {actionText && onAction && (
         <Button
           variant="contained"
+          color="primary"
           size="small"
           startIcon={actionIcon}
           onClick={onAction}
@@ -98,10 +99,6 @@ export function EmptyState({
             borderRadius: '8px',
             px: 2.25,
             py: 0.75,
-            backgroundColor: '#0284c7',
-            '&:hover': {
-              backgroundColor: '#0369a1',
-            },
           }}
         >
           {actionText}
@@ -117,8 +114,9 @@ export function EmptyState({
         className={className}
         sx={{
           borderRadius: '12px',
-          border: '1px solid #e2e8f0',
-          backgroundColor: '#ffffff',
+          border: '1px solid',
+          borderColor: 'divider',
+          backgroundColor: 'background.paper',
           boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
         }}
       >

@@ -69,10 +69,10 @@ export function ChartCard({
           fontWeight: 700,
           fontFeatureSettings: '"tnum"',
           borderRadius: '20px',
-          bgcolor: isUp ? '#ecfdf5' : isDown ? '#fef2f2' : '#f1f5f9',
-          color: isUp ? '#15803d' : isDown ? '#b91c1c' : '#475569',
+          bgcolor: isUp ? 'success.light' : isDown ? 'error.light' : 'action.hover',
+          color: isUp ? 'success.dark' : isDown ? 'error.dark' : 'text.secondary',
           border: '1px solid',
-          borderColor: isUp ? '#a7f3d0' : isDown ? '#fecaca' : '#e2e8f0',
+          borderColor: isUp ? 'success.light' : isDown ? 'error.light' : 'divider',
         }}
       />
     );
@@ -85,12 +85,13 @@ export function ChartCard({
       sx={{
         p: { xs: 2, sm: 2.5 },
         borderRadius: '12px',
-        border: '1px solid #e2e8f0',
+        border: '1px solid',
+        borderColor: 'divider',
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
         minHeight,
-        bgcolor: '#ffffff',
+        bgcolor: 'background.paper',
         boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
       }}
     >
@@ -109,20 +110,20 @@ export function ChartCard({
           <Typography
             variant="h6"
             fontWeight={700}
-            color="#0f172a"
+            color="text.primary"
             sx={{ fontSize: { xs: '0.9375rem', sm: '1.05rem' }, lineHeight: 1.3, letterSpacing: '-0.015em' }}
           >
             {title}
           </Typography>
           {subtitle && (
-            <Typography variant="caption" display="block" sx={{ color: '#64748b', fontSize: '0.75rem', mt: 0.25 }}>
+            <Typography variant="caption" display="block" sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.25 }}>
               {subtitle}
             </Typography>
           )}
 
           {value !== undefined && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-              <Typography variant="h5" fontWeight={800} sx={{ fontFeatureSettings: '"tnum"', color: '#0f172a' }}>
+              <Typography variant="h5" fontWeight={800} sx={{ fontFeatureSettings: '"tnum"', color: 'text.primary' }}>
                 {typeof value === 'number' ? value.toLocaleString('ru-RU') : value}
               </Typography>
               {getTrendChip()}
@@ -150,7 +151,7 @@ export function ChartCard({
           </Box>
         ) : empty ? (
           <EmptyState
-            icon={<BarChartIcon sx={{ fontSize: 32, color: '#94a3b8' }} />}
+            icon={<BarChartIcon sx={{ fontSize: 32, color: 'text.disabled' }} />}
             title="Данные отсутствуют"
             description={emptyMessage}
             minHeight={200}

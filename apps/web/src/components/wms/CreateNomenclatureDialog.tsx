@@ -155,7 +155,7 @@ export default function CreateNomenclatureDialog({
       <Stack spacing={2.5} sx={{ mt: 1 }}>
         {/* Type Selector Pills */}
         <Box>
-          <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, display: 'block', mb: 1 }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, display: 'block', mb: 1 }}>
             Тип товарно-материальной ценности:
           </Typography>
           <Grid container spacing={1}>
@@ -170,25 +170,25 @@ export default function CreateNomenclatureDialog({
                       p: 1,
                       borderRadius: '8px',
                       border: '1px solid',
-                      borderColor: isSelected ? '#0284c7' : '#e2e8f0',
-                      bgcolor: isSelected ? 'rgba(2, 132, 199, 0.08)' : '#ffffff',
+                      borderColor: isSelected ? 'primary.main' : 'divider',
+                      bgcolor: isSelected ? 'rgba(2, 132, 199, 0.08)' : 'background.paper',
                       cursor: 'pointer',
                       textAlign: 'center',
                       transition: 'all 0.15s ease',
                       '&:hover': {
-                        borderColor: '#0284c7',
+                        borderColor: 'primary.main',
                         transform: 'translateY(-1px)',
                       },
                     }}
                   >
-                    <Box sx={{ color: isSelected ? '#0284c7' : '#64748b', display: 'flex', justifyContent: 'center', mb: 0.5 }}>
+                    <Box sx={{ color: isSelected ? 'primary.main' : 'text.secondary', display: 'flex', justifyContent: 'center', mb: 0.5 }}>
                       {t.icon}
                     </Box>
                     <Typography
                       variant="caption"
                       sx={{
                         fontWeight: isSelected ? 700 : 500,
-                        color: isSelected ? '#0284c7' : '#334155',
+                        color: isSelected ? 'primary.main' : 'text.secondary',
                         display: 'block',
                         fontSize: '0.6875rem',
                       }}
@@ -219,10 +219,10 @@ export default function CreateNomenclatureDialog({
               '& .MuiOutlinedInput-root': {
                 borderRadius: '8px',
                 fontSize: '0.875rem',
-                backgroundColor: '#ffffff',
-                '& fieldset': { borderColor: '#e2e8f0' },
-                '&:hover fieldset': { borderColor: '#94a3b8' },
-                '&.Mui-focused fieldset': { borderColor: '#0284c7' },
+                backgroundColor: 'background.paper',
+                '& fieldset': { borderColor: 'divider' },
+                '&:hover fieldset': { borderColor: 'text.disabled' },
+                '&.Mui-focused fieldset': { borderColor: 'primary.main' },
               },
             }}
           />
@@ -244,7 +244,7 @@ export default function CreateNomenclatureDialog({
                 endAdornment: (
                   <InputAdornment position="end">
                     <Tooltip title="Сгенерировать артикул автоматически">
-                      <IconButton size="small" onClick={handleGenerateSku} sx={{ color: '#7c3aed' }}>
+                      <IconButton size="small" onClick={handleGenerateSku} sx={{ color: 'secondary.main' }}>
                         <AutoAwesomeIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
@@ -255,10 +255,10 @@ export default function CreateNomenclatureDialog({
                 '& .MuiOutlinedInput-root': {
                   borderRadius: '8px',
                   fontSize: '0.875rem',
-                  backgroundColor: '#ffffff',
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#94a3b8' },
-                  '&.Mui-focused fieldset': { borderColor: '#0284c7' },
+                  backgroundColor: 'background.paper',
+                  '& fieldset': { borderColor: 'divider' },
+                  '&:hover fieldset': { borderColor: 'text.disabled' },
+                  '&.Mui-focused fieldset': { borderColor: 'primary.main' },
                 },
               }}
             />
@@ -277,10 +277,10 @@ export default function CreateNomenclatureDialog({
                 '& .MuiOutlinedInput-root': {
                   borderRadius: '8px',
                   fontSize: '0.875rem',
-                  backgroundColor: '#ffffff',
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#94a3b8' },
-                  '&.Mui-focused fieldset': { borderColor: '#0284c7' },
+                  backgroundColor: 'background.paper',
+                  '& fieldset': { borderColor: 'divider' },
+                  '&:hover fieldset': { borderColor: 'text.disabled' },
+                  '&.Mui-focused fieldset': { borderColor: 'primary.main' },
                 },
               }}
             />
@@ -304,10 +304,10 @@ export default function CreateNomenclatureDialog({
                 '& .MuiOutlinedInput-root': {
                   borderRadius: '8px',
                   fontSize: '0.8125rem',
-                  backgroundColor: '#ffffff',
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#94a3b8' },
-                  '&.Mui-focused fieldset': { borderColor: '#0284c7' },
+                  backgroundColor: 'background.paper',
+                  '& fieldset': { borderColor: 'divider' },
+                  '&:hover fieldset': { borderColor: 'text.disabled' },
+                  '&.Mui-focused fieldset': { borderColor: 'primary.main' },
                 },
               }}
             >
@@ -336,15 +336,15 @@ export default function CreateNomenclatureDialog({
                 '& .MuiOutlinedInput-root': {
                   borderRadius: '8px',
                   fontSize: '0.875rem',
-                  backgroundColor: '#ffffff',
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#94a3b8' },
-                  '&.Mui-focused fieldset': { borderColor: '#0284c7' },
+                  backgroundColor: 'background.paper',
+                  '& fieldset': { borderColor: 'divider' },
+                  '&:hover fieldset': { borderColor: 'text.disabled' },
+                  '&.Mui-focused fieldset': { borderColor: 'primary.main' },
                 },
                 '& .MuiFormHelperText-root': {
                   fontSize: '0.75rem',
                   mt: 0.5,
-                  color: '#64748b',
+                  color: 'text.secondary',
                 },
               }}
             />
@@ -368,10 +368,10 @@ export default function CreateNomenclatureDialog({
               '& .MuiOutlinedInput-root': {
                 borderRadius: '8px',
                 fontSize: '0.875rem',
-                backgroundColor: '#ffffff',
-                '& fieldset': { borderColor: '#e2e8f0' },
-                '&:hover fieldset': { borderColor: '#94a3b8' },
-                '&.Mui-focused fieldset': { borderColor: '#0284c7' },
+                backgroundColor: 'background.paper',
+                '& fieldset': { borderColor: 'divider' },
+                '&:hover fieldset': { borderColor: 'text.disabled' },
+                '&.Mui-focused fieldset': { borderColor: 'primary.main' },
               },
             }}
           />

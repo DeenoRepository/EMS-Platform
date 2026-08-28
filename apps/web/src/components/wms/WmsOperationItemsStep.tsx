@@ -145,7 +145,7 @@ export function WmsOperationItemsStep({
                       {currentWarehouse ? `${currentWarehouse.name} (${currentWarehouse.code})` : '—'}
                     </Typography>
                     {operationType === 'TRANSFER' && targetWarehouseId && (
-                      <Typography variant="caption" sx={{ display: 'block', color: '#7c3aed', fontWeight: 700, mt: 0.25 }}>
+                      <Typography variant="caption" sx={{ display: 'block', color: 'secondary.main', fontWeight: 700, mt: 0.25 }}>
                         → Склад назначения: {targetWarehouseName}
                       </Typography>
                     )}
@@ -160,7 +160,7 @@ export function WmsOperationItemsStep({
             </Paper>
 
             {/* Quick Item Add / Search Card */}
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: '10px', bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+            <Paper elevation={0} sx={{ p: 2.5, borderRadius: '10px', bgcolor: 'background.default', border: '1px solid divider' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary' }}>
                   Поиск и добавление позиций ТМЦ:
@@ -180,7 +180,7 @@ export function WmsOperationItemsStep({
               <Grid container spacing={1.5} alignItems="flex-start">
                 {operationType === 'ISSUE_WRITE_OFF' && (
                   <Grid item xs={12}>
-                    <Stack spacing={1.5} sx={{ mb: 1, p: 1.5, bgcolor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <Stack spacing={1.5} sx={{ mb: 1, p: 1.5, bgcolor: 'background.paper', borderRadius: '8px', border: '1px solid divider' }}>
                       <Box>
                         <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block', mb: 0.75 }}>
                           Причина / основание списания:
@@ -505,7 +505,7 @@ export function WmsOperationItemsStep({
                   В операцию еще не добавлено ни одной позиции. Воспользуйтесь поиском выше.
                 </Alert>
               ) : (
-                <Paper elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                <Paper elevation={0} sx={{ border: '1px solid divider', borderRadius: '8px', overflow: 'hidden' }}>
                   <Table size="small">
                     <TableHead sx={{ bgcolor: 'background.default' }}>
                       <TableRow>

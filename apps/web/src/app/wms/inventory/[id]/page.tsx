@@ -233,14 +233,14 @@ export default function WmsInventoryDetailPage() {
             </Button>
             <Button
               variant="outlined"
-              startIcon={<FactCheckOutlinedIcon sx={{ color: '#0284c7' }} />}
+              startIcon={<FactCheckOutlinedIcon sx={{ color: 'primary.main' }} />}
               onClick={() => setIsCountSheetOpen(true)}
               sx={{
                 fontWeight: 600,
-                borderColor: '#0284c7',
-                color: '#0284c7',
+                borderColor: 'primary.main',
+                color: 'primary.main',
                 '&:hover': {
-                  borderColor: '#0369a1',
+                  borderColor: 'primary.dark',
                   backgroundColor: 'rgba(2, 132, 199, 0.04)',
                 },
               }}
@@ -281,8 +281,8 @@ export default function WmsInventoryDetailPage() {
             subtitle={`Ответственный: ${inventory.createdBy.displayName}`}
             icon={<CheckCircleIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(2, 132, 199, 0.08)"
-            iconColor="#0284c7"
-            accentColor="#0284c7"
+            iconColor="primary.main"
+            accentColor="primary.main"
           />
         </Grid>
 
@@ -293,8 +293,8 @@ export default function WmsInventoryDetailPage() {
             subtitle={`Совпадают: ${matchCount}`}
             icon={<CheckCircleIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(15, 23, 42, 0.06)"
-            iconColor="#475569"
-            accentColor="#0284c7"
+            iconColor="text.secondary"
+            accentColor="primary.main"
           />
         </Grid>
 
@@ -305,8 +305,8 @@ export default function WmsInventoryDetailPage() {
             subtitle="Факт выше учетного"
             icon={<CheckCircleIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(22, 163, 74, 0.08)"
-            iconColor="#16a34a"
-            accentColor="#16a34a"
+            iconColor="success.main"
+            accentColor="success.main"
           />
         </Grid>
 
@@ -317,8 +317,8 @@ export default function WmsInventoryDetailPage() {
             subtitle="Факт ниже учетного"
             icon={<WarningAmberIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(220, 38, 38, 0.08)"
-            iconColor="#dc2626"
-            accentColor="#dc2626"
+            iconColor="error.main"
+            accentColor="error.main"
           />
         </Grid>
       </Grid>

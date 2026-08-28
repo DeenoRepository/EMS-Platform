@@ -188,13 +188,13 @@ export default function ApprovalWizardDialog({
             />
 
             {selectedEquipment && (
-              <Paper elevation={0} sx={{ p: 2, borderRadius: '8px', bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+              <Paper elevation={0} sx={{ p: 2, borderRadius: '8px', bgcolor: 'background.default', border: '1px solid divider' }}>
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="caption" color="text.secondary">
                       Наименование:
                     </Typography>
-                    <Typography variant="body2" fontWeight={700} color="#0f172a">
+                    <Typography variant="body2" fontWeight={700} color="text.primary">
                       {selectedEquipment.name}
                     </Typography>
                   </Grid>
@@ -202,7 +202,7 @@ export default function ApprovalWizardDialog({
                     <Typography variant="caption" color="text.secondary">
                       Инв. номер:
                     </Typography>
-                    <Typography variant="body2" fontWeight={600} color="#0f172a">
+                    <Typography variant="body2" fontWeight={600} color="text.primary">
                       {selectedEquipment.inventoryNumber || '—'}
                     </Typography>
                   </Grid>
@@ -312,13 +312,13 @@ export default function ApprovalWizardDialog({
               Заявка будет зарегистрирована в системе со статусом «На рассмотрении» и станет доступна уполномоченным лицам для утверждения.
             </Alert>
 
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: '10px', bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+            <Paper elevation={0} sx={{ p: 2.5, borderRadius: '10px', bgcolor: 'background.default', border: '1px solid divider' }}>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="caption" color="text.secondary">
                     Тип согласования:
                   </Typography>
-                  <Typography variant="subtitle2" fontWeight={700} color="#0f172a">
+                  <Typography variant="subtitle2" fontWeight={700} color="text.primary">
                     {APPROVAL_TYPE_MAP[approvalType as keyof typeof APPROVAL_TYPE_MAP] || approvalType}
                   </Typography>
                 </Grid>
@@ -326,7 +326,7 @@ export default function ApprovalWizardDialog({
                   <Typography variant="caption" color="text.secondary">
                     Оборудование:
                   </Typography>
-                  <Typography variant="subtitle2" fontWeight={700} color="#0f172a">
+                  <Typography variant="subtitle2" fontWeight={700} color="text.primary">
                     {selectedEquipment?.name} ({selectedEquipment?.inventoryNumber || 'б/н'})
                   </Typography>
                 </Grid>
@@ -334,7 +334,7 @@ export default function ApprovalWizardDialog({
                   <Typography variant="caption" color="text.secondary">
                     Тема заявки:
                   </Typography>
-                  <Typography variant="body2" fontWeight={600} color="#0f172a">
+                  <Typography variant="body2" fontWeight={600} color="text.primary">
                     {title}
                   </Typography>
                 </Grid>
@@ -343,7 +343,7 @@ export default function ApprovalWizardDialog({
                     <Typography variant="caption" color="text.secondary">
                       Обоснование:
                     </Typography>
-                    <Typography variant="body2" color="#334155">
+                    <Typography variant="body2" color="text.secondary">
                       {description}
                     </Typography>
                   </Grid>

@@ -381,8 +381,8 @@ function WmsOperationsContent() {
     if (op.type === 'TRANSFER') {
       return (
         <Stack direction="row" spacing={0.75} alignItems="center">
-          <SwapHorizIcon sx={{ fontSize: 16, color: '#7c3aed' }} />
-          <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: '#6d28d9', fontWeight: 600 }}>
+          <SwapHorizIcon sx={{ fontSize: 16, color: 'secondary.main' }} />
+          <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'secondary.dark', fontWeight: 600 }}>
             {op.counterparty ? `Целевой склад: ${op.counterparty}` : 'Перемещение между складами'}
           </Typography>
         </Stack>
@@ -474,8 +474,8 @@ function WmsOperationsContent() {
                 subtitle="В журнале движения ТМЦ"
                 icon={<SwapHorizIcon sx={{ fontSize: 20 }} />}
                 iconBgColor="rgba(2, 132, 199, 0.08)"
-                iconColor="#0284c7"
-                accentColor="#0284c7"
+                iconColor="primary.main"
+                accentColor="primary.main"
                 active={selectedType === ''}
                 onClick={() => setSelectedType('')}
                 loading={isLoadingOps && opsTotalCount === 0}
@@ -488,8 +488,8 @@ function WmsOperationsContent() {
                 subtitle="От поставщиков"
                 icon={<MoveToInboxIcon sx={{ fontSize: 20 }} />}
                 iconBgColor="rgba(22, 163, 74, 0.08)"
-                iconColor="#16a34a"
-                accentColor="#16a34a"
+                iconColor="success.main"
+                accentColor="success.main"
                 active={selectedType === 'RECEIPT'}
                 onClick={() => setSelectedType((prev) => (prev === 'RECEIPT' ? '' : 'RECEIPT'))}
                 loading={isLoadingOps && opsTotalCount === 0}
@@ -502,8 +502,8 @@ function WmsOperationsContent() {
                 subtitle="В подотчет и на оборудование ТОиР"
                 icon={<OutboxIcon sx={{ fontSize: 20 }} />}
                 iconBgColor="rgba(217, 119, 6, 0.08)"
-                iconColor="#d97706"
-                accentColor="#d97706"
+                iconColor="warning.main"
+                accentColor="warning.main"
                 active={selectedType === 'ISSUE_EMPLOYEE' || selectedType === 'ISSUE_WRITE_OFF'}
                 onClick={() => setSelectedType((prev) => (prev === 'ISSUE_WRITE_OFF' ? '' : 'ISSUE_WRITE_OFF'))}
                 loading={isLoadingOps && opsTotalCount === 0}
@@ -516,8 +516,8 @@ function WmsOperationsContent() {
                 subtitle="Перемещения ТМЦ"
                 icon={<SwapHorizIcon sx={{ fontSize: 20 }} />}
                 iconBgColor="rgba(124, 58, 237, 0.08)"
-                iconColor="#7c3aed"
-                accentColor="#7c3aed"
+                iconColor="secondary.main"
+                accentColor="secondary.main"
                 active={selectedType === 'TRANSFER'}
                 onClick={() => setSelectedType((prev) => (prev === 'TRANSFER' ? '' : 'TRANSFER'))}
                 loading={isLoadingOps && opsTotalCount === 0}
@@ -673,7 +673,7 @@ function WmsOperationsContent() {
                               fontSize: '0.6875rem',
                               backgroundColor: 'background.paper',
                               color: 'text.secondary',
-                              border: '1px solid #e2e8f0',
+                              border: '1px solid divider',
                               height: 20,
                             }}
                           />
@@ -733,8 +733,8 @@ function WmsOperationsContent() {
                 subtitle="Входящие ТМЦ в пути"
                 icon={<MoveToInboxIcon sx={{ fontSize: 20 }} />}
                 iconBgColor="rgba(2, 132, 199, 0.08)"
-                iconColor="#0284c7"
-                accentColor="#0284c7"
+                iconColor="primary.main"
+                accentColor="primary.main"
                 loading={isLoadingTransfers}
                 active={transferTab === 'inbound'}
                 onClick={() => setTransferTab('inbound')}
@@ -747,8 +747,8 @@ function WmsOperationsContent() {
                 subtitle="Ожидают согласования"
                 icon={<HourglassEmptyIcon sx={{ fontSize: 20 }} />}
                 iconBgColor="rgba(217, 119, 6, 0.08)"
-                iconColor="#d97706"
-                accentColor="#d97706"
+                iconColor="warning.main"
+                accentColor="warning.main"
                 loading={isLoadingTransfers}
                 active={transferTab === 'requests'}
                 onClick={() => setTransferTab('requests')}
@@ -761,8 +761,8 @@ function WmsOperationsContent() {
                 subtitle="Исходящие отгрузки"
                 icon={<LocalShippingOutlinedIcon sx={{ fontSize: 20 }} />}
                 iconBgColor="rgba(124, 58, 237, 0.08)"
-                iconColor="#7c3aed"
-                accentColor="#7c3aed"
+                iconColor="secondary.main"
+                accentColor="secondary.main"
                 loading={isLoadingTransfers}
                 active={transferTab === 'outbound'}
                 onClick={() => setTransferTab('outbound')}
@@ -775,8 +775,8 @@ function WmsOperationsContent() {
                 subtitle="Все записи реестра"
                 icon={<CheckCircleOutlineIcon sx={{ fontSize: 20 }} />}
                 iconBgColor="rgba(22, 163, 74, 0.08)"
-                iconColor="#16a34a"
-                accentColor="#16a34a"
+                iconColor="success.main"
+                accentColor="success.main"
                 loading={isLoadingTransfers}
                 active={transferTab === 'all'}
                 onClick={() => setTransferTab('all')}
@@ -924,11 +924,11 @@ function WmsOperationsContent() {
                         </TableCell>
                         <TableCell sx={{ py: 1.25 }}>
                           {t.rejectionReason ? (
-                            <Box sx={{ p: 0.75, bgcolor: '#fef2f2', borderRadius: '6px', border: '1px solid #fecaca' }}>
+                            <Box sx={{ p: 0.75, bgcolor: 'error.light', borderRadius: '6px', border: '1px solid error.light' }}>
                               <Typography variant="caption" sx={{ color: 'error.main', fontWeight: 700, display: 'block' }}>
                                 Отказ:
                               </Typography>
-                              <Typography variant="caption" sx={{ color: '#991b1b' }}>
+                              <Typography variant="caption" sx={{ color: 'error.dark' }}>
                                 {t.rejectionReason}
                               </Typography>
                             </Box>

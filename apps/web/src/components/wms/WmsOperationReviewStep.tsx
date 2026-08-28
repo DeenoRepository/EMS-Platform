@@ -54,7 +54,7 @@ export function WmsOperationReviewStep({
         Все параметры операции заполнены. Проверьте сводные данные перед проведением в базе данных.
       </Alert>
 
-      <Paper elevation={0} sx={{ p: 2.5, borderRadius: '10px', bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+      <Paper elevation={0} sx={{ p: 2.5, borderRadius: '10px', bgcolor: 'background.default', border: '1px solid divider' }}>
         <Grid container spacing={2}>
           <Grid item xs={12} sm={6}>
             <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block' }}>
@@ -113,7 +113,7 @@ export function WmsOperationReviewStep({
         <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary', mb: 1 }}>
           Итоговый перечень позиций ({lineItems.length}):
         </Typography>
-        <Paper elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+        <Paper elevation={0} sx={{ border: '1px solid divider', borderRadius: '8px', overflow: 'hidden' }}>
           <Table size="small">
             <TableHead sx={{ bgcolor: 'background.default' }}>
               <TableRow>

@@ -146,7 +146,7 @@ export default function StockDetailDrawer({
       <Box
         sx={{
           p: 2.5,
-          borderBottom: '1px solid #e2e8f0',
+          borderBottom: '1px solid divider',
           bgcolor: 'background.default',
           display: 'flex',
           alignItems: 'flex-start',
@@ -161,7 +161,7 @@ export default function StockDetailDrawer({
               height: 44,
               borderRadius: '10px',
               bgcolor: isCritical ? 'rgba(239, 68, 68, 0.1)' : 'rgba(2, 132, 199, 0.1)',
-              color: isCritical ? '#ef4444' : 'primary.main',
+              color: isCritical ? 'error.main' : 'primary.main',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -213,7 +213,7 @@ export default function StockDetailDrawer({
         onChange={(_, val) => setTabIndex(val)}
         variant="fullWidth"
         sx={{
-          borderBottom: '1px solid #e2e8f0',
+          borderBottom: '1px solid divider',
           minHeight: 44,
           '& .MuiTab-root': {
             minHeight: 44,
@@ -243,7 +243,7 @@ export default function StockDetailDrawer({
                   sx={{
                     p: 2,
                     borderRadius: '10px',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid divider',
                     bgcolor: 'background.default',
                   }}
                 >
@@ -270,7 +270,7 @@ export default function StockDetailDrawer({
                   sx={{
                     p: 2,
                     borderRadius: '10px',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid divider',
                     bgcolor: 'background.default',
                   }}
                 >
@@ -311,7 +311,7 @@ export default function StockDetailDrawer({
                     sx={{
                       width: `${fillPercent}%`,
                       height: '100%',
-                      bgcolor: isCritical ? '#ef4444' : '#22c55e',
+                      bgcolor: isCritical ? 'error.main' : 'success.main',
                       transition: 'width 0.4s ease',
                     }}
                   />
@@ -325,7 +325,7 @@ export default function StockDetailDrawer({
               sx={{
                 p: 2,
                 borderRadius: '10px',
-                border: '1px solid #e2e8f0',
+                border: '1px solid divider',
               }}
             >
               <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary', mb: 1.5 }}>
@@ -359,7 +359,7 @@ export default function StockDetailDrawer({
                         size="small"
                         sx={{
                           fontWeight: 700,
-                          bgcolor: '#eff6ff',
+                          bgcolor: 'info.light',
                           color: 'info.dark',
                           borderRadius: '6px',
                         }}
@@ -464,7 +464,7 @@ export default function StockDetailDrawer({
                   sx={{
                     p: 1.75,
                     borderRadius: '8px',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid divider',
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
                     display: 'flex',
@@ -545,7 +545,7 @@ export default function StockDetailDrawer({
                 p: 3,
                 width: 220,
                 borderRadius: '8px',
-                border: '2px dashed #94a3b8',
+                border: '2px dashed text.disabled',
                 textAlign: 'center',
                 bgcolor: 'background.paper',
               }}

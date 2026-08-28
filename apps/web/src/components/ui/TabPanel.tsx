@@ -53,7 +53,7 @@ export function NavTabsContainer({
         borderBottom: paper ? 'none' : 'none',
         minHeight: 44,
         '& .MuiTabs-indicator': {
-          backgroundColor: '#0284c7',
+          backgroundColor: 'primary.main',
           height: 2.5,
           borderRadius: '2px 2px 0 0',
         },
@@ -65,13 +65,13 @@ export function NavTabsContainer({
           fontSize: '0.8125rem',
           textTransform: 'none',
           letterSpacing: 0,
-          color: '#64748b',
+          color: 'text.secondary',
           transition: 'color 0.15s ease',
           '&:hover': {
-            color: '#0f172a',
+            color: 'text.primary',
           },
           '&.Mui-selected': {
-            color: '#0284c7',
+            color: 'primary.main',
           },
         },
       }}
@@ -80,20 +80,20 @@ export function NavTabsContainer({
         const isSelected = value === t.value;
         const badgeBg =
           t.badgeColor === 'error'
-            ? isSelected ? '#fee2e2' : '#fef2f2'
+            ? 'error.light'
             : t.badgeColor === 'warning'
-            ? isSelected ? '#fef3c7' : '#fffbeb'
+            ? 'warning.light'
             : t.badgeColor === 'success'
-            ? isSelected ? '#dcfce7' : '#f0fdf4'
-            : isSelected ? 'rgba(2, 132, 199, 0.1)' : '#f1f5f9';
+            ? 'success.light'
+            : isSelected ? 'action.selected' : 'action.hover';
         const badgeTextColor =
           t.badgeColor === 'error'
-            ? '#dc2626'
+            ? 'error.main'
             : t.badgeColor === 'warning'
-            ? '#d97706'
+            ? 'warning.main'
             : t.badgeColor === 'success'
-            ? '#16a34a'
-            : isSelected ? '#0284c7' : '#64748b';
+            ? 'success.main'
+            : isSelected ? 'primary.main' : 'text.secondary';
 
         return (
           <Tab
@@ -138,9 +138,10 @@ export function NavTabsContainer({
         elevation={0}
         sx={{
           borderRadius: '12px',
-          border: '1px solid #e2e8f0',
+          border: '1px solid',
+          borderColor: 'divider',
           overflow: 'hidden',
-          bgcolor: '#ffffff',
+          bgcolor: 'background.paper',
           boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
         }}
       >
@@ -180,12 +181,11 @@ export function TabPanel({
       id={`tabpanel-${value}`}
       aria-labelledby={`tab-${value}`}
       className={className}
-      sx={{
-        display: isSelected ? 'block' : 'none',
-        pt: 2.5,
-      }}
+      sx={{ display: isSelected ? 'block' : 'none' }}
     >
       {children}
     </Box>
   );
 }
+
+export default TabPanel;

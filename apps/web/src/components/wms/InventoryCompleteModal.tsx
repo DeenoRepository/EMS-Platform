@@ -101,44 +101,44 @@ export default function InventoryCompleteModal({
         {/* 4 Summary Metric Cards */}
         <Grid container spacing={1.5}>
           <Grid item xs={6} sm={3}>
-            <Paper elevation={0} sx={{ p: 1.5, borderRadius: '8px', border: '1px solid #e2e8f0', bgcolor: '#f8fafc' }}>
-              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>
+            <Paper elevation={0} sx={{ p: 1.5, borderRadius: '8px', border: '1px solid divider', bgcolor: 'background.default' }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
                 Всего позиций
               </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', fontFeatureSettings: '"tnum"' }}>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.primary', fontFeatureSettings: '"tnum"' }}>
                 {totalItems}
               </Typography>
             </Paper>
           </Grid>
 
           <Grid item xs={6} sm={3}>
-            <Paper elevation={0} sx={{ p: 1.5, borderRadius: '8px', border: '1px solid #bbf7d0', bgcolor: '#f0fdf4' }}>
-              <Typography variant="caption" sx={{ color: '#166534', fontWeight: 600 }}>
+            <Paper elevation={0} sx={{ p: 1.5, borderRadius: '8px', border: '1px solid success.light', bgcolor: 'success.light' }}>
+              <Typography variant="caption" sx={{ color: 'success.dark', fontWeight: 600 }}>
                 Совпадений ({matchPercent}%)
               </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: '#15803d', fontFeatureSettings: '"tnum"' }}>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: 'success.dark', fontFeatureSettings: '"tnum"' }}>
                 {matchItems.length}
               </Typography>
             </Paper>
           </Grid>
 
           <Grid item xs={6} sm={3}>
-            <Paper elevation={0} sx={{ p: 1.5, borderRadius: '8px', border: '1px solid #fed7aa', bgcolor: '#fff7ed' }}>
-              <Typography variant="caption" sx={{ color: '#9a3412', fontWeight: 600 }}>
+            <Paper elevation={0} sx={{ p: 1.5, borderRadius: '8px', border: '1px solid warning.light', bgcolor: 'warning.light' }}>
+              <Typography variant="caption" sx={{ color: 'warning.dark', fontWeight: 600 }}>
                 Излишков
               </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: '#c2410c', fontFeatureSettings: '"tnum"' }}>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: 'warning.dark', fontFeatureSettings: '"tnum"' }}>
                 {surplusItems.length}
               </Typography>
             </Paper>
           </Grid>
 
           <Grid item xs={6} sm={3}>
-            <Paper elevation={0} sx={{ p: 1.5, borderRadius: '8px', border: '1px solid #fecaca', bgcolor: '#fef2f2' }}>
-              <Typography variant="caption" sx={{ color: '#991b1b', fontWeight: 600 }}>
+            <Paper elevation={0} sx={{ p: 1.5, borderRadius: '8px', border: '1px solid error.light', bgcolor: 'error.light' }}>
+              <Typography variant="caption" sx={{ color: 'error.dark', fontWeight: 600 }}>
                 Недостач
               </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: '#b91c1c', fontFeatureSettings: '"tnum"' }}>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: 'error.dark', fontFeatureSettings: '"tnum"' }}>
                 {deficitItems.length}
               </Typography>
             </Paper>
@@ -148,13 +148,13 @@ export default function InventoryCompleteModal({
         {/* List of Deviations Table */}
         {hasDiscrepancy && (
           <Box>
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0f172a', mb: 1 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary', mb: 1 }}>
               Позиции с расхождениями ({surplusItems.length + deficitItems.length}):
             </Typography>
 
-            <Paper elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: '8px', maxHeight: 220, overflowY: 'auto' }}>
+            <Paper elevation={0} sx={{ border: '1px solid divider', borderRadius: '8px', maxHeight: 220, overflowY: 'auto' }}>
               <Table size="small" stickyHeader>
-                <TableHead sx={{ bgcolor: '#f8fafc' }}>
+                <TableHead sx={{ bgcolor: 'background.default' }}>
                   <TableRow>
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Номенклатура</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Учет</TableCell>
@@ -172,11 +172,11 @@ export default function InventoryCompleteModal({
                           <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>
                             {item.nomenclature.name}
                           </Typography>
-                          <Typography variant="caption" sx={{ color: '#64748b' }}>
+                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                             {item.nomenclature.article || '—'}
                           </Typography>
                         </TableCell>
-                        <TableCell align="right" sx={{ py: 1, color: '#64748b', fontFeatureSettings: '"tnum"' }}>
+                        <TableCell align="right" sx={{ py: 1, color: 'text.secondary', fontFeatureSettings: '"tnum"' }}>
                           {item.expectedQty} {item.nomenclature.unit}
                         </TableCell>
                         <TableCell align="right" sx={{ py: 1, fontWeight: 700, fontFeatureSettings: '"tnum"' }}>
@@ -190,8 +190,8 @@ export default function InventoryCompleteModal({
                               fontWeight: 700,
                               fontSize: '0.6875rem',
                               height: 22,
-                              bgcolor: isSurplus ? '#ffedd5' : '#fee2e2',
-                              color: isSurplus ? '#c2410c' : '#b91c1c',
+                              bgcolor: isSurplus ? 'warning.light' : 'error.light',
+                              color: isSurplus ? 'warning.dark' : 'error.dark',
                             }}
                           />
                         </TableCell>

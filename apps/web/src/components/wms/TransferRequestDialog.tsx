@@ -251,14 +251,14 @@ export default function TransferRequestDialog({
         <Grid container spacing={2}>
           {/* Склад-получатель (Мой склад) */}
           <Grid item xs={12} sm={6}>
-            <Typography variant="caption" sx={{ color: '#475569', fontWeight: 700, display: 'block', mb: 0.75, textTransform: 'uppercase' }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.75, textTransform: 'uppercase' }}>
               Склад назначения (Ваш склад):
             </Typography>
-            <Paper variant="outlined" sx={{ p: 1.5, borderRadius: '8px', bgcolor: '#f8fafc' }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0f172a' }}>
+            <Paper variant="outlined" sx={{ p: 1.5, borderRadius: '8px', bgcolor: 'background.default' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary' }}>
                 {myWh ? `${myWh.name} (${myWh.code})` : 'Определение склада...'}
               </Typography>
-              <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
                 МОЛ: <b>{user?.displayName || 'Вы'}</b>
               </Typography>
             </Paper>
@@ -266,7 +266,7 @@ export default function TransferRequestDialog({
 
           {/* Склад-донор */}
           <Grid item xs={12} sm={6}>
-            <Typography variant="caption" sx={{ color: '#475569', fontWeight: 700, display: 'block', mb: 0.75, textTransform: 'uppercase' }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.75, textTransform: 'uppercase' }}>
               Склад-донор (Откуда запросить ТМЦ):
             </Typography>
             <TextField
@@ -307,8 +307,8 @@ export default function TransferRequestDialog({
         </Grid>
 
         {/* Подбор номенклатуры */}
-        <Paper elevation={0} sx={{ p: 2, borderRadius: '8px', bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0f172a', mb: 1.5 }}>
+        <Paper elevation={0} sx={{ p: 2, borderRadius: '8px', bgcolor: 'background.default', border: '1px solid divider' }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary', mb: 1.5 }}>
             Подбор запрашиваемых позиций ТМЦ:
           </Typography>
 
@@ -327,7 +327,7 @@ export default function TransferRequestDialog({
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
                         <Box>
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>{option.name}</Typography>
-                          <Typography variant="caption" sx={{ color: '#64748b' }}>
+                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                             {option.article ? `Арт: ${option.article} • ` : ''}{option.unit}
                           </Typography>
                         </Box>
@@ -384,7 +384,7 @@ export default function TransferRequestDialog({
           {lineItems.length > 0 && (
             <Paper variant="outlined" sx={{ mt: 2, borderRadius: '8px', overflow: 'hidden' }}>
               <Table size="small">
-                <TableHead sx={{ bgcolor: '#ffffff' }}>
+                <TableHead sx={{ bgcolor: 'background.paper' }}>
                   <TableRow>
                     <TableCell sx={{ fontWeight: 700 }}>№</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>Номенклатура</TableCell>
@@ -402,12 +402,12 @@ export default function TransferRequestDialog({
                     const donorStock = stockMap[item.nomenclatureId] || 0;
                     return (
                       <TableRow key={item.nomenclatureId} hover>
-                        <TableCell sx={{ py: 1, color: '#64748b' }}>{idx + 1}</TableCell>
+                        <TableCell sx={{ py: 1, color: 'text.secondary' }}>{idx + 1}</TableCell>
                         <TableCell sx={{ py: 1 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#0f172a' }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
                             {item.nomenclatureName}
                           </Typography>
-                          <Typography variant="caption" sx={{ color: '#64748b' }}>
+                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                             {item.nomenclatureArticle ? `Арт: ${item.nomenclatureArticle} • ` : ''}
                             {item.unit}
                           </Typography>
@@ -421,7 +421,7 @@ export default function TransferRequestDialog({
                             sx={{ fontWeight: 700, fontSize: '0.75rem' }}
                           />
                         </TableCell>
-                        <TableCell align="right" sx={{ py: 1, fontWeight: 700, color: '#0284c7' }}>
+                        <TableCell align="right" sx={{ py: 1, fontWeight: 700, color: 'primary.main' }}>
                           {item.quantity} {item.unit}
                         </TableCell>
                         <TableCell align="center" sx={{ py: 0.5 }}>

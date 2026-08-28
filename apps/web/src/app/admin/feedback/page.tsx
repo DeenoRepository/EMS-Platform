@@ -12,7 +12,6 @@ import {
   MenuItem,
   Paper,
   Divider,
-  Alert,
   Checkbox,
   FormControlLabel,
   CircularProgress,
@@ -25,13 +24,10 @@ import {
 } from '@mui/material';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
-import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
 import SendIcon from '@mui/icons-material/Send';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
-import DevicesIcon from '@mui/icons-material/Devices';
 import LinkIcon from '@mui/icons-material/Link';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
@@ -51,10 +47,8 @@ import {
 } from '@/components/ui';
 import {
   FeedbackTicketDto,
-  FeedbackType,
-  FeedbackModule,
-  FeedbackPriority,
   FeedbackStatus,
+  FeedbackPriority,
   FEEDBACK_TYPE_LABELS,
   FEEDBACK_MODULE_LABELS,
   FEEDBACK_PRIORITY_LABELS,
@@ -84,7 +78,6 @@ export default function AdminFeedbackPage() {
   // Detail Drawer State
   const [selectedTicket, setSelectedTicket] = useState<FeedbackTicketDto | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [loadingDetails, setLoadingDetails] = useState(false);
 
   // Drawer Edit state
   const [editStatus, setEditStatus] = useState<FeedbackStatus>('NEW');
@@ -159,7 +152,6 @@ export default function AdminFeedbackPage() {
   // Load selected ticket details
   const fetchTicketDetails = useCallback(
     async (id: string) => {
-      setLoadingDetails(true);
       try {
         const res = await fetch(`/api/feedback/${id}`);
         if (res.ok) {
@@ -173,8 +165,6 @@ export default function AdminFeedbackPage() {
         }
       } catch {
         enqueueSnackbar('Ошибка загрузки деталей обращения', { variant: 'error' });
-      } finally {
-        setLoadingDetails(false);
       }
     },
     [enqueueSnackbar]
@@ -323,8 +313,8 @@ export default function AdminFeedbackPage() {
           <StatCard
             title="Всего обращений"
             value={stats?.total ?? '—'}
-            icon={<HourglassEmptyIcon sx={{ color: '#0284c7' }} />}
-            accentColor="#0284c7"
+            icon={<HourglassEmptyIcon sx={{ color: 'primary.main' }} />}
+            accentColor="primary.main"
             active={filterStatus === 'ALL' && filterType === 'ALL'}
             onClick={() => {
               setFilterStatus('ALL');
@@ -336,8 +326,8 @@ export default function AdminFeedbackPage() {
           <StatCard
             title="Новые"
             value={stats?.new ?? '—'}
-            icon={<HourglassEmptyIcon sx={{ color: '#0284c7' }} />}
-            accentColor="#0284c7"
+            icon={<HourglassEmptyIcon sx={{ color: 'primary.main' }} />}
+            accentColor="primary.main"
             active={filterStatus === 'NEW'}
             trend={stats?.new > 0 ? { value: stats.new, label: 'требуют рассмотрения', direction: 'up' } : undefined}
             onClick={() => setFilterStatus('NEW')}
@@ -347,8 +337,8 @@ export default function AdminFeedbackPage() {
           <StatCard
             title="В работе"
             value={stats?.inProgress ?? '—'}
-            icon={<HourglassEmptyIcon sx={{ color: '#2563eb' }} />}
-            accentColor="#2563eb"
+            icon={<HourglassEmptyIcon sx={{ color: 'info.main' }} />}
+            accentColor="info.main"
             active={filterStatus === 'IN_PROGRESS'}
             onClick={() => setFilterStatus('IN_PROGRESS')}
           />
@@ -357,8 +347,8 @@ export default function AdminFeedbackPage() {
           <StatCard
             title="Ошибки / Баги"
             value={stats?.bugs ?? '—'}
-            icon={<BugReportIcon sx={{ color: '#ef4444' }} />}
-            accentColor="#ef4444"
+            icon={<BugReportIcon sx={{ color: 'error.main' }} />}
+            accentColor="error.main"
             active={filterType === 'BUG'}
             onClick={() => setFilterType('BUG')}
           />
@@ -367,8 +357,8 @@ export default function AdminFeedbackPage() {
           <StatCard
             title="Предложения"
             value={stats?.features ?? '—'}
-            icon={<LightbulbOutlinedIcon sx={{ color: '#3b82f6' }} />}
-            accentColor="#3b82f6"
+            icon={<LightbulbOutlinedIcon sx={{ color: 'info.main' }} />}
+            accentColor="info.main"
             active={filterType === 'FEATURE_REQUEST'}
             onClick={() => setFilterType('FEATURE_REQUEST')}
           />
@@ -377,8 +367,8 @@ export default function AdminFeedbackPage() {
           <StatCard
             title="Решено / Готово"
             value={stats?.resolved ?? '—'}
-            icon={<CheckCircleOutlineIcon sx={{ color: '#16a34a' }} />}
-            accentColor="#16a34a"
+            icon={<CheckCircleOutlineIcon sx={{ color: 'success.main' }} />}
+            accentColor="success.main"
             active={filterStatus === 'RESOLVED'}
             onClick={() => setFilterStatus('RESOLVED')}
           />
@@ -523,7 +513,7 @@ export default function AdminFeedbackPage() {
                   sx={{ cursor: 'pointer', transition: 'background-color 0.15s ease' }}
                 >
                   <TableCell>
-                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#0284c7' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: 'primary.main' }}>
                       {ticket.ticketNumber}
                     </Typography>
                   </TableCell>
@@ -531,19 +521,19 @@ export default function AdminFeedbackPage() {
                     <StatusBadge status={ticket.type} size="small" />
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: '#475569' }}>
+                    <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
                       {FEEDBACK_MODULE_LABELS[ticket.module] || ticket.module}
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#0f172a' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
                       {ticket.title}
                     </Typography>
                     {ticket.commentsCount && ticket.commentsCount > 0 ? (
                       <Chip
                         label={`${ticket.commentsCount} сообщ.`}
                         size="small"
-                        sx={{ height: 18, fontSize: '0.65rem', mt: 0.5, backgroundColor: '#f1f5f9' }}
+                        sx={{ height: 18, fontSize: '0.65rem', mt: 0.5, backgroundColor: 'action.hover' }}
                       />
                     ) : null}
                   </TableCell>
@@ -558,15 +548,15 @@ export default function AdminFeedbackPage() {
                     <StatusBadge status={ticket.status} size="small" />
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#1e293b' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
                       {ticket.createdBy?.displayName || 'Пользователь'}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#64748b' }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                       {ticket.createdBy?.ldapLogin}
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="caption" sx={{ color: '#64748b' }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                       {formatDateTime(ticket.createdAt)}
                     </Typography>
                   </TableCell>
@@ -599,11 +589,12 @@ export default function AdminFeedbackPage() {
               sx={{
                 p: 2,
                 borderRadius: '12px',
-                border: '1px solid #e2e8f0',
-                backgroundColor: '#f8fafc',
+                border: '1px solid',
+                borderColor: 'divider',
+                backgroundColor: 'background.default',
               }}
             >
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: '#0f172a' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: 'text.primary' }}>
                 Управление статусом и приоритетом
               </Typography>
               <Grid container spacing={2}>
@@ -623,7 +614,6 @@ export default function AdminFeedbackPage() {
                     ))}
                   </TextField>
                 </Grid>
-
                 <Grid item xs={12} sm={6}>
                   <TextField
                     select
@@ -640,41 +630,26 @@ export default function AdminFeedbackPage() {
                     ))}
                   </TextField>
                 </Grid>
-
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
                     multiline
                     minRows={2}
                     size="small"
-                    label="Итоговая резолюция / Заключение администратора"
-                    placeholder="Укажите комментарий для автора обращения при решении или отклонении..."
+                    label="Официальная резолюция / Ответ службы поддержки"
+                    placeholder="Укажите принятые меры, причину отказа или ссылку на релиз с исправлением..."
                     value={editResolution}
                     onChange={(e) => setEditResolution(e.target.value)}
                   />
                 </Grid>
-
-                <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Button
-                    color="error"
-                    size="small"
-                    startIcon={<DeleteOutlineIcon />}
-                    onClick={() => {
-                      setDeletingTicketId(selectedTicket.id);
-                      setDeleteConfirmOpen(true);
-                    }}
-                    sx={{ textTransform: 'none' }}
-                  >
-                    Удалить
-                  </Button>
-
+                <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
                   <Button
                     variant="contained"
+                    color="primary"
                     size="small"
                     disabled={savingChanges}
                     onClick={handleSaveChanges}
                     sx={{
-                      backgroundColor: '#0284c7',
                       borderRadius: '8px',
                       textTransform: 'none',
                       fontWeight: 600,
@@ -687,19 +662,19 @@ export default function AdminFeedbackPage() {
             </Paper>
 
             {/* Author and Ticket Description */}
-            <Paper elevation={0} sx={{ p: 2, borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+            <Paper elevation={0} sx={{ p: 2, borderRadius: '12px', border: '1px solid', borderColor: 'divider' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
                 <Box>
-                  <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
                     Автор обращения:
                   </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 700, color: '#0f172a' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>
                     {selectedTicket.createdBy?.displayName} ({selectedTicket.createdBy?.ldapLogin})
                   </Typography>
                 </Box>
 
                 <Box sx={{ textAlign: 'right' }}>
-                  <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
                     Дата создания:
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 500 }}>
@@ -710,17 +685,17 @@ export default function AdminFeedbackPage() {
 
               <Divider sx={{ my: 1.5 }} />
 
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0f172a', mb: 0.5 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
                 Описание проблемы / предложения:
               </Typography>
-              <Typography variant="body2" sx={{ color: '#334155', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+              <Typography variant="body2" sx={{ color: 'text.secondary', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
                 {selectedTicket.description}
               </Typography>
 
               {/* Attachments */}
               {selectedTicket.attachments && selectedTicket.attachments.length > 0 && (
-                <Box sx={{ mt: 2, pt: 1.5, borderTop: '1px dashed #cbd5e1' }}>
-                  <Typography variant="caption" sx={{ fontWeight: 600, color: '#475569', display: 'block', mb: 1 }}>
+                <Box sx={{ mt: 2, pt: 1.5, borderTop: '1px dashed', borderColor: 'divider' }}>
+                  <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', display: 'block', mb: 1 }}>
                     Прикрепленные файлы и скриншоты:
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
@@ -734,7 +709,7 @@ export default function AdminFeedbackPage() {
                         icon={<AttachFileIcon sx={{ fontSize: 16 }} />}
                         label={`${att.originalName} (${formatBytes(att.fileSize)})`}
                         size="small"
-                        sx={{ borderRadius: '6px', backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1' }}
+                        sx={{ borderRadius: '6px', backgroundColor: 'action.hover', border: '1px solid', borderColor: 'divider' }}
                       />
                     ))}
                   </Box>
@@ -743,15 +718,15 @@ export default function AdminFeedbackPage() {
             </Paper>
 
             {/* Context Telemetry */}
-            <Paper elevation={0} sx={{ p: 2, borderRadius: '12px', border: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: '#0f172a' }}>
+            <Paper elevation={0} sx={{ p: 2, borderRadius: '12px', border: '1px solid', borderColor: 'divider', backgroundColor: 'background.default' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: 'text.primary' }}>
                 Контекст и телеметрия окружения
               </Typography>
               <Grid container spacing={1}>
                 <Grid item xs={12}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <LinkIcon sx={{ color: '#64748b', fontSize: 18 }} />
-                    <Typography variant="caption" sx={{ color: '#334155' }}>
+                    <LinkIcon sx={{ color: 'text.secondary', fontSize: 18 }} />
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                       URL страницы: <strong>{selectedTicket.pageUrl || 'Не указан'}</strong>
                     </Typography>
                   </Box>
@@ -759,17 +734,17 @@ export default function AdminFeedbackPage() {
                 {selectedTicket.browserInfo && (
                   <>
                     <Grid item xs={12} sm={6}>
-                      <Typography variant="caption" sx={{ color: '#64748b' }}>
+                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                         Разрешение: {selectedTicket.browserInfo.screenResolution || '—'}
                       </Typography>
                     </Grid>
                     <Grid item xs={12} sm={6}>
-                      <Typography variant="caption" sx={{ color: '#64748b' }}>
+                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                         Язык: {selectedTicket.browserInfo.language || '—'}
                       </Typography>
                     </Grid>
                     <Grid item xs={12}>
-                      <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '0.7rem', wordBreak: 'break-all' }}>
+                      <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.7rem', wordBreak: 'break-all' }}>
                         User Agent: {selectedTicket.browserInfo.userAgent || '—'}
                       </Typography>
                     </Grid>
@@ -780,13 +755,13 @@ export default function AdminFeedbackPage() {
 
             {/* Conversation / Comments Timeline */}
             <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0f172a', mb: 1.5 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary', mb: 1.5 }}>
                 Переписка и внутренние заметки ({selectedTicket.comments?.length || 0})
               </Typography>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, maxHeight: 320, overflowY: 'auto', p: 1 }}>
                 {(!selectedTicket.comments || selectedTicket.comments.length === 0) && (
-                  <Typography variant="body2" sx={{ color: '#94a3b8', textAlign: 'center', py: 2 }}>
+                  <Typography variant="body2" sx={{ color: 'text.disabled', textAlign: 'center', py: 2 }}>
                     История сообщений пуста
                   </Typography>
                 )}
@@ -799,13 +774,13 @@ export default function AdminFeedbackPage() {
                       p: 1.5,
                       borderRadius: '10px',
                       border: '1px solid',
-                      borderColor: comment.isInternal ? '#fde68a' : '#e2e8f0',
-                      backgroundColor: comment.isInternal ? '#fffbeb' : '#ffffff',
+                      borderColor: comment.isInternal ? 'warning.light' : 'divider',
+                      backgroundColor: comment.isInternal ? 'warning.light' : 'background.paper',
                     }}
                   >
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="caption" sx={{ fontWeight: 700, color: '#0f172a' }}>
+                        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.primary' }}>
                           {comment.user?.displayName || 'Сотрудник'}
                         </Typography>
                         {comment.isInternal && (
@@ -813,16 +788,16 @@ export default function AdminFeedbackPage() {
                             icon={<LockOutlinedIcon sx={{ fontSize: '12px !important' }} />}
                             label="Внутренняя заметка"
                             size="small"
-                            sx={{ height: 18, fontSize: '0.65rem', backgroundColor: '#fef3c7', color: '#b45309', fontWeight: 700 }}
+                            sx={{ height: 18, fontSize: '0.65rem', backgroundColor: 'warning.light', color: 'warning.dark', fontWeight: 700 }}
                           />
                         )}
                       </Box>
-                      <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '0.7rem' }}>
+                      <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.7rem' }}>
                         {formatDateTime(comment.createdAt)}
                       </Typography>
                     </Box>
 
-                    <Typography variant="body2" sx={{ color: '#334155', whiteSpace: 'pre-wrap' }}>
+                    <Typography variant="body2" sx={{ color: 'text.secondary', whiteSpace: 'pre-wrap' }}>
                       {comment.message}
                     </Typography>
                   </Paper>
@@ -830,7 +805,7 @@ export default function AdminFeedbackPage() {
               </Box>
 
               {/* Reply Form */}
-              <Paper elevation={0} sx={{ mt: 2, p: 1.5, border: '1px solid #e2e8f0', borderRadius: '10px' }}>
+              <Paper elevation={0} sx={{ mt: 2, p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: '10px' }}>
                 <TextField
                   fullWidth
                   multiline
@@ -851,7 +826,7 @@ export default function AdminFeedbackPage() {
                       />
                     }
                     label={
-                      <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
                         Внутренняя заметка (видна только администраторам)
                       </Typography>
                     }
@@ -859,22 +834,46 @@ export default function AdminFeedbackPage() {
 
                   <Button
                     variant="contained"
+                    color={isInternalComment ? 'warning' : 'primary'}
                     size="small"
                     disabled={!replyMessage.trim() || sendingComment}
                     onClick={handleSendComment}
                     startIcon={sendingComment ? <CircularProgress size={16} color="inherit" /> : <SendIcon />}
                     sx={{
-                      backgroundColor: isInternalComment ? '#d97706' : '#0284c7',
                       borderRadius: '8px',
                       textTransform: 'none',
                       fontWeight: 600,
-                      '&:hover': { backgroundColor: isInternalComment ? '#b45309' : '#0369a1' },
                     }}
                   >
-                    {isInternalComment ? 'Добавить заметку' : 'Отправить ответ'}
+                    {sendingComment ? 'Отправка...' : isInternalComment ? 'Добавить заметку' : 'Ответить автору'}
                   </Button>
                 </Box>
               </Paper>
+            </Box>
+
+            {/* Bottom Actions */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+              <Button
+                color="error"
+                size="small"
+                startIcon={<DeleteOutlineIcon />}
+                onClick={() => {
+                  setDeletingTicketId(selectedTicket.id);
+                  setDeleteConfirmOpen(true);
+                }}
+                sx={{ textTransform: 'none' }}
+              >
+                Удалить обращение
+              </Button>
+
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => setDrawerOpen(false)}
+                sx={{ borderRadius: '8px', textTransform: 'none' }}
+              >
+                Закрыть
+              </Button>
             </Box>
           </Box>
         )}
@@ -883,12 +882,12 @@ export default function AdminFeedbackPage() {
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         open={deleteConfirmOpen}
-        onClose={() => setDeleteConfirmOpen(false)}
-        onConfirm={handleDeleteTicket}
-        title="Удалить обращение?"
-        message="Обращение будет скрыто из реестра. Это действие можно отменить только через прямое обращение к базе данных."
-        confirmText="Удалить"
+        title="Удаление обращения"
+        message="Вы уверены, что хотите удалить данное обращение и всю связанную переписку? Это действие необратимо."
         variant="danger"
+        confirmText="Удалить"
+        onConfirm={handleDeleteTicket}
+        onClose={() => setDeleteConfirmOpen(false)}
       />
     </Box>
   );

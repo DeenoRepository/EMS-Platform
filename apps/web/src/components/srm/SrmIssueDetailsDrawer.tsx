@@ -132,11 +132,11 @@ export default function SrmIssueDetailsDrawer({
       open={open}
       onClose={onClose}
       PaperProps={{
-        sx: { width: { xs: '100%', sm: 540, md: 620 }, p: 0, bgcolor: '#ffffff' },
+        sx: { width: { xs: '100%', sm: 540, md: 620 }, p: 0, bgcolor: 'background.paper' },
       }}
     >
       {/* Drawer Header */}
-      <Box sx={{ p: 2.5, borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: '#f8fafc' }}>
+      <Box sx={{ p: 2.5, borderBottom: '1px solid divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'background.default' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Typography variant="h6" fontWeight={800} sx={{ fontFamily: 'monospace', color: 'primary.main' }}>
             {issue.issueKey || issue.key}
@@ -153,7 +153,7 @@ export default function SrmIssueDetailsDrawer({
       <Box sx={{ p: 3, overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
         {/* Title and Metadata */}
         <div>
-          <Typography variant="h6" fontWeight={700} sx={{ mb: 1, color: '#0f172a' }}>
+          <Typography variant="h6" fontWeight={700} sx={{ mb: 1, color: 'text.primary' }}>
             {issue.summary || issue.title}
           </Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
@@ -184,7 +184,7 @@ export default function SrmIssueDetailsDrawer({
         </div>
 
         {/* Linked Equipment Card */}
-        <Paper variant="outlined" sx={{ p: 2, borderRadius: '10px', bgcolor: '#f8fafc' }}>
+        <Paper variant="outlined" sx={{ p: 2, borderRadius: '10px', bgcolor: 'background.default' }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
             <Typography variant="subtitle2" fontWeight={700} color="text.secondary">
               Связанное оборудование (EPS):
@@ -202,7 +202,7 @@ export default function SrmIssueDetailsDrawer({
           </Box>
           {issue.equipment ? (
             <Box>
-              <Typography variant="body1" fontWeight={700} color="#0f172a">
+              <Typography variant="body1" fontWeight={700} color="text.primary">
                 {issue.equipment.name}
               </Typography>
               <Typography variant="body2" color="text.secondary">
@@ -236,7 +236,7 @@ export default function SrmIssueDetailsDrawer({
               <Typography variant="caption" color="text.secondary">
                 Время простоя линии:
               </Typography>
-              <Typography variant="body2" fontWeight={700} color="#0f172a">
+              <Typography variant="body2" fontWeight={700} color="text.primary">
                 {issue.downtimeMinutes ? `${Math.round((issue.downtimeMinutes / 60) * 10) / 10} ч (${issue.downtimeMinutes} мин)` : '0 мин'}
               </Typography>
             </Paper>
@@ -245,11 +245,11 @@ export default function SrmIssueDetailsDrawer({
 
         {/* Description */}
         <div>
-          <Typography variant="subtitle2" fontWeight={700} color="#0f172a" sx={{ mb: 1 }}>
+          <Typography variant="subtitle2" fontWeight={700} color="text.primary" sx={{ mb: 1 }}>
             Описание инцидента и симптомы:
           </Typography>
-          <Paper variant="outlined" sx={{ p: 2, borderRadius: '8px', minHeight: 70, bgcolor: '#ffffff' }}>
-            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: '#334155' }}>
+          <Paper variant="outlined" sx={{ p: 2, borderRadius: '8px', minHeight: 70, bgcolor: 'background.paper' }}>
+            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.secondary' }}>
               {issue.description || (issue.rawData?.description ? String(issue.rawData.description) : null) || 'Подробное текстовое описание отсутствует.'}
             </Typography>
           </Paper>
@@ -257,7 +257,7 @@ export default function SrmIssueDetailsDrawer({
 
         {/* Linked MRO Work Order */}
         {issue.mroScheduleId ? (
-          <Paper variant="outlined" sx={{ p: 2, borderRadius: '8px', bgcolor: 'rgba(2, 132, 199, 0.04)', borderColor: '#bae6fd' }}>
+          <Paper variant="outlined" sx={{ p: 2, borderRadius: '8px', bgcolor: 'rgba(2, 132, 199, 0.04)', borderColor: 'primary.light' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
               <Typography variant="subtitle2" fontWeight={700} color="primary.main">
                 Сформирован наряд ТОиР в модуле MRO
@@ -287,7 +287,7 @@ export default function SrmIssueDetailsDrawer({
 
         {/* Fast Action / Resolution Form */}
         <div>
-          <Typography variant="subtitle2" fontWeight={700} color="#0f172a" sx={{ mb: 2 }}>
+          <Typography variant="subtitle2" fontWeight={700} color="text.primary" sx={{ mb: 2 }}>
             Управление статусом и фиксация решения:
           </Typography>
           <Grid container spacing={2}>
@@ -348,7 +348,7 @@ export default function SrmIssueDetailsDrawer({
       </Box>
 
       {/* Drawer Footer Actions */}
-      <Box sx={{ p: 2.5, borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 1.5, bgcolor: '#f8fafc' }}>
+      <Box sx={{ p: 2.5, borderTop: '1px solid divider', display: 'flex', justifyContent: 'flex-end', gap: 1.5, bgcolor: 'background.default' }}>
         <Button onClick={onClose} variant="outlined" sx={{ fontWeight: 600 }}>
           Закрыть
         </Button>

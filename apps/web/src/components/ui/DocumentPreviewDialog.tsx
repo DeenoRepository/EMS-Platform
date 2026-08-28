@@ -5,7 +5,6 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
   IconButton,
   Button,
   Typography,
@@ -17,7 +16,6 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
-import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import RotateRightIcon from '@mui/icons-material/RotateRight';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
@@ -102,8 +100,8 @@ export function DocumentPreviewDialog({
         sx: {
           borderRadius: isFullScreen ? 0 : '16px',
           overflow: 'hidden',
-          backgroundColor: '#0f172a',
-          color: '#ffffff',
+          backgroundColor: 'grey.900',
+          color: 'common.white',
           height: isFullScreen ? '100vh' : '82vh',
           display: 'flex',
           flexDirection: 'column',
@@ -120,8 +118,9 @@ export function DocumentPreviewDialog({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-          bgcolor: '#1e293b',
+          borderBottom: '1px solid',
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          bgcolor: 'grey.800',
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
@@ -133,18 +132,18 @@ export function DocumentPreviewDialog({
               width: 36,
               height: 36,
               borderRadius: '8px',
-              bgcolor: 'rgba(2, 132, 199, 0.2)',
-              color: '#38bdf8',
+              bgcolor: 'primary.dark',
+              color: 'primary.light',
             }}
           >
             {fileType === 'qr' ? <QrCode2Icon fontSize="small" /> : <DescriptionOutlinedIcon fontSize="small" />}
           </Box>
           <Box sx={{ minWidth: 0 }}>
-            <Typography variant="subtitle1" fontWeight={700} color="#f8fafc" noWrap sx={{ fontSize: '0.9375rem' }}>
+            <Typography variant="subtitle1" fontWeight={700} color="grey.50" noWrap sx={{ fontSize: '0.9375rem' }}>
               {title}
             </Typography>
             {subtitle && (
-              <Typography variant="caption" color="#94a3b8" noWrap sx={{ display: 'block', fontSize: '0.75rem' }}>
+              <Typography variant="caption" color="grey.400" noWrap sx={{ display: 'block', fontSize: '0.75rem' }}>
                 {subtitle}
               </Typography>
             )}
@@ -154,24 +153,24 @@ export function DocumentPreviewDialog({
         {/* Action Controls */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {fileType === 'image' && (
-            <ButtonGroup size="small" variant="outlined" sx={{ '& button': { borderColor: 'rgba(255,255,255,0.15)', color: '#cbd5e1' } }}>
+            <ButtonGroup size="small" variant="outlined" sx={{ '& button': { borderColor: 'rgba(255,255,255,0.15)', color: 'grey.300' } }}>
               <Tooltip title="Увеличить (+)">
-                <IconButton size="small" onClick={handleZoomIn} sx={{ color: '#cbd5e1' }}>
+                <IconButton size="small" onClick={handleZoomIn} sx={{ color: 'grey.300' }}>
                   <ZoomInIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
               <Tooltip title="Сбросить масштаб">
-                <Button onClick={handleResetZoom} sx={{ fontSize: '0.75rem', px: 1, py: 0.2 }}>
+                <Button onClick={handleResetZoom} sx={{ fontSize: '0.75rem', px: 1, py: 0.2, color: 'grey.300' }}>
                   {zoom}%
                 </Button>
               </Tooltip>
               <Tooltip title="Уменьшить (-)">
-                <IconButton size="small" onClick={handleZoomOut} sx={{ color: '#cbd5e1' }}>
+                <IconButton size="small" onClick={handleZoomOut} sx={{ color: 'grey.300' }}>
                   <ZoomOutIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
               <Tooltip title="Повернуть на 90°">
-                <IconButton size="small" onClick={handleRotate} sx={{ color: '#cbd5e1' }}>
+                <IconButton size="small" onClick={handleRotate} sx={{ color: 'grey.300' }}>
                   <RotateRightIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
@@ -179,26 +178,26 @@ export function DocumentPreviewDialog({
           )}
 
           <Tooltip title={isFullScreen ? 'Свернуть' : 'На весь экран'}>
-            <IconButton size="small" onClick={() => setIsFullScreen((prev) => !prev)} sx={{ color: '#cbd5e1' }}>
+            <IconButton size="small" onClick={() => setIsFullScreen((prev) => !prev)} sx={{ color: 'grey.300' }}>
               {isFullScreen ? <FullscreenExitIcon fontSize="small" /> : <FullscreenIcon fontSize="small" />}
             </IconButton>
           </Tooltip>
 
           {fileUrl && (
             <Tooltip title="Скачать файл">
-              <IconButton size="small" onClick={handleDownload} sx={{ color: '#38bdf8' }}>
+              <IconButton size="small" onClick={handleDownload} sx={{ color: 'primary.light' }}>
                 <DownloadOutlinedIcon fontSize="small" />
               </IconButton>
             </Tooltip>
           )}
 
           <Tooltip title="Распечатать">
-            <IconButton size="small" onClick={handlePrint} sx={{ color: '#cbd5e1' }}>
+            <IconButton size="small" onClick={handlePrint} sx={{ color: 'grey.300' }}>
               <PrintOutlinedIcon fontSize="small" />
             </IconButton>
           </Tooltip>
 
-          <IconButton size="small" onClick={onClose} sx={{ color: '#94a3b8', '&:hover': { color: '#ffffff' } }}>
+          <IconButton size="small" onClick={onClose} sx={{ color: 'grey.400', '&:hover': { color: 'common.white' } }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
@@ -213,10 +212,7 @@ export function DocumentPreviewDialog({
           alignItems: 'center',
           justifyContent: 'center',
           overflow: 'auto',
-          backgroundColor: '#090d16',
-          backgroundImage:
-            'radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 0)',
-          backgroundSize: '24px 24px',
+          backgroundColor: 'grey.900',
         }}
       >
         {fileType === 'image' && fileUrl ? (
@@ -249,9 +245,9 @@ export function DocumentPreviewDialog({
             sx={{
               p: 4,
               textAlign: 'center',
-              backgroundColor: '#ffffff',
+              backgroundColor: 'background.paper',
               borderRadius: '16px',
-              color: '#0f172a',
+              color: 'text.primary',
               boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)',
             }}
           >
@@ -262,22 +258,23 @@ export function DocumentPreviewDialog({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                bgcolor: '#f8fafc',
-                border: '2px dashed #cbd5e1',
+                bgcolor: 'background.default',
+                border: '2px dashed',
+                borderColor: 'divider',
                 borderRadius: '12px',
                 mb: 2,
                 mx: 'auto',
               }}
             >
-              <QrCode2Icon sx={{ fontSize: 160, color: '#0f172a' }} />
+              <QrCode2Icon sx={{ fontSize: 160, color: 'text.primary' }} />
             </Box>
-            <Typography variant="h6" fontWeight={700} sx={{ fontSize: '1rem', mb: 0.5 }}>
+            <Typography variant="h6" fontWeight={700} sx={{ fontSize: '1rem', mb: 0.5, color: 'text.primary' }}>
               {title}
             </Typography>
             <Chip
               label={qrValue || 'QR-CODE-VAL'}
               size="small"
-              sx={{ fontFamily: 'monospace', fontWeight: 600, bgcolor: '#f1f5f9' }}
+              sx={{ fontFamily: 'monospace', fontWeight: 600, bgcolor: 'action.hover' }}
             />
           </Box>
         ) : fileType === 'pdf' && fileUrl ? (
@@ -290,16 +287,17 @@ export function DocumentPreviewDialog({
           />
         ) : (
           <Box sx={{ textAlign: 'center', p: 4 }}>
-            <DescriptionOutlinedIcon sx={{ fontSize: 64, color: '#475569', mb: 1.5 }} />
-            <Typography variant="body1" color="#94a3b8" fontWeight={500}>
+            <DescriptionOutlinedIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 1.5 }} />
+            <Typography variant="body1" color="text.disabled" fontWeight={500}>
               Предпросмотр недоступен
             </Typography>
             {fileUrl && (
               <Button
                 variant="contained"
-                onClick={handleDownload}
+                color="primary"
                 startIcon={<DownloadOutlinedIcon />}
-                sx={{ mt: 2, borderRadius: '8px', bgcolor: '#0284c7' }}
+                onClick={handleDownload}
+                sx={{ mt: 2, borderRadius: '8px' }}
               >
                 Скачать файл
               </Button>
@@ -310,3 +308,5 @@ export function DocumentPreviewDialog({
     </Dialog>
   );
 }
+
+export default DocumentPreviewDialog;

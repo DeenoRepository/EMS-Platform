@@ -376,7 +376,7 @@ export function SmartImportWizard() {
 
           {/* Missing Fields Cards */}
           {missingFields.length > 0 && (
-            <Card sx={{ mb: 3, border: '1px solid #0284c7', borderRadius: '12px' }}>
+            <Card sx={{ mb: 3, border: '1px solid primary.main', borderRadius: '12px' }}>
               <CardContent sx={{ p: 3 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                   <AddCircleOutlineIcon color="primary" sx={{ fontSize: 24 }} />
@@ -567,7 +567,7 @@ export function SmartImportWizard() {
                       p: 2.5,
                       cursor: 'pointer',
                       borderRadius: '8px',
-                      border: conflictStrategy === 'UPSERT' ? '2px solid #0284c7' : '1px solid #e2e8f0',
+                      border: conflictStrategy === 'UPSERT' ? '2px solid primary.main' : '1px solid divider',
                       backgroundColor: conflictStrategy === 'UPSERT' ? 'rgba(2, 132, 199, 0.04)' : 'background.paper',
                     }}
                   >
@@ -591,7 +591,7 @@ export function SmartImportWizard() {
                       p: 2.5,
                       cursor: 'pointer',
                       borderRadius: '8px',
-                      border: conflictStrategy === 'SKIP' ? '2px solid #0284c7' : '1px solid #e2e8f0',
+                      border: conflictStrategy === 'SKIP' ? '2px solid primary.main' : '1px solid divider',
                       backgroundColor: conflictStrategy === 'SKIP' ? 'rgba(2, 132, 199, 0.04)' : 'background.paper',
                     }}
                   >
@@ -727,7 +727,7 @@ export function SmartImportWizard() {
 
             <Grid container spacing={3} sx={{ mt: 3, mb: 4, maxWidth: 900, mx: 'auto' }}>
               <Grid item xs={12} sm={3}>
-                <Paper variant="outlined" sx={{ p: 2.5, backgroundColor: 'success.light', borderColor: '#86efac', borderRadius: '8px' }}>
+                <Paper variant="outlined" sx={{ p: 2.5, backgroundColor: 'success.light', borderColor: 'success.light', borderRadius: '8px' }}>
                   <Typography variant="caption" color="success.main" fontWeight={700} display="block">
                     СОЗДАНО НОВЫХ
                   </Typography>
@@ -738,7 +738,7 @@ export function SmartImportWizard() {
               </Grid>
 
               <Grid item xs={12} sm={3}>
-                <Paper variant="outlined" sx={{ p: 2.5, backgroundColor: '#eff6ff', borderColor: '#93c5fd', borderRadius: '8px' }}>
+                <Paper variant="outlined" sx={{ p: 2.5, backgroundColor: 'info.light', borderColor: 'primary.light', borderRadius: '8px' }}>
                   <Typography variant="caption" color="primary.main" fontWeight={700} display="block">
                     ОБНОВЛЕНО
                   </Typography>
@@ -760,7 +760,7 @@ export function SmartImportWizard() {
               </Grid>
 
               <Grid item xs={12} sm={3}>
-                <Paper variant="outlined" sx={{ p: 2.5, backgroundColor: '#faf5ff', borderColor: '#d8b4fe', borderRadius: '8px' }}>
+                <Paper variant="outlined" sx={{ p: 2.5, backgroundColor: 'secondary.light', borderColor: 'secondary.light', borderRadius: '8px' }}>
                   <Typography variant="caption" color="secondary.main" fontWeight={700} display="block">
                     НОВЫХ ПОЛЕЙ
                   </Typography>

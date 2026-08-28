@@ -272,8 +272,8 @@ function MroPageContent() {
           sx={{
             mb: 2.5,
             borderRadius: '12px',
-            border: '1px solid #fed7aa',
-            backgroundColor: '#fffbeb',
+            border: '1px solid warning.light',
+            backgroundColor: 'warning.light',
             fontWeight: 500,
           }}
         >
@@ -314,7 +314,7 @@ function MroPageContent() {
                   fontWeight: 700,
                   borderRadius: '8px',
                   minHeight: 36,
-                  backgroundColor: '#0284c7',
+                  backgroundColor: 'primary.main',
                 }}
               >
                 Провести ТО
@@ -331,7 +331,7 @@ function MroPageContent() {
             title="Всего в графике"
             value={stats.total}
             icon={<CalendarMonthIcon />}
-            iconColor="#0284c7"
+            iconColor="primary.main"
             iconBgColor="rgba(2, 132, 199, 0.08)"
             loading={loading}
             subtitle="Запланированных и выполненных"
@@ -346,7 +346,7 @@ function MroPageContent() {
             title="Просрочено регламентов"
             value={stats.overdue}
             icon={<WarningAmberIcon />}
-            iconColor="#dc2626"
+            iconColor="error.main"
             iconBgColor="rgba(220, 38, 38, 0.08)"
             loading={loading}
             subtitle="Требуют немедленного проведения"
@@ -361,7 +361,7 @@ function MroPageContent() {
             title="Запланировано на период"
             value={stats.planned}
             icon={<EventIcon />}
-            iconColor="#0284c7"
+            iconColor="primary.main"
             iconBgColor="rgba(2, 132, 199, 0.08)"
             loading={loading}
             subtitle="Ожидают наступления срока"
@@ -376,7 +376,7 @@ function MroPageContent() {
             title="Выполнено ТО"
             value={stats.completed}
             icon={<CheckCircleOutlineIcon />}
-            iconColor="#16a34a"
+            iconColor="success.main"
             iconBgColor="rgba(22, 163, 74, 0.08)"
             loading={loading}
             subtitle="Проведено с фиксацией акта"
@@ -404,7 +404,7 @@ function MroPageContent() {
         pageSizeOptions={[15, 25, 50, 100]}
         emptyState={
           <EmptyState
-            icon={<CalendarMonthIcon sx={{ fontSize: 44, color: '#94a3b8' }} />}
+            icon={<CalendarMonthIcon sx={{ fontSize: 44, color: 'text.disabled' }} />}
             title="Регламенты не найдены"
             description={
               activeFilterCount > 0
@@ -527,7 +527,7 @@ function MroPageContent() {
                   {visibleColumns.includes('equipment') && (
                     <TableCell>
                       <Box>
-                        <Typography variant="body2" fontWeight={600} color="#0f172a">
+                        <Typography variant="body2" fontWeight={600} color="text.primary">
                           {sch.equipment.name}
                         </Typography>
                         <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
@@ -538,7 +538,7 @@ function MroPageContent() {
                   )}
                   {visibleColumns.includes('plan') && (
                     <TableCell>
-                      <Typography variant="body2" color="#0f172a">
+                      <Typography variant="body2" color="text.primary">
                         {sch.plan?.name || 'Регламентное ТО по паспорту'}
                       </Typography>
                       {sch.plan?.checklist && (
@@ -596,7 +596,7 @@ function MroPageContent() {
                             borderRadius: '6px',
                             py: 0.35,
                             px: 1.25,
-                            backgroundColor: '#0284c7',
+                            backgroundColor: 'primary.main',
                           }}
                         >
                           Выполнить

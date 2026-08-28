@@ -52,7 +52,7 @@ export function FilterToolbar({
             startIcon={<RestartAltIcon sx={{ fontSize: 16 }} />}
             onClick={onResetFilters}
             sx={{
-              color: '#64748b',
+              color: 'text.secondary',
               fontWeight: 600,
               fontSize: '0.75rem',
               borderRadius: '6px',
@@ -60,8 +60,8 @@ export function FilterToolbar({
               py: 0.5,
               height: 36,
               '&:hover': {
-                color: '#dc2626',
-                backgroundColor: '#fee2e2',
+                color: 'error.main',
+                backgroundColor: 'error.light',
               },
             }}
           >
@@ -103,8 +103,9 @@ export function FilterToolbar({
         p: 1.75,
         mb: 2.5,
         borderRadius: '10px',
-        backgroundColor: '#ffffff',
-        border: '1px solid #e2e8f0',
+        backgroundColor: 'background.paper',
+        border: '1px solid',
+        borderColor: 'divider',
         boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
       }}
     >

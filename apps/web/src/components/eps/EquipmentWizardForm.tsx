@@ -192,7 +192,7 @@ export function EquipmentWizardForm({
     if (def.fieldType === 'SELECT' && def.options && Array.isArray(def.options)) {
       return (
         <Box key={def.key} sx={{ gridColumn: { xs: 'span 1', sm: 'span 1' } }}>
-          <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+          <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ mb: 0.5 }}>
             {def.name} {def.isRequired && <Box component="span" sx={{ color: 'error.main' }}>*</Box>}
           </Typography>
           <TextField
@@ -217,7 +217,7 @@ export function EquipmentWizardForm({
     if (def.fieldType === 'TEXTAREA') {
       return (
         <Box key={def.key} sx={{ gridColumn: { xs: 'span 1', sm: 'span 2' } }}>
-          <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+          <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ mb: 0.5 }}>
             {def.name} {def.isRequired && <Box component="span" sx={{ color: 'error.main' }}>*</Box>}
           </Typography>
           <TextField
@@ -235,7 +235,7 @@ export function EquipmentWizardForm({
 
     return (
       <Box key={def.key} sx={{ gridColumn: { xs: 'span 1', sm: 'span 1' } }}>
-        <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+        <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ mb: 0.5 }}>
           {def.name} {def.isRequired && <Box component="span" sx={{ color: 'error.main' }}>*</Box>}
         </Typography>
         <TextField
@@ -343,7 +343,7 @@ export function EquipmentWizardForm({
           p: mode === 'dialog' ? 1.75 : 2.5,
           mb: 2.5,
           borderRadius: '10px',
-          border: '1px solid #e2e8f0',
+          border: '1px solid divider',
           bgcolor: 'background.default',
         }}
       >
@@ -379,8 +379,8 @@ export function EquipmentWizardForm({
         {/* STEP 0: Идентификация */}
         {activeStep === 0 && (
           <Stack spacing={2.5}>
-            <Paper elevation={0} sx={{ p: 2, borderRadius: '10px', bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
-              <Typography variant="subtitle2" fontWeight={700} color="#0f172a" sx={{ mb: 0.5 }}>
+            <Paper elevation={0} sx={{ p: 2, borderRadius: '10px', bgcolor: 'background.default', border: '1px solid divider' }}>
+              <Typography variant="subtitle2" fontWeight={700} color="text.primary" sx={{ mb: 0.5 }}>
                 Основные реквизиты единицы оборудования
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -397,7 +397,7 @@ export function EquipmentWizardForm({
               }}
             >
               <Box sx={{ gridColumn: { xs: 'span 1', sm: 'span 2' } }}>
-                <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+                <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ mb: 0.5 }}>
                   Наименование оборудования <Box component="span" sx={{ color: 'error.main' }}>*</Box>
                 </Typography>
                 <TextField
@@ -411,7 +411,7 @@ export function EquipmentWizardForm({
               </Box>
 
               <Box>
-                <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+                <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ mb: 0.5 }}>
                   Инвентарный номер
                 </Typography>
                 <TextField
@@ -424,7 +424,7 @@ export function EquipmentWizardForm({
               </Box>
 
               <Box>
-                <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+                <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ mb: 0.5 }}>
                   Заводской / Серийный номер
                 </Typography>
                 <TextField
@@ -437,7 +437,7 @@ export function EquipmentWizardForm({
               </Box>
 
               <Box>
-                <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+                <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ mb: 0.5 }}>
                   Производитель (Бренд)
                 </Typography>
                 <TextField
@@ -450,7 +450,7 @@ export function EquipmentWizardForm({
               </Box>
 
               <Box>
-                <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+                <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ mb: 0.5 }}>
                   Модель / Модификация
                 </Typography>
                 <TextField
@@ -463,7 +463,7 @@ export function EquipmentWizardForm({
               </Box>
 
               <Box sx={{ gridColumn: { xs: 'span 1', sm: 'span 2' } }}>
-                <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+                <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ mb: 0.5 }}>
                   Место установки (Цех, участок, позиция)
                 </Typography>
                 <TextField
@@ -491,7 +491,7 @@ export function EquipmentWizardForm({
                   <Paper
                     key={sec.id}
                     elevation={0}
-                    sx={{ p: 2.5, borderRadius: '10px', border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}
+                    sx={{ p: 2.5, borderRadius: '10px', border: '1px solid divider', bgcolor: 'background.paper' }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
                       {sec.icon && SECTION_ICONS[sec.icon] ? (
@@ -500,7 +500,7 @@ export function EquipmentWizardForm({
                         <TuneIcon color="primary" sx={{ fontSize: 20 }} />
                       )}
                       <Box>
-                        <Typography variant="subtitle2" fontWeight={700} color="#0f172a">
+                        <Typography variant="subtitle2" fontWeight={700} color="text.primary">
                           {sec.name}
                         </Typography>
                         {sec.description && (
@@ -527,9 +527,9 @@ export function EquipmentWizardForm({
                 {unassignedFields.length > 0 && (
                   <Paper
                     elevation={0}
-                    sx={{ p: 2.5, borderRadius: '10px', border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}
+                    sx={{ p: 2.5, borderRadius: '10px', border: '1px solid divider', bgcolor: 'background.paper' }}
                   >
-                    <Typography variant="subtitle2" fontWeight={700} color="#0f172a" sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" fontWeight={700} color="text.primary" sx={{ mb: 2 }}>
                       Дополнительные параметры
                     </Typography>
                     <Box
@@ -552,8 +552,8 @@ export function EquipmentWizardForm({
         {/* STEP 2: Классификация и ввод в эксплуатацию */}
         {activeStep === 2 && (
           <Stack spacing={2.5}>
-            <Paper elevation={0} sx={{ p: 2, borderRadius: '10px', bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
-              <Typography variant="subtitle2" fontWeight={700} color="#0f172a" sx={{ mb: 0.5 }}>
+            <Paper elevation={0} sx={{ p: 2, borderRadius: '10px', bgcolor: 'background.default', border: '1px solid divider' }}>
+              <Typography variant="subtitle2" fontWeight={700} color="text.primary" sx={{ mb: 0.5 }}>
                 Статус жизненного цикла и метки классификации
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -570,7 +570,7 @@ export function EquipmentWizardForm({
               }}
             >
               <Box>
-                <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+                <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ mb: 0.5 }}>
                   Статус оборудования
                 </Typography>
                 <FormControl fullWidth size="small">
@@ -590,7 +590,7 @@ export function EquipmentWizardForm({
               </Box>
 
               <Box>
-                <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+                <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ mb: 0.5 }}>
                   Дата ввода в эксплуатацию
                 </Typography>
                 <DatePickerField
@@ -602,7 +602,7 @@ export function EquipmentWizardForm({
               </Box>
 
               <Box sx={{ gridColumn: { xs: 'span 1', sm: 'span 2' } }}>
-                <Typography variant="subtitle2" fontWeight={700} color="#334155" sx={{ mb: 1.25 }}>
+                <Typography variant="subtitle2" fontWeight={700} color="text.secondary" sx={{ mb: 1.25 }}>
                   Метки и теги оборудования
                 </Typography>
                 <Paper variant="outlined" sx={{ p: 2, borderRadius: '8px', minHeight: 80, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
@@ -695,7 +695,7 @@ export function EquipmentWizardForm({
                     ) : (
                       <TuneIcon color="primary" sx={{ fontSize: 18 }} />
                     )}
-                    <Typography variant="subtitle2" fontWeight={700} color="#0f172a">
+                    <Typography variant="subtitle2" fontWeight={700} color="text.primary">
                       {sec.name}
                     </Typography>
                   </Box>
@@ -740,7 +740,7 @@ export function EquipmentWizardForm({
           alignItems: 'center',
           pt: 2.5,
           mt: 3,
-          borderTop: '1px solid #e2e8f0',
+          borderTop: '1px solid divider',
         }}
       >
         <Box sx={{ display: 'flex', gap: 1 }}>

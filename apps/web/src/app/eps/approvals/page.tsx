@@ -474,8 +474,8 @@ function ApprovalsListContent() {
             subtitle={scopeTab === 'my_requests' ? 'Моих на рассмотрении' : 'Ожидают решения'}
             icon={<PendingActionsOutlinedIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(217, 119, 6, 0.08)"
-            iconColor="#d97706"
-            accentColor="#d97706"
+            iconColor="warning.main"
+            accentColor="warning.main"
             active={statusFilter === 'PENDING'}
             onClick={() => handleKpiFilter('PENDING')}
             loading={loading && stats.total === 0}
@@ -489,8 +489,8 @@ function ApprovalsListContent() {
             subtitle={scopeTab === 'my_requests' ? 'Моих одобренных' : 'Одобренные заявки'}
             icon={<CheckCircleOutlineIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(22, 163, 74, 0.08)"
-            iconColor="#16a34a"
-            accentColor="#16a34a"
+            iconColor="success.main"
+            accentColor="success.main"
             active={statusFilter === 'APPROVED'}
             onClick={() => handleKpiFilter('APPROVED')}
             loading={loading && stats.total === 0}
@@ -504,8 +504,8 @@ function ApprovalsListContent() {
             subtitle={scopeTab === 'my_requests' ? 'Моих отклоненных' : 'Отклоненные заявки'}
             icon={<CancelOutlinedIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(220, 38, 38, 0.08)"
-            iconColor="#dc2626"
-            accentColor="#dc2626"
+            iconColor="error.main"
+            accentColor="error.main"
             active={statusFilter === 'REJECTED'}
             onClick={() => handleKpiFilter('REJECTED')}
             loading={loading && stats.total === 0}
@@ -519,8 +519,8 @@ function ApprovalsListContent() {
             subtitle={scopeTab === 'my_requests' ? 'Моих отмененных' : 'Отмененные инициатором'}
             icon={<RemoveCircleOutlineIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(100, 116, 139, 0.08)"
-            iconColor="#64748b"
-            accentColor="#64748b"
+            iconColor="text.secondary"
+            accentColor="text.secondary"
             active={statusFilter === 'CANCELLED'}
             onClick={() => handleKpiFilter('CANCELLED')}
             loading={loading && stats.total === 0}
@@ -534,8 +534,8 @@ function ApprovalsListContent() {
             subtitle={scopeTab === 'my_requests' ? 'Всего моих заявок' : 'За все время'}
             icon={<FactCheckOutlinedIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(2, 132, 199, 0.08)"
-            iconColor="#0284c7"
-            accentColor="#0284c7"
+            iconColor="primary.main"
+            accentColor="primary.main"
             active={statusFilter === ''}
             onClick={() => handleKpiFilter('')}
             loading={loading && stats.total === 0}
@@ -1062,7 +1062,7 @@ function ApprovalsListContent() {
               )}
 
               {selectedApprovalForReview.proposedData && typeof selectedApprovalForReview.proposedData === 'object' && (
-                <Box sx={{ mt: 1.5, p: 1.5, bgcolor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                <Box sx={{ mt: 1.5, p: 1.5, bgcolor: 'background.paper', borderRadius: '6px', border: '1px solid divider' }}>
                   <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" sx={{ mb: 0.75 }}>
                     Предложенные данные / характеристики:
                   </Typography>
@@ -1071,7 +1071,7 @@ function ApprovalsListContent() {
                       if (val === null || val === undefined || val === '') return null;
                       if (key === 'customFields' && typeof val === 'object') {
                         return Object.entries(val).map(([cfKey, cfVal]) => (
-                          <Box key={cfKey} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', py: 0.25, borderBottom: '1px dashed #f1f5f9' }}>
+                          <Box key={cfKey} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', py: 0.25, borderBottom: '1px dashed action.hover' }}>
                             <Typography variant="caption" color="text.secondary">{cfKey}:</Typography>
                             <Typography variant="caption" fontWeight={600}>{String(cfVal)}</Typography>
                           </Box>
@@ -1088,7 +1088,7 @@ function ApprovalsListContent() {
                         targetStatus: 'Целевой статус',
                       };
                       return (
-                        <Box key={key} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', py: 0.25, borderBottom: '1px dashed #f1f5f9' }}>
+                        <Box key={key} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', py: 0.25, borderBottom: '1px dashed action.hover' }}>
                           <Typography variant="caption" color="text.secondary">{labels[key] || key}:</Typography>
                           <Typography variant="caption" fontWeight={600}>{String(val)}</Typography>
                         </Box>
@@ -1191,7 +1191,7 @@ function ApprovalsListContent() {
               )}
 
               {selectedApprovalForDetails.proposedData && typeof selectedApprovalForDetails.proposedData === 'object' && (
-                <Box sx={{ mt: 1.5, p: 1.5, bgcolor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                <Box sx={{ mt: 1.5, p: 1.5, bgcolor: 'background.paper', borderRadius: '6px', border: '1px solid divider' }}>
                   <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" sx={{ mb: 0.75 }}>
                     Предложенные данные / характеристики:
                   </Typography>
@@ -1200,7 +1200,7 @@ function ApprovalsListContent() {
                       if (val === null || val === undefined || val === '') return null;
                       if (key === 'customFields' && typeof val === 'object') {
                         return Object.entries(val).map(([cfKey, cfVal]) => (
-                          <Box key={cfKey} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', py: 0.25, borderBottom: '1px dashed #f1f5f9' }}>
+                          <Box key={cfKey} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', py: 0.25, borderBottom: '1px dashed action.hover' }}>
                             <Typography variant="caption" color="text.secondary">{cfKey}:</Typography>
                             <Typography variant="caption" fontWeight={600}>{String(cfVal)}</Typography>
                           </Box>
@@ -1217,7 +1217,7 @@ function ApprovalsListContent() {
                         targetStatus: 'Целевой статус',
                       };
                       return (
-                        <Box key={key} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', py: 0.25, borderBottom: '1px dashed #f1f5f9' }}>
+                        <Box key={key} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', py: 0.25, borderBottom: '1px dashed action.hover' }}>
                           <Typography variant="caption" color="text.secondary">{labels[key] || key}:</Typography>
                           <Typography variant="caption" fontWeight={600}>{String(val)}</Typography>
                         </Box>

@@ -96,7 +96,7 @@ function DeficitItem({
       sx={{
         py: 1.25,
         px: 0,
-        borderBottom: '1px solid #f1f5f9',
+        borderBottom: '1px solid action.hover',
         '&:last-child': { borderBottom: 'none' },
       }}
     >
@@ -143,7 +143,7 @@ function DeficitItem({
               width: `${fillPercent}%`,
               height: '100%',
               borderRadius: 2,
-              bgcolor: isCritical ? '#ef4444' : '#f59e0b',
+              bgcolor: isCritical ? 'error.main' : 'warning.main',
               transition: 'width 0.4s ease',
             }}
           />
@@ -233,8 +233,8 @@ export default function WmsDashboardPage() {
           sx={{
             mb: 2.5,
             borderRadius: '12px',
-            border: '1px solid #fed7aa',
-            backgroundColor: '#fffbeb',
+            border: '1px solid warning.light',
+            backgroundColor: 'warning.light',
             fontWeight: 500,
           }}
         >
@@ -319,8 +319,8 @@ export default function WmsDashboardPage() {
             subtitle="Активных складских комплексов"
             icon={<WarehouseOutlinedIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(2, 132, 199, 0.08)"
-            iconColor="#0284c7"
-            accentColor="#0284c7"
+            iconColor="primary.main"
+            accentColor="primary.main"
             loading={isLoading && !stats}
             onClick={() => router.push('/wms/warehouses')}
           />
@@ -333,8 +333,8 @@ export default function WmsDashboardPage() {
             subtitle="Уникальных позиций ТМЦ"
             icon={<Inventory2OutlinedIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(15, 118, 110, 0.08)"
-            iconColor="#0f766e"
-            accentColor="#0f766e"
+            iconColor="secondary.main"
+            accentColor="secondary.main"
             loading={isLoading && !stats}
             onClick={() => router.push('/wms/stock')}
           />
@@ -348,7 +348,7 @@ export default function WmsDashboardPage() {
             icon={<WarningAmberOutlinedIcon sx={{ fontSize: 20 }} />}
             iconBgColor={stats && stats.lowStockCount > 0 ? 'rgba(220, 38, 38, 0.1)' : 'rgba(217, 119, 6, 0.08)'}
             iconColor={stats && stats.lowStockCount > 0 ? 'error.main' : 'warning.main'}
-            accentColor={stats && stats.lowStockCount > 0 ? '#dc2626' : '#d97706'}
+            accentColor={stats && stats.lowStockCount > 0 ? 'error.main' : 'warning.main'}
             loading={isLoading && !stats}
             onClick={() => router.push('/wms/stock?lowStockOnly=true')}
           />
@@ -361,8 +361,8 @@ export default function WmsDashboardPage() {
             subtitle="Актов в процессе сверки"
             icon={<FactCheckOutlinedIcon sx={{ fontSize: 20 }} />}
             iconBgColor="rgba(123, 31, 162, 0.08)"
-            iconColor="#7b1fa2"
-            accentColor="#7b1fa2"
+            iconColor="secondary.dark"
+            accentColor="secondary.dark"
             loading={isLoading && !stats}
             onClick={() => router.push('/wms/inventory')}
           />
@@ -377,7 +377,7 @@ export default function WmsDashboardPage() {
             sx={{
               height: '100%',
               borderRadius: '12px',
-              border: '1px solid #e2e8f0',
+              border: '1px solid divider',
               boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
               display: 'flex',
               flexDirection: 'column',
@@ -585,7 +585,7 @@ export default function WmsDashboardPage() {
             <Card
               sx={{
                 borderRadius: '12px',
-                border: '1px solid #e2e8f0',
+                border: '1px solid divider',
                 boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
               }}
             >

@@ -634,7 +634,7 @@ function EquipmentPassportContent() {
             display: 'block !important',
             mb: 2.5,
             pb: 1.5,
-            borderBottom: '2px solid #0f172a',
+            borderBottom: '2px solid text.primary',
           },
         }}
       >
@@ -758,9 +758,9 @@ function EquipmentPassportContent() {
             value={statusInfo.label}
             subtitle={equipment.location ? `Локация: ${equipment.location}` : `Ввод: ${formatDate(equipment.commissionDate)}`}
             icon={<PrecisionManufacturingIcon sx={{ fontSize: 24 }} />}
-            accentColor="#0284c7"
-            iconColor="#0284c7"
-            iconBgColor="#e0f2fe"
+            accentColor="primary.main"
+            iconColor="primary.main"
+            iconBgColor="info.light"
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -779,17 +779,17 @@ function EquipmentPassportContent() {
             icon={<SpeedIcon sx={{ fontSize: 24 }} />}
             accentColor={
               actualWear !== null && actualWear > 70
-                ? '#ef4444'
+                ? 'error.main'
                 : actualWear !== null && actualWear > 30
-                ? '#f59e0b'
-                : '#10b981'
+                ? 'warning.main'
+                : 'success.main'
             }
             iconColor={
               actualWear !== null && actualWear > 70
-                ? '#ef4444'
+                ? 'error.main'
                 : actualWear !== null && actualWear > 30
-                ? '#f59e0b'
-                : '#10b981'
+                ? 'warning.main'
+                : 'success.main'
             }
             iconBgColor={
               actualWear !== null && actualWear > 70
@@ -806,9 +806,9 @@ function EquipmentPassportContent() {
             value={maintPeriodicity || (equipment.maintenancePlans.length > 0 ? `${equipment.maintenancePlans.length} плана ТО` : 'По регламенту')}
             subtitle={maintScheduleYear ? `График: ${maintScheduleYear}` : 'График ППР 2026'}
             icon={<ShieldIcon sx={{ fontSize: 24 }} />}
-            accentColor="#10b981"
-            iconColor="#10b981"
-            iconBgColor="#dcfce7"
+            accentColor="success.main"
+            iconColor="success.main"
+            iconBgColor="success.light"
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -817,9 +817,9 @@ function EquipmentPassportContent() {
             value={`Класс ${criticality}`}
             subtitle={equipment.spareParts.length > 0 ? `Запас ТМЦ: ${equipment.spareParts.length} поз.` : 'Категория надежности'}
             icon={<CategoryIcon sx={{ fontSize: 24 }} />}
-            accentColor={criticality === 'A' ? '#ef4444' : criticality === 'B' ? '#f59e0b' : '#0ea5e9'}
-            iconColor={criticality === 'A' ? '#ef4444' : criticality === 'B' ? '#f59e0b' : '#0ea5e9'}
-            iconBgColor={criticality === 'A' ? 'error.light' : criticality === 'B' ? 'warning.light' : '#e0f2fe'}
+            accentColor={criticality === 'A' ? 'error.main' : criticality === 'B' ? 'warning.main' : 'primary.light'}
+            iconColor={criticality === 'A' ? 'error.main' : criticality === 'B' ? 'warning.main' : 'primary.light'}
+            iconBgColor={criticality === 'A' ? 'error.light' : criticality === 'B' ? 'warning.light' : 'info.light'}
           />
         </Grid>
       </Grid>
@@ -831,7 +831,7 @@ function EquipmentPassportContent() {
           <Grid item xs={12} lg={5}>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
               {/* Card 1: Основные реквизиты и размещение */}
-              <Card sx={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+              <Card sx={{ borderRadius: '12px', border: '1px solid divider', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
                 <CardContent sx={{ p: 2.5 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
                     <PrecisionManufacturingIcon color="primary" />
@@ -845,18 +845,18 @@ function EquipmentPassportContent() {
                     <Table size="small">
                       <TableBody>
                         <TableRow>
-                          <TableCell sx={{ fontWeight: 500, width: '42%', color: 'text.secondary', py: 1, borderBottom: '1px solid #f1f5f9' }}>
+                          <TableCell sx={{ fontWeight: 500, width: '42%', color: 'text.secondary', py: 1, borderBottom: '1px solid action.hover' }}>
                             Наименование
                           </TableCell>
-                          <TableCell sx={{ fontWeight: 700, py: 1, borderBottom: '1px solid #f1f5f9' }}>
+                          <TableCell sx={{ fontWeight: 700, py: 1, borderBottom: '1px solid action.hover' }}>
                             {equipment.name}
                           </TableCell>
                         </TableRow>
                         <TableRow>
-                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid #f1f5f9' }}>
+                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid action.hover' }}>
                             Инвентарный номер
                           </TableCell>
-                          <TableCell sx={{ py: 1, borderBottom: '1px solid #f1f5f9' }}>
+                          <TableCell sx={{ py: 1, borderBottom: '1px solid action.hover' }}>
                             {equipment.inventoryNumber ? (
                               <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
                                 <Paper
@@ -892,10 +892,10 @@ function EquipmentPassportContent() {
                           </TableCell>
                         </TableRow>
                         <TableRow>
-                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid #f1f5f9' }}>
+                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid action.hover' }}>
                             Заводской / Серийный №
                           </TableCell>
-                          <TableCell sx={{ py: 1, borderBottom: '1px solid #f1f5f9' }}>
+                          <TableCell sx={{ py: 1, borderBottom: '1px solid action.hover' }}>
                             {equipment.serialNumber ? (
                               <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
                                 <Paper
@@ -931,50 +931,50 @@ function EquipmentPassportContent() {
                           </TableCell>
                         </TableRow>
                         <TableRow>
-                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid #f1f5f9' }}>
+                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid action.hover' }}>
                             Производитель (Бренд)
                           </TableCell>
-                          <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: '1px solid #f1f5f9' }}>
+                          <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: '1px solid action.hover' }}>
                             {equipment.manufacturer || <Typography component="span" variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>}
                           </TableCell>
                         </TableRow>
                         <TableRow>
-                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid #f1f5f9' }}>
+                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid action.hover' }}>
                             Модель / Модификация
                           </TableCell>
-                          <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: '1px solid #f1f5f9' }}>
+                          <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: '1px solid action.hover' }}>
                             {equipment.model || <Typography component="span" variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>}
                           </TableCell>
                         </TableRow>
                         <TableRow>
-                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid #f1f5f9' }}>
+                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid action.hover' }}>
                             Место установки (Локация)
                           </TableCell>
-                          <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: '1px solid #f1f5f9' }}>
+                          <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: '1px solid action.hover' }}>
                             {equipment.location || <Typography component="span" variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>}
                           </TableCell>
                         </TableRow>
                         <TableRow>
-                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid #f1f5f9' }}>
+                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid action.hover' }}>
                             Ответственное лицо (МОЛ)
                           </TableCell>
-                          <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: '1px solid #f1f5f9' }}>
+                          <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: '1px solid action.hover' }}>
                             {respPerson || <Typography component="span" variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>}
                           </TableCell>
                         </TableRow>
                         <TableRow>
-                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid #f1f5f9' }}>
+                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid action.hover' }}>
                             Дата ввода в эксплуатацию
                           </TableCell>
-                          <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: '1px solid #f1f5f9' }}>
+                          <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: '1px solid action.hover' }}>
                             {equipment.commissionDate ? formatDate(equipment.commissionDate) : <Typography component="span" variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>}
                           </TableCell>
                         </TableRow>
                         <TableRow>
-                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: equipment.tags.length > 0 ? '1px solid #f1f5f9' : 0 }}>
+                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: equipment.tags.length > 0 ? '1px solid action.hover' : 0 }}>
                             Паспорт зарегистрировал
                           </TableCell>
-                          <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: equipment.tags.length > 0 ? '1px solid #f1f5f9' : 0 }}>
+                          <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: equipment.tags.length > 0 ? '1px solid action.hover' : 0 }}>
                             {equipment.createdBy?.displayName} ({formatDate(equipment.createdAt)})
                           </TableCell>
                         </TableRow>
@@ -1030,7 +1030,7 @@ function EquipmentPassportContent() {
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
               {/* Dynamic Custom Sections from Database */}
               {sections.map((sec) => (
-                <Card key={sec.id} sx={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                <Card key={sec.id} sx={{ borderRadius: '12px', border: '1px solid divider', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
                   <CardContent sx={{ p: 2.5 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
                       {SECTION_ICONS[sec.icon || 'Category'] || <CategoryIcon color="primary" />}
@@ -1062,10 +1062,10 @@ function EquipmentPassportContent() {
                               const isLast = fIdx === sec.fields.length - 1;
                               return (
                                 <TableRow key={f.key}>
-                                  <TableCell sx={{ fontWeight: 500, color: 'text.secondary', width: '42%', py: 1, borderBottom: isLast ? 0 : '1px solid #f1f5f9' }}>
+                                  <TableCell sx={{ fontWeight: 500, color: 'text.secondary', width: '42%', py: 1, borderBottom: isLast ? 0 : '1px solid action.hover' }}>
                                     {f.name}
                                   </TableCell>
-                                  <TableCell sx={{ py: 1, borderBottom: isLast ? 0 : '1px solid #f1f5f9' }}>
+                                  <TableCell sx={{ py: 1, borderBottom: isLast ? 0 : '1px solid action.hover' }}>
                                     <CustomFieldValueRenderer field={f} value={val} onCopy={handleCopy} />
                                   </TableCell>
                                 </TableRow>
@@ -1081,7 +1081,7 @@ function EquipmentPassportContent() {
 
               {/* Unassigned Custom Fields if any */}
               {unassignedFields.length > 0 && (
-                <Card sx={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                <Card sx={{ borderRadius: '12px', border: '1px solid divider', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
                   <CardContent sx={{ p: 2.5 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
                       <TuneIcon color="primary" />
@@ -1099,10 +1099,10 @@ function EquipmentPassportContent() {
                             const isLast = uIdx === unassignedFields.length - 1;
                             return (
                               <TableRow key={f.key}>
-                                <TableCell sx={{ fontWeight: 500, color: 'text.secondary', width: '42%', py: 1, borderBottom: isLast ? 0 : '1px solid #f1f5f9' }}>
+                                <TableCell sx={{ fontWeight: 500, color: 'text.secondary', width: '42%', py: 1, borderBottom: isLast ? 0 : '1px solid action.hover' }}>
                                   {f.name}
                                 </TableCell>
-                                <TableCell sx={{ py: 1, borderBottom: isLast ? 0 : '1px solid #f1f5f9' }}>
+                                <TableCell sx={{ py: 1, borderBottom: isLast ? 0 : '1px solid action.hover' }}>
                                   <CustomFieldValueRenderer field={f} value={val} onCopy={handleCopy} />
                                 </TableCell>
                               </TableRow>

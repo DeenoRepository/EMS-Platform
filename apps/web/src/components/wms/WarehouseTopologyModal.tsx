@@ -363,8 +363,8 @@ export default function WarehouseTopologyModal({
           sx={{
             p: 2.5,
             pb: 2,
-            borderBottom: '1px solid #e2e8f0',
-            bgcolor: '#ffffff',
+            borderBottom: '1px solid divider',
+            bgcolor: 'background.paper',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -377,7 +377,7 @@ export default function WarehouseTopologyModal({
                 height: 44,
                 borderRadius: '12px',
                 bgcolor: 'rgba(2, 132, 199, 0.08)',
-                color: '#0284c7',
+                color: 'primary.main',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -386,32 +386,32 @@ export default function WarehouseTopologyModal({
               <MeetingRoomOutlinedIcon sx={{ fontSize: 24 }} />
             </Box>
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.125rem', color: '#0f172a' }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.125rem', color: 'text.primary' }}>
                 Топология адресного хранения
               </Typography>
-              <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.8125rem' }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.8125rem' }}>
                 Склад: <strong>{warehouse?.name}</strong> ({warehouse?.code}) • Всего ячеек: {totalCellsInWarehouse} (занято: {totalOccupiedCells})
               </Typography>
             </Box>
           </Box>
 
-          <IconButton onClick={onClose} size="small" aria-label="Закрыть" sx={{ color: '#94a3b8' }}>
+          <IconButton onClick={onClose} size="small" aria-label="Закрыть" sx={{ color: 'text.disabled' }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </DialogTitle>
 
-        <DialogContent sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 2.5, bgcolor: '#f8fafc' }}>
+        <DialogContent sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 2.5, bgcolor: 'background.default' }}>
           {isLoading ? (
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexGrow: 1, py: 8 }}>
-              <CircularProgress size={36} sx={{ color: '#0284c7', mb: 2 }} />
-              <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
+              <CircularProgress size={36} sx={{ color: 'primary.main', mb: 2 }} />
+              <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
                 Загрузка топологии и ячеек...
               </Typography>
             </Box>
           ) : zones.length === 0 ? (
-            <Box sx={{ bgcolor: '#ffffff', p: 4, borderRadius: '12px', border: '1px solid #e2e8f0', flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Box sx={{ bgcolor: 'background.paper', p: 4, borderRadius: '12px', border: '1px solid divider', flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <EmptyState
-                icon={<GridViewIcon sx={{ fontSize: 44, color: '#94a3b8' }} />}
+                icon={<GridViewIcon sx={{ fontSize: 44, color: 'text.disabled' }} />}
                 title="Зоны хранения не созданы"
                 description="Разделите склад на зоны (Стеллажи, Напольное хранение, Буферная зона) и добавьте ячейки для точного учета местоположения ТМЦ."
                 actionText={canManageZones ? 'Создать первую зону' : undefined}
@@ -426,8 +426,8 @@ export default function WarehouseTopologyModal({
                 sx={{
                   p: 1.5,
                   borderRadius: '12px',
-                  border: '1px solid #e2e8f0',
-                  bgcolor: '#ffffff',
+                  border: '1px solid divider',
+                  bgcolor: 'background.paper',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
@@ -457,7 +457,7 @@ export default function WarehouseTopologyModal({
                       transition: 'all 0.2s ease',
                       '&.Mui-selected': {
                         bgcolor: 'rgba(2, 132, 199, 0.08)',
-                        color: '#0284c7',
+                        color: 'primary.main',
                       },
                     },
                     '& .MuiTabs-indicator': {
@@ -478,8 +478,8 @@ export default function WarehouseTopologyModal({
                               height: 18,
                               fontSize: '0.6875rem',
                               fontWeight: 700,
-                              bgcolor: idx === selectedZoneIndex ? '#0284c7' : '#f1f5f9',
-                              color: idx === selectedZoneIndex ? '#ffffff' : '#64748b',
+                              bgcolor: idx === selectedZoneIndex ? 'primary.main' : 'action.hover',
+                              color: idx === selectedZoneIndex ? 'background.paper' : 'text.secondary',
                             }}
                           />
                         </Box>
@@ -514,8 +514,8 @@ export default function WarehouseTopologyModal({
                   sx={{
                     p: 2.5,
                     borderRadius: '12px',
-                    border: '1px solid #e2e8f0',
-                    bgcolor: '#ffffff',
+                    border: '1px solid divider',
+                    bgcolor: 'background.paper',
                     flexGrow: 1,
                     display: 'flex',
                     flexDirection: 'column',
@@ -531,12 +531,12 @@ export default function WarehouseTopologyModal({
                       gap: 2,
                       mb: 2.5,
                       pb: 2,
-                      borderBottom: '1px solid #f1f5f9',
+                      borderBottom: '1px solid action.hover',
                     }}
                   >
                     <Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#0f172a' }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'text.primary' }}>
                           {activeZone.name}
                         </Typography>
                         <Chip
@@ -545,19 +545,19 @@ export default function WarehouseTopologyModal({
                           sx={{
                             fontWeight: 700,
                             borderRadius: '6px',
-                            bgcolor: '#f1f5f9',
-                            color: '#334155',
+                            bgcolor: 'action.hover',
+                            color: 'text.secondary',
                             height: 22,
                             fontSize: '0.6875rem',
                           }}
                         />
                         {activeZone.description && (
-                          <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.8125rem' }}>
+                          <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8125rem' }}>
                             • {activeZone.description}
                           </Typography>
                         )}
                       </Box>
-                      <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                      <Typography variant="caption" sx={{ color: 'text.disabled' }}>
                         Всего {activeZone.cells.length} ячеек адресного хранения в этой зоне
                       </Typography>
                     </Box>
@@ -578,7 +578,7 @@ export default function WarehouseTopologyModal({
                           <Button
                             variant="outlined"
                             size="small"
-                            startIcon={<AutoAwesomeIcon sx={{ color: '#7c3aed' }} />}
+                            startIcon={<AutoAwesomeIcon sx={{ color: 'secondary.main' }} />}
                             onClick={() => {
                               setBatchPrefix(activeZone.code);
                               setIsBatchOpen(true);
@@ -589,10 +589,10 @@ export default function WarehouseTopologyModal({
                               fontWeight: 600,
                               fontSize: '0.75rem',
                               textTransform: 'none',
-                              borderColor: '#ddd6fe',
-                              color: '#6d28d9',
-                              bgcolor: '#f5f3ff',
-                              '&:hover': { bgcolor: '#ede9fe', borderColor: '#c4b5fd' },
+                              borderColor: 'secondary.light',
+                              color: 'secondary.dark',
+                              bgcolor: 'secondary.light',
+                              '&:hover': { bgcolor: 'secondary.light', borderColor: 'secondary.light' },
                             }}
                           >
                             Мастер генерации ячеек
@@ -609,8 +609,8 @@ export default function WarehouseTopologyModal({
                               fontWeight: 600,
                               fontSize: '0.75rem',
                               textTransform: 'none',
-                              bgcolor: '#0284c7',
-                              '&:hover': { bgcolor: '#0369a1' },
+                              bgcolor: 'primary.main',
+                              '&:hover': { bgcolor: 'primary.dark' },
                             }}
                           >
                             Добавить ячейку
@@ -621,7 +621,7 @@ export default function WarehouseTopologyModal({
                             color="error"
                             onClick={() => handleDeleteZone(activeZone)}
                             aria-label="Удалить зону"
-                            sx={{ bgcolor: '#fef2f2', '&:hover': { bgcolor: '#fee2e2' } }}
+                            sx={{ bgcolor: 'error.light', '&:hover': { bgcolor: 'error.light' } }}
                           >
                             <DeleteOutlineIcon fontSize="small" />
                           </IconButton>
@@ -633,7 +633,7 @@ export default function WarehouseTopologyModal({
                   {/* 2D Interactive Rack / Cell Grid */}
                   {filteredCells.length === 0 ? (
                     <Box sx={{ py: 6, textAlign: 'center' }}>
-                      <Typography variant="body2" sx={{ color: '#64748b' }}>
+                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                         {searchQuery ? 'Ячейки по запросу не найдены' : 'В этой зоне пока нет созданных ячеек.'}
                       </Typography>
                       {!searchQuery && canManageZones && (
@@ -666,8 +666,8 @@ export default function WarehouseTopologyModal({
                                   p: 1.5,
                                   borderRadius: '10px',
                                   border: '1px solid',
-                                  borderColor: isOccupied ? '#93c5fd' : '#e2e8f0',
-                                  bgcolor: isOccupied ? 'rgba(239, 246, 255, 0.6)' : '#ffffff',
+                                  borderColor: isOccupied ? 'primary.light' : 'divider',
+                                  bgcolor: isOccupied ? 'rgba(239, 246, 255, 0.6)' : 'background.paper',
                                   transition: 'all 0.18s ease',
                                   display: 'flex',
                                   flexDirection: 'column',
@@ -675,7 +675,7 @@ export default function WarehouseTopologyModal({
                                   minHeight: 88,
                                   position: 'relative',
                                   '&:hover': {
-                                    borderColor: '#0284c7',
+                                    borderColor: 'primary.main',
                                     transform: 'translateY(-2px)',
                                     boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08)',
                                     '& .cell-del-btn': { opacity: 1 },
@@ -689,14 +689,14 @@ export default function WarehouseTopologyModal({
                                       sx={{
                                         fontWeight: 700,
                                         fontSize: '0.875rem',
-                                        color: '#0f172a',
+                                        color: 'text.primary',
                                         fontFeatureSettings: '"tnum"',
                                       }}
                                     >
                                       {cell.code}
                                     </Typography>
                                     {cell.name && (
-                                      <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.6875rem' }} noWrap>
+                                      <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6875rem' }} noWrap>
                                         {cell.name}
                                       </Typography>
                                     )}
@@ -711,7 +711,7 @@ export default function WarehouseTopologyModal({
                                       sx={{
                                         opacity: 0,
                                         p: 0.25,
-                                        color: '#ef4444',
+                                        color: 'error.main',
                                         transition: 'opacity 0.15s ease',
                                       }}
                                     >
@@ -729,8 +729,8 @@ export default function WarehouseTopologyModal({
                                       fontSize: '0.625rem',
                                       fontWeight: 600,
                                       borderRadius: '4px',
-                                      bgcolor: isOccupied ? '#dbeafe' : '#f1f5f9',
-                                      color: isOccupied ? '#1e40af' : '#64748b',
+                                      bgcolor: isOccupied ? 'info.light' : 'action.hover',
+                                      color: isOccupied ? 'info.dark' : 'text.secondary',
                                     }}
                                   />
 
@@ -739,7 +739,7 @@ export default function WarehouseTopologyModal({
                                       width: 8,
                                       height: 8,
                                       borderRadius: '50%',
-                                      bgcolor: isOccupied ? '#3b82f6' : '#22c55e',
+                                      bgcolor: isOccupied ? 'info.main' : 'success.main',
                                     }}
                                   />
                                 </Box>
@@ -756,7 +756,7 @@ export default function WarehouseTopologyModal({
           )}
         </DialogContent>
 
-        <DialogActions sx={{ p: 2, px: 3, borderTop: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
+        <DialogActions sx={{ p: 2, px: 3, borderTop: '1px solid divider', bgcolor: 'background.paper' }}>
           <Button onClick={onClose} variant="outlined" sx={{ borderRadius: '8px', fontWeight: 600 }}>
             Закрыть
           </Button>
@@ -844,7 +844,7 @@ export default function WarehouseTopologyModal({
         onClose={() => !isGeneratingBatch && setIsBatchOpen(false)}
         title="Мастер пакетной генерации ячеек"
         subtitle="Автоматическое создание сетки ячеек по матрице Ряд-Стеллаж-Ярус"
-        icon={<AutoAwesomeIcon sx={{ color: '#7c3aed' }} />}
+        icon={<AutoAwesomeIcon sx={{ color: 'secondary.main' }} />}
         maxWidth="sm"
         loading={isGeneratingBatch}
         submitLabel={isGeneratingBatch ? 'Генерация...' : 'Сгенерировать ячейки'}
@@ -899,17 +899,17 @@ export default function WarehouseTopologyModal({
             sx={{
               p: 2,
               borderRadius: '8px',
-              bgcolor: '#f5f3ff',
-              border: '1px solid #ddd6fe',
+              bgcolor: 'secondary.light',
+              border: '1px solid secondary.light',
             }}
           >
-            <Typography variant="caption" sx={{ color: '#6d28d9', fontWeight: 600, display: 'block', mb: 0.5 }}>
+            <Typography variant="caption" sx={{ color: 'secondary.dark', fontWeight: 600, display: 'block', mb: 0.5 }}>
               Пример генерируемых адресов:
             </Typography>
-            <Typography variant="body2" sx={{ color: '#4c1d95', fontFeatureSettings: '"tnum"', fontWeight: 500 }}>
+            <Typography variant="body2" sx={{ color: 'secondary.dark', fontFeatureSettings: '"tnum"', fontWeight: 500 }}>
               {`${batchPrefix || 'A'}-01-01-1, ${batchPrefix || 'A'}-01-01-2 ... ${batchPrefix || 'A'}-${(parseInt(batchRacks, 10) || 1).toString().padStart(2, '0')}-${(parseInt(batchTiers, 10) || 1).toString().padStart(2, '0')}-${batchSlots || 1}`}
             </Typography>
-            <Typography variant="caption" sx={{ color: '#7c3aed', mt: 0.75, display: 'block' }}>
+            <Typography variant="caption" sx={{ color: 'secondary.main', mt: 0.75, display: 'block' }}>
               Будет создано всего:{' '}
               <strong>
                 {(parseInt(batchRacks, 10) || 0) *

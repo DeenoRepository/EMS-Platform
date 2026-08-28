@@ -48,13 +48,13 @@ export function WarehouseSelect({
       }}
       sx={{
         minWidth: 200,
-        backgroundColor: '#ffffff',
+        backgroundColor: 'background.paper',
         '& .MuiOutlinedInput-root': {
           borderRadius: '8px',
           fontSize: '0.8125rem',
           height: size === 'small' ? 36 : 40,
-          '& fieldset': { borderColor: '#e2e8f0' },
-          '&:hover fieldset': { borderColor: '#cbd5e1' },
+          '& fieldset': { borderColor: 'divider' },
+          '&:hover fieldset': { borderColor: 'divider' },
         },
         ...sx,
       }}

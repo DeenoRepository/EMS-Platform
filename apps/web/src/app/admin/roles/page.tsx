@@ -266,9 +266,9 @@ export default function AdminRolesPage() {
             value={totalRoles}
             subtitle="Настроенных в системе"
             icon={<SecurityIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(2, 132, 199, 0.08)"
-            iconColor="#0284c7"
-            accentColor="#0284c7"
+            iconBgColor="action.hover"
+            iconColor="primary.main"
+            accentColor="primary.main"
             loading={loading}
           />
         </Grid>
@@ -278,9 +278,9 @@ export default function AdminRolesPage() {
             value={systemRoles}
             subtitle="Встроенные базовые роли EMS"
             icon={<AdminPanelSettingsIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(124, 58, 237, 0.08)"
-            iconColor="#7c3aed"
-            accentColor="#7c3aed"
+            iconBgColor="secondary.light"
+            iconColor="secondary.main"
+            accentColor="secondary.main"
             loading={loading}
           />
         </Grid>
@@ -290,9 +290,9 @@ export default function AdminRolesPage() {
             value={customRoles}
             subtitle="Созданные администраторами"
             icon={<VpnKeyIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(22, 163, 74, 0.08)"
-            iconColor="#16a34a"
-            accentColor="#16a34a"
+            iconBgColor="success.light"
+            iconColor="success.main"
+            accentColor="success.main"
             loading={loading}
           />
         </Grid>
@@ -319,69 +319,92 @@ export default function AdminRolesPage() {
             setRowsPerPage(parseInt(e.target.value, 10));
             setPage(0);
           }}
-          pageSizeOptions={[15, 25, 50, 100]}
+          pageSizeOptions={[10, 25, 50]}
           stickyHeader
         >
-          <Table size="small" aria-label="Таблица ролей и прав доступа">
+          <Table size="small" aria-label="Таблица ролей пользователей">
             <TableHead>
-              <TableRow>
-                <TableCell sx={{ minWidth: 180 }}>Название роли</TableCell>
-                <TableCell sx={{ minWidth: 140 }}>Системный код</TableCell>
-                <TableCell sx={{ minWidth: 200 }}>Описание</TableCell>
-                <TableCell sx={{ minWidth: 120 }}>Пользователей</TableCell>
-                <TableCell sx={{ minWidth: 140 }}>Количество прав</TableCell>
-                <TableCell align="right" sx={{ minWidth: 120 }}>Действия</TableCell>
+              <TableRow sx={{ backgroundColor: 'background.paper' }}>
+                <TableCell sx={{ minWidth: 200 }}>Название роли</TableCell>
+                <TableCell sx={{ minWidth: 160 }}>Системный код</TableCell>
+                <TableCell sx={{ minWidth: 240 }}>Описание</TableCell>
+                <TableCell align="center" sx={{ minWidth: 120 }}>Тип</TableCell>
+                <TableCell align="center" sx={{ minWidth: 130 }}>Пользователей</TableCell>
+                <TableCell sx={{ minWidth: 180 }}>Полномочия</TableCell>
+                <TableCell align="right" sx={{ minWidth: 100 }}>Действия</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {paginatedRoles.map((r) => (
-                <TableRow key={r.id} hover>
+              {paginatedRoles.map((role) => (
+                <TableRow key={role.id} hover>
                   <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
-                        {r.displayName}
-                      </Typography>
-                      {r.isSystem && (
-                        <StatusBadge status="SYSTEM" size="small" variant="outlined" />
-                      )}
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Chip label={r.name} size="small" variant="outlined" sx={{ borderRadius: '4px', height: 22, fontFamily: 'monospace' }} />
-                  </TableCell>
-                  <TableCell sx={{ fontSize: '0.8125rem' }}>{r.description || '—'}</TableCell>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
-                      {r.userCount}
+                    <Typography variant="body2" fontWeight={600} color="text.primary">
+                      {role.displayName}
                     </Typography>
                   </TableCell>
                   <TableCell>
+                    <Typography variant="caption" sx={{ fontFamily: 'monospace', color: 'text.secondary', fontWeight: 600 }}>
+                      {role.name}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem' }}>
+                      {role.description || '—'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="center">
                     <StatusBadge
-                      status={r.name === 'admin' ? 'ADMIN' : 'USER'}
-                      label={r.name === 'admin' ? `Все права (${permissions.length})` : `${r.permissions.length} из ${permissions.length}`}
+                      status={role.isSystem ? 'ACTIVE' : 'DRAFT'}
+                      label={role.isSystem ? 'Системная' : 'Кастомная'}
                       size="small"
-                      variant="subtle"
+                      variant="outlined"
                     />
                   </TableCell>
-                  <TableCell align="right">
-                    <IconButton
+                  <TableCell align="center">
+                    <Chip
+                      label={`${role.userCount} польз.`}
                       size="small"
-                      color="primary"
-                      onClick={() => handleOpenEdit(r)}
-                      title="Редактировать права"
-                    >
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    {!r.isSystem && (
+                      sx={{
+                        fontFamily: 'monospace',
+                        fontWeight: 600,
+                        height: 22,
+                        fontSize: '0.75rem',
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="caption" color="text.secondary" fontWeight={500}>
+                      {role.permissions.length === 0
+                        ? 'Нет прав'
+                        : `${role.permissions.length} ${
+                            role.permissions.length === 1
+                              ? 'полномочие'
+                              : role.permissions.length < 5
+                              ? 'полномочия'
+                              : 'полномочий'
+                          }`}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="right">
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
                       <IconButton
                         size="small"
-                        color="error"
-                        onClick={() => setRoleToDelete(r)}
-                        title="Удалить роль"
+                        onClick={() => handleOpenEdit(role)}
+                        title="Редактировать роль"
+                        sx={{ color: 'text.secondary', '&:hover': { color: 'primary.main' } }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => setRoleToDelete(role)}
+                        disabled={role.isSystem}
+                        title={role.isSystem ? 'Системную роль нельзя удалить' : 'Удалить роль'}
+                        sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}
                       >
                         <DeleteOutlineIcon fontSize="small" />
                       </IconButton>
-                    )}
+                    </Box>
                   </TableCell>
                 </TableRow>
               ))}
@@ -390,23 +413,23 @@ export default function AdminRolesPage() {
         </DataTableWrapper>
       )}
 
-      {/* Диалог подтверждения удаления роли */}
+      {/* Delete Role Confirmation Dialog */}
       <ConfirmDialog
         open={Boolean(roleToDelete)}
-        title="Удаление роли"
+        title="Удаление роли доступа"
         message={
-          <Typography variant="body2">
-            Вы действительно хотите безвозвратно удалить роль <b>«{roleToDelete?.displayName}»</b>? Пользователи, привязанные к этой роли, потеряют соответствующие привилегии.
-          </Typography>
+          roleToDelete
+            ? `Вы действительно хотите удалить роль «${roleToDelete.displayName}» (${roleToDelete.name})? Пользователи, имеющие только эту роль, потеряют связанные полномочия.`
+            : ''
         }
-        confirmText="Удалить роль"
         variant="danger"
+        confirmText="Удалить роль"
         loading={isDeleting}
         onConfirm={handleConfirmDeleteRole}
         onClose={() => setRoleToDelete(null)}
       />
 
-      {/* Role Form & Permission Matrix Dialog */}
+      {/* Create / Edit Role Modal Form */}
       <FormDialog
         open={dialogOpen}
         onClose={handleCloseDialog}
@@ -414,39 +437,40 @@ export default function AdminRolesPage() {
         icon={<SecurityIcon color="primary" />}
         maxWidth="md"
         loading={saving}
-        submitLabel={saving ? 'Сохранение...' : 'Сохранить роль'}
+        submitLabel={editingRole ? 'Сохранить изменения' : 'Создать роль'}
         onSubmit={handleSaveRole}
-        submitDisabled={saving || !roleDisplayName || !roleName}
       >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3, pt: 1 }}>
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <TextField
-              label="Отображаемое название"
-              placeholder="например: Специалист ОТК"
-              value={roleDisplayName}
-              onChange={(e) => setRoleDisplayName(e.target.value)}
-              fullWidth
-              required
-              size="small"
-            />
-            <TextField
-              label="Системный код (латиницей)"
-              placeholder="например: quality_inspector"
-              value={roleName}
-              onChange={(e) => setRoleName(e.target.value)}
-              disabled={Boolean(editingRole)}
-              fullWidth
-              required
-              size="small"
-            />
-          </Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
           <TextField
-            label="Описание роли"
-            placeholder="Кратко опишите назначение и уровень доступа этой роли"
-            value={roleDescription}
-            onChange={(e) => setRoleDescription(e.target.value)}
+            label="Отображаемое название роли"
+            placeholder="например, Главный инженер склада"
+            fullWidth
+            required
+            value={roleDisplayName}
+            onChange={(e) => setRoleDisplayName(e.target.value)}
+            size="small"
+          />
+
+          {!editingRole && (
+            <TextField
+              label="Системный код (латиницей, UNIQUE)"
+              placeholder="например, warehouse_lead"
+              fullWidth
+              required
+              value={roleName}
+              onChange={(e) => setRoleName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+              helperText="Используется внутри системы для проверки прав и связи с LDAP группами"
+              size="small"
+            />
+          )}
+
+          <TextField
+            label="Описание назначения роли"
+            placeholder="Краткое пояснение области ответственности"
             fullWidth
             multiline
+            value={roleDescription}
+            onChange={(e) => setRoleDescription(e.target.value)}
             rows={2}
             size="small"
           />
@@ -460,7 +484,7 @@ export default function AdminRolesPage() {
           const allSelected = modulePerms.every((p) => selectedPermCodes.includes(p.code));
 
           return (
-            <Accordion key={moduleKey} defaultExpanded sx={{ border: '1px solid #e2e8f0', mb: 1, boxShadow: 'none' }}>
+            <Accordion key={moduleKey} defaultExpanded sx={{ border: '1px solid', borderColor: 'divider', mb: 1, boxShadow: 'none' }}>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between', pr: 2 }}>
                   <Typography variant="subtitle2" fontWeight={600}>
@@ -498,15 +522,15 @@ export default function AdminRolesPage() {
                         p: 1.25,
                         borderRadius: '8px',
                         border: '1px solid',
-                        borderColor: selectedPermCodes.includes(perm.code) ? '#bae6fd' : '#f1f5f9',
-                        bgcolor: selectedPermCodes.includes(perm.code) ? 'rgba(2, 132, 199, 0.04)' : '#ffffff',
+                        borderColor: selectedPermCodes.includes(perm.code) ? 'primary.light' : 'divider',
+                        bgcolor: selectedPermCodes.includes(perm.code) ? 'action.hover' : 'background.paper',
                         transition: 'all 0.15s ease',
-                        '&:hover': { bgcolor: '#f8fafc', borderColor: '#cbd5e1' },
+                        '&:hover': { bgcolor: 'action.hover', borderColor: 'text.disabled' },
                       }}
                       label={
                         <Box sx={{ ml: 0.5 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap', mb: 0.25 }}>
-                            <Typography variant="body2" fontWeight={600} fontSize="0.8125rem" color="#0f172a">
+                            <Typography variant="body2" fontWeight={600} fontSize="0.8125rem" color="text.primary">
                               {perm.displayName}
                             </Typography>
                             <Typography
@@ -514,8 +538,8 @@ export default function AdminRolesPage() {
                               sx={{
                                 fontFamily: 'monospace',
                                 fontSize: '0.6875rem',
-                                color: '#64748b',
-                                bgcolor: '#f1f5f9',
+                                color: 'text.secondary',
+                                bgcolor: 'action.hover',
                                 px: 0.75,
                                 py: 0.1,
                                 borderRadius: '4px',
@@ -525,7 +549,7 @@ export default function AdminRolesPage() {
                             </Typography>
                           </Box>
                           {perm.description && (
-                            <Typography variant="caption" color="#64748b" display="block" sx={{ lineHeight: 1.35 }}>
+                            <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.35 }}>
                               {perm.description}
                             </Typography>
                           )}

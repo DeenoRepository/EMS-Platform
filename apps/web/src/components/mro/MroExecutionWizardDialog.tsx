@@ -285,10 +285,10 @@ export default function MroExecutionWizardDialog({
         {activeStep === 0 && (
           <Stack spacing={3}>
             {/* Equipment Card */}
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: '10px', bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+            <Paper elevation={0} sx={{ p: 2.5, borderRadius: '10px', bgcolor: 'background.default', border: '1px solid divider' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
                 <PrecisionManufacturingIcon color="primary" />
-                <Typography variant="subtitle1" fontWeight={700} color="#0f172a">
+                <Typography variant="subtitle1" fontWeight={700} color="text.primary">
                   Объект технического обслуживания
                 </Typography>
               </Box>
@@ -297,7 +297,7 @@ export default function MroExecutionWizardDialog({
                   <Typography variant="caption" color="text.secondary">
                     Оборудование:
                   </Typography>
-                  <Typography variant="body2" fontWeight={700} color="#0f172a">
+                  <Typography variant="body2" fontWeight={700} color="text.primary">
                     {schedule.equipment.name}
                   </Typography>
                 </Grid>
@@ -305,7 +305,7 @@ export default function MroExecutionWizardDialog({
                   <Typography variant="caption" color="text.secondary">
                     Инвентарный номер:
                   </Typography>
-                  <Typography variant="body2" fontWeight={700} color="#0f172a">
+                  <Typography variant="body2" fontWeight={700} color="text.primary">
                     {schedule.equipment.inventoryNumber || '—'}
                   </Typography>
                 </Grid>
@@ -313,7 +313,7 @@ export default function MroExecutionWizardDialog({
                   <Typography variant="caption" color="text.secondary">
                     Локация:
                   </Typography>
-                  <Typography variant="body2" fontWeight={600} color="#0f172a">
+                  <Typography variant="body2" fontWeight={600} color="text.primary">
                     {schedule.equipment.location || '—'}
                   </Typography>
                 </Grid>
@@ -367,7 +367,7 @@ export default function MroExecutionWizardDialog({
         {activeStep === 1 && (
           <Stack spacing={2.5}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="subtitle2" fontWeight={700} color="#0f172a">
+              <Typography variant="subtitle2" fontWeight={700} color="text.primary">
                 Пункты регламентной проверки ({checklistItems.length}):
               </Typography>
               <Chip
@@ -395,7 +395,7 @@ export default function MroExecutionWizardDialog({
                         p: 2,
                         borderRadius: '8px',
                         border: '1px solid',
-                        borderColor: isChecked ? '#86efac' : 'divider',
+                        borderColor: isChecked ? 'success.light' : 'divider',
                         bgcolor: isChecked ? 'rgba(240, 253, 244, 0.5)' : 'background.paper',
                         transition: 'all 0.15s ease',
                       }}
@@ -416,7 +416,7 @@ export default function MroExecutionWizardDialog({
                           }
                           label={
                             <Box>
-                              <Typography variant="body2" fontWeight={600} color="#0f172a">
+                              <Typography variant="body2" fontWeight={600} color="text.primary">
                                 {idx + 1}. {item.description}
                                 {item.isRequired && (
                                   <Typography component="span" color="error.main" sx={{ ml: 0.5 }}>
@@ -456,8 +456,8 @@ export default function MroExecutionWizardDialog({
         {activeStep === 2 && (
           <Stack spacing={2.5}>
             {/* Add Part Form */}
-            <Paper elevation={0} sx={{ p: 2, borderRadius: '10px', bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
-              <Typography variant="subtitle2" fontWeight={700} color="#0f172a" sx={{ mb: 1.5 }}>
+            <Paper elevation={0} sx={{ p: 2, borderRadius: '10px', bgcolor: 'background.default', border: '1px solid divider' }}>
+              <Typography variant="subtitle2" fontWeight={700} color="text.primary" sx={{ mb: 1.5 }}>
                 Подобрать и списать деталь со склада WMS:
               </Typography>
               <Grid container spacing={1.5} alignItems="center">
@@ -514,7 +514,7 @@ export default function MroExecutionWizardDialog({
 
             {/* List of Used Parts */}
             <Box>
-              <Typography variant="subtitle2" fontWeight={700} color="#0f172a" sx={{ mb: 1 }}>
+              <Typography variant="subtitle2" fontWeight={700} color="text.primary" sx={{ mb: 1 }}>
                 Запчасти и материалы к списанию ({usedParts.length}):
               </Typography>
               {usedParts.length === 0 ? (
@@ -522,7 +522,7 @@ export default function MroExecutionWizardDialog({
                   Запчасти не использовались (ТО проведено без списания расходных материалов).
                 </Alert>
               ) : (
-                <Paper elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                <Paper elevation={0} sx={{ border: '1px solid divider', borderRadius: '8px', overflow: 'hidden' }}>
                   <Table size="small">
                     <TableHead sx={{ bgcolor: 'background.default' }}>
                       <TableRow>
@@ -581,13 +581,13 @@ export default function MroExecutionWizardDialog({
               Все этапы регламента пройдены. Проверьте сводный протокол перед подписанием и списанием ТМЦ.
             </Alert>
 
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: '10px', border: '1px solid #e2e8f0', bgcolor: '#f8fafc' }}>
+            <Paper elevation={0} sx={{ p: 2.5, borderRadius: '10px', border: '1px solid divider', bgcolor: 'background.default' }}>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="caption" color="text.secondary">
                     Название регламента:
                   </Typography>
-                  <Typography variant="subtitle2" fontWeight={700} color="#0f172a">
+                  <Typography variant="subtitle2" fontWeight={700} color="text.primary">
                     {schedule.title}
                   </Typography>
                 </Grid>
@@ -595,7 +595,7 @@ export default function MroExecutionWizardDialog({
                   <Typography variant="caption" color="text.secondary">
                     Оборудование:
                   </Typography>
-                  <Typography variant="subtitle2" fontWeight={700} color="#0f172a">
+                  <Typography variant="subtitle2" fontWeight={700} color="text.primary">
                     {schedule.equipment.name} ({schedule.equipment.inventoryNumber || 'б/н'})
                   </Typography>
                 </Grid>
@@ -611,7 +611,7 @@ export default function MroExecutionWizardDialog({
                   <Typography variant="caption" color="text.secondary">
                     Списываемых запчастей:
                   </Typography>
-                  <Typography variant="body2" fontWeight={700} color="#0f172a">
+                  <Typography variant="body2" fontWeight={700} color="text.primary">
                     {usedParts.length} позиций
                   </Typography>
                 </Grid>
@@ -619,7 +619,7 @@ export default function MroExecutionWizardDialog({
                   <Typography variant="caption" color="text.secondary">
                     Дата закрытия:
                   </Typography>
-                  <Typography variant="body2" fontWeight={700} color="#0f172a">
+                  <Typography variant="body2" fontWeight={700} color="text.primary">
                     {executionDate}
                   </Typography>
                 </Grid>

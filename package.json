@@ -8,7 +8,7 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "check:theme": "node scripts/check-theme-tokens.mjs",
-    "test": "DATABASE_URL=\"postgresql://dummy:dummy@localhost:5432/dummy?schema=public\" tsx --test packages/auth/src/*.test.ts apps/web/src/lib/__tests__/*.test.ts",
+    "test": "node scripts/test-runner.mjs",
     "start:prod": "pnpm --filter @ems/web start",
     "prod:up": "docker compose -f docker-compose.prod.yml up -d --build",
     "prod:down": "docker compose -f docker-compose.prod.yml down",
@@ -29,4 +29,3 @@
     "typescript": "^5.7.3"
   }
 }
-

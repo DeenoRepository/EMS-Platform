@@ -425,8 +425,8 @@ export default function AdminSettingsPage() {
           <Card
             sx={{
               borderRadius: '12px',
-              border: maintStatus.system.enabled ? '2px solid #ea580c' : '1px solid #e2e8f0',
-              backgroundColor: maintStatus.system.enabled ? '#fffbeb' : '#ffffff',
+              border: maintStatus.system.enabled ? '2px solid warning.main' : '1px solid divider',
+              backgroundColor: maintStatus.system.enabled ? 'warning.light' : 'background.paper',
               boxShadow: maintStatus.system.enabled ? '0 4px 20px rgba(234, 88, 12, 0.12)' : 'none',
               transition: 'all 0.2s ease',
             }}
@@ -439,8 +439,8 @@ export default function AdminSettingsPage() {
                       width: 44,
                       height: 44,
                       borderRadius: '10px',
-                      backgroundColor: maintStatus.system.enabled ? '#ffedd5' : '#f1f5f9',
-                      color: maintStatus.system.enabled ? '#ea580c' : '#64748b',
+                      backgroundColor: maintStatus.system.enabled ? 'warning.light' : 'action.hover',
+                      color: maintStatus.system.enabled ? 'warning.main' : 'text.secondary',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -449,7 +449,7 @@ export default function AdminSettingsPage() {
                     <EngineeringIcon sx={{ fontSize: 26 }} />
                   </Box>
                   <Box>
-                    <Typography variant="h6" fontWeight={700} sx={{ color: maintStatus.system.enabled ? '#9a3412' : '#0f172a' }}>
+                    <Typography variant="h6" fontWeight={700} sx={{ color: maintStatus.system.enabled ? 'warning.dark' : 'text.primary' }}>
                       Техническое обслуживание платформы
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem' }}>
@@ -556,8 +556,8 @@ export default function AdminSettingsPage() {
                           display: 'flex',
                           flexDirection: 'column',
                           justifyContent: 'space-between',
-                          backgroundColor: isMaint ? '#fffbeb' : '#ffffff',
-                          borderColor: isMaint ? '#fed7aa' : 'divider',
+                          backgroundColor: isMaint ? 'warning.light' : 'background.paper',
+                          borderColor: isMaint ? 'warning.light' : 'divider',
                           transition: 'all 0.15s ease',
                           '&:hover': {
                             boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
@@ -583,8 +583,8 @@ export default function AdminSettingsPage() {
                           </Typography>
                         </Box>
 
-                        <Box sx={{ pt: 1.5, borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <Typography variant="caption" fontWeight={600} color={isMaint ? '#ea580c' : 'primary.main'}>
+                        <Box sx={{ pt: 1.5, borderTop: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <Typography variant="caption" fontWeight={600} color={isMaint ? 'warning.main' : 'primary.main'}>
                             {isMaint ? 'Режим ТО включен' : 'Работает штатно'}
                           </Typography>
                           <Switch
