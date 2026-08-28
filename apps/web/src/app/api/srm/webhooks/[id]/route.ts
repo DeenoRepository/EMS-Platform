@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@ems/database';
+import { logger } from '@/lib/logger';
+import { toSafeErrorDetails } from '@/lib/safe-error';
 import { applyJiraFieldMapping, getJiraFieldMapping, JiraFieldMappingConfig, notifySrmIncident } from '@/lib/jira-service';
 import { extractIssueFromWebhookPayload } from '@/lib/srm-providers';
 import { enforceRateLimit } from '@/lib/rate-limit';
@@ -127,10 +129,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         equipmentId: savedIssue.equipmentId,
       },
     });
-  } catch (error: any) {
-    console.error('Ошибка обработки вебхука SRM:', error);
+  } catch (error: unknown) {
+    const details = toSafeErrorDetails(error, 'Внутренняя ошибка обработки вебхука');
+    logger.error('Ошибка обработки вебхука SRM', { error: details.logMessage });
     return NextResponse.json(
-      { success: false, error: `Внутренняя ошибка обработки вебхука: ${error.message || error}` },
+      { success: false, error: details.publicError },
       { status: 500 }
     );
   }

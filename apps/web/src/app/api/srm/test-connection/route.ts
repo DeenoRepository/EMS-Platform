@@ -4,6 +4,8 @@ import { PERMISSIONS } from '@ems/shared';
 import { getSrmAdapter } from '@/lib/srm-providers';
 import { SrmProviderType, SrmAuthType } from '@ems/database';
 import { validateOutboundUrl } from '@/lib/outbound-url';
+import { logger } from '@/lib/logger';
+import { toSafeErrorDetails } from '@/lib/safe-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -72,12 +74,13 @@ export async function POST(req: NextRequest) {
       message: testResult.message,
       data: testResult,
     });
-  } catch (error: any) {
-    console.error('Ошибка в POST /api/srm/test-connection:', error);
+  } catch (error: unknown) {
+    const details = toSafeErrorDetails(error, 'Ошибка при проверке подключения');
+    logger.error('Ошибка в POST /api/srm/test-connection', { error: details.logMessage });
     return NextResponse.json(
       {
         success: false,
-        error: `Ошибка при проверке подключения: ${error.message || error}`,
+        error: details.publicError,
       },
       { status: 500 }
     );

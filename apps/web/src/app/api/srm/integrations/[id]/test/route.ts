@@ -3,6 +3,8 @@ import { requireAuth } from '@/lib/auth-guard';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { getSrmAdapter } from '@/lib/srm-providers';
+import { logger } from '@/lib/logger';
+import { toSafeErrorDetails } from '@/lib/safe-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,10 +29,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       success: testResult.success,
       data: testResult,
     });
-  } catch (error: any) {
-    console.error('Ошибка проверки соединения:', error);
+  } catch (error: unknown) {
+    const details = toSafeErrorDetails(error, 'Ошибка при проверке подключения');
+    logger.error('Ошибка проверки соединения SRM', { error: details.logMessage, integrationId: params.id });
     return NextResponse.json(
-      { success: false, error: `Ошибка при проверке подключения: ${error.message || error}` },
+      { success: false, error: details.publicError },
       { status: 500 }
     );
   }
