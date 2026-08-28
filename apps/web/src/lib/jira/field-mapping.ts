@@ -270,104 +270,122 @@ export interface JiraIssueData {
   customFields?: Record<string, any>;
 }
 
+interface EquipmentCacheItem {
+  id: string;
+  name: string;
+  inventoryNumber: string | null;
+  serialNumber: string | null;
+}
+
+function mapStandardFields(rawIssue: any, config: JiraFieldMappingConfig): Record<string, any> {
+  const result: Record<string, any> = {};
+
+  for (const mapping of config.standardMappings) {
+    const rawValue = extractValueByPath(rawIssue, mapping.jiraPath);
+    let value = transformValue(rawValue, mapping.transformType, mapping.defaultValue);
+
+    if (mapping.srmField === 'status' && value && config.statusMapping?.[value]) {
+      value = config.statusMapping[value];
+    }
+    if (mapping.srmField === 'priority' && value && config.priorityMapping?.[value]) {
+      value = config.priorityMapping[value];
+    }
+
+    result[mapping.srmField] = value;
+  }
+
+  return {
+    ...result,
+    issueKey: result.issueKey || rawIssue.key || `MOCK-${Date.now()}`,
+    summary: result.summary || 'Без темы',
+    status: result.status || 'Open',
+    priority: result.priority || 'Medium',
+    issueType: result.issueType || 'Incident',
+    createdDate: result.createdDate || new Date(),
+  };
+}
+
+function mapCustomFields(rawIssue: any, mappings: JiraCustomFieldMappingItem[]): Record<string, any> {
+  return mappings.reduce<Record<string, any>>((customFields, mapping) => {
+    const rawValue = extractValueByPath(rawIssue, mapping.jiraPath);
+    customFields[mapping.key] = transformValue(rawValue, mapping.transformType, mapping.defaultValue);
+    return customFields;
+  }, {});
+}
+
+function extractEquipmentSearchValue(rawIssue: any, config: EquipmentMatchConfig): string {
+  const rawValue = extractValueByPath(rawIssue, config.sourcePath);
+  let searchValue = rawValue ? String(rawValue).trim() : '';
+
+  if (searchValue && config.matchBy === 'regex' && config.regexPattern) {
+    try {
+      const match = searchValue.match(new RegExp(config.regexPattern, 'i'));
+      if (match?.[1]) searchValue = match[1].trim();
+    } catch (error) {
+      console.warn('Ошибка выполнения regex для сопоставления оборудования:', error);
+    }
+  }
+
+  return searchValue;
+}
+
+function isMatchingEquipment(equipment: EquipmentCacheItem, matchBy: EquipmentMatchConfig['matchBy'], searchValue: string): boolean {
+  const normalizedSearchValue = searchValue.toLowerCase();
+
+  if (matchBy === 'inventoryNumber' || matchBy === 'regex') {
+    return Boolean(equipment.inventoryNumber && equipment.inventoryNumber.toLowerCase() === normalizedSearchValue);
+  }
+  if (matchBy === 'serialNumber' && equipment.serialNumber) {
+    return equipment.serialNumber.toLowerCase() === normalizedSearchValue;
+  }
+  return matchBy === 'name' && equipment.name.toLowerCase().includes(normalizedSearchValue);
+}
+
+async function resolveMatchedEquipmentId(
+  rawIssue: any,
+  config: EquipmentMatchConfig,
+  equipmentCache?: EquipmentCacheItem[]
+): Promise<string | null> {
+  const searchValue = extractEquipmentSearchValue(rawIssue, config);
+  if (!searchValue) return null;
+
+  if (equipmentCache) {
+    return equipmentCache.find((equipment) => isMatchingEquipment(equipment, config.matchBy, searchValue))?.id || null;
+  }
+
+  const equipment = await prisma.equipment.findFirst({
+    where: {
+      OR: [
+        { inventoryNumber: { equals: searchValue, mode: 'insensitive' } },
+        { serialNumber: { equals: searchValue, mode: 'insensitive' } },
+        { name: { contains: searchValue, mode: 'insensitive' } },
+      ],
+    },
+  });
+
+  return equipment?.id || null;
+}
+
 /**
  * Применение конфигурации сопоставления к сырому объекту задачи из Jira
  */
 export async function applyJiraFieldMapping(
   rawIssue: any,
   config: JiraFieldMappingConfig,
-  equipmentCache?: Array<{ id: string; name: string; inventoryNumber: string | null; serialNumber: string | null }>
+  equipmentCache?: EquipmentCacheItem[]
 ): Promise<JiraIssueData> {
-  const result: any = {
+  const standardFields = mapStandardFields(rawIssue, config);
+  const customFields = mapCustomFields(rawIssue, config.customMappings || []);
+  const equipmentId = config.equipmentMatching?.sourcePath
+    ? await resolveMatchedEquipmentId(rawIssue, config.equipmentMatching, equipmentCache)
+    : null;
+
+  return {
+    ...standardFields,
     rawData: rawIssue,
-    customFields: {},
-  };
-
-  // 1. Стандартные поля
-  for (const mapping of config.standardMappings) {
-    const rawVal = extractValueByPath(rawIssue, mapping.jiraPath);
-    let val = transformValue(rawVal, mapping.transformType, mapping.defaultValue);
-
-    // Нормализация через словари статусов/приоритетов
-    if (mapping.srmField === 'status' && val && config.statusMapping && config.statusMapping[val]) {
-      val = config.statusMapping[val];
-    }
-    if (mapping.srmField === 'priority' && val && config.priorityMapping && config.priorityMapping[val]) {
-      val = config.priorityMapping[val];
-    }
-
-    result[mapping.srmField] = val;
-  }
-
-  // Дефолты обязательных полей если не были извлечены
-  if (!result.issueKey) result.issueKey = rawIssue.key || `MOCK-${Date.now()}`;
-  if (!result.summary) result.summary = 'Без темы';
-  if (!result.status) result.status = 'Open';
-  if (!result.priority) result.priority = 'Medium';
-  if (!result.issueType) result.issueType = 'Incident';
-  if (!result.createdDate) result.createdDate = new Date();
-
-  // 2. Кастомные поля
-  if (config.customMappings && Array.isArray(config.customMappings)) {
-    for (const custom of config.customMappings) {
-      const rawVal = extractValueByPath(rawIssue, custom.jiraPath);
-      result.customFields[custom.key] = transformValue(rawVal, custom.transformType, custom.defaultValue);
-    }
-  }
-
-  // 3. Сопоставление оборудования
-  let matchedEquipmentId: string | null = null;
-  const eqConfig = config.equipmentMatching;
-
-  if (eqConfig && eqConfig.sourcePath) {
-    const rawEqVal = extractValueByPath(rawIssue, eqConfig.sourcePath);
-    let searchVal = rawEqVal ? String(rawEqVal).trim() : '';
-
-    // Если указано регулярное выражение
-    if (searchVal && eqConfig.matchBy === 'regex' && eqConfig.regexPattern) {
-      try {
-        const reg = new RegExp(eqConfig.regexPattern, 'i');
-        const match = searchVal.match(reg);
-        if (match && match[1]) {
-          searchVal = match[1].trim();
-        }
-      } catch (e) {
-        console.warn('Ошибка выполнения regex для сопоставления оборудования:', e);
-      }
-    }
-
-    if (searchVal) {
-      if (equipmentCache) {
-        const found = equipmentCache.find((e) => {
-          if (eqConfig.matchBy === 'inventoryNumber' || eqConfig.matchBy === 'regex') {
-            return Boolean(e.inventoryNumber && e.inventoryNumber.toLowerCase() === searchVal.toLowerCase());
-          }
-          if (eqConfig.matchBy === 'serialNumber' && e.serialNumber) {
-            return e.serialNumber.toLowerCase() === searchVal.toLowerCase();
-          }
-          if (eqConfig.matchBy === 'name') {
-            return e.name.toLowerCase().includes(searchVal.toLowerCase());
-          }
-          return false;
-        });
-        if (found) matchedEquipmentId = found.id;
-      } else {
-        const eq = await prisma.equipment.findFirst({
-          where: {
-            OR: [
-              { inventoryNumber: { equals: searchVal, mode: 'insensitive' } },
-              { serialNumber: { equals: searchVal, mode: 'insensitive' } },
-              { name: { contains: searchVal, mode: 'insensitive' } },
-            ],
-          },
-        });
-        if (eq) matchedEquipmentId = eq.id;
-      }
-    }
-  }
-
-  result.equipmentId = matchedEquipmentId;
-  return result as JiraIssueData;
+    customFields,
+    equipmentId,
+  } as JiraIssueData;
 }
 
 /**
