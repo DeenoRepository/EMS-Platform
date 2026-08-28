@@ -8,14 +8,14 @@ export const dynamic = 'force-dynamic';
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
     if (!hasPermission(user, PERMISSIONS.ADMIN_ROLES_MANAGE)) return forbiddenResponse();
 
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
     const { displayName, description, permissionCodes } = body;
 
@@ -61,14 +61,14 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
     if (!hasPermission(user, PERMISSIONS.ADMIN_ROLES_MANAGE)) return forbiddenResponse();
 
-    const { id } = params;
+    const { id } = await params;
     const role = await prisma.role.findUnique({ where: { id } });
     if (!role) {
       return NextResponse.json({ success: false, error: 'Роль не найдена' }, { status: 404 });

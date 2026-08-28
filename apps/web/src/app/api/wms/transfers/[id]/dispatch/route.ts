@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 // POST /api/wms/transfers/[id]/dispatch - Согласование и отгрузка запроса на перемещение
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(req);

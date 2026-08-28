@@ -14,7 +14,7 @@ const MAX_WEBHOOK_BODY_SIZE = 5 * 1024 * 1024; // 5MB
  * POST /api/srm/webhooks/[id]
  * Прием входящих Push-событий от Jira, Redmine, GitLab и кастомных вебхуков
  */
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const integrationId = params.id;
   const rateLimitError = await enforceRateLimit(
     req,

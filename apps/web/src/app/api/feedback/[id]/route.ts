@@ -19,7 +19,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
 
-    const { id } = params;
+    const { id } = await params;
 
     const isAdmin =
       user.roles?.includes('admin') ||
@@ -96,7 +96,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       return forbiddenResponse('Только администраторы могут изменять статус и параметры обращений');
     }
 
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
 
     const existing = await prisma.feedbackTicket.findUnique({
@@ -213,7 +213,7 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
       return forbiddenResponse();
     }
 
-    const { id } = params;
+    const { id } = await params;
     await prisma.feedbackTicket.update({
       where: { id },
       data: { deletedAt: new Date() },

@@ -8,14 +8,14 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
     if (!hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_VIEW)) return forbiddenResponse();
 
-    const { id } = params;
+    const { id } = await params;
 
     const logs = await prisma.auditLog.findMany({
       where: {

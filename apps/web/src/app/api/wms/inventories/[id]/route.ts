@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(req);
@@ -17,7 +17,7 @@ export async function GET(
       return forbiddenResponse();
     }
 
-    const { id } = params;
+    const { id } = await params;
     const inventory = await prisma.inventory.findUnique({
       where: { id },
       include: {
@@ -70,14 +70,14 @@ interface UpdateItemInput {
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
     if (!hasPermission(user, PERMISSIONS.WMS_INVENTORY_MANAGE)) return forbiddenResponse();
 
-    const { id } = params;
+    const { id } = await params;
     const currentInventory = await prisma.inventory.findUnique({
       where: { id },
       include: {

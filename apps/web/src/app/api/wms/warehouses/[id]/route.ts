@@ -8,14 +8,14 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
     if (!hasPermission(user, PERMISSIONS.WMS_STOCK_VIEW)) return forbiddenResponse();
 
-    const { id } = params;
+    const { id } = await params;
     const warehouse = await prisma.warehouse.findUnique({
       where: { id },
       include: {
@@ -59,7 +59,7 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(req);
@@ -68,7 +68,7 @@ export async function PATCH(
       return forbiddenResponse();
     }
 
-    const { id } = params;
+    const { id } = await params;
     const current = await prisma.warehouse.findUnique({ where: { id } });
     if (!current) {
       return NextResponse.json({ success: false, error: 'Склад не найден' }, { status: 404 });

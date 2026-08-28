@@ -8,7 +8,7 @@ import { z } from 'zod';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(req);
@@ -22,7 +22,7 @@ export async function GET(
       return forbiddenResponse();
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     const approval = await prisma.equipmentApproval.findUnique({
       where: { id },
@@ -59,13 +59,13 @@ const updateSchema = z.object({
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
 
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
     const { status, resolutionComment } = updateSchema.parse(body);
 

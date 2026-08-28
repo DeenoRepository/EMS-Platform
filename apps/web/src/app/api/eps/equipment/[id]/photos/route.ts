@@ -10,14 +10,14 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
     if (!hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_EDIT)) return forbiddenResponse();
 
-    const { id } = params;
+    const { id } = await params;
     const equipment = await prisma.equipment.findUnique({ where: { id } });
     if (!equipment) {
       return NextResponse.json({ success: false, error: 'Оборудование не найдено' }, { status: 404 });
@@ -69,7 +69,7 @@ export async function POST(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(req);

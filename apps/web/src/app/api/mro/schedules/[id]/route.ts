@@ -7,7 +7,7 @@ import { PERMISSIONS } from '@ems/shared';
 export const dynamic = 'force-dynamic';
 
 // GET /api/mro/schedules/[id] - Детали работы ТО
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAuth(req, PERMISSIONS.MRO_SCHEDULE_VIEW);
   if (auth.errorResponse) return auth.errorResponse;
 
@@ -51,7 +51,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 // PATCH /api/mro/schedules/[id] - Обновление / Завершение работы ТО с чек-листом и списанием запчастей
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAuth(req, [PERMISSIONS.MRO_SCHEDULE_MANAGE, PERMISSIONS.MRO_EXECUTION_COMPLETE]);
   if (auth.errorResponse) return auth.errorResponse;
 

@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 // GET /api/wms/warehouses/[id]/zones - List all zones & cells of a warehouse
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(req);
@@ -44,7 +44,7 @@ export async function GET(
 // POST /api/wms/warehouses/[id]/zones - Create a new zone inside a warehouse
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(req);

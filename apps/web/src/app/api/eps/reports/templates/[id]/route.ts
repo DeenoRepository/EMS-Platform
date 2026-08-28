@@ -8,7 +8,7 @@ import { hasPermission } from '@ems/auth';
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const rateLimitRes = await enforceRateLimit(req, {
     limit: 30,
@@ -21,7 +21,7 @@ export async function DELETE(
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
 
-    const { id } = params;
+    const { id } = await params;
     const template = await prisma.reportTemplate.findUnique({ where: { id } });
 
     if (!template) {

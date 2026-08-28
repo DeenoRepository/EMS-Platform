@@ -7,7 +7,7 @@ import { deleteFile } from '@/lib/storage';
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(req);
@@ -16,7 +16,7 @@ export async function DELETE(
       return forbiddenResponse();
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     const document = await prisma.document.findUnique({
       where: { id },

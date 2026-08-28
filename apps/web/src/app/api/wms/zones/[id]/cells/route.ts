@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 // GET /api/wms/zones/[id]/cells - List all cells in a zone
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(req);
@@ -39,7 +39,7 @@ export async function GET(
 // POST /api/wms/zones/[id]/cells - Create cell or batch generate cells
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(req);
@@ -168,7 +168,7 @@ export async function POST(
 // DELETE /api/wms/zones/[id]/cells?cellId=... - Delete a cell from zone
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(req);

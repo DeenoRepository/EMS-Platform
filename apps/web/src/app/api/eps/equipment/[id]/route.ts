@@ -10,14 +10,14 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
     if (!hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_VIEW)) return forbiddenResponse();
 
-    const { id } = params;
+    const { id } = await params;
 
     const equipment = await prisma.equipment.findUnique({
       where: { id },
@@ -103,14 +103,14 @@ const updateSchema = z.object({
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
     if (!hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_EDIT)) return forbiddenResponse();
 
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
     const parsedBody = updateSchema.parse(body);
     const {
@@ -314,14 +314,14 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
     if (!hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_DELETE)) return forbiddenResponse();
 
-    const { id } = params;
+    const { id } = await params;
     const equipment = await prisma.equipment.findUnique({ where: { id } });
 
     if (!equipment) {

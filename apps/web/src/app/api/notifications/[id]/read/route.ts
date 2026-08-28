@@ -4,7 +4,7 @@ import { prisma } from '@ems/database';
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(req);
@@ -12,7 +12,7 @@ export async function PATCH(
       return unauthorizedResponse();
     }
 
-    const { id } = params;
+    const { id } = await params;
     await prisma.notification.updateMany({
       where: {
         id,

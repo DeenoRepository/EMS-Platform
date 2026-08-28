@@ -15,7 +15,7 @@ interface CellAllocationInput {
 // POST /api/wms/transfers/[id]/receive - Подтверждение приемки ТМЦ на складе-получателе
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(req);

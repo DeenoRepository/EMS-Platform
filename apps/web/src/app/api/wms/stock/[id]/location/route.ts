@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 // PATCH /api/wms/stock/[id]/location - Assign or update storage cell of a stock item
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(req);

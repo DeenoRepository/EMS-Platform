@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 // PATCH /api/wms/zones/[id] - Update a storage zone
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(req);
@@ -75,7 +75,7 @@ export async function PATCH(
 // DELETE /api/wms/zones/[id] - Delete a storage zone
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(req);
