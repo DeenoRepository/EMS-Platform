@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
+    if (!hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_VIEW)) return forbiddenResponse();
 
     const fields = await prisma.customFieldDefinition.findMany({
       orderBy: { sortOrder: 'asc' },
