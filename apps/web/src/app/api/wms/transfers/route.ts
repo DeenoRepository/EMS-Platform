@@ -121,7 +121,7 @@ export async function GET(req: NextRequest) {
         counts,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка получения списка перемещений:', error);
     return NextResponse.json(
       { success: false, error: 'Ошибка получения списка перемещений' },

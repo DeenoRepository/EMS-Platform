@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: templates });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка получения шаблонов чек-листов:', error);
     return NextResponse.json({ success: false, error: 'Внутренняя ошибка сервера' }, { status: 500 });
   }
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: template }, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка создания шаблона чек-листа:', error);
     return NextResponse.json({ success: false, error: 'Не удалось создать шаблон' }, { status: 500 });
   }

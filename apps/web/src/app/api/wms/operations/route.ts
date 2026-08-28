@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
         totalPages: Math.ceil(total / pageSize),
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка получения операций:', error);
     return NextResponse.json({ success: false, error: 'Ошибка получения журнала операций' }, { status: 500 });
   }

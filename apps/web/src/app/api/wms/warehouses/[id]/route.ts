@@ -51,7 +51,7 @@ export async function GET(
     }
 
     return NextResponse.json({ success: true, data: warehouse });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка получения данных склада:', error);
     return NextResponse.json({ success: false, error: 'Ошибка получения данных склада' }, { status: 500 });
   }
@@ -107,7 +107,7 @@ export async function PATCH(
     });
 
     return NextResponse.json({ success: true, data: updated });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка обновления склада:', error);
     return NextResponse.json({ success: false, error: 'Ошибка обновления склада' }, { status: 500 });
   }

@@ -238,7 +238,7 @@ export async function POST(req: NextRequest) {
         rows,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка формирования отчета EPS:', error);
     return NextResponse.json({ success: false, error: 'Ошибка формирования отчета' }, { status: 500 });
   }

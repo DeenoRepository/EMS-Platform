@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 
     const stats = await calculateSrmStats();
     return NextResponse.json({ success: true, data: stats });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка получения статистики SRM:', error);
     return NextResponse.json({ success: false, error: 'Внутренняя ошибка сервера' }, { status: 500 });
   }

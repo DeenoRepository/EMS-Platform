@@ -69,8 +69,9 @@ function checkStorageAccess(dirPath: string): { writable: boolean; error?: strin
     }
     fs.unlinkSync(testFile);
     return { writable: true };
-  } catch (err: any) {
-    return { writable: false, error: err.message || 'Нет прав на запись в каталог' };
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : 'Нет прав на запись в каталог';
+    return { writable: false, error: errorMessage || 'Нет прав на запись в каталог' };
   }
 }
 

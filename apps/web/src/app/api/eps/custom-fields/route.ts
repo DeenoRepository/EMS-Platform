@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: fields });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка GET /api/eps/custom-fields:', error);
     return NextResponse.json({ success: false, error: 'Ошибка получения кастомных полей' }, { status: 500 });
   }
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: field });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка POST /api/eps/custom-fields:', error);
     return NextResponse.json({ success: false, error: 'Ошибка сохранения кастомного поля' }, { status: 500 });
   }
@@ -107,7 +107,7 @@ export async function DELETE(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, message: 'Поле удалено' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка DELETE /api/eps/custom-fields:', error);
     return NextResponse.json({ success: false, error: 'Ошибка удаления поля' }, { status: 500 });
   }

@@ -32,7 +32,7 @@ export async function GET(
     });
 
     return NextResponse.json({ success: true, data: logs });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({ success: false, error: 'Ошибка получения аудита оборудования' }, { status: 500 });
   }
 }

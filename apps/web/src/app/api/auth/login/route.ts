@@ -44,8 +44,9 @@ export async function POST(req: NextRequest) {
           searchBase,
         });
         logger.debug('[LOGIN ROUTE] Результат authenticateLdap', { success: !!ldapResult });
-      } catch (err: any) {
-        console.error('[LOGIN ROUTE] Ошибка вызова authenticateLdap:', err?.message || err);
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        console.error('[LOGIN ROUTE] Ошибка вызова authenticateLdap:', errorMessage);
       }
     }
 

@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     const data = await calculateAdvancedRamsMetrics(equipmentId);
 
     return NextResponse.json({ success: true, data });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка расчета RAMS аналитики надежности SRM:', error);
     return NextResponse.json(
       { success: false, error: 'Ошибка сервера при расчете аналитических метрик' },

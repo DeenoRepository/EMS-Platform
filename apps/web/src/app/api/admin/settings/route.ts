@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
       success: true,
       data: defaultSettings,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({ success: false, error: 'Ошибка получения настроек' }, { status: 500 });
   }
 }
@@ -80,7 +80,7 @@ export async function PATCH(req: NextRequest) {
     invalidateSystemSettingsCache();
 
     return NextResponse.json({ success: true, message: 'Настройки сохранены' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({ success: false, error: 'Ошибка сохранения настроек' }, { status: 500 });
   }
 }

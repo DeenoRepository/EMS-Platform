@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: schedules });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка получения расписания ТО:', error);
     return NextResponse.json({ success: false, error: 'Внутренняя ошибка сервера' }, { status: 500 });
   }
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: schedule }, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка создания графика ТО:', error);
     return NextResponse.json({ success: false, error: 'Не удалось создать график ТО' }, { status: 500 });
   }

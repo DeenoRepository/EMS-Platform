@@ -31,7 +31,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         authConfig: sanitizeAuthConfig(integration.authConfig),
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({ success: false, error: 'Ошибка получения данных интеграции' }, { status: 500 });
   }
 }
@@ -94,7 +94,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         authConfig: sanitizeAuthConfig(updated.authConfig),
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({ success: false, error: 'Ошибка обновления подключения' }, { status: 500 });
   }
 }
@@ -112,7 +112,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       success: true,
       message: 'Подключение удалено',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({ success: false, error: 'Ошибка удаления подключения' }, { status: 500 });
   }
 }

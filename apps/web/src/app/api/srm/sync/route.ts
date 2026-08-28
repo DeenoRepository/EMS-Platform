@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       message: `Синхронизировано заявок: ${result.count}`,
       source: result.source,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка синхронизации Jira:', error);
     return NextResponse.json({ success: false, error: 'Сбой синхронизации с Jira' }, { status: 500 });
   }

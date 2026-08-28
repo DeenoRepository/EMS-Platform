@@ -24,7 +24,7 @@ export async function PATCH(
     });
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({ success: false, error: 'Ошибка обновления' }, { status: 500 });
   }
 }

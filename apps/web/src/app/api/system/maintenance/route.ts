@@ -55,7 +55,7 @@ export async function GET() {
       success: true,
       data: status,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
       { success: false, error: 'Ошибка получения статуса тех. обслуживания' },
       { status: 500 }
@@ -143,7 +143,7 @@ export async function PATCH(req: NextRequest) {
       data: updated,
       message: 'Конфигурация технического обслуживания успешно обновлена',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ success: false, error: 'Некорректные параметры', details: error.issues }, { status: 400 });
     }

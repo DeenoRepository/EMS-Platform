@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     }));
 
     return NextResponse.json({ success: true, data: formatted });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({ success: false, error: 'Ошибка получения тегов' }, { status: 500 });
   }
 }
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: tag });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({ success: false, error: 'Ошибка создания тега' }, { status: 500 });
   }
 }

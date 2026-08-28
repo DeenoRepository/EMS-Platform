@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
         unassignedFields,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка GET /api/eps/custom-sections:', error);
     return NextResponse.json({ success: false, error: 'Внутренняя ошибка сервера' }, { status: 500 });
   }

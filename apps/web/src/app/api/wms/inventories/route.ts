@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: inventories });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка получения списка инвентаризаций:', error);
     return NextResponse.json({ success: false, error: 'Ошибка получения инвентаризаций' }, { status: 500 });
   }
@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: inventory });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка создания инвентаризации:', error);
     return NextResponse.json({ success: false, error: 'Ошибка создания акта инвентаризации' }, { status: 500 });
   }

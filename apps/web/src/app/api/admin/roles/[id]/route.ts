@@ -54,7 +54,7 @@ export async function PATCH(
     });
 
     return NextResponse.json({ success: true, data: updatedRole });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({ success: false, error: 'Ошибка обновления роли' }, { status: 500 });
   }
 }
@@ -89,7 +89,7 @@ export async function DELETE(
     });
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({ success: false, error: 'Ошибка удаления роли' }, { status: 500 });
   }
 }

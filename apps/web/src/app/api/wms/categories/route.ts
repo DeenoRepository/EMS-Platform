@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: categories });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка получения категорий:', error);
     return NextResponse.json({ success: false, error: 'Ошибка получения категорий' }, { status: 500 });
   }
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: category });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка создания категории:', error);
     return NextResponse.json({ success: false, error: 'Ошибка создания категории' }, { status: 500 });
   }

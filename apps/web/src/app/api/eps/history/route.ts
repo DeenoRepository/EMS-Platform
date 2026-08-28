@@ -152,7 +152,7 @@ export async function GET(req: NextRequest) {
         stats,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка получения журнала истории изменений EPS:', error);
     return NextResponse.json(
       { success: false, error: 'Ошибка получения истории изменений' },

@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
         sampleIssue: SAMPLE_JIRA_ISSUE,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка получения настроек маппинга Jira:', error);
     return NextResponse.json(
       { success: false, error: 'Ошибка получения настроек сопоставления полей Jira' },
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
       message: 'Конфигурация сопоставления полей Jira успешно сохранена',
       data: config,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка сохранения настроек маппинга Jira:', error);
     return NextResponse.json(
       { success: false, error: 'Ошибка сохранения конфигурации маппинга полей' },

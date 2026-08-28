@@ -56,7 +56,7 @@ export async function GET(
     }
 
     return NextResponse.json({ success: true, data: inventory });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка получения акта инвентаризации:', error);
     return NextResponse.json({ success: false, error: 'Ошибка получения данных инвентаризации' }, { status: 500 });
   }
@@ -238,7 +238,7 @@ export async function PATCH(
     });
 
     return NextResponse.json({ success: true, data: updated });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка обновления инвентаризации:', error);
     return NextResponse.json({ success: false, error: 'Ошибка обновления инвентаризации' }, { status: 500 });
   }

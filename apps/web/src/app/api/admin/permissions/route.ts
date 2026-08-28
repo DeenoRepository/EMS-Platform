@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
       success: true,
       data: enrichedPermissions,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({ success: false, error: 'Ошибка получения прав' }, { status: 500 });
   }
 }

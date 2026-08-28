@@ -97,7 +97,7 @@ export async function GET(req: NextRequest) {
         userWarehouseIds,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка получения статистики WMS:', error);
     return NextResponse.json({ success: false, error: 'Ошибка получения статистики WMS' }, { status: 500 });
   }

@@ -207,7 +207,7 @@ export async function GET(req: NextRequest) {
         totalPages: Math.max(1, Math.ceil(total / pageSize)),
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка получения остатков склада:', error);
     return NextResponse.json({ success: false, error: 'Ошибка получения остатков склада' }, { status: 500 });
   }

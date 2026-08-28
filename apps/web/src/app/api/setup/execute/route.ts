@@ -84,18 +84,20 @@ export async function POST(req: NextRequest) {
       const testFile = path.join(storagePath, `.perm_test_${Date.now()}.tmp`);
       fs.writeFileSync(testFile, 'test');
       fs.unlinkSync(testFile);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
       return NextResponse.json(
-        { success: false, error: `Установка заблокирована: каталог хранилища недоступен для записи (${storagePath}): ${err.message}` },
+        { success: false, error: `Установка заблокирована: каталог хранилища недоступен для записи (${storagePath}): ${errorMessage}` },
         { status: 400 }
       );
     }
 
     try {
       crypto.randomBytes(32);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
       return NextResponse.json(
-        { success: false, error: `Установка заблокирована: ошибка генерации криптографической энтропии: ${err.message}` },
+        { success: false, error: `Установка заблокирована: ошибка генерации криптографической энтропии: ${errorMessage}` },
         { status: 400 }
       );
     }
@@ -186,9 +188,10 @@ export async function POST(req: NextRequest) {
           shell: true as any,
         });
       }
-    } catch (schemaSyncErr: any) {
-      console.error('Database schema sync error:', schemaSyncErr?.message || schemaSyncErr);
-      const stderr = schemaSyncErr?.stderr?.toString?.() || schemaSyncErr?.message || String(schemaSyncErr);
+    } catch (schemaSyncErr: unknown) {
+      const commandError = schemaSyncErr as { message?: string; stderr?: Buffer | string };
+      console.error('Database schema sync error:', commandError.message || schemaSyncErr);
+      const stderr = commandError.stderr?.toString() || commandError.message || String(schemaSyncErr);
       return NextResponse.json(
         {
           success: false,

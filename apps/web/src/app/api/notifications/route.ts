@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
         unreadCount,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка /api/notifications:', error);
     return NextResponse.json({ success: false, error: 'Ошибка сервера' }, { status: 500 });
   }

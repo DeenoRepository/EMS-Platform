@@ -69,7 +69,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
         mroSchedule,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка получения деталей заявки SRM:', error);
     return NextResponse.json({ success: false, error: 'Внутренняя ошибка сервера' }, { status: 500 });
   }
@@ -181,7 +181,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     }
 
     return NextResponse.json({ success: true, data: updated, message: 'Заявка успешно обновлена' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка обновления заявки SRM:', error);
     return NextResponse.json({ success: false, error: 'Ошибка сервера при обновлении заявки' }, { status: 500 });
   }
@@ -210,7 +210,7 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
     });
 
     return NextResponse.json({ success: true, message: 'Заявка успешно удалена' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка удаления заявки SRM:', error);
     return NextResponse.json({ success: false, error: 'Ошибка сервера при удалении' }, { status: 500 });
   }

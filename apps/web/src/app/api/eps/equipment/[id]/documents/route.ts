@@ -88,7 +88,7 @@ export async function DELETE(
     await prisma.document.delete({ where: { id: documentId } });
 
     return NextResponse.json({ success: true, message: 'Документ удален' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({ success: false, error: 'Ошибка удаления документа' }, { status: 500 });
   }
 }

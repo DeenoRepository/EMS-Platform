@@ -37,7 +37,7 @@ export async function GET(
     }
 
     return NextResponse.json({ success: true, data: nomenclature });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка получения номенклатуры:', error);
     return NextResponse.json({ success: false, error: 'Ошибка сервера' }, { status: 500 });
   }
@@ -112,7 +112,7 @@ export async function PUT(
     });
 
     return NextResponse.json({ success: true, data: updated });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка обновления номенклатуры:', error);
     return NextResponse.json({ success: false, error: 'Ошибка при сохранении изменений' }, { status: 500 });
   }

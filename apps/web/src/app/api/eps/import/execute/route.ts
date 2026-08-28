@@ -287,9 +287,9 @@ export async function POST(req: NextRequest) {
 
           createdCount++;
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         errorCount++;
-        errors.push({ row: i + 1, error: err.message || 'Ошибка обработки строки' });
+        errors.push({ row: i + 1, error: err instanceof Error ? err.message : 'Ошибка обработки строки' });
       }
     }
 
@@ -322,7 +322,7 @@ export async function POST(req: NextRequest) {
         errors,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка выполнения импорта оборудования:', error);
     return NextResponse.json({ success: false, error: 'Ошибка выполнения импорта' }, { status: 500 });
   }

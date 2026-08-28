@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
     }));
 
     return NextResponse.json({ success: true, data: formattedUsers });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка получения списка пользователей:', error);
     return NextResponse.json({ success: false, error: 'Ошибка получения пользователей' }, { status: 500 });
   }

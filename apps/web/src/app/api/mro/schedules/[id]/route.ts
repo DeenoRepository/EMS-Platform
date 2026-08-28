@@ -44,7 +44,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }
 
     return NextResponse.json({ success: true, data: schedule });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка получения наряда ТО:', error);
     return NextResponse.json({ success: false, error: 'Внутренняя ошибка сервера' }, { status: 500 });
   }

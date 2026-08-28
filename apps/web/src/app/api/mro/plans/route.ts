@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: plans });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка получения планов ТО:', error);
     return NextResponse.json({ success: false, error: 'Внутренняя ошибка сервера' }, { status: 500 });
   }
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: plan }, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Ошибка создания плана ТО:', error);
     return NextResponse.json({ success: false, error: 'Не удалось создать план ТО' }, { status: 500 });
   }

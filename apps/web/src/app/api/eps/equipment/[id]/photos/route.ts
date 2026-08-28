@@ -92,7 +92,7 @@ export async function DELETE(
     await prisma.photo.delete({ where: { id: photoId } });
 
     return NextResponse.json({ success: true, message: 'Фото удалено' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({ success: false, error: 'Ошибка удаления фото' }, { status: 500 });
   }
 }
