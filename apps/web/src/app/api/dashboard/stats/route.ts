@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse } from '@/lib/auth-guard';
-import { prisma } from '@ems/database';
+import { prisma, Prisma } from '@ems/database';
+import { safeErrorResponse } from '@/lib/safe-error';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
 
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
     const scope = isEnterprise ? 'ENTERPRISE' : 'PERSONAL';
 
     // 1. EPS: EQUIPMENT IN SCOPE
-    let equipmentWhere: any = { deletedAt: null };
+    let equipmentWhere: Prisma.EquipmentWhereInput = { deletedAt: null };
     let userEquipmentIds: string[] = [];
 
     if (!isEnterprise) {
@@ -70,7 +71,7 @@ export async function GET(req: NextRequest) {
     ]);
 
     // 2. APPROVALS IN SCOPE
-    let approvalsWhere: any = { status: 'PENDING' };
+    let approvalsWhere: Prisma.EquipmentApprovalWhereInput = { status: 'PENDING' };
     if (!isEnterprise) {
       approvalsWhere = {
         status: 'PENDING',
@@ -109,7 +110,7 @@ export async function GET(req: NextRequest) {
     };
 
     if (hasWmsPermission) {
-      let warehouseWhere: any = { isActive: true };
+      let warehouseWhere: Prisma.WarehouseWhereInput = { isActive: true };
       let userWarehouseIds: string[] = [];
 
       if (!isEnterprise) {
@@ -167,9 +168,9 @@ export async function GET(req: NextRequest) {
     }
 
     // 4. SRM: SERVICE REQUESTS IN SCOPE
-    let srmWhere: any = {};
+    let srmWhere: Prisma.JiraIssueCacheWhereInput = {};
     if (!isEnterprise) {
-      const orConditions: any[] = [
+      const orConditions: Prisma.JiraIssueCacheWhereInput[] = [
         { reporter: user.ldapLogin },
         { assignee: user.ldapLogin },
         { createdById: user.userId },
@@ -229,9 +230,9 @@ export async function GET(req: NextRequest) {
     }));
 
     // 5. MRO: MAINTENANCE SCHEDULES IN SCOPE
-    let mroWhere: any = {};
+    let mroWhere: Prisma.MaintenanceScheduleWhereInput = {};
     if (!isEnterprise) {
-      const orConditions: any[] = [{ completedById: user.userId }];
+      const orConditions: Prisma.MaintenanceScheduleWhereInput[] = [{ completedById: user.userId }];
       if (userEquipmentIds.length > 0) {
         orConditions.push({ equipmentId: { in: userEquipmentIds } });
       }
@@ -317,11 +318,7 @@ export async function GET(req: NextRequest) {
         },
       },
     });
-  } catch (error: any) {
-    console.error('Ошибка получения данных дашборда:', error);
-    return NextResponse.json(
-      { success: false, error: 'Ошибка загрузки данных панели управления' },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    return safeErrorResponse(error, 'Ошибка загрузки данных панели управления', 500, { endpoint: 'dashboard-stats' });
   }
 }
