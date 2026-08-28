@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   TableContainer,
   Paper,
@@ -93,6 +93,267 @@ export interface DataTableWrapperProps {
   className?: string;
 }
 
+const DENSITY_STYLES = {
+  compact: {
+    '& .MuiTableCell-root': {
+      py: 0.6,
+      px: 1.25,
+      fontSize: '0.75rem',
+    },
+    '& .MuiTableCell-head': {
+      py: 0.75,
+      px: 1.25,
+      fontSize: '0.75rem',
+      whiteSpace: 'nowrap',
+      fontWeight: 600,
+    },
+  },
+  standard: {
+    '& .MuiTableCell-root': {
+      py: 1.1,
+      px: 1.75,
+      fontSize: '0.8125rem',
+    },
+    '& .MuiTableCell-head': {
+      py: 1,
+      px: 1.75,
+      fontSize: '0.75rem',
+      whiteSpace: 'nowrap',
+      fontWeight: 600,
+    },
+  },
+  comfortable: {
+    '& .MuiTableCell-root': {
+      py: 1.6,
+      px: 2,
+      fontSize: '0.875rem',
+    },
+    '& .MuiTableCell-head': {
+      py: 1.25,
+      px: 2,
+      fontSize: '0.8125rem',
+      whiteSpace: 'nowrap',
+      fontWeight: 600,
+    },
+  },
+};
+
+interface DensityToggleProps {
+  currentDensity: TableDensity;
+  onChange: (d: TableDensity) => void;
+}
+
+function DensityToggle({ currentDensity, onChange }: DensityToggleProps) {
+  return (
+    <Tooltip title="Плотность строк">
+      <Box sx={{ display: 'flex', border: '1px solid', borderColor: 'divider', borderRadius: '8px', p: 0.25, bgcolor: 'background.paper' }}>
+        <IconButton
+          size="small"
+          onClick={() => onChange('compact')}
+          sx={{
+            p: 0.5,
+            borderRadius: '6px',
+            color: currentDensity === 'compact' ? 'primary.main' : 'text.secondary',
+            backgroundColor: currentDensity === 'compact' ? 'action.selected' : 'transparent',
+          }}
+        >
+          <ViewListIcon sx={{ fontSize: 16 }} />
+        </IconButton>
+        <IconButton
+          size="small"
+          onClick={() => onChange('standard')}
+          sx={{
+            p: 0.5,
+            borderRadius: '6px',
+            color: currentDensity === 'standard' ? 'primary.main' : 'text.secondary',
+            backgroundColor: currentDensity === 'standard' ? 'action.selected' : 'transparent',
+          }}
+        >
+          <ViewModuleIcon sx={{ fontSize: 16 }} />
+        </IconButton>
+      </Box>
+    </Tooltip>
+  );
+}
+
+interface ColumnSelectorProps {
+  columns: TableColumnOption[];
+  visibleColumns: string[];
+  onToggle: (colId: string) => void;
+  onSelectAll: () => void;
+  onReset: () => void;
+}
+
+function ColumnSelector({ columns, visibleColumns, onToggle, onSelectAll, onReset }: ColumnSelectorProps) {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const isOpen = Boolean(anchorEl);
+
+  return (
+    <>
+      <Tooltip title="Настройка видимости колонок">
+        <Button
+          size="small"
+          variant="outlined"
+          onClick={(e) => setAnchorEl(e.currentTarget)}
+          startIcon={<ViewWeekOutlinedIcon sx={{ fontSize: 16 }} />}
+          sx={{
+            height: 36,
+            borderRadius: '8px',
+            borderColor: 'divider',
+            color: 'text.secondary',
+            backgroundColor: 'background.paper',
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            '&:hover': {
+              borderColor: 'text.disabled',
+              backgroundColor: 'action.hover',
+            },
+          }}
+        >
+          Колонки {visibleColumns.length < columns.length && `(${visibleColumns.length}/${columns.length})`}
+        </Button>
+      </Tooltip>
+
+      <Menu
+        anchorEl={anchorEl}
+        open={isOpen}
+        onClose={() => setAnchorEl(null)}
+        PaperProps={{
+          sx: {
+            minWidth: 280,
+            maxWidth: 360,
+            maxHeight: 440,
+            borderRadius: '10px',
+            border: '1px solid',
+            borderColor: 'divider',
+            boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.15)',
+            p: 0.5,
+            overflowX: 'hidden',
+          },
+        }}
+      >
+        <Box sx={{ px: 1.5, py: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="subtitle2" fontWeight={700} sx={{ fontSize: '0.8125rem', color: 'text.primary' }}>
+            Колонки таблицы
+          </Typography>
+          <Button
+            size="small"
+            onClick={onReset}
+            startIcon={<RestartAltIcon sx={{ fontSize: 13 }} />}
+            sx={{ fontSize: '0.6875rem', p: 0, minWidth: 'auto', color: 'text.secondary' }}
+          >
+            Сброс
+          </Button>
+        </Box>
+        <Divider sx={{ my: 0.5, borderColor: 'divider' }} />
+        <Box sx={{ maxHeight: 290, overflowY: 'auto', overflowX: 'hidden' }}>
+          {columns.map((col) => {
+            const isChecked = visibleColumns.includes(col.id);
+            return (
+              <MenuItem
+                key={col.id}
+                onClick={() => onToggle(col.id)}
+                sx={{
+                  py: 0.6,
+                  px: 1.25,
+                  borderRadius: '6px',
+                  fontSize: '0.8125rem',
+                  whiteSpace: 'normal',
+                }}
+              >
+                <Checkbox size="small" checked={isChecked} sx={{ p: 0.5, mr: 1, flexShrink: 0 }} />
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: '0.8125rem',
+                    fontWeight: isChecked ? 600 : 400,
+                    color: isChecked ? 'text.primary' : 'text.secondary',
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {col.label}
+                </Typography>
+              </MenuItem>
+            );
+          })}
+        </Box>
+        <Divider sx={{ my: 0.5, borderColor: 'divider' }} />
+        <Box sx={{ px: 1, pt: 0.5, display: 'flex', justifyContent: 'space-between' }}>
+          <Button
+            size="small"
+            onClick={onSelectAll}
+            sx={{ fontSize: '0.6875rem', fontWeight: 600, color: 'primary.main' }}
+          >
+            Показать все
+          </Button>
+          <Button
+            size="small"
+            onClick={() => setAnchorEl(null)}
+            variant="contained"
+            color="primary"
+            sx={{
+              fontSize: '0.6875rem',
+              fontWeight: 600,
+              borderRadius: '6px',
+              py: 0.35,
+              px: 1.75,
+            }}
+          >
+            Готово
+          </Button>
+        </Box>
+      </Menu>
+    </>
+  );
+}
+
+interface SelectionBannerProps {
+  count: number;
+  total?: number;
+  onClear?: () => void;
+}
+
+function SelectionBanner({ count, total, onClear }: SelectionBannerProps) {
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: 'success.light',
+        borderBottom: '1px solid',
+        borderColor: 'success.light',
+        px: 2,
+        py: 0.75,
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Chip
+          label={`Выбрано: ${count}`}
+          size="small"
+          sx={{ fontWeight: 700, height: 22, backgroundColor: 'success.dark', color: 'common.white' }}
+        />
+        <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'success.dark', fontWeight: 500 }}>
+          {total ? `из ${total} записей` : ''}
+        </Typography>
+      </Box>
+
+      {onClear && (
+        <Button
+          size="small"
+          variant="text"
+          color="inherit"
+          startIcon={<CloseIcon sx={{ fontSize: 14 }} />}
+          onClick={onClear}
+          sx={{ fontSize: '0.75rem', fontWeight: 600, py: 0.2, color: 'success.dark' }}
+        >
+          Снять выделение
+        </Button>
+      )}
+    </Box>
+  );
+}
+
 export function DataTableWrapper({
   children,
   tabs,
@@ -104,7 +365,6 @@ export function DataTableWrapper({
   empty = false,
   emptyState,
   viewMode = 'table',
-  onViewModeChange,
   gridContent,
   density: controlledDensity,
   onDensityChange,
@@ -113,8 +373,6 @@ export function DataTableWrapper({
   columns,
   visibleColumns: controlledVisibleColumns,
   onVisibleColumnsChange,
-  onRefresh,
-  refreshing = false,
   selectedCount = 0,
   onClearSelection,
   footerActions,
@@ -124,18 +382,12 @@ export function DataTableWrapper({
   onPageChange,
   onPageSizeChange,
   pageSizeOptions = [10, 25, 50, 100],
-  stickyHeader = false,
   maxHeight,
   className,
 }: DataTableWrapperProps) {
   const [internalDensity, setInternalDensity] = useState<TableDensity>('standard');
   const currentDensity = controlledDensity !== undefined ? controlledDensity : internalDensity;
 
-  // Column Selector state
-  const [columnMenuAnchor, setColumnMenuAnchor] = useState<null | HTMLElement>(null);
-  const isColumnMenuOpen = Boolean(columnMenuAnchor);
-
-  // Default visible columns if not controlled
   const [internalVisibleColumns, setInternalVisibleColumns] = useState<string[]>(() => {
     if (columns) {
       return columns.filter((c) => c.defaultVisible !== false).map((c) => c.id);
@@ -145,25 +397,23 @@ export function DataTableWrapper({
 
   const currentVisibleColumns = controlledVisibleColumns !== undefined ? controlledVisibleColumns : internalVisibleColumns;
 
-  // Compute a fallback storage key based on column signatures if explicit storageKey is not passed
   const computedStorageKey = storageKey || (
     columns && columns.length > 0
       ? `auto_${columns.map((c) => c.id).slice(0, 3).join('_')}_len${columns.length}`
       : undefined
   );
 
-  const onVisibleColumnsChangeRef = React.useRef(onVisibleColumnsChange);
-  React.useEffect(() => {
+  const onVisibleColumnsChangeRef = useRef(onVisibleColumnsChange);
+  useEffect(() => {
     onVisibleColumnsChangeRef.current = onVisibleColumnsChange;
   });
 
-  const onDensityChangeRef = React.useRef(onDensityChange);
-  React.useEffect(() => {
+  const onDensityChangeRef = useRef(onDensityChange);
+  useEffect(() => {
     onDensityChangeRef.current = onDensityChange;
   });
 
-  // Restore saved column choices and density from localStorage on mount
-  React.useEffect(() => {
+  useEffect(() => {
     if (!computedStorageKey || typeof window === 'undefined') return;
     try {
       const savedColsRaw = localStorage.getItem(`ems_cols_${computedStorageKey}`);
@@ -261,207 +511,20 @@ export function DataTableWrapper({
     Boolean(onPageChange) &&
     !empty;
 
-  // Density styles for table cells
-  const densityStyles = {
-    compact: {
-      '& .MuiTableCell-root': {
-        py: 0.6,
-        px: 1.25,
-        fontSize: '0.75rem',
-      },
-      '& .MuiTableCell-head': {
-        py: 0.75,
-        px: 1.25,
-        fontSize: '0.75rem',
-        whiteSpace: 'nowrap',
-        fontWeight: 600,
-      },
-    },
-    standard: {
-      '& .MuiTableCell-root': {
-        py: 1.1,
-        px: 1.75,
-        fontSize: '0.8125rem',
-      },
-      '& .MuiTableCell-head': {
-        py: 1,
-        px: 1.75,
-        fontSize: '0.75rem',
-        whiteSpace: 'nowrap',
-        fontWeight: 600,
-      },
-    },
-    comfortable: {
-      '& .MuiTableCell-root': {
-        py: 1.6,
-        px: 2,
-        fontSize: '0.875rem',
-      },
-      '& .MuiTableCell-head': {
-        py: 1.25,
-        px: 2,
-        fontSize: '0.8125rem',
-        whiteSpace: 'nowrap',
-        fontWeight: 600,
-      },
-    },
-  };
-
   const utilityTools = (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-      {/* Density Selector */}
       {showDensityToggle && (
-        <Tooltip title="Плотность строк">
-          <Box sx={{ display: 'flex', border: '1px solid', borderColor: 'divider', borderRadius: '8px', p: 0.25, bgcolor: 'background.paper' }}>
-            <IconButton
-              size="small"
-              onClick={() => handleDensityChange('compact')}
-              sx={{
-                p: 0.5,
-                borderRadius: '6px',
-                color: currentDensity === 'compact' ? 'primary.main' : 'text.secondary',
-                backgroundColor: currentDensity === 'compact' ? 'action.selected' : 'transparent',
-              }}
-            >
-              <ViewListIcon sx={{ fontSize: 16 }} />
-            </IconButton>
-            <IconButton
-              size="small"
-              onClick={() => handleDensityChange('standard')}
-              sx={{
-                p: 0.5,
-                borderRadius: '6px',
-                color: currentDensity === 'standard' ? 'primary.main' : 'text.secondary',
-                backgroundColor: currentDensity === 'standard' ? 'action.selected' : 'transparent',
-              }}
-            >
-              <ViewModuleIcon sx={{ fontSize: 16 }} />
-            </IconButton>
-          </Box>
-        </Tooltip>
+        <DensityToggle currentDensity={currentDensity} onChange={handleDensityChange} />
       )}
 
-      {/* Column Selector Button & Dropdown */}
       {columns && columns.length > 0 && (
-        <>
-          <Tooltip title="Настройка видимости колонок">
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={(e) => setColumnMenuAnchor(e.currentTarget)}
-              startIcon={<ViewWeekOutlinedIcon sx={{ fontSize: 16 }} />}
-              sx={{
-                height: 36,
-                borderRadius: '8px',
-                borderColor: 'divider',
-                color: 'text.secondary',
-                backgroundColor: 'background.paper',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                '&:hover': {
-                  borderColor: 'text.disabled',
-                  backgroundColor: 'action.hover',
-                },
-              }}
-            >
-              Колонки {currentVisibleColumns.length < columns.length && `(${currentVisibleColumns.length}/${columns.length})`}
-            </Button>
-          </Tooltip>
-
-          <Menu
-            anchorEl={columnMenuAnchor}
-            open={isColumnMenuOpen}
-            onClose={() => setColumnMenuAnchor(null)}
-            PaperProps={{
-              sx: {
-                minWidth: 280,
-                maxWidth: 360,
-                maxHeight: 440,
-                borderRadius: '10px',
-                border: '1px solid',
-                borderColor: 'divider',
-                boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.15)',
-                p: 0.5,
-                overflowX: 'hidden',
-              },
-            }}
-          >
-            <Box sx={{ px: 1.5, py: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="subtitle2" fontWeight={700} sx={{ fontSize: '0.8125rem', color: 'text.primary' }}>
-                Колонки таблицы
-              </Typography>
-              <Button
-                size="small"
-                onClick={handleResetColumns}
-                startIcon={<RestartAltIcon sx={{ fontSize: 13 }} />}
-                sx={{ fontSize: '0.6875rem', p: 0, minWidth: 'auto', color: 'text.secondary' }}
-              >
-                Сброс
-              </Button>
-            </Box>
-            <Divider sx={{ my: 0.5, borderColor: 'divider' }} />
-            <Box sx={{ maxHeight: 290, overflowY: 'auto', overflowX: 'hidden' }}>
-              {columns.map((col) => {
-                const isChecked = currentVisibleColumns.includes(col.id);
-                return (
-                  <MenuItem
-                    key={col.id}
-                    onClick={() => handleToggleColumn(col.id)}
-                    sx={{
-                      py: 0.6,
-                      px: 1.25,
-                      borderRadius: '6px',
-                      fontSize: '0.8125rem',
-                      whiteSpace: 'normal',
-                    }}
-                  >
-                    <Checkbox
-                      size="small"
-                      checked={isChecked}
-                      sx={{ p: 0.5, mr: 1, flexShrink: 0 }}
-                    />
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontSize: '0.8125rem',
-                        fontWeight: isChecked ? 600 : 400,
-                        color: isChecked ? 'text.primary' : 'text.secondary',
-                        lineHeight: 1.3,
-                      }}
-                    >
-                      {col.label}
-                    </Typography>
-                  </MenuItem>
-                );
-              })}
-            </Box>
-            <Divider sx={{ my: 0.5, borderColor: 'divider' }} />
-            <Box sx={{ px: 1, pt: 0.5, display: 'flex', justifyContent: 'space-between' }}>
-              <Button
-                size="small"
-                onClick={handleSelectAllColumns}
-                sx={{ fontSize: '0.6875rem', fontWeight: 600, color: 'primary.main' }}
-              >
-                Показать все
-              </Button>
-              <Button
-                size="small"
-                onClick={() => setColumnMenuAnchor(null)}
-                variant="contained"
-                color="primary"
-                sx={{
-                  fontSize: '0.6875rem',
-                  fontWeight: 600,
-                  borderRadius: '6px',
-                  py: 0.35,
-                  px: 1.75,
-                }}
-              >
-                Готово
-              </Button>
-            </Box>
-          </Menu>
-        </>
+        <ColumnSelector
+          columns={columns}
+          visibleColumns={currentVisibleColumns}
+          onToggle={handleToggleColumn}
+          onSelectAll={handleSelectAllColumns}
+          onReset={handleResetColumns}
+        />
       )}
 
       {headerActions}
@@ -486,7 +549,6 @@ export function DataTableWrapper({
         flexDirection: 'column',
       }}
     >
-      {/* 0. Integrated Navigation Tabs Header */}
       {tabs && (
         <Box
           sx={{
@@ -504,7 +566,6 @@ export function DataTableWrapper({
         </Box>
       )}
 
-      {/* 1. Header Row (if explicit title provided) */}
       {hasHeader && (
         <Box
           sx={{
@@ -529,12 +590,10 @@ export function DataTableWrapper({
               </Typography>
             )}
           </Box>
-
           {utilityTools}
         </Box>
       )}
 
-      {/* 2. Integrated Filter & Action Toolbar (Single Flat Unified Bar) */}
       {toolbar && (
         <Box
           sx={{
@@ -549,15 +608,12 @@ export function DataTableWrapper({
             gap: 1.5,
           }}
         >
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            {toolbar}
-          </Box>
+          <Box sx={{ flex: 1, minWidth: 0 }}>{toolbar}</Box>
           {!hasHeader && utilityTools}
         </Box>
       )}
 
-      {/* If no toolbar but utilityTools exist and no header */}
-      {!hasHeader && !toolbar && (showDensityToggle || onRefresh || columns || headerActions) && (
+      {!hasHeader && !toolbar && (showDensityToggle || columns || headerActions) && (
         <Box
           sx={{
             p: 1.25,
@@ -572,57 +628,12 @@ export function DataTableWrapper({
         </Box>
       )}
 
-      {/* Contextual Selection Banner */}
       {selectedCount > 0 && (
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            backgroundColor: 'success.light',
-            borderBottom: '1px solid',
-            borderColor: 'success.light',
-            px: 2,
-            py: 0.75,
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Chip
-              label={`Выбрано: ${selectedCount}`}
-              size="small"
-              sx={{ fontWeight: 700, height: 22, backgroundColor: 'success.dark', color: 'common.white' }}
-            />
-            <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'success.dark', fontWeight: 500 }}>
-              {total ? `из ${total} записей` : ''}
-            </Typography>
-          </Box>
-
-          {onClearSelection && (
-            <Button
-              size="small"
-              variant="text"
-              color="inherit"
-              startIcon={<CloseIcon sx={{ fontSize: 14 }} />}
-              onClick={onClearSelection}
-              sx={{ fontSize: '0.75rem', fontWeight: 600, py: 0.2, color: 'success.dark' }}
-            >
-              Снять выделение
-            </Button>
-          )}
-        </Box>
+        <SelectionBanner count={selectedCount} total={total} onClear={onClearSelection} />
       )}
 
-      {/* 2. Loading Indicator */}
-      {loading && (
-        <LinearProgress
-          color="primary"
-          sx={{
-            height: 2,
-          }}
-        />
-      )}
+      {loading && <LinearProgress color="primary" sx={{ height: 2 }} />}
 
-      {/* 3. Table / Grid Content / Empty State */}
       {empty && emptyState ? (
         <Box sx={{ p: { xs: 2, sm: 4 }, display: 'flex', justifyContent: 'center' }}>
           {emptyState}
@@ -638,14 +649,13 @@ export function DataTableWrapper({
             '&::-webkit-scrollbar': { height: 6, width: 6 },
             '&::-webkit-scrollbar-track': { backgroundColor: 'background.default' },
             '&::-webkit-scrollbar-thumb': { backgroundColor: 'divider', borderRadius: 3 },
-            ...densityStyles,
+            ...DENSITY_STYLES[currentDensity],
           }}
         >
           {children}
         </TableContainer>
       )}
 
-      {/* 4. Footer & Pagination Area */}
       {(showPagination || footerActions) && (
         <Box
           sx={{
@@ -661,9 +671,7 @@ export function DataTableWrapper({
             gap: 1,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {footerActions}
-          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>{footerActions}</Box>
 
           {showPagination && (
             <TablePagination

@@ -4,82 +4,33 @@ import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'reac
 import {
   Box,
   Grid,
-  Typography,
-  Button,
-  Chip,
   MenuItem,
   TextField,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  TableSortLabel,
-  Stack,
-  Paper,
-  IconButton,
-  Tooltip,
-  Alert,
+  Button,
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import PageHeader from '@/components/layout/PageHeader';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import EventIcon from '@mui/icons-material/Event';
 import BuildOutlinedIcon from '@mui/icons-material/BuildOutlined';
 import {
   StatCard,
-  StatusBadge,
   SearchInput,
   FilterToolbar,
-  EmptyState,
   DataTableWrapper,
   PageLoading,
   ModuleMaintenanceState,
   type TableColumnOption,
 } from '@/components/ui';
 import { MroExecutionWizardDialog } from '@/components/mro';
-import { formatDateTime, formatDate, PERMISSIONS, PlatformMaintenanceStatus } from '@ems/shared';
+import { PERMISSIONS, PlatformMaintenanceStatus } from '@ems/shared';
 import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
-
-interface MaintenanceScheduleItem {
-  id: string;
-  equipmentId: string;
-  planId: string | null;
-  scheduledDate: string;
-  actualDate: string | null;
-  status: string;
-  notes: string | null;
-  createdAt: string;
-  equipment: {
-    id: string;
-    name: string;
-    inventoryNumber: string | null;
-    serialNumber: string | null;
-    location: string | null;
-    status: string;
-  };
-  plan?: {
-    id: string;
-    name: string;
-    frequency: string;
-    checklist?: {
-      id: string;
-      title: string;
-      items: Array<{ id: string; text: string; isRequired: boolean }>;
-    } | null;
-  } | null;
-  completedBy?: {
-    id: string;
-    displayName: string;
-    ldapLogin: string;
-  } | null;
-}
+import MroSchedulesTable, { MaintenanceScheduleRow } from '@/components/mro/MroSchedulesTable';
 
 const MRO_COLUMNS: TableColumnOption[] = [
   { id: 'scheduledDate', label: 'Плановый срок проведения', defaultVisible: true },
@@ -97,7 +48,7 @@ function MroPageContent() {
   const { hasPermission } = useAuth();
   const { enqueueSnackbar } = useSnackbar();
 
-  const [schedules, setSchedules] = useState<MaintenanceScheduleItem[]>([]);
+  const [schedules, setSchedules] = useState<MaintenanceScheduleRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -117,10 +68,8 @@ function MroPageContent() {
     MRO_COLUMNS.filter((c) => c.defaultVisible !== false).map((c) => c.id)
   );
 
-  // Pagination state
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
-
   const [maintStatus, setMaintStatus] = useState<PlatformMaintenanceStatus | null>(null);
 
   const fetchSchedules = useCallback(async () => {
@@ -165,7 +114,6 @@ function MroPageContent() {
     fetchSchedules();
   };
 
-  // KPIs
   const stats = useMemo(() => {
     const now = new Date();
     const total = schedules.length;
@@ -177,10 +125,9 @@ function MroPageContent() {
     return { total, overdue, planned, completed };
   }, [schedules]);
 
-  // Filtered & Sorted schedules
   const sortedSchedules = useMemo(() => {
     const now = new Date();
-    let list = schedules.filter((sch) => {
+    const list = schedules.filter((sch) => {
       if (search) {
         const q = search.toLowerCase();
         const eqName = sch.equipment?.name?.toLowerCase() || '';
@@ -237,388 +184,213 @@ function MroPageContent() {
 
   const activeFilterCount = (search ? 1 : 0) + (statusFilter ? 1 : 0) + (periodicityFilter ? 1 : 0);
 
-  const handleResetFilters = () => {
-    setSearch('');
-    setStatusFilter('');
-    setPeriodicityFilter('');
+  const handleRequestSort = (property: string) => {
+    const isAsc = sortField === property && sortDirection === 'asc';
+    setSortDirection(isAsc ? 'desc' : 'asc');
+    setSortField(property);
   };
 
-  const handleExecuteMro = (schedule: MaintenanceScheduleItem) => {
-    setSelectedSchedule(schedule);
+  const handleExecuteMro = (schedule: MaintenanceScheduleRow) => {
+    setSelectedSchedule({
+      id: schedule.id,
+      scheduledDate: schedule.scheduledDate,
+      equipment: schedule.equipment,
+      plan: schedule.plan,
+    });
     setIsExecutionWizardOpen(true);
   };
 
-  const { user } = useAuth();
-  const isAdmin = user?.roles?.includes('admin') || user?.roles?.includes('administrator');
-  const isModuleInMaintenance = Boolean(maintStatus?.modules.mro?.enabled);
-
-  if (isModuleInMaintenance && !isAdmin) {
-    return (
-      <ModuleMaintenanceState
-        moduleName="ТО и Ремонт (MRO)"
-        message={maintStatus?.modules.mro.message}
-        estimatedUntil={maintStatus?.modules.mro.estimatedUntil}
-        onRefresh={fetchSchedules}
-      />
-    );
-  }
+  const canExecute = hasPermission(PERMISSIONS.MRO_EXECUTION_COMPLETE);
+  const canManage = hasPermission(PERMISSIONS.MRO_SCHEDULE_MANAGE);
 
   return (
-    <Box sx={{ width: '100%', pb: 4 }}>
-      {/* Admin Maintenance Preview Banner */}
-      {isModuleInMaintenance && (
-        <Alert
-          severity="warning"
-          sx={{
-            mb: 2.5,
-            borderRadius: '12px',
-            border: '1px solid warning.light',
-            backgroundColor: 'warning.light',
-            fontWeight: 500,
-          }}
-        >
-          <strong>Режим предпросмотра администратора:</strong> Модуль MRO переведен в режим технического обслуживания. Для обычных пользователей доступ временно закрыт.
-        </Alert>
+    <Box sx={{ pb: 4 }}>
+      {maintStatus?.modules?.mro?.enabled && (
+        <ModuleMaintenanceState
+          moduleName="MRO (ТОиР)"
+          message={maintStatus.modules.mro.message}
+        />
       )}
 
-      {/* 1. Header */}
       <PageHeader
-        title="График планово-предупредительных ремонтов (ППР)"
-        subtitle="Календарное планирование регламентного ТО, наряды-задания и контроль исполнения"
-        breadcrumbs={[
-          { label: 'Главная', href: '/' },
-          { label: 'ТО и Ремонт', href: '/mro' },
-          { label: 'График ППР' },
-        ]}
+        title="График ППР и наряды на ТО"
+        subtitle="Планирование, маршрутизация и подтверждение проведения планово-предупредительных ремонтов"
+        breadcrumbs={[{ label: 'Главная', href: '/' }, { label: 'ТОиР', href: '/mro' }, { label: 'График ППР' }]}
         actions={
-          <Stack direction="row" spacing={1.25}>
+          <Box sx={{ display: 'flex', gap: 1.5 }}>
             <Button
               variant="outlined"
               size="small"
-              startIcon={<RefreshIcon className={refreshing ? 'animate-spin' : ''} sx={{ fontSize: 16 }} />}
+              startIcon={<RefreshIcon />}
               onClick={handleRefresh}
-              sx={{ fontWeight: 600, borderRadius: '8px', minHeight: 36 }}
+              disabled={refreshing}
             >
               Обновить
             </Button>
-            {hasPermission(PERMISSIONS.MRO_EXECUTION_COMPLETE) && (
+            {canManage && (
               <Button
                 variant="contained"
                 size="small"
-                startIcon={<PlayArrowIcon sx={{ fontSize: 16 }} />}
-                onClick={() => {
-                  setSelectedSchedule(null);
-                  setIsExecutionWizardOpen(true);
-                }}
-                sx={{
-                  fontWeight: 700,
-                  borderRadius: '8px',
-                  minHeight: 36,
-                  backgroundColor: 'primary.main',
-                }}
+                startIcon={<AddIcon />}
+                onClick={() => router.push('/mro/schedules/new')}
+                sx={{ fontWeight: 700 }}
               >
-                Провести ТО
+                Создать наряд
               </Button>
             )}
-          </Stack>
+          </Box>
         }
       />
 
-      {/* 2. KPI Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
-            title="Всего в графике"
-            value={stats.total}
-            icon={<CalendarMonthIcon />}
-            iconColor="primary.main"
-            iconBgColor="rgba(2, 132, 199, 0.08)"
+            title="Просрочено ТО"
+            value={stats.overdue}
+            subtitle="Требуют срочного ТО"
+            icon={<WarningAmberIcon sx={{ fontSize: 22 }} />}
+            iconBgColor="rgba(220, 38, 38, 0.08)"
+            iconColor="error.main"
+            accentColor="error.main"
             loading={loading}
-            subtitle="Запланированных и выполненных"
+            active={statusFilter === 'OVERDUE'}
+            onClick={() => setStatusFilter(statusFilter === 'OVERDUE' ? '' : 'OVERDUE')}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Запланировано"
+            value={stats.planned}
+            subtitle="Ожидают выполнения"
+            icon={<CalendarMonthIcon sx={{ fontSize: 22 }} />}
+            iconBgColor="rgba(2, 132, 199, 0.08)"
+            iconColor="primary.main"
+            accentColor="primary.main"
+            loading={loading}
+            active={statusFilter === 'PLANNED'}
+            onClick={() => setStatusFilter(statusFilter === 'PLANNED' ? '' : 'PLANNED')}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Выполнено в срок"
+            value={stats.completed}
+            subtitle="Успешно завершено"
+            icon={<CheckCircleOutlineIcon sx={{ fontSize: 22 }} />}
+            iconBgColor="rgba(22, 163, 74, 0.08)"
+            iconColor="success.main"
+            accentColor="success.main"
+            loading={loading}
+            active={statusFilter === 'COMPLETED'}
+            onClick={() => setStatusFilter(statusFilter === 'COMPLETED' ? '' : 'COMPLETED')}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Всего регламентов"
+            value={stats.total}
+            subtitle="За все периоды"
+            icon={<EventIcon sx={{ fontSize: 22 }} />}
+            iconBgColor="rgba(100, 116, 139, 0.08)"
+            iconColor="text.secondary"
+            loading={loading}
+            active={statusFilter === '' && periodicityFilter === '' && !search}
             onClick={() => {
               setStatusFilter('');
-              setPage(0);
-            }}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Просрочено регламентов"
-            value={stats.overdue}
-            icon={<WarningAmberIcon />}
-            iconColor="error.main"
-            iconBgColor="rgba(220, 38, 38, 0.08)"
-            loading={loading}
-            subtitle="Требуют немедленного проведения"
-            onClick={() => {
-              setStatusFilter('OVERDUE');
-              setPage(0);
-            }}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Запланировано на период"
-            value={stats.planned}
-            icon={<EventIcon />}
-            iconColor="primary.main"
-            iconBgColor="rgba(2, 132, 199, 0.08)"
-            loading={loading}
-            subtitle="Ожидают наступления срока"
-            onClick={() => {
-              setStatusFilter('PLANNED');
-              setPage(0);
-            }}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Выполнено ТО"
-            value={stats.completed}
-            icon={<CheckCircleOutlineIcon />}
-            iconColor="success.main"
-            iconBgColor="rgba(22, 163, 74, 0.08)"
-            loading={loading}
-            subtitle="Проведено с фиксацией акта"
-            onClick={() => {
-              setStatusFilter('COMPLETED');
-              setPage(0);
+              setPeriodicityFilter('');
+              setSearch('');
             }}
           />
         </Grid>
       </Grid>
 
-      {/* 3. Schedules Data Table */}
       <DataTableWrapper
-        title="Календарный график планово-предупредительных работ"
-        subtitle={`Всего позиций в графике: ${sortedSchedules.length}`}
-        loading={loading}
-        page={page}
-        pageSize={rowsPerPage}
-        total={sortedSchedules.length}
-        onPageChange={(_, newPage) => setPage(newPage)}
-        onPageSizeChange={(e) => {
-          setRowsPerPage(parseInt(e.target.value, 10));
-          setPage(0);
-        }}
-        pageSizeOptions={[15, 25, 50, 100]}
-        emptyState={
-          <EmptyState
-            icon={<CalendarMonthIcon sx={{ fontSize: 44, color: 'text.disabled' }} />}
-            title="Регламенты не найдены"
-            description={
-              activeFilterCount > 0
-                ? 'Нет регламентов, соответствующих заданным критериям фильтрации.'
-                : 'Запланируйте первое регламентное обслуживание оборудования.'
-            }
-            actionText={activeFilterCount > 0 ? 'Сбросить фильтры' : 'Провести ТО'}
-            onAction={activeFilterCount > 0 ? handleResetFilters : () => setIsExecutionWizardOpen(true)}
-          />
-        }
-        storageKey="mro_schedules_table"
-        columns={MRO_COLUMNS}
-        visibleColumns={visibleColumns}
-        onVisibleColumnsChange={setVisibleColumns}
         toolbar={
-          <FilterToolbar activeFilterCount={activeFilterCount} onResetFilters={handleResetFilters}>
-            <Box sx={{ width: { xs: '100%', sm: 260 } }}>
+          <FilterToolbar
+            variant="embedded"
+            activeFilterCount={activeFilterCount}
+            onResetFilters={() => {
+              setSearch('');
+              setStatusFilter('');
+              setPeriodicityFilter('');
+            }}
+          >
+            <Box sx={{ minWidth: 260 }}>
               <SearchInput
+                placeholder="Поиск по оборудованию, регламенту..."
                 value={search}
-                onSearch={(val) => {
-                  setSearch(val);
-                  setPage(0);
-                }}
-                placeholder="Поиск по оборудованию, инв. №..."
+                onSearch={setSearch}
               />
             </Box>
             <TextField
               select
               size="small"
-              label="Статус"
+              label="Статус регламента"
               value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(0);
-              }}
-              sx={{ minWidth: 160 }}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              sx={{ minWidth: 180 }}
             >
               <MenuItem value="">Все статусы</MenuItem>
               <MenuItem value="PLANNED">Запланировано</MenuItem>
               <MenuItem value="OVERDUE">Просрочено</MenuItem>
+              <MenuItem value="IN_PROGRESS">В работе</MenuItem>
               <MenuItem value="COMPLETED">Выполнено</MenuItem>
+              <MenuItem value="CANCELLED">Отменено</MenuItem>
             </TextField>
             <TextField
               select
               size="small"
               label="Периодичность"
               value={periodicityFilter}
-              onChange={(e) => {
-                setPeriodicityFilter(e.target.value);
-                setPage(0);
-              }}
-              sx={{ minWidth: 160 }}
+              onChange={(e) => setPeriodicityFilter(e.target.value)}
+              sx={{ minWidth: 170 }}
             >
               <MenuItem value="">Любая периодичность</MenuItem>
-              <MenuItem value="DAILY">Ежедневно</MenuItem>
-              <MenuItem value="WEEKLY">Еженедельно</MenuItem>
-              <MenuItem value="MONTHLY">Ежемесячно</MenuItem>
-              <MenuItem value="QUARTERLY">Ежеквартально</MenuItem>
-              <MenuItem value="ANNUAL">Ежегодно</MenuItem>
+              <MenuItem value="Ежедневно">Ежедневно</MenuItem>
+              <MenuItem value="Еженедельно">Еженедельно</MenuItem>
+              <MenuItem value="Ежемесячно">Ежемесячно</MenuItem>
+              <MenuItem value="Ежеквартально">Ежеквартально</MenuItem>
+              <MenuItem value="1 раз в полгода">1 раз в полгода</MenuItem>
+              <MenuItem value="1 раз в год">1 раз в год</MenuItem>
             </TextField>
           </FilterToolbar>
         }
+        total={sortedSchedules.length}
+        page={page}
+        pageSize={rowsPerPage}
+        onPageChange={(_, newPage) => setPage(newPage)}
+        onPageSizeChange={(e) => {
+          setRowsPerPage(parseInt(e.target.value, 10));
+          setPage(0);
+        }}
+        columns={MRO_COLUMNS}
+        visibleColumns={visibleColumns}
+        onVisibleColumnsChange={setVisibleColumns}
+        loading={loading}
       >
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              {visibleColumns.includes('scheduledDate') && (
-                <TableCell sx={{ minWidth: 140 }}>
-                  <TableSortLabel
-                    active={sortField === 'scheduledDate'}
-                    direction={sortField === 'scheduledDate' ? sortDirection : 'asc'}
-                    onClick={() => {
-                      const isAsc = sortField === 'scheduledDate' && sortDirection === 'asc';
-                      setSortDirection(isAsc ? 'desc' : 'asc');
-                      setSortField('scheduledDate');
-                    }}
-                  >
-                    Плановая дата
-                  </TableSortLabel>
-                </TableCell>
-              )}
-              {visibleColumns.includes('equipment') && (
-                <TableCell sx={{ minWidth: 240 }}>Оборудование</TableCell>
-              )}
-              {visibleColumns.includes('plan') && (
-                <TableCell sx={{ minWidth: 200 }}>Регламентная карта</TableCell>
-              )}
-              {visibleColumns.includes('periodicity') && (
-                <TableCell sx={{ minWidth: 140 }}>Периодичность</TableCell>
-              )}
-              {visibleColumns.includes('status') && (
-                <TableCell sx={{ minWidth: 140 }}>Статус</TableCell>
-              )}
-              {visibleColumns.includes('location') && (
-                <TableCell sx={{ minWidth: 160 }}>Место установки</TableCell>
-              )}
-              {visibleColumns.includes('completedBy') && (
-                <TableCell sx={{ minWidth: 150 }}>Исполнитель</TableCell>
-              )}
-              {visibleColumns.includes('actions') && (
-                <TableCell align="right" sx={{ minWidth: 120 }}>
-                  Действия
-                </TableCell>
-              )}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {paginatedSchedules.map((sch) => {
-              const isOverdue =
-                sch.status === 'MISSED' || (sch.status === 'PLANNED' && new Date(sch.scheduledDate) < new Date());
-              const effectiveStatus = isOverdue && sch.status === 'PLANNED' ? 'MISSED' : sch.status;
-
-              return (
-                <TableRow key={sch.id} hover>
-                  {visibleColumns.includes('scheduledDate') && (
-                    <TableCell sx={{ fontWeight: 600, fontFamily: 'monospace' }}>
-                      {formatDate(sch.scheduledDate)}
-                    </TableCell>
-                  )}
-                  {visibleColumns.includes('equipment') && (
-                    <TableCell>
-                      <Box>
-                        <Typography variant="body2" fontWeight={600} color="text.primary">
-                          {sch.equipment.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
-                          Инв. № {sch.equipment.inventoryNumber || '—'}
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                  )}
-                  {visibleColumns.includes('plan') && (
-                    <TableCell>
-                      <Typography variant="body2" color="text.primary">
-                        {sch.plan?.name || 'Регламентное ТО по паспорту'}
-                      </Typography>
-                      {sch.plan?.checklist && (
-                        <Typography variant="caption" color="primary" sx={{ display: 'block' }}>
-                          Чек-лист: {sch.plan.checklist.items.length} пунктов проверки
-                        </Typography>
-                      )}
-                    </TableCell>
-                  )}
-                  {visibleColumns.includes('periodicity') && (
-                    <TableCell>
-                      <StatusBadge
-                        status={sch.plan?.frequency || 'MONTHLY'}
-                        size="small"
-                        variant="outlined"
-                      />
-                    </TableCell>
-                  )}
-                  {visibleColumns.includes('status') && (
-                    <TableCell>
-                      <StatusBadge status={effectiveStatus} size="small" />
-                    </TableCell>
-                  )}
-                  {visibleColumns.includes('location') && (
-                    <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
-                      {sch.equipment.location || '—'}
-                    </TableCell>
-                  )}
-                  {visibleColumns.includes('completedBy') && (
-                    <TableCell sx={{ fontSize: '0.8125rem' }}>
-                      {sch.completedBy?.displayName || '—'}
-                    </TableCell>
-                  )}
-                  {visibleColumns.includes('actions') && (
-                    <TableCell align="right">
-                      {sch.status === 'COMPLETED' ? (
-                        <Button
-                          size="small"
-                          variant="text"
-                          onClick={() => handleExecuteMro(sch)}
-                          sx={{ fontSize: '0.75rem', fontWeight: 600 }}
-                        >
-                          Протокол
-                        </Button>
-                      ) : (
-                        <Button
-                          size="small"
-                          variant="contained"
-                          color="primary"
-                          startIcon={<PlayArrowIcon sx={{ fontSize: 14 }} />}
-                          onClick={() => handleExecuteMro(sch)}
-                          sx={{
-                            fontSize: '0.75rem',
-                            fontWeight: 700,
-                            borderRadius: '6px',
-                            py: 0.35,
-                            px: 1.25,
-                            backgroundColor: 'primary.main',
-                          }}
-                        >
-                          Выполнить
-                        </Button>
-                      )}
-                    </TableCell>
-                  )}
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+        <MroSchedulesTable
+          schedules={paginatedSchedules}
+          visibleColumns={visibleColumns}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          canExecute={canExecute}
+          onRequestSort={handleRequestSort}
+          onExecute={handleExecuteMro}
+        />
       </DataTableWrapper>
 
-      {/* 4. Execution Wizard Dialog */}
-      {isExecutionWizardOpen && (
+      {/* Execution Wizard Dialog */}
+      {selectedSchedule && (
         <MroExecutionWizardDialog
           open={isExecutionWizardOpen}
           schedule={selectedSchedule}
-          onClose={() => setIsExecutionWizardOpen(false)}
+          onClose={() => {
+            setIsExecutionWizardOpen(false);
+            setSelectedSchedule(null);
+          }}
           onSuccess={() => {
             setIsExecutionWizardOpen(false);
+            setSelectedSchedule(null);
             fetchSchedules();
           }}
         />
@@ -629,7 +401,7 @@ function MroPageContent() {
 
 export default function MroPage() {
   return (
-    <Suspense fallback={<PageLoading text="Загрузка модуля ТОиР (MRO)..." />}>
+    <Suspense fallback={<PageLoading text="Загрузка графиков ТОиР..." />}>
       <MroPageContent />
     </Suspense>
   );

@@ -1,52 +1,18 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { WmsOperationItemsStep } from './WmsOperationItemsStep';
 import { WmsOperationReviewStep } from './WmsOperationReviewStep';
 import { WmsOperationSetupStep } from './WmsOperationSetupStep';
-import {
-  Box,
-  Typography,
-  Grid,
-  Button,
-  TextField,
-  MenuItem,
-  Stack,
-  Paper,
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-  IconButton,
-  Chip,
-  Divider,
-  Alert,
-  Autocomplete,
-  Collapse,
-  InputAdornment,
-  Tooltip,
-  CircularProgress,
-} from '@mui/material';
+import { Box } from '@mui/material';
 import MoveToInboxIcon from '@mui/icons-material/MoveToInbox';
 import PersonIcon from '@mui/icons-material/Person';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
-import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import BuildOutlinedIcon from '@mui/icons-material/BuildOutlined';
-import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
-import SecurityOutlinedIcon from '@mui/icons-material/SecurityOutlined';
-import BusinessIcon from '@mui/icons-material/Business';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS } from '@ems/shared';
-import { FormDialog, StatusBadge } from '@/components/ui';
+import { FormDialog } from '@/components/ui';
 import CreateNomenclatureDialog from './CreateNomenclatureDialog';
 
 export type OperationType = 'RECEIPT' | 'ISSUE_EMPLOYEE' | 'ISSUE_WRITE_OFF' | 'TRANSFER';
@@ -103,14 +69,6 @@ interface WmsOperationWizardDialogProps {
   initialType?: OperationType;
   initialNomenclatureId?: string;
 }
-
-const NOMENCLATURE_TYPES = [
-  { id: 'SPARE_PART', label: 'Запчасть', icon: <PrecisionManufacturingIcon sx={{ fontSize: 16 }} />, prefix: 'SP' },
-  { id: 'CONSUMABLE', label: 'Расходник', icon: <Inventory2OutlinedIcon sx={{ fontSize: 16 }} />, prefix: 'CS' },
-  { id: 'TOOL', label: 'Инструмент', icon: <BuildOutlinedIcon sx={{ fontSize: 16 }} />, prefix: 'TL' },
-  { id: 'LUBRICANT', label: 'Масла/ГСМ', icon: <ScienceOutlinedIcon sx={{ fontSize: 16 }} />, prefix: 'LB' },
-  { id: 'PPE', label: 'СИЗ', icon: <SecurityOutlinedIcon sx={{ fontSize: 16 }} />, prefix: 'PPE' },
-];
 
 const OPERATION_TYPES = [
   {
@@ -187,7 +145,7 @@ export function WmsOperationWizardDialog({
   const [nomenclatures, setNomenclatures] = useState<NomenclatureOption[]>([]);
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [stockMap, setStockMap] = useState<Record<string, { quantity: number; cell?: string }>>({});
-  const [isLoadingStock, setIsLoadingStock] = useState(false);
+  const [, setIsLoadingStock] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isAdmin = Boolean(
@@ -196,7 +154,6 @@ export function WmsOperationWizardDialog({
     user?.permissions?.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE)
   );
 
-  // Automatically determine the warehouse assigned to current user (1 employee = 1 warehouse)
   const assignedWarehouse = useMemo(() => {
     if (!warehouses.length) return null;
     const userWh = warehouses.find((w) => w.responsibleUserId === user?.userId);
@@ -210,7 +167,7 @@ export function WmsOperationWizardDialog({
 
   const isOutflow = operationType === 'ISSUE_EMPLOYEE' || operationType === 'ISSUE_WRITE_OFF' || operationType === 'TRANSFER';
 
-  const fetchStock = React.useCallback(async (whId: string) => {
+  const fetchStock = useCallback(async (whId: string) => {
     if (!whId) {
       setStockMap({});
       return;
@@ -238,11 +195,11 @@ export function WmsOperationWizardDialog({
     }
   }, []);
 
-  const getWarehouseStock = React.useCallback((nomId: string) => {
+  const getWarehouseStock = useCallback((nomId: string) => {
     return stockMap[nomId]?.quantity || 0;
   }, [stockMap]);
 
-  const getAvailableStock = React.useCallback((nomId: string) => {
+  const getAvailableStock = useCallback((nomId: string) => {
     const rawStock = getWarehouseStock(nomId);
     const alreadyAdded = lineItems
       .filter((it) => it.nomenclatureId === nomId)
@@ -274,7 +231,6 @@ export function WmsOperationWizardDialog({
       setComment('');
       setIsCreateNomDialogOpen(false);
 
-      // Load dictionaries
       Promise.all([
         fetch('/api/wms/warehouses').then((r) => r.json()),
         fetch('/api/wms/warehouses?forTransfer=true').then((r) => r.json()),
@@ -320,8 +276,6 @@ export function WmsOperationWizardDialog({
     }
   }, [open, initialType, initialNomenclatureId, user?.userId]);
 
-
-
   const handleOpenCreateNomDialog = (suggestedName?: string) => {
     const nameToSet = (suggestedName || searchInputValue || '').trim();
     setNomDialogInitialName(nameToSet);
@@ -341,7 +295,6 @@ export function WmsOperationWizardDialog({
     setSearchInputValue('');
     setIsCreateNomDialogOpen(false);
 
-    // If quantity is specified, automatically add to line items for RECEIPT
     const qty = parseFloat(itemQty) || 1;
     if (operationType === 'RECEIPT' && qty > 0) {
       setLineItems((prev) => [
@@ -359,7 +312,6 @@ export function WmsOperationWizardDialog({
       setItemQty('1');
     }
   };
-
 
   const handleAddItem = () => {
     if (!selectedNomenclature) {
@@ -533,18 +485,10 @@ export function WmsOperationWizardDialog({
     if (operationType === 'ISSUE_WRITE_OFF') {
       const reasons = new Set(lineItems.map((i) => i.writeOffReason).filter(Boolean));
       const hasEq = lineItems.some((i) => i.equipmentName);
-      if (hasEq) {
-        return 'Списание на оборудование';
-      }
-      if (reasons.has('Списание в брак / дефект')) {
-        return 'Списание в брак / дефект';
-      }
-      if (reasons.has('Списание в неликвид')) {
-        return 'Списание в неликвид';
-      }
-      if (reasons.has('Утилизация / износ')) {
-        return 'Списание на утилизацию';
-      }
+      if (hasEq) return 'Списание на оборудование';
+      if (reasons.has('Списание в брак / дефект')) return 'Списание в брак / дефект';
+      if (reasons.has('Списание в неликвид')) return 'Списание в неликвид';
+      if (reasons.has('Утилизация / износ')) return 'Списание на утилизацию';
       return 'Списание ТМЦ';
     }
     return currentOpMeta.title;
@@ -647,7 +591,6 @@ export function WmsOperationWizardDialog({
         )}
       </Box>
 
-      {/* Модальное окно создания новой номенклатуры */}
       <CreateNomenclatureDialog
         open={isCreateNomDialogOpen}
         onClose={() => setIsCreateNomDialogOpen(false)}

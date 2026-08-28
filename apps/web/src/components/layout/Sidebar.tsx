@@ -1,84 +1,39 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   Typography,
   IconButton,
   Avatar,
-  // eslint-disable-next-line no-restricted-imports -- Badge used as avatar notification dot, not status
   Badge,
   Menu,
   MenuItem,
   ListItemIcon,
   ListItemText,
   Divider,
-  Chip,
   Tooltip,
-  Collapse,
-  Popover,
 } from '@mui/material';
 import { usePathname, useRouter } from 'next/navigation';
-import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
-import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
-import AnalyticsOutlinedIcon from '@mui/icons-material/AnalyticsOutlined';
-import BuildOutlinedIcon from '@mui/icons-material/BuildOutlined';
 import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined';
-import AdminPanelSettingsOutlinedIcon from '@mui/icons-material/AdminPanelSettingsOutlined';
-import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
-import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
-import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined';
 import MenuOpenIcon from '@mui/icons-material/MenuOpen';
-import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
-import MoveToInboxIcon from '@mui/icons-material/MoveToInbox';
-import TimelineIcon from '@mui/icons-material/Timeline';
-import SpeedIcon from '@mui/icons-material/Speed';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import ChecklistIcon from '@mui/icons-material/Checklist';
-import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
-import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
-import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
-import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined';
-import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
-import BugReportOutlinedIcon from '@mui/icons-material/BugReportOutlined';
-import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import LogoutIcon from '@mui/icons-material/Logout';
 import FeedbackOutlinedIcon from '@mui/icons-material/FeedbackOutlined';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS, PlatformMaintenanceStatus } from '@ems/shared';
 import { StatusBadge } from '@/components/ui';
+import FeedbackDialog from '@/components/feedback/FeedbackDialog';
+import {
+  NavItemDef,
+  getMainItems,
+  getOperationalItems,
+  getAdminItems,
+} from './sidebar-items';
+import SidebarNavGroup from './SidebarNavGroup';
+import SidebarCollapsedFlyout from './SidebarCollapsedFlyout';
 
 export const SIDEBAR_WIDTH_EXPANDED = 330;
 export const SIDEBAR_WIDTH_COLLAPSED = 68;
-
-interface NavChild {
-  label: string;
-  path: string;
-  icon?: React.ReactNode;
-  badge?: number | null;
-  badgeText?: string;
-  badgeColor?: 'warning' | 'error' | 'primary' | 'default';
-  badgeTooltip?: string;
-  permission?: string;
-  permissions?: string[];
-}
-
-interface NavItemDef {
-  id: string;
-  label: string;
-  path?: string;
-  icon: React.ReactNode;
-  badge?: number | null;
-  badgeText?: string;
-  badgeColor?: 'warning' | 'error' | 'primary' | 'default';
-  badgeTooltip?: string;
-  permission?: string;
-  permissions?: string[];
-  children?: NavChild[];
-}
 
 interface SidebarProps {
   open: boolean;
@@ -99,7 +54,7 @@ export default function Sidebar({
   const router = useRouter();
   const { user, logout, hasPermission } = useAuth();
 
-  // Operational alert stats (strictly actionable events requiring user response)
+  // Operational alert stats
   const [repairCount, setRepairCount] = useState<number | null>(null);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number | null>(null);
   const [rejectedApprovalsCount, setRejectedApprovalsCount] = useState<number | null>(null);
@@ -117,6 +72,8 @@ export default function Sidebar({
     wms: pathname.startsWith('/wms'),
     mro: pathname.startsWith('/mro'),
     srm: pathname.startsWith('/srm'),
+    access: pathname.startsWith('/admin/users') || pathname.startsWith('/admin/roles'),
+    'module-settings': pathname.startsWith('/admin/module-settings'),
   });
 
   // User Profile Menu Anchor
@@ -126,6 +83,9 @@ export default function Sidebar({
   const [flyoutAnchor, setFlyoutAnchor] = useState<HTMLElement | null>(null);
   const [activeFlyoutItem, setActiveFlyoutItem] = useState<NavItemDef | null>(null);
 
+  // Feedback dialog state
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+
   // Module activation status state
   const [moduleStatus, setModuleStatus] = useState<Record<string, boolean>>({
     eps: true,
@@ -133,6 +93,19 @@ export default function Sidebar({
     srm: true,
     mro: true,
   });
+
+  const [maintenanceStatus, setMaintenanceStatus] = useState<PlatformMaintenanceStatus | null>(null);
+
+  useEffect(() => {
+    fetch('/api/system/maintenance')
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && json.data) {
+          setMaintenanceStatus(json.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     async function loadData() {
@@ -209,7 +182,7 @@ export default function Sidebar({
       }
     }
     loadData();
-    const interval = setInterval(loadData, 20000); // 20s polling for real-time reactive event counters
+    const interval = setInterval(loadData, 20000);
     return () => clearInterval(interval);
   }, [pathname]);
 
@@ -242,10 +215,6 @@ export default function Sidebar({
     return false;
   };
 
-  const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setProfileMenuAnchor(event.currentTarget);
-  };
-
   const handleProfileMenuClose = () => {
     setProfileMenuAnchor(null);
   };
@@ -254,13 +223,6 @@ export default function Sidebar({
     handleProfileMenuClose();
     await logout();
   };
-
-  const canAccessAdmin =
-    user?.roles?.includes('admin') ||
-    hasPermission(PERMISSIONS.ADMIN_USERS_MANAGE) ||
-    hasPermission(PERMISSIONS.ADMIN_ROLES_MANAGE) ||
-    hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-    hasPermission(PERMISSIONS.ADMIN_AUDIT_VIEW);
 
   const canAccess = useCallback(
     (nav?: { permission?: string; permissions?: string[] } | null) => {
@@ -277,706 +239,74 @@ export default function Sidebar({
     [user, hasPermission]
   );
 
-  const [maintenanceStatus, setMaintenanceStatus] = useState<PlatformMaintenanceStatus | null>(null);
+  const counts = useMemo(
+    () => ({
+      repairCount,
+      pendingApprovalsCount,
+      rejectedApprovalsCount,
+      wmsLowStockCount,
+      wmsPendingTransfersCount,
+      wmsActiveInventoriesCount,
+      srmOpenCount,
+      srmInProgressCount,
+      mroOverdueCount,
+      mroPlannedCount,
+    }),
+    [
+      repairCount,
+      pendingApprovalsCount,
+      rejectedApprovalsCount,
+      wmsLowStockCount,
+      wmsPendingTransfersCount,
+      wmsActiveInventoriesCount,
+      srmOpenCount,
+      srmInProgressCount,
+      mroOverdueCount,
+      mroPlannedCount,
+    ]
+  );
 
-  useEffect(() => {
-    fetch('/api/system/maintenance')
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success && json.data) {
-          setMaintenanceStatus(json.data);
-        }
-      })
-      .catch(() => {});
-  }, []);
+  const mainItems = useMemo(() => getMainItems(), []);
+  const operationalItems = useMemo(() => getOperationalItems(counts, maintenanceStatus), [counts, maintenanceStatus]);
+  const adminItems = useMemo(() => getAdminItems(), []);
 
-  // Главное (Сводная панель)
-  const mainItems: NavItemDef[] = [
-    {
-      id: 'dashboard',
-      label: 'Сводная панель показателей',
-      path: '/',
-      icon: <AnalyticsOutlinedIcon sx={{ fontSize: 18 }} />,
-    },
-  ];
+  const canAccessAdmin =
+    user?.roles?.includes('admin') ||
+    hasPermission(PERMISSIONS.ADMIN_USERS_MANAGE) ||
+    hasPermission(PERMISSIONS.ADMIN_ROLES_MANAGE) ||
+    hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
+    hasPermission(PERMISSIONS.ADMIN_AUDIT_VIEW);
 
-  // Purely Operational Modules with Consistent Modern Outlined Icons & Explicit Event Counters
-  const operationalItems: NavItemDef[] = [
-    {
-      id: 'eps',
-      label: 'Паспортизация оборудования (EPS)',
-      icon: <BadgeOutlinedIcon sx={{ fontSize: 18 }} />,
-      permissions: [
-        PERMISSIONS.EPS_EQUIPMENT_VIEW,
-        PERMISSIONS.EPS_EQUIPMENT_CREATE,
-        PERMISSIONS.EPS_DOCUMENTS_VIEW,
-        PERMISSIONS.EPS_APPROVALS_VIEW,
-        PERMISSIONS.EPS_APPROVALS_CREATE,
-        PERMISSIONS.EPS_HISTORY_VIEW,
-        PERMISSIONS.EPS_REPORTS_VIEW,
-      ],
-      badgeText: maintenanceStatus?.modules.eps?.enabled ? 'ТО' : undefined,
-      badgeColor: maintenanceStatus?.modules.eps?.enabled ? 'warning' : undefined,
-      badgeTooltip: maintenanceStatus?.modules.eps?.enabled ? 'Модуль EPS находится на техническом обслуживании' : undefined,
-      children: [
-        {
-          label: 'Реестр оборудования',
-          path: '/eps',
-          icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} />,
-          permissions: [PERMISSIONS.EPS_EQUIPMENT_VIEW, PERMISSIONS.EPS_EQUIPMENT_CREATE, PERMISSIONS.EPS_EQUIPMENT_EDIT],
-          badge: repairCount && repairCount > 0 ? repairCount : null,
-          badgeColor: 'error',
-          badgeTooltip: repairCount && repairCount > 0 ? `${repairCount} ед. оборудования в неисправном состоянии (в ремонте)` : undefined,
-        },
-        {
-          label: 'Техническая документация',
-          path: '/eps/documents',
-          icon: <ArticleOutlinedIcon sx={{ fontSize: 15 }} />,
-          permissions: [PERMISSIONS.EPS_DOCUMENTS_VIEW, PERMISSIONS.EPS_DOCUMENTS_UPLOAD],
-        },
-        {
-          label: 'Журнал согласований',
-          path: '/eps/approvals',
-          icon: <FactCheckOutlinedIcon sx={{ fontSize: 15 }} />,
-          permissions: [PERMISSIONS.EPS_APPROVALS_VIEW, PERMISSIONS.EPS_APPROVALS_CREATE, PERMISSIONS.EPS_APPROVALS_MANAGE],
-          badge:
-            pendingApprovalsCount && pendingApprovalsCount > 0
-              ? pendingApprovalsCount
-              : rejectedApprovalsCount && rejectedApprovalsCount > 0
-              ? rejectedApprovalsCount
-              : null,
-          badgeColor: pendingApprovalsCount && pendingApprovalsCount > 0 ? 'warning' : 'error',
-          badgeTooltip:
-            pendingApprovalsCount && pendingApprovalsCount > 0
-              ? `${pendingApprovalsCount} заявок ожидает рассмотрения`
-              : rejectedApprovalsCount && rejectedApprovalsCount > 0
-              ? `${rejectedApprovalsCount} отклоненных заявок требует доработки`
-              : undefined,
-        },
-        {
-          label: 'История изменений и аудит',
-          path: '/eps/history',
-          icon: <HistoryOutlinedIcon sx={{ fontSize: 15 }} />,
-          permission: PERMISSIONS.EPS_HISTORY_VIEW,
-        },
-        {
-          label: 'Генератор отчетов и ведомостей',
-          path: '/eps/reports',
-          icon: <AssessmentOutlinedIcon sx={{ fontSize: 15 }} />,
-          permissions: [PERMISSIONS.EPS_REPORTS_VIEW, PERMISSIONS.EPS_REPORTS_MANAGE],
-        },
-      ],
-    },
-    {
-      id: 'wms',
-      label: 'Складской учёт ТМЦ (WMS)',
-      icon: <WarehouseOutlinedIcon sx={{ fontSize: 18 }} />,
-      permissions: [
-        PERMISSIONS.WMS_STOCK_VIEW,
-        PERMISSIONS.WMS_OPERATIONS_CREATE,
-        PERMISSIONS.WMS_NOMENCLATURE_MANAGE,
-        PERMISSIONS.WMS_WAREHOUSES_MANAGE,
-        PERMISSIONS.WMS_ZONES_MANAGE,
-        PERMISSIONS.WMS_INVENTORY_MANAGE,
-      ],
-      badgeText: maintenanceStatus?.modules.wms?.enabled ? 'ТО' : undefined,
-      badgeColor: maintenanceStatus?.modules.wms?.enabled ? 'warning' : undefined,
-      badgeTooltip: maintenanceStatus?.modules.wms?.enabled ? 'Модуль WMS находится на техническом обслуживании' : undefined,
-      children: [
-        {
-          label: 'Панель материальных потоков',
-          path: '/wms',
-          icon: <AnalyticsOutlinedIcon sx={{ fontSize: 15 }} />,
-          permission: PERMISSIONS.WMS_STOCK_VIEW,
-        },
-        {
-          label: 'Номенклатура и остатки ТМЦ',
-          path: '/wms/stock',
-          icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} />,
-          permissions: [PERMISSIONS.WMS_STOCK_VIEW, PERMISSIONS.WMS_NOMENCLATURE_MANAGE],
-          badge: wmsLowStockCount && wmsLowStockCount > 0 ? wmsLowStockCount : null,
-          badgeColor: 'error',
-          badgeTooltip: wmsLowStockCount && wmsLowStockCount > 0 ? `${wmsLowStockCount} поз. ТМЦ ниже неснижаемого остатка (дефицит)` : undefined,
-        },
-        {
-          label: 'Складские операции и перемещения',
-          path: '/wms/operations',
-          icon: <SwapHorizIcon sx={{ fontSize: 15 }} />,
-          permissions: [PERMISSIONS.WMS_STOCK_VIEW, PERMISSIONS.WMS_OPERATIONS_CREATE],
-          badge: wmsPendingTransfersCount && wmsPendingTransfersCount > 0 ? wmsPendingTransfersCount : null,
-          badgeColor: 'warning',
-          badgeTooltip: wmsPendingTransfersCount && wmsPendingTransfersCount > 0 ? `${wmsPendingTransfersCount} перемещений ожидает приемки / отгрузки` : undefined,
-        },
-        {
-          label: 'Инвентаризационные описи',
-          path: '/wms/inventory',
-          icon: <FactCheckOutlinedIcon sx={{ fontSize: 15 }} />,
-          permissions: [PERMISSIONS.WMS_INVENTORY_MANAGE, PERMISSIONS.WMS_STOCK_VIEW],
-          badge: wmsActiveInventoriesCount && wmsActiveInventoriesCount > 0 ? wmsActiveInventoriesCount : null,
-          badgeColor: 'primary',
-          badgeTooltip: wmsActiveInventoriesCount && wmsActiveInventoriesCount > 0 ? `${wmsActiveInventoriesCount} инвентаризаций в процессе` : undefined,
-        },
-        {
-          label: 'Топология складов и ячеек',
-          path: '/wms/warehouses',
-          icon: <WarehouseOutlinedIcon sx={{ fontSize: 15 }} />,
-          permissions: [PERMISSIONS.WMS_WAREHOUSES_MANAGE, PERMISSIONS.WMS_ZONES_MANAGE],
-        },
-      ],
-    },
-    {
-      id: 'srm',
-      label: 'Управление инцидентами (SRM)',
-      icon: <BugReportOutlinedIcon sx={{ fontSize: 18 }} />,
-      permissions: [
-        PERMISSIONS.SRM_DASHBOARD_VIEW,
-        PERMISSIONS.SRM_REQUESTS_CREATE,
-        PERMISSIONS.SRM_REQUESTS_MANAGE,
-        PERMISSIONS.SRM_RELIABILITY_VIEW,
-      ],
-      badgeText: maintenanceStatus?.modules.srm?.enabled ? 'ТО' : undefined,
-      badgeColor: maintenanceStatus?.modules.srm?.enabled ? 'warning' : undefined,
-      badgeTooltip: maintenanceStatus?.modules.srm?.enabled ? 'Модуль SRM находится на техническом обслуживании' : undefined,
-      children: [
-        {
-          label: 'Журнал инцидентов и заявок',
-          path: '/srm',
-          icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} />,
-          permissions: [PERMISSIONS.SRM_DASHBOARD_VIEW, PERMISSIONS.SRM_REQUESTS_CREATE, PERMISSIONS.SRM_REQUESTS_MANAGE],
-          badge: srmOpenCount && srmOpenCount > 0 ? srmOpenCount : null,
-          badgeColor: srmOpenCount && srmOpenCount > 0 ? 'warning' : 'default',
-          badgeTooltip: srmOpenCount && srmOpenCount > 0 ? `${srmOpenCount} активных сервисных заявок` : undefined,
-        },
-        {
-          label: 'Аналитика надежности и RAMS',
-          path: '/srm/analytics',
-          icon: <TimelineIcon sx={{ fontSize: 15 }} />,
-          permissions: [PERMISSIONS.SRM_RELIABILITY_VIEW, PERMISSIONS.SRM_REPORTS_EXPORT],
-        },
-      ],
-    },
-    {
-      id: 'mro',
-      label: 'Техническое обслуживание (MRO)',
-      icon: <BuildOutlinedIcon sx={{ fontSize: 18 }} />,
-      permissions: [
-        PERMISSIONS.MRO_SCHEDULE_VIEW,
-        PERMISSIONS.MRO_SCHEDULE_MANAGE,
-        PERMISSIONS.MRO_EXECUTION_COMPLETE,
-      ],
-      badgeText: maintenanceStatus?.modules.mro?.enabled ? 'ТО' : undefined,
-      badgeColor: maintenanceStatus?.modules.mro?.enabled ? 'warning' : undefined,
-      badgeTooltip: maintenanceStatus?.modules.mro?.enabled ? 'Модуль MRO находится на техническом обслуживании' : undefined,
-      children: [
-        {
-          label: 'График ППР и наряды на ТО',
-          path: '/mro',
-          icon: <CalendarMonthIcon sx={{ fontSize: 15 }} />,
-          permissions: [PERMISSIONS.MRO_SCHEDULE_VIEW, PERMISSIONS.MRO_SCHEDULE_MANAGE, PERMISSIONS.MRO_EXECUTION_COMPLETE],
-          badge: mroOverdueCount && mroOverdueCount > 0 ? mroOverdueCount : null,
-          badgeColor: mroOverdueCount && mroOverdueCount > 0 ? 'error' : 'default',
-          badgeTooltip: mroOverdueCount && mroOverdueCount > 0 ? `${mroOverdueCount} просроченных регламентов ТО` : undefined,
-        },
-        {
-          label: 'Технологические карты и регламенты',
-          path: '/mro/checklists',
-          icon: <ChecklistIcon sx={{ fontSize: 15 }} />,
-          permissions: [PERMISSIONS.MRO_SCHEDULE_VIEW, PERMISSIONS.MRO_SCHEDULE_MANAGE],
-        },
-        {
-          label: 'Журнал выполненных работ',
-          path: '/mro/history',
-          icon: <FactCheckOutlinedIcon sx={{ fontSize: 15 }} />,
-          permissions: [PERMISSIONS.MRO_SCHEDULE_VIEW, PERMISSIONS.MRO_EXECUTION_COMPLETE],
-        },
-      ],
-    },
-  ];
-
-  // Administration Section with Sub-groups
-  const adminItems: NavItemDef[] = [
-    {
-      id: 'access',
-      label: 'Управление доступом и правами',
-      icon: <AdminPanelSettingsOutlinedIcon sx={{ fontSize: 18 }} />,
-      permissions: [PERMISSIONS.ADMIN_USERS_MANAGE, PERMISSIONS.ADMIN_ROLES_MANAGE],
-      children: [
-        {
-          label: 'Учетные записи пользователей',
-          path: '/admin/users',
-          icon: <GroupOutlinedIcon sx={{ fontSize: 15 }} />,
-          permission: PERMISSIONS.ADMIN_USERS_MANAGE,
-        },
-        {
-          label: 'Матрица ролей и полномочий',
-          path: '/admin/roles',
-          icon: <AdminPanelSettingsOutlinedIcon sx={{ fontSize: 15 }} />,
-          permission: PERMISSIONS.ADMIN_ROLES_MANAGE,
-        },
-      ],
-    },
-    {
-      id: 'module-settings',
-      label: 'Конфигурация модулей',
-      icon: <TuneOutlinedIcon sx={{ fontSize: 18 }} />,
-      permission: PERMISSIONS.ADMIN_SETTINGS_MANAGE,
-      children: [
-        { label: 'Паспортизация оборудования (EPS)', path: '/admin/module-settings?tab=eps', icon: <BadgeOutlinedIcon sx={{ fontSize: 15 }} /> },
-        { label: 'Складской учёт ТМЦ (WMS)', path: '/admin/module-settings?tab=wms', icon: <WarehouseOutlinedIcon sx={{ fontSize: 15 }} /> },
-        { label: 'Управление инцидентами (SRM)', path: '/admin/module-settings?tab=srm', icon: <BugReportOutlinedIcon sx={{ fontSize: 15 }} /> },
-        { label: 'ТО и Ремонт (MRO)', path: '/admin/module-settings?tab=mro', icon: <BuildOutlinedIcon sx={{ fontSize: 15 }} /> },
-      ],
-    },
-    {
-      id: 'audit-log',
-      label: 'Журнал аудита безопасности',
-      path: '/admin/audit-log',
-      icon: <ReceiptLongOutlinedIcon sx={{ fontSize: 18 }} />,
-      permission: PERMISSIONS.ADMIN_AUDIT_VIEW,
-    },
-    {
-      id: 'admin-feedback',
-      label: 'Центр обратной связи и техподдержки',
-      path: '/admin/feedback',
-      icon: <FeedbackOutlinedIcon sx={{ fontSize: 18 }} />,
-      permission: PERMISSIONS.ADMIN_FEEDBACK_MANAGE,
-    },
-    {
-      id: 'settings',
-      label: 'Системные параметры платформы',
-      path: '/admin/settings',
-      icon: <SettingsOutlinedIcon sx={{ fontSize: 18 }} />,
-      permission: PERMISSIONS.ADMIN_SETTINGS_MANAGE,
-    },
-  ];
-
-  const getBadgeColors = (type?: string) => {
-    switch (type) {
-      case 'warning':
-        return {
-          bg: 'warning.light',
-          text: 'warning.main',
-          border: 'warning.dark',
-          animation: 'none',
-        };
-      case 'error':
-        return {
-          bg: 'error.light',
-          text: 'error.main',
-          border: 'error.dark',
-          animation: 'badgePulse 2s infinite',
-        };
-      default:
-        return {
-          bg: 'primary.light',
-          text: 'primary.main',
-          border: 'primary.dark',
-          animation: 'none',
-        };
-    }
-  };
-
-  const renderNavBlock = (item: NavItemDef) => {
-    if (!canAccess(item)) return null;
-
-    // If an operational module is disabled in system settings, hide it from operational menu
-    if (operationalItems.some((op) => op.id === item.id) && moduleStatus[item.id] === false) {
-      return null;
-    }
-
-    const visibleChildren = item.children ? item.children.filter((c) => canAccess(c)) : [];
-    const hasChildren = visibleChildren.length > 0;
-
-    if (item.children && item.children.length > 0 && visibleChildren.length === 0 && !item.path) {
-      return null;
-    }
-
-    const active = isItemActive(item);
-    const isExpanded = expandedItems[item.id] || false;
-
-    // Aggregate badge count from visible children or item
-    const parentBadgeCount =
-      hasChildren
-        ? visibleChildren.reduce((acc, c) => acc + (c.badge && c.badge > 0 ? c.badge : 0), 0) || item.badge
-        : item.badge;
-
-    // Derive badge color
-    const effectiveBadgeColor = (() => {
-      if (hasChildren) {
-        if (visibleChildren.some((c) => c.badge && c.badge > 0 && c.badgeColor === 'error')) return 'error';
-        if (visibleChildren.some((c) => c.badge && c.badge > 0 && c.badgeColor === 'warning')) return 'warning';
-        const firstWithBadge = visibleChildren.find((c) => c.badge && c.badge > 0);
-        if (firstWithBadge?.badgeColor) return firstWithBadge.badgeColor;
-      }
-      return item.badgeColor || 'default';
-    })();
-
-    const effectiveBadgeTooltip = (() => {
-      if (hasChildren) {
-        const activeChildrenWithBadge = visibleChildren.filter((c) => c.badge && c.badge > 0 && c.badgeTooltip);
-        if (activeChildrenWithBadge.length > 0) {
-          return activeChildrenWithBadge.map((c) => c.badgeTooltip).join(' • ');
-        }
-      }
-      return item.badgeTooltip || undefined;
-    })();
-
-    const badgeColors = getBadgeColors(effectiveBadgeColor);
-    const parentBadgeDisplay = item.badgeText || (parentBadgeCount && parentBadgeCount > 0 ? parentBadgeCount : null);
-    const hasBadge = Boolean(parentBadgeDisplay);
-
-    if (collapsed) {
-      return (
-        <Tooltip key={item.id} title={item.label} placement="right">
-          <Box
-            onClick={(e) => handleOpenFlyout(e, item)}
-            sx={{
-              position: 'relative',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 42,
-              height: 42,
-              mx: 'auto',
-              my: 0.25,
-              borderRadius: '8px',
-              cursor: 'pointer',
-              color: active ? 'primary.light' : 'text.disabled',
-              backgroundColor: active ? 'action.selected' : 'transparent',
-              transition: 'all 0.15s ease',
-              '&:hover': {
-                backgroundColor: active ? 'action.selected' : 'action.hover',
-                color: 'primary.light',
-              },
-            }}
-          >
-            {/* Active Left Pill Indicator */}
-            {active && (
-              <Box
-                sx={{
-                  position: 'absolute',
-                  left: -10,
-                  top: 8,
-                  bottom: 8,
-                  width: 3,
-                  borderRadius: '0 3px 3px 0',
-                  backgroundColor: 'primary.light',
-                }}
-              />
-            )}
-
-            {item.icon}
-
-            {hasBadge && (
-              <Tooltip title={effectiveBadgeTooltip || (item.badgeText ? item.badgeText : `${parentBadgeCount} событий`)} arrow placement="right">
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    top: 4,
-                    right: 2,
-                    minWidth: item.badgeText ? 24 : 15,
-                    height: 15,
-                    borderRadius: '8px',
-                    backgroundColor: item.badgeText ? 'grey.700' : badgeColors.text,
-                    color: item.badgeText ? 'grey.50' : 'text.primary',
-                    fontSize: item.badgeText ? '0.55rem' : '0.625rem',
-                    fontWeight: 800,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    px: item.badgeText ? 0.4 : 0.3,
-                    fontFamily: item.badgeText ? 'inherit' : 'monospace',
-                    animation: item.badgeText ? 'none' : badgeColors.animation,
-                    '@keyframes badgePulse': {
-                      '0%': { transform: 'scale(1)', boxShadow: '0 0 0 0 transparent' },
-                      '70%': { transform: 'scale(1.1)', boxShadow: '0 0 0 4px transparent' },
-                      '100%': { transform: 'scale(1)', boxShadow: '0 0 0 0 transparent' },
-                    },
-                  }}
-                >
-                  {parentBadgeDisplay}
-                </Box>
-              </Tooltip>
-            )}
-          </Box>
-        </Tooltip>
-      );
-    }
-
-    return (
-      <Box key={item.id} sx={{ mb: 0.25 }}>
-        {/* Main Item Row */}
-        <Box
-          onClick={() => {
-            if (hasChildren) {
-              toggleExpand(item.id);
-            } else if (item.path) {
-              handleNavigate(item.path);
-            }
-          }}
-          sx={{
-            position: 'relative',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            pl: 1,
-            pr: 0.5,
-            py: 0.7,
-            borderRadius: '6px',
-            cursor: 'pointer',
-            color: active ? 'primary.light' : 'grey.300',
-            backgroundColor: active && !hasChildren ? 'action.selected' : 'transparent',
-            transition: 'all 0.12s ease',
-            '&:hover': {
-              backgroundColor: active && !hasChildren ? 'action.selected' : 'action.hover',
-              color: 'common.white',
-            },
-          }}
-        >
-          {/* Active Left Indicator Bar */}
-          {active && (
-            <Box
-              sx={{
-                position: 'absolute',
-                left: -12,
-                top: 5,
-                bottom: 5,
-                width: 3,
-                borderRadius: '0 3px 3px 0',
-                backgroundColor: 'primary.light',
-              }}
-            />
-          )}
-
-          {/* Left: Icon & Label */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, overflow: 'hidden', minWidth: 0, flexGrow: 1, mr: 0.25 }}>
-            <Box sx={{ color: active ? 'primary.light' : 'text.disabled', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-              {item.icon}
-            </Box>
-            <Typography
-              variant="body2"
-              noWrap
-              sx={{
-                fontSize: '0.78125rem', // 12.5px
-                fontWeight: active ? 600 : 500,
-                color: active ? 'common.white' : 'inherit',
-                letterSpacing: '-0.01em',
-              }}
-            >
-              {item.label}
-            </Typography>
-          </Box>
-
-          {/* Right: Chevron & Badge (arrow and badge on standardized vertical lines) */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, flexShrink: 0, ml: 'auto' }}>
-            {hasChildren && (
-              <Box
-                sx={{
-                  color: 'text.secondary',
-                  width: 16,
-                  height: 16,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                {isExpanded ? (
-                  <KeyboardArrowDownIcon sx={{ fontSize: 15 }} />
-                ) : (
-                  <KeyboardArrowRightIcon sx={{ fontSize: 15 }} />
-                )}
-              </Box>
-            )}
-
-            {/* Badge Slot: Standardized width for pixel-perfect vertical alignment */}
-            {(hasChildren || hasBadge) && (
-              <Box
-                sx={{
-                  minWidth: item.badgeText ? 36 : 18,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                {(!hasChildren || !isExpanded) && hasBadge && (
-                  <Tooltip title={effectiveBadgeTooltip || (item.badgeText ? item.badgeText : '')} arrow placement="right">
-                    <Box
-                      sx={{
-                        px: item.badgeText ? 0.6 : 0.4,
-                        height: 17,
-                        minWidth: 17,
-                        borderRadius: '8.5px',
-                        backgroundColor: item.badgeText ? 'action.selected' : badgeColors.bg,
-                        color: item.badgeText ? 'text.disabled' : badgeColors.text,
-                        border: item.badgeText ? '1px solid' : `1px solid ${badgeColors.border}`,
-                        borderColor: item.badgeText ? 'grey.700' : badgeColors.border,
-                        fontSize: item.badgeText ? '0.625rem' : '0.65rem',
-                        fontWeight: 700,
-                        fontFamily: item.badgeText ? 'inherit' : 'monospace',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        lineHeight: 1,
-                        boxSizing: 'border-box',
-                        animation: item.badgeText ? 'none' : badgeColors.animation,
-                        '@keyframes badgePulse': {
-                          '0%': { transform: 'scale(1)', boxShadow: '0 0 0 0 transparent' },
-                          '70%': { transform: 'scale(1.08)', boxShadow: '0 0 0 4px transparent' },
-                          '100%': { transform: 'scale(1)', boxShadow: '0 0 0 0 transparent' },
-                        },
-                      }}
-                    >
-                      {parentBadgeDisplay}
-                    </Box>
-                  </Tooltip>
-                )}
-              </Box>
-            )}
-          </Box>
-        </Box>
-
-        {/* Children Sub-links (Accordion) with Right-Aligned Badges per Sub-section */}
-        {hasChildren && (
-          <Collapse in={isExpanded} timeout="auto" unmountOnExit>
-            <Box
-              sx={{
-                ml: '14px',
-                pl: '8px',
-                borderLeft: '1.5px solid',
-                borderLeftColor: 'action.disabledBackground',
-                my: 0.25,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 0.25,
-              }}
-            >
-              {visibleChildren.map((child) => {
-                const isChildActive = pathname === child.path;
-                const childHasBadge = child.badge !== null && child.badge !== undefined && child.badge > 0;
-                const childBadgeColors = getBadgeColors(child.badgeColor);
-
-                return (
-                  <Box
-                    key={child.path + child.label}
-                    onClick={() => handleNavigate(child.path)}
-                    sx={{
-                      pl: 1,
-                      pr: 0.5,
-                      py: 0.5,
-                      borderRadius: '5px',
-                      cursor: 'pointer',
-                      fontSize: '0.75rem', // 12px
-                      color: isChildActive ? 'primary.light' : 'text.disabled',
-                      fontWeight: isChildActive ? 600 : 500,
-                      backgroundColor: isChildActive ? 'action.selected' : 'transparent',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 0.75,
-                      transition: 'all 0.12s ease',
-                      '&:hover': {
-                        backgroundColor: isChildActive ? 'action.selected' : 'action.hover',
-                        color: 'common.white',
-                      },
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, overflow: 'hidden', minWidth: 0, flexGrow: 1, mr: 0.25 }}>
-                      {child.icon}
-                      <Typography variant="inherit" noWrap sx={{ fontSize: '0.75rem', letterSpacing: '-0.01em' }}>
-                        {child.label}
-                      </Typography>
-                    </Box>
-
-                    {childHasBadge && (
-                      <Box
-                        sx={{
-                          width: 20,
-                          minWidth: 20,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0,
-                          ml: 'auto',
-                        }}
-                      >
-                        <Tooltip title={child.badgeTooltip || ''} arrow placement="right">
-                          <Box
-                            sx={{
-                              px: 0.4,
-                              height: 17,
-                              minWidth: 17,
-                              borderRadius: '8.5px',
-                              backgroundColor: childBadgeColors.bg,
-                              color: childBadgeColors.text,
-                              border: `1px solid ${childBadgeColors.border}`,
-                              fontSize: '0.65rem',
-                              fontWeight: 700,
-                              fontFamily: 'monospace',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              lineHeight: 1,
-                              boxSizing: 'border-box',
-                              animation: childBadgeColors.animation,
-                              '@keyframes badgePulse': {
-                                '0%': { transform: 'scale(1)', boxShadow: '0 0 0 0 transparent' },
-                                '70%': { transform: 'scale(1.08)', boxShadow: '0 0 0 4px transparent' },
-                                '100%': { transform: 'scale(1)', boxShadow: '0 0 0 0 transparent' },
-                              },
-                            }}
-                          >
-                            {child.badge}
-                          </Box>
-                        </Tooltip>
-                      </Box>
-                    )}
-                  </Box>
-                );
-              })}
-            </Box>
-          </Collapse>
-        )}
-      </Box>
-    );
-  };
-
-  const currentWidth = collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
+  const width = collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
 
   return (
     <Box
       component="nav"
       sx={{
-        width: currentWidth,
+        width: { xs: '100%', sm: width },
         flexShrink: 0,
-        height: '100vh',
-        position: 'sticky',
-        top: 0,
-        boxSizing: 'border-box',
-        transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-        backgroundColor: 'grey.900',
-        backgroundImage: 'linear-gradient(180deg, var(--mui-palette-grey-900) 0%, var(--mui-palette-grey-800) 100%)',
+        height: '100%',
+        backgroundColor: 'background.paper',
         borderRight: '1px solid',
-        borderRightColor: 'grey.800',
+        borderColor: 'divider',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden',
-        p: 1,
-        zIndex: 100,
+        position: 'relative',
+        zIndex: 10,
+        transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
       }}
     >
-      {/* Top Header: Brand Logo / Expand Button */}
+      {/* Top Header & Brand Bar */}
       <Box
         sx={{
+          height: 64,
           display: 'flex',
           alignItems: 'center',
           justifyContent: collapsed ? 'center' : 'space-between',
-          mb: 2.5,
-          pb: 1.5,
+          px: collapsed ? 1 : 2,
           borderBottom: '1px solid',
-          borderBottomColor: 'action.disabledBackground',
-          minHeight: 42,
+          borderColor: 'divider',
+          flexShrink: 0,
         }}
       >
         {collapsed ? (
@@ -985,16 +315,10 @@ export default function Sidebar({
               size="small"
               onClick={onToggleCollapse}
               sx={{
-                width: 38,
-                height: 38,
+                color: 'text.secondary',
+                p: 1,
                 borderRadius: '8px',
-                color: 'text.disabled',
-                backgroundColor: 'transparent',
-                transition: 'all 0.15s ease',
-                '&:hover': {
-                  backgroundColor: 'action.hover',
-                  color: 'common.white',
-                },
+                '&:hover': { backgroundColor: 'action.hover', color: 'primary.main' },
               }}
             >
               <MenuOpenIcon sx={{ fontSize: 20, transform: 'rotate(180deg)' }} />
@@ -1002,7 +326,6 @@ export default function Sidebar({
           </Tooltip>
         ) : (
           <>
-            {/* Brand Logo & Professional Typography */}
             <Box
               onClick={() => handleNavigate('/')}
               title="Перейти на главную"
@@ -1022,12 +345,9 @@ export default function Sidebar({
                   width: 34,
                   height: 34,
                   objectFit: 'contain',
-                  filter: 'drop-shadow(0 2px 8px var(--mui-palette-primary-light))',
                   flexShrink: 0,
                   transition: 'transform 0.15s ease',
-                  '&:hover': {
-                    transform: 'scale(1.06)',
-                  },
+                  '&:hover': { transform: 'scale(1.06)' },
                 }}
               />
               <Box sx={{ minWidth: 0 }}>
@@ -1039,7 +359,7 @@ export default function Sidebar({
                       fontSize: '1.0625rem',
                       lineHeight: 1.1,
                       letterSpacing: '-0.02em',
-                      color: 'common.white',
+                      color: 'text.primary',
                     }}
                   >
                     EMS
@@ -1050,7 +370,7 @@ export default function Sidebar({
                       fontWeight: 700,
                       fontSize: '0.9375rem',
                       lineHeight: 1.1,
-                      color: 'primary.light',
+                      color: 'primary.main',
                       letterSpacing: '-0.01em',
                     }}
                   >
@@ -1060,7 +380,7 @@ export default function Sidebar({
                 <Typography
                   variant="caption"
                   sx={{
-                    color: 'text.disabled',
+                    color: 'text.secondary',
                     fontWeight: 500,
                     fontSize: '0.6875rem',
                     display: 'block',
@@ -1075,16 +395,15 @@ export default function Sidebar({
               </Box>
             </Box>
 
-            {/* Toggle Sidebar Collapse Button */}
             <IconButton
               size="small"
               onClick={onToggleCollapse}
               title="Свернуть меню"
               sx={{
-                color: 'text.disabled',
+                color: 'text.secondary',
                 p: 0.5,
                 borderRadius: '6px',
-                '&:hover': { backgroundColor: 'action.hover', color: 'common.white' },
+                '&:hover': { backgroundColor: 'action.hover', color: 'primary.main' },
               }}
             >
               <MenuOpenIcon sx={{ fontSize: 20 }} />
@@ -1093,283 +412,211 @@ export default function Sidebar({
         )}
       </Box>
 
-      {/* Scrollable Navigation Body */}
+      {/* Navigation Groups List */}
       <Box
         sx={{
           flexGrow: 1,
           overflowY: 'auto',
-          pr: 0.5,
-          pt: 0.5,
-          /* Custom Dark Scrollbar */
-          '&::-webkit-scrollbar': {
-            width: '5px',
-          },
-          '&::-webkit-scrollbar-track': {
-            backgroundColor: 'transparent',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'action.disabledBackground',
-            borderRadius: '4px',
-            '&:hover': {
-              backgroundColor: 'action.disabled',
-            },
-          },
-          scrollbarWidth: 'thin',
-          scrollbarColor: 'action.disabledBackground transparent',
+          px: collapsed ? 0.75 : 1.5,
+          py: 1,
+          '&::-webkit-scrollbar': { width: '4px' },
+          '&::-webkit-scrollbar-track': { backgroundColor: 'transparent' },
+          '&::-webkit-scrollbar-thumb': { backgroundColor: 'divider', borderRadius: '4px' },
         }}
       >
-        {/* Блок «Главное» */}
-        <Box sx={{ mb: 2 }}>
-          {!collapsed && (
-            <Typography
-              variant="caption"
-              sx={{
-                display: 'block',
-                px: 1.25,
-                mb: 0.75,
-                fontSize: '0.6875rem',
-                fontWeight: 700,
-                color: 'text.secondary',
-                letterSpacing: '0.06em',
-              }}
-            >
-              ГЛАВНОЕ
-            </Typography>
-          )}
-          {mainItems.map(renderNavBlock)}
-        </Box>
+        {/* Main section */}
+        {!collapsed && (
+          <Typography variant="overline" sx={{ px: 1, color: 'text.secondary', fontWeight: 700, fontSize: '0.6875rem' }}>
+            Главное
+          </Typography>
+        )}
+        {mainItems.map((item) => (
+          <SidebarNavGroup
+            key={item.id}
+            item={item}
+            collapsed={collapsed}
+            active={isItemActive(item)}
+            expanded={expandedItems[item.id] || false}
+            moduleDisabled={false}
+            canAccess={canAccess}
+            onToggleExpand={toggleExpand}
+            onNavigate={handleNavigate}
+            onOpenFlyout={handleOpenFlyout}
+            currentPath={pathname}
+          />
+        ))}
 
-        {/* Блок «Модули» */}
-        <Box sx={{ mb: 2 }}>
-          {!collapsed && (
-            <Typography
-              variant="caption"
-              sx={{
-                display: 'block',
-                px: 1.25,
-                mb: 0.75,
-                fontSize: '0.6875rem',
-                fontWeight: 700,
-                color: 'text.secondary',
-                letterSpacing: '0.06em',
-              }}
-            >
-              МОДУЛИ
-            </Typography>
-          )}
-          {operationalItems.map(renderNavBlock)}
-        </Box>
+        <Divider sx={{ my: 1.5, borderColor: 'divider' }} />
 
-        {/* Administration Section with Sub-groups */}
+        {/* Operational Modules */}
+        {!collapsed && (
+          <Typography variant="overline" sx={{ px: 1, color: 'text.secondary', fontWeight: 700, fontSize: '0.6875rem' }}>
+            Модули платформы
+          </Typography>
+        )}
+        {operationalItems.map((item) => (
+          <SidebarNavGroup
+            key={item.id}
+            item={item}
+            collapsed={collapsed}
+            active={isItemActive(item)}
+            expanded={expandedItems[item.id] || false}
+            moduleDisabled={moduleStatus[item.id] === false}
+            canAccess={canAccess}
+            onToggleExpand={toggleExpand}
+            onNavigate={handleNavigate}
+            onOpenFlyout={handleOpenFlyout}
+            currentPath={pathname}
+          />
+        ))}
+
         {canAccessAdmin && (
-          <Box sx={{ mt: 2.5 }}>
+          <>
+            <Divider sx={{ my: 1.5, borderColor: 'divider' }} />
             {!collapsed && (
-              <Typography
-                variant="caption"
-                sx={{
-                  display: 'block',
-                  px: 1.25,
-                  mb: 0.5,
-                  fontSize: '0.6875rem',
-                  fontWeight: 700,
-                  color: 'text.secondary',
-                  letterSpacing: '0.06em',
-                }}
-              >
-                АДМИНИСТРИРОВАНИЕ
+              <Typography variant="overline" sx={{ px: 1, color: 'text.secondary', fontWeight: 700, fontSize: '0.6875rem' }}>
+                Администрирование
               </Typography>
             )}
-            {adminItems.map(renderNavBlock)}
-          </Box>
+            {adminItems.map((item) => (
+              <SidebarNavGroup
+                key={item.id}
+                item={item}
+                collapsed={collapsed}
+                active={isItemActive(item)}
+                expanded={expandedItems[item.id] || false}
+                moduleDisabled={false}
+                canAccess={canAccess}
+                onToggleExpand={toggleExpand}
+                onNavigate={handleNavigate}
+                onOpenFlyout={handleOpenFlyout}
+                currentPath={pathname}
+              />
+            ))}
+          </>
         )}
       </Box>
 
-      {/* Bottom User Account Card with Integrated Popup Menu */}
+      {/* Footer: Feedback & User Profile */}
       <Box
-        onClick={handleProfileMenuOpen}
         sx={{
-          pt: 1.25,
-          mt: 'auto',
+          p: collapsed ? 1 : 1.5,
           borderTop: '1px solid',
-          borderTopColor: 'action.disabledBackground',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: collapsed ? 'center' : 'flex-start',
-          gap: 1.25,
-          cursor: 'pointer',
-          p: 0.75,
-          borderRadius: '8px',
-          transition: 'background-color 0.15s ease',
-          '&:hover': {
-            backgroundColor: 'action.hover',
-          },
+          borderColor: 'divider',
+          backgroundColor: 'background.paper',
+          flexShrink: 0,
         }}
       >
-        <Badge
-          overlap="circular"
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-          variant="dot"
+        {/* Support Button */}
+        <Box
+          onClick={() => setIsFeedbackOpen(true)}
           sx={{
-            '& .MuiBadge-badge': {
-              backgroundColor: 'success.main',
-              boxShadow: '0 0 0 2px grey.900',
-              width: 8,
-              height: 8,
-              borderRadius: '4px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: collapsed ? 'center' : 'flex-start',
+            gap: 1.25,
+            px: collapsed ? 0 : 1.25,
+            py: 0.75,
+            mb: 1,
+            borderRadius: '8px',
+            cursor: 'pointer',
+            color: 'primary.main',
+            backgroundColor: 'info.light',
+            border: '1px solid',
+            borderColor: 'primary.light',
+            transition: 'all 0.15s ease',
+            '&:hover': {
+              backgroundColor: 'action.hover',
             },
           }}
         >
-          <Avatar
-            sx={{
-              width: 32,
-              height: 32,
-              backgroundColor: 'primary.main',
-              fontSize: '0.8125rem',
-              fontWeight: 700,
-              color: 'common.white',
-            }}
-          >
-            {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'A'}
-          </Avatar>
-        </Badge>
+          <FeedbackOutlinedIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+          {!collapsed && (
+            <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>
+              Поддержка и связь
+            </Typography>
+          )}
+        </Box>
 
-        {!collapsed && (
-          <Box sx={{ overflow: 'hidden', flexGrow: 1, minWidth: 0 }}>
-            <Typography variant="subtitle2" fontWeight={700} noWrap fontSize="0.78125rem" color="grey.50" lineHeight={1.2}>
-              {user?.displayName || 'Администратор'}
-            </Typography>
-            <Typography variant="caption" color="text.disabled" noWrap display="block" fontSize="0.6875rem">
-              {user?.roles?.[0] || 'Инженер'}
-            </Typography>
+        {/* User profile tile */}
+        <Box
+          onClick={(e) => setProfileMenuAnchor(e.currentTarget)}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: collapsed ? 'center' : 'space-between',
+            p: 0.75,
+            borderRadius: '8px',
+            cursor: 'pointer',
+            '&:hover': { backgroundColor: 'action.hover' },
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 0 }}>
+            <Badge
+              overlap="circular"
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              variant="dot"
+              color="success"
+            >
+              <Avatar
+                sx={{
+                  width: 32,
+                  height: 32,
+                  bgcolor: 'primary.main',
+                  fontSize: '0.8125rem',
+                  fontWeight: 700,
+                }}
+              >
+                {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}
+              </Avatar>
+            </Badge>
+            {!collapsed && (
+              <Box sx={{ minWidth: 0 }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: '0.8125rem',
+                    color: 'text.primary',
+                    lineHeight: 1.2,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {user?.displayName || 'Пользователь'}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'text.secondary',
+                    fontSize: '0.6875rem',
+                    display: 'block',
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {user?.roles?.[0] || 'Инженер'}
+                </Typography>
+              </Box>
+            )}
           </Box>
-        )}
+        </Box>
       </Box>
 
-      {/* Collapsed Mode Flyout Popover */}
-      <Popover
-        open={Boolean(flyoutAnchor && activeFlyoutItem)}
+      {/* Flyout Popover for Collapsed Mode */}
+      <SidebarCollapsedFlyout
         anchorEl={flyoutAnchor}
+        activeItem={activeFlyoutItem}
+        currentPath={pathname}
         onClose={() => {
           setFlyoutAnchor(null);
           setActiveFlyoutItem(null);
         }}
-        anchorOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
-        }}
-        PaperProps={{
-          sx: {
-            ml: 1,
-            p: 1.25,
-            minWidth: 200,
-            borderRadius: '8px',
-            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
-            backgroundColor: 'grey.900',
-            border: '1px solid',
-            borderColor: 'grey.700',
-            color: 'grey.300',
-          },
-        }}
-      >
-        {activeFlyoutItem && (
-          <Box>
-            {/* Flyout Header */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 0.75, mb: 0.75, borderBottom: '1px solid', borderBottomColor: 'grey.800' }}>
-              <Typography variant="subtitle2" fontWeight={700} color="primary.light" fontSize="0.78125rem">
-                {activeFlyoutItem.label}
-              </Typography>
-              {activeFlyoutItem.badge && (
-                <Box
-                  sx={{
-                    px: 0.6,
-                    py: 0.05,
-                    borderRadius: '5px',
-                    backgroundColor: 'action.selected',
-                    color: 'primary.light',
-                    fontSize: '0.65rem',
-                    fontWeight: 700,
-                  }}
-                >
-                  {activeFlyoutItem.badge}
-                </Box>
-              )}
-            </Box>
+        onNavigate={handleNavigate}
+        canAccess={canAccess}
+      />
 
-            {/* Flyout Children List */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-              {activeFlyoutItem.children?.filter((c) => canAccess(c)).map((child) => {
-                const isChildActive = pathname === child.path;
-                const childHasBadge = child.badge !== null && child.badge !== undefined && child.badge > 0;
-                const childBadgeColors = getBadgeColors(child.badgeColor);
-
-                return (
-                  <Box
-                    key={child.path + child.label}
-                    onClick={() => handleNavigate(child.path)}
-                    sx={{
-                      px: 1.25,
-                      py: 0.6,
-                      borderRadius: '5px',
-                      cursor: 'pointer',
-                      fontSize: '0.78125rem',
-                      color: isChildActive ? 'primary.light' : 'text.disabled',
-                      fontWeight: isChildActive ? 600 : 500,
-                      backgroundColor: isChildActive ? 'action.selected' : 'transparent',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 1,
-                      transition: 'all 0.12s ease',
-                      '&:hover': {
-                        backgroundColor: 'action.hover',
-                        color: 'common.white',
-                      },
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, overflow: 'hidden', minWidth: 0, flexGrow: 1, mr: 1 }}>
-                      {child.icon}
-                      <Typography variant="inherit" noWrap sx={{ fontSize: '0.78125rem' }}>
-                        {child.label}
-                      </Typography>
-                    </Box>
-
-                    {childHasBadge && (
-                      <Box
-                        sx={{
-                          px: 0.6,
-                          height: 17,
-                          minWidth: 17,
-                          borderRadius: '8.5px',
-                          backgroundColor: childBadgeColors.bg,
-                          color: childBadgeColors.text,
-                          border: `1px solid ${childBadgeColors.border}`,
-                          fontSize: '0.65rem',
-                          fontWeight: 700,
-                          fontFamily: 'monospace',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          lineHeight: 1,
-                          flexShrink: 0,
-                          ml: 'auto',
-                        }}
-                      >
-                        {child.badge}
-                      </Box>
-                    )}
-                  </Box>
-                );
-              })}
-            </Box>
-          </Box>
-        )}
-      </Popover>
-
-      {/* User Profile / Logout Popover Menu */}
+      {/* Profile Menu Dropdown */}
       <Menu
         anchorEl={profileMenuAnchor}
         open={Boolean(profileMenuAnchor)}
@@ -1396,13 +643,13 @@ export default function Sidebar({
             Логин: {user?.ldapLogin}
           </Typography>
           <Box sx={{ mt: 0.75, display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-            {user?.roles.map((r) => (
+            {user?.roles?.map((r) => (
               <StatusBadge key={r} status={r} label={r} size="small" variant="outlined" />
             ))}
           </Box>
         </Box>
         <Divider sx={{ my: 0.5 }} />
-        {user?.roles.includes('admin') && (
+        {user?.roles?.includes('admin') && (
           <MenuItem
             onClick={() => {
               handleProfileMenuClose();
@@ -1423,6 +670,8 @@ export default function Sidebar({
           <ListItemText primary="Выйти из системы" primaryTypographyProps={{ fontSize: '0.78125rem', fontWeight: 600 }} />
         </MenuItem>
       </Menu>
+
+      <FeedbackDialog open={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
     </Box>
   );
 }

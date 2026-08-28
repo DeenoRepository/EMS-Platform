@@ -3,31 +3,12 @@
 import React, { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
 import {
   Box,
-  Card,
   Grid,
-  Typography,
   TextField,
   MenuItem,
   Button,
-  Pagination,
-  IconButton,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TableSortLabel,
-  InputAdornment,
-  CircularProgress,
-  Tooltip,
-  Autocomplete,
-  Alert,
-  Paper,
-  Divider,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import SearchIcon from '@mui/icons-material/Search';
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
@@ -35,304 +16,152 @@ import PendingActionsOutlinedIcon from '@mui/icons-material/PendingActionsOutlin
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import AssignmentTurnedInOutlinedIcon from '@mui/icons-material/AssignmentTurnedInOutlined';
 import AssignmentOutlinedIcon from '@mui/icons-material/AssignmentOutlined';
-import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import PageHeader from '@/components/layout/PageHeader';
 import { sortApprovals } from '../approval-registry-model';
-import { useRouter, useSearchParams } from 'next/navigation';
 import {
   APPROVAL_TYPE_MAP,
   APPROVAL_STATUS_MAP,
-  EQUIPMENT_STATUS_MAP,
-  formatDateTime,
   PERMISSIONS,
 } from '@ems/shared';
 import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
 import {
   StatCard,
-  StatusBadge,
   SearchInput,
   FilterToolbar,
   EmptyState,
   DataTableWrapper,
   PageLoading,
-  FormDialog,
   ConfirmDialog,
   NavTabsContainer,
   type TableColumnOption,
 } from '@/components/ui';
 import { ApprovalWizardDialog } from '@/components/eps';
-
-type ApprovalProposedData = { targetStatus?: string } & Record<string, unknown>;
-
-interface ApprovalItem {
-  id: string;
-  equipmentId: string;
-  type: string;
-  status: string;
-  title: string;
-  description: string | null;
-  proposedData: ApprovalProposedData | null;
-  requesterId: string;
-  reviewerId: string | null;
-  reviewedAt: string | null;
-  resolutionComment: string | null;
-  createdAt: string;
-  updatedAt: string;
-  equipment: {
-    id: string;
-    name: string;
-    inventoryNumber: string | null;
-    manufacturer?: string | null;
-    model?: string | null;
-    location?: string | null;
-    status?: string;
-  } | null;
-  requester: {
-    id: string;
-    displayName: string;
-    ldapLogin: string;
-  };
-  reviewer: {
-    id: string;
-    displayName: string;
-    ldapLogin: string;
-  } | null;
-}
-
-interface EquipmentOption {
-  id: string;
-  name: string;
-  inventoryNumber: string | null;
-  status: string;
-}
-
-type ApprovalReviewDecision = 'APPROVED' | 'REJECTED' | 'CANCELLED';
-
-const APPROVAL_PROPOSED_DATA_BY_TYPE: Record<string, { targetStatus: string } | null> = {
-  STATUS_CHANGE: null,
-  DECOMMISSIONING: { targetStatus: 'DECOMMISSIONED' },
-  COMMISSIONING: { targetStatus: 'ACTIVE' },
-};
+import ApprovalReviewDialog, { ApprovalReviewDecision } from '@/components/eps/ApprovalReviewDialog';
+import ApprovalDetailsDialog from '@/components/eps/ApprovalDetailsDialog';
+import ApprovalTableView, { ApprovalTableItem, ApprovalSortField, ApprovalSortDirection } from '@/components/eps/ApprovalTableView';
 
 const APPROVAL_REVIEW_FEEDBACK: Record<ApprovalReviewDecision, { message: string; variant: 'success' | 'info' }> = {
   APPROVED: { message: 'Заявка успешно согласована. Статус оборудования обновлен!', variant: 'success' },
   REJECTED: { message: 'Заявка отклонена', variant: 'info' },
-  CANCELLED: { message: 'Заявка отозвана', variant: 'info' },
+  CANCELLED: { message: 'Заявка успешно отозвана инициатором', variant: 'info' },
 };
 
-function ApprovalsListContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+const APPROVAL_COLUMNS: TableColumnOption[] = [
+  { id: 'title', label: 'Тема / Заявка', defaultVisible: true },
+  { id: 'inventoryNumber', label: 'Инв. номер', defaultVisible: true },
+  { id: 'equipment', label: 'Оборудование', defaultVisible: true },
+  { id: 'manufacturer', label: 'Производитель', defaultVisible: true },
+  { id: 'type', label: 'Тип согласования', defaultVisible: true },
+  { id: 'status', label: 'Статус', defaultVisible: true },
+  { id: 'requester', label: 'Инициатор', defaultVisible: true },
+  { id: 'date', label: 'Дата подачи', defaultVisible: true },
+  { id: 'reviewer', label: 'Решение / Автор', defaultVisible: true },
+  { id: 'actions', label: 'Действия', defaultVisible: true },
+];
+
+function ApprovalRegistryContent() {
   const { user, hasPermission } = useAuth();
   const { enqueueSnackbar } = useSnackbar();
 
-  const [items, setItems] = useState<ApprovalItem[]>([]);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [items, setItems] = useState<ApprovalTableItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
 
-  // Sorting
-  const [sortField, setSortField] = useState<string>('date');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [activeScopeTab, setActiveScopeTab] = useState<string>('all');
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [equipmentFilter, setEquipmentFilter] = useState('');
 
-  const handleRequestSort = (property: string) => {
-    const isAsc = sortField === property && sortDirection === 'asc';
-    setSortDirection(isAsc ? 'desc' : 'asc');
-    setSortField(property);
-  };
+  const [sortField, setSortField] = useState<ApprovalSortField>('date');
+  const [sortDirection, setSortDirection] = useState<ApprovalSortDirection>('desc');
 
-  const sortedItems = useMemo(
-    () => sortApprovals(items, sortField, sortDirection),
-    [items, sortField, sortDirection]
-  );
-
-  const canAccessApprovals =
-    user?.roles?.includes('admin') ||
-    hasPermission(PERMISSIONS.EPS_APPROVALS_VIEW) ||
-    hasPermission(PERMISSIONS.EPS_APPROVALS_CREATE) ||
-    hasPermission(PERMISSIONS.EPS_APPROVALS_MANAGE);
-
-  // Scope Tab: 'all' | 'to_review' | 'my_requests'
-  const [scopeTab, setScopeTab] = useState<'all' | 'to_review' | 'my_requests'>('all');
-
-  // Filters
-  const [search, setSearch] = useState(searchParams?.get('search') || '');
-  const [statusFilter, setStatusFilter] = useState(searchParams?.get('status') || '');
-  const [typeFilter, setTypeFilter] = useState(searchParams?.get('type') || '');
-  const [equipmentFilter, setEquipmentFilter] = useState(searchParams?.get('equipmentId') || '');
-
-  // Equipment options for filter & create
-  const [equipmentList, setEquipmentList] = useState<EquipmentOption[]>([]);
-
-  // Statistics
   const [stats, setStats] = useState({
-    total: 0,
     pending: 0,
     approved: 0,
     rejected: 0,
     cancelled: 0,
+    total: 0,
     toReview: 0,
+    myPending: 0,
+    myRejected: 0,
   });
 
-  // Create Modal State
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [selectedEquipmentForCreate, setSelectedEquipmentForCreate] = useState<EquipmentOption | null>(null);
-  const [createType, setCreateType] = useState('DECOMMISSIONING');
-  const [createTitle, setCreateTitle] = useState('');
-  const [createDescription, setCreateDescription] = useState('');
-  const [createTargetStatus, setCreateTargetStatus] = useState('UNDER_REPAIR');
-  const [submittingCreate, setSubmittingCreate] = useState(false);
-
-  // Review Resolution Modal State
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
-  const [selectedApprovalForReview, setSelectedApprovalForReview] = useState<ApprovalItem | null>(null);
-  const [reviewDecision, setReviewDecision] = useState<'APPROVED' | 'REJECTED' | 'CANCELLED'>('APPROVED');
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [selectedApprovalForReview, setSelectedApprovalForReview] = useState<ApprovalTableItem | null>(null);
+  const [selectedApprovalForDetails, setSelectedApprovalForDetails] = useState<ApprovalTableItem | null>(null);
   const [resolutionComment, setResolutionComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [revokeApproval, setRevokeApproval] = useState<ApprovalTableItem | null>(null);
 
-  // Detailed Modal View
-  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
-  const [selectedApprovalForDetails, setSelectedApprovalForDetails] = useState<ApprovalItem | null>(null);
-  const [revokeApproval, setRevokeApproval] = useState<ApprovalItem | null>(null);
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(() =>
+    APPROVAL_COLUMNS.map((c) => c.id)
+  );
 
-  const fetchEquipmentList = async () => {
-    try {
-      const res = await fetch('/api/eps/equipment?pageSize=100');
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success) {
-          setEquipmentList(
-            (json.data.items as EquipmentOption[]).map((equipment) => ({
-              id: equipment.id,
-              name: equipment.name,
-              inventoryNumber: equipment.inventoryNumber,
-              status: equipment.status,
-            }))
-          );
-        }
-      }
-    } catch {
-      // ignore
-    }
-  };
+  const canAccessApprovals = hasPermission(PERMISSIONS.EPS_APPROVALS_VIEW) || hasPermission(PERMISSIONS.EPS_EQUIPMENT_VIEW);
+  const canCreate = hasPermission(PERMISSIONS.EPS_APPROVALS_CREATE) || hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT);
+  const canManage = hasPermission(PERMISSIONS.EPS_APPROVALS_MANAGE) || hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT);
+  const canReview = canManage;
 
   const fetchApprovals = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
-        page: String(page),
-        pageSize: String(pageSize),
+        page: String(page + 1),
+        pageSize: String(rowsPerPage),
       });
-      if (search) params.append('search', search);
-      if (statusFilter) params.append('status', statusFilter);
-      if (typeFilter) params.append('type', typeFilter);
-      if (equipmentFilter) params.append('equipmentId', equipmentFilter);
-      if (scopeTab === 'to_review') params.append('scope', 'to_review');
-      if (scopeTab === 'my_requests') params.append('scope', 'my_requests');
 
-      const res = await fetch(`/api/eps/approvals?${params.toString()}`);
+      if (activeScopeTab === 'to_review') params.set('scope', 'to_review');
+      else if (activeScopeTab === 'my_requests') params.set('scope', 'my_requests');
+      else if (activeScopeTab === 'my_rejected') {
+        params.set('scope', 'my_requests');
+        params.set('status', 'REJECTED');
+      }
+
+      if (search) params.set('search', search);
+      if (statusFilter && activeScopeTab !== 'my_rejected') params.set('status', statusFilter);
+      if (typeFilter) params.set('type', typeFilter);
+      if (equipmentFilter) params.set('equipmentId', equipmentFilter);
+
+      const res = await fetch(`/api/eps/approvals?${params}`);
       if (res.ok) {
         const json = await res.json();
         if (json.success) {
           setItems(json.data.items || []);
           setTotal(json.data.total || 0);
-          setTotalPages(json.data.totalPages || 1);
           if (json.data.stats) {
             setStats(json.data.stats);
           }
         }
       }
     } catch {
-      enqueueSnackbar('Ошибка загрузки заявок на согласование', { variant: 'error' });
+      enqueueSnackbar('Ошибка при получении списка заявок на согласование', { variant: 'error' });
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, search, statusFilter, typeFilter, equipmentFilter, scopeTab, enqueueSnackbar]);
+  }, [page, rowsPerPage, activeScopeTab, search, statusFilter, typeFilter, equipmentFilter, enqueueSnackbar]);
 
   useEffect(() => {
-    if (canAccessApprovals) {
-      fetchEquipmentList();
-      fetchApprovals();
-    }
-  }, [canAccessApprovals, fetchApprovals]);
+    fetchApprovals();
+  }, [fetchApprovals]);
 
-  const handleKpiFilter = (status: string) => {
-    if (statusFilter === status) {
-      setStatusFilter('');
-    } else {
-      setStatusFilter(status);
-    }
-    setPage(1);
-  };
+  const handleProcessReview = async (decision: ApprovalReviewDecision, targetItem?: ApprovalTableItem | null) => {
+    const item = targetItem || selectedApprovalForReview;
+    if (!item) return;
 
-  const handleResetFilters = () => {
-    setSearch('');
-    setStatusFilter('');
-    setTypeFilter('');
-    setEquipmentFilter('');
-    setPage(1);
-  };
-
-  // Create Approval Submit
-  const handleCreateSubmit = async () => {
-    if (!selectedEquipmentForCreate) {
-      enqueueSnackbar('Выберите единицу оборудования', { variant: 'warning' });
-      return;
-    }
-    if (!createTitle.trim()) {
-      enqueueSnackbar('Укажите наименование/тему заявки', { variant: 'warning' });
-      return;
-    }
-
-    setSubmittingCreate(true);
-    try {
-      const proposedData =
-        createType === 'STATUS_CHANGE'
-          ? { targetStatus: createTargetStatus }
-          : APPROVAL_PROPOSED_DATA_BY_TYPE[createType] ?? null;
-
-      const res = await fetch('/api/eps/approvals', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          equipmentId: selectedEquipmentForCreate.id,
-          type: createType,
-          title: createTitle,
-          description: createDescription,
-          proposedData,
-        }),
-      });
-
-      const json = await res.json();
-      if (json.success) {
-        enqueueSnackbar('Заявка на согласование успешно создана', { variant: 'success' });
-        setCreateModalOpen(false);
-        setSelectedEquipmentForCreate(null);
-        setCreateTitle('');
-        setCreateDescription('');
-        fetchApprovals();
-      } else {
-        enqueueSnackbar(json.error || 'Ошибка создания заявки', { variant: 'error' });
-      }
-    } catch {
-      enqueueSnackbar('Ошибка сети при создании заявки', { variant: 'error' });
-    } finally {
-      setSubmittingCreate(false);
-    }
-  };
-
-  const handleProcessReview = async (decision: ApprovalReviewDecision) => {
-    if (!selectedApprovalForReview) return;
     if (decision === 'REJECTED' && !resolutionComment.trim()) {
       enqueueSnackbar('Для отклонения заявки обязательно укажите причину в комментарии', { variant: 'warning' });
       return;
     }
+
     setSubmittingReview(true);
     try {
-      const res = await fetch(`/api/eps/approvals/${selectedApprovalForReview.id}`, {
+      const res = await fetch(`/api/eps/approvals/${item.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -354,37 +183,64 @@ function ApprovalsListContent() {
       }
     } catch {
       enqueueSnackbar('Ошибка сети при обработке решения', { variant: 'error' });
-  } finally {
+    } finally {
       setSubmittingReview(false);
     }
   };
 
-  const APPROVAL_COLUMNS: TableColumnOption[] = [
-    { id: 'title', label: 'Тема / Заявка', defaultVisible: true },
-    { id: 'inventoryNumber', label: 'Инв. номер', defaultVisible: true },
-    { id: 'equipment', label: 'Оборудование', defaultVisible: true },
-    { id: 'manufacturer', label: 'Производитель', defaultVisible: true },
-    { id: 'type', label: 'Тип согласования', defaultVisible: true },
-    { id: 'status', label: 'Статус', defaultVisible: true },
-    { id: 'requester', label: 'Инициатор', defaultVisible: true },
-    { id: 'date', label: 'Дата подачи', defaultVisible: true },
-    { id: 'reviewer', label: 'Решение / Автор', defaultVisible: true },
-    { id: 'actions', label: 'Действия', defaultVisible: true },
-  ];
+  const handleRequestSort = (field: ApprovalSortField) => {
+    const isAsc = sortField === field && sortDirection === 'asc';
+    setSortDirection(isAsc ? 'desc' : 'asc');
+    setSortField(field);
+  };
 
-  const [visibleColumns, setVisibleColumns] = useState<string[]>(() =>
-    APPROVAL_COLUMNS.map((c) => c.id)
-  );
+  const sortedItems = useMemo(() => {
+    return sortApprovals(items as any, sortField, sortDirection) as ApprovalTableItem[];
+  }, [items, sortField, sortDirection]);
+
+  const scopeTabs = useMemo(() => {
+    const tabs = [
+      {
+        value: 'all',
+        label: 'Все заявки',
+        icon: <FactCheckOutlinedIcon sx={{ fontSize: 18 }} />,
+        badge: stats.total,
+      },
+    ];
+
+    if (canReview) {
+      tabs.push({
+        value: 'to_review',
+        label: 'На рассмотрении (Входящие)',
+        icon: <PendingActionsOutlinedIcon sx={{ fontSize: 18 }} />,
+        badge: stats.toReview,
+      });
+    }
+
+    tabs.push({
+      value: 'my_requests',
+      label: 'Мои поданные заявки',
+      icon: <AssignmentOutlinedIcon sx={{ fontSize: 18 }} />,
+      badge: stats.myPending,
+    });
+
+    if (stats.myRejected > 0) {
+      tabs.push({
+        value: 'my_rejected',
+        label: 'Отклоненные (Требуют внимания)',
+        icon: <CancelOutlinedIcon sx={{ fontSize: 18 }} />,
+        badge: stats.myRejected,
+      });
+    }
+
+    return tabs;
+  }, [canReview, stats]);
 
   const activeFilterCount =
     (search ? 1 : 0) +
     (statusFilter ? 1 : 0) +
     (typeFilter ? 1 : 0) +
     (equipmentFilter ? 1 : 0);
-
-  const canCreate = hasPermission(PERMISSIONS.EPS_APPROVALS_CREATE) || hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT);
-  const canManage = hasPermission(PERMISSIONS.EPS_APPROVALS_MANAGE) || hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT);
-  const canReview = canManage;
 
   if (!canAccessApprovals) {
     return (
@@ -400,8 +256,7 @@ function ApprovalsListContent() {
         />
         <EmptyState
           title="Доступ ограничен"
-          description="У вашей учетной записи нет полномочий для доступа к журналу согласований оборудования (требуется право eps.approvals.view или eps.approvals.create)."
-          icon={<FactCheckOutlinedIcon sx={{ fontSize: 48, color: 'text.secondary' }} />}
+          description="У вашей учетной записи недостаточно прав для просмотра реестра согласований EPS."
         />
       </Box>
     );
@@ -417,834 +272,253 @@ function ApprovalsListContent() {
           { label: 'Оборудование', href: '/eps' },
           { label: 'Согласования' },
         ]}
+        actions={
+          canCreate ? (
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<AddIcon />}
+              onClick={() => setCreateModalOpen(true)}
+              sx={{ fontWeight: 700 }}
+            >
+              Создать заявку
+            </Button>
+          ) : undefined
+        }
       />
 
-      <Grid container spacing={1.75} sx={{ mb: 2.5 }}>
-        <Grid item xs={12} sm={6} md={2.4}>
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard
-            title="На рассмотрении"
+            title="Ожидают решения"
             value={stats.pending}
-            subtitle={scopeTab === 'my_requests' ? 'Моих на рассмотрении' : 'Ожидают решения'}
-            icon={<PendingActionsOutlinedIcon sx={{ fontSize: 20 }} />}
+            subtitle="Требуют рассмотрения"
+            icon={<PendingActionsOutlinedIcon sx={{ fontSize: 22 }} />}
             iconBgColor="rgba(217, 119, 6, 0.08)"
             iconColor="warning.main"
             accentColor="warning.main"
+            loading={loading}
             active={statusFilter === 'PENDING'}
-            onClick={() => handleKpiFilter('PENDING')}
-            loading={loading && stats.total === 0}
+            onClick={() => {
+              setStatusFilter(statusFilter === 'PENDING' ? '' : 'PENDING');
+              setPage(0);
+            }}
           />
         </Grid>
-
-        <Grid item xs={12} sm={6} md={2.4}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard
-            title="Согласовано"
+            title="Утверждено"
             value={stats.approved}
-            subtitle={scopeTab === 'my_requests' ? 'Моих одобренных' : 'Одобренные заявки'}
-            icon={<CheckCircleOutlineIcon sx={{ fontSize: 20 }} />}
+            subtitle="Согласованные изменения"
+            icon={<AssignmentTurnedInOutlinedIcon sx={{ fontSize: 22 }} />}
             iconBgColor="rgba(22, 163, 74, 0.08)"
             iconColor="success.main"
             accentColor="success.main"
+            loading={loading}
             active={statusFilter === 'APPROVED'}
-            onClick={() => handleKpiFilter('APPROVED')}
-            loading={loading && stats.total === 0}
+            onClick={() => {
+              setStatusFilter(statusFilter === 'APPROVED' ? '' : 'APPROVED');
+              setPage(0);
+            }}
           />
         </Grid>
-
-        <Grid item xs={12} sm={6} md={2.4}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Отклонено"
             value={stats.rejected}
-            subtitle={scopeTab === 'my_requests' ? 'Моих отклоненных' : 'Отклоненные заявки'}
-            icon={<CancelOutlinedIcon sx={{ fontSize: 20 }} />}
+            subtitle="Отправлены на доработку"
+            icon={<CancelOutlinedIcon sx={{ fontSize: 22 }} />}
             iconBgColor="rgba(220, 38, 38, 0.08)"
             iconColor="error.main"
             accentColor="error.main"
+            loading={loading}
             active={statusFilter === 'REJECTED'}
-            onClick={() => handleKpiFilter('REJECTED')}
-            loading={loading && stats.total === 0}
+            onClick={() => {
+              setStatusFilter(statusFilter === 'REJECTED' ? '' : 'REJECTED');
+              setPage(0);
+            }}
           />
         </Grid>
-
-        <Grid item xs={12} sm={6} md={2.4}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Отозвано"
             value={stats.cancelled}
-            subtitle={scopeTab === 'my_requests' ? 'Моих отмененных' : 'Отмененные инициатором'}
-            icon={<RemoveCircleOutlineIcon sx={{ fontSize: 20 }} />}
+            subtitle="Аннулировано автором"
+            icon={<RemoveCircleOutlineIcon sx={{ fontSize: 22 }} />}
             iconBgColor="rgba(100, 116, 139, 0.08)"
             iconColor="text.secondary"
-            accentColor="text.secondary"
+            accentColor="grey.600"
+            loading={loading}
             active={statusFilter === 'CANCELLED'}
-            onClick={() => handleKpiFilter('CANCELLED')}
-            loading={loading && stats.total === 0}
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={2.4}>
-          <StatCard
-            title="Всего заявок"
-            value={stats.total}
-            subtitle={scopeTab === 'my_requests' ? 'Всего моих заявок' : 'За все время'}
-            icon={<FactCheckOutlinedIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(2, 132, 199, 0.08)"
-            iconColor="primary.main"
-            accentColor="primary.main"
-            active={statusFilter === ''}
-            onClick={() => handleKpiFilter('')}
-            loading={loading && stats.total === 0}
+            onClick={() => {
+              setStatusFilter(statusFilter === 'CANCELLED' ? '' : 'CANCELLED');
+              setPage(0);
+            }}
           />
         </Grid>
       </Grid>
 
       <DataTableWrapper
-        loading={loading}
-        page={page - 1}
-        pageSize={pageSize}
-        total={total}
-        onPageChange={(_, newPage) => setPage(newPage + 1)}
-        onPageSizeChange={(e) => {
-          setPageSize(parseInt(e.target.value, 10));
-          setPage(1);
-        }}
-        storageKey="eps_approvals_table"
-        columns={APPROVAL_COLUMNS}
-        visibleColumns={visibleColumns}
-        onVisibleColumnsChange={setVisibleColumns}
-        stickyHeader
         tabs={
           <NavTabsContainer
-            value={scopeTab}
+            tabs={scopeTabs}
+            value={activeScopeTab}
             onChange={(val) => {
-              setScopeTab(val);
-              setPage(1);
+              setActiveScopeTab(val as string);
+              setPage(0);
             }}
-            tabs={[
-              { label: 'Все заявки', value: 'all' },
-              {
-                label: 'Требуют рассмотрения',
-                value: 'to_review',
-                badge: stats.toReview || (scopeTab === 'to_review' ? stats.pending : undefined),
-                badgeColor: (stats.toReview || stats.pending) > 0 ? 'warning' : 'default',
-              },
-              { label: 'Мои заявки', value: 'my_requests' },
-            ]}
-          />
-        }
-        empty={items.length === 0 && !loading}
-        emptyState={
-          <EmptyState
-            icon={<FactCheckOutlinedIcon sx={{ fontSize: 36, color: 'text.disabled' }} />}
-            title="Заявки на согласование не найдены"
-            description={
-              activeFilterCount > 0
-                ? 'По заданным критериям фильтрации заявки не найдены. Попробуйте сбросить фильтры.'
-                : 'В системе пока нет активных заявок на согласование.'
-            }
-            actionText={activeFilterCount > 0 ? 'Сбросить фильтры' : (canCreate ? 'Создать заявку' : undefined)}
-            onAction={activeFilterCount > 0 ? handleResetFilters : (canCreate ? () => setCreateModalOpen(true) : undefined)}
           />
         }
         toolbar={
           <FilterToolbar
             variant="embedded"
             activeFilterCount={activeFilterCount}
-            onResetFilters={handleResetFilters}
-            actions={
-              <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center', flexWrap: 'wrap' }}>
-                <TextField
-                  select
-                  size="small"
-                  value={typeFilter}
-                  onChange={(e) => {
-                    setTypeFilter(e.target.value);
-                    setPage(1);
-                  }}
-                  SelectProps={{
-                    displayEmpty: true,
-                  }}
-                  sx={{
-                    minWidth: 170,
-                    backgroundColor: 'background.paper',
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '8px',
-                      fontSize: '0.8125rem',
-                      height: 36,
-                      '& fieldset': { borderColor: 'divider' },
-                      '&:hover fieldset': { borderColor: 'grey.400' },
-                    },
-                  }}
-                >
-                  <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все типы</MenuItem>
-                  {Object.entries(APPROVAL_TYPE_MAP).map(([key, label]) => (
-                    <MenuItem key={key} value={key} sx={{ fontSize: '0.8125rem' }}>
-                      {label}
-                    </MenuItem>
-                  ))}
-                </TextField>
-
-                <TextField
-                  select
-                  size="small"
-                  value={statusFilter}
-                  onChange={(e) => {
-                    setStatusFilter(e.target.value);
-                    setPage(1);
-                  }}
-                  SelectProps={{
-                    displayEmpty: true,
-                  }}
-                  sx={{
-                    minWidth: 150,
-                    backgroundColor: 'background.paper',
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '8px',
-                      fontSize: '0.8125rem',
-                      height: 36,
-                      '& fieldset': { borderColor: 'divider' },
-                      '&:hover fieldset': { borderColor: 'grey.400' },
-                    },
-                  }}
-                >
-                  <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все статусы</MenuItem>
-                  {Object.entries(APPROVAL_STATUS_MAP).map(([key, info]) => (
-                    <MenuItem key={key} value={key} sx={{ fontSize: '0.8125rem' }}>
-                      {info.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
-
-                <TextField
-                  select
-                  size="small"
-                  value={equipmentFilter}
-                  onChange={(e) => {
-                    setEquipmentFilter(e.target.value);
-                    setPage(1);
-                  }}
-                  SelectProps={{
-                    displayEmpty: true,
-                  }}
-                  sx={{
-                    minWidth: 200,
-                    backgroundColor: 'background.paper',
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '8px',
-                      fontSize: '0.8125rem',
-                      height: 36,
-                      '& fieldset': { borderColor: 'divider' },
-                      '&:hover fieldset': { borderColor: 'grey.400' },
-                    },
-                  }}
-                >
-                  <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все единицы</MenuItem>
-                  {equipmentList.map((eq) => (
-                    <MenuItem key={eq.id} value={eq.id} sx={{ fontSize: '0.8125rem' }}>
-                      {eq.inventoryNumber ? `[${eq.inventoryNumber}] ` : ''}{eq.name}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Box>
-            }
+            onResetFilters={() => {
+              setSearch('');
+              setStatusFilter('');
+              setTypeFilter('');
+              setEquipmentFilter('');
+              setPage(0);
+            }}
           >
-            <Box sx={{ minWidth: { xs: '100%', sm: 260, md: 320 }, flexGrow: 1 }}>
+            <Box sx={{ minWidth: 260 }}>
               <SearchInput
+                placeholder="Поиск по теме, оборудованию, инициатору..."
                 value={search}
-                placeholder="Поиск по теме, описанию, инв. номеру..."
-                onSearch={(val) => {
-                  setSearch(val);
-                  setPage(1);
+                onSearch={(v: string) => {
+                  setSearch(v);
+                  setPage(0);
                 }}
               />
             </Box>
+            <TextField
+              select
+              size="small"
+              label="Тип заявки"
+              value={typeFilter}
+              onChange={(e) => {
+                setTypeFilter(e.target.value);
+                setPage(0);
+              }}
+              sx={{ minWidth: 190 }}
+            >
+              <MenuItem value="">Все типы</MenuItem>
+              {Object.entries(APPROVAL_TYPE_MAP).map(([k, v]) => (
+                <MenuItem key={k} value={k}>
+                  {typeof v === 'string' ? v : (v as any).label}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              select
+              size="small"
+              label="Статус"
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(0);
+              }}
+              sx={{ minWidth: 170 }}
+            >
+              <MenuItem value="">Все статусы</MenuItem>
+              {Object.entries(APPROVAL_STATUS_MAP).map(([k, v]) => (
+                <MenuItem key={k} value={k}>
+                  {typeof v === 'string' ? v : (v as any).label}
+                </MenuItem>
+              ))}
+            </TextField>
           </FilterToolbar>
         }
+        total={total}
+        page={page}
+        pageSize={rowsPerPage}
+        onPageChange={(_, newPage) => setPage(newPage)}
+        onPageSizeChange={(e) => {
+          setRowsPerPage(parseInt(e.target.value, 10));
+          setPage(0);
+        }}
+        columns={APPROVAL_COLUMNS}
+        visibleColumns={visibleColumns}
+        onVisibleColumnsChange={setVisibleColumns}
+        loading={loading}
+        empty={items.length === 0 && !loading}
+        emptyState={
+          <EmptyState
+            title="Заявок на согласование не найдено"
+            description="По заданным критериям фильтрации записей не обнаружено."
+            actionText={canCreate ? 'Создать заявку' : undefined}
+            onAction={canCreate ? () => setCreateModalOpen(true) : undefined}
+          />
+        }
       >
-        <Table size="small">
-          <TableHead>
-            <TableRow sx={{ backgroundColor: 'background.paper' }}>
-              {visibleColumns.includes('title') && (
-                <TableCell sx={{ minWidth: 200 }}>
-                  <TableSortLabel
-                    active={sortField === 'title'}
-                    direction={sortField === 'title' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('title')}
-                  >
-                    Тема / заявка
-                  </TableSortLabel>
-                </TableCell>
-              )}
-              {visibleColumns.includes('inventoryNumber') && (
-                <TableCell sx={{ minWidth: 130 }}>
-                  <TableSortLabel
-                    active={sortField === 'inventoryNumber'}
-                    direction={sortField === 'inventoryNumber' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('inventoryNumber')}
-                  >
-                    Инв. номер
-                  </TableSortLabel>
-                </TableCell>
-              )}
-              {visibleColumns.includes('equipment') && (
-                <TableCell sx={{ minWidth: 180 }}>
-                  <TableSortLabel
-                    active={sortField === 'equipment'}
-                    direction={sortField === 'equipment' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('equipment')}
-                  >
-                    Оборудование
-                  </TableSortLabel>
-                </TableCell>
-              )}
-              {visibleColumns.includes('manufacturer') && (
-                <TableCell sx={{ minWidth: 150 }}>
-                  <TableSortLabel
-                    active={sortField === 'manufacturer'}
-                    direction={sortField === 'manufacturer' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('manufacturer')}
-                  >
-                    Производитель
-                  </TableSortLabel>
-                </TableCell>
-              )}
-              {visibleColumns.includes('type') && (
-                <TableCell sx={{ minWidth: 160 }}>
-                  <TableSortLabel
-                    active={sortField === 'type'}
-                    direction={sortField === 'type' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('type')}
-                  >
-                    Тип согласования
-                  </TableSortLabel>
-                </TableCell>
-              )}
-              {visibleColumns.includes('status') && (
-                <TableCell sx={{ minWidth: 130 }}>
-                  <TableSortLabel
-                    active={sortField === 'status'}
-                    direction={sortField === 'status' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('status')}
-                  >
-                    Статус
-                  </TableSortLabel>
-                </TableCell>
-              )}
-              {visibleColumns.includes('requester') && (
-                <TableCell sx={{ minWidth: 150 }}>
-                  <TableSortLabel
-                    active={sortField === 'requester'}
-                    direction={sortField === 'requester' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('requester')}
-                  >
-                    Инициатор
-                  </TableSortLabel>
-                </TableCell>
-              )}
-              {visibleColumns.includes('date') && (
-                <TableCell sx={{ minWidth: 130 }}>
-                  <TableSortLabel
-                    active={sortField === 'date'}
-                    direction={sortField === 'date' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('date')}
-                  >
-                    Дата подачи
-                  </TableSortLabel>
-                </TableCell>
-              )}
-              {visibleColumns.includes('reviewer') && (
-                <TableCell sx={{ minWidth: 160 }}>
-                  <TableSortLabel
-                    active={sortField === 'reviewer'}
-                    direction={sortField === 'reviewer' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('reviewer')}
-                  >
-                    Решение / автор
-                  </TableSortLabel>
-                </TableCell>
-              )}
-              {visibleColumns.includes('actions') && (
-                <TableCell align="right" sx={{ minWidth: 110 }}>
-                  Действия
-                </TableCell>
-              )}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {sortedItems.map((app) => {
-              const isPending = app.status === 'PENDING';
-              const isRequester = user?.userId === app.requesterId;
-
-              return (
-                <TableRow
-                  key={app.id}
-                  hover
-                  sx={{ cursor: 'pointer' }}
-                  onClick={() => {
-                    setSelectedApprovalForDetails(app);
-                    setDetailsModalOpen(true);
-                  }}
-                >
-                  {visibleColumns.includes('title') && (
-                    <TableCell>
-                      <Typography variant="subtitle2" fontWeight={600} color="primary.main" sx={{ fontSize: '0.8125rem' }}>
-                        {app.title}
-                      </Typography>
-                      {app.proposedData?.targetStatus && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-                          <Typography variant="caption" color="text.secondary">
-                            Целевой статус:
-                          </Typography>
-                          <StatusBadge status={app.proposedData.targetStatus} size="small" variant="outlined" />
-                        </Box>
-                      )}
-                    </TableCell>
-                  )}
-
-                  {visibleColumns.includes('inventoryNumber') && (
-                    <TableCell sx={{ width: 120 }}>
-                      {app.equipment?.inventoryNumber ? (
-                        <Paper
-                          variant="outlined"
-                          sx={{
-                            display: 'inline-block',
-                            px: 0.85,
-                            py: 0.2,
-                            fontFamily: 'monospace',
-                            fontWeight: 700,
-                            bgcolor: 'background.default',
-                            fontSize: '0.75rem',
-                            borderRadius: '4px',
-                            color: 'text.secondary',
-                            borderColor: 'grey.400',
-                            lineHeight: 1.3,
-                          }}
-                        >
-                          {app.equipment.inventoryNumber}
-                        </Paper>
-                      ) : (
-                        <Typography variant="caption" color="text.secondary">—</Typography>
-                      )}
-                    </TableCell>
-                  )}
-
-                  {visibleColumns.includes('equipment') && (
-                    <TableCell>
-                      {app.equipment ? (
-                        <Box
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (app.equipment?.id) {
-                              router.push(`/eps/${app.equipment.id}`);
-                            }
-                          }}
-                          sx={{
-                            cursor: 'pointer',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'flex-start',
-                            gap: 0.35,
-                            '&:hover .equipment-name': { color: 'primary.main', textDecoration: 'underline' },
-                          }}
-                        >
-                          <Typography
-                            className="equipment-name"
-                            variant="body2"
-                            fontWeight={600}
-                            sx={{ fontSize: '0.8125rem', color: 'text.primary', lineHeight: 1.35 }}
-                          >
-                            {app.equipment.name}
-                          </Typography>
-                        </Box>
-                      ) : (
-                        <Typography variant="caption" color="text.secondary">
-                          —
-                        </Typography>
-                      )}
-                    </TableCell>
-                  )}
-
-                  {visibleColumns.includes('manufacturer') && (
-                    <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
-                      {app.equipment?.manufacturer || '—'}
-                    </TableCell>
-                  )}
-
-                  {visibleColumns.includes('type') && (
-                    <TableCell>
-                      <StatusBadge status={app.type} />
-                    </TableCell>
-                  )}
-
-                  {visibleColumns.includes('status') && (
-                    <TableCell>
-                      <StatusBadge status={app.status} />
-                    </TableCell>
-                  )}
-
-                  {visibleColumns.includes('requester') && (
-                    <TableCell sx={{ fontSize: '0.8125rem' }}>
-                      {app.requester?.displayName || '—'}
-                    </TableCell>
-                  )}
-
-                  {visibleColumns.includes('date') && (
-                    <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace', color: 'text.disabled' }}>
-                      {formatDateTime(app.createdAt)}
-                    </TableCell>
-                  )}
-
-                  {visibleColumns.includes('reviewer') && (
-                    <TableCell sx={{ fontSize: '0.8125rem' }}>
-                      {app.reviewer ? (
-                        <Box>
-                          <Typography variant="caption" fontWeight={600} display="block" sx={{ color: 'text.primary' }}>
-                            {app.reviewer.displayName}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
-                            {app.reviewedAt ? formatDateTime(app.reviewedAt) : ''}
-                          </Typography>
-                        </Box>
-                      ) : (
-                        <Typography variant="caption" color="text.secondary">
-                          Не рассмотрено
-                        </Typography>
-                      )}
-                    </TableCell>
-                  )}
-
-                  {visibleColumns.includes('actions') && (
-                    <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-                      {isPending && canReview ? (
-                        <Button
-                          size="small"
-                          variant="contained"
-                          color="primary"
-                          onClick={() => {
-                            setSelectedApprovalForReview(app);
-                            setResolutionComment('');
-                            setReviewModalOpen(true);
-                          }}
-                          sx={{ fontSize: '0.75rem', px: 1.25, py: 0.25, borderRadius: '6px' }}
-                        >
-                          Решение
-                        </Button>
-                      ) : isPending && isRequester ? (
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          color="inherit"
-                          onClick={() => setRevokeApproval(app)}
-                          sx={{ fontSize: '0.75rem', px: 1, borderRadius: '6px' }}
-                        >
-                          Отозвать
-                        </Button>
-                      ) : (
-                        <Button
-                          size="small"
-                          variant="text"
-                          onClick={() => {
-                            setSelectedApprovalForDetails(app);
-                            setDetailsModalOpen(true);
-                          }}
-                          sx={{ fontSize: '0.75rem', borderRadius: '6px' }}
-                        >
-                          Детали
-                        </Button>
-                      )}
-                    </TableCell>
-                  )}
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+        <ApprovalTableView
+          items={sortedItems}
+          visibleColumns={visibleColumns}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          currentUserId={user?.userId}
+          canReview={canReview}
+          onRequestSort={handleRequestSort}
+          onSelectReview={(app) => {
+            setSelectedApprovalForReview(app);
+            setResolutionComment('');
+            setReviewModalOpen(true);
+          }}
+          onSelectDetails={(app) => {
+            setSelectedApprovalForDetails(app);
+            setDetailsModalOpen(true);
+          }}
+          onRevoke={(app) => setRevokeApproval(app)}
+        />
       </DataTableWrapper>
 
-      {/* Мастер создания заявки на согласование */}
       <ApprovalWizardDialog
         open={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
         onSuccess={fetchApprovals}
       />
 
-      {/* Dialog 2: Review Resolution Modal */}
-      <FormDialog
+      <ApprovalReviewDialog
         open={reviewModalOpen}
+        approval={selectedApprovalForReview}
+        resolutionComment={resolutionComment}
+        submitting={submittingReview}
         onClose={() => setReviewModalOpen(false)}
-        title="Рассмотрение заявки на согласование"
-        icon={<CheckCircleOutlineIcon color="primary" />}
-        maxWidth="sm"
-        hideActions
-      >
-        {selectedApprovalForReview && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-            <Paper variant="outlined" sx={{ p: 2, backgroundColor: 'background.default' }}>
-              <Typography variant="caption" color="text.secondary" display="block">
-                Оборудование:
-              </Typography>
-              <Typography variant="subtitle2" fontWeight={700}>
-                {selectedApprovalForReview.equipment
-                  ? `${selectedApprovalForReview.equipment.name} (Инв. №: ${selectedApprovalForReview.equipment.inventoryNumber || 'Б/Н'})`
-                  : 'Оборудование удалено / не привязано'}
-              </Typography>
+        onCommentChange={setResolutionComment}
+        onProcessReview={handleProcessReview}
+      />
 
-              <Divider sx={{ my: 1.5 }} />
-
-              <Typography variant="caption" color="text.secondary" display="block">
-                Тип согласования:
-              </Typography>
-              <Box sx={{ mt: 0.5 }}>
-                <StatusBadge status={selectedApprovalForReview.type} />
-              </Box>
-
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1.5 }}>
-                Тема заявки:
-              </Typography>
-              <Typography variant="body2" fontWeight={600}>
-                {selectedApprovalForReview.title}
-              </Typography>
-
-              {selectedApprovalForReview.description && (
-                <>
-                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-                    Обоснование инициатора ({selectedApprovalForReview.requester?.displayName || 'Инициатор'}):
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontStyle: 'italic' }}>
-                    «{selectedApprovalForReview.description}»
-                  </Typography>
-                </>
-              )}
-
-              {selectedApprovalForReview.proposedData && typeof selectedApprovalForReview.proposedData === 'object' && (
-                <Box sx={{ mt: 1.5, p: 1.5, bgcolor: 'background.paper', borderRadius: '6px', border: '1px solid divider' }}>
-                  <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" sx={{ mb: 0.75 }}>
-                    Предложенные данные / характеристики:
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                    {Object.entries(selectedApprovalForReview.proposedData).map(([key, val]) => {
-                      if (val === null || val === undefined || val === '') return null;
-                      if (key === 'customFields' && typeof val === 'object') {
-                        return Object.entries(val).map(([cfKey, cfVal]) => (
-                          <Box key={cfKey} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', py: 0.25, borderBottom: '1px dashed action.hover' }}>
-                            <Typography variant="caption" color="text.secondary">{cfKey}:</Typography>
-                            <Typography variant="caption" fontWeight={600}>{String(cfVal)}</Typography>
-                          </Box>
-                        ));
-                      }
-                      const labels: Record<string, string> = {
-                        name: 'Наименование',
-                        inventoryNumber: 'Инвентарный №',
-                        serialNumber: 'Заводской №',
-                        manufacturer: 'Производитель',
-                        model: 'Модель',
-                        location: 'Локация',
-                        status: 'Целевой статус',
-                        targetStatus: 'Целевой статус',
-                      };
-                      return (
-                        <Box key={key} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', py: 0.25, borderBottom: '1px dashed action.hover' }}>
-                          <Typography variant="caption" color="text.secondary">{labels[key] || key}:</Typography>
-                          <Typography variant="caption" fontWeight={600}>{String(val)}</Typography>
-                        </Box>
-                      );
-                    })}
-                  </Box>
-                </Box>
-              )}
-            </Paper>
-
-            <Alert severity="info">
-              При согласовании система <strong>автоматически обновит статус оборудования</strong> в базе данных и зафиксирует событие в Истории изменений.
-            </Alert>
-
-            <TextField
-              label="Резолюция / Комментарий согласующего лица"
-              value={resolutionComment}
-              onChange={(e) => setResolutionComment(e.target.value)}
-              multiline
-              rows={3}
-              size="small"
-              fullWidth
-              placeholder="Укажите комментарий, основание решения или номер служебной записки..."
-            />
-
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1 }}>
-              <Button onClick={() => setReviewModalOpen(false)} color="inherit">
-                Закрыть
-              </Button>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button
-                  variant="outlined"
-                  color="error"
-                  onClick={() => handleProcessReview('REJECTED')}
-                  disabled={submittingReview}
-                >
-                  Отклонить
-                </Button>
-                <Button
-                  variant="contained"
-                  color="success"
-                  onClick={() => handleProcessReview('APPROVED')}
-                  disabled={submittingReview}
-                >
-                  {submittingReview ? <CircularProgress size={20} /> : 'Согласовать'}
-                </Button>
-              </Box>
-            </Box>
-          </Box>
-        )}
-      </FormDialog>
-
-      {/* Dialog 3: Approval Details Modal */}
-      <FormDialog
+      <ApprovalDetailsDialog
         open={detailsModalOpen}
+        approval={selectedApprovalForDetails}
         onClose={() => setDetailsModalOpen(false)}
-        title="Сведения о заявке на согласование"
-        maxWidth="sm"
-        hideActions
-      >
-        {selectedApprovalForDetails && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <StatusBadge status={selectedApprovalForDetails.type} />
-              <StatusBadge status={selectedApprovalForDetails.status} />
-            </Box>
-
-            <Typography variant="h6" fontWeight={700}>
-              {selectedApprovalForDetails.title}
-            </Typography>
-
-            <Paper variant="outlined" sx={{ p: 2, backgroundColor: 'background.default' }}>
-              <Typography variant="caption" color="text.secondary" display="block">
-                Оборудование:
-              </Typography>
-              <Typography variant="subtitle2" fontWeight={700}>
-                {selectedApprovalForDetails.equipment
-                  ? `${selectedApprovalForDetails.equipment.name} • Инв. №: ${selectedApprovalForDetails.equipment.inventoryNumber || 'Б/Н'}`
-                  : 'Оборудование удалено / не привязано'}
-              </Typography>
-
-              <Divider sx={{ my: 1.5 }} />
-
-              <Typography variant="caption" color="text.secondary" display="block">
-                Инициатор заявки:
-              </Typography>
-              <Typography variant="body2" fontWeight={600}>
-                {selectedApprovalForDetails.requester?.displayName || 'Инициатор'} ({formatDateTime(selectedApprovalForDetails.createdAt)})
-              </Typography>
-
-              {selectedApprovalForDetails.description && (
-                <>
-                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1.5 }}>
-                    Обоснование:
-                  </Typography>
-                  <Typography variant="body2">
-                    {selectedApprovalForDetails.description}
-                  </Typography>
-                </>
-              )}
-
-              {selectedApprovalForDetails.proposedData && typeof selectedApprovalForDetails.proposedData === 'object' && (
-                <Box sx={{ mt: 1.5, p: 1.5, bgcolor: 'background.paper', borderRadius: '6px', border: '1px solid divider' }}>
-                  <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" sx={{ mb: 0.75 }}>
-                    Предложенные данные / характеристики:
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                    {Object.entries(selectedApprovalForDetails.proposedData).map(([key, val]) => {
-                      if (val === null || val === undefined || val === '') return null;
-                      if (key === 'customFields' && typeof val === 'object') {
-                        return Object.entries(val).map(([cfKey, cfVal]) => (
-                          <Box key={cfKey} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', py: 0.25, borderBottom: '1px dashed action.hover' }}>
-                            <Typography variant="caption" color="text.secondary">{cfKey}:</Typography>
-                            <Typography variant="caption" fontWeight={600}>{String(cfVal)}</Typography>
-                          </Box>
-                        ));
-                      }
-                      const labels: Record<string, string> = {
-                        name: 'Наименование',
-                        inventoryNumber: 'Инвентарный №',
-                        serialNumber: 'Заводской №',
-                        manufacturer: 'Производитель',
-                        model: 'Модель',
-                        location: 'Локация',
-                        status: 'Целевой статус',
-                        targetStatus: 'Целевой статус',
-                      };
-                      return (
-                        <Box key={key} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', py: 0.25, borderBottom: '1px dashed action.hover' }}>
-                          <Typography variant="caption" color="text.secondary">{labels[key] || key}:</Typography>
-                          <Typography variant="caption" fontWeight={600}>{String(val)}</Typography>
-                        </Box>
-                      );
-                    })}
-                  </Box>
-                </Box>
-              )}
-
-              {selectedApprovalForDetails.reviewer && (
-                <>
-                  <Divider sx={{ my: 1.5 }} />
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    Решение принял:
-                  </Typography>
-                  <Typography variant="body2" fontWeight={600}>
-                    {selectedApprovalForDetails.reviewer.displayName} ({formatDateTime(selectedApprovalForDetails.reviewedAt)})
-                  </Typography>
-
-                  {selectedApprovalForDetails.resolutionComment && (
-                    <>
-                      <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-                        Резолюция:
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontStyle: 'italic' }}>
-                        «{selectedApprovalForDetails.resolutionComment}»
-                      </Typography>
-                    </>
-                  )}
-                </>
-              )}
-            </Paper>
-
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1 }}>
-              <Button onClick={() => setDetailsModalOpen(false)} color="inherit">
-                Закрыть
-              </Button>
-              {selectedApprovalForDetails.equipment && (
-                <Button
-                  variant="outlined"
-                  onClick={() => router.push(`/eps/${selectedApprovalForDetails.equipment?.id}`)}
-                >
-                  Перейти в паспорт оборудования
-                </Button>
-              )}
-            </Box>
-          </Box>
-        )}
-      </FormDialog>
+      />
 
       <ConfirmDialog
         open={Boolean(revokeApproval)}
-        title="Отозвать заявку"
-        message={`Вы действительно хотите отозвать заявку «${revokeApproval?.title || ''}»?`}
-        variant="warning"
+        title="Отозвать заявку на согласование?"
+        message={
+          revokeApproval
+            ? `Вы уверены, что хотите отозвать заявку «${revokeApproval.title}»? Она будет переведена в статус «Отозвано» и не будет рассматриваться.`
+            : ''
+        }
         confirmText="Отозвать заявку"
-        cancelText="Отмена"
-        loading={submittingReview}
-        onConfirm={async () => {
-          if (!revokeApproval) return;
-          setSelectedApprovalForReview(revokeApproval);
-          setRevokeApproval(null);
-          await handleProcessReview('CANCELLED');
-        }}
+        variant="danger"
         onClose={() => setRevokeApproval(null)}
+        onConfirm={async () => {
+          const itemToRevoke = revokeApproval;
+          setRevokeApproval(null);
+          await handleProcessReview('CANCELLED', itemToRevoke);
+        }}
       />
     </Box>
   );
 }
 
-export default function ApprovalsPage() {
+export default function ApprovalRegistryPage() {
   return (
-    <Suspense fallback={<PageLoading text="Загрузка реестра заявок на согласование..." />}>
-      <ApprovalsListContent />
+    <Suspense fallback={<PageLoading text="Загрузка журнала согласований..." />}>
+      <ApprovalRegistryContent />
     </Suspense>
   );
 }

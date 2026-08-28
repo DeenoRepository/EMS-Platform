@@ -1,6 +1,8 @@
 import { prisma } from '@ems/database';
+import { logger } from '../logger';
 import { getSystemSettings } from '../system-settings-service';
 import { applyJiraFieldMapping, getJiraFieldMapping, type JiraFieldMappingConfig } from './field-mapping';
+
 export async function syncJiraIssues(targetIntegrationId?: string): Promise<{ count: number; source: string }> {
   const allEquipment = await prisma.equipment.findMany({
     select: { id: true, name: true, inventoryNumber: true, serialNumber: true },
@@ -46,7 +48,7 @@ export async function syncJiraIssues(targetIntegrationId?: string): Promise<{ co
               resolvedDate: mapped.resolvedDate,
               equipmentId: mapped.equipmentId,
               integrationId: integration.id,
-              rawData: rawIssue,
+              rawData: rawIssue as any,
               syncedAt: new Date(),
             },
             update: {
@@ -60,7 +62,7 @@ export async function syncJiraIssues(targetIntegrationId?: string): Promise<{ co
               resolvedDate: mapped.resolvedDate,
               equipmentId: mapped.equipmentId,
               integrationId: integration.id,
-              rawData: rawIssue,
+              rawData: rawIssue as any,
               syncedAt: new Date(),
             },
           });
@@ -89,73 +91,84 @@ export async function syncJiraIssues(targetIntegrationId?: string): Promise<{ co
       }
     }
 
-    return { count: totalImported, source: 'srm_integrations' };
+    return { count: totalImported, source: 'SRM Providers Adapter' };
   }
 
-  // 2. Fallback на системные параметры из БД / .env (legacy Jira)
-  const sysSettings = await getSystemSettings();
-  const isJiraEnabled = process.env.JIRA_ENABLED === 'true' || Boolean(sysSettings.JIRA_BASE_URL);
-  const baseUrl = sysSettings.JIRA_BASE_URL || process.env.JIRA_BASE_URL || process.env.JIRA_HOST;
-  const apiToken = process.env.JIRA_API_TOKEN;
-  const userEmail = process.env.JIRA_USER_EMAIL || process.env.JIRA_EMAIL;
-  const projectKey = sysSettings.JIRA_PROJECT_KEY || process.env.JIRA_PROJECT_KEY || 'EMS';
+  // 2. Fallback на устаревшие SystemSettings (обратная совместимость)
+  const settings = (await getSystemSettings()) as any;
+  const jiraUrl = settings?.jiraUrl || process.env.JIRA_HOST;
+  const jiraUser = settings?.jiraUsername || process.env.JIRA_USERNAME;
+  const jiraToken = settings?.jiraApiToken || process.env.JIRA_API_TOKEN;
+  const jql = settings?.jiraJql || process.env.JIRA_JQL || 'project = EMS ORDER BY created DESC';
 
-  if (isJiraEnabled && baseUrl && apiToken && userEmail) {
-    try {
-      const authHeader = `Basic ${Buffer.from(`${userEmail}:${apiToken}`).toString('base64')}`;
-      const res = await fetch(`${baseUrl}/rest/api/2/search?jql=project=${projectKey} ORDER BY created DESC`, {
-        headers: {
-          Authorization: authHeader,
-          Accept: 'application/json',
-        },
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        const issues: any[] = data.issues || [];
-
-        for (const issue of issues) {
-          const mapped = await applyJiraFieldMapping(issue, defaultGlobalMapping, allEquipment);
-
-          await prisma.jiraIssueCache.upsert({
-            where: { issueKey: mapped.issueKey },
-            create: {
-              issueKey: mapped.issueKey,
-              summary: mapped.summary,
-              status: mapped.status,
-              priority: mapped.priority,
-              issueType: mapped.issueType,
-              assignee: mapped.assignee,
-              reporter: mapped.reporter,
-              createdDate: mapped.createdDate,
-              resolvedDate: mapped.resolvedDate,
-              equipmentId: mapped.equipmentId,
-              rawData: issue,
-              syncedAt: new Date(),
-            },
-            update: {
-              summary: mapped.summary,
-              status: mapped.status,
-              priority: mapped.priority,
-              issueType: mapped.issueType,
-              assignee: mapped.assignee,
-              reporter: mapped.reporter,
-              createdDate: mapped.createdDate,
-              resolvedDate: mapped.resolvedDate,
-              equipmentId: mapped.equipmentId,
-              rawData: issue,
-              syncedAt: new Date(),
-            },
-          });
-        }
-
-        return { count: issues.length, source: 'jira_env_api' };
-      }
-    } catch (err) {
-      logger.warn('Не удалось подключиться к Jira по .env, переход в локальный fallback', { error: err instanceof Error ? err.message : String(err) });
-    }
+  if (!jiraUrl) {
+    throw new Error('Подключение к Jira / SRM не настроено. Перейдите в раздел Интеграции SRM.');
   }
 
-  const existingCount = await prisma.jiraIssueCache.count();
-  return { count: existingCount, source: existingCount > 0 ? 'srm_cache' : 'none' };
+  const authHeader = jiraUser && jiraToken
+    ? `Basic ${Buffer.from(`${jiraUser}:${jiraToken}`).toString('base64')}`
+    : jiraToken
+    ? `Bearer ${jiraToken}`
+    : undefined;
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
+  if (authHeader) {
+    headers['Authorization'] = authHeader;
+  }
+
+  const cleanUrl = jiraUrl.replace(/\/+$/, '');
+  const searchUrl = `${cleanUrl}/rest/api/2/search?jql=${encodeURIComponent(jql)}&maxResults=100`;
+
+  const response = await fetch(searchUrl, {
+    method: 'GET',
+    headers,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Jira API returned status ${response.status}: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  const issues = data.issues || [];
+
+  for (const issue of issues) {
+    const mapped = await applyJiraFieldMapping(issue, defaultGlobalMapping, allEquipment);
+
+    await prisma.jiraIssueCache.upsert({
+      where: { issueKey: mapped.issueKey },
+      create: {
+        issueKey: mapped.issueKey,
+        summary: mapped.summary,
+        status: mapped.status,
+        priority: mapped.priority,
+        issueType: mapped.issueType,
+        assignee: mapped.assignee,
+        reporter: mapped.reporter,
+        createdDate: mapped.createdDate,
+        resolvedDate: mapped.resolvedDate,
+        equipmentId: mapped.equipmentId,
+        rawData: issue as any,
+        syncedAt: new Date(),
+      },
+      update: {
+        summary: mapped.summary,
+        status: mapped.status,
+        priority: mapped.priority,
+        issueType: mapped.issueType,
+        assignee: mapped.assignee,
+        reporter: mapped.reporter,
+        createdDate: mapped.createdDate,
+        resolvedDate: mapped.resolvedDate,
+        equipmentId: mapped.equipmentId,
+        rawData: issue as any,
+        syncedAt: new Date(),
+      },
+    });
+  }
+
+  logger.info(`Синхронизировано ${issues.length} инцидентов Jira (legacy config)`);
+  return { count: issues.length, source: 'Legacy Jira Service' };
 }

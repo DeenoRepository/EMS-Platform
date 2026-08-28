@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth-guard';
+import { enforceRateLimit } from '@/lib/rate-limit';
 import { PERMISSIONS } from '@ems/shared';
 import {
   getJiraFieldMapping,
@@ -72,44 +73,32 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    console.error('Ошибка получения настроек маппинга Jira:', error);
-    return NextResponse.json(
-      { success: false, error: 'Ошибка получения настроек сопоставления полей Jira' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Ошибка получения конфигурации маппинга' }, { status: 500 });
   }
 }
 
-export async function POST(req: NextRequest) {
-  const rateLimitError = await enforceRateLimit(req, { limit: 30, windowMs: 60 * 1000, prefix: 'srm-mapping-post' });
+export async function PUT(req: NextRequest) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 30, windowMs: 60 * 1000, prefix: 'srm-mapping-put' });
   if (rateLimitError) return rateLimitError;
 
   const auth = await requireAuth(req, [PERMISSIONS.ADMIN_SETTINGS_MANAGE, PERMISSIONS.SRM_SYNC_TRIGGER]);
   if (auth.errorResponse) return auth.errorResponse;
 
   try {
-    const body = await req.json();
-    const config: JiraFieldMappingConfig = body;
+    const body: JiraFieldMappingConfig = await req.json();
 
-    if (!config || !Array.isArray(config.standardMappings) || !config.equipmentMatching) {
-      return NextResponse.json(
-        { success: false, error: 'Некорректная структура конфигурации сопоставления' },
-        { status: 400 }
-      );
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json({ success: false, error: 'Некорректная конфигурация маппинга' }, { status: 400 });
     }
 
-    await saveJiraFieldMapping(config);
+    const updated = await saveJiraFieldMapping(body);
 
     return NextResponse.json({
       success: true,
-      message: 'Конфигурация сопоставления полей Jira успешно сохранена',
-      data: config,
+      message: 'Конфигурация маппинга полей SRM успешно сохранена',
+      data: updated,
     });
   } catch (error: unknown) {
-    console.error('Ошибка сохранения настроек маппинга Jira:', error);
-    return NextResponse.json(
-      { success: false, error: 'Ошибка сохранения конфигурации маппинга полей' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Ошибка сохранения конфигурации маппинга' }, { status: 500 });
   }
 }

@@ -1,11 +1,341 @@
 {
   "directory": "D:\\Projects\\EMS-Platform\\apps\\web\\src",
-  "files_analyzed": 258,
-  "average_score": 77.1,
+  "files_analyzed": 238,
+  "average_score": 75.4,
   "overall_grade": "C",
-  "total_code_smells": 2341,
-  "total_solid_violations": 23,
+  "total_code_smells": 2334,
+  "total_solid_violations": 27,
   "files": [
+    {
+      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\app\\eps\\approvals\\page.tsx",
+      "language": "typescript",
+      "metrics": {
+        "lines": {
+          "total": 1251,
+          "code": 1162,
+          "blank": 79,
+          "comment": 10
+        },
+        "functions": 8,
+        "classes": 0,
+        "avg_complexity": 14.6
+      },
+      "quality_score": 0,
+      "grade": "F",
+      "smells": [
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'handleRequestSort' has 61 lines (max: 50)",
+          "location": "handleRequestSort"
+        },
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'fetchEquipmentList' has 62 lines (max: 50)",
+          "location": "fetchEquipmentList"
+        },
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'handleProcessReview' has 918 lines (max: 50)",
+          "location": "handleProcessReview"
+        },
+        {
+          "type": "high_complexity",
+          "severity": "medium",
+          "message": "Function 'fetchEquipmentList' has complexity 18 (max: 10)",
+          "location": "fetchEquipmentList"
+        },
+        {
+          "type": "high_complexity",
+          "severity": "high",
+          "message": "Function 'handleProcessReview' has complexity 76 (max: 10)",
+          "location": "handleProcessReview"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 100 should be a named constant",
+          "location": "line 203"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 217 should be a named constant",
+          "location": "line 429"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 163 should be a named constant",
+          "location": "line 444"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 220 should be a named constant",
+          "location": "line 459"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 100 should be a named constant",
+          "location": "line 474"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 132 should be a named constant",
+          "location": "line 489"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 170 should be a named constant",
+          "location": "line 566"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 150 should be a named constant",
+          "location": "line 597"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 200 should be a named constant",
+          "location": "line 628"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 260 should be a named constant",
+          "location": "line 649"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 200 should be a named constant",
+          "location": "line 666"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 130 should be a named constant",
+          "location": "line 677"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 180 should be a named constant",
+          "location": "line 688"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 150 should be a named constant",
+          "location": "line 699"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 160 should be a named constant",
+          "location": "line 710"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 130 should be a named constant",
+          "location": "line 721"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 150 should be a named constant",
+          "location": "line 732"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 130 should be a named constant",
+          "location": "line 743"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 160 should be a named constant",
+          "location": "line 754"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 110 should be a named constant",
+          "location": "line 765"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 788"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 120 should be a named constant",
+          "location": "line 803"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 812"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 851"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 899"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 984"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 1002"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 1019"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 1029"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 1046"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 1112"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 1120"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 1131"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 1148"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 1158"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 1175"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 1189"
+        }
+      ],
+      "solid_violations": [
+        {
+          "principle": "DIP",
+          "name": "Dependency Inversion Principle",
+          "severity": "low",
+          "message": "File has 20 imports - consider dependency injection"
+        }
+      ],
+      "function_details": [
+        {
+          "name": "ApprovalsListContent",
+          "parameters": 0,
+          "lines": 18,
+          "complexity": 1
+        },
+        {
+          "name": "handleRequestSort",
+          "parameters": 1,
+          "lines": 61,
+          "complexity": 10
+        },
+        {
+          "name": "fetchEquipmentList",
+          "parameters": 1,
+          "lines": 62,
+          "complexity": 18
+        },
+        {
+          "name": "handleKpiFilter",
+          "parameters": 1,
+          "lines": 10,
+          "complexity": 3
+        },
+        {
+          "name": "handleResetFilters",
+          "parameters": 1,
+          "lines": 10,
+          "complexity": 1
+        },
+        {
+          "name": "handleCreateSubmit",
+          "parameters": 1,
+          "lines": 48,
+          "complexity": 7
+        },
+        {
+          "name": "handleProcessReview",
+          "parameters": 1,
+          "lines": 918,
+          "complexity": 76
+        },
+        {
+          "name": "ApprovalsPage",
+          "parameters": 0,
+          "lines": 8,
+          "complexity": 1
+        }
+      ],
+      "class_details": []
+    },
     {
       "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\app\\eps\\[id]\\page.tsx",
       "language": "typescript",
@@ -1081,6 +1411,348 @@
       "class_details": []
     },
     {
+      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\app\\wms\\operations\\page.tsx",
+      "language": "typescript",
+      "metrics": {
+        "lines": {
+          "total": 1075,
+          "code": 1025,
+          "blank": 40,
+          "comment": 10
+        },
+        "functions": 4,
+        "classes": 0,
+        "avg_complexity": 23.5
+      },
+      "quality_score": 0,
+      "grade": "F",
+      "smells": [
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'WmsOperationsContent' has 134 lines (max: 50)",
+          "location": "WmsOperationsContent"
+        },
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'handleQuickDispatch' has 69 lines (max: 50)",
+          "location": "handleQuickDispatch"
+        },
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'renderRecipientBadge' has 732 lines (max: 50)",
+          "location": "renderRecipientBadge"
+        },
+        {
+          "type": "high_complexity",
+          "severity": "high",
+          "message": "Function 'WmsOperationsContent' has complexity 33 (max: 10)",
+          "location": "WmsOperationsContent"
+        },
+        {
+          "type": "high_complexity",
+          "severity": "high",
+          "message": "Function 'renderRecipientBadge' has complexity 51 (max: 10)",
+          "location": "renderRecipientBadge"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 342"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 353"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 366"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 375"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 386"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 420"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 442"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 132 should be a named constant",
+          "location": "line 477"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 163 should be a named constant",
+          "location": "line 491"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 217 should be a named constant",
+          "location": "line 505"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 124 should be a named constant",
+          "location": "line 519"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 200 should be a named constant",
+          "location": "line 575"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 599"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 604"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 609"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 614"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 619"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 624"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 629"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 200 should be a named constant",
+          "location": "line 649"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 672"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 500 should be a named constant",
+          "location": "line 711"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 132 should be a named constant",
+          "location": "line 736"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 217 should be a named constant",
+          "location": "line 750"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 124 should be a named constant",
+          "location": "line 764"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 163 should be a named constant",
+          "location": "line 778"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 280 should be a named constant",
+          "location": "line 812"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 847"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 848"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 849"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 850"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 851"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 852"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 853"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 883"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 884"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 894"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 903"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 931"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 961"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 971"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 986"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 996"
+        }
+      ],
+      "solid_violations": [
+        {
+          "principle": "DIP",
+          "name": "Dependency Inversion Principle",
+          "severity": "low",
+          "message": "File has 25 imports - consider dependency injection"
+        }
+      ],
+      "function_details": [
+        {
+          "name": "WmsOperationsContent",
+          "parameters": 0,
+          "lines": 134,
+          "complexity": 33
+        },
+        {
+          "name": "handleQuickDispatch",
+          "parameters": 1,
+          "lines": 69,
+          "complexity": 9
+        },
+        {
+          "name": "renderRecipientBadge",
+          "parameters": 1,
+          "lines": 732,
+          "complexity": 51
+        },
+        {
+          "name": "WmsOperationsPage",
+          "parameters": 0,
+          "lines": 8,
+          "complexity": 1
+        }
+      ],
+      "class_details": []
+    },
+    {
       "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\eps\\EquipmentWizardForm.tsx",
       "language": "typescript",
       "metrics": {
@@ -1740,6 +2412,558 @@
       "class_details": []
     },
     {
+      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\layout\\Sidebar.tsx",
+      "language": "typescript",
+      "metrics": {
+        "lines": {
+          "total": 1429,
+          "code": 1354,
+          "blank": 61,
+          "comment": 14
+        },
+        "functions": 13,
+        "classes": 0,
+        "avg_complexity": 10.6
+      },
+      "quality_score": 0,
+      "grade": "F",
+      "smells": [
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'loadData' has 79 lines (max: 50)",
+          "location": "loadData"
+        },
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'handleLogout' has 301 lines (max: 50)",
+          "location": "handleLogout"
+        },
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'effectiveBadgeTooltip' has 58 lines (max: 50)",
+          "location": "effectiveBadgeTooltip"
+        },
+        {
+          "type": "high_complexity",
+          "severity": "high",
+          "message": "Function 'loadData' has complexity 47 (max: 10)",
+          "location": "loadData"
+        },
+        {
+          "type": "high_complexity",
+          "severity": "high",
+          "message": "Function 'handleLogout' has complexity 32 (max: 10)",
+          "location": "handleLogout"
+        },
+        {
+          "type": "high_complexity",
+          "severity": "medium",
+          "message": "Function 'renderNavBlock' has complexity 13 (max: 10)",
+          "location": "renderNavBlock"
+        },
+        {
+          "type": "high_complexity",
+          "severity": "medium",
+          "message": "Function 'effectiveBadgeColor' has complexity 11 (max: 10)",
+          "location": "effectiveBadgeColor"
+        },
+        {
+          "type": "high_complexity",
+          "severity": "medium",
+          "message": "Function 'effectiveBadgeTooltip' has complexity 12 (max: 10)",
+          "location": "effectiveBadgeTooltip"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 330 should be a named constant",
+          "location": "line 54"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 20000 should be a named constant",
+          "location": "line 212"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 800 should be a named constant",
+          "location": "line 683"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 761"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 816"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 872"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 915"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 900 should be a named constant",
+          "location": "line 959"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 100 should be a named constant",
+          "location": "line 966"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 800 should be a named constant",
+          "location": "line 1038"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 1050"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 500 should be a named constant",
+          "location": "line 1064"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 1131"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 1152"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 1174"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 1228"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 1238"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 200 should be a named constant",
+          "location": "line 1268"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 1282"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 1294"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 1320"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 1351"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 220 should be a named constant",
+          "location": "line 1381"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 1392"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 1423"
+        },
+        {
+          "type": "commented_code",
+          "severity": "low",
+          "message": "Commented-out code should be removed",
+          "location": "line 582"
+        }
+      ],
+      "solid_violations": [
+        {
+          "principle": "DIP",
+          "name": "Dependency Inversion Principle",
+          "severity": "low",
+          "message": "File has 34 imports - consider dependency injection"
+        }
+      ],
+      "function_details": [
+        {
+          "name": "Sidebar",
+          "parameters": 0,
+          "lines": 48,
+          "complexity": 2
+        },
+        {
+          "name": "loadData",
+          "parameters": 0,
+          "lines": 79,
+          "complexity": 47
+        },
+        {
+          "name": "toggleExpand",
+          "parameters": 1,
+          "lines": 5,
+          "complexity": 1
+        },
+        {
+          "name": "handleNavigate",
+          "parameters": 1,
+          "lines": 8,
+          "complexity": 2
+        },
+        {
+          "name": "handleOpenFlyout",
+          "parameters": 1,
+          "lines": 11,
+          "complexity": 6
+        },
+        {
+          "name": "isItemActive",
+          "parameters": 1,
+          "lines": 9,
+          "complexity": 7
+        },
+        {
+          "name": "handleProfileMenuOpen",
+          "parameters": 1,
+          "lines": 5,
+          "complexity": 1
+        },
+        {
+          "name": "handleProfileMenuClose",
+          "parameters": 1,
+          "lines": 5,
+          "complexity": 1
+        },
+        {
+          "name": "handleLogout",
+          "parameters": 1,
+          "lines": 301,
+          "complexity": 32
+        },
+        {
+          "name": "getBadgeColors",
+          "parameters": 1,
+          "lines": 27,
+          "complexity": 3
+        }
+      ],
+      "class_details": []
+    },
+    {
+      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\app\\eps\\history\\page.tsx",
+      "language": "typescript",
+      "metrics": {
+        "lines": {
+          "total": 759,
+          "code": 703,
+          "blank": 50,
+          "comment": 6
+        },
+        "functions": 8,
+        "classes": 0,
+        "avg_complexity": 12.0
+      },
+      "quality_score": 5,
+      "grade": "F",
+      "smells": [
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'handleRequestSort' has 67 lines (max: 50)",
+          "location": "handleRequestSort"
+        },
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'loadEquipment' has 58 lines (max: 50)",
+          "location": "loadEquipment"
+        },
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'handleResetFilters' has 432 lines (max: 50)",
+          "location": "handleResetFilters"
+        },
+        {
+          "type": "high_complexity",
+          "severity": "medium",
+          "message": "Function 'formatValue' has complexity 12 (max: 10)",
+          "location": "formatValue"
+        },
+        {
+          "type": "high_complexity",
+          "severity": "high",
+          "message": "Function 'handleRequestSort' has complexity 31 (max: 10)",
+          "location": "handleRequestSort"
+        },
+        {
+          "type": "high_complexity",
+          "severity": "medium",
+          "message": "Function 'loadEquipment' has complexity 16 (max: 10)",
+          "location": "loadEquipment"
+        },
+        {
+          "type": "high_complexity",
+          "severity": "high",
+          "message": "Function 'handleResetFilters' has complexity 23 (max: 10)",
+          "location": "handleResetFilters"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 142"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 149"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 158"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 100 should be a named constant",
+          "location": "line 257"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 132 should be a named constant",
+          "location": "line 390"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 163 should be a named constant",
+          "location": "line 404"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 132 should be a named constant",
+          "location": "line 418"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 220 should be a named constant",
+          "location": "line 432"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 160 should be a named constant",
+          "location": "line 491"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 200 should be a named constant",
+          "location": "line 522"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 140 should be a named constant",
+          "location": "line 541"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 140 should be a named constant",
+          "location": "line 553"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 260 should be a named constant",
+          "location": "line 567"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 160 should be a named constant",
+          "location": "line 584"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 160 should be a named constant",
+          "location": "line 595"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 130 should be a named constant",
+          "location": "line 606"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 150 should be a named constant",
+          "location": "line 617"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 180 should be a named constant",
+          "location": "line 628"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 200 should be a named constant",
+          "location": "line 639"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 662"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 706"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 717"
+        }
+      ],
+      "solid_violations": [
+        {
+          "principle": "OCP",
+          "name": "Open/Closed Principle",
+          "severity": "medium",
+          "message": "Found 5 type checks - consider using polymorphism"
+        },
+        {
+          "principle": "DIP",
+          "name": "Dependency Inversion Principle",
+          "severity": "low",
+          "message": "File has 16 imports - consider dependency injection"
+        }
+      ],
+      "function_details": [
+        {
+          "name": "formatValue",
+          "parameters": 0,
+          "lines": 28,
+          "complexity": 12
+        },
+        {
+          "name": "RenderChangesDiff",
+          "parameters": 0,
+          "lines": 48,
+          "complexity": 8
+        },
+        {
+          "name": "HistoryListContent",
+          "parameters": 0,
+          "lines": 19,
+          "complexity": 2
+        },
+        {
+          "name": "handleRequestSort",
+          "parameters": 1,
+          "lines": 67,
+          "complexity": 31
+        },
+        {
+          "name": "loadEquipment",
+          "parameters": 0,
+          "lines": 58,
+          "complexity": 16
+        },
+        {
+          "name": "handleKpiFilter",
+          "parameters": 1,
+          "lines": 10,
+          "complexity": 3
+        },
+        {
+          "name": "handleResetFilters",
+          "parameters": 1,
+          "lines": 432,
+          "complexity": 23
+        },
+        {
+          "name": "HistoryPage",
+          "parameters": 0,
+          "lines": 8,
+          "complexity": 1
+        }
+      ],
+      "class_details": []
+    },
+    {
       "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\app\\wms\\stock\\page.tsx",
       "language": "typescript",
       "metrics": {
@@ -2328,6 +3552,300 @@
       "class_details": []
     },
     {
+      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\app\\eps\\reports\\page.tsx",
+      "language": "typescript",
+      "metrics": {
+        "lines": {
+          "total": 1271,
+          "code": 1174,
+          "blank": 68,
+          "comment": 29
+        },
+        "functions": 12,
+        "classes": 0,
+        "avg_complexity": 7.9
+      },
+      "quality_score": 13,
+      "grade": "F",
+      "smells": [
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'ReportBuilderPage' has 218 lines (max: 50)",
+          "location": "ReportBuilderPage"
+        },
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'handleExportJson' has 56 lines (max: 50)",
+          "location": "handleExportJson"
+        },
+        {
+          "type": "high_complexity",
+          "severity": "high",
+          "message": "Function 'ReportBuilderPage' has complexity 43 (max: 10)",
+          "location": "ReportBuilderPage"
+        },
+        {
+          "type": "high_complexity",
+          "severity": "medium",
+          "message": "Function 'handleSaveTemplate' has complexity 13 (max: 10)",
+          "location": "handleSaveTemplate"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 645"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 132 should be a named constant",
+          "location": "line 679"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 124 should be a named constant",
+          "location": "line 691"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 150 should be a named constant",
+          "location": "line 734"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 100 should be a named constant",
+          "location": "line 739"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 100 should be a named constant",
+          "location": "line 750"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 150 should be a named constant",
+          "location": "line 769"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 150 should be a named constant",
+          "location": "line 797"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 150 should be a named constant",
+          "location": "line 818"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 130 should be a named constant",
+          "location": "line 839"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 130 should be a named constant",
+          "location": "line 849"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 260 should be a named constant",
+          "location": "line 855"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 882"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 889"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 917"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 929"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 949"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 988"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 1001"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 1011"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 1022"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 100 should be a named constant",
+          "location": "line 1037"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 380 should be a named constant",
+          "location": "line 1041"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 1073"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 1118"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 430 should be a named constant",
+          "location": "line 1134"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 1155"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 1161"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 1238"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 1241"
+        }
+      ],
+      "solid_violations": [
+        {
+          "principle": "DIP",
+          "name": "Dependency Inversion Principle",
+          "severity": "low",
+          "message": "File has 22 imports - consider dependency injection"
+        }
+      ],
+      "function_details": [
+        {
+          "name": "ReportBuilderPage",
+          "parameters": 0,
+          "lines": 218,
+          "complexity": 43
+        },
+        {
+          "name": "handleMoveColumn",
+          "parameters": 1,
+          "lines": 12,
+          "complexity": 3
+        },
+        {
+          "name": "handleToggleColumn",
+          "parameters": 1,
+          "lines": 16,
+          "complexity": 4
+        },
+        {
+          "name": "handleToggleCategory",
+          "parameters": 1,
+          "lines": 20,
+          "complexity": 5
+        },
+        {
+          "name": "handleSelectAllColumns",
+          "parameters": 1,
+          "lines": 7,
+          "complexity": 1
+        },
+        {
+          "name": "handleResetFilters",
+          "parameters": 1,
+          "lines": 18,
+          "complexity": 1
+        },
+        {
+          "name": "handleApplyTemplate",
+          "parameters": 1,
+          "lines": 18,
+          "complexity": 10
+        },
+        {
+          "name": "handleSaveTemplate",
+          "parameters": 1,
+          "lines": 48,
+          "complexity": 13
+        },
+        {
+          "name": "confirmDeleteTemplate",
+          "parameters": 1,
+          "lines": 22,
+          "complexity": 7
+        },
+        {
+          "name": "handleExportExcel",
+          "parameters": 1,
+          "lines": 36,
+          "complexity": 3
+        }
+      ],
+      "class_details": []
+    },
+    {
       "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\app\\admin\\feedback\\page.tsx",
       "language": "typescript",
       "metrics": {
@@ -2605,6 +4123,276 @@
           "parameters": 1,
           "lines": 62,
           "complexity": 2
+        }
+      ],
+      "class_details": []
+    },
+    {
+      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\app\\page.tsx",
+      "language": "typescript",
+      "metrics": {
+        "lines": {
+          "total": 808,
+          "code": 762,
+          "blank": 42,
+          "comment": 4
+        },
+        "functions": 4,
+        "classes": 0,
+        "avg_complexity": 15.5
+      },
+      "quality_score": 15,
+      "grade": "F",
+      "smells": [
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'handleScopeChange' has 632 lines (max: 50)",
+          "location": "handleScopeChange"
+        },
+        {
+          "type": "high_complexity",
+          "severity": "high",
+          "message": "Function 'handleScopeChange' has complexity 53 (max: 10)",
+          "location": "handleScopeChange"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 100 should be a named constant",
+          "location": "line 187"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 293"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 255 should be a named constant",
+          "location": "line 298"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 304"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 334"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 132 should be a named constant",
+          "location": "line 370"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 118 should be a named constant",
+          "location": "line 392"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 217 should be a named constant",
+          "location": "line 406"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 124 should be a named constant",
+          "location": "line 420"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 132 should be a named constant",
+          "location": "line 449"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 459"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 475"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 487"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 499"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 511"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 530"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 538"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 160 should be a named constant",
+          "location": "line 548"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 800 should be a named constant",
+          "location": "line 572"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 574"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 602"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 610"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 160 should be a named constant",
+          "location": "line 620"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 640"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 664"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 800 should be a named constant",
+          "location": "line 682"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 685"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 800 should be a named constant",
+          "location": "line 692"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 695"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 711"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 719"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 140 should be a named constant",
+          "location": "line 729"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 750"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 800 should be a named constant",
+          "location": "line 758"
+        }
+      ],
+      "solid_violations": [
+        {
+          "principle": "DIP",
+          "name": "Dependency Inversion Principle",
+          "severity": "low",
+          "message": "File has 23 imports - consider dependency injection"
+        }
+      ],
+      "function_details": [
+        {
+          "name": "ExecutiveDashboardContent",
+          "parameters": 0,
+          "lines": 41,
+          "complexity": 7
+        },
+        {
+          "name": "handleRefresh",
+          "parameters": 1,
+          "lines": 6,
+          "complexity": 1
+        },
+        {
+          "name": "handleScopeChange",
+          "parameters": 1,
+          "lines": 632,
+          "complexity": 53
+        },
+        {
+          "name": "DashboardPage",
+          "parameters": 0,
+          "lines": 8,
+          "complexity": 1
         }
       ],
       "class_details": []
@@ -3643,6 +5431,234 @@
           "parameters": 0,
           "lines": 63,
           "complexity": 20
+        }
+      ],
+      "class_details": []
+    },
+    {
+      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\app\\mro\\page.tsx",
+      "language": "typescript",
+      "metrics": {
+        "lines": {
+          "total": 637,
+          "code": 597,
+          "blank": 34,
+          "comment": 6
+        },
+        "functions": 5,
+        "classes": 0,
+        "avg_complexity": 15.6
+      },
+      "quality_score": 17,
+      "grade": "F",
+      "smells": [
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'MroPageContent' has 69 lines (max: 50)",
+          "location": "MroPageContent"
+        },
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'handleRefresh' has 78 lines (max: 50)",
+          "location": "handleRefresh"
+        },
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'handleExecuteMro' has 385 lines (max: 50)",
+          "location": "handleExecuteMro"
+        },
+        {
+          "type": "high_complexity",
+          "severity": "high",
+          "message": "Function 'handleRefresh' has complexity 33 (max: 10)",
+          "location": "handleRefresh"
+        },
+        {
+          "type": "high_complexity",
+          "severity": "high",
+          "message": "Function 'handleExecuteMro' has complexity 33 (max: 10)",
+          "location": "handleExecuteMro"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 500 should be a named constant",
+          "location": "line 277"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 300"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 314"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 132 should be a named constant",
+          "location": "line 335"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 220 should be a named constant",
+          "location": "line 350"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 132 should be a named constant",
+          "location": "line 365"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 163 should be a named constant",
+          "location": "line 380"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 100 should be a named constant",
+          "location": "line 404"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 260 should be a named constant",
+          "location": "line 424"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 160 should be a named constant",
+          "location": "line 443"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 160 should be a named constant",
+          "location": "line 459"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 140 should be a named constant",
+          "location": "line 475"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 240 should be a named constant",
+          "location": "line 490"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 200 should be a named constant",
+          "location": "line 493"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 140 should be a named constant",
+          "location": "line 496"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 140 should be a named constant",
+          "location": "line 499"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 160 should be a named constant",
+          "location": "line 502"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 150 should be a named constant",
+          "location": "line 505"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 120 should be a named constant",
+          "location": "line 508"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 523"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 530"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 582"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 595"
+        }
+      ],
+      "solid_violations": [
+        {
+          "principle": "DIP",
+          "name": "Dependency Inversion Principle",
+          "severity": "low",
+          "message": "File has 17 imports - consider dependency injection"
+        }
+      ],
+      "function_details": [
+        {
+          "name": "MroPageContent",
+          "parameters": 0,
+          "lines": 69,
+          "complexity": 10
+        },
+        {
+          "name": "handleRefresh",
+          "parameters": 1,
+          "lines": 78,
+          "complexity": 33
+        },
+        {
+          "name": "handleResetFilters",
+          "parameters": 1,
+          "lines": 7,
+          "complexity": 1
+        },
+        {
+          "name": "handleExecuteMro",
+          "parameters": 1,
+          "lines": 385,
+          "complexity": 33
+        },
+        {
+          "name": "MroPage",
+          "parameters": 0,
+          "lines": 8,
+          "complexity": 1
         }
       ],
       "class_details": []
@@ -4714,6 +6730,234 @@
       "class_details": []
     },
     {
+      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\feedback\\FeedbackDialog.tsx",
+      "language": "typescript",
+      "metrics": {
+        "lines": {
+          "total": 914,
+          "code": 852,
+          "blank": 50,
+          "comment": 12
+        },
+        "functions": 6,
+        "classes": 0,
+        "avg_complexity": 7.7
+      },
+      "quality_score": 32,
+      "grade": "F",
+      "smells": [
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'FeedbackDialog' has 88 lines (max: 50)",
+          "location": "FeedbackDialog"
+        },
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'handleSubmit' has 53 lines (max: 50)",
+          "location": "handleSubmit"
+        },
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'handleSendReply' has 67 lines (max: 50)",
+          "location": "handleSendReply"
+        },
+        {
+          "type": "high_complexity",
+          "severity": "medium",
+          "message": "Function 'FeedbackDialog' has complexity 18 (max: 10)",
+          "location": "FeedbackDialog"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 620 should be a named constant",
+          "location": "line 272"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 800 should be a named constant",
+          "location": "line 311"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 363"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 378"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 395"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 460"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 569"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 500 should be a named constant",
+          "location": "line 591"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 500 should be a named constant",
+          "location": "line 618"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 644"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 670"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 701"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 725"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 734"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 280 should be a named constant",
+          "location": "line 738"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 757"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 796"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 420 should be a named constant",
+          "location": "line 825"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 851"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 859"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 872"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 889"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 903"
+        }
+      ],
+      "solid_violations": [
+        {
+          "principle": "DIP",
+          "name": "Dependency Inversion Principle",
+          "severity": "low",
+          "message": "File has 20 imports - consider dependency injection"
+        }
+      ],
+      "function_details": [
+        {
+          "name": "FeedbackDialog",
+          "parameters": 0,
+          "lines": 88,
+          "complexity": 18
+        },
+        {
+          "name": "handlePaste",
+          "parameters": 1,
+          "lines": 26,
+          "complexity": 6
+        },
+        {
+          "name": "handleFileChange",
+          "parameters": 1,
+          "lines": 8,
+          "complexity": 3
+        },
+        {
+          "name": "handleRemoveFile",
+          "parameters": 1,
+          "lines": 5,
+          "complexity": 1
+        },
+        {
+          "name": "handleSubmit",
+          "parameters": 1,
+          "lines": 53,
+          "complexity": 10
+        },
+        {
+          "name": "handleSendReply",
+          "parameters": 1,
+          "lines": 67,
+          "complexity": 8
+        }
+      ],
+      "class_details": []
+    },
+    {
       "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\wms\\WarehouseTopologyModal.tsx",
       "language": "typescript",
       "metrics": {
@@ -4921,14 +7165,14 @@
       "language": "typescript",
       "metrics": {
         "lines": {
-          "total": 716,
-          "code": 646,
-          "blank": 45,
-          "comment": 25
+          "total": 708,
+          "code": 638,
+          "blank": 40,
+          "comment": 30
         },
-        "functions": 9,
+        "functions": 7,
         "classes": 0,
-        "avg_complexity": 6.0
+        "avg_complexity": 7.3
       },
       "quality_score": 37,
       "grade": "F",
@@ -4936,173 +7180,155 @@
         {
           "type": "long_function",
           "severity": "medium",
-          "message": "Function 'ColumnSelector' has 130 lines (max: 50)",
-          "location": "ColumnSelector"
-        },
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'DataTableWrapper' has 87 lines (max: 50)",
+          "message": "Function 'DataTableWrapper' has 98 lines (max: 50)",
           "location": "DataTableWrapper"
         },
         {
           "type": "long_function",
           "severity": "medium",
-          "message": "Function 'handleDensityChange' has 81 lines (max: 50)",
+          "message": "Function 'handleDensityChange' has 67 lines (max: 50)",
           "location": "handleDensityChange"
+        },
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'utilityTools' has 55 lines (max: 50)",
+          "location": "utilityTools"
         },
         {
           "type": "high_complexity",
           "severity": "medium",
-          "message": "Function 'DataTableWrapper' has complexity 13 (max: 10)",
+          "message": "Function 'DataTableWrapper' has complexity 16 (max: 10)",
           "location": "DataTableWrapper"
         },
         {
           "type": "high_complexity",
           "severity": "medium",
-          "message": "Function 'handleDensityChange' has complexity 16 (max: 10)",
+          "message": "Function 'handleDensityChange' has complexity 11 (max: 10)",
           "location": "handleDensityChange"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 108"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 122"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 136"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 206"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 280 should be a named constant",
-          "location": "line 223"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 360 should be a named constant",
-          "location": "line 224"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 440 should be a named constant",
-          "location": "line 225"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 236"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 290 should be a named constant",
-          "location": "line 249"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 269"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 285"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 296"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 334"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 500 should be a named constant",
-          "location": "line 336"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 348"
         },
         {
           "type": "magic_number",
           "severity": "low",
           "message": "Magic number 100 should be a named constant",
-          "location": "line 384"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 584"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 500 should be a named constant",
-          "location": "line 696"
+          "location": "line 126"
         },
         {
           "type": "magic_number",
           "severity": "low",
           "message": "Magic number 600 should be a named constant",
-          "location": "line 700"
+          "location": "line 277"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 291"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 305"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 360"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 280 should be a named constant",
+          "location": "line 377"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 360 should be a named constant",
+          "location": "line 378"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 440 should be a named constant",
+          "location": "line 379"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 390"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 290 should be a named constant",
+          "location": "line 403"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 427"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 443"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 454"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 523"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 700 should be a named constant",
+          "location": "line 593"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 500 should be a named constant",
+          "location": "line 595"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 607"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 500 should be a named constant",
+          "location": "line 688"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 600 should be a named constant",
+          "location": "line 692"
         }
       ],
       "solid_violations": [],
       "function_details": [
         {
-          "name": "DensityToggle",
-          "parameters": 0,
-          "lines": 42,
-          "complexity": 1
-        },
-        {
-          "name": "ColumnSelector",
-          "parameters": 0,
-          "lines": 130,
-          "complexity": 2
-        },
-        {
-          "name": "SelectionBanner",
-          "parameters": 0,
-          "lines": 42,
-          "complexity": 2
-        },
-        {
           "name": "DataTableWrapper",
           "parameters": 0,
-          "lines": 87,
-          "complexity": 13
+          "lines": 98,
+          "complexity": 16
         },
         {
           "name": "persistColumns",
@@ -5131,8 +7357,194 @@
         {
           "name": "handleDensityChange",
           "parameters": 1,
-          "lines": 81,
-          "complexity": 16
+          "lines": 67,
+          "complexity": 11
+        },
+        {
+          "name": "utilityTools",
+          "parameters": 1,
+          "lines": 55,
+          "complexity": 4
+        }
+      ],
+      "class_details": []
+    },
+    {
+      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\wms\\WmsOperationWizardDialog.tsx",
+      "language": "typescript",
+      "metrics": {
+        "lines": {
+          "total": 663,
+          "code": 602,
+          "blank": 54,
+          "comment": 7
+        },
+        "functions": 9,
+        "classes": 0,
+        "avg_complexity": 12.3
+      },
+      "quality_score": 37,
+      "grade": "F",
+      "smells": [
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'WmsOperationWizardDialog' has 176 lines (max: 50)",
+          "location": "WmsOperationWizardDialog"
+        },
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'handleAddItem' has 68 lines (max: 50)",
+          "location": "handleAddItem"
+        },
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'handleSubmit' has 66 lines (max: 50)",
+          "location": "handleSubmit"
+        },
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'getCurrentOpBannerTitle' has 53 lines (max: 50)",
+          "location": "getCurrentOpBannerTitle"
+        },
+        {
+          "type": "high_complexity",
+          "severity": "high",
+          "message": "Function 'WmsOperationWizardDialog' has complexity 40 (max: 10)",
+          "location": "WmsOperationWizardDialog"
+        },
+        {
+          "type": "high_complexity",
+          "severity": "medium",
+          "message": "Function 'handleAddItem' has complexity 17 (max: 10)",
+          "location": "handleAddItem"
+        },
+        {
+          "type": "high_complexity",
+          "severity": "medium",
+          "message": "Function 'handleNextStep' has complexity 12 (max: 10)",
+          "location": "handleNextStep"
+        },
+        {
+          "type": "high_complexity",
+          "severity": "medium",
+          "message": "Function 'handleSubmit' has complexity 17 (max: 10)",
+          "location": "handleSubmit"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 163 should be a named constant",
+          "location": "line 122"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 216 should be a named constant",
+          "location": "line 130"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 217 should be a named constant",
+          "location": "line 138"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 124 should be a named constant",
+          "location": "line 146"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 1000 should be a named constant",
+          "location": "line 220"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 1000 should be a named constant",
+          "location": "line 281"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 500 should be a named constant",
+          "location": "line 282"
+        },
+        {
+          "type": "commented_code",
+          "severity": "low",
+          "message": "Commented-out code should be removed",
+          "location": "line 344"
+        }
+      ],
+      "solid_violations": [
+        {
+          "principle": "DIP",
+          "name": "Dependency Inversion Principle",
+          "severity": "low",
+          "message": "File has 25 imports - consider dependency injection"
+        }
+      ],
+      "function_details": [
+        {
+          "name": "WmsOperationWizardDialog",
+          "parameters": 0,
+          "lines": 176,
+          "complexity": 40
+        },
+        {
+          "name": "handleOpenCreateNomDialog",
+          "parameters": 1,
+          "lines": 7,
+          "complexity": 3
+        },
+        {
+          "name": "handleNomenclatureCreated",
+          "parameters": 1,
+          "lines": 34,
+          "complexity": 7
+        },
+        {
+          "name": "handleAddItem",
+          "parameters": 1,
+          "lines": 68,
+          "complexity": 17
+        },
+        {
+          "name": "handleRemoveItem",
+          "parameters": 1,
+          "lines": 5,
+          "complexity": 1
+        },
+        {
+          "name": "handleNextStep",
+          "parameters": 1,
+          "lines": 33,
+          "complexity": 12
+        },
+        {
+          "name": "handleSubmit",
+          "parameters": 1,
+          "lines": 66,
+          "complexity": 17
+        },
+        {
+          "name": "getOperationSummaryLabel",
+          "parameters": 1,
+          "lines": 22,
+          "complexity": 6
+        },
+        {
+          "name": "getCurrentOpBannerTitle",
+          "parameters": 1,
+          "lines": 53,
+          "complexity": 8
         }
       ],
       "class_details": []
@@ -5554,173 +7966,6 @@
       "class_details": []
     },
     {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\wms\\WmsOperationWizardDialog.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 606,
-          "code": 552,
-          "blank": 50,
-          "comment": 4
-        },
-        "functions": 9,
-        "classes": 0,
-        "avg_complexity": 12.1
-      },
-      "quality_score": 41,
-      "grade": "F",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'WmsOperationWizardDialog' has 172 lines (max: 50)",
-          "location": "WmsOperationWizardDialog"
-        },
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'handleAddItem' has 68 lines (max: 50)",
-          "location": "handleAddItem"
-        },
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'handleSubmit' has 66 lines (max: 50)",
-          "location": "handleSubmit"
-        },
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'getCurrentOpBannerTitle' has 53 lines (max: 50)",
-          "location": "getCurrentOpBannerTitle"
-        },
-        {
-          "type": "high_complexity",
-          "severity": "high",
-          "message": "Function 'WmsOperationWizardDialog' has complexity 40 (max: 10)",
-          "location": "WmsOperationWizardDialog"
-        },
-        {
-          "type": "high_complexity",
-          "severity": "medium",
-          "message": "Function 'handleAddItem' has complexity 17 (max: 10)",
-          "location": "handleAddItem"
-        },
-        {
-          "type": "high_complexity",
-          "severity": "medium",
-          "message": "Function 'handleNextStep' has complexity 12 (max: 10)",
-          "location": "handleNextStep"
-        },
-        {
-          "type": "high_complexity",
-          "severity": "medium",
-          "message": "Function 'handleSubmit' has complexity 17 (max: 10)",
-          "location": "handleSubmit"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 163 should be a named constant",
-          "location": "line 80"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 216 should be a named constant",
-          "location": "line 88"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 217 should be a named constant",
-          "location": "line 96"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 124 should be a named constant",
-          "location": "line 104"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 1000 should be a named constant",
-          "location": "line 177"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 1000 should be a named constant",
-          "location": "line 237"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 500 should be a named constant",
-          "location": "line 238"
-        }
-      ],
-      "solid_violations": [],
-      "function_details": [
-        {
-          "name": "WmsOperationWizardDialog",
-          "parameters": 0,
-          "lines": 172,
-          "complexity": 40
-        },
-        {
-          "name": "handleOpenCreateNomDialog",
-          "parameters": 1,
-          "lines": 7,
-          "complexity": 3
-        },
-        {
-          "name": "handleNomenclatureCreated",
-          "parameters": 1,
-          "lines": 32,
-          "complexity": 5
-        },
-        {
-          "name": "handleAddItem",
-          "parameters": 1,
-          "lines": 68,
-          "complexity": 17
-        },
-        {
-          "name": "handleRemoveItem",
-          "parameters": 1,
-          "lines": 5,
-          "complexity": 1
-        },
-        {
-          "name": "handleNextStep",
-          "parameters": 1,
-          "lines": 33,
-          "complexity": 12
-        },
-        {
-          "name": "handleSubmit",
-          "parameters": 1,
-          "lines": 66,
-          "complexity": 17
-        },
-        {
-          "name": "getOperationSummaryLabel",
-          "parameters": 1,
-          "lines": 14,
-          "complexity": 6
-        },
-        {
-          "name": "getCurrentOpBannerTitle",
-          "parameters": 1,
-          "lines": 53,
-          "complexity": 8
-        }
-      ],
-      "class_details": []
-    },
-    {
       "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\app\\wms\\inventory\\page.tsx",
       "language": "typescript",
       "metrics": {
@@ -5913,527 +8158,6 @@
           "parameters": 1,
           "lines": 57,
           "complexity": 17
-        }
-      ],
-      "class_details": []
-    },
-    {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\app\\eps\\reports\\page.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 842,
-          "code": 780,
-          "blank": 57,
-          "comment": 5
-        },
-        "functions": 15,
-        "classes": 0,
-        "avg_complexity": 5.9
-      },
-      "quality_score": 44,
-      "grade": "F",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'ReportBuilderContent' has 144 lines (max: 50)",
-          "location": "ReportBuilderContent"
-        },
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'handleExportJson' has 369 lines (max: 50)",
-          "location": "handleExportJson"
-        },
-        {
-          "type": "high_complexity",
-          "severity": "medium",
-          "message": "Function 'ReportBuilderContent' has complexity 20 (max: 10)",
-          "location": "ReportBuilderContent"
-        },
-        {
-          "type": "high_complexity",
-          "severity": "medium",
-          "message": "Function 'handleApplyTemplate' has complexity 11 (max: 10)",
-          "location": "handleApplyTemplate"
-        },
-        {
-          "type": "high_complexity",
-          "severity": "high",
-          "message": "Function 'handleExportJson' has complexity 25 (max: 10)",
-          "location": "handleExportJson"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 534"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 132 should be a named constant",
-          "location": "line 567"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 124 should be a named constant",
-          "location": "line 579"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 150 should be a named constant",
-          "location": "line 622"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 645"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 657"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 673"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 682"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 240 should be a named constant",
-          "location": "line 714"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 150 should be a named constant",
-          "location": "line 733"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 140 should be a named constant",
-          "location": "line 743"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 140 should be a named constant",
-          "location": "line 755"
-        }
-      ],
-      "solid_violations": [
-        {
-          "principle": "DIP",
-          "name": "Dependency Inversion Principle",
-          "severity": "low",
-          "message": "File has 21 imports - consider dependency injection"
-        }
-      ],
-      "function_details": [
-        {
-          "name": "ReportBuilderContent",
-          "parameters": 0,
-          "lines": 144,
-          "complexity": 20
-        },
-        {
-          "name": "handleResetFilters",
-          "parameters": 1,
-          "lines": 10,
-          "complexity": 1
-        },
-        {
-          "name": "handleToggleColumn",
-          "parameters": 1,
-          "lines": 8,
-          "complexity": 1
-        },
-        {
-          "name": "handleToggleCategory",
-          "parameters": 1,
-          "lines": 12,
-          "complexity": 4
-        },
-        {
-          "name": "handleSelectAllColumns",
-          "parameters": 1,
-          "lines": 6,
-          "complexity": 1
-        },
-        {
-          "name": "handleApplyPreset",
-          "parameters": 1,
-          "lines": 7,
-          "complexity": 1
-        },
-        {
-          "name": "handleApplyTemplate",
-          "parameters": 1,
-          "lines": 19,
-          "complexity": 11
-        },
-        {
-          "name": "handleMoveColumn",
-          "parameters": 1,
-          "lines": 11,
-          "complexity": 3
-        },
-        {
-          "name": "handleRemoveColumn",
-          "parameters": 1,
-          "lines": 5,
-          "complexity": 1
-        },
-        {
-          "name": "handleSaveTemplate",
-          "parameters": 1,
-          "lines": 47,
-          "complexity": 8
-        }
-      ],
-      "class_details": []
-    },
-    {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\app\\wms\\operations\\page.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 641,
-          "code": 601,
-          "blank": 35,
-          "comment": 5
-        },
-        "functions": 4,
-        "classes": 0,
-        "avg_complexity": 11.8
-      },
-      "quality_score": 46,
-      "grade": "F",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'WmsOperationsContent' has 71 lines (max: 50)",
-          "location": "WmsOperationsContent"
-        },
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'handleMainTabChange' has 75 lines (max: 50)",
-          "location": "handleMainTabChange"
-        },
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'handleQuickDispatch' has 438 lines (max: 50)",
-          "location": "handleQuickDispatch"
-        },
-        {
-          "type": "high_complexity",
-          "severity": "high",
-          "message": "Function 'handleMainTabChange' has complexity 22 (max: 10)",
-          "location": "handleMainTabChange"
-        },
-        {
-          "type": "high_complexity",
-          "severity": "medium",
-          "message": "Function 'handleQuickDispatch' has complexity 16 (max: 10)",
-          "location": "handleQuickDispatch"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 163 should be a named constant",
-          "location": "line 295"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 132 should be a named constant",
-          "location": "line 312"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 217 should be a named constant",
-          "location": "line 329"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 124 should be a named constant",
-          "location": "line 346"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 260 should be a named constant",
-          "location": "line 392"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 200 should be a named constant",
-          "location": "line 411"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 132 should be a named constant",
-          "location": "line 463"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 217 should be a named constant",
-          "location": "line 477"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 124 should be a named constant",
-          "location": "line 491"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 163 should be a named constant",
-          "location": "line 505"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 280 should be a named constant",
-          "location": "line 538"
-        }
-      ],
-      "solid_violations": [
-        {
-          "principle": "DIP",
-          "name": "Dependency Inversion Principle",
-          "severity": "low",
-          "message": "File has 19 imports - consider dependency injection"
-        }
-      ],
-      "function_details": [
-        {
-          "name": "WmsOperationsContent",
-          "parameters": 0,
-          "lines": 71,
-          "complexity": 8
-        },
-        {
-          "name": "handleMainTabChange",
-          "parameters": 1,
-          "lines": 75,
-          "complexity": 22
-        },
-        {
-          "name": "handleQuickDispatch",
-          "parameters": 1,
-          "lines": 438,
-          "complexity": 16
-        },
-        {
-          "name": "WmsOperationsPage",
-          "parameters": 0,
-          "lines": 8,
-          "complexity": 1
-        }
-      ],
-      "class_details": []
-    },
-    {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\layout\\Sidebar.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 678,
-          "code": 634,
-          "blank": 37,
-          "comment": 7
-        },
-        "functions": 8,
-        "classes": 0,
-        "avg_complexity": 9.9
-      },
-      "quality_score": 47,
-      "grade": "F",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'Sidebar' has 66 lines (max: 50)",
-          "location": "Sidebar"
-        },
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'loadData' has 79 lines (max: 50)",
-          "location": "loadData"
-        },
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'handleLogout' has 73 lines (max: 50)",
-          "location": "handleLogout"
-        },
-        {
-          "type": "high_complexity",
-          "severity": "high",
-          "message": "Function 'loadData' has complexity 46 (max: 10)",
-          "location": "loadData"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 330 should be a named constant",
-          "location": "line 35"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 20000 should be a named constant",
-          "location": "line 185"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 800 should be a named constant",
-          "location": "line 358"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 370"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 500 should be a named constant",
-          "location": "line 384"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 429"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 453"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 477"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 535"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 567"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 578"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 220 should be a named constant",
-          "location": "line 628"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 639"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 670"
-        }
-      ],
-      "solid_violations": [],
-      "function_details": [
-        {
-          "name": "Sidebar",
-          "parameters": 0,
-          "lines": 66,
-          "complexity": 6
-        },
-        {
-          "name": "loadData",
-          "parameters": 0,
-          "lines": 79,
-          "complexity": 46
-        },
-        {
-          "name": "toggleExpand",
-          "parameters": 1,
-          "lines": 5,
-          "complexity": 1
-        },
-        {
-          "name": "handleNavigate",
-          "parameters": 1,
-          "lines": 8,
-          "complexity": 2
-        },
-        {
-          "name": "handleOpenFlyout",
-          "parameters": 1,
-          "lines": 11,
-          "complexity": 6
-        },
-        {
-          "name": "isItemActive",
-          "parameters": 1,
-          "lines": 9,
-          "complexity": 7
-        },
-        {
-          "name": "handleProfileMenuClose",
-          "parameters": 1,
-          "lines": 5,
-          "complexity": 1
-        },
-        {
-          "name": "handleLogout",
-          "parameters": 1,
-          "lines": 73,
-          "complexity": 10
         }
       ],
       "class_details": []
@@ -7526,138 +9250,6 @@
       "class_details": []
     },
     {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\app\\mro\\page.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 409,
-          "code": 376,
-          "blank": 30,
-          "comment": 3
-        },
-        "functions": 5,
-        "classes": 0,
-        "avg_complexity": 10.4
-      },
-      "quality_score": 57,
-      "grade": "F",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'MroPageContent' has 67 lines (max: 50)",
-          "location": "MroPageContent"
-        },
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'handleRefresh' has 76 lines (max: 50)",
-          "location": "handleRefresh"
-        },
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'handleExecuteMro' has 210 lines (max: 50)",
-          "location": "handleExecuteMro"
-        },
-        {
-          "type": "high_complexity",
-          "severity": "high",
-          "message": "Function 'handleRefresh' has complexity 33 (max: 10)",
-          "location": "handleRefresh"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 236"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 220 should be a named constant",
-          "location": "line 252"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 132 should be a named constant",
-          "location": "line 266"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 163 should be a named constant",
-          "location": "line 280"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 100 should be a named constant",
-          "location": "line 294"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 260 should be a named constant",
-          "location": "line 318"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 180 should be a named constant",
-          "location": "line 331"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 170 should be a named constant",
-          "location": "line 346"
-        }
-      ],
-      "solid_violations": [
-        {
-          "principle": "DIP",
-          "name": "Dependency Inversion Principle",
-          "severity": "low",
-          "message": "File has 17 imports - consider dependency injection"
-        }
-      ],
-      "function_details": [
-        {
-          "name": "MroPageContent",
-          "parameters": 0,
-          "lines": 67,
-          "complexity": 10
-        },
-        {
-          "name": "handleRefresh",
-          "parameters": 1,
-          "lines": 76,
-          "complexity": 33
-        },
-        {
-          "name": "handleRequestSort",
-          "parameters": 1,
-          "lines": 7,
-          "complexity": 2
-        },
-        {
-          "name": "handleExecuteMro",
-          "parameters": 1,
-          "lines": 210,
-          "complexity": 6
-        },
-        {
-          "name": "MroPage",
-          "parameters": 0,
-          "lines": 8,
-          "complexity": 1
-        }
-      ],
-      "class_details": []
-    },
-    {
       "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\srm\\SrmReliabilityAnalytics.tsx",
       "language": "typescript",
       "metrics": {
@@ -8486,131 +10078,6 @@
       "class_details": []
     },
     {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\app\\eps\\history\\page.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 435,
-          "code": 398,
-          "blank": 33,
-          "comment": 4
-        },
-        "functions": 4,
-        "classes": 0,
-        "avg_complexity": 13.2
-      },
-      "quality_score": 60,
-      "grade": "D",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'handleRequestSort' has 120 lines (max: 50)",
-          "location": "handleRequestSort"
-        },
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'handleResetFilters' has 226 lines (max: 50)",
-          "location": "handleResetFilters"
-        },
-        {
-          "type": "high_complexity",
-          "severity": "high",
-          "message": "Function 'handleRequestSort' has complexity 40 (max: 10)",
-          "location": "handleRequestSort"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 1000 should be a named constant",
-          "location": "line 92"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 132 should be a named constant",
-          "location": "line 243"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 163 should be a named constant",
-          "location": "line 255"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 217 should be a named constant",
-          "location": "line 272"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 220 should be a named constant",
-          "location": "line 289"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 260 should be a named constant",
-          "location": "line 337"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 160 should be a named constant",
-          "location": "line 355"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 200 should be a named constant",
-          "location": "line 373"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 140 should be a named constant",
-          "location": "line 383"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 140 should be a named constant",
-          "location": "line 395"
-        }
-      ],
-      "solid_violations": [],
-      "function_details": [
-        {
-          "name": "HistoryListContent",
-          "parameters": 0,
-          "lines": 33,
-          "complexity": 7
-        },
-        {
-          "name": "handleRequestSort",
-          "parameters": 1,
-          "lines": 120,
-          "complexity": 40
-        },
-        {
-          "name": "handleResetFilters",
-          "parameters": 1,
-          "lines": 226,
-          "complexity": 5
-        },
-        {
-          "name": "HistoryPage",
-          "parameters": 0,
-          "lines": 8,
-          "complexity": 1
-        }
-      ],
-      "class_details": []
-    },
-    {
       "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\srm\\SrmIntegrationWizardDialog.tsx",
       "language": "typescript",
       "metrics": {
@@ -8831,275 +10298,6 @@
       "class_details": []
     },
     {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\app\\eps\\approvals\\page.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 525,
-          "code": 487,
-          "blank": 38,
-          "comment": 0
-        },
-        "functions": 4,
-        "classes": 0,
-        "avg_complexity": 9.5
-      },
-      "quality_score": 62,
-      "grade": "D",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'ApprovalRegistryContent' has 91 lines (max: 50)",
-          "location": "ApprovalRegistryContent"
-        },
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'handleRequestSort' has 328 lines (max: 50)",
-          "location": "handleRequestSort"
-        },
-        {
-          "type": "high_complexity",
-          "severity": "medium",
-          "message": "Function 'ApprovalRegistryContent' has complexity 20 (max: 10)",
-          "location": "ApprovalRegistryContent"
-        },
-        {
-          "type": "high_complexity",
-          "severity": "medium",
-          "message": "Function 'handleProcessReview' has complexity 11 (max: 10)",
-          "location": "handleProcessReview"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 282"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 217 should be a named constant",
-          "location": "line 297"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 163 should be a named constant",
-          "location": "line 314"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 220 should be a named constant",
-          "location": "line 331"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 100 should be a named constant",
-          "location": "line 348"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 260 should be a named constant",
-          "location": "line 384"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 190 should be a named constant",
-          "location": "line 403"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 170 should be a named constant",
-          "location": "line 421"
-        }
-      ],
-      "solid_violations": [
-        {
-          "principle": "DIP",
-          "name": "Dependency Inversion Principle",
-          "severity": "low",
-          "message": "File has 20 imports - consider dependency injection"
-        }
-      ],
-      "function_details": [
-        {
-          "name": "ApprovalRegistryContent",
-          "parameters": 0,
-          "lines": 91,
-          "complexity": 20
-        },
-        {
-          "name": "handleProcessReview",
-          "parameters": 1,
-          "lines": 39,
-          "complexity": 11
-        },
-        {
-          "name": "handleRequestSort",
-          "parameters": 1,
-          "lines": 328,
-          "complexity": 6
-        },
-        {
-          "name": "ApprovalRegistryPage",
-          "parameters": 0,
-          "lines": 8,
-          "complexity": 1
-        }
-      ],
-      "class_details": []
-    },
-    {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\dashboard\\DashboardRecentActivity.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 299,
-          "code": 284,
-          "blank": 15,
-          "comment": 0
-        },
-        "functions": 1,
-        "classes": 0,
-        "avg_complexity": 2.0
-      },
-      "quality_score": 62,
-      "grade": "D",
-      "smells": [
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 49"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 57"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 160 should be a named constant",
-          "location": "line 67"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 800 should be a named constant",
-          "location": "line 91"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 93"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 121"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 129"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 160 should be a named constant",
-          "location": "line 139"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 159"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 183"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 800 should be a named constant",
-          "location": "line 201"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 204"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 800 should be a named constant",
-          "location": "line 211"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 214"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 230"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 238"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 160 should be a named constant",
-          "location": "line 248"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 269"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 800 should be a named constant",
-          "location": "line 277"
-        }
-      ],
-      "solid_violations": [],
-      "function_details": [
-        {
-          "name": "DashboardRecentActivity",
-          "parameters": 0,
-          "lines": 46,
-          "complexity": 2
-        }
-      ],
-      "class_details": []
-    },
-    {
       "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\wms\\InventoryCompleteModal.tsx",
       "language": "typescript",
       "metrics": {
@@ -9244,137 +10442,6 @@
           "parameters": 1,
           "lines": 47,
           "complexity": 2
-        }
-      ],
-      "class_details": []
-    },
-    {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\eps\\ApprovalTableView.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 373,
-          "code": 355,
-          "blank": 18,
-          "comment": 0
-        },
-        "functions": 1,
-        "classes": 0,
-        "avg_complexity": 6.0
-      },
-      "quality_score": 63,
-      "grade": "D",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'ApprovalTableView' has 61 lines (max: 50)",
-          "location": "ApprovalTableView"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 210 should be a named constant",
-          "location": "line 89"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 140 should be a named constant",
-          "location": "line 100"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 180 should be a named constant",
-          "location": "line 111"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 120 should be a named constant",
-          "location": "line 122"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 150 should be a named constant",
-          "location": "line 127"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 130 should be a named constant",
-          "location": "line 138"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 150 should be a named constant",
-          "location": "line 149"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 130 should be a named constant",
-          "location": "line 160"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 160 should be a named constant",
-          "location": "line 171"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 110 should be a named constant",
-          "location": "line 182"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 202"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 120 should be a named constant",
-          "location": "line 217"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 226"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 265"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 500 should be a named constant",
-          "location": "line 299"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 500 should be a named constant",
-          "location": "line 315"
-        }
-      ],
-      "solid_violations": [],
-      "function_details": [
-        {
-          "name": "ApprovalTableView",
-          "parameters": 0,
-          "lines": 61,
-          "complexity": 6
         }
       ],
       "class_details": []
@@ -11075,226 +12142,6 @@
       "class_details": []
     },
     {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\feedback\\FeedbackDialog.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 416,
-          "code": 384,
-          "blank": 27,
-          "comment": 5
-        },
-        "functions": 4,
-        "classes": 0,
-        "avg_complexity": 10.2
-      },
-      "quality_score": 68,
-      "grade": "D",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'FeedbackDialog' has 85 lines (max: 50)",
-          "location": "FeedbackDialog"
-        },
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'handleSubmit' has 51 lines (max: 50)",
-          "location": "handleSubmit"
-        },
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'handleSendReply' has 67 lines (max: 50)",
-          "location": "handleSendReply"
-        },
-        {
-          "type": "high_complexity",
-          "severity": "medium",
-          "message": "Function 'FeedbackDialog' has complexity 17 (max: 10)",
-          "location": "FeedbackDialog"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 620 should be a named constant",
-          "location": "line 230"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 800 should be a named constant",
-          "location": "line 268"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 319"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 334"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 391"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 405"
-        }
-      ],
-      "solid_violations": [],
-      "function_details": [
-        {
-          "name": "FeedbackDialog",
-          "parameters": 0,
-          "lines": 85,
-          "complexity": 17
-        },
-        {
-          "name": "handlePaste",
-          "parameters": 1,
-          "lines": 26,
-          "complexity": 6
-        },
-        {
-          "name": "handleSubmit",
-          "parameters": 1,
-          "lines": 51,
-          "complexity": 10
-        },
-        {
-          "name": "handleSendReply",
-          "parameters": 1,
-          "lines": 67,
-          "complexity": 8
-        }
-      ],
-      "class_details": []
-    },
-    {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\mro\\MroSchedulesTable.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 287,
-          "code": 265,
-          "blank": 22,
-          "comment": 0
-        },
-        "functions": 1,
-        "classes": 0,
-        "avg_complexity": 6.0
-      },
-      "quality_score": 69,
-      "grade": "D",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'MroSchedulesTable' has 61 lines (max: 50)",
-          "location": "MroSchedulesTable"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 160 should be a named constant",
-          "location": "line 81"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 200 should be a named constant",
-          "location": "line 93"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 180 should be a named constant",
-          "location": "line 105"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 130 should be a named constant",
-          "location": "line 117"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 130 should be a named constant",
-          "location": "line 121"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 140 should be a named constant",
-          "location": "line 133"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 150 should be a named constant",
-          "location": "line 137"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 110 should be a named constant",
-          "location": "line 141"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 169"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 186"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 500 should be a named constant",
-          "location": "line 211"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 263"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 270"
-        }
-      ],
-      "solid_violations": [],
-      "function_details": [
-        {
-          "name": "MroSchedulesTable",
-          "parameters": 0,
-          "lines": 61,
-          "complexity": 6
-        }
-      ],
-      "class_details": []
-    },
-    {
       "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\app\\api\\eps\\approvals\\route.ts",
       "language": "typescript",
       "metrics": {
@@ -11462,125 +12309,6 @@
           "parameters": 0,
           "lines": 39,
           "complexity": 7
-        }
-      ],
-      "class_details": []
-    },
-    {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\wms\\WmsTransfersTable.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 249,
-          "code": 240,
-          "blank": 9,
-          "comment": 0
-        },
-        "functions": 1,
-        "classes": 0,
-        "avg_complexity": 6.0
-      },
-      "quality_score": 70,
-      "grade": "C",
-      "smells": [
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 93"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 94"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 95"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 96"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 97"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 98"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 99"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 129"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 130"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 140"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 149"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 177"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 207"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 217"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 232"
-        }
-      ],
-      "solid_violations": [],
-      "function_details": [
-        {
-          "name": "WmsTransfersTable",
-          "parameters": 0,
-          "lines": 50,
-          "complexity": 6
         }
       ],
       "class_details": []
@@ -12121,108 +12849,6 @@
           "parameters": 0,
           "lines": 57,
           "complexity": 22
-        }
-      ],
-      "class_details": []
-    },
-    {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\eps\\history\\AuditDiffModal.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 191,
-          "code": 170,
-          "blank": 21,
-          "comment": 0
-        },
-        "functions": 3,
-        "classes": 0,
-        "avg_complexity": 8.3
-      },
-      "quality_score": 72,
-      "grade": "C",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'RenderChangesDiff' has 54 lines (max: 50)",
-          "location": "RenderChangesDiff"
-        },
-        {
-          "type": "high_complexity",
-          "severity": "medium",
-          "message": "Function 'formatAuditValue' has complexity 12 (max: 10)",
-          "location": "formatAuditValue"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 84"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 91"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 100"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 137"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 145"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 170"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 178"
-        }
-      ],
-      "solid_violations": [
-        {
-          "principle": "OCP",
-          "name": "Open/Closed Principle",
-          "severity": "medium",
-          "message": "Found 3 type checks - consider using polymorphism"
-        }
-      ],
-      "function_details": [
-        {
-          "name": "formatAuditValue",
-          "parameters": 0,
-          "lines": 28,
-          "complexity": 12
-        },
-        {
-          "name": "RenderChangesDiff",
-          "parameters": 0,
-          "lines": 54,
-          "complexity": 8
-        },
-        {
-          "name": "AuditDiffModal",
-          "parameters": 0,
-          "lines": 49,
-          "complexity": 5
         }
       ],
       "class_details": []
@@ -13250,107 +13876,6 @@
       "class_details": []
     },
     {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\wms\\WmsOperationsTable.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 170,
-          "code": 164,
-          "blank": 6,
-          "comment": 0
-        },
-        "functions": 1,
-        "classes": 0,
-        "avg_complexity": 8.0
-      },
-      "quality_score": 73,
-      "grade": "C",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'WmsOperationsTable' has 53 lines (max: 50)",
-          "location": "WmsOperationsTable"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 800 should be a named constant",
-          "location": "line 42"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 46"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 51"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 56"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 61"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 66"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 71"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 76"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 200 should be a named constant",
-          "location": "line 93"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 116"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 500 should be a named constant",
-          "location": "line 156"
-        }
-      ],
-      "solid_violations": [],
-      "function_details": [
-        {
-          "name": "WmsOperationsTable",
-          "parameters": 0,
-          "lines": 53,
-          "complexity": 8
-        }
-      ],
-      "class_details": []
-    },
-    {
       "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\app\\api\\eps\\custom-fields\\route.ts",
       "language": "typescript",
       "metrics": {
@@ -13781,285 +14306,6 @@
           "parameters": 1,
           "lines": 81,
           "complexity": 4
-        }
-      ],
-      "class_details": []
-    },
-    {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\dashboard\\DashboardKpiSection.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 277,
-          "code": 258,
-          "blank": 19,
-          "comment": 0
-        },
-        "functions": 1,
-        "classes": 0,
-        "avg_complexity": 7.0
-      },
-      "quality_score": 75,
-      "grade": "C",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'DashboardKpiSection' has 57 lines (max: 50)",
-          "location": "DashboardKpiSection"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 132 should be a named constant",
-          "location": "line 124"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 118 should be a named constant",
-          "location": "line 146"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 217 should be a named constant",
-          "location": "line 160"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 124 should be a named constant",
-          "location": "line 174"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 132 should be a named constant",
-          "location": "line 203"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 213"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 229"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 241"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 253"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 265"
-        }
-      ],
-      "solid_violations": [],
-      "function_details": [
-        {
-          "name": "DashboardKpiSection",
-          "parameters": 0,
-          "lines": 57,
-          "complexity": 7
-        }
-      ],
-      "class_details": []
-    },
-    {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\eps\\reports\\ReportColumnBuilderDialog.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 341,
-          "code": 321,
-          "blank": 20,
-          "comment": 0
-        },
-        "functions": 1,
-        "classes": 0,
-        "avg_complexity": 9.0
-      },
-      "quality_score": 75,
-      "grade": "C",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'ReportColumnBuilderDialog' has 70 lines (max: 50)",
-          "location": "ReportColumnBuilderDialog"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 130"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 143"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 153"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 164"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 100 should be a named constant",
-          "location": "line 179"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 380 should be a named constant",
-          "location": "line 183"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 216"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 261"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 430 should be a named constant",
-          "location": "line 277"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 301"
-        }
-      ],
-      "solid_violations": [],
-      "function_details": [
-        {
-          "name": "ReportColumnBuilderDialog",
-          "parameters": 0,
-          "lines": 70,
-          "complexity": 9
-        }
-      ],
-      "class_details": []
-    },
-    {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\layout\\SidebarNavGroup.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 348,
-          "code": 327,
-          "blank": 21,
-          "comment": 0
-        },
-        "functions": 3,
-        "classes": 0,
-        "avg_complexity": 10.7
-      },
-      "quality_score": 75,
-      "grade": "C",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'effectiveBadgeTooltip' has 61 lines (max: 50)",
-          "location": "effectiveBadgeTooltip"
-        },
-        {
-          "type": "high_complexity",
-          "severity": "medium",
-          "message": "Function 'effectiveBadgeColor' has complexity 11 (max: 10)",
-          "location": "effectiveBadgeColor"
-        },
-        {
-          "type": "high_complexity",
-          "severity": "medium",
-          "message": "Function 'effectiveBadgeTooltip' has complexity 12 (max: 10)",
-          "location": "effectiveBadgeTooltip"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 800 should be a named constant",
-          "location": "line 131"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 207"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 800 should be a named constant",
-          "location": "line 231"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 302"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 800 should be a named constant",
-          "location": "line 325"
-        }
-      ],
-      "solid_violations": [],
-      "function_details": [
-        {
-          "name": "SidebarNavGroup",
-          "parameters": 0,
-          "lines": 27,
-          "complexity": 9
-        },
-        {
-          "name": "effectiveBadgeColor",
-          "parameters": 1,
-          "lines": 11,
-          "complexity": 11
-        },
-        {
-          "name": "effectiveBadgeTooltip",
-          "parameters": 1,
-          "lines": 61,
-          "complexity": 12
         }
       ],
       "class_details": []
@@ -14825,178 +15071,6 @@
       "class_details": []
     },
     {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\app\\page.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 292,
-          "code": 266,
-          "blank": 24,
-          "comment": 2
-        },
-        "functions": 4,
-        "classes": 0,
-        "avg_complexity": 7.5
-      },
-      "quality_score": 77,
-      "grade": "C",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'handleScopeChange' has 205 lines (max: 50)",
-          "location": "handleScopeChange"
-        },
-        {
-          "type": "high_complexity",
-          "severity": "high",
-          "message": "Function 'handleScopeChange' has complexity 21 (max: 10)",
-          "location": "handleScopeChange"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 100 should be a named constant",
-          "location": "line 93"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 190"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 196"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 222"
-        }
-      ],
-      "solid_violations": [],
-      "function_details": [
-        {
-          "name": "ExecutiveDashboardContent",
-          "parameters": 0,
-          "lines": 41,
-          "complexity": 7
-        },
-        {
-          "name": "handleRefresh",
-          "parameters": 1,
-          "lines": 6,
-          "complexity": 1
-        },
-        {
-          "name": "handleScopeChange",
-          "parameters": 1,
-          "lines": 205,
-          "complexity": 21
-        },
-        {
-          "name": "DashboardPage",
-          "parameters": 0,
-          "lines": 8,
-          "complexity": 1
-        }
-      ],
-      "class_details": []
-    },
-    {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\eps\\history\\AuditLogTableView.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 208,
-          "code": 196,
-          "blank": 12,
-          "comment": 0
-        },
-        "functions": 1,
-        "classes": 0,
-        "avg_complexity": 5.0
-      },
-      "quality_score": 77,
-      "grade": "C",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'AuditLogTableView' has 59 lines (max: 50)",
-          "location": "AuditLogTableView"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 160 should be a named constant",
-          "location": "line 44"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 160 should be a named constant",
-          "location": "line 55"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 130 should be a named constant",
-          "location": "line 66"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 150 should be a named constant",
-          "location": "line 77"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 180 should be a named constant",
-          "location": "line 88"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 200 should be a named constant",
-          "location": "line 99"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 122"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 159"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 300 should be a named constant",
-          "location": "line 180"
-        }
-      ],
-      "solid_violations": [],
-      "function_details": [
-        {
-          "name": "AuditLogTableView",
-          "parameters": 0,
-          "lines": 59,
-          "complexity": 5
-        }
-      ],
-      "class_details": []
-    },
-    {
       "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\app\\api\\setup\\test-ldap\\route.ts",
       "language": "typescript",
       "metrics": {
@@ -15594,10 +15668,10 @@
       "language": "typescript",
       "metrics": {
         "lines": {
-          "total": 136,
-          "code": 113,
-          "blank": 21,
-          "comment": 2
+          "total": 129,
+          "code": 109,
+          "blank": 19,
+          "comment": 1
         },
         "functions": 3,
         "classes": 0,
@@ -15658,7 +15732,7 @@
           "type": "magic_number",
           "severity": "low",
           "message": "Magic number 500 should be a named constant",
-          "location": "line 133"
+          "location": "line 126"
         }
       ],
       "solid_violations": [],
@@ -15678,91 +15752,8 @@
         {
           "name": "DELETE",
           "parameters": 0,
-          "lines": 28,
+          "lines": 21,
           "complexity": 4
-        }
-      ],
-      "class_details": []
-    },
-    {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\feedback\\FeedbackTicketDetailView.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 221,
-          "code": 207,
-          "blank": 14,
-          "comment": 0
-        },
-        "functions": 1,
-        "classes": 0,
-        "avg_complexity": 3.0
-      },
-      "quality_score": 79,
-      "grade": "C",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'FeedbackTicketDetailView' has 60 lines (max: 50)",
-          "location": "FeedbackTicketDetailView"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 51"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 77"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 108"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 132"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 141"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 280 should be a named constant",
-          "location": "line 145"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 164"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 203"
-        }
-      ],
-      "solid_violations": [],
-      "function_details": [
-        {
-          "name": "FeedbackTicketDetailView",
-          "parameters": 0,
-          "lines": 60,
-          "complexity": 3
         }
       ],
       "class_details": []
@@ -16125,6 +16116,101 @@
           "parameters": 0,
           "lines": 52,
           "complexity": 14
+        }
+      ],
+      "class_details": []
+    },
+    {
+      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\app\\api\\srm\\mapping\\route.ts",
+      "language": "typescript",
+      "metrics": {
+        "lines": {
+          "total": 116,
+          "code": 103,
+          "blank": 13,
+          "comment": 0
+        },
+        "functions": 2,
+        "classes": 0,
+        "avg_complexity": 5.5
+      },
+      "quality_score": 80,
+      "grade": "B",
+      "smells": [
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 205 should be a named constant",
+          "location": "line 15"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 10042 should be a named constant",
+          "location": "line 16"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 0300 should be a named constant",
+          "location": "line 44"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 0300 should be a named constant",
+          "location": "line 45"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 00104 should be a named constant",
+          "location": "line 47"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 1000 should be a named constant",
+          "location": "line 57"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 500 should be a named constant",
+          "location": "line 78"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 1000 should be a named constant",
+          "location": "line 84"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 400 should be a named constant",
+          "location": "line 97"
+        },
+        {
+          "type": "magic_number",
+          "severity": "low",
+          "message": "Magic number 500 should be a named constant",
+          "location": "line 112"
+        }
+      ],
+      "solid_violations": [],
+      "function_details": [
+        {
+          "name": "GET",
+          "parameters": 0,
+          "lines": 28,
+          "complexity": 4
+        },
+        {
+          "name": "POST",
+          "parameters": 0,
+          "lines": 34,
+          "complexity": 7
         }
       ],
       "class_details": []
@@ -16735,83 +16821,6 @@
           "parameters": 0,
           "lines": 65,
           "complexity": 21
-        }
-      ],
-      "class_details": []
-    },
-    {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\eps\\ApprovalDetailsDialog.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 164,
-          "code": 148,
-          "blank": 16,
-          "comment": 0
-        },
-        "functions": 1,
-        "classes": 0,
-        "avg_complexity": 7.0
-      },
-      "quality_score": 81,
-      "grade": "B",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'ApprovalDetailsDialog' has 55 lines (max: 50)",
-          "location": "ApprovalDetailsDialog"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 76"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 84"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 95"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 110"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 120"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 127"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 141"
-        }
-      ],
-      "solid_violations": [],
-      "function_details": [
-        {
-          "name": "ApprovalDetailsDialog",
-          "parameters": 0,
-          "lines": 55,
-          "complexity": 7
         }
       ],
       "class_details": []
@@ -17711,78 +17720,6 @@
       "class_details": []
     },
     {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\layout\\sidebar-items.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 365,
-          "code": 356,
-          "blank": 9,
-          "comment": 0
-        },
-        "functions": 4,
-        "classes": 0,
-        "avg_complexity": 6.2
-      },
-      "quality_score": 83,
-      "grade": "B",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'getOperationalItems' has 209 lines (max: 50)",
-          "location": "getOperationalItems"
-        },
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'getAdminItems' has 59 lines (max: 50)",
-          "location": "getAdminItems"
-        },
-        {
-          "type": "high_complexity",
-          "severity": "medium",
-          "message": "Function 'getOperationalItems' has complexity 20 (max: 10)",
-          "location": "getOperationalItems"
-        }
-      ],
-      "solid_violations": [
-        {
-          "principle": "DIP",
-          "name": "Dependency Inversion Principle",
-          "severity": "low",
-          "message": "File has 22 imports - consider dependency injection"
-        }
-      ],
-      "function_details": [
-        {
-          "name": "getMainItems",
-          "parameters": 0,
-          "lines": 12,
-          "complexity": 1
-        },
-        {
-          "name": "getOperationalItems",
-          "parameters": 0,
-          "lines": 209,
-          "complexity": 20
-        },
-        {
-          "name": "getAdminItems",
-          "parameters": 0,
-          "lines": 59,
-          "complexity": 1
-        },
-        {
-          "name": "getBadgeColors",
-          "parameters": 0,
-          "lines": 26,
-          "complexity": 3
-        }
-      ],
-      "class_details": []
-    },
-    {
       "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\ui\\BulkActionBar.tsx",
       "language": "typescript",
       "metrics": {
@@ -18451,101 +18388,6 @@
       "class_details": []
     },
     {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\app\\api\\srm\\mapping\\route.ts",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 105,
-          "code": 92,
-          "blank": 13,
-          "comment": 0
-        },
-        "functions": 2,
-        "classes": 0,
-        "avg_complexity": 5.0
-      },
-      "quality_score": 85,
-      "grade": "B",
-      "smells": [
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 205 should be a named constant",
-          "location": "line 16"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 10042 should be a named constant",
-          "location": "line 17"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 0300 should be a named constant",
-          "location": "line 45"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 0300 should be a named constant",
-          "location": "line 46"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 00104 should be a named constant",
-          "location": "line 48"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 1000 should be a named constant",
-          "location": "line 58"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 500 should be a named constant",
-          "location": "line 76"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 1000 should be a named constant",
-          "location": "line 81"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 400 should be a named constant",
-          "location": "line 91"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 500 should be a named constant",
-          "location": "line 102"
-        }
-      ],
-      "solid_violations": [],
-      "function_details": [
-        {
-          "name": "GET",
-          "parameters": 0,
-          "lines": 24,
-          "complexity": 4
-        },
-        {
-          "name": "PUT",
-          "parameters": 0,
-          "lines": 26,
-          "complexity": 6
-        }
-      ],
-      "class_details": []
-    },
-    {
       "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\lib\\database-backup-service.ts",
       "language": "typescript",
       "metrics": {
@@ -18699,136 +18541,6 @@
           "name": "createMroWorkOrderFromIssue",
           "parameters": 0,
           "lines": 43,
-          "complexity": 4
-        }
-      ],
-      "class_details": []
-    },
-    {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\eps\\ApprovalReviewDialog.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 169,
-          "code": 154,
-          "blank": 15,
-          "comment": 0
-        },
-        "functions": 1,
-        "classes": 0,
-        "avg_complexity": 7.0
-      },
-      "quality_score": 85,
-      "grade": "B",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'ApprovalReviewDialog' has 59 lines (max: 50)",
-          "location": "ApprovalReviewDialog"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 75"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 93"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 110"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 148"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 158"
-        }
-      ],
-      "solid_violations": [],
-      "function_details": [
-        {
-          "name": "ApprovalReviewDialog",
-          "parameters": 0,
-          "lines": 59,
-          "complexity": 7
-        }
-      ],
-      "class_details": []
-    },
-    {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\eps\\reports\\ReportDataTable.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 117,
-          "code": 112,
-          "blank": 5,
-          "comment": 0
-        },
-        "functions": 1,
-        "classes": 0,
-        "avg_complexity": 4.0
-      },
-      "quality_score": 85,
-      "grade": "B",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'ReportDataTable' has 54 lines (max: 50)",
-          "location": "ReportDataTable"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 40"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 44"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 59"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 71"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 91"
-        }
-      ],
-      "solid_violations": [],
-      "function_details": [
-        {
-          "name": "ReportDataTable",
-          "parameters": 0,
-          "lines": 54,
           "complexity": 4
         }
       ],
@@ -19350,65 +19062,6 @@
       "class_details": []
     },
     {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\feedback\\FeedbackTicketListView.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 107,
-          "code": 97,
-          "blank": 10,
-          "comment": 0
-        },
-        "functions": 1,
-        "classes": 0,
-        "avg_complexity": 3.0
-      },
-      "quality_score": 87,
-      "grade": "B",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'FeedbackTicketListView' has 62 lines (max: 50)",
-          "location": "FeedbackTicketListView"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 420 should be a named constant",
-          "location": "line 52"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 75"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 83"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 96"
-        }
-      ],
-      "solid_violations": [],
-      "function_details": [
-        {
-          "name": "FeedbackTicketListView",
-          "parameters": 0,
-          "lines": 62,
-          "complexity": 3
-        }
-      ],
-      "class_details": []
-    },
-    {
       "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\layout\\PageHeader.tsx",
       "language": "typescript",
       "metrics": {
@@ -19463,65 +19116,6 @@
           "parameters": 0,
           "lines": 65,
           "complexity": 5
-        }
-      ],
-      "class_details": []
-    },
-    {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\layout\\SidebarCollapsedFlyout.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 161,
-          "code": 152,
-          "blank": 9,
-          "comment": 0
-        },
-        "functions": 1,
-        "classes": 0,
-        "avg_complexity": 3.0
-      },
-      "quality_score": 87,
-      "grade": "B",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'SidebarCollapsedFlyout' has 70 lines (max: 50)",
-          "location": "SidebarCollapsedFlyout"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 220 should be a named constant",
-          "location": "line 56"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 67"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 119"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 800 should be a named constant",
-          "location": "line 139"
-        }
-      ],
-      "solid_violations": [],
-      "function_details": [
-        {
-          "name": "SidebarCollapsedFlyout",
-          "parameters": 0,
-          "lines": 70,
-          "complexity": 3
         }
       ],
       "class_details": []
@@ -20649,83 +20243,6 @@
       "class_details": []
     },
     {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\feedback\\FeedbackNewTicketTab.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 332,
-          "code": 315,
-          "blank": 17,
-          "comment": 0
-        },
-        "functions": 3,
-        "classes": 0,
-        "avg_complexity": 1.7
-      },
-      "quality_score": 90,
-      "grade": "A",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'handleRemoveFile' has 51 lines (max: 50)",
-          "location": "handleRemoveFile"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 117"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 700 should be a named constant",
-          "location": "line 153"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 262"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 500 should be a named constant",
-          "location": "line 284"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 500 should be a named constant",
-          "location": "line 311"
-        }
-      ],
-      "solid_violations": [],
-      "function_details": [
-        {
-          "name": "FeedbackNewTicketTab",
-          "parameters": 0,
-          "lines": 20,
-          "complexity": 1
-        },
-        {
-          "name": "handleFileChange",
-          "parameters": 1,
-          "lines": 8,
-          "complexity": 3
-        },
-        {
-          "name": "handleRemoveFile",
-          "parameters": 1,
-          "lines": 51,
-          "complexity": 1
-        }
-      ],
-      "class_details": []
-    },
-    {
       "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\ui\\ExportButton.tsx",
       "language": "typescript",
       "metrics": {
@@ -20804,65 +20321,6 @@
           "parameters": 1,
           "lines": 68,
           "complexity": 2
-        }
-      ],
-      "class_details": []
-    },
-    {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\wms\\WmsOperationRecipientBadge.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 89,
-          "code": 79,
-          "blank": 10,
-          "comment": 0
-        },
-        "functions": 1,
-        "classes": 0,
-        "avg_complexity": 9.0
-      },
-      "quality_score": 90,
-      "grade": "A",
-      "smells": [
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 30"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 41"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 54"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 63"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 600 should be a named constant",
-          "location": "line 74"
-        }
-      ],
-      "solid_violations": [],
-      "function_details": [
-        {
-          "name": "WmsOperationRecipientBadge",
-          "parameters": 0,
-          "lines": 49,
-          "complexity": 9
         }
       ],
       "class_details": []
@@ -21455,47 +20913,6 @@
       "class_details": []
     },
     {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\lib\\jira\\sync.ts",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 175,
-          "code": 150,
-          "blank": 23,
-          "comment": 2
-        },
-        "functions": 1,
-        "classes": 0,
-        "avg_complexity": 6.0
-      },
-      "quality_score": 93,
-      "grade": "A",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'syncJiraIssues' has 53 lines (max: 50)",
-          "location": "syncJiraIssues"
-        },
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 100 should be a named constant",
-          "location": "line 123"
-        }
-      ],
-      "solid_violations": [],
-      "function_details": [
-        {
-          "name": "syncJiraIssues",
-          "parameters": 0,
-          "lines": 53,
-          "complexity": 6
-        }
-      ],
-      "class_details": []
-    },
-    {
       "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\lib\\__tests__\\rate-limit.test.ts",
       "language": "typescript",
       "metrics": {
@@ -21976,6 +21393,41 @@
       "class_details": []
     },
     {
+      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\lib\\jira\\sync.ts",
+      "language": "typescript",
+      "metrics": {
+        "lines": {
+          "total": 162,
+          "code": 142,
+          "blank": 18,
+          "comment": 2
+        },
+        "functions": 1,
+        "classes": 0,
+        "avg_complexity": 6.0
+      },
+      "quality_score": 95,
+      "grade": "A",
+      "smells": [
+        {
+          "type": "long_function",
+          "severity": "medium",
+          "message": "Function 'syncJiraIssues' has 53 lines (max: 50)",
+          "location": "syncJiraIssues"
+        }
+      ],
+      "solid_violations": [],
+      "function_details": [
+        {
+          "name": "syncJiraIssues",
+          "parameters": 0,
+          "lines": 53,
+          "complexity": 6
+        }
+      ],
+      "class_details": []
+    },
+    {
       "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\app\\eps\\page.tsx",
       "language": "typescript",
       "metrics": {
@@ -22012,41 +21464,6 @@
           "parameters": 0,
           "lines": 8,
           "complexity": 1
-        }
-      ],
-      "class_details": []
-    },
-    {
-      "file": "D:\\Projects\\EMS-Platform\\apps\\web\\src\\components\\eps\\reports\\ReportSaveTemplateDialog.tsx",
-      "language": "typescript",
-      "metrics": {
-        "lines": {
-          "total": 96,
-          "code": 88,
-          "blank": 8,
-          "comment": 0
-        },
-        "functions": 1,
-        "classes": 0,
-        "avg_complexity": 2.0
-      },
-      "quality_score": 95,
-      "grade": "A",
-      "smells": [
-        {
-          "type": "long_function",
-          "severity": "medium",
-          "message": "Function 'ReportSaveTemplateDialog' has 69 lines (max: 50)",
-          "location": "ReportSaveTemplateDialog"
-        }
-      ],
-      "solid_violations": [],
-      "function_details": [
-        {
-          "name": "ReportSaveTemplateDialog",
-          "parameters": 0,
-          "lines": 69,
-          "complexity": 2
         }
       ],
       "class_details": []
@@ -22112,7 +21529,7 @@
         {
           "type": "long_function",
           "severity": "medium",
-          "message": "Function 'flush' has 63 lines (max: 50)",
+          "message": "Function 'flush' has 64 lines (max: 50)",
           "location": "flush"
         }
       ],
@@ -22127,7 +21544,7 @@
         {
           "name": "flush",
           "parameters": 1,
-          "lines": 63,
+          "lines": 64,
           "complexity": 3
         }
       ],
@@ -22655,32 +22072,25 @@
       "language": "typescript",
       "metrics": {
         "lines": {
-          "total": 18,
-          "code": 13,
-          "blank": 4,
+          "total": 14,
+          "code": 10,
+          "blank": 3,
           "comment": 1
         },
         "functions": 1,
         "classes": 0,
-        "avg_complexity": 2.0
+        "avg_complexity": 1.0
       },
       "quality_score": 100,
       "grade": "A",
-      "smells": [
-        {
-          "type": "magic_number",
-          "severity": "low",
-          "message": "Magic number 1000 should be a named constant",
-          "location": "line 13"
-        }
-      ],
+      "smells": [],
       "solid_violations": [],
       "function_details": [
         {
           "name": "POST",
           "parameters": 0,
-          "lines": 7,
-          "complexity": 2
+          "lines": 4,
+          "complexity": 1
         }
       ],
       "class_details": []

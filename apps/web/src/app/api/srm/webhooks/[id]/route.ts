@@ -100,7 +100,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         resolvedDate: mapped.resolvedDate,
         equipmentId: mapped.equipmentId,
         integrationId: integration.id,
-        rawData: rawIssue,
+        rawData: rawIssue as any,
         syncedAt: new Date(),
       },
       update: {
@@ -114,7 +114,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         resolvedDate: mapped.resolvedDate,
         equipmentId: mapped.equipmentId,
         integrationId: integration.id,
-        rawData: rawIssue,
+        rawData: rawIssue as any,
         syncedAt: new Date(),
       },
     });

@@ -62,8 +62,8 @@ export default function ThemeRegistry({ children }: { children: React.ReactNode 
                 margin: '10mm 12mm 10mm 12mm',
               },
               'html, body': {
-                backgroundColor: '#ffffff !important',
-                color: '#0f172a !important',
+                backgroundColor: `${theme.palette.background.paper} !important`,
+                color: `${theme.palette.text.primary} !important`,
                 fontSize: '10pt !important',
                 WebkitPrintColorAdjust: 'exact !important',
                 printColorAdjust: 'exact !important',
@@ -84,11 +84,11 @@ export default function ThemeRegistry({ children }: { children: React.ReactNode 
               },
               '.MuiCard-root, .MuiPaper-root': {
                 boxShadow: 'none !important',
-                border: '1px solid #cbd5e1 !important',
+                border: `1px solid ${theme.palette.divider} !important`,
                 pageBreakInside: 'avoid !important',
                 breakInside: 'avoid !important',
                 marginBottom: '10px !important',
-                backgroundColor: '#ffffff !important',
+                backgroundColor: `${theme.palette.background.paper} !important`,
               },
               '.MuiGrid-container': {
                 width: '100% !important',

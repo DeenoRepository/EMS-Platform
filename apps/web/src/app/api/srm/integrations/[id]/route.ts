@@ -75,7 +75,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     // Сохраняем существующие секреты при передаче маскированного плейсхолдера
-    const resolvedAuthConfig = authConfig !== undefined ? mergeAuthConfig(authConfig, existing.authConfig) : existing.authConfig;
+    const resolvedAuthConfig = authConfig !== undefined ? mergeAuthConfig(authConfig, existing.authConfig as any) : existing.authConfig;
 
     const updated = await prisma.srmIntegration.update({
       where: { id: (await params).id },
@@ -84,7 +84,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         providerType: providerType || existing.providerType,
         baseUrl: baseUrl !== undefined ? baseUrl.trim() : existing.baseUrl,
         authType: authType || existing.authType,
-        authConfig: resolvedAuthConfig,
+        authConfig: resolvedAuthConfig as any,
         queryConfig: queryConfig !== undefined ? queryConfig : existing.queryConfig,
         mappingConfig: mappingConfig !== undefined ? mappingConfig : existing.mappingConfig,
         isActive: isActive !== undefined ? Boolean(isActive) : existing.isActive,
@@ -102,25 +102,32 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       },
     });
   } catch (error: unknown) {
-    return NextResponse.json({ success: false, error: 'Ошибка обновления подключения' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Ошибка сохранения настроек интеграции' }, { status: 500 });
   }
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const rateLimitError = await enforceRateLimit(req, { limit: 20, windowMs: 60 * 1000, prefix: 'srm-integration-id-delete' });
+  const rateLimitError = await enforceRateLimit(req, { limit: 15, windowMs: 60 * 1000, prefix: 'srm-integration-id-delete' });
   if (rateLimitError) return rateLimitError;
 
-  const auth = await requireAuth(req, [PERMISSIONS.ADMIN_SETTINGS_MANAGE, PERMISSIONS.SRM_SYNC_TRIGGER]);
+  const auth = await requireAuth(req, PERMISSIONS.ADMIN_SETTINGS_MANAGE);
   if (auth.errorResponse) return auth.errorResponse;
 
   try {
+    const integrationId = (await params).id;
+
+    // Удаляем связанные кэшированные инциденты
+    await prisma.jiraIssueCache.deleteMany({
+      where: { integrationId },
+    });
+
     await prisma.srmIntegration.delete({
-      where: { id: (await params).id },
+      where: { id: integrationId },
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Подключение удалено',
+      message: 'Подключение SRM успешно удалено',
     });
   } catch (error: unknown) {
     return NextResponse.json({ success: false, error: 'Ошибка удаления подключения' }, { status: 500 });
