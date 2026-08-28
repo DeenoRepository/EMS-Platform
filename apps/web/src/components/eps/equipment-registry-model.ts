@@ -57,61 +57,67 @@ function customValue(item: EquipmentRegistryItem, key: string): string | number 
   return item.customFields?.[key] ?? '';
 }
 
-export function getEquipmentSortValue(item: EquipmentRegistryItem, sortField: string): string | number | boolean {
-  switch (sortField) {
-    case 'inventoryNumber':
-    case 'serialNumber':
-    case 'manufacturer':
-    case 'model':
-    case 'location':
-      return item[sortField] || '';
-    case 'name':
-    case 'status':
-      return item[sortField] || '';
-    case 'criticality':
-      return customValue(item, 'criticality');
-    case 'actualWear':
-      return item.customFields?.actual_wear_percentage !== undefined && item.customFields.actual_wear_percentage !== ''
-        ? Number(item.customFields.actual_wear_percentage)
-        : -1;
-    case 'eqGroup':
-      return customValue(item, 'equipment_group');
-    case 'eqType':
-      return customValue(item, 'equipment_type');
-    case 'respPerson':
-      return customValue(item, 'responsible_person_name');
-    case 'okofCode':
-      return customValue(item, 'okof_code');
-    case 'okpd2Code':
-      return customValue(item, 'okpd2_code');
-    case 'procCode':
-      return customValue(item, 'process_classifier_code');
-    case 'maintPeriodicity':
-      return customValue(item, 'maintenance_periodicity');
-    case 'calibrationInterval':
-      return item.customFields?.calibration_interval ? Number(item.customFields.calibration_interval) : -1;
-    case 'cleanRoom':
-      return customValue(item, 'clean_room_class');
-    case 'isCriticalPath':
-      return item.customFields?.is_critical_path ? 1 : 0;
-    case 'isUnique':
-      return item.customFields?.is_unique ? 1 : 0;
-    case 'isImported':
-      return item.customFields?.is_imported ? 1 : 0;
-    case 'documentsCount':
-      return item._count?.documents || item.counts?.documents || 0;
-    case 'sparePartsCount':
-      return item._count?.spareParts || item.counts?.spareParts || 0;
-    case 'tags':
-      return item.tags.map((tag) => tag.name).join(', ');
-    case 'commissionDate':
-      return item.commissionDate ? new Date(item.commissionDate).getTime() : 0;
-    case 'updatedAt':
-    case 'createdAt':
-      return item[sortField] ? new Date(item[sortField]).getTime() : 0;
-    default:
-      return String((item as unknown as Record<string, unknown>)[sortField] ?? '');
+const DIRECT_EQUIPMENT_FIELDS = new Set(['inventoryNumber', 'serialNumber', 'manufacturer', 'model', 'location', 'name', 'status']);
+const CUSTOM_FIELD_BY_SORT_FIELD: Record<string, string> = {
+  criticality: 'criticality',
+  eqGroup: 'equipment_group',
+  eqType: 'equipment_type',
+  respPerson: 'responsible_person_name',
+  okofCode: 'okof_code',
+  okpd2Code: 'okpd2_code',
+  procCode: 'process_classifier_code',
+  maintPeriodicity: 'maintenance_periodicity',
+  cleanRoom: 'clean_room_class',
+};
+const BOOLEAN_SORT_FIELDS: Record<string, string> = {
+  isCriticalPath: 'is_critical_path',
+  isUnique: 'is_unique',
+  isImported: 'is_imported',
+};
+
+function getEquipmentCustomSortValue(item: EquipmentRegistryItem, sortField: string): string | number | boolean | undefined {
+  const customField = CUSTOM_FIELD_BY_SORT_FIELD[sortField];
+  if (customField) return customValue(item, customField);
+
+  const booleanField = BOOLEAN_SORT_FIELDS[sortField];
+  if (booleanField) return item.customFields?.[booleanField] ? 1 : 0;
+
+  return undefined;
+}
+
+function getEquipmentDateSortValue(item: EquipmentRegistryItem, sortField: string): number | undefined {
+  if (sortField === 'commissionDate') return item.commissionDate ? new Date(item.commissionDate).getTime() : 0;
+  if (sortField === 'updatedAt' || sortField === 'createdAt') {
+    return item[sortField] ? new Date(item[sortField]).getTime() : 0;
   }
+  return undefined;
+}
+
+export function getEquipmentSortValue(item: EquipmentRegistryItem, sortField: string): string | number | boolean {
+  if (DIRECT_EQUIPMENT_FIELDS.has(sortField)) {
+    return item[sortField as keyof Pick<EquipmentRegistryItem, 'inventoryNumber' | 'serialNumber' | 'manufacturer' | 'model' | 'location' | 'name' | 'status'>] || '';
+  }
+
+  if (sortField === 'actualWear') {
+    const value = item.customFields?.actual_wear_percentage;
+    return value !== undefined && value !== '' ? Number(value) : -1;
+  }
+
+  if (sortField === 'calibrationInterval') {
+    return item.customFields?.calibration_interval ? Number(item.customFields.calibration_interval) : -1;
+  }
+
+  const customSortValue = getEquipmentCustomSortValue(item, sortField);
+  if (customSortValue !== undefined) return customSortValue;
+
+  if (sortField === 'documentsCount') return item._count?.documents || item.counts?.documents || 0;
+  if (sortField === 'sparePartsCount') return item._count?.spareParts || item.counts?.spareParts || 0;
+  if (sortField === 'tags') return item.tags.map((tag) => tag.name).join(', ');
+
+  const dateSortValue = getEquipmentDateSortValue(item, sortField);
+  if (dateSortValue !== undefined) return dateSortValue;
+
+  return String((item as unknown as Record<string, unknown>)[sortField] ?? '');
 }
 
 export function sortEquipmentRegistry(
