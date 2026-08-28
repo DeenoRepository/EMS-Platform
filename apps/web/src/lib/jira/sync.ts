@@ -75,14 +75,15 @@ export async function syncJiraIssues(targetIntegrationId?: string): Promise<{ co
             lastSyncError: null,
           },
         });
-      } catch (err: any) {
-        console.error(`Ошибка синхронизации интеграции [${integration.name}]:`, err);
+      } catch (err: unknown) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        logger.error(`Ошибка синхронизации интеграции [${integration.name}]`, { error: errMsg, integrationId: integration.id });
         await prisma.srmIntegration.update({
           where: { id: integration.id },
           data: {
             lastSyncAt: new Date(),
             lastSyncStatus: 'ERROR',
-            lastSyncError: err.message || String(err),
+            lastSyncError: errMsg,
           },
         });
       }
@@ -151,7 +152,7 @@ export async function syncJiraIssues(targetIntegrationId?: string): Promise<{ co
         return { count: issues.length, source: 'jira_env_api' };
       }
     } catch (err) {
-      console.warn('Не удалось подключиться к Jira по .env, переход в локальный fallback:', err);
+      logger.warn('Не удалось подключиться к Jira по .env, переход в локальный fallback', { error: err instanceof Error ? err.message : String(err) });
     }
   }
 

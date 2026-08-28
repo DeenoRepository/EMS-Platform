@@ -34,9 +34,9 @@ export function getSrmAdapter(type: SrmProviderType): ISrmProviderAdapter {
 /**
  * Санитизация конфигурации аутентификации (маскирование паролей и токенов)
  */
-export function sanitizeAuthConfig(authConfig: any): any {
+export function sanitizeAuthConfig(authConfig: unknown): Record<string, unknown> {
   if (!authConfig || typeof authConfig !== 'object') return {};
-  const sanitized = { ...authConfig };
+  const sanitized: Record<string, unknown> = { ...(authConfig as Record<string, unknown>) };
   if (sanitized.password) sanitized.password = '••••••••';
   if (sanitized.apiToken) sanitized.apiToken = '••••••••';
   if (sanitized.apiKey) sanitized.apiKey = '••••••••';
@@ -47,10 +47,13 @@ export function sanitizeAuthConfig(authConfig: any): any {
 /**
  * Слияние обновленной конфигурации с сохранением существующих секретов, если передан плейсхолдер
  */
-export function mergeAuthConfig(newAuthConfig: any, existingAuthConfig: any): any {
+export function mergeAuthConfig(
+  newAuthConfig: Record<string, unknown> | null | undefined,
+  existingAuthConfig: Record<string, unknown> | null | undefined
+): Record<string, unknown> {
   if (!newAuthConfig) return existingAuthConfig || {};
   if (!existingAuthConfig) return newAuthConfig;
-  const merged = { ...newAuthConfig };
+  const merged: Record<string, unknown> = { ...newAuthConfig };
   const secretKeys = ['password', 'apiToken', 'apiKey', 'token'];
   for (const key of secretKeys) {
     if (merged[key] === '••••••••' || merged[key] === undefined || merged[key] === '') {
@@ -65,32 +68,33 @@ export function mergeAuthConfig(newAuthConfig: any, existingAuthConfig: any): an
 /**
  * Извлечение объекта задачи из разнородных форматов входящих вебхуков (Jira, GitLab, Redmine, Generic)
  */
-export function extractIssueFromWebhookPayload(payload: any): any {
+export function extractIssueFromWebhookPayload(payload: unknown): Record<string, unknown> | null {
   if (!payload || typeof payload !== 'object') return null;
+  const p = payload as Record<string, any>;
 
   // 1. Atlassian Jira Webhook: { webhookEvent: 'jira:issue_created', issue: { ... } }
-  if (payload.issue && typeof payload.issue === 'object') {
-    return payload.issue;
+  if (p.issue && typeof p.issue === 'object') {
+    return p.issue;
   }
 
   // 2. GitLab Issues Webhook: { object_kind: 'issue', object_attributes: { ... } }
-  if (payload.object_kind === 'issue' && payload.object_attributes) {
+  if (p.object_kind === 'issue' && p.object_attributes) {
     return {
-      ...payload.object_attributes,
-      references: payload.project ? { full: `${payload.project.path_with_namespace}#${payload.object_attributes.iid}` } : { full: `#${payload.object_attributes.iid}` },
-      author: payload.user || payload.object_attributes.author,
-      assignee: payload.assignees?.[0] || payload.assignee,
+      ...p.object_attributes,
+      references: p.project ? { full: `${p.project.path_with_namespace}#${p.object_attributes.iid}` } : { full: `#${p.object_attributes.iid}` },
+      author: p.user || p.object_attributes.author,
+      assignee: p.assignees?.[0] || p.assignee,
     };
   }
 
   // 3. Redmine Webhook: { action: 'opened', issue: { ... } }
-  if (payload.issue) {
-    return payload.issue;
+  if (p.issue) {
+    return p.issue;
   }
 
   // 4. Generic REST payload: если передан сразу объект инцидента
-  if (payload.id || payload.key || payload.issueKey || payload.summary || payload.title) {
-    return payload;
+  if (p.id || p.key || p.issueKey || p.summary || p.title) {
+    return p;
   }
 
   return null;

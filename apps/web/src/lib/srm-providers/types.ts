@@ -1,12 +1,30 @@
 import { SrmProviderType, SrmAuthType, SrmIntegration } from '@ems/database';
-import { JiraFieldMappingConfig, JiraIssueData } from '../jira-service';
+import { JiraFieldMappingConfig } from '../jira-service';
+
+export interface SrmAuthConfig {
+  password?: string;
+  apiToken?: string;
+  apiKey?: string;
+  token?: string;
+  username?: string;
+  [key: string]: string | number | boolean | null | undefined;
+}
+
+export interface SrmQueryConfig {
+  endpoint?: string;
+  testEndpoint?: string;
+  projectKey?: string;
+  projectId?: string | number;
+  issuesPath?: string;
+  [key: string]: string | number | boolean | null | undefined;
+}
 
 export interface SrmTestConnectionResult {
   success: boolean;
   message: string;
   statusCode?: number;
   sampleCount?: number;
-  sampleItem?: any;
+  sampleItem?: Record<string, unknown> | null;
   diagnostics?: string[];
 }
 
@@ -24,6 +42,6 @@ export interface SrmProviderMetadata {
 export interface ISrmProviderAdapter {
   readonly providerType: SrmProviderType;
   testConnection(integration: SrmIntegration): Promise<SrmTestConnectionResult>;
-  fetchIssues(integration: SrmIntegration): Promise<any[]>;
+  fetchIssues(integration: SrmIntegration): Promise<Record<string, unknown>[]>;
   getMetadata(): SrmProviderMetadata;
 }

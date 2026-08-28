@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
 
     const permissions = await prisma.permission.findMany({
       orderBy: [{ module: 'asc' }, { code: 'asc' }],
+      take: 200,
     });
 
     const enrichedPermissions = permissions.map((p) => {

@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
         },
       },
       orderBy: { createdAt: 'asc' },
+      take: 500,
     });
 
     const formattedUsers = users.map((u) => ({

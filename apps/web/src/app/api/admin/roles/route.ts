@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
         },
       },
       orderBy: { createdAt: 'asc' },
+      take: 100,
     });
 
     const formattedRoles = roles.map((r) => ({
