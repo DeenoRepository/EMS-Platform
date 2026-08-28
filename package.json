@@ -8,6 +8,7 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "check:theme": "node scripts/check-theme-tokens.mjs",
+    "check:quality": "python .agents/skills/code-reviewer/scripts/code_quality_checker.py apps/web/src --recursive --language typescript --json > quality-web.json && python .agents/skills/code-reviewer/scripts/code_quality_checker.py packages --recursive --language typescript --json > quality-packages.json && node scripts/check-quality-baseline.mjs quality-web.json quality-packages.json",
     "test": "node scripts/test-runner.mjs",
     "start:prod": "pnpm --filter @ems/web start",
     "prod:up": "docker compose -f docker-compose.prod.yml up -d --build",

@@ -51,10 +51,7 @@ jobs:
         run: pnpm run lint
 
       - name: Run Code Quality Gate
-        run: |
-          python .agents/skills/code-reviewer/scripts/code_quality_checker.py apps/web/src --recursive --language typescript --json > quality-web.json
-          python .agents/skills/code-reviewer/scripts/code_quality_checker.py packages --recursive --language typescript --json > quality-packages.json
-          python -c "import json,sys; reports=[json.load(open(p, encoding='utf-8')) for p in ('quality-web.json','quality-packages.json')]; failed=[f['file'] for r in reports for f in r['files'] if f['grade']=='F']; print('F-grade files:', len(failed)); sys.exit(1 if failed else 0)"
+        run: pnpm check:quality
 
       - name: Upload Quality Reports
         if: always()
