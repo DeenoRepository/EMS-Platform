@@ -36,6 +36,7 @@ import {
 } from '@/components/wms';
 import WmsOperationsTable, { StockOperationRecord } from '@/components/wms/WmsOperationsTable';
 import WmsTransfersTable, { StockTransferRecord } from '@/components/wms/WmsTransfersTable';
+import { dispatchWmsTransfer } from './quick-dispatch';
 
 const OPERATIONS_COLUMNS: TableColumnOption[] = [
   { id: 'date', label: 'Дата / Время', defaultVisible: true },
@@ -197,15 +198,12 @@ function WmsOperationsContent() {
   const handleQuickDispatch = async (t: StockTransferRecord) => {
     setIsDispatchingId(t.id);
     try {
-      const res = await fetch(`/api/wms/transfers/${t.id}/dispatch`, {
-        method: 'POST',
-      });
-      const json = await res.json();
-      if (res.ok && json.success) {
+      const result = await dispatchWmsTransfer(t.id);
+      if (result.success) {
         enqueueSnackbar(`Запрос ${t.transferNumber} успешно согласован и отгружен`, { variant: 'success' });
         fetchTransfers();
       } else {
-        enqueueSnackbar(json.error || 'Ошибка отгрузки', { variant: 'error' });
+        enqueueSnackbar(result.error || 'Ошибка отгрузки', { variant: 'error' });
       }
     } catch {
       enqueueSnackbar('Ошибка сети при отгрузке', { variant: 'error' });
