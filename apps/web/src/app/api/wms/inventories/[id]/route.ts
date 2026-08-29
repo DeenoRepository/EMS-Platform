@@ -4,6 +4,7 @@ import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma, InventoryStatus } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,7 +62,10 @@ export async function GET(
 
     return NextResponse.json({ success: true, data: inventory });
   } catch (error: unknown) {
-    console.error('Ошибка получения акта инвентаризации:', error);
+    logger.error('Failed to fetch inventory by id', {
+      endpoint: 'wms-inventory-id-get',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Ошибка получения данных инвентаризации' }, { status: 500 });
   }
 }
@@ -246,7 +250,10 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error: unknown) {
-    console.error('Ошибка обновления инвентаризации:', error);
+    logger.error('Failed to update inventory', {
+      endpoint: 'wms-inventory-id-patch',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Ошибка обновления инвентаризации' }, { status: 500 });
   }
 }

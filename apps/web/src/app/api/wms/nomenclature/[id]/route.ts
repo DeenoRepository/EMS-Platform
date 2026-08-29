@@ -4,6 +4,7 @@ import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,7 +43,10 @@ export async function GET(
 
     return NextResponse.json({ success: true, data: nomenclature });
   } catch (error: unknown) {
-    console.error('Ошибка получения номенклатуры:', error);
+    logger.error('Failed to fetch nomenclature by id', {
+      endpoint: 'wms-nomenclature-id-get',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Ошибка сервера' }, { status: 500 });
   }
 }
@@ -120,7 +124,10 @@ export async function PUT(
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error: unknown) {
-    console.error('Ошибка обновления номенклатуры:', error);
+    logger.error('Failed to update nomenclature', {
+      endpoint: 'wms-nomenclature-id-put',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Ошибка при сохранении изменений' }, { status: 500 });
   }
 }

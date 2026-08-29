@@ -113,12 +113,18 @@ describe('API Security and Hardening Regressions', () => {
         'apps/web/src/app/api/wms/nomenclature/route.ts',
         'apps/web/src/app/api/wms/warehouses/route.ts',
         'apps/web/src/app/api/wms/operations/route.ts',
+        // WMS detail/zones/inventories batch
+        'apps/web/src/app/api/wms/warehouses/[id]/route.ts',
+        'apps/web/src/app/api/wms/warehouses/[id]/zones/route.ts',
+        'apps/web/src/app/api/wms/nomenclature/[id]/route.ts',
+        'apps/web/src/app/api/wms/inventories/route.ts',
+        'apps/web/src/app/api/wms/inventories/[id]/route.ts',
       ];
 
       for (const routePath of routePaths) {
         const source = readRepositoryFile(routePath);
-        assert.match(source, /from ['"]@\/lib\/logger['"]/);
-        assert.doesNotMatch(source, /console\.error/);
+        assert.match(source, /from ['"]@\/lib\/logger['"]/, `${routePath} must import logger`);
+        assert.doesNotMatch(source, /console\.error/, `${routePath} must not use console.error`);
       }
     });
 

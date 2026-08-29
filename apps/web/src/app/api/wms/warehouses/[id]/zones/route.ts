@@ -4,6 +4,7 @@ import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,7 +38,10 @@ export async function GET(
 
     return NextResponse.json({ success: true, data: zones });
   } catch (error) {
-    console.error('Error fetching warehouse zones:', error);
+    logger.error('Failed to fetch warehouse zones', {
+      endpoint: 'wms-warehouse-zones-get',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
       { success: false, error: 'Internal Server Error' },
       { status: 500 }
@@ -124,7 +128,10 @@ export async function POST(
 
     return NextResponse.json({ success: true, data: zone });
   } catch (error) {
-    console.error('Error creating storage zone:', error);
+    logger.error('Failed to create storage zone', {
+      endpoint: 'wms-warehouse-zones-post',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
       { success: false, error: 'Internal Server Error' },
       { status: 500 }
