@@ -41,6 +41,7 @@ import { TableSortLabel } from '@mui/material';
 import WmsInventoryFilters from '@/components/wms/WmsInventoryFilters';
 import { countActiveInventoryFilters } from './filter-state';
 import { filterInventories, type InventoryItemSummary } from './inventory-filter';
+import { sortInventories } from './inventory-sort';
 
 const INVENTORY_COLUMNS: TableColumnOption[] = [
   { id: 'code', label: 'Номер / Акт', defaultVisible: true, required: true },
@@ -187,49 +188,10 @@ export default function WmsInventoryListPage() {
     [inventories, selectedWarehouse, selectedStatus, search]
   );
 
-  const sortedInventories = useMemo(() => {
-    if (!sortField) return filteredInventories;
-    return [...filteredInventories].sort((a, b) => {
-      let aVal: any = '';
-      let bVal: any = '';
-      switch (sortField) {
-        case 'code':
-          aVal = a.id;
-          bVal = b.id;
-          break;
-        case 'warehouse':
-          aVal = a.warehouse.name;
-          bVal = b.warehouse.name;
-          break;
-        case 'status':
-          aVal = a.status;
-          bVal = b.status;
-          break;
-        case 'count':
-          aVal = a._count.items;
-          bVal = b._count.items;
-          break;
-        case 'date':
-          aVal = new Date(a.createdAt).getTime();
-          bVal = new Date(b.createdAt).getTime();
-          break;
-        case 'author':
-          aVal = a.createdBy.displayName;
-          bVal = b.createdBy.displayName;
-          break;
-        default:
-          aVal = (a as unknown as Record<string, unknown>)[sortField] ?? '';
-          bVal = (b as unknown as Record<string, unknown>)[sortField] ?? '';
-      }
-
-      if (typeof aVal === 'number' && typeof bVal === 'number') {
-        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
-      }
-      return sortDirection === 'asc'
-        ? String(aVal).localeCompare(String(bVal), 'ru')
-        : String(bVal).localeCompare(String(aVal), 'ru');
-    });
-  }, [filteredInventories, sortField, sortDirection]);
+  const sortedInventories = useMemo(
+    () => sortInventories(filteredInventories, sortField, sortDirection),
+    [filteredInventories, sortField, sortDirection]
+  );
 
   // Pagination state
   const [page, setPage] = useState(0);
