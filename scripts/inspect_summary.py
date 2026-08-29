@@ -1,7 +1,16 @@
-import json, sys
+import json, sys, subprocess, os
 
-def summarize(path, label):
-    d = json.load(open(path, encoding='utf-8'))
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
+CHECKER_PY = os.path.join(ROOT_DIR, '.agents', 'skills', 'code-reviewer', 'scripts', 'code_quality_checker.py')
+
+def analyze(target_path, label):
+    cmd = [sys.executable, CHECKER_PY, target_path, '--language', 'typescript', '--json']
+    res = subprocess.run(cmd, cwd=ROOT_DIR, capture_output=True, text=True, encoding='utf-8')
+    if res.returncode != 0:
+        print(f"Error analyzing {target_path}: {res.stderr}")
+        return
+    d = json.loads(res.stdout)
     files = d['files']
     grades = {}
     for f in files:
@@ -25,7 +34,6 @@ def summarize(path, label):
     if not bad:
         print("    (none)")
 
-    # Collect smell type stats
     smell_types = {}
     for f in files:
         for s in f['smells']:
@@ -38,5 +46,6 @@ def summarize(path, label):
     for k, v in top:
         print(f"    {v:5d}  {k}")
 
-summarize('docs/inspection-quality-web-current.json', 'WEB (apps/web/src) — 238 files')
-summarize('docs/inspection-quality-packages-current.json', 'PACKAGES (packages/) — 22 files')
+if __name__ == '__main__':
+    analyze('apps/web/src', 'WEB (apps/web/src)')
+    analyze('packages', 'PACKAGES (packages/)')

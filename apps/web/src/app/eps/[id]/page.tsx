@@ -3,65 +3,26 @@
 import React, { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
 import {
   Box,
-  Card,
   Typography,
-  Chip,
-  Grid,
   Button,
   IconButton,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  TextField,
-  MenuItem,
-  Divider,
-  Paper,
-  Switch,
-  FormControlLabel,
   Alert,
-  FormControl,
-  InputLabel,
-  Select,
-  Tooltip,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import UploadFileIcon from '@mui/icons-material/UploadFile';
-import DownloadIcon from '@mui/icons-material/Download';
-import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
-import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
-import AddIcon from '@mui/icons-material/Add';
-import LaunchIcon from '@mui/icons-material/Launch';
-import BuildCircleIcon from '@mui/icons-material/BuildCircle';
 import PageHeader from '@/components/layout/PageHeader';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
   EQUIPMENT_STATUS_MAP,
-  DOCUMENT_TYPE_MAP,
-  APPROVAL_TYPE_MAP,
-  APPROVAL_STATUS_MAP,
-  MAINTENANCE_STATUS_MAP,
-  formatDate,
-  formatDateTime,
-  formatBytes,
   PERMISSIONS,
   AUDIT_ACTION_MAP,
 } from '@ems/shared';
 import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
 import {
-  StatusBadge,
-  EmptyState,
   ConfirmDialog,
-  LifecycleTimeline,
   PageLoading,
-  FormDialog,
-  DataTableWrapper,
   NavTabsContainer,
-  FileUploadDropzone,
-  DatePickerField,
   type LifecycleEvent,
 } from '@/components/ui';
 import { CreateServiceRequestDialog } from '@/components/srm';
@@ -104,7 +65,7 @@ export interface EquipmentDetails {
   location: string | null;
   status: string;
   commissionDate: string | null;
-  customFields: Record<string, any> | null;
+  customFields: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
   createdBy: { displayName: string; ldapLogin: string };
@@ -153,13 +114,24 @@ export interface EquipmentDetails {
     status: string;
     title: string;
     description: string | null;
-    proposedData: any | null;
+    proposedData: unknown;
     createdAt: string;
     reviewedAt: string | null;
     resolutionComment: string | null;
     requester: { displayName: string; ldapLogin: string };
     reviewer: { displayName: string; ldapLogin: string } | null;
   }[];
+}
+
+interface EquipmentEditFormState {
+  name?: string;
+  inventoryNumber?: string;
+  serialNumber?: string;
+  manufacturer?: string;
+  model?: string;
+  location?: string;
+  status?: string;
+  commissionDate?: string;
 }
 
 function EquipmentPassportContent() {
@@ -171,7 +143,7 @@ function EquipmentPassportContent() {
   const searchParams = useSearchParams();
   const tabParam = searchParams?.get('tab');
 
-  const TAB_KEY_MAP: Record<string, number> = {
+  const TAB_KEY_MAP: Record<string, number> = useMemo(() => ({
     overview: 0,
     specs: 1,
     photos: 2,
@@ -180,8 +152,9 @@ function EquipmentPassportContent() {
     mro: 5,
     srm: 6,
     history: 7,
-  };
-  const TAB_INDEX_MAP = ['overview', 'specs', 'photos', 'docs', 'spare-parts', 'mro', 'srm', 'history'];
+  }), []);
+
+  const TAB_INDEX_MAP = useMemo(() => ['overview', 'specs', 'photos', 'docs', 'spare-parts', 'mro', 'srm', 'history'], []);
 
   const [equipment, setEquipment] = useState<EquipmentDetails | null>(null);
   const [sections, setSections] = useState<CustomSectionDef[]>([]);
@@ -197,12 +170,12 @@ function EquipmentPassportContent() {
 
   // Modals state
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editForm, setEditForm] = useState<any>({});
-  const [editCustomFields, setEditCustomFields] = useState<Record<string, any>>({});
+  const [editForm, setEditForm] = useState<EquipmentEditFormState>({});
+  const [editCustomFields, setEditCustomFields] = useState<Record<string, unknown>>({});
 
   const [docModalOpen, setDocModalOpen] = useState(false);
   const [previewDocUrl, setPreviewDocUrl] = useState<string | null>(null);
-  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [auditLogs, setAuditLogs] = useState<Record<string, unknown>[]>([]);
   const [loadingAudit, setLoadingAudit] = useState(false);
 
   // Approval Modal State
@@ -274,7 +247,7 @@ function EquipmentPassportContent() {
     fetchEquipmentAndMeta();
   }, [fetchEquipmentAndMeta]);
 
-  const fetchAudit = async () => {
+  const fetchAudit = useCallback(async () => {
     setLoadingAudit(true);
     try {
       const res = await fetch(`/api/eps/equipment/${id}/audit`);
@@ -287,9 +260,9 @@ function EquipmentPassportContent() {
     } finally {
       setLoadingAudit(false);
     }
-  };
+  }, [id]);
 
-  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (newValue: number) => {
     setActiveTab(newValue);
     const key = TAB_INDEX_MAP[newValue] || 'overview';
     if (typeof window !== 'undefined') {
@@ -297,7 +270,7 @@ function EquipmentPassportContent() {
       params.set('tab', key);
       router.replace(`/eps/${id}?${params.toString()}`);
     }
-    if (newValue === 7) {
+    if (newValue === 6) {
       fetchAudit();
     }
   };
@@ -310,7 +283,7 @@ function EquipmentPassportContent() {
     }
     setSubmittingApproval(true);
     try {
-      let proposedData: any = null;
+      let proposedData: Record<string, string> | null = null;
       if (createApprovalType === 'STATUS_CHANGE') {
         proposedData = { targetStatus: createApprovalTargetStatus };
       } else if (createApprovalType === 'DECOMMISSIONING') {
@@ -467,7 +440,7 @@ function EquipmentPassportContent() {
     if (equipment.status === 'DECOMMISSIONED') return 10;
     if (equipment.status === 'UNDER_REPAIR') return 45;
     if (equipment.status === 'IN_STORAGE') return 75;
-    const openIssues = (equipment.jiraIssues || []).filter((i: any) => i.status !== 'Closed' && i.status !== 'Resolved').length;
+    const openIssues = (equipment.jiraIssues || []).filter((i) => i.status !== 'Closed' && i.status !== 'Resolved').length;
     const plansCount = (equipment.maintenancePlans || []).length;
     return Math.max(50, Math.min(100, 95 - openIssues * 10 + (plansCount > 0 ? 5 : 0)));
   }, [equipment]);
@@ -489,65 +462,47 @@ function EquipmentPassportContent() {
     }
 
     // Maintenance events
-    (equipment.maintenancePlans || []).forEach((mp: any) => {
+    (equipment.maintenancePlans || []).forEach((mp) => {
       evts.push({
         id: `mro-${mp.id}`,
         type: 'MAINTENANCE',
-        title: `Регламент ТО: ${mp.title || 'Периодическое обслуживание'}`,
-        description: `Периодичность: каждые ${mp.intervalDays || 30} дн. Статус регламента: ${mp.status || 'Активен'}.`,
-        date: mp.nextDueDate || mp.createdAt,
-        metadata: {
-          'Интервал (дней)': mp.intervalDays || 30,
-          'Статус регламента': mp.status || 'ACTIVE',
-        },
+        title: `Регламент ТО: ${mp.name || 'Периодическое обслуживание'}`,
+        description: `Периодичность: ${mp.frequency || 'Регламент'}.`,
+        date: equipment.createdAt,
       });
     });
 
     // Spare parts replacements
-    (equipment.spareParts || []).forEach((sp: any) => {
+    (equipment.spareParts || []).forEach((sp, idx) => {
       evts.push({
-        id: `wms-${sp.id}`,
+        id: `wms-${sp.nomenclature?.id || idx}`,
         type: 'PARTS_REPLACED',
-        title: `Установка/списание комплектующих: ${sp.nomenclature?.name || 'ТМЦ'}`,
-        description: `Количество: ${sp.quantity || 1} ${sp.nomenclature?.unit || 'шт.'}. Установлено в узел оборудования.`,
-        date: sp.installedAt || sp.createdAt,
-        metadata: {
-          'Артикул ТМЦ': sp.nomenclature?.sku || '—',
-          'Количество': `${sp.quantity || 1} ${sp.nomenclature?.unit || 'шт.'}`,
-        },
+        title: `Установка комплектующих: ${sp.nomenclature?.name || 'ТМЦ'}`,
+        description: `Артикул: ${sp.nomenclature?.article || 'Б/А'}. Ед. изм.: ${sp.nomenclature?.unit || 'шт.'}.`,
+        date: equipment.createdAt,
       });
     });
 
     // Jira / SRM Incidents
-    (equipment.jiraIssues || []).forEach((issue: any) => {
+    (equipment.jiraIssues || []).forEach((issue) => {
       evts.push({
         id: `srm-${issue.id}`,
         type: 'INCIDENT',
-        title: `Инцидент ServiceDesk: [${issue.jiraKey}] ${issue.summary}`,
+        title: `Инцидент ServiceDesk: [${issue.issueKey}] ${issue.summary}`,
         description: `Приоритет: ${issue.priority}. Статус: ${issue.status}.`,
         date: issue.createdDate,
-        author: issue.reporter,
-        metadata: {
-          'Ключ заявки': issue.jiraKey,
-          'Приоритет': issue.priority,
-          'Статус': issue.status,
-        },
-        link: {
-          label: 'Открыть заявку в Jira',
-          href: issue.jiraUrl || '#',
-        },
       });
     });
 
     // Audit changes
-    (auditLogs || []).forEach((log: any) => {
+    (auditLogs || []).forEach((log, idx) => {
+      const actionKey = String(log.action || 'UPDATE') as keyof typeof AUDIT_ACTION_MAP;
       evts.push({
-        id: `audit-${log.id}`,
-        type: log.action === 'CREATE' ? 'COMMISSIONING' : 'AUDIT',
-        title: `Аудит: ${AUDIT_ACTION_MAP[log.action]?.label || log.action} данных паспорта`,
-        date: log.createdAt,
-        author: log.user?.displayName || 'Системный сервис',
-        description: `Зафиксированы изменения в структуре паспорта или атрибутов оборудования.`,
+        id: `audit-${String(log.id || idx)}`,
+        type: actionKey === 'CREATE' ? 'COMMISSIONING' : 'AUDIT',
+        title: `Аудит: ${AUDIT_ACTION_MAP[actionKey]?.label || actionKey} данных паспорта`,
+        date: String(log.createdAt || equipment.updatedAt),
+        description: 'Зафиксированы изменения в структуре паспорта или атрибутов оборудования.',
       });
     });
 
@@ -559,9 +514,6 @@ function EquipmentPassportContent() {
     return <PageLoading text="Загрузка электронного паспорта оборудования..." />;
   }
 
-  const statusInfo = EQUIPMENT_STATUS_MAP[equipment.status] || { label: equipment.status, color: 'default' };
-
-  // Extracted custom fields
   // Copy helper with feedback
   const handleCopy = (text: string, label: string) => {
     if (!text || text === '—') return;
@@ -620,7 +572,6 @@ function EquipmentPassportContent() {
             {canEdit && (
               <Button
                 variant="contained"
-                startIcon={<EditIcon />}
                 onClick={() => setEditModalOpen(true)}
                 sx={{
                   height: 38,
@@ -635,6 +586,7 @@ function EquipmentPassportContent() {
                     backgroundColor: 'primary.dark',
                   },
                 }}
+                startIcon={<EditIcon />}
               >
                 Редактировать
               </Button>
@@ -649,10 +601,7 @@ function EquipmentPassportContent() {
         tabs={
           <NavTabsContainer
             value={activeTab}
-            onChange={(val) => {
-              setActiveTab(val);
-              if (val === 6) fetchAudit();
-            }}
+            onChange={handleTabChange}
             tabs={[
               { label: 'Паспорт оборудования', value: 0 },
               { label: 'Документация и схемы', value: 1, badge: equipment.documents.length },

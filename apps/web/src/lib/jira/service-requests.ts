@@ -1,4 +1,5 @@
 import { prisma } from '@ems/database';
+import { logger } from '../logger';
 import {
   CRITICAL_SLA_HOURS,
   DEFAULT_SLA_HOURS,
@@ -8,9 +9,8 @@ import {
   MILLISECONDS_PER_HOUR,
 } from './constants';
 import { notifySrmIncident } from './notifications';
-import type { JiraIssueData } from './field-mapping';
 
-export async function createInternalServiceRequest(data: {
+export interface CreateServiceRequestInput {
   summary: string;
   description?: string;
   priority: string;
@@ -22,10 +22,12 @@ export async function createInternalServiceRequest(data: {
   assignee?: string;
   warrantyClaim?: boolean;
   contractorName?: string;
-}): Promise<any> {
-  const currentYear = new Date().getFullYear();
-  
-  // Генерация уникального номера заявки: INC-YYYY-XXXX
+}
+
+/**
+ * Генерация следующего порядкового ключа инцидента INC-YYYY-XXXX
+ */
+async function generateInternalIncidentKey(currentYear: number): Promise<string> {
   const latestIssue = await prisma.jiraIssueCache.findFirst({
     where: {
       issueKey: {
@@ -36,26 +38,91 @@ export async function createInternalServiceRequest(data: {
   });
 
   let nextNum = 1;
-  if (latestIssue && latestIssue.issueKey) {
+  if (latestIssue?.issueKey) {
     const parts = latestIssue.issueKey.split('-');
     if (parts.length === 3) {
       const parsed = parseInt(parts[2], 10);
       if (!isNaN(parsed)) nextNum = parsed + 1;
     }
   }
-  const issueKey = `INC-${currentYear}-${String(nextNum).padStart(INTERNAL_INCIDENT_SEQUENCE_PADDING, '0')}`;
+  return `INC-${currentYear}-${String(nextNum).padStart(INTERNAL_INCIDENT_SEQUENCE_PADDING, '0')}`;
+}
 
-  // Расчет нормативного дедлайна по SLA
+/**
+ * Расчет нормативного дедлайна по SLA согласно приоритету
+ */
+function calculateSlaDeadline(normPriority: string, baseDate: Date): Date {
+  let slaHours = DEFAULT_SLA_HOURS;
+  if (normPriority === 'CRITICAL' || normPriority === 'HIGHEST') {
+    slaHours = CRITICAL_SLA_HOURS;
+  } else if (normPriority === 'HIGH') {
+    slaHours = HIGH_SLA_HOURS;
+  } else if (normPriority === 'LOW' || normPriority === 'LOWEST') {
+    slaHours = LOW_SLA_HOURS;
+  }
+  return new Date(baseDate.getTime() + slaHours * MILLISECONDS_PER_HOUR);
+}
+
+/**
+ * Перевод оборудования в статус UNDER_REPAIR при критических инцидентах
+ */
+async function setEquipmentUnderRepair(equipmentId: string): Promise<void> {
+  try {
+    await prisma.equipment.update({
+      where: { id: equipmentId },
+      data: { status: 'UNDER_REPAIR' },
+    });
+  } catch (error) {
+    logger.warn('Не удалось обновить статус оборудования в EPS', { equipmentId, error });
+  }
+}
+
+/**
+ * Отправка оповещения ответственным лицам по созданному инциденту
+ */
+async function dispatchIncidentNotification(
+  issueKey: string,
+  normPriority: string,
+  data: CreateServiceRequestInput,
+  now: Date
+): Promise<void> {
+  try {
+    let eqName: string | undefined;
+    if (data.equipmentId) {
+      const eq = await prisma.equipment.findUnique({
+        where: { id: data.equipmentId },
+        select: { name: true },
+      });
+      eqName = eq?.name;
+    }
+    await notifySrmIncident(
+      {
+        issueKey,
+        summary: data.summary,
+        status: 'OPEN',
+        priority: normPriority,
+        issueType: data.issueType || 'INCIDENT',
+        assignee: data.assignee || null,
+        reporter: data.reporter || null,
+        createdDate: now,
+        resolvedDate: null,
+        rawData: {},
+      },
+      eqName
+    );
+  } catch (error) {
+    logger.warn('Ошибка при отправке оповещения SRM', { issueKey, error });
+  }
+}
+
+export async function createInternalServiceRequest(data: CreateServiceRequestInput) {
+  const currentYear = new Date().getFullYear();
+  const issueKey = await generateInternalIncidentKey(currentYear);
+
   const now = new Date();
-  let slaHours = DEFAULT_SLA_HOURS; // по умолчанию 24ч (Medium)
   const normPriority = (data.priority || 'MEDIUM').toUpperCase();
-  if (normPriority === 'CRITICAL' || normPriority === 'HIGHEST') slaHours = CRITICAL_SLA_HOURS;
-  else if (normPriority === 'HIGH') slaHours = HIGH_SLA_HOURS;
-  else if (normPriority === 'LOW' || normPriority === 'LOWEST') slaHours = LOW_SLA_HOURS;
+  const slaDeadline = calculateSlaDeadline(normPriority, now);
 
-  const slaDeadline = new Date(now.getTime() + slaHours * MILLISECONDS_PER_HOUR);
-
-  // Создаем запись инцидента
   const issue = await prisma.jiraIssueCache.create({
     data: {
       issueKey,
@@ -82,43 +149,11 @@ export async function createInternalServiceRequest(data: {
     },
   });
 
-  // Если инцидент критический и указано оборудование - переводим оборудование в статус UNDER_REPAIR в EPS
   if (data.equipmentId && (normPriority === 'CRITICAL' || normPriority === 'HIGH')) {
-    try {
-      await prisma.equipment.update({
-        where: { id: data.equipmentId },
-        data: { status: 'UNDER_REPAIR' },
-      });
-    } catch (e) {
-      console.warn('Не удалось обновить статус оборудования в EPS:', e);
-    }
+    await setEquipmentUnderRepair(data.equipmentId);
   }
 
-  // Отправляем уведомление ответственным лицам
-  try {
-    let eqName: string | undefined;
-    if (data.equipmentId) {
-      const eq = await prisma.equipment.findUnique({ where: { id: data.equipmentId }, select: { name: true } });
-      eqName = eq?.name;
-    }
-    await notifySrmIncident(
-      {
-        issueKey,
-        summary: data.summary,
-        status: 'OPEN',
-        priority: normPriority,
-        issueType: data.issueType || 'INCIDENT',
-        assignee: data.assignee || null,
-        reporter: data.reporter || null,
-        createdDate: now,
-        resolvedDate: null,
-        rawData: {},
-      },
-      eqName
-    );
-  } catch (e) {
-    console.warn('Ошибка при отправке оповещения SRM:', e);
-  }
+  await dispatchIncidentNotification(issueKey, normPriority, data, now);
 
   return issue;
 }
@@ -126,7 +161,7 @@ export async function createInternalServiceRequest(data: {
 /**
  * Создание аварийного заказ-наряда MRO на основе инцидента SRM
  */
-export async function createMroWorkOrderFromIssue(issueId: string, userId?: string): Promise<any> {
+export async function createMroWorkOrderFromIssue(issueId: string, _userId?: string) {
   const issue = await prisma.jiraIssueCache.findUnique({
     where: { id: issueId },
   });
@@ -139,7 +174,6 @@ export async function createMroWorkOrderFromIssue(issueId: string, userId?: stri
     throw new Error('Невозможно создать заказ-наряд ТОиР: к заявке не привязано оборудование');
   }
 
-  // Создаем заказ-наряд в MRO
   const schedule = await prisma.maintenanceSchedule.create({
     data: {
       equipmentId: issue.equipmentId,
@@ -151,7 +185,6 @@ export async function createMroWorkOrderFromIssue(issueId: string, userId?: stri
     },
   });
 
-  // Обновляем заявку SRM: статус IN_PROGRESS, связь с нарядом MRO
   const updatedIssue = await prisma.jiraIssueCache.update({
     where: { id: issueId },
     data: {
@@ -160,7 +193,6 @@ export async function createMroWorkOrderFromIssue(issueId: string, userId?: stri
     },
   });
 
-  // Убеждаемся, что оборудование имеет статус UNDER_REPAIR
   await prisma.equipment.update({
     where: { id: issue.equipmentId },
     data: { status: 'UNDER_REPAIR' },

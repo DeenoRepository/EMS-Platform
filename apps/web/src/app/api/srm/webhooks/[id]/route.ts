@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@ems/database';
+import { prisma, type Prisma } from '@ems/database';
 import { logger } from '@/lib/logger';
 import { toSafeErrorDetails } from '@/lib/safe-error';
 import { applyJiraFieldMapping, getJiraFieldMapping, JiraFieldMappingConfig, notifySrmIncident } from '@/lib/jira-service';
@@ -9,6 +9,14 @@ import { enforceRateLimit } from '@/lib/rate-limit';
 export const dynamic = 'force-dynamic';
 
 const MAX_WEBHOOK_BODY_SIZE = 5 * 1024 * 1024; // 5MB
+
+interface SrmWebhookAuthConfig {
+  webhookSecret?: string;
+  apiToken?: string;
+  apiKey?: string;
+  token?: string;
+  [key: string]: unknown;
+}
 
 /**
  * POST /api/srm/webhooks/[id]
@@ -37,7 +45,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     // Проверка секрета вебхука (если задан)
-    const auth = (integration.authConfig as any) || {};
+    const auth = (integration.authConfig && typeof integration.authConfig === 'object'
+      ? (integration.authConfig as Record<string, unknown>)
+      : {}) as SrmWebhookAuthConfig;
     const webhookSecret = auth.webhookSecret || auth.apiToken || auth.apiKey || auth.token;
 
     if (webhookSecret) {
@@ -51,8 +61,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
       const providedToken = tokenParam || headerSecret;
       // SECURITY FIX: If webhookSecret is configured, ALWAYS require a matching token.
-      // Previously, missing token (providedToken === undefined/null) would bypass the check entirely
-      // due to the truthy guard `if (providedToken && ...)`. Now: reject if token absent OR wrong.
       if (!providedToken || providedToken !== webhookSecret) {
         return NextResponse.json({ success: false, error: 'Неверный или отсутствующий секретный токен вебхука' }, { status: 401 });
       }
@@ -85,6 +93,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const mappingConfig = (integration.mappingConfig as unknown as JiraFieldMappingConfig) || globalMapping;
 
     const mapped = await applyJiraFieldMapping(rawIssue, mappingConfig, allEquipment);
+    const rawDataJson = (rawIssue && typeof rawIssue === 'object' ? rawIssue : {}) as Prisma.InputJsonValue;
 
     const savedIssue = await prisma.jiraIssueCache.upsert({
       where: { issueKey: mapped.issueKey },
@@ -100,7 +109,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         resolvedDate: mapped.resolvedDate,
         equipmentId: mapped.equipmentId,
         integrationId: integration.id,
-        rawData: rawIssue as any,
+        rawData: rawDataJson,
         syncedAt: new Date(),
       },
       update: {
@@ -114,7 +123,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         resolvedDate: mapped.resolvedDate,
         equipmentId: mapped.equipmentId,
         integrationId: integration.id,
-        rawData: rawIssue as any,
+        rawData: rawDataJson,
         syncedAt: new Date(),
       },
     });

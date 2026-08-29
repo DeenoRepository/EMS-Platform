@@ -1,124 +1,51 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import {
   Box,
   Card,
-  CardContent,
   Typography,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
-  IconButton,
   TextField,
-  MenuItem,
   FormControlLabel,
-  Checkbox,
   Switch,
   Grid,
   Divider,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Paper,
-  Tooltip,
   Dialog,
   DialogTitle,
   DialogContent,
+  IconButton,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import EditIcon from '@mui/icons-material/Edit';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import BoltIcon from '@mui/icons-material/Bolt';
-import WaterDropIcon from '@mui/icons-material/WaterDrop';
-import ShieldIcon from '@mui/icons-material/Shield';
-import StraightenIcon from '@mui/icons-material/Straighten';
-import SpeedIcon from '@mui/icons-material/Speed';
-import CategoryIcon from '@mui/icons-material/Category';
-import EngineeringIcon from '@mui/icons-material/Engineering';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import Inventory2Icon from '@mui/icons-material/Inventory2';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import BuildCircleIcon from '@mui/icons-material/BuildCircle';
 import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
-import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
-import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
-import BugReportOutlinedIcon from '@mui/icons-material/BugReportOutlined';
-import LayersOutlinedIcon from '@mui/icons-material/LayersOutlined';
 import PageHeader from '@/components/layout/PageHeader';
 import { SmartImportWizard } from '@/components/eps/SmartImportWizard';
 import { useSnackbar } from 'notistack';
 import {
-  StatCard,
-  DataTableWrapper,
-  EmptyState,
   ConfirmDialog,
   PageLoading,
-  FormDialog,
   StatusBadge,
   NavTabsContainer,
 } from '@/components/ui';
 
-interface CustomFieldItem {
-  id: string;
-  sectionId: string | null;
-  key: string;
-  name: string;
-  fieldType: string;
-  unit: string | null;
-  isRequired: boolean;
-  defaultValue: string | null;
-  options: string[] | null;
-  sortOrder: number;
-}
-
-interface CustomSectionItem {
-  id: string;
-  code: string;
-  name: string;
-  description: string | null;
-  icon: string | null;
-  sortOrder: number;
-  fields: CustomFieldItem[];
-}
-
-interface TagItem {
-  id: string;
-  name: string;
-  color: string;
-  equipmentCount: number;
-}
-
-const FIELD_TYPE_LABELS: Record<string, string> = {
-  TEXT: 'Текстовое поле',
-  TEXTAREA: 'Многострочный текст',
-  NUMBER: 'Числовое значение',
-  DATE: 'Дата',
-  SELECT: 'Выпадающий список',
-  BOOLEAN: 'Флаг (Да/Нет)',
-};
-
-const SECTION_ICONS: Record<string, React.ReactNode> = {
-  Category: <CategoryIcon color="primary" />,
-  Speed: <SpeedIcon color="error" />,
-  Shield: <ShieldIcon color="success" />,
-  Engineering: <EngineeringIcon color="warning" />,
-  Bolt: <BoltIcon color="warning" />,
-  WaterDrop: <WaterDropIcon color="info" />,
-  Straighten: <StraightenIcon color="secondary" />,
-};
-
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Suspense } from 'react';
-
-const PRESET_COLORS = ['primary.main', 'secondary.main', 'success.main', 'warning.main', 'error.main', 'secondary.main', 'secondary.main', 'text.secondary'];
+import {
+  SectionDialog,
+  FieldDialog,
+  TagDialog,
+  type CustomSectionItem,
+  type CustomFieldItem,
+} from '@/components/admin/ModuleSettingsDialogs';
+import {
+  ModuleSettingsEpsTab,
+  type TagItem,
+} from '@/components/admin/ModuleSettingsEpsTab';
 
 const MODULE_KEYS = ['eps', 'wms', 'srm', 'mro'];
 
@@ -155,7 +82,7 @@ function ModuleSettingsContent() {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
 
-  const getInitialTab = () => {
+  const initialTab = useMemo(() => {
     switch (tabParam) {
       case 'wms':
         return 1;
@@ -166,9 +93,9 @@ function ModuleSettingsContent() {
       default:
         return 0;
     }
-  };
+  }, [tabParam]);
 
-  const [activeTab, setActiveTab] = useState(getInitialTab);
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -213,6 +140,15 @@ function ModuleSettingsContent() {
   const [tagColor, setTagColor] = useState('primary.main');
   const [savingTag, setSavingTag] = useState(false);
 
+  // Module Status State
+  const [moduleStatus, setModuleStatus] = useState<Record<string, boolean>>({
+    eps: true,
+    wms: true,
+    srm: true,
+    mro: true,
+  });
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+
   // Confirm State
   const [deleteConfirm, setDeleteConfirm] = useState<{
     open: boolean;
@@ -221,6 +157,20 @@ function ModuleSettingsContent() {
     onConfirm: () => Promise<void> | void;
     loading?: boolean;
   }>({ open: false, title: '', message: '', onConfirm: () => {} });
+
+  const fetchModuleSettings = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/module-settings');
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          setModuleStatus(json.data);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const fetchEpsData = useCallback(async () => {
     setLoadingEps(true);
@@ -246,7 +196,38 @@ function ModuleSettingsContent() {
 
   useEffect(() => {
     fetchEpsData();
-  }, [fetchEpsData]);
+    fetchModuleSettings();
+  }, [fetchEpsData, fetchModuleSettings]);
+
+  const handleToggleModule = async (moduleKey: string, enabled: boolean) => {
+    setUpdatingStatus(true);
+    try {
+      const res = await fetch('/api/admin/module-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ module: moduleKey, enabled }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setModuleStatus((prev) => ({ ...prev, [moduleKey]: enabled }));
+        enqueueSnackbar(`Модуль ${MODULE_META[moduleKey]?.name || moduleKey} ${enabled ? 'включен' : 'отключен'}`, {
+          variant: enabled ? 'success' : 'info',
+        });
+      } else {
+        enqueueSnackbar(data.error || 'Ошибка изменения статуса модуля', { variant: 'error' });
+      }
+    } catch {
+      enqueueSnackbar('Ошибка сети', { variant: 'error' });
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
+  const handleTabChange = (index: number) => {
+    setActiveTab(index);
+    const key = MODULE_KEYS[index] || 'eps';
+    router.push(`/admin/module-settings?tab=${key}`);
+  };
 
   // Open Create Section Modal
   const handleOpenCreateSection = () => {
@@ -359,11 +340,11 @@ function ModuleSettingsContent() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          sectionId: fieldTargetSectionId || null,
           key: fieldKey.trim(),
           name: fieldName.trim(),
           fieldType,
           unit: fieldUnit.trim() || null,
-          sectionId: fieldTargetSectionId || null,
           isRequired,
           defaultValue: defaultValue.trim() || null,
           options,
@@ -372,7 +353,7 @@ function ModuleSettingsContent() {
       });
       const data = await res.json();
       if (data.success) {
-        enqueueSnackbar('Параметр паспорта сохранен', { variant: 'success' });
+        enqueueSnackbar('Параметр добавлен в паспорт', { variant: 'success' });
         setFieldDialogOpen(false);
         fetchEpsData();
       } else {
@@ -389,8 +370,8 @@ function ModuleSettingsContent() {
   const handleDeleteField = (f: CustomFieldItem) => {
     setDeleteConfirm({
       open: true,
-      title: 'Удаление параметра паспорта',
-      message: `Удалить технический параметр «${f.name}»?`,
+      title: 'Удаление технического параметра',
+      message: `Удалить параметр «${f.name}» (${f.key}) из структуры паспорта?`,
       onConfirm: async () => {
         try {
           const res = await fetch(`/api/eps/custom-fields?id=${f.id}`, { method: 'DELETE' });
@@ -412,7 +393,7 @@ function ModuleSettingsContent() {
   // Save Tag
   const handleSaveTag = async () => {
     if (!tagName.trim()) {
-      enqueueSnackbar('Укажите наименование метки классификатора', { variant: 'warning' });
+      enqueueSnackbar('Укажите наименование метки', { variant: 'warning' });
       return;
     }
     setSavingTag(true);
@@ -420,13 +401,15 @@ function ModuleSettingsContent() {
       const res = await fetch('/api/eps/tags', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: tagName.trim(), color: tagColor }),
+        body: JSON.stringify({
+          name: tagName.trim(),
+          color: tagColor,
+        }),
       });
       const data = await res.json();
       if (data.success) {
-        enqueueSnackbar('Метка классификатора создана', { variant: 'success' });
+        enqueueSnackbar('Метка создана', { variant: 'success' });
         setTagDialogOpen(false);
-        setTagName('');
         fetchEpsData();
       } else {
         enqueueSnackbar(data.error || 'Ошибка создания метки', { variant: 'error' });
@@ -438,163 +421,36 @@ function ModuleSettingsContent() {
     }
   };
 
-  const renderFieldTable = (fieldList: CustomFieldItem[]) => {
-    if (fieldList.length === 0) {
-      return (
-        <EmptyState
-          title="В этом разделе пока нет добавленных полей"
-          description="Вы можете добавить кастомное поле с заданным типом данных и единицей измерения."
-          actionText="Добавить поле"
-          onAction={() => handleOpenCreateField()}
-        />
-      );
-    }
-
-    return (
-      <DataTableWrapper total={fieldList.length} stickyHeader>
-        <Table size="small" aria-label="Таблица пользовательских полей">
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 700 }}>Название поля</TableCell>
-              <TableCell sx={{ fontWeight: 700, width: 140 }}>Системный ключ</TableCell>
-              <TableCell sx={{ fontWeight: 700, width: 140 }}>Тип данных</TableCell>
-              <TableCell sx={{ fontWeight: 700, width: 90 }}>Ед. изм.</TableCell>
-              <TableCell sx={{ fontWeight: 700, width: 110 }}>Обязательное</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Значение / Опции</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 700, width: 80 }}>Действия</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {fieldList.map((f) => (
-              <TableRow key={f.id} hover>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>{f.name}</TableCell>
-                <TableCell>
-                  <Chip label={f.key} size="small" variant="outlined" sx={{ fontFamily: 'monospace', borderRadius: '4px', height: 20 }} />
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={f.fieldType} label={FIELD_TYPE_LABELS[f.fieldType] || f.fieldType} size="small" />
-                </TableCell>
-                <TableCell>
-                  {f.unit ? <Chip label={f.unit} size="small" variant="outlined" sx={{ fontWeight: 700, borderRadius: '4px', height: 20 }} /> : '—'}
-                </TableCell>
-                <TableCell sx={{ fontSize: '0.8125rem' }}>{f.isRequired ? 'Да' : 'Нет'}</TableCell>
-                <TableCell>
-                  {f.fieldType === 'SELECT' && f.options ? (
-                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                      {f.options.map((opt, i) => (
-                        <Chip key={i} label={opt} size="small" variant="outlined" sx={{ borderRadius: '4px', height: 20 }} />
-                      ))}
-                    </Box>
-                  ) : (
-                    f.defaultValue || '—'
-                  )}
-                </TableCell>
-                <TableCell align="right">
-                  <IconButton size="small" color="error" onClick={() => handleDeleteField(f)}>
-                    <DeleteOutlineIcon fontSize="small" />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </DataTableWrapper>
-    );
-  };
-
-  const MODULE_METADATA = [
-    {
-      title: 'Конфигурация модуля: Паспортизация оборудования (EPS)',
-      subtitle: 'Управление техническими разделами, структурой паспортов оборудования и классификаторами (ОКОФ, ОКПД2)',
-      breadcrumb: 'Паспортизация оборудования (EPS)',
-    },
-    {
-      title: 'Конфигурация модуля: Складской учёт ТМЦ (WMS)',
-      subtitle: 'Управление складскими комплексами, топологией ячеек адресного хранения и категориями ТМЦ',
-      breadcrumb: 'Складской учёт ТМЦ (WMS)',
-    },
-    {
-      title: 'Конфигурация модуля: Управление инцидентами и сервисом (SRM)',
-      subtitle: 'Интеграция с корпоративными Service Desk (Jira, Redmine, 1С), схема сопоставления полей и регламенты SLA',
-      breadcrumb: 'Управление инцидентами (SRM)',
-    },
-    {
-      title: 'Конфигурация модуля: Техническое обслуживание и ремонт (MRO)',
-      subtitle: 'Справочник планов регламентного обслуживания, стандарты технологических карт и нормативы периодичности ТО',
-      breadcrumb: 'Техническое обслуживание (MRO)',
-    },
-  ];
-
-  // Module Status State
-  const MODULE_KEYS = ['eps', 'wms', 'srm', 'mro'] as const;
-  const [moduleStatus, setModuleStatus] = useState<Record<string, boolean>>({
-    eps: true,
-    wms: true,
-    srm: true,
-    mro: true,
-  });
-  const [updatingStatus, setUpdatingStatus] = useState(false);
-
-  const fetchModuleStatus = useCallback(async () => {
-    try {
-      const res = await fetch('/api/modules/status');
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success && json.data) {
-          setModuleStatus(json.data);
-        }
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchModuleStatus();
-  }, [fetchModuleStatus]);
-
-  const handleToggleModule = async (moduleId: string, newEnabled: boolean) => {
-    setUpdatingStatus(true);
-    try {
-      const res = await fetch('/api/modules/status', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ moduleId, enabled: newEnabled }),
-      });
-      const json = await res.json();
-      if (json.success && json.data) {
-        setModuleStatus(json.data);
-        enqueueSnackbar(`Модуль успешно ${newEnabled ? 'включен' : 'отключен'}`, {
-          variant: newEnabled ? 'success' : 'info',
-        });
-      } else {
-        enqueueSnackbar(json.error || 'Ошибка изменения статуса модуля', { variant: 'error' });
-      }
-    } catch {
-      enqueueSnackbar('Сетевая ошибка при изменении статуса модуля', { variant: 'error' });
-    } finally {
-      setUpdatingStatus(false);
-    }
-  };
-
   const currentModuleKey = MODULE_KEYS[activeTab] || 'eps';
-  const currentMeta = MODULE_META[currentModuleKey] || MODULE_META.eps;
-  const currentModuleEnabled = moduleStatus[currentModuleKey] !== false;
+  const currentModuleMeta = MODULE_META[currentModuleKey] || MODULE_META.eps;
+  const currentModuleEnabled = moduleStatus[currentModuleKey] ?? true;
 
   return (
-    <Box sx={{ width: '100%', pb: 2 }}>
+    <Box sx={{ width: '100%', pb: 4 }}>
       <PageHeader
-        title={currentMeta.title}
-        subtitle={currentMeta.subtitle}
+        title={currentModuleMeta.title}
+        subtitle={currentModuleMeta.subtitle}
         breadcrumbs={[
           { label: 'Главная', href: '/' },
           { label: 'Администрирование', href: '/admin/settings' },
-          { label: 'Настройки модулей', href: '/admin/module-settings' },
-          { label: currentMeta.breadcrumb },
+          { label: 'Модули системы', href: '/admin/module-settings' },
+          { label: currentModuleMeta.breadcrumb },
         ]}
+        tabs={
+          <NavTabsContainer
+            value={activeTab}
+            onChange={handleTabChange}
+            tabs={[
+              { label: 'Паспортизация (EPS)', value: 0, icon: <PrecisionManufacturingIcon fontSize="small" /> },
+              { label: 'Складской учёт (WMS)', value: 1, icon: <Inventory2Icon fontSize="small" /> },
+              { label: 'Система заявок (SRM)', value: 2, icon: <AssessmentIcon fontSize="small" /> },
+              { label: 'ТО и Ремонт (MRO)', value: 3, icon: <BuildCircleIcon fontSize="small" /> },
+            ]}
+          />
+        }
       />
 
-      {/* Module Enable / Disable Control Banner */}
+      {/* Global Module Toggle Banner */}
       <Paper
         variant="outlined"
         sx={{
@@ -641,256 +497,23 @@ function ModuleSettingsContent() {
 
       {/* TAB 0: EPS — Разделы, Поля, Теги */}
       {activeTab === 0 && (
-        <Box>
-          <Grid container spacing={3}>
-            {/* Main Column: Custom Sections with their Fields */}
-            <Grid item xs={12} lg={8}>
-              <Card sx={{ mb: 3 }}>
-                <CardContent sx={{ p: 3 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1.5 }}>
-                    <Box>
-                      <Typography variant="h6" fontWeight={700}>
-                        Технические разделы и характеристики паспорта
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Группировка технических параметров по разделам паспорта с единицами измерения
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        color="primary"
-                        startIcon={<FileUploadOutlinedIcon />}
-                        onClick={() => setImportDialogOpen(true)}
-                        sx={{ borderRadius: '8px' }}
-                      >
-                        Импорт оборудования
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<AddIcon />}
-                        onClick={handleOpenCreateSection}
-                        sx={{ borderRadius: '8px' }}
-                      >
-                        Добавить раздел
-                      </Button>
-                      <Button
-                        variant="contained"
-                        size="small"
-                        startIcon={<AddIcon />}
-                        onClick={() => handleOpenCreateField()}
-                        sx={{ borderRadius: '8px' }}
-                      >
-                        Добавить параметр
-                      </Button>
-                    </Box>
-                  </Box>
-                <Divider sx={{ mb: 2.5 }} />
-
-                {loadingEps ? (
-                  <PageLoading text="Загрузка структуры разделов..." minHeight={160} size={28} />
-                ) : sections.length === 0 ? (
-                  <EmptyState
-                    title="Разделы не созданы"
-                    description="Технические разделы еще не созданы. Нажмите «Добавить раздел» для группировки параметров."
-                    minHeight={160}
-                  />
-                ) : (
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    {sections.map((sec) => (
-                      <Accordion key={sec.id} defaultExpanded variant="outlined" sx={{ borderRadius: '8px !important', overflow: 'hidden' }}>
-                        <AccordionSummary
-                          expandIcon={<ExpandMoreIcon />}
-                          sx={{
-                            backgroundColor: 'background.default',
-                            borderBottom: '1px solid divider',
-                            px: 2.5,
-                          }}
-                        >
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', pr: 1 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                              {SECTION_ICONS[sec.icon || 'Bolt'] || <BoltIcon color="primary" />}
-                              <Box>
-                                <Typography variant="subtitle1" fontWeight={700}>
-                                  {sec.name}
-                                </Typography>
-                                {sec.description && (
-                                  <Typography variant="caption" color="text.secondary">
-                                    {sec.description}
-                                  </Typography>
-                                )}
-                              </Box>
-                            </Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <Chip label={`${sec.fields.length} параметров`} size="small" />
-                              <IconButton
-                                size="small"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOpenEditSection(sec);
-                                }}
-                                title="Редактировать раздел"
-                              >
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                              <IconButton
-                                size="small"
-                                color="error"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteSection(sec);
-                                }}
-                                title="Удалить раздел"
-                              >
-                                <DeleteOutlineIcon fontSize="small" />
-                              </IconButton>
-                            </Box>
-                          </Box>
-                        </AccordionSummary>
-                        <AccordionDetails sx={{ p: 0 }}>
-                          {renderFieldTable(sec.fields)}
-                          <Box sx={{ p: 1.5, display: 'flex', justifyContent: 'flex-end', backgroundColor: 'background.default', borderTop: '1px solid', borderColor: 'divider' }}>
-                            <Button
-                              size="small"
-                              startIcon={<AddIcon />}
-                              onClick={() => handleOpenCreateField(sec.id)}
-                            >
-                              Добавить параметр в «{sec.name}»
-                            </Button>
-                          </Box>
-                        </AccordionDetails>
-                      </Accordion>
-                    ))}
-
-                    {/* Unassigned Fields Section if any */}
-                    {unassignedFields.length > 0 && (
-                      <Accordion defaultExpanded variant="outlined" sx={{ borderRadius: '8px !important', overflow: 'hidden' }}>
-                        <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ backgroundColor: 'warning.light' }}>
-                          <Typography variant="subtitle1" fontWeight={700} color="warning.dark">
-                            Общие параметры (базовые характеристики)
-                          </Typography>
-                        </AccordionSummary>
-                        <AccordionDetails sx={{ p: 0 }}>
-                          {renderFieldTable(unassignedFields)}
-                        </AccordionDetails>
-                      </Accordion>
-                    )}
-                  </Box>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Side Column: Tags & Colors */}
-          <Grid item xs={12} lg={4}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Box>
-                    <Typography variant="h6" fontWeight={700}>
-                      Метки и классификаторы
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Категории и цветовая маркировка
-                    </Typography>
-                  </Box>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={<AddIcon />}
-                    onClick={() => {
-                      setTagName('');
-                      setTagColor('primary.main');
-                      setTagDialogOpen(true);
-                    }}
-                  >
-                    Добавить метку
-                  </Button>
-                </Box>
-                <Divider sx={{ mb: 2.5 }} />
-
-                {loadingEps ? (
-                  <PageLoading text="Загрузка списка тегов..." minHeight={140} size={24} />
-                ) : (
-                  <DataTableWrapper total={tags.length} stickyHeader>
-                    <Table size="small" aria-label="Таблица тегов оборудования">
-                      <TableHead sx={{ backgroundColor: 'action.hover' }}>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 700 }}>Тег</TableCell>
-                          <TableCell sx={{ fontWeight: 700 }}>Цвет</TableCell>
-                          <TableCell sx={{ fontWeight: 700 }}>Оборудование</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {tags.map((t) => (
-                          <TableRow key={t.id} hover>
-                            <TableCell>
-                              <StatusBadge
-                                status={t.name}
-                                label={t.name}
-                                customColor={t.color}
-                                size="small"
-                                variant="outlined"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Box sx={{ width: 16, height: 16, borderRadius: '50%', backgroundColor: t.color }} />
-                                <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>
-                                  {t.color}
-                                </Typography>
-                              </Box>
-                            </TableCell>
-                            <TableCell>{t.equipmentCount} ед.</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </DataTableWrapper>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
-        {/* Modal Dialog: Мастер импорта оборудования */}
-        <Dialog
-          open={importDialogOpen}
-          onClose={() => setImportDialogOpen(false)}
-          maxWidth="lg"
-          fullWidth
-          PaperProps={{
-            sx: { borderRadius: '12px', overflow: 'hidden' },
+        <ModuleSettingsEpsTab
+          sections={sections}
+          unassignedFields={unassignedFields}
+          tags={tags}
+          loadingEps={loadingEps}
+          onOpenImport={() => setImportDialogOpen(true)}
+          onOpenCreateSection={handleOpenCreateSection}
+          onOpenEditSection={handleOpenEditSection}
+          onDeleteSection={handleDeleteSection}
+          onOpenCreateField={handleOpenCreateField}
+          onDeleteField={handleDeleteField}
+          onOpenCreateTag={() => {
+            setTagName('');
+            setTagColor('primary.main');
+            setTagDialogOpen(true);
           }}
-        >
-          <DialogTitle
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              py: 2,
-              px: 3,
-              borderBottom: '1px solid divider',
-              backgroundColor: 'background.paper',
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-              <FileUploadOutlinedIcon color="primary" />
-              <Typography variant="h6" fontWeight={700}>
-                Мастер импорта оборудования
-              </Typography>
-            </Box>
-            <IconButton size="small" onClick={() => setImportDialogOpen(false)} aria-label="Закрыть модальное окно">
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </DialogTitle>
-          <DialogContent sx={{ p: 3, backgroundColor: 'background.default' }}>
-            <SmartImportWizard />
-          </DialogContent>
-        </Dialog>
-      </Box>
+        />
       )}
 
       {/* TAB 1: WMS — Складской учёт */}
@@ -978,242 +601,97 @@ function ModuleSettingsContent() {
         </Card>
       )}
 
-      {/* Create / Edit Section Modal */}
-      <FormDialog
-        open={sectionDialogOpen}
-        onClose={() => setSectionDialogOpen(false)}
-        title={sectionEditingId ? 'Редактирование технического раздела' : 'Создание технического раздела'}
-        maxWidth="sm"
-        loading={savingSection}
-        submitLabel={savingSection ? 'Сохранение...' : 'Сохранить раздел'}
-        onSubmit={handleSaveSection}
-        submitDisabled={savingSection || !sectionName}
+      {/* Modal Dialog: Мастер импорта оборудования */}
+      <Dialog
+        open={importDialogOpen}
+        onClose={() => setImportDialogOpen(false)}
+        maxWidth="lg"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: '12px', overflow: 'hidden' },
+        }}
       >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-          <TextField
-            label="Отображаемое название раздела"
-            placeholder="например: Электротехнические характеристики"
-            value={sectionName}
-            onChange={(e) => setSectionName(e.target.value)}
-            fullWidth
-            size="small"
-            required
-          />
-          {!sectionEditingId && (
-            <TextField
-              label="Системный код (латиницей)"
-              placeholder="например: electrical_characteristics"
-              value={sectionCode}
-              onChange={(e) => setSectionCode(e.target.value)}
-              fullWidth
-              size="small"
-              helperText="Оставьте пустым для автогенерации из названия"
-            />
-          )}
-          <TextField
-            label="Краткое описание"
-            placeholder="Параметры мощности, напряжения, питающей сети"
-            value={sectionDesc}
-            onChange={(e) => setSectionDesc(e.target.value)}
-            fullWidth
-            size="small"
-            multiline
-            rows={2}
-          />
-          <TextField
-            select
-            label="Иконка раздела"
-            value={sectionIcon}
-            onChange={(e) => setSectionIcon(e.target.value)}
-            fullWidth
-            size="small"
-            SelectProps={{ displayEmpty: true }}
-          >
-            <MenuItem value="Category">Классификаторы / ОКОФ (Категория)</MenuItem>
-            <MenuItem value="Speed">Состояние / Износ (Спидометр)</MenuItem>
-            <MenuItem value="Shield">Регламент / Надежность (Щит)</MenuItem>
-            <MenuItem value="Engineering">ТОиР / Инженерия (Инструменты)</MenuItem>
-            <MenuItem value="Bolt">Электричество (Молния)</MenuItem>
-            <MenuItem value="WaterDrop">Гидравлика / Среда (Капля)</MenuItem>
-            <MenuItem value="Straighten">Габариты / Размеры (Линейка)</MenuItem>
-          </TextField>
-          <TextField
-            label="Порядковый номер сортировки"
-            type="number"
-            value={sectionSort}
-            onChange={(e) => setSectionSort(Number(e.target.value))}
-            fullWidth
-            size="small"
-          />
-        </Box>
-      </FormDialog>
-
-      {/* Create / Edit Custom Field Modal */}
-      <FormDialog
-        open={fieldDialogOpen}
-        onClose={() => setFieldDialogOpen(false)}
-        title="Добавление технического параметра в паспорт"
-        maxWidth="sm"
-        loading={savingField}
-        submitLabel={savingField ? 'Сохранение...' : 'Сохранить параметр'}
-        onSubmit={handleSaveField}
-        submitDisabled={savingField || !fieldName || !fieldKey}
-      >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-          <TextField
-            select
-            label="Целевой раздел паспорта"
-            value={fieldTargetSectionId}
-            onChange={(e) => setFieldTargetSectionId(e.target.value)}
-            fullWidth
-            size="small"
-            SelectProps={{ displayEmpty: true }}
-          >
-            <MenuItem value="">— Общий (без раздела) —</MenuItem>
-            {sections.map((s) => (
-              <MenuItem key={s.id} value={s.id}>
-                {s.name}
-              </MenuItem>
-            ))}
-          </TextField>
-
-          <TextField
-            label="Отображаемое наименование параметра"
-            placeholder="например: Номинальная мощность"
-            value={fieldName}
-            onChange={(e) => setFieldName(e.target.value)}
-            fullWidth
-            size="small"
-            required
-          />
-
-          <TextField
-            label="Системный ключ (латиницей)"
-            placeholder="например: nominal_power_kw"
-            value={fieldKey}
-            onChange={(e) => setFieldKey(e.target.value)}
-            fullWidth
-            size="small"
-            required
-            helperText="Идентификатор параметра в структуре паспорта оборудования"
-          />
-
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={7}>
-              <TextField
-                select
-                label="Тип данных"
-                value={fieldType}
-                onChange={(e) => setFieldType(e.target.value)}
-                fullWidth
-                size="small"
-                SelectProps={{ displayEmpty: true }}
-              >
-                {Object.entries(FIELD_TYPE_LABELS).map(([k, label]) => (
-                  <MenuItem key={k} value={k}>
-                    {label}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-
-            <Grid item xs={12} sm={5}>
-              <TextField
-                label="Единица изм."
-                placeholder="кВт, бар, В, кг, мм"
-                value={fieldUnit}
-                onChange={(e) => setFieldUnit(e.target.value)}
-                fullWidth
-                size="small"
-              />
-            </Grid>
-          </Grid>
-
-          {fieldType === 'SELECT' && (
-            <TextField
-              label="Варианты (через запятую)"
-              placeholder="220 В, 380 В, 6 кВ, 10 кВ"
-              value={optionsStr}
-              onChange={(e) => setOptionsStr(e.target.value)}
-              fullWidth
-              size="small"
-            />
-          )}
-
-          {fieldType !== 'BOOLEAN' && fieldType !== 'TEXTAREA' && (
-            <TextField
-              label="Значение по умолчанию"
-              value={defaultValue}
-              onChange={(e) => setDefaultValue(e.target.value)}
-              fullWidth
-              size="small"
-            />
-          )}
-
-          <TextField
-            label="Порядковый номер внутри раздела"
-            type="number"
-            value={sortOrder}
-            onChange={(e) => setSortOrder(Number(e.target.value))}
-            fullWidth
-            size="small"
-          />
-
-          <FormControlLabel
-            control={
-              <Checkbox checked={isRequired} onChange={(e) => setIsRequired(e.target.checked)} />
-            }
-            label="Обязательно для заполнения в паспорте"
-          />
-        </Box>
-      </FormDialog>
-
-      {/* Create Tag Modal */}
-      <FormDialog
-        open={tagDialogOpen}
-        onClose={() => setTagDialogOpen(false)}
-        title="Создание классификатора / метки"
-        maxWidth="xs"
-        loading={savingTag}
-        submitLabel={savingTag ? 'Создание...' : 'Создать метку'}
-        onSubmit={handleSaveTag}
-        submitDisabled={savingTag || !tagName}
-      >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-          <TextField
-            label="Наименование метки"
-            placeholder="например: Взрывозащищенное"
-            value={tagName}
-            onChange={(e) => setTagName(e.target.value)}
-            fullWidth
-            size="small"
-            required
-          />
-          <Box>
-            <Typography variant="caption" color="text.secondary" gutterBottom display="block">
-              Цвет метки:
+        <DialogTitle
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            py: 2,
+            px: 3,
+            borderBottom: '1px solid divider',
+            backgroundColor: 'background.paper',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+            <FileUploadOutlinedIcon color="primary" />
+            <Typography variant="h6" fontWeight={700}>
+              Мастер импорта оборудования
             </Typography>
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              {PRESET_COLORS.map((color) => (
-                <Box
-                  key={color}
-                  onClick={() => setTagColor(color)}
-                  sx={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: '50%',
-                    backgroundColor: color,
-                    cursor: 'pointer',
-                    border: tagColor === color ? '3px solid text.primary' : '2px solid transparent',
-                    transition: 'transform 0.1s ease',
-                    '&:hover': { transform: 'scale(1.15)' },
-                  }}
-                />
-              ))}
-            </Box>
           </Box>
-        </Box>
-      </FormDialog>
+          <IconButton size="small" onClick={() => setImportDialogOpen(false)} aria-label="Закрыть модальное окно">
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 3, backgroundColor: 'background.default' }}>
+          <SmartImportWizard />
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialogs */}
+      <SectionDialog
+        open={sectionDialogOpen}
+        editingId={sectionEditingId}
+        name={sectionName}
+        code={sectionCode}
+        desc={sectionDesc}
+        icon={sectionIcon}
+        sort={sectionSort}
+        saving={savingSection}
+        onClose={() => setSectionDialogOpen(false)}
+        onNameChange={setSectionName}
+        onCodeChange={setSectionCode}
+        onDescChange={setSectionDesc}
+        onIconChange={setSectionIcon}
+        onSortChange={setSectionSort}
+        onSave={handleSaveSection}
+      />
+
+      <FieldDialog
+        open={fieldDialogOpen}
+        sections={sections}
+        targetSectionId={fieldTargetSectionId}
+        fieldKey={fieldKey}
+        name={fieldName}
+        fieldType={fieldType}
+        unit={fieldUnit}
+        isRequired={isRequired}
+        defaultValue={defaultValue}
+        optionsStr={optionsStr}
+        sortOrder={sortOrder}
+        saving={savingField}
+        onClose={() => setFieldDialogOpen(false)}
+        onTargetSectionIdChange={setFieldTargetSectionId}
+        onFieldKeyChange={setFieldKey}
+        onNameChange={setFieldName}
+        onFieldTypeChange={setFieldType}
+        onUnitChange={setFieldUnit}
+        onIsRequiredChange={setIsRequired}
+        onDefaultValueChange={setDefaultValue}
+        onOptionsStrChange={setOptionsStr}
+        onSortOrderChange={setSortOrder}
+        onSave={handleSaveField}
+      />
+
+      <TagDialog
+        open={tagDialogOpen}
+        tagName={tagName}
+        tagColor={tagColor}
+        saving={savingTag}
+        onClose={() => setTagDialogOpen(false)}
+        onTagNameChange={setTagName}
+        onTagColorChange={setTagColor}
+        onSave={handleSaveTag}
+      />
 
       <ConfirmDialog
         open={deleteConfirm.open}
