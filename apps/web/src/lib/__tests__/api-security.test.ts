@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { NextRequest } from 'next/server';
+import { validateEnv } from '../env-validate';
 import { enforceRateLimit, _resetRateLimitStore } from '../rate-limit';
 import { safeErrorResponse, toSafeErrorDetails } from '../safe-error';
 
@@ -170,6 +171,32 @@ describe('API Security and Hardening Regressions', () => {
       assert.match(source, /const \[ldapBindPassword, setLdapBindPassword\] = useState\(''\)/);
       assert.doesNotMatch(source, /const \[adminPassword, setAdminPassword\] = useState\('admin123'\)/);
       assert.doesNotMatch(source, /const \[dbPassword, setDbPassword\] = useState\('postgrespassword'\)/);
+    });
+
+    test('environment example does not ship a demo Jira token', () => {
+      const envExample = readRepositoryFile('.env.example');
+      assert.match(envExample, /^JIRA_API_TOKEN=REPLACE_WITH_JIRA_TOKEN$/m);
+      assert.doesNotMatch(envExample, /^JIRA_API_TOKEN=adminpassword$/m);
+    });
+
+    test('environment validation rejects LDAP adminpassword defaults', () => {
+      const originalEnv = { ...process.env };
+
+      try {
+        process.env.JWT_SECRET = 'secure_test_jwt_secret_with_at_least_32_chars';
+        process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test?schema=public';
+        process.env.LDAP_ENABLED = 'true';
+        process.env.LDAP_BIND_PASSWORD = 'adminpassword';
+        delete process.env.LDAP_ADMIN_PASSWORD;
+
+        assert.throws(() => validateEnv(true), /LDAP_BIND_PASSWORD.*небезопасное значение/);
+
+        process.env.LDAP_BIND_PASSWORD = 'secure-bind-password';
+        process.env.LDAP_ADMIN_PASSWORD = 'adminpassword';
+        assert.throws(() => validateEnv(true), /LDAP_ADMIN_PASSWORD.*небезопасное значение/);
+      } finally {
+        process.env = originalEnv;
+      }
     });
 
     test('production compose templates require secrets without fallback defaults', () => {

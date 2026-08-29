@@ -105,11 +105,11 @@ export function validateEnv(force = false): void {
   if (process.env.LDAP_ENABLED === 'true') {
     assertEnv('LDAP_BIND_PASSWORD', process.env.LDAP_BIND_PASSWORD, {
       required: false,
-      forbiddenValues: ['password', 'changeme'],
+      forbiddenValues: DANGEROUS_DEFAULTS,
     });
     assertEnv('LDAP_ADMIN_PASSWORD', process.env.LDAP_ADMIN_PASSWORD, {
       required: false,
-      forbiddenValues: ['password', 'changeme'],
+      forbiddenValues: DANGEROUS_DEFAULTS,
     });
   }
 }

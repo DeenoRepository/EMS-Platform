@@ -76,10 +76,10 @@ Heuristic `getCurrentUser` без `PERMISSIONS.*` (10 маршрутов): logou
 | ID | Severity | Finding | Evidence | Рекомендация |
 |---|---|---|---|---|
 | S1 | Medium | Dev [`docker-compose.yml`](../docker-compose.yml:11) содержит fallback `postgrespassword`, `adminpassword`, статический JWT. `NODE_ENV=production` на этом стеке. | compose lines 11, 36, 62–63, 78 | Оставить только для local-dev; не использовать файл как prod path. `docker-compose.prod.yml` уже строгий. |
-| S2 | Low | [`.env.example`](../.env.example:81) всё ещё показывает `JIRA_API_TOKEN=adminpassword`. | line 81 | Заменить на `REPLACE_WITH_JIRA_TOKEN`, как остальные секреты. |
-| S3 | Low | [`validateEnv()`](../apps/web/src/lib/env-validate.ts:105) для LDAP запрещает только `password`/`changeme`, не `adminpassword`. | lines 105–113 | Добавить `adminpassword` в `forbiddenValues` LDAP. |
 | S4 | Medium | Если у интеграции **нет** `webhookSecret`, webhook принимается без токена. | [`webhooks/[id]/route.ts`](../apps/web/src/app/api/srm/webhooks/[id]/route.ts:53) `if (webhookSecret) { ... }` | Требовать секрет для активных интеграций либо явно документировать unsigned inbound как opt-in. |
 | S5 | Low | Login route логирует LDAP-ошибки через `console.error`, не `logger`. | [`login/route.ts`](../apps/web/src/app/api/auth/login/route.ts:49) | Перевести на structured logger. |
+
+Закрыто в Story A1: S2 (`JIRA_API_TOKEN` заменён на placeholder) и S3 (LDAP-пароли проверяются по общему `DANGEROUS_DEFAULTS`); добавлены regression-тесты.
 
 Локальный `.env` содержит demo-пароли — файл в `.gitignore`, в Git не попадает.
 
@@ -153,12 +153,11 @@ Packages F-grade: **нет**. Худший package-файл — [`packages/datab
 
 Подробный план с шагами, DoD и расписанием: [`docs/REMEDIATION_PLAN.md`](REMEDIATION_PLAN.md).
 
-1. **Docs/examples:** убрать `JIRA_API_TOKEN=adminpassword` из `.env.example`; расширить LDAP forbidden defaults в `env-validate`.
-2. **Webhook policy:** не принимать inbound без секрета, либо явный `allowUnsignedWebhooks` в integration config + тест.
-3. **Logging:** заменить `.catch(console.error)` и login `console.error` на `logger` + UI error state.
-4. **UI-1:** `StatusBadge` вместо `Chip` в [`EquipmentPassportOverview.tsx`](../apps/web/src/components/eps/EquipmentPassportOverview.tsx:285).
-5. **Admin settings / WMS topology / EPS wizard** — по одному PR, без смены API contract.
-6. **Не трогать** массово 1911 `magic_number`: выделять только domain constants (лимиты, статусы, timeouts).
+1. **Webhook policy:** не принимать inbound без секрета, либо явный `allowUnsignedWebhooks` в integration config + тест.
+2. **Logging:** заменить `.catch(console.error)` и login `console.error` на `logger` + UI error state.
+3. **UI-1:** `StatusBadge` вместо `Chip` в [`EquipmentPassportOverview.tsx`](../apps/web/src/components/eps/EquipmentPassportOverview.tsx:285).
+4. **Admin settings / WMS topology / EPS wizard** — по одному PR, без смены API contract.
+5. **Не трогать** массово 1911 `magic_number`: выделять только domain constants (лимиты, статусы, timeouts).
 
 Каждая story: Conventional Commit, lint + tsc + targeted tests; security/API — полный `pnpm test` и `python scripts/route_audit.py`.
 
@@ -172,9 +171,9 @@ Packages F-grade: **нет**. Худший package-файл — [`packages/datab
 - [x] Webhook fail-closed при заданном секрете
 - [x] Production compose требует секреты
 - [x] Packages без F-grade
+- [x] `.env.example` без demo Jira token; LDAP `adminpassword` блокируется валидатором
 - [ ] Web F-grade < 38 (сейчас ровно на пороге)
 - [ ] Unsigned webhook закрыт политикой
-- [ ] `.env.example` без demo Jira token
 - [ ] `EquipmentPassportOverview` использует `StatusBadge` для статуса оборудования
 
 ---

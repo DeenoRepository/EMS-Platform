@@ -40,9 +40,10 @@
 
 ## Фаза A — Security и конфигурация (сначала)
 
-### Story A1 — Убрать demo-секреты из шаблонов (S2, S3)
+### Story A1 — Убрать demo-секреты из шаблонов (S2, S3) — ✅ выполнено
 
-**Приоритет:** P1 / Low–Medium  
+**Статус:** завершено 2026-08-29; regression suite, lint, TypeScript, route audit и quality baseline прошли.
+**Приоритет:** P1 / Low–Medium
 **Скиллы:** `senior-security`, `senior-backend`  
 **Оценка:** 0.5 дня
 
@@ -59,8 +60,10 @@
 
 **DoD:**
 
-- `rg adminpassword` в tracked files даёт только тесты, `DANGEROUS_DEFAULTS` и комментарии про запрет.
-- `pnpm test` (security suite) зелёный.
+- [x] `.env.example` использует `REPLACE_WITH_JIRA_TOKEN`.
+- [x] LDAP bind/admin password проверяются по `DANGEROUS_DEFAULTS`.
+- [x] Regression-тесты для template и `validateEnv(true)` добавлены.
+- [x] `pnpm test`: 153 passed; lint/tsc/route audit/quality baseline PASS.
 - Коммит: `fix(security): remove demo Jira token from env examples and block LDAP default password`
 
 ---
