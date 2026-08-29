@@ -35,6 +35,8 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { SetupAdminLdapStep } from '@/components/setup/SetupAdminLdapStep';
 import { SetupDatabaseStep } from '@/components/setup/SetupDatabaseStep';
 import { SetupDependencyStep } from '@/components/setup/SetupDependencyStep';
+import { SetupStorageSrmStep } from '@/components/setup/SetupStorageSrmStep';
+import { SetupExecutionStep } from '@/components/setup/SetupExecutionStep';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import StorageIcon from '@mui/icons-material/Storage';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
@@ -582,201 +584,39 @@ export default function SetupWizardPage() {
               STEP 4: Storage & SRM Integrations
              ========================================================================= */}
           {activeStep === 3 && (
-            <Stack spacing={3}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Avatar sx={{ bgcolor: 'rgba(2, 132, 199, 0.1)', color: 'primary.main', width: 44, height: 44 }}>
-                  <FolderOpenIcon sx={{ fontSize: 24 }} />
-                </Avatar>
-                <Box>
-                  <Typography variant="h6" fontWeight={800} color="text.primary">
-                    Шаг 4: Хранилище файлов и внешние интеграции
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Настройка директории для паспортов, чертежей и связи с заявками ServiceDesk
-                  </Typography>
-                </Box>
-              </Box>
-
-              <TextField
-                fullWidth
-                label="Директория хранения файлов, паспортов и чертежей"
-                value={storageDir}
-                onChange={(e) => setStorageDir(e.target.value)}
-                helperText="Локальный каталог сервера или путь внутри Docker-тома (/app/uploads)"
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <FolderOpenIcon sx={{ color: 'text.disabled', fontSize: 20 }} />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-
-              <Divider />
-
-              <Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
-                  <HubIcon sx={{ color: 'primary.main', fontSize: 22 }} />
-                  <Typography variant="subtitle1" fontWeight={800}>
-                    Интеграция с внешней системой ServiceDesk (SRM) — опционально
-                  </Typography>
-                </Box>
-
-                <Grid container spacing={2} sx={{ mb: 2 }}>
-                  {[
-                    { id: 'DISABLED', label: 'Отключено', desc: 'Автономная работа' },
-                    { id: 'JIRA', label: 'Atlassian Jira', desc: 'Jira Cloud / Server' },
-                    { id: 'REDMINE', label: 'Redmine', desc: 'REST API' },
-                    { id: 'GITLAB', label: 'GitLab Issues', desc: 'GitLab API' },
-                    { id: 'GENERIC_REST', label: 'Custom REST API', desc: 'Универсальный вебхук' },
-                  ].map((prov) => (
-                    <Grid item xs={12} sm={4} key={prov.id}>
-                      <Paper
-                        onClick={() => setSrmProvider(prov.id as any)}
-                        variant="outlined"
-                        sx={{
-                          p: 1.5,
-                          cursor: 'pointer',
-                          borderRadius: 2.5,
-                          border: '2px solid',
-                          borderColor: srmProvider === prov.id ? 'primary.main' : 'divider',
-                          bgcolor: srmProvider === prov.id ? 'rgba(2, 132, 199, 0.04)' : 'background.paper',
-                          transition: 'all 0.15s ease-in-out',
-                          '&:hover': { borderColor: 'primary.light' },
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Radio checked={srmProvider === prov.id} size="small" />
-                          <Typography variant="subtitle2" fontWeight={700}>
-                            {prov.label}
-                          </Typography>
-                        </Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ pl: 3.5, display: 'block' }}>
-                          {prov.desc}
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                  ))}
-                </Grid>
-
-                {srmProvider !== 'DISABLED' && (
-                  <Grid container spacing={2} sx={{ p: 2.5, bgcolor: 'background.default', borderRadius: 3, border: '1px solid divider' }}>
-                    <Grid item xs={12} sm={8}>
-                      <TextField
-                        fullWidth
-                        label="URL внешней системы"
-                        placeholder="https://jira.company.com или https://redmine.local"
-                        value={srmUrl}
-                        onChange={(e) => setSrmUrl(e.target.value)}
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={4}>
-                      <TextField
-                        fullWidth
-                        label="Ключ проекта"
-                        placeholder="EMS"
-                        value={srmProjectKey}
-                        onChange={(e) => setSrmProjectKey(e.target.value)}
-                      />
-                    </Grid>
-                    <Grid item xs={12}>
-                      <TextField
-                        fullWidth
-                        type="password"
-                        label="API Token / Ключ доступа"
-                        placeholder="••••••••••••"
-                        value={srmApiKey}
-                        onChange={(e) => setSrmApiKey(e.target.value)}
-                      />
-                    </Grid>
-                  </Grid>
-                )}
-              </Box>
-            </Stack>
+            <SetupStorageSrmStep
+              storageDir={storageDir}
+              setStorageDir={setStorageDir}
+              srmProvider={srmProvider}
+              setSrmProvider={setSrmProvider}
+              srmUrl={srmUrl}
+              setSrmUrl={setSrmUrl}
+              srmProjectKey={srmProjectKey}
+              setSrmProjectKey={setSrmProjectKey}
+              srmApiKey={srmApiKey}
+              setSrmApiKey={setSrmApiKey}
+            />
           )}
 
           {/* =========================================================================
               STEP 5: Final Review & Execution
              ========================================================================= */}
           {activeStep === 4 && (
-            <Stack spacing={3}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Avatar sx={{ bgcolor: 'rgba(2, 132, 199, 0.1)', color: 'primary.main', width: 44, height: 44 }}>
-                  <RocketLaunchIcon sx={{ fontSize: 24 }} />
-                </Avatar>
-                <Box>
-                  <Typography variant="h6" fontWeight={800} color="text.primary">
-                    Шаг 5: Проверка параметров и инициализация
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Финальное подтверждение параметров перед созданием базы данных и запуском платформы
-                  </Typography>
-                </Box>
-              </Box>
-
-              <Paper variant="outlined" sx={{ p: 3, borderRadius: 3, bgcolor: 'background.default', border: '1px solid divider' }}>
-                <Grid container spacing={2.5}>
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, display: 'block' }}>
-                      База данных PostgreSQL
-                    </Typography>
-                    <Typography variant="body2" fontWeight={800} sx={{ mt: 0.25 }}>
-                      {dbHost}:{dbPort}/{dbName} (пользователь: {dbUser})
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, display: 'block' }}>
-                      Главный Администратор
-                    </Typography>
-                    <Typography variant="body2" fontWeight={800} sx={{ mt: 0.25 }}>
-                      {adminLogin} ({adminDisplayName})
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {authMode === 'ldap' ? 'Доменная учетная запись LDAP Binding' : 'Локальная учетная запись'}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, display: 'block' }}>
-                      Служба каталогов LDAP
-                    </Typography>
-                    <Typography variant="body2" fontWeight={800} sx={{ mt: 0.25 }}>
-                      {authMode === 'ldap' || ldapEnabled ? `Включена (${ldapUrl})` : 'Отключена (локальная БД)'}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, display: 'block' }}>
-                      Хранилище файлов
-                    </Typography>
-                    <Typography variant="body2" fontWeight={800} sx={{ mt: 0.25 }}>
-                      {storageDir}
-                    </Typography>
-                  </Grid>
-                </Grid>
-              </Paper>
-
-              {isExecuting && (
-                <Box sx={{ width: '100%', p: 2, bgcolor: 'rgba(2, 132, 199, 0.04)', borderRadius: 3, border: '1px solid rgba(2, 132, 199, 0.2)' }}>
-                  <Typography variant="body2" color="primary.main" fontWeight={700} sx={{ mb: 1 }}>
-                    Применение схемы данных, создание таблиц и учетной записи администратора...
-                  </Typography>
-                  <LinearProgress sx={{ borderRadius: 1.5, height: 8 }} />
-                </Box>
-              )}
-
-              {execError && (
-                <Alert severity="error" sx={{ borderRadius: 3 }}>
-                  <AlertTitle sx={{ fontWeight: 800 }}>Ошибка при установке</AlertTitle>
-                  {execError}
-                </Alert>
-              )}
-
-              {execSuccess && (
-                <Alert severity="success" sx={{ borderRadius: 3 }}>
-                  <AlertTitle sx={{ fontWeight: 800 }}>Установка успешно завершена!</AlertTitle>
-                  Конфигурация сохранена. Перенаправление на страницу авторизации...
-                </Alert>
-              )}
-            </Stack>
+            <SetupExecutionStep
+              dbHost={dbHost}
+              dbPort={dbPort}
+              dbName={dbName}
+              dbUser={dbUser}
+              adminLogin={adminLogin}
+              adminDisplayName={adminDisplayName}
+              authMode={authMode}
+              ldapEnabled={ldapEnabled}
+              ldapUrl={ldapUrl}
+              storageDir={storageDir}
+              isExecuting={isExecuting}
+              execError={execError}
+              execSuccess={execSuccess}
+            />
           )}
 
           {/* =========================================================================
