@@ -145,6 +145,8 @@ Packages F-grade: **нет**. Худший package-файл — [`packages/datab
 
 ## 7. Рекомендуемые bounded stories (очередность)
 
+Подробный план с шагами, DoD и расписанием: [`docs/REMEDIATION_PLAN.md`](REMEDIATION_PLAN.md).
+
 1. **Docs/examples:** убрать `JIRA_API_TOKEN=adminpassword` из `.env.example`; расширить LDAP forbidden defaults в `env-validate`.
 2. **Webhook policy:** не принимать inbound без секрета, либо явный `allowUnsignedWebhooks` в integration config + тест.
 3. **Logging:** заменить `.catch(console.error)` и login `console.error` на `logger` + UI error state.
