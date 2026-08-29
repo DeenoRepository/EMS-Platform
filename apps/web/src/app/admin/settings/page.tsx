@@ -24,11 +24,10 @@ import {
   MenuItem,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
-import LanIcon from '@mui/icons-material/Lan';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import NetworkCheckIcon from '@mui/icons-material/NetworkCheck';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import StorageIcon from '@mui/icons-material/Storage';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
@@ -41,6 +40,7 @@ import { useSnackbar } from 'notistack';
 import { StatusBadge, PageLoading, ConfirmDialog } from '@/components/ui';
 import { PlatformMaintenanceStatus } from '@ems/shared';
 import { AdminMaintenancePanel } from '@/components/admin/settings/AdminMaintenancePanel';
+import { AdminLdapIntegrationPanel } from '@/components/admin/settings/AdminLdapIntegrationPanel';
 
 export default function AdminSettingsPage() {
   const { enqueueSnackbar } = useSnackbar();
@@ -433,88 +433,15 @@ export default function AdminSettingsPage() {
 
           {/* SECTION 4: INTEGRATIONS (LDAP & JIRA) */}
           <Grid container spacing={3}>
-            {/* LDAP Settings */}
-            <Grid item xs={12} md={6}>
-              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <CardContent sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, flexWrap: 'wrap', gap: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <LanIcon color="primary" />
-                      <Typography variant="h6" fontWeight={700}>
-                        Интеграция с LDAP / Active Directory
-                      </Typography>
-                    </Box>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      startIcon={testingLdap ? <CircularProgress size={14} color="inherit" /> : <NetworkCheckIcon />}
-                      disabled={testingLdap}
-                      onClick={handleTestLdap}
-                      sx={{ textTransform: 'none', fontWeight: 600, borderRadius: '8px' }}
-                    >
-                      {testingLdap ? 'Проверка...' : 'Проверить подключение'}
-                    </Button>
-                  </Box>
-                  <Typography variant="caption" color="text.secondary" paragraph>
-                    Параметры корпоративного каталога для аутентификации пользователей
-                  </Typography>
-                  <Divider sx={{ mb: 2.5 }} />
-
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <TextField
-                      label="LDAP URL"
-                      placeholder="ldap://ldap.company.local:389"
-                      fullWidth
-                      size="small"
-                      value={settings.LDAP_URL}
-                      onChange={(e) => handleChange('LDAP_URL', e.target.value)}
-                      helperText="Адрес сервера каталогов"
-                    />
-
-                    <TextField
-                      label="LDAP Search Base"
-                      placeholder="ou=users,dc=company,dc=local"
-                      fullWidth
-                      size="small"
-                      value={settings.LDAP_SEARCH_BASE}
-                      onChange={(e) => handleChange('LDAP_SEARCH_BASE', e.target.value)}
-                      helperText="Базовая ветка поиска пользователей"
-                    />
-
-                    {/* LDAP Test Result Banner */}
-                    {ldapTestResult && (
-                      <Alert
-                        severity={ldapTestResult.success ? 'success' : 'error'}
-                        icon={ldapTestResult.success ? <CheckCircleOutlineIcon fontSize="inherit" /> : <ErrorOutlineIcon fontSize="inherit" />}
-                        sx={{ mt: 1, borderRadius: 2, fontSize: '0.8125rem' }}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-                          <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
-                            {ldapTestResult.success
-                              ? ldapTestResult.message || 'Подключение успешно установлено'
-                              : ldapTestResult.error || 'Ошибка подключения'}
-                          </Typography>
-                          {ldapTestResult.latencyMs !== undefined && (
-                            <Chip
-                              label={`${ldapTestResult.latencyMs} мс`}
-                              size="small"
-                              color={ldapTestResult.success ? 'success' : 'error'}
-                              variant="outlined"
-                              sx={{ height: 20, fontSize: '0.7rem', fontWeight: 700 }}
-                            />
-                          )}
-                        </Box>
-                        {ldapTestResult.details?.authMode && (
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                            Режим проверки: {ldapTestResult.details.authMode}
-                          </Typography>
-                        )}
-                      </Alert>
-                    )}
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
+            <AdminLdapIntegrationPanel
+              ldapUrl={settings.LDAP_URL}
+              searchBase={settings.LDAP_SEARCH_BASE}
+              testing={testingLdap}
+              testResult={ldapTestResult}
+              onLdapUrlChange={(value) => handleChange('LDAP_URL', value)}
+              onSearchBaseChange={(value) => handleChange('LDAP_SEARCH_BASE', value)}
+              onTestConnection={handleTestLdap}
+            />
 
             {/* Polymorphic External ServiceDesk / SRM Settings */}
             <Grid item xs={12} md={6}>

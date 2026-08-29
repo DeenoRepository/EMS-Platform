@@ -18,7 +18,7 @@
 | B2 — StatusBadge в паспорте | ✅ Выполнено | P2 |
 | **B3 — Role string унификация** | ✅ Выполнено (2026-08-29) | LOW |
 | **B4 — console.* остаток в API** | ✅ Выполнено (2026-08-29) | LOW |
-| C1 — Admin settings page | ⏳ В работе: C1.1 ✅; C1.2–C1.4 открыты | MEDIUM |
+| C1 — Admin settings page | ⏳ В работе: C1.1 ✅; C1.2a ✅; C1.2b–C1.4 открыты | MEDIUM |
 | C2 — Warehouse topology modal | ⏳ Открыта | MEDIUM |
 | C3 — WMS stock page | ⏳ Открыта | MEDIUM |
 | C4 — Equipment wizard form | ⏳ Открыта | MEDIUM |
@@ -350,9 +350,10 @@ pnpm --filter @ems/web lint
 
 **Следующие под-stories C1:**
 
-- [ ] **C1.2** — вынести LDAP и SRM integration panels в `components/admin/settings/`; сохранить result DTO и callbacks.
+- [x] **C1.2a** — LDAP integration panel вынесен в [`AdminLdapIntegrationPanel.tsx`](../apps/web/src/components/admin/settings/AdminLdapIntegrationPanel.tsx); result DTO и callbacks сохранены.
+- [ ] **C1.2b** — вынести SRM integration panel в `components/admin/settings/`; сохранить provider-specific fields, diagnostics и callbacks.
 - [ ] **C1.3** — вынести database dump panel; сохранить `dumpMode`, confirmation flow и download behavior.
-- [ ] **C1.4** — проверить размер страницы и удалить только ставшие неиспользуемыми imports; не смешивать с C1.2/C1.3.
+- [ ] **C1.4** — проверить размер страницы и удалить только ставшие неиспользуемыми imports; не смешивать с C1.2b/C1.3.
 
 ---
 
