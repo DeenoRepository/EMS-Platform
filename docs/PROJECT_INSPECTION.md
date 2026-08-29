@@ -8,7 +8,7 @@
 > **Вердикт: ✅ Approve with suggestions.**  
 > Все критические security findings из аудита 2026-08-27 (Stories A1–A3, B1–B2) подтверждены закрытыми.  
 > Quality baseline PASS: 79.3/100 (C), 0 rate-limit gaps, 0 hex-hardcode в компонентах.
-> B3, B4 и C1–C5 завершены: admin-role checks унифицированы, production API logging paths переведены на structured `logger`, а крупные UI-области декомпозированы. Следующий этап — C6: остальные P1-файлы.
+> B3, B4 и C1–C5 завершены; C6.1 и C6.2a выполнены: admin-role checks унифицированы, production API logging paths переведены на structured `logger`, а крупные UI-области декомпозированы. Следующий этап — C6.3: EPS equipment passport page.
 
 ---
 
@@ -316,6 +316,12 @@ packages/shared/   — типы, константы, permissions, formatters
 **Результат:** upload/reference-template STEP 0 вынесен в presentation-компонент; file/analyzing state и analyze/download callbacks сохранены в wizard.
 **Проверки:** lint, tsc, 160 тестов, route audit, theme check и quality baseline 79.1/F36/SOLID25 — PASS.
 
+### Story C6.2a — WMS inventory filter toolbar ✅
+
+**Файлы:** [`wms/inventory/page.tsx`](../apps/web/src/app/wms/inventory/page.tsx), [`WmsInventoryFilters.tsx`](../apps/web/src/components/wms/WmsInventoryFilters.tsx).
+**Результат:** поиск, фильтры склада/статуса и сброс фильтров вынесены в typed-компонент с shared [`FilterToolbar`](../apps/web/src/components/ui/FilterToolbar.tsx) и [`SearchInput`](../apps/web/src/components/ui/SearchInput.tsx); filter/pagination behavior сохранены.
+**Проверки:** lint, tsc, 160 тестов, route audit, theme check и quality baseline 79.3/F36/SOLID25 — PASS.
+
 ---
 
 ## 8. Воспроизведённые проверки
@@ -348,11 +354,11 @@ pnpm --filter @ems/web build
 | API pattern consistency | ✅ PASS | — |
 | Role string consistency | ✅ PASS | B3 завершена |
 | `console.*` в API | ✅ PASS | B4 завершена |
-| Large files (> 500 строк) | ⚠️ MEDIUM | C5.3, C6 |
+| Large files (> 500 строк) | ⚠️ MEDIUM | C6.3–C6.6 |
 | Quality baseline (79.3, F≤38) | ✅ PASS | поддерживать |
 | Test coverage (160 passed) | ✅ PASS | поддерживать |
 
-**Общий вердикт: ✅ Approve with suggestions.** Проект находится в стабильном рабочем состоянии. Критические проблемы безопасности и дизайна закрыты. B3, B4 и C1–C5 выполнены и прошли verification. Следующий bounded этап — C6: остальные P1-файлы.
+**Общий вердикт: ✅ Approve with suggestions.** Проект находится в стабильном рабочем состоянии. Критические проблемы безопасности и дизайна закрыты. B3, B4 и C1–C5 выполнены и прошли verification; C6.2a также прошла verification. Следующий bounded этап — C6.3: EPS equipment passport page.
 
 ---
 

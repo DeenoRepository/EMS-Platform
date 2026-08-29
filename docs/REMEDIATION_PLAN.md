@@ -23,7 +23,7 @@
 | C3 — WMS stock page | ✅ Выполнено: C3.1–C3.4 | MEDIUM |
 | C4 — Equipment wizard form | ✅ Выполнено: C4.1–C4.3 | MEDIUM |
 | C5 — EPS reports + import | ✅ Выполнено: C5.1–C5.4 | MEDIUM |
-| C6 — P1 страницы > 600 строк | ⏳ Открыта | MEDIUM |
+| C6 — P1 страницы > 600 строк | ⏳ В работе: C6.1 ✅; C6.2a ✅; C6.3 открыта | MEDIUM |
 | C7 — P2 F-файлы < 500 строк | ⏳ Открыта | LOW |
 | D — Типизация | ⏳ Открыта | P2 |
 | E — Tooling и документация | ⏳ Открыта | LOW |
@@ -479,9 +479,13 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 - `refactor(eps): extract report builder content from page`
 - `refactor(eps): extract smart import analyze/execute handlers`
 
-### Story C6 — Остальные P1 страницы > 600 строк
+### Story C6 — Остальные P1 страницы > 600 строк (decomposed into bounded stories)
 
-По одному коммиту, тот же рецепт:
+По одному коммиту, тот же рецепт. C6.1 inventory актуализирован; C6.2a завершена:
+
+- [x] **C6.2a** — filter toolbar WMS inventory вынесен в [`WmsInventoryFilters.tsx`](../apps/web/src/components/wms/WmsInventoryFilters.tsx); filter/reset/pagination behavior сохранены. Проверки: lint, tsc, 160 тестов, route audit, theme check и quality baseline (web 79.3, F=36, SOLID=25) — PASS.
+
+Следующий кандидат — C6.3: EPS equipment passport page [`apps/web/src/app/eps/[id]/page.tsx`](../apps/web/src/app/eps/[id]/page.tsx); focus — bounded extraction handlers copy/delete, без изменения passport tabs/API.
 
 | Порядок | Файл | Фокус |
 |---|---|---|
@@ -592,8 +596,8 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 5. **Quality checker** некорректно режет границы TSX-функций — всегда проверять вручную.
 6. **Не трогать:** `temp/`, `.env`, `uploads/`, `docker/jira/server.js` без отдельной задачи.
 7. **Не** массово заменять magic_number.
-8. **B3, B4, C1–C5 завершены.** Следующий этап — C6: остальные P1-файлы.
+8. **B3, B4, C1–C5 и C6.2a завершены.** Следующий этап — C6.3: следующий P1 bounded файл.
 9. **C-stories** могут идти параллельно на разных файлах (не пересекающихся).
 10. **Не снижать** quality baseline: web ≥ 78.0, F ≤ 38, packages ≥ 94.0, F=0.
 
-*Обновлено 2026-08-29 после завершения C5.3. Stories A1–A3, B1–B4 и C1–C5 закрыты.*
+*Обновлено 2026-08-29 после завершения C6.2a. Stories A1–A3, B1–B4, C1–C5 и C6.2a закрыты.*

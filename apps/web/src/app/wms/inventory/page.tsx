@@ -34,12 +34,11 @@ import {
   EmptyState,
   StatusBadge,
   FormDialog,
-  FilterToolbar,
-  SearchInput,
   type TableColumnOption,
 } from '@/components/ui';
 import { InventoryCountSheetDialog } from '@/components/wms';
 import { TableSortLabel } from '@mui/material';
+import WmsInventoryFilters from '@/components/wms/WmsInventoryFilters';
 
 const INVENTORY_COLUMNS: TableColumnOption[] = [
   { id: 'code', label: 'Номер / Акт', defaultVisible: true, required: true },
@@ -412,72 +411,17 @@ export default function WmsInventoryListPage() {
           />
         }
         toolbar={
-          <FilterToolbar
-            variant="embedded"
+          <WmsInventoryFilters
             activeFilterCount={activeFilterCount}
+            search={search}
+            selectedWarehouse={selectedWarehouse}
+            selectedStatus={selectedStatus}
+            warehouses={warehouses}
+            onSearchChange={setSearch}
+            onWarehouseChange={setSelectedWarehouse}
+            onStatusChange={setSelectedStatus}
             onResetFilters={handleResetFilters}
-          >
-            <Box sx={{ minWidth: { xs: '100%', sm: 240 } }}>
-              <SearchInput
-                value={search}
-                placeholder="Поиск по номеру, складу, автору..."
-                onSearch={setSearch}
-              />
-            </Box>
-
-            <TextField
-              select
-              size="small"
-              value={selectedWarehouse}
-              onChange={(e) => setSelectedWarehouse(e.target.value)}
-              SelectProps={{
-                displayEmpty: true,
-              }}
-              sx={{
-                minWidth: 160,
-                backgroundColor: 'background.paper',
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '8px',
-                  fontSize: '0.8125rem',
-                  height: 36,
-                  '& fieldset': { borderColor: 'divider' },
-                  '&:hover fieldset': { borderColor: 'grey.400' },
-                },
-              }}
-            >
-              <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все склады</MenuItem>
-              {warehouses.map((w) => (
-                <MenuItem key={w.id} value={w.id} sx={{ fontSize: '0.8125rem' }}>
-                  {w.name} ({w.code})
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <TextField
-              select
-              size="small"
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              SelectProps={{
-                displayEmpty: true,
-              }}
-              sx={{
-                minWidth: 160,
-                backgroundColor: 'background.paper',
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '8px',
-                  fontSize: '0.8125rem',
-                  height: 36,
-                  '& fieldset': { borderColor: 'divider' },
-                  '&:hover fieldset': { borderColor: 'grey.400' },
-                },
-              }}
-            >
-              <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все статусы</MenuItem>
-              <MenuItem value="IN_PROGRESS" sx={{ fontSize: '0.8125rem' }}>В процессе</MenuItem>
-              <MenuItem value="COMPLETED" sx={{ fontSize: '0.8125rem' }}>Завершена</MenuItem>
-            </TextField>
-          </FilterToolbar>
+          />
         }
       >
         <Table size="small" aria-label="Реестр актов инвентаризации">
