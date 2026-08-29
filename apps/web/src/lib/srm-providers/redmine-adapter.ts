@@ -1,6 +1,18 @@
 import { SrmIntegration, SrmProviderType } from '@ems/database';
 import { ISrmProviderAdapter, SrmProviderMetadata, SrmTestConnectionResult } from './types';
 
+type RedmineCurrentUserResponse = Record<string, unknown> & {
+  user?: {
+    firstname?: unknown;
+    lastname?: unknown;
+    login?: unknown;
+  };
+};
+
+function isRedmineCurrentUserResponse(value: unknown): value is RedmineCurrentUserResponse {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 export class RedmineProviderAdapter implements ISrmProviderAdapter {
   readonly providerType: SrmProviderType = 'REDMINE';
 
@@ -77,7 +89,8 @@ export class RedmineProviderAdapter implements ISrmProviderAdapter {
         };
       }
 
-      const data = await res.json();
+      const rawData: unknown = await res.json();
+      const data = isRedmineCurrentUserResponse(rawData) ? rawData : {};
       return {
         success: true,
         statusCode: res.status,
