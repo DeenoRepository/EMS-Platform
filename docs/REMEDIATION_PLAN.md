@@ -1,11 +1,32 @@
 # EMS-Platform — план устранения замечаний инспекции
 
-**Дата плана:** 2026-08-29  
-**Источник:** [`docs/PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md)  
-**Правила:** [`AGENTS.md`](../AGENTS.md), [`.agents/rules/security.md`](../.agents/rules/security.md), [`.agents/rules/code_quality.md`](../.agents/rules/code_quality.md), [`.agents/rules/ui_design_code.md`](../.agents/rules/ui_design_code.md)  
+**Дата плана:** 2026-08-29 (обновлено по повторной инспекции 2026-08-29)
+**Источник:** [`docs/PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md), [`docs/CODE_REVIEW_AUDIT.md`](CODE_REVIEW_AUDIT.md)
+**Правила:** [`AGENTS.md`](../AGENTS.md), [`.agents/rules/security.md`](../.agents/rules/security.md), [`.agents/rules/code_quality.md`](../.agents/rules/code_quality.md), [`.agents/rules/ui_design_code.md`](../.agents/rules/ui_design_code.md)
 **Скиллы по story:** `senior-security` / `senior-secops` (S*), `senior-backend` + `strict-api` (API), `senior-frontend` (UI-декомпозиция), `senior-qa` (тесты), `code-reviewer` (quality gate).
 
 > **Цель:** закрыть остаточный долг без массового переписывания. Каждая story — один Conventional Commit, без смены API contract, без массовой замены `magic_number`.
+
+### Текущий прогресс по фазам
+
+| Story | Статус | Приоритет |
+|---|---|---|
+| A1 — Demo secrets | ✅ Выполнено | P1 |
+| A2 — Webhook secret policy | ✅ Выполнено | P1 |
+| A3 — Dev compose | ✅ Выполнено | P2 |
+| B1 — Structured logging (bounded) | ✅ Выполнено (bounded) | P2 |
+| B2 — StatusBadge в паспорте | ✅ Выполнено | P2 |
+| **B3 — Role string унификация** | ⏳ Новая (2026-08-29) | LOW |
+| **B4 — console.* остаток в API** | ⏳ Новая (2026-08-29) | LOW |
+| C1 — Admin settings page | ⏳ Открыта | MEDIUM |
+| C2 — Warehouse topology modal | ⏳ Открыта | MEDIUM |
+| C3 — WMS stock page | ⏳ Открыта | MEDIUM |
+| C4 — Equipment wizard form | ⏳ Открыта | MEDIUM |
+| C5 — EPS reports + import | ⏳ Открыта | MEDIUM |
+| C6 — P1 страницы > 600 строк | ⏳ Открыта | MEDIUM |
+| C7 — P2 F-файлы < 500 строк | ⏳ Открыта | LOW |
+| D — Типизация | ⏳ Открыта | P2 |
+| E — Tooling и документация | ⏳ Открыта | LOW |
 
 ---
 
@@ -127,7 +148,7 @@
 
 ---
 
-## Фаза B — Наблюдаемость и async-дисциплина
+## Фаза B — Наблюдаемость, async-дисциплина и микрофиксы
 
 ### Story B1 — Structured logging вместо `console.error` (S5 + §6 инспекции) — ✅ выполнено для bounded списка
 
@@ -189,6 +210,131 @@
 - [x] Metadata Chips оборудования сохранены.
 - [x] `pnpm --filter @ems/web lint` + `tsc --noEmit`; theme check, 156 tests и quality baseline PASS.
 - Коммит: `fix(ui): use StatusBadge for equipment status in passport overview`
+
+---
+
+### Story B3 — Унификация проверки роли администратора (новая, 2026-08-29) ⏳
+
+**Статус:** открыта
+**Приоритет:** LOW
+**Скиллы:** `senior-backend`, `strict-api`
+**Оценка:** 0.5 дня
+
+**Проблема:** Инспекция 2026-08-29 выявила **37 мест** в 20+ API-маршрутах, где строка роли администратора проверяется несогласованно:
+
+```typescript
+// Вариант 1 — в WMS, EPS, Setup (9 файлов):
+user.roles.includes('admin')
+
+// Вариант 2 — в Feedback, Dashboard, Users (7 файлов):
+user.roles?.includes('administrator')
+
+// Вариант 3 — в Auth login (1 файл):
+roles.includes('admin') || roles.includes('administrator')
+```
+
+**Риск:** Если в БД роль хранится как `'administrator'`, маршруты, проверяющие только `'admin'`, неверно откажут в доступе (и наоборот). Нестабильность в RBAC-логике.
+
+**Шаги:**
+
+1. В [`apps/web/src/lib/auth-guard.ts`](../apps/web/src/lib/auth-guard.ts) добавить хелпер:
+   ```typescript
+   /** Возвращает true если пользователь имеет роль admin или administrator */
+   export function isAdminUser(user: JwtUserPayload): boolean {
+     return user.roles.includes('admin') || user.roles.includes('administrator');
+   }
+   ```
+2. Заменить все вхождения `user.roles.includes('admin')` и `user.roles?.includes('administrator')` на `isAdminUser(user)` в следующих файлах:
+   - [`api/wms/zones/[id]/route.ts`](../apps/web/src/app/api/wms/zones/[id]/route.ts)
+   - [`api/wms/operations/route.ts`](../apps/web/src/app/api/wms/operations/route.ts)
+   - [`api/wms/categories/route.ts`](../apps/web/src/app/api/wms/categories/route.ts)
+   - [`api/wms/stats/route.ts`](../apps/web/src/app/api/wms/stats/route.ts)
+   - [`api/wms/transfers/route.ts`](../apps/web/src/app/api/wms/transfers/route.ts) (+ dispatch/receive/reject)
+   - [`api/wms/warehouses/route.ts`](../apps/web/src/app/api/wms/warehouses/route.ts) (+ [id])
+   - [`api/wms/warehouses/[id]/zones/route.ts`](../apps/web/src/app/api/wms/warehouses/[id]/zones/route.ts)
+   - [`api/wms/zones/[id]/cells/route.ts`](../apps/web/src/app/api/wms/zones/[id]/cells/route.ts)
+   - [`api/wms/stock/[id]/location/route.ts`](../apps/web/src/app/api/wms/stock/[id]/location/route.ts)
+   - [`api/users/route.ts`](../apps/web/src/app/api/users/route.ts)
+   - [`api/modules/status/route.ts`](../apps/web/src/app/api/modules/status/route.ts)
+   - [`api/system/health/route.ts`](../apps/web/src/app/api/system/health/route.ts)
+   - [`api/system/maintenance/route.ts`](../apps/web/src/app/api/system/maintenance/route.ts)
+   - [`api/eps/approvals/route.ts`](../apps/web/src/app/api/eps/approvals/route.ts) (+ [id])
+   - [`api/eps/documents/route.ts`](../apps/web/src/app/api/eps/documents/route.ts)
+   - [`api/eps/history/route.ts`](../apps/web/src/app/api/eps/history/route.ts)
+   - [`api/eps/reports/templates/route.ts`](../apps/web/src/app/api/eps/reports/templates/route.ts) (+ generate)
+   - [`api/eps/equipment/route.ts`](../apps/web/src/app/api/eps/equipment/route.ts) (+ [id])
+   - [`api/setup/test-db/route.ts`](../apps/web/src/app/api/setup/test-db/route.ts)
+   - [`api/setup/test-ldap/route.ts`](../apps/web/src/app/api/setup/test-ldap/route.ts)
+   - [`api/setup/status/route.ts`](../apps/web/src/app/api/setup/status/route.ts)
+   - [`api/setup/execute/route.ts`](../apps/web/src/app/api/setup/execute/route.ts)
+   - [`api/dashboard/stats/route.ts`](../apps/web/src/app/api/dashboard/stats/route.ts)
+   - [`api/feedback/route.ts`](../apps/web/src/app/api/feedback/route.ts) (+ [id], comments, stats)
+3. Добавить unit-тест в [`apps/web/src/lib/__tests__/auth-guard.test.ts`](../apps/web/src/lib/__tests__/auth-guard.test.ts):
+   ```typescript
+   it('isAdminUser returns true for "admin" role', () => { ... });
+   it('isAdminUser returns true for "administrator" role', () => { ... });
+   it('isAdminUser returns false for regular user', () => { ... });
+   ```
+4. В [`api/auth/login/route.ts`](../apps/web/src/app/api/auth/login/route.ts) тоже заменить inline-проверку на `isAdminUser`.
+
+**Не делать:** менять схему БД, переименовывать роли, изменять RBAC permissions.
+
+**Верификация после:**
+```bash
+python scripts/route_audit.py
+pnpm --filter @ems/web exec tsc --noEmit
+pnpm test
+```
+
+**DoD:**
+
+- [ ] `isAdminUser(user)` добавлен в `auth-guard.ts` с unit-тестами.
+- [ ] Все 37 вхождений заменены на вызов хелпера.
+- [ ] `pnpm test`: все passed; lint/tsc PASS.
+- Коммит: `refactor(auth): unify admin role check via isAdminUser helper`
+
+---
+
+### Story B4 — Замена остаточных `console.*` на `logger` в API (новая, 2026-08-29) ⏳
+
+**Статус:** открыта
+**Приоритет:** LOW
+**Скиллы:** `senior-backend`
+**Оценка:** 0.5 дня
+
+**Проблема:** Инспекция 2026-08-29 выявила 4 вхождения `console.warn/error` в production API paths вне ранее закрытого B1 bounded списка:
+
+| Файл | Строка | Тип | Контекст |
+|---|---|---|---|
+| [`api/srm/issues/route.ts:156`](../apps/web/src/app/api/srm/issues/route.ts) | 156 | `console.warn` | Не удалось записать лог аудита |
+| [`api/eps/import/execute/route.ts:134`](../apps/web/src/app/api/eps/import/execute/route.ts) | 134 | `console.error` | Ошибка создания кастомного поля при импорте |
+| [`api/eps/import/execute/route.ts:326`](../apps/web/src/app/api/eps/import/execute/route.ts) | 326 | `console.error` | Ошибка выполнения импорта оборудования |
+| [`api/setup/execute/route.ts:162`](../apps/web/src/app/api/setup/execute/route.ts) | 162 | `console.warn` | Не удалось записать `.env` на диск |
+
+**Шаги:**
+
+1. В каждом файле убедиться, что `logger` уже импортирован (или добавить `import { logger } from '@/lib/logger'`).
+2. Заменить:
+   - `console.warn('Не удалось записать лог аудита SRM:', e)` → `logger.warn('Не удалось записать лог аудита SRM', { error: e, context: 'srm-issues-audit' })`
+   - `console.error('Ошибка создания поля ${def.key}:', err)` → `logger.error('Ошибка создания кастомного поля при импорте', { fieldKey: def.key, error: err })`
+   - `console.error('Ошибка выполнения импорта оборудования:', error)` → `logger.error('Ошибка выполнения импорта оборудования', { error })`
+   - `console.warn('Could not write to disk .env:', envErr)` → `logger.warn('Could not write .env to disk', { error: envErr })`
+3. Не трогать логику: все catch-блоки сохраняют исходное поведение (best-effort).
+4. Проверить, что `logger` из [`apps/web/src/lib/logger.ts`](../apps/web/src/lib/logger.ts) принимает объектный второй аргумент (context).
+
+**Верификация после:**
+```bash
+# Убедиться что console.* не осталось в API
+grep -r "console\." apps/web/src/app/api/ --include="*.ts"
+pnpm --filter @ems/web exec tsc --noEmit
+pnpm --filter @ems/web lint
+```
+
+**DoD:**
+
+- [ ] 0 вхождений `console.warn/error` в `apps/web/src/app/api/**/*.ts`.
+- [ ] lint/tsc PASS.
+- Коммит: `refactor(api): replace remaining console.warn/error with structured logger`
 
 ---
 
@@ -329,28 +475,55 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 
 ---
 
-## Расписание (рекомендуемое)
+## Расписание (рекомендуемое, обновлено 2026-08-29)
 
 | Неделя | Stories | Результат |
 |---|---|---|
-| 1 | A1, A2, A3, B1 | security residual закрыт, logging единообразен |
-| 2 | C1, C2, C3 | 3 крупнейших UI-монолита |
-| 3 | C4, C5 | EPS wizard + import/report |
-| 4 | C6 (4–6 файлов) | F-grade < 38 |
+| ~~1~~ | ~~A1, A2, A3, B1~~ | ✅ security residual закрыт, logging (bounded) |
+| ~~2~~ | ~~B2~~ | ✅ StatusBadge в паспорте |
+| **Текущая** | **B3, B4** | role string унификация + console.* cleanup |
+| +1 | C1, C2, C3 | 3 крупнейших UI-монолита |
+| +2 | C4, C5 | EPS wizard + import/report |
+| +3 | C6 (4–6 файлов) | F-grade < 38 |
 | backlog | C7, D, E | parser false-positives, typing, rules sync |
 
 ---
 
 ## Definition of Done всего плана
 
-- [ ] A1–A3 закрыты тестами
-- [ ] Unsigned webhook не принимается по умолчанию
-- [ ] `.env.example` без demo Jira token
-- [ ] Нет `.catch(console.error)` в apps/web production paths
-- [ ] Web F-grade < 38, baseline PASS
+- [x] A1–A3 закрыты тестами
+- [x] Unsigned webhook не принимается по умолчанию
+- [x] `.env.example` без demo Jira token
+- [x] StatusBadge для статусов сущностей — сквозное применение
+- [x] 0 hex-цветов в компонентах вне theme-файлов
+- [x] 0 rate-limit gaps на 85 маршрутах
+- [ ] `isAdminUser()` хелпер унифицирует ≥37 проверок роли (B3)
+- [ ] 0 `console.warn/error` в `apps/web/src/app/api/**` (B4)
+- [ ] Web F-grade < 38, baseline PASS (C1–C6)
 - [ ] `pnpm check:quality`, `check:theme`, `route_audit.py`, `pnpm test` зелёные
-- [ ] [`PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md) §8 чеклист обновлён
+- [ ] [`PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md) обновлён после каждой story
 
 ---
 
-*План для следующих агентов. Не начинать C-story, пока A2 не в main, если работаете на том же webhook-файле.*
+---
+
+## Правила выполнения для агентов — напоминание
+
+1. **Одна story = один коммит** типа `fix:` / `refactor:` / `docs:`.
+2. **Перед кодом:** прочитать затронутые файлы целиком (`read_file`), не выдумывать API.
+3. **Shared UI** только из `@/components/ui`. Hex в `sx` запрещён. Статусы — только `StatusBadge`.
+4. **После каждой story минимально:**
+   ```bash
+   pnpm --filter @ems/web lint
+   pnpm --filter @ems/web exec tsc --noEmit
+   ```
+   Security/API stories: добавить `pnpm test` и `python scripts/route_audit.py`.
+   Декомпозиция (C*): добавить `node scripts/check-quality-baseline.mjs`.
+5. **Quality checker** некорректно режет границы TSX-функций — всегда проверять вручную.
+6. **Не трогать:** `temp/`, `.env`, `uploads/`, `docker/jira/server.js` без отдельной задачи.
+7. **Не** массово заменять magic_number.
+8. **B3 и B4** независимы — можно делать параллельно или последовательно.
+9. **C-stories** могут идти параллельно на разных файлах (не пересекающихся).
+10. **Не снижать** quality baseline: web ≥ 78.0, F ≤ 38, packages ≥ 94.0, F=0.
+
+*Обновлено 2026-08-29 по результатам повторной инспекции. Предыдущие stories A1–A3, B1–B2 закрыты.*
