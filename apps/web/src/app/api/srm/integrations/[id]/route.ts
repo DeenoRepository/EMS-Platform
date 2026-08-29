@@ -3,7 +3,7 @@ import { requireAuth } from '@/lib/auth-guard';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
-import { sanitizeAuthConfig, mergeAuthConfig } from '@/lib/srm-providers';
+import { hasSecureSrmWebhookAuth, sanitizeAuthConfig, mergeAuthConfig } from '@/lib/srm-providers';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,6 +76,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     // Сохраняем существующие секреты при передаче маскированного плейсхолдера
     const resolvedAuthConfig = authConfig !== undefined ? mergeAuthConfig(authConfig, existing.authConfig as any) : existing.authConfig;
+    const resolvedIsActive = isActive !== undefined ? Boolean(isActive) : existing.isActive;
+
+    if (resolvedIsActive && !hasSecureSrmWebhookAuth(resolvedAuthConfig)) {
+      return NextResponse.json(
+        { success: false, error: 'Для активной интеграции укажите секрет вебхука или явно разрешите unsigned webhooks' },
+        { status: 400 }
+      );
+    }
 
     const updated = await prisma.srmIntegration.update({
       where: { id: (await params).id },
@@ -87,7 +95,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         authConfig: resolvedAuthConfig as any,
         queryConfig: queryConfig !== undefined ? queryConfig : existing.queryConfig,
         mappingConfig: mappingConfig !== undefined ? mappingConfig : existing.mappingConfig,
-        isActive: isActive !== undefined ? Boolean(isActive) : existing.isActive,
+        isActive: resolvedIsActive,
         isDefault: isDefault !== undefined ? Boolean(isDefault) : existing.isDefault,
         syncInterval: syncInterval !== undefined ? Number(syncInterval) : existing.syncInterval,
       },

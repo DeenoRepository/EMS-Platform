@@ -10,6 +10,7 @@ export * from './jira-adapter';
 export * from './redmine-adapter';
 export * from './gitlab-adapter';
 export * from './generic-rest-adapter';
+export * from './webhook-policy';
 
 const adapters: Record<SrmProviderType, ISrmProviderAdapter> = {
   JIRA: new JiraProviderAdapter(),
@@ -37,10 +38,10 @@ export function getSrmAdapter(type: SrmProviderType): ISrmProviderAdapter {
 export function sanitizeAuthConfig(authConfig: unknown): Record<string, unknown> {
   if (!authConfig || typeof authConfig !== 'object') return {};
   const sanitized: Record<string, unknown> = { ...(authConfig as Record<string, unknown>) };
-  if (sanitized.password) sanitized.password = '••••••••';
-  if (sanitized.apiToken) sanitized.apiToken = '••••••••';
-  if (sanitized.apiKey) sanitized.apiKey = '••••••••';
-  if (sanitized.token) sanitized.token = '••••••••';
+  const secretKeys = ['password', 'apiToken', 'apiKey', 'token', 'webhookSecret'];
+  for (const key of secretKeys) {
+    if (sanitized[key]) sanitized[key] = '••••••••';
+  }
   return sanitized;
 }
 
@@ -54,7 +55,7 @@ export function mergeAuthConfig(
   if (!newAuthConfig) return existingAuthConfig || {};
   if (!existingAuthConfig) return newAuthConfig;
   const merged: Record<string, unknown> = { ...newAuthConfig };
-  const secretKeys = ['password', 'apiToken', 'apiKey', 'token'];
+  const secretKeys = ['password', 'apiToken', 'apiKey', 'token', 'webhookSecret'];
   for (const key of secretKeys) {
     if (merged[key] === '••••••••' || merged[key] === undefined || merged[key] === '') {
       if (existingAuthConfig[key]) {

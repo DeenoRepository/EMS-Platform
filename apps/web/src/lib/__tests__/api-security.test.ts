@@ -105,8 +105,18 @@ describe('API Security and Hardening Regressions', () => {
   describe('Route Security Policy', () => {
     test('configured webhook secret cannot be bypassed by an absent token', () => {
       const source = readRepositoryFile('apps/web/src/app/api/srm/webhooks/[id]/route.ts');
-      assert.match(source, /if\s*\(\s*!providedToken\s*\|\|\s*providedToken\s*!==\s*webhookSecret\s*\)/);
-      assert.doesNotMatch(source, /if\s*\(\s*providedToken\s*&&\s*providedToken\s*!==\s*webhookSecret\s*\)/);
+      assert.match(source, /if\s*\(\s*!providedToken\s*\|\|\s*providedToken\s*!==\s*webhookAuth\.secret\s*\)/);
+      assert.doesNotMatch(source, /if\s*\(\s*providedToken\s*&&\s*providedToken\s*!==\s*webhookAuth\.secret\s*\)/);
+    });
+
+    test('active integrations reject unsigned webhook configuration unless explicitly allowed', () => {
+      const webhookSource = readRepositoryFile('apps/web/src/app/api/srm/webhooks/[id]/route.ts');
+      const createSource = readRepositoryFile('apps/web/src/app/api/srm/integrations/route.ts');
+      const updateSource = readRepositoryFile('apps/web/src/app/api/srm/integrations/[id]/route.ts');
+
+      assert.match(webhookSource, /!webhookAuth\.secret\s*&&\s*!webhookAuth\.allowUnsigned/);
+      assert.match(createSource, /Boolean\(isActive\)\s*&&\s*!hasSecureSrmWebhookAuth\(authConfig\)/);
+      assert.match(updateSource, /resolvedIsActive\s*&&\s*!hasSecureSrmWebhookAuth\(resolvedAuthConfig\)/);
     });
 
     test('module status handlers require administrative permission', () => {

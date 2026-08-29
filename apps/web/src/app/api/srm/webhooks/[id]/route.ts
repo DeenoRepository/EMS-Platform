@@ -3,20 +3,12 @@ import { prisma, type Prisma } from '@ems/database';
 import { logger } from '@/lib/logger';
 import { toSafeErrorDetails } from '@/lib/safe-error';
 import { applyJiraFieldMapping, getJiraFieldMapping, JiraFieldMappingConfig, notifySrmIncident } from '@/lib/jira-service';
-import { extractIssueFromWebhookPayload } from '@/lib/srm-providers';
+import { extractIssueFromWebhookPayload, getSrmWebhookAuthPolicy } from '@/lib/srm-providers';
 import { enforceRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 const MAX_WEBHOOK_BODY_SIZE = 5 * 1024 * 1024; // 5MB
-
-interface SrmWebhookAuthConfig {
-  webhookSecret?: string;
-  apiToken?: string;
-  apiKey?: string;
-  token?: string;
-  [key: string]: unknown;
-}
 
 /**
  * POST /api/srm/webhooks/[id]
@@ -44,13 +36,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ success: false, error: 'Интеграция деактивирована' }, { status: 400 });
     }
 
-    // Проверка секрета вебхука (если задан)
-    const auth = (integration.authConfig && typeof integration.authConfig === 'object'
-      ? (integration.authConfig as Record<string, unknown>)
-      : {}) as SrmWebhookAuthConfig;
-    const webhookSecret = auth.webhookSecret || auth.apiToken || auth.apiKey || auth.token;
+    const webhookAuth = getSrmWebhookAuthPolicy(integration.authConfig);
+    if (!webhookAuth.secret && !webhookAuth.allowUnsigned) {
+      logger.warn('Отклонен unsigned SRM webhook без явного разрешения', { integrationId });
+      return NextResponse.json(
+        { success: false, error: 'Для активной интеграции не настроен секрет вебхука' },
+        { status: 401 }
+      );
+    }
 
-    if (webhookSecret) {
+    if (webhookAuth.secret) {
       const url = new URL(req.url);
       const tokenParam = url.searchParams.get('token') || url.searchParams.get('secret');
       const headerSecret =
@@ -60,8 +55,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         req.headers.get('authorization')?.replace(/^Bearer\s+/, '');
 
       const providedToken = tokenParam || headerSecret;
-      // SECURITY FIX: If webhookSecret is configured, ALWAYS require a matching token.
-      if (!providedToken || providedToken !== webhookSecret) {
+      if (!providedToken || providedToken !== webhookAuth.secret) {
         return NextResponse.json({ success: false, error: 'Неверный или отсутствующий секретный токен вебхука' }, { status: 401 });
       }
     }

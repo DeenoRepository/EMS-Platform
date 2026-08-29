@@ -68,9 +68,10 @@
 
 ---
 
-### Story A2 — Политика webhook secret (S4)
+### Story A2 — Политика webhook secret (S4) — ✅ выполнено
 
-**Приоритет:** P1 / Medium  
+**Статус:** завершено 2026-08-29; runtime policy, integration CRUD validation, secret masking, regression suite, lint, TypeScript, full tests и route audit прошли.
+**Приоритет:** P1 / Medium
 **Скиллы:** `senior-security`, `senior-backend`, `strict-api`, `jira-expert`  
 **Оценка:** 1 день
 
@@ -90,8 +91,11 @@
 
 **DoD:**
 
-- `python scripts/route_audit.py` — 0 rate-limit gaps.
-- Новый/расширенный тест в `api-security.test.ts` или `packages/auth/src/srm-webhooks.test.ts`.
+- [x] Active unsigned integrations return 401 unless `allowUnsignedWebhooks === true`.
+- [x] Create/update routes reject active integrations without secure webhook auth.
+- [x] Configured secret still requires a matching token.
+- [x] Webhook secrets are masked and preserved through sanitized PUT payloads.
+- [x] `pnpm test`: 156 passed; lint/tsc/route audit PASS.
 - Коммит: `fix(security): reject unsigned SRM webhooks unless explicitly allowed`
 
 ---

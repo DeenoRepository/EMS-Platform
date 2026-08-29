@@ -11,6 +11,7 @@ describe('SRM Security & Sanitization Suite', () => {
       apiToken: 'jira_pat_token_abc_999',
       apiKey: 'api_key_secret_value',
       token: 'bearer_token_xyz',
+      webhookSecret: 'incoming_webhook_secret',
       headerName: 'X-Custom-Header',
     };
 
@@ -22,6 +23,7 @@ describe('SRM Security & Sanitization Suite', () => {
     assert.strictEqual(sanitized.apiToken, '••••••••');
     assert.strictEqual(sanitized.apiKey, '••••••••');
     assert.strictEqual(sanitized.token, '••••••••');
+    assert.strictEqual(sanitized.webhookSecret, '••••••••');
   });
 
   test('sanitizeAuthConfig handles empty and non-object inputs safely', () => {
@@ -35,12 +37,14 @@ describe('SRM Security & Sanitization Suite', () => {
       username: 'admin@company.ru',
       password: 'ExistingStrongPassword!',
       apiToken: 'ExistingSecretApiToken',
+      webhookSecret: 'ExistingWebhookSecret',
     };
 
     const updated = {
       username: 'new_admin@company.ru',
       password: '••••••••',
       apiToken: '••••••••',
+      webhookSecret: '••••••••',
     };
 
     const merged = mergeAuthConfig(updated, existing);
@@ -48,6 +52,7 @@ describe('SRM Security & Sanitization Suite', () => {
     assert.strictEqual(merged.username, 'new_admin@company.ru');
     assert.strictEqual(merged.password, 'ExistingStrongPassword!');
     assert.strictEqual(merged.apiToken, 'ExistingSecretApiToken');
+    assert.strictEqual(merged.webhookSecret, 'ExistingWebhookSecret');
   });
 
   test('mergeAuthConfig accepts newly provided secrets over existing', () => {

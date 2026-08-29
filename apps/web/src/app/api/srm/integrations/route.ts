@@ -4,7 +4,7 @@ import { safeErrorResponse } from '@/lib/safe-error';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma, SrmProviderType, SrmAuthType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
-import { getAvailableSrmProviders, sanitizeAuthConfig } from '@/lib/srm-providers';
+import { getAvailableSrmProviders, hasSecureSrmWebhookAuth, sanitizeAuthConfig } from '@/lib/srm-providers';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,6 +82,13 @@ export async function POST(req: NextRequest) {
     if (!name || !baseUrl || !providerType) {
       return NextResponse.json(
         { success: false, error: 'Укажите название, тип провайдера и базовый URL' },
+        { status: 400 }
+      );
+    }
+
+    if (Boolean(isActive) && !hasSecureSrmWebhookAuth(authConfig)) {
+      return NextResponse.json(
+        { success: false, error: 'Для активной интеграции укажите секрет вебхука или явно разрешите unsigned webhooks' },
         { status: 400 }
       );
     }

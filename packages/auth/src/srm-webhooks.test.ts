@@ -1,6 +1,10 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert';
-import { extractIssueFromWebhookPayload } from '../../../apps/web/src/lib/srm-providers';
+import {
+  extractIssueFromWebhookPayload,
+  getSrmWebhookAuthPolicy,
+  hasSecureSrmWebhookAuth,
+} from '../../../apps/web/src/lib/srm-providers';
 
 describe('SRM Webhooks Payload Parsers Suite', () => {
   test('Extracts issue from Jira webhook payload', () => {
@@ -22,8 +26,9 @@ describe('SRM Webhooks Payload Parsers Suite', () => {
 
     const extracted = extractIssueFromWebhookPayload(jiraWebhook);
     assert.ok(extracted);
+    const fields = extracted.fields as Record<string, unknown>;
     assert.strictEqual(extracted.key, 'EMS-777');
-    assert.strictEqual(extracted.fields.summary, 'Отказ привода ЧПУ станка');
+    assert.strictEqual(fields.summary, 'Отказ привода ЧПУ станка');
   });
 
   test('Extracts issue from GitLab webhook payload and constructs references', () => {
@@ -42,9 +47,11 @@ describe('SRM Webhooks Payload Parsers Suite', () => {
 
     const extracted = extractIssueFromWebhookPayload(gitlabWebhook);
     assert.ok(extracted);
+    const references = extracted.references as Record<string, unknown>;
+    const author = extracted.author as Record<string, unknown>;
     assert.strictEqual(extracted.title, 'Утечка масла в редукторе');
-    assert.strictEqual(extracted.references?.full, 'factory/cnc-maintenance#45');
-    assert.strictEqual(extracted.author?.username, 'mechanic_ivan');
+    assert.strictEqual(references.full, 'factory/cnc-maintenance#45');
+    assert.strictEqual(author.username, 'mechanic_ivan');
   });
 
   test('Extracts issue from Redmine webhook payload', () => {
@@ -83,5 +90,25 @@ describe('SRM Webhooks Payload Parsers Suite', () => {
     assert.strictEqual(extractIssueFromWebhookPayload(undefined), null);
     assert.strictEqual(extractIssueFromWebhookPayload('invalid string'), null);
     assert.strictEqual(extractIssueFromWebhookPayload({}), null);
+  });
+  test('rejects active integrations without a secret unless explicitly opted in', () => {
+    assert.deepStrictEqual(getSrmWebhookAuthPolicy({}), {
+      secret: null,
+      allowUnsigned: false,
+    });
+    assert.strictEqual(hasSecureSrmWebhookAuth({}), false);
+    assert.strictEqual(hasSecureSrmWebhookAuth({ allowUnsignedWebhooks: true }), true);
+  });
+
+  test('detects configured webhook secrets and ignores blank values', () => {
+    assert.deepStrictEqual(getSrmWebhookAuthPolicy({ webhookSecret: '  webhook-secret  ' }), {
+      secret: 'webhook-secret',
+      allowUnsigned: false,
+    });
+    assert.deepStrictEqual(getSrmWebhookAuthPolicy({ apiToken: '', apiKey: 'api-key' }), {
+      secret: 'api-key',
+      allowUnsigned: false,
+    });
+    assert.strictEqual(hasSecureSrmWebhookAuth({ token: 'token' }), true);
   });
 });
