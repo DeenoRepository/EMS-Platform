@@ -39,6 +39,7 @@ import {
 import { InventoryCountSheetDialog } from '@/components/wms';
 import { TableSortLabel } from '@mui/material';
 import WmsInventoryFilters from '@/components/wms/WmsInventoryFilters';
+import { countActiveInventoryFilters } from './filter-state';
 
 const INVENTORY_COLUMNS: TableColumnOption[] = [
   { id: 'code', label: 'Номер / Акт', defaultVisible: true, required: true },
@@ -191,8 +192,7 @@ export default function WmsInventoryListPage() {
     setSelectedStatus('');
   };
 
-  const activeFilterCount =
-    (search ? 1 : 0) + (selectedWarehouse ? 1 : 0) + (selectedStatus ? 1 : 0);
+  const activeFilterCount = countActiveInventoryFilters(search, selectedWarehouse, selectedStatus);
 
   const filteredInventories = useMemo(() => {
     return inventories.filter((inv) => {
