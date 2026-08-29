@@ -182,6 +182,12 @@ export default function WmsInventoryListPage() {
     setSelectedStatus('');
   };
 
+  const openCreateInventoryModal = useCallback(() => {
+    setSelectedWarehouseId(warehouses[0]?.id || '');
+    setComment('');
+    setIsModalOpen(true);
+  }, [warehouses]);
+
   const activeFilterCount = countActiveInventoryFilters(search, selectedWarehouse, selectedStatus);
 
   const filteredInventories = useMemo(
@@ -240,11 +246,7 @@ export default function WmsInventoryListPage() {
             <Button
               variant="contained"
               startIcon={<AddIcon />}
-              onClick={() => {
-                setSelectedWarehouseId(warehouses[0]?.id || '');
-                setComment('');
-                setIsModalOpen(true);
-              }}
+              onClick={openCreateInventoryModal}
               sx={{
                 height: 36,
                 px: 2,
@@ -340,11 +342,7 @@ export default function WmsInventoryListPage() {
               activeFilterCount > 0
                 ? handleResetFilters
                 : hasPermission(PERMISSIONS.WMS_INVENTORY_MANAGE)
-                ? () => {
-                    setSelectedWarehouseId(warehouses[0]?.id || '');
-                    setComment('');
-                    setIsModalOpen(true);
-                  }
+                ? openCreateInventoryModal
                 : undefined
             }
           />
