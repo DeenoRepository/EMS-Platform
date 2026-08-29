@@ -18,7 +18,7 @@
 | B2 — StatusBadge в паспорте | ✅ Выполнено | P2 |
 | **B3 — Role string унификация** | ✅ Выполнено (2026-08-29) | LOW |
 | **B4 — console.* остаток в API** | ✅ Выполнено (2026-08-29) | LOW |
-| C1 — Admin settings page | ⏳ Открыта | MEDIUM |
+| C1 — Admin settings page | ⏳ В работе: C1.1 ✅; C1.2–C1.4 открыты | MEDIUM |
 | C2 — Warehouse topology modal | ⏳ Открыта | MEDIUM |
 | C3 — WMS stock page | ⏳ Открыта | MEDIUM |
 | C4 — Equipment wizard form | ⏳ Открыта | MEDIUM |
@@ -337,6 +337,22 @@ pnpm --filter @ems/web lint
 - [x] `pnpm test`: 160 passed, 0 failed; lint/tsc PASS.
 - [x] `route_audit.py`, theme check и quality baseline PASS.
 - Коммит: `refactor(api): replace remaining console.warn/error with structured logger`
+
+---
+
+### C1.1 — Maintenance panel extraction ✅
+
+**Статус:** завершено 2026-08-29.
+**Файлы:** [`AdminMaintenancePanel.tsx`](../apps/web/src/components/admin/settings/AdminMaintenancePanel.tsx), [`AdminSettingsPage`](../apps/web/src/app/admin/settings/page.tsx).
+**Результат:** глобальная и модульная maintenance UI вынесена в typed presentation-компонент; state, fetch и handlers остались в route owner. API-контракты и UI-поведение не менялись.
+**Проверки:** lint, tsc, `pnpm test` (160/160), quality baseline (web 78.4, F-grade 38) — PASS.
+**Коммит:** `refactor(admin): extract maintenance panel from settings page`.
+
+**Следующие под-stories C1:**
+
+- [ ] **C1.2** — вынести LDAP и SRM integration panels в `components/admin/settings/`; сохранить result DTO и callbacks.
+- [ ] **C1.3** — вынести database dump panel; сохранить `dumpMode`, confirmation flow и download behavior.
+- [ ] **C1.4** — проверить размер страницы и удалить только ставшие неиспользуемыми imports; не смешивать с C1.2/C1.3.
 
 ---
 
