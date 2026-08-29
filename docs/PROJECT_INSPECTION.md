@@ -7,8 +7,8 @@
 
 > **Вердикт: ✅ Approve with suggestions.**  
 > Все критические security findings из аудита 2026-08-27 (Stories A1–A3, B1–B2) подтверждены закрытыми.  
-> Quality baseline PASS: 79.3/100 (C), 0 rate-limit gaps, 0 hex-hardcode в компонентах.
-> B3, B4 и C1–C5 завершены; C6.1 и C6.2a выполнены: admin-role checks унифицированы, production API logging paths переведены на structured `logger`, а крупные UI-области декомпозированы. Следующий этап — C6.3: EPS equipment passport page.
+> Quality baseline PASS: 79.4/100 (C), 0 rate-limit gaps, 0 hex-hardcode в компонентах.
+> B3, B4 и C1–C5 завершены; C6.1, C6.2a и C6.3 выполнены: admin-role checks унифицированы, production API logging paths переведены на structured `logger`, а крупные UI-области декомпозированы. Для EPS equipment passport page lifecycle-event mapping вынесен в отдельный typed helper без изменения state/API contracts.
 
 ---
 
@@ -354,11 +354,11 @@ pnpm --filter @ems/web build
 | API pattern consistency | ✅ PASS | — |
 | Role string consistency | ✅ PASS | B3 завершена |
 | `console.*` в API | ✅ PASS | B4 завершена |
-| Large files (> 500 строк) | ⚠️ MEDIUM | C6.3–C6.6 |
-| Quality baseline (79.3, F≤38) | ✅ PASS | поддерживать |
+| Large files (> 500 строк) | ⚠️ MEDIUM | C6.4–C6.6 |
+| Quality baseline (79.4, F≤38) | ✅ PASS | поддерживать |
 | Test coverage (160 passed) | ✅ PASS | поддерживать |
 
-**Общий вердикт: ✅ Approve with suggestions.** Проект находится в стабильном рабочем состоянии. Критические проблемы безопасности и дизайна закрыты. B3, B4 и C1–C5 выполнены и прошли verification; C6.2a также прошла verification. Следующий bounded этап — C6.3: EPS equipment passport page.
+**Общий вердикт: ✅ Approve with suggestions.** Проект находится в стабильном рабочем состоянии. Критические проблемы безопасности и дизайна закрыты. B3, B4, C1–C5, C6.2a и C6.3 выполнены и прошли verification. Следующий bounded этап — C6.4–C6.6: оставшиеся P1/F-grade файлы.
 
 ---
 
