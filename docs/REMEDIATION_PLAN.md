@@ -149,6 +149,29 @@
 
 ---
 
+### Story B2 — StatusBadge в паспорте оборудования (UI-1)
+
+**Приоритет:** P2 / Low
+**Скиллы:** `senior-frontend`
+**Оценка:** 0.5 часа
+
+**Проблема:** [`EquipmentPassportOverview.tsx`](../apps/web/src/components/eps/EquipmentPassportOverview.tsx:285) показывает «Текущий статус» через `<Chip label={statusInfo.label} />`. Это статус сущности — запрещено [`.agents/rules/ui_design_code.md`](../.agents/rules/ui_design_code.md). Эталон: [`ApprovalWizardDialog.tsx`](../apps/web/src/components/eps/ApprovalWizardDialog.tsx:214).
+
+**Шаги:**
+
+1. Импортировать `StatusBadge` из `@/components/ui`.
+2. Заменить Chip на `<StatusBadge status={equipment.status} />`.
+3. Убрать неиспользуемый `Chip` из MUI-импорта, если больше не нужен (теги оборудования Chip оставляют).
+4. Не трогать `HealthScoreGauge` / `StatCard`.
+
+**DoD:**
+
+- В паспорте статус оборудования только через `StatusBadge`.
+- `pnpm --filter @ems/web lint` + `tsc --noEmit`.
+- Коммит: `fix(ui): use StatusBadge for equipment status in passport overview`
+
+---
+
 ## Фаза C — Снижение F-grade (качество, без смены поведения)
 
 Цель фазы: **F-grade web < 38**, average не ниже 78.0, SOLID ≤ 25.  

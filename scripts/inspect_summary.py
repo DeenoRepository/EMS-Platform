@@ -16,7 +16,7 @@ def analyze(target_path, label):
     for f in files:
         g = f['grade']
         grades[g] = grades.get(g, 0) + 1
-    bad = sorted([f for f in files if f['quality_score'] < 50], key=lambda x: x['quality_score'])
+    bad = sorted([f for f in files if f.get('grade') == 'F'], key=lambda x: x['quality_score'])
     print(f"\n{'='*60}")
     print(f"  {label}")
     print(f"{'='*60}")
@@ -26,7 +26,7 @@ def analyze(target_path, label):
     print(f"  Total smells   : {d['total_code_smells']}")
     print(f"  SOLID violations: {d['total_solid_violations']}")
     print(f"  Grade breakdown: {dict(sorted(grades.items()))}")
-    print(f"\n  F-grade files (score < 50) — require mandatory refactor:")
+    print(f"\n  F-grade files (grade === F) — require mandatory refactor:")
     for f in bad[:30]:
         fname = f['file'].replace('\\', '/').split('/')[-1]
         smells = len(f['smells'])

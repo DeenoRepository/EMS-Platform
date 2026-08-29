@@ -1,11 +1,11 @@
 # EMS-Platform — инспекция проекта
 
-**Дата инспекции:** 2026-08-29  
-**Ветка:** `main` @ `61e82ec`  
-**Инструменты:** `code-reviewer` (`code_quality_checker.py`, `pr_analyzer.py`), [`scripts/inspect_summary.py`](../scripts/inspect_summary.py), [`scripts/fgrade_detail.py`](../scripts/fgrade_detail.py), [`scripts/route_audit.py`](../scripts/route_audit.py), [`scripts/check-theme-tokens.mjs`](../scripts/check-theme-tokens.mjs), [`scripts/check-quality-baseline.mjs`](../scripts/check-quality-baseline.mjs)  
+**Дата инспекции:** 2026-08-29 (повтор, HEAD `0f57ab3`)
+**Ветка:** `main` @ `0f57ab3` (`docs: add bounded remediation plan from 2026-08-29 inspection`)
+**Инструменты:** `code-reviewer` (`code_quality_checker.py`, `pr_analyzer.py`), [`scripts/inspect_summary.py`](../scripts/inspect_summary.py), [`scripts/fgrade_detail.py`](../scripts/fgrade_detail.py), [`scripts/route_audit.py`](../scripts/route_audit.py), [`scripts/check-theme-tokens.mjs`](../scripts/check-theme-tokens.mjs), [`scripts/check-quality-baseline.mjs`](../scripts/check-quality-baseline.mjs)
 **Правила:** [`AGENTS.md`](../AGENTS.md), [`.agents/rules/security.md`](../.agents/rules/security.md), [`.agents/rules/code_quality.md`](../.agents/rules/code_quality.md), [`.agents/rules/ui_design_code.md`](../.agents/rules/ui_design_code.md), `.agents/skills/code-reviewer/rules/universal.md`, `.agents/skills/code-reviewer/languages/typescript.md`.
 
-> **Вердикт:** Approve with suggestions. Quality baseline проходит. Критические security/UI findings из аудита 2026-08-27 закрыты. Остаточный долг — крупные presentation-файлы (F-grade), local-dev секреты в `docker-compose.yml`, открытый webhook без секрета и `console.error` на async-путях.
+> **Вердикт:** Approve with suggestions. Quality baseline проходит. Критические security findings из аудита 2026-08-27 закрыты. Остаточный долг — F-grade presentation-файлы (ровно на пороге 38), local-dev секреты в `docker-compose.yml`, unsigned webhook без секрета, `console.error` на async-путях, Chip вместо `StatusBadge` в паспорте оборудования.
 
 ---
 
@@ -43,7 +43,9 @@ node scripts/check-theme-tokens.mjs
 node scripts/check-quality-baseline.mjs
 ```
 
-Lint / tsc / full test / production build в этой сессии не перезапускались: рабочее дерево чистое, последний коммит уже фиксирует verification outcomes. Для следующего merge-gate их нужно прогнать заново.
+Lint / tsc / full test / production build в этой сессии не перезапускались: рабочее дерево чистое относительно исходного HEAD, последний verification-коммит уже фиксирует outcomes. Для следующего merge-gate их нужно прогнать заново.
+
+`fgrade_detail.py` раньше фильтровал `quality_score < 50` (26 файлов) и расходился с `check:quality` (`grade === 'F'` → 38). Скрипт выровнен с baseline.
 
 ---
 
@@ -86,9 +88,13 @@ Heuristic `getCurrentUser` без `PERMISSIONS.*` (10 маршрутов): logou
 ## 4. UI design-code
 
 - Hex вне theme-файлов: **0** (`pnpm check:theme`).
-- Entity statuses идут через [`StatusBadge`](../apps/web/src/components/ui/StatusBadge.tsx) (81+ usages).
-- `<Chip>` остаётся для metadata: коды складов, артикулы, счётчики, единицы, shortcuts, вложения. Это соответствует решению аудита 2026-08-27, не нарушает запрет Chip-для-статусов.
+- Entity statuses в большинстве мест идут через [`StatusBadge`](../apps/web/src/components/ui/StatusBadge.tsx) (81+ usages). Эталон: [`ApprovalWizardDialog.tsx`](../apps/web/src/components/eps/ApprovalWizardDialog.tsx:214).
+- `<Chip>` остаётся для metadata: коды складов, артикулы, счётчики, единицы, shortcuts, вложения. Это соответствует решению аудита 2026-08-27.
 - Shared UI library на месте: `StatCard`, `SearchInput`, `FilterToolbar`, `EmptyState`, `DataTableWrapper`, `ConfirmDialog`.
+
+### UI-1 — Chip вместо StatusBadge (entity status)
+
+[`EquipmentPassportOverview.tsx`](../apps/web/src/components/eps/EquipmentPassportOverview.tsx:285) рендерит «Текущий статус» через `<Chip label={statusInfo.label} />`. Это статус оборудования — нарушение [`.agents/rules/ui_design_code.md`](../.agents/rules/ui_design_code.md) §1. Замена: `<StatusBadge status={equipment.status} />`. Bounded story, без рефакторинга всего паспорта.
 
 ---
 
@@ -126,7 +132,7 @@ Parser-ограничения отмечены. Приоритет по разм
 
 [`EquipmentOperationalTabs.tsx`](../apps/web/src/components/eps/EquipmentOperationalTabs.tsx), [`EquipmentPassportOverview.tsx`](../apps/web/src/components/eps/EquipmentPassportOverview.tsx), [`theme.ts`](../apps/web/src/theme/theme.ts) (false F: нет функций), [`StockDetailDrawer.tsx`](../apps/web/src/components/wms/StockDetailDrawer.tsx) (complexity 20), [`TransferRequestDialog.tsx`](../apps/web/src/components/wms/TransferRequestDialog.tsx).
 
-Остальные 7 F-файлов из полного списка `fgrade_detail.py` (module-settings, inventory `[id]`, WMS cells/operations/transfers API, MRO history, WmsStockTable, mro page, SrmReliabilityAnalytics, eps-import-helpers, ApprovalWizardDialog, SrmIssueDetailsDrawer) — дробить только вместе с тестами consumers.
+Остальные 12 F-файлов с `grade === 'F'` при score 52–58 (module-settings, inventory `[id]`, WMS cells/operations/transfers API, MRO history, WmsStockTable, mro page, SrmReliabilityAnalytics, eps-import-helpers, ApprovalWizardDialog, SrmIssueDetailsDrawer) — дробить только вместе с тестами consumers.
 
 Packages F-grade: **нет**. Худший package-файл — [`packages/database/src/seed-data/domain-data.ts`](../packages/database/src/seed-data/domain-data.ts) grade D (63), `seedDomainData` 66 строк + demo magic numbers.
 
@@ -150,8 +156,9 @@ Packages F-grade: **нет**. Худший package-файл — [`packages/datab
 1. **Docs/examples:** убрать `JIRA_API_TOKEN=adminpassword` из `.env.example`; расширить LDAP forbidden defaults в `env-validate`.
 2. **Webhook policy:** не принимать inbound без секрета, либо явный `allowUnsignedWebhooks` в integration config + тест.
 3. **Logging:** заменить `.catch(console.error)` и login `console.error` на `logger` + UI error state.
-4. **Admin settings / WMS topology / EPS wizard** — по одному PR, без смены API contract.
-5. **Не трогать** массово 1911 `magic_number`: выделять только domain constants (лимиты, статусы, timeouts).
+4. **UI-1:** `StatusBadge` вместо `Chip` в [`EquipmentPassportOverview.tsx`](../apps/web/src/components/eps/EquipmentPassportOverview.tsx:285).
+5. **Admin settings / WMS topology / EPS wizard** — по одному PR, без смены API contract.
+6. **Не трогать** массово 1911 `magic_number`: выделять только domain constants (лимиты, статусы, timeouts).
 
 Каждая story: Conventional Commit, lint + tsc + targeted tests; security/API — полный `pnpm test` и `python scripts/route_audit.py`.
 
@@ -168,7 +175,8 @@ Packages F-grade: **нет**. Худший package-файл — [`packages/datab
 - [ ] Web F-grade < 38 (сейчас ровно на пороге)
 - [ ] Unsigned webhook закрыт политикой
 - [ ] `.env.example` без demo Jira token
+- [ ] `EquipmentPassportOverview` использует `StatusBadge` для статуса оборудования
 
 ---
 
-*Инспекция 2026-08-29. Правила агентов: AGENTS.md v2.0.*
+*Повторная инспекция 2026-08-29 @ `0f57ab3`. Правила агентов: AGENTS.md v2.0.*

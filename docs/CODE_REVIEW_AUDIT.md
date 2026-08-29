@@ -5,7 +5,7 @@
 > **Инструмент:** `code_quality_checker.py` (TypeScript/TSX) + ручной анализ
 > **Покрытие (2026-08-29):** `apps/web/src` — 279 файлов; `packages` — 30 файлов
 > **Итоговая оценка web:** **C (78.3 / 100)**; packages **A (94.1 / 100)**
-> **Вердикт:** ✅ **Quality baseline PASS** (`pnpm check:quality`). Критические security/UI findings из исходного аудита устранены; автоматический checker фиксирует остаточные low-priority smells и ограничения парсера TSX.
+> **Вердикт:** ✅ **Quality baseline PASS** (`pnpm check:quality`). Критические security findings из исходного аудита устранены. Остаточный UI-долг: Chip вместо `StatusBadge` в паспорте оборудования. Автоматический checker фиксирует low-priority smells и ограничения парсера TSX.
 
 ---
 
@@ -84,7 +84,7 @@ python .agents\\skills\\code-reviewer\\scripts\\code_quality_checker.py apps\\we
 - production build: pass, 33 static pages generated;
 - quality scan: 219 files, 73.7/100, grade C, 2 325 smells, 28 SOLID findings.
 
-Повтор 2026-08-29 (`pnpm check:quality`, route audit, theme check): web 78.3/100, 2 353 smells, 25 SOLID, 38 F-grade; packages 94.1/100, 0 F-grade; baseline PASS. Актуальный план остаточного долга — [`PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md).
+Повтор 2026-08-29 @ `0f57ab3` (`pnpm check:quality`, route audit, theme check): web 78.3/100, 2 353 smells, 25 SOLID, 38 F-grade; packages 94.1/100, 0 F-grade; baseline PASS. Актуальный план — [`PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md), [`REMEDIATION_PLAN.md`](REMEDIATION_PLAN.md).
 
 Оставшиеся quality-scan findings относятся преимущественно к широкому legacy smell inventory, остаточной типизации/размеру отдельных presentation files и policy cleanup вне подтверждённых critical paths. Их следует устранять отдельными bounded stories с ручной проверкой, а не массовыми автоматическими заменами.
 
