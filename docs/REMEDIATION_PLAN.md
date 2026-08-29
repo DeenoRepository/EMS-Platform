@@ -512,9 +512,9 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 
 - [x] **C15** — WMS operation wizard submit payload builder вынесен в [`operation-submit.ts`](../apps/web/src/components/wms/operation-submit.ts); transfer и standard operation payload shapes, trimming, optional fields и component state ownership сохранены. Проверки: lint, tsc, targeted quality checker, quality baseline (web 80.4, F=34, SOLID=24) и `git diff --check` — PASS. Commit: `47e3e02`.
 
-- [x] **C16** — MRO schedule KPI/statistics calculation extracted into [`schedule-stats.ts`](../apps/web/src/app/mro/schedule-stats.ts:1), with [`page.tsx`](../apps/web/src/app/mro/page.tsx:128) retaining API calls, state ownership, routing, filtering, sorting, pagination, and shared UI contracts. Verified baseline: web 80.5, F-grade 33, smells 2361, SOLID 24; packages 94.1, F-grade 0, SOLID 0. Commit: `4bd77de`.
+- [x] **C16** — MRO schedule KPI/statistics calculation was extracted into [`schedule-stats.ts`](../apps/web/src/app/mro/schedule-stats.ts:1) while API calls, state ownership, routing, filtering, sorting, pagination, and shared UI contracts were preserved in [`page.tsx`](../apps/web/src/app/mro/page.tsx:128). Verified baseline: web 80.5, F-grade 33, smells 2361, SOLID 24; packages 94.1, F-grade 0, SOLID 0. Commit: `4bd77de`.
 
-Следующий bounded этап — выбрать следующий P1/F-grade файл после завершённых C6.8 и C7–C16.
+Следующий bounded этап — выбрать следующий P1/F-grade файл после завершённых C6.8 и C7–C16, включая C16 schedule statistics extraction.
 
 C6.5 закрыта отдельным коммитом `9203fa6`; последующие изменения должны сохранять payload shape и API contract setup flow.
 
