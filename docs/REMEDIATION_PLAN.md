@@ -23,7 +23,7 @@
 | C3 — WMS stock page | ✅ Выполнено: C3.1–C3.4 | MEDIUM |
 | C4 — Equipment wizard form | ✅ Выполнено: C4.1–C4.3 | MEDIUM |
 | C5 — EPS reports + import | ✅ Выполнено: C5.1–C5.4 | MEDIUM |
-| C6 — P1 страницы > 600 строк | ⏳ В работе: C6.1 ✅; C6.2a ✅; C6.3 ✅; C6.5 ✅ | MEDIUM |
+| C6 — P1 страницы > 600 строк | ⏳ В работе: C6.1 ✅; C6.2a ✅; C6.3 ✅; C6.5 ✅; C6.5 ✅ | MEDIUM |
 | C7 — P2 F-файлы < 500 строк | ⏳ Открыта | LOW |
 | D — Типизация | ⏳ В работе: D.1 ✅ (GitLab connection JSON boundary) | P2 |
 | E — Tooling и документация | ⏳ Открыта | LOW |
@@ -487,6 +487,8 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 - [x] **C6.3** — lifecycle-event mapping EPS equipment passport page вынесен в [`equipment-lifecycle-events.ts`](../apps/web/src/components/eps/equipment-lifecycle-events.ts); state, handlers и API contracts сохранены в [`page.tsx`](../apps/web/src/app/eps/[id]/page.tsx). Проверки: lint, tsc, 160 тестов, route audit, theme check, `git diff --check` и quality baseline (web 79.4, F=36, SOLID=25; packages 94.1, F=0, SOLID=0) — PASS.
 
 - [x] **C6.5** — setup wizard payload builder вынесен в [`setup-payload.ts`](../apps/web/src/app/setup/setup-payload.ts); [`handleExecuteSetup`](../apps/web/src/app/setup/page.tsx) сохранил payload shape, API contract и navigation behavior. Проверки: lint, tsc, targeted quality checker и `git diff --check` — PASS; web baseline до story: 79.4, F=36, SOLID=25. Commit: `9203fa6`.
+
+- [x] **C6.6** — warehouse submit request builder вынесен в [`warehouse-submit.ts`](../apps/web/src/app/wms/warehouses/warehouse-submit.ts); submit payload, endpoint selection и validation behavior сохранены. Commit: `5613e7a`.
 
 Следующий bounded этап — C6.6: оставшиеся P1/F-grade файлы.
 
