@@ -4,6 +4,7 @@ import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -102,7 +103,10 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    console.error('Ошибка получения статистики WMS:', error);
+    logger.error('Failed to fetch WMS statistics', {
+      endpoint: 'wms-stats-get',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Ошибка получения статистики WMS' }, { status: 500 });
   }
 }

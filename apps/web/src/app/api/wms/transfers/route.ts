@@ -127,7 +127,10 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    console.error('Ошибка получения списка перемещений:', error);
+    logger.error('Failed to fetch transfers list', {
+      endpoint: 'wms-transfers-get',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
       { success: false, error: 'Ошибка получения списка перемещений' },
       { status: 500 }

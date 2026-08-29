@@ -4,6 +4,7 @@ import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -94,7 +95,10 @@ export async function PATCH(
       message: cellId ? 'Место хранения закреплено' : 'Место хранения очищено',
     });
   } catch (error) {
-    console.error('Error updating stock item location:', error);
+    logger.error('Failed to update stock item location', {
+      endpoint: 'wms-stock-location-patch',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
       { success: false, error: 'Internal Server Error' },
       { status: 500 }

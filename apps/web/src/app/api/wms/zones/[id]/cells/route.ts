@@ -4,6 +4,7 @@ import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,7 +33,10 @@ export async function GET(
 
     return NextResponse.json({ success: true, data: cells });
   } catch (error) {
-    console.error('Error fetching zone cells:', error);
+    logger.error('Failed to fetch zone cells', {
+      endpoint: 'wms-zone-cells-get',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
       { success: false, error: 'Internal Server Error' },
       { status: 500 }
@@ -120,7 +124,11 @@ export async function POST(
           });
           createdCells.push(cell);
         } catch (e) {
-          console.error('Error creating cell in bulk:', itemCode, e);
+          logger.warn('Failed to create cell in bulk', {
+            endpoint: 'wms-zone-cells-post-bulk',
+            cellCode: itemCode,
+            error: e instanceof Error ? e.message : String(e),
+          });
         }
       }
 
@@ -164,7 +172,10 @@ export async function POST(
 
     return NextResponse.json({ success: true, data: cell });
   } catch (error) {
-    console.error('Error creating storage cell:', error);
+    logger.error('Failed to create storage cell', {
+      endpoint: 'wms-zone-cells-post',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
       { success: false, error: 'Internal Server Error' },
       { status: 500 }
@@ -227,7 +238,10 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, message: 'Ячейка успешно удалена' });
   } catch (error) {
-    console.error('Error deleting storage cell:', error);
+    logger.error('Failed to delete storage cell', {
+      endpoint: 'wms-zone-cells-delete',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
       { success: false, error: 'Internal Server Error' },
       { status: 500 }

@@ -4,6 +4,7 @@ import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -212,7 +213,10 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    console.error('Ошибка получения остатков склада:', error);
+    logger.error('Failed to fetch stock items', {
+      endpoint: 'wms-stock-get',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Ошибка получения остатков склада' }, { status: 500 });
   }
 }

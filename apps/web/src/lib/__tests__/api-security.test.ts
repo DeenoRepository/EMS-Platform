@@ -119,6 +119,13 @@ describe('API Security and Hardening Regressions', () => {
         'apps/web/src/app/api/wms/nomenclature/[id]/route.ts',
         'apps/web/src/app/api/wms/inventories/route.ts',
         'apps/web/src/app/api/wms/inventories/[id]/route.ts',
+        // WMS stock/zones/cells batch
+        'apps/web/src/app/api/wms/zones/[id]/route.ts',
+        'apps/web/src/app/api/wms/zones/[id]/cells/route.ts',
+        'apps/web/src/app/api/wms/stats/route.ts',
+        'apps/web/src/app/api/wms/stock/route.ts',
+        'apps/web/src/app/api/wms/stock/[id]/location/route.ts',
+        'apps/web/src/app/api/wms/transfers/route.ts',
       ];
 
       for (const routePath of routePaths) {

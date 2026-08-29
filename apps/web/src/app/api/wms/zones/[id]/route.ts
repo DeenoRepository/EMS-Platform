@@ -4,6 +4,7 @@ import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -68,7 +69,10 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
-    console.error('Error updating storage zone:', error);
+    logger.error('Failed to update storage zone', {
+      endpoint: 'wms-zone-patch',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
       { success: false, error: 'Internal Server Error' },
       { status: 500 }
@@ -124,7 +128,10 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, message: 'Зона успешно удалена' });
   } catch (error) {
-    console.error('Error deleting storage zone:', error);
+    logger.error('Failed to delete storage zone', {
+      endpoint: 'wms-zone-delete',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
       { success: false, error: 'Internal Server Error' },
       { status: 500 }
