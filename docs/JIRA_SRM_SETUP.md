@@ -76,7 +76,7 @@ JIRA_HOST=http://localhost:8080
 JIRA_BASE_URL=http://localhost:8080
 JIRA_EMAIL=admin@company.local
 JIRA_USER_EMAIL=admin@company.local
-JIRA_API_TOKEN=adminpassword
+JIRA_API_TOKEN=your-jira-api-token-or-password
 JIRA_PROJECT_KEY=GRIO
 JIRA_EQUIPMENT_CUSTOM_FIELD=customfield_10100
 ```

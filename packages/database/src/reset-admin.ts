@@ -10,19 +10,32 @@ function hashPassword(password: string, iterations = 210_000): string {
 }
 
 async function main() {
+  const newPassword = process.env.ADMIN_PASSWORD || process.argv[2];
+  if (!newPassword) {
+    console.error('❌ Ошибка: укажите новый пароль через переменную окружения ADMIN_PASSWORD или аргумент командной строки.');
+    console.error('   Пример: ADMIN_PASSWORD="your-strong-password" pnpm --filter @ems/database run reset-admin');
+    console.error('   Или: pnpm --filter @ems/database run reset-admin "your-strong-password"');
+    process.exit(1);
+  }
+
+  if (newPassword.length < 8) {
+    console.error('❌ Ошибка: пароль администратора должен быть длиной не менее 8 символов.');
+    process.exit(1);
+  }
+
   const adminRole = await prisma.role.findUnique({ where: { name: 'admin' } });
 
   const admin = await prisma.user.upsert({
     where: { ldapLogin: 'admin' },
     update: {
-      passwordHash: hashPassword('admin123'),
+      passwordHash: hashPassword(newPassword),
       isActive: true,
     },
     create: {
       ldapLogin: 'admin',
       displayName: 'Главный Администратор',
       email: 'admin@ems.local',
-      passwordHash: hashPassword('admin123'),
+      passwordHash: hashPassword(newPassword),
       isActive: true,
     },
   });
@@ -35,7 +48,7 @@ async function main() {
     });
   }
 
-  console.log('✅ Пароль для пользователя admin успешно установлен: admin123');
+  console.log('✅ Пароль для пользователя admin успешно обновлен.');
 }
 
 main()

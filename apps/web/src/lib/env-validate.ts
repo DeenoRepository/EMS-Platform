@@ -15,6 +15,11 @@ const DANGEROUS_DEFAULTS = [
   'changeme',
   'secret',
   'jwt_secret',
+  '8f7b2c9a1d4e6f3a5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f90',
+  'postgrespassword',
+  'postgres_secure_password',
+  'adminpassword',
+  'admin123',
 ];
 
 function assertEnv(name: string, value: string | undefined, rules: {

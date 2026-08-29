@@ -149,7 +149,7 @@ export default function SetupWizardPage() {
   const [dbPort, setDbPort] = useState('5432');
   const [dbName, setDbName] = useState('ems_db');
   const [dbUser, setDbUser] = useState('postgres');
-  const [dbPassword, setDbPassword] = useState('postgrespassword');
+  const [dbPassword, setDbPassword] = useState('');
   const [dbTestResult, setDbTestResult] = useState<{ success: boolean; message: string; latencyMs?: number } | null>(null);
   const [isTestingDb, setIsTestingDb] = useState(false);
   const [showDbPass, setShowDbPass] = useState(false);
@@ -159,14 +159,14 @@ export default function SetupWizardPage() {
   const [adminLogin, setAdminLogin] = useState('admin');
   const [adminDisplayName, setAdminDisplayName] = useState('Главный Администратор');
   const [adminEmail, setAdminEmail] = useState('admin@company.local');
-  const [adminPassword, setAdminPassword] = useState('admin123');
-  const [adminPasswordConfirm, setAdminPasswordConfirm] = useState('admin123');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [adminPasswordConfirm, setAdminPasswordConfirm] = useState('');
   const [showAdminPass, setShowAdminPass] = useState(false);
 
   const [ldapEnabled, setLdapEnabled] = useState(false);
   const [ldapUrl, setLdapUrl] = useState('ldap://127.0.0.1:389');
   const [ldapBindDn, setLdapBindDn] = useState('cn=admin,dc=company,dc=local');
-  const [ldapBindPassword, setLdapBindPassword] = useState('adminpassword');
+  const [ldapBindPassword, setLdapBindPassword] = useState('');
   const [ldapSearchBase, setLdapSearchBase] = useState('dc=company,dc=local');
   const [ldapSearchFilter, setLdapSearchFilter] = useState('(|(sAMAccountName={{username}})(uid={{username}})(userPrincipalName={{username}}))');
   const [ldapTestResult, setLdapTestResult] = useState<{ success: boolean; message: string } | null>(null);

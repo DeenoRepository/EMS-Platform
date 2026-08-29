@@ -161,4 +161,31 @@ describe('API Security and Hardening Regressions', () => {
       assert.ok(details.correlationId);
     });
   });
+
+  describe('Security Defaults and Hardcoded Credentials Prevention', () => {
+    test('setup UI starts with empty password fields', () => {
+      const source = readRepositoryFile('apps/web/src/app/setup/page.tsx');
+      assert.match(source, /useState\(''\);\s*\/\/\s*dbPassword|const \[dbPassword, setDbPassword\] = useState\(''\)/);
+      assert.match(source, /const \[adminPassword, setAdminPassword\] = useState\(''\)/);
+      assert.match(source, /const \[ldapBindPassword, setLdapBindPassword\] = useState\(''\)/);
+      assert.doesNotMatch(source, /const \[adminPassword, setAdminPassword\] = useState\('admin123'\)/);
+      assert.doesNotMatch(source, /const \[dbPassword, setDbPassword\] = useState\('postgrespassword'\)/);
+    });
+
+    test('production compose templates require secrets without fallback defaults', () => {
+      const prodCompose = readRepositoryFile('docker-compose.prod.yml');
+      const offlineCompose = readRepositoryFile('docker-compose.offline.yml');
+
+      assert.match(prodCompose, /POSTGRES_PASSWORD:\s*\$\{POSTGRES_PASSWORD:\?/);
+      assert.match(prodCompose, /JWT_SECRET:\s*\$\{JWT_SECRET:\?/);
+      assert.match(offlineCompose, /POSTGRES_PASSWORD:\s*\$\{POSTGRES_PASSWORD:\?/);
+      assert.match(offlineCompose, /JWT_SECRET:\s*\$\{JWT_SECRET:\?/);
+    });
+
+    test('reset-admin CLI enforces non-empty password and forbids hardcoded default', () => {
+      const resetAdminSource = readRepositoryFile('packages/database/src/reset-admin.ts');
+      assert.match(resetAdminSource, /process\.env\.ADMIN_PASSWORD\s*\|\|\s*process\.argv\[2\]/);
+      assert.doesNotMatch(resetAdminSource, /hashPassword\('admin123'\)/);
+    });
+  });
 });
