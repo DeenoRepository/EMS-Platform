@@ -18,7 +18,7 @@
 | B2 — StatusBadge в паспорте | ✅ Выполнено | P2 |
 | **B3 — Role string унификация** | ✅ Выполнено (2026-08-29) | LOW |
 | **B4 — console.* остаток в API** | ✅ Выполнено (2026-08-29) | LOW |
-| C1 — Admin settings page | ⏳ В работе: C1.1 ✅; C1.2a ✅; C1.2b ✅; C1.3–C1.4 открыты | MEDIUM |
+| C1 — Admin settings page | ⏳ В работе: C1.1 ✅; C1.2a ✅; C1.2b ✅; C1.3 ✅; C1.4 открыта | MEDIUM |
 | C2 — Warehouse topology modal | ⏳ Открыта | MEDIUM |
 | C3 — WMS stock page | ⏳ Открыта | MEDIUM |
 | C4 — Equipment wizard form | ⏳ Открыта | MEDIUM |
@@ -352,7 +352,7 @@ pnpm --filter @ems/web lint
 
 - [x] **C1.2a** — LDAP integration panel вынесен в [`AdminLdapIntegrationPanel.tsx`](../apps/web/src/components/admin/settings/AdminLdapIntegrationPanel.tsx); result DTO и callbacks сохранены.
 - [x] **C1.2b** — SRM integration panel вынесен в [`AdminSrmIntegrationPanel.tsx`](../apps/web/src/components/admin/settings/AdminSrmIntegrationPanel.tsx); provider-specific fields, diagnostics и callbacks сохранены. Проверки: 160 тестов, lint, tsc, route audit, theme check и quality baseline (web 78.5, F=38) — PASS.
-- [ ] **C1.3** — вынести database dump panel; сохранить `dumpMode`, confirmation flow и download behavior.
+- [x] **C1.3** — database dump panel вынесен в [`AdminDatabaseDumpPanel.tsx`](../apps/web/src/components/admin/settings/AdminDatabaseDumpPanel.tsx); `dumpMode`, confirmation flow и download behavior сохранены. Проверки: 160 тестов, lint, tsc, route audit, theme check и quality baseline (web 78.5, F=37) — PASS.
 - [ ] **C1.4** — проверить размер страницы и удалить только ставшие неиспользуемыми imports; не смешивать с C1.2b/C1.3.
 
 ---

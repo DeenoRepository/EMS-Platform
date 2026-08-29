@@ -29,8 +29,6 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import NetworkCheckIcon from '@mui/icons-material/NetworkCheck';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import StorageIcon from '@mui/icons-material/Storage';
-import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import Radio from '@mui/material/Radio';
 import RadioGroup from '@mui/material/RadioGroup';
 import FormControl from '@mui/material/FormControl';
@@ -42,6 +40,7 @@ import { PlatformMaintenanceStatus } from '@ems/shared';
 import { AdminMaintenancePanel } from '@/components/admin/settings/AdminMaintenancePanel';
 import { AdminLdapIntegrationPanel } from '@/components/admin/settings/AdminLdapIntegrationPanel';
 import { AdminSrmIntegrationPanel } from '@/components/admin/settings/AdminSrmIntegrationPanel';
+import { AdminDatabaseDumpPanel, type DatabaseDumpMode } from '@/components/admin/settings/AdminDatabaseDumpPanel';
 
 export default function AdminSettingsPage() {
   const { enqueueSnackbar } = useSnackbar();
@@ -461,87 +460,13 @@ export default function AdminSettingsPage() {
             />
           </Grid>
 
-          {/* Database Backup and Dump Export Card */}
-          <Card sx={{ mt: 3 }}>
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Box
-                    sx={{
-                      p: 1,
-                      borderRadius: '8px',
-                      bgcolor: 'rgba(2, 132, 199, 0.08)',
-                      color: 'primary.main',
-                      display: 'flex',
-                    }}
-                  >
-                    <StorageIcon />
-                  </Box>
-                  <Box>
-                    <Typography variant="h6" fontWeight={700}>
-                      Резервное копирование и дамп базы данных
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Экспорт структуры и данных PostgreSQL в архивном формате .sql.gz для переноса и резервного хранения
-                    </Typography>
-                  </Box>
-                </Box>
-                <StatusBadge status="ACTIVE" label="PostgreSQL" size="small" />
-              </Box>
-
-              <Divider sx={{ mb: 2.5 }} />
-
-              <Grid container spacing={3} alignItems="center">
-                <Grid item xs={12} md={7}>
-                  <FormControl component="fieldset">
-                    <FormLabel component="legend" sx={{ fontWeight: 700, fontSize: '0.875rem', mb: 1, color: 'text.primary' }}>
-                      Выберите режим выгрузки дампа:
-                    </FormLabel>
-                    <RadioGroup
-                      row
-                      value={dumpMode}
-                      onChange={(e) => setDumpMode(e.target.value as 'full' | 'data' | 'schema')}
-                    >
-                      <FormControlLabel
-                        value="full"
-                        control={<Radio size="small" />}
-                        label={<Typography variant="body2" fontWeight={dumpMode === 'full' ? 700 : 400}>Полный дамп (Схема + Данные)</Typography>}
-                      />
-                      <FormControlLabel
-                        value="data"
-                        control={<Radio size="small" />}
-                        label={<Typography variant="body2" fontWeight={dumpMode === 'data' ? 700 : 400}>Только данные (INSERTs)</Typography>}
-                      />
-                      <FormControlLabel
-                        value="schema"
-                        control={<Radio size="small" />}
-                        label={<Typography variant="body2" fontWeight={dumpMode === 'schema' ? 700 : 400}>Только структура (DDL)</Typography>}
-                      />
-                    </RadioGroup>
-                  </FormControl>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-                    {dumpMode === 'full' && '• Создается полный самодостаточный дамп с удалением и созданием всех таблиц, связей и записей.'}
-                    {dumpMode === 'data' && '• Экспортируются только строки таблиц для восстановления поверх существующей структуры.'}
-                    {dumpMode === 'schema' && '• Экспортируется DDL-структура таблиц, индексов и ограничений без бизнес-данных.'}
-                  </Typography>
-                </Grid>
-
-                <Grid item xs={12} md={5} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    size="medium"
-                    startIcon={downloadingDump ? <CircularProgress size={18} color="inherit" /> : <CloudDownloadIcon />}
-                    disabled={downloadingDump || loading}
-                    onClick={() => setConfirmDumpDialogOpen(true)}
-                    sx={{ px: 3, py: 1.2, fontWeight: 700 }}
-                  >
-                    {downloadingDump ? 'Формирование дампа...' : 'Скачать дамп БД (.sql.gz)'}
-                  </Button>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
+          <AdminDatabaseDumpPanel
+            dumpMode={dumpMode}
+            downloading={downloadingDump}
+            loading={loading}
+            onDumpModeChange={(mode: DatabaseDumpMode) => setDumpMode(mode)}
+            onRequestDownload={() => setConfirmDumpDialogOpen(true)}
+          />
 
           {/* Submit Button */}
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
