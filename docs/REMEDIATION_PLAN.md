@@ -481,7 +481,7 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 
 ### Story C6 — Остальные P1 страницы > 600 строк (decomposed into bounded stories)
 
-По одному коммиту, тот же рецепт. C6.1 inventory актуализирован; C6.2a, C6.3, C6.5, C6.6, C6.7, C6.8 и C7 завершены:
+По одному коммиту, тот же рецепт. C6.1 inventory актуализирован; C6.2a, C6.3, C6.5, C6.6, C6.7, C6.8, C7 и C9 завершены:
 
 - [x] **C6.2a** — filter toolbar WMS inventory вынесен в [`WmsInventoryFilters.tsx`](../apps/web/src/components/wms/WmsInventoryFilters.tsx); filter/reset/pagination behavior сохранены. Проверки: lint, tsc, 160 тестов, route audit, theme check и quality baseline (web 79.3, F=36, SOLID=25) — PASS.
 - [x] **C6.3** — lifecycle-event mapping EPS equipment passport page вынесен в [`equipment-lifecycle-events.ts`](../apps/web/src/components/eps/equipment-lifecycle-events.ts); state, handlers и API contracts сохранены в [`page.tsx`](../apps/web/src/app/eps/[id]/page.tsx). Проверки: lint, tsc, 160 тестов, route audit, theme check, `git diff --check` и quality baseline (web 79.4, F=36, SOLID=25; packages 94.1, F=0, SOLID=0) — PASS.
@@ -495,6 +495,8 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 - [x] **C7** — StockDetailDrawer overview tab вынесен в [`StockDetailOverviewTab.tsx`](../apps/web/src/components/wms/StockDetailOverviewTab.tsx); drawer state, operations loading, permissions и callbacks сохранены. Проверки: lint, tsc, targeted quality checker (72/100, C), `git diff --check` — PASS. Commit: `eab0fa1`.
 
 - [x] **C7.1** — spare-parts branch of [`EquipmentOperationalTabs.tsx`](../apps/web/src/components/eps/EquipmentOperationalTabs.tsx) вынесен в [`EquipmentSparePartsTab.tsx`](../apps/web/src/components/eps/EquipmentSparePartsTab.tsx); existing data, StatusBadge, DataTableWrapper and EmptyState contracts preserved. Проверки: lint, tsc, targeted quality checker, quality baseline и `git diff --check` — PASS. Commit: `15c8dc6`.
+
+- [x] **C9** — four-card KPI panel from [`EquipmentPassportOverview.tsx`](../apps/web/src/components/eps/EquipmentPassportOverview.tsx) вынесен в [`EquipmentPassportKpiPanel.tsx`](../apps/web/src/components/eps/EquipmentPassportKpiPanel.tsx); typed equipment contract and shared StatCard usage preserved. Проверки: lint, tsc, targeted quality checker, quality baseline и `git diff --check` — PASS. Commit: `667a03c`.
 
 Следующий bounded этап — C8: remaining P2/F-grade files and typed JSON boundaries.
 
