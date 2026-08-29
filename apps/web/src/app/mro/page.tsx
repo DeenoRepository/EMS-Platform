@@ -32,6 +32,7 @@ import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
 import MroSchedulesTable, { MaintenanceScheduleRow } from '@/components/mro/MroSchedulesTable';
 import { compareMaintenanceSchedules } from './schedule-sort';
+import { getMaintenanceScheduleStats } from './schedule-stats';
 
 const MRO_COLUMNS: TableColumnOption[] = [
   { id: 'scheduledDate', label: 'Плановый срок проведения', defaultVisible: true },
@@ -115,16 +116,7 @@ function MroPageContent() {
     fetchSchedules();
   };
 
-  const stats = useMemo(() => {
-    const now = new Date();
-    const total = schedules.length;
-    const overdue = schedules.filter(
-      (s) => s.status === 'MISSED' || (s.status === 'PLANNED' && new Date(s.scheduledDate) < now)
-    ).length;
-    const planned = schedules.filter((s) => s.status === 'PLANNED' && new Date(s.scheduledDate) >= now).length;
-    const completed = schedules.filter((s) => s.status === 'COMPLETED').length;
-    return { total, overdue, planned, completed };
-  }, [schedules]);
+  const stats = useMemo(() => getMaintenanceScheduleStats(schedules, new Date()), [schedules]);
 
   const sortedSchedules = useMemo(() => {
     const now = new Date();
