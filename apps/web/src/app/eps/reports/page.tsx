@@ -7,14 +7,8 @@ import {
   TextField,
   MenuItem,
   Button,
-  Chip,
-  Paper,
   Typography,
 } from '@mui/material';
-import TableChartIcon from '@mui/icons-material/TableChart';
-import BookmarkAddOutlinedIcon from '@mui/icons-material/BookmarkAddOutlined';
-import BookmarkOutlinedIcon from '@mui/icons-material/BookmarkOutlined';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ViewColumnOutlinedIcon from '@mui/icons-material/ViewColumnOutlined';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import SpeedIcon from '@mui/icons-material/Speed';
@@ -40,8 +34,9 @@ import {
 import ReportColumnBuilderDialog, { ReportColumn, IndustryPreset } from '@/components/eps/reports/ReportColumnBuilderDialog';
 import ReportSaveTemplateDialog from '@/components/eps/reports/ReportSaveTemplateDialog';
 import ReportDataTable from '@/components/eps/reports/ReportDataTable';
+import ReportPresetsToolbar from '@/components/eps/reports/ReportPresetsToolbar';
 
-interface SavedTemplate {
+export interface SavedTemplate {
   id: string;
   name: string;
   description: string | null;
@@ -625,65 +620,16 @@ function ReportBuilderContent() {
         </Grid>
       </Grid>
 
-      {/* Preset Chips and Save Template Banner */}
-      <Paper
-        variant="outlined"
-        sx={{
-          p: 1.5,
-          mb: 2.5,
-          borderRadius: '10px',
-          borderColor: 'divider',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: 1.5,
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-          <TableChartIcon sx={{ fontSize: 18, color: 'primary.main' }} />
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.8125rem' }}>
-            Пресеты:
-          </Typography>
-          {INDUSTRY_PRESETS.map((preset) => (
-            <Chip
-              key={preset.id}
-              label={preset.name}
-              size="small"
-              variant={activePresetOrTemplateId === preset.id ? 'filled' : 'outlined'}
-              color={activePresetOrTemplateId === preset.id ? 'primary' : 'default'}
-              onClick={() => handleApplyPreset(preset)}
-              clickable
-              sx={{ fontWeight: 600, fontSize: '0.75rem' }}
-            />
-          ))}
-
-          {templates.map((tmpl) => (
-            <Chip
-              key={tmpl.id}
-              icon={<BookmarkOutlinedIcon sx={{ fontSize: 14 }} />}
-              label={tmpl.name}
-              size="small"
-              variant={activePresetOrTemplateId === `tmpl_${tmpl.id}` ? 'filled' : 'outlined'}
-              color={activePresetOrTemplateId === `tmpl_${tmpl.id}` ? 'primary' : 'default'}
-              onClick={() => handleApplyTemplate(tmpl)}
-              onDelete={canManageTemplates ? () => setDeleteTemplateId(tmpl.id) : undefined}
-              deleteIcon={<DeleteOutlineIcon sx={{ fontSize: 14 }} />}
-              clickable
-              sx={{ fontWeight: 600, fontSize: '0.75rem' }}
-            />
-          ))}
-        </Box>
-
-        <Button
-          size="small"
-          startIcon={<BookmarkAddOutlinedIcon />}
-          onClick={() => setSaveTemplateOpen(true)}
-          sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.75rem' }}
-        >
-          Сохранить шаблон
-        </Button>
-      </Paper>
+      <ReportPresetsToolbar
+        presets={INDUSTRY_PRESETS}
+        templates={templates}
+        activePresetOrTemplateId={activePresetOrTemplateId}
+        canManageTemplates={canManageTemplates}
+        onApplyPreset={handleApplyPreset}
+        onApplyTemplate={handleApplyTemplate}
+        onDeleteTemplate={setDeleteTemplateId}
+        onSaveTemplate={() => setSaveTemplateOpen(true)}
+      />
 
       {/* Report Data Table */}
       <DataTableWrapper

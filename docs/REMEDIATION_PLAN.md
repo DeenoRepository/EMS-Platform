@@ -22,7 +22,7 @@
 | C2 — Warehouse topology modal | ✅ Выполнено: C2.1–C2.3 | MEDIUM |
 | C3 — WMS stock page | ✅ Выполнено: C3.1–C3.4 | MEDIUM |
 | C4 — Equipment wizard form | ✅ Выполнено: C4.1–C4.3 | MEDIUM |
-| C5 — EPS reports + import | ⏳ Открыта | MEDIUM |
+| C5 — EPS reports + import | ⏳ В работе: C5.1 ✅; C5.2a ✅; C5.2b–C5.4 открыты | MEDIUM |
 | C6 — P1 страницы > 600 строк | ⏳ Открыта | MEDIUM |
 | C7 — P2 F-файлы < 500 строк | ⏳ Открыта | LOW |
 | D — Типизация | ⏳ Открыта | P2 |
@@ -578,7 +578,7 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 5. **Quality checker** некорректно режет границы TSX-функций — всегда проверять вручную.
 6. **Не трогать:** `temp/`, `.env`, `uploads/`, `docker/jira/server.js` без отдельной задачи.
 7. **Не** массово заменять magic_number.
-8. **B3, B4, C1, C2, C3, C4.1 и C4.2 завершены.** Следующий этап — C4.3: финальная проверка C4.
+8. **B3, B4, C1, C2, C3 и C4 завершены.** C5.1 и C5.2a выполнены; следующий этап — C5.2b: Smart Import.
 9. **C-stories** могут идти параллельно на разных файлах (не пересекающихся).
 10. **Не снижать** quality baseline: web ≥ 78.0, F ≤ 38, packages ≥ 94.0, F=0.
 

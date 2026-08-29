@@ -7,8 +7,8 @@
 
 > **Вердикт: ✅ Approve with suggestions.**  
 > Все критические security findings из аудита 2026-08-27 (Stories A1–A3, B1–B2) подтверждены закрытыми.  
-> Quality baseline PASS: 78.8/100 (C), 0 rate-limit gaps, 0 hex-hardcode в компонентах.
-> B3, B4, C1, C2, C3, C4.1 и C4.2 завершены: admin-role checks унифицированы, production API logging paths переведены на structured `logger`, а крупные UI-области декомпозированы. Остаточный долг — 4 файла ≥ 700 строк без деградации качества ниже F.
+> Quality baseline PASS: 79.0/100 (C), 0 rate-limit gaps, 0 hex-hardcode в компонентах.
+> B3, B4, C1, C2, C3 и C4 завершены; C5.1 и C5.2a выполнены: admin-role checks унифицированы, production API logging paths переведены на structured `logger`, а крупные UI-области декомпозированы. Следующий этап — C5.2b Smart Import.
 
 ---
 
@@ -328,7 +328,7 @@ pnpm --filter @ems/web build
 | Quality baseline (79.0, F≤38) | ✅ PASS | поддерживать |
 | Test coverage (160 passed) | ✅ PASS | поддерживать |
 
-**Общий вердикт: ✅ Approve with suggestions.** Проект находится в стабильном рабочем состоянии. Критические проблемы безопасности и дизайна закрыты. B3, B4, C1, C2, C3, C4.1 и C4.2 выполнены; следующий bounded этап — C4.3: финальная проверка C4.
+**Общий вердикт: ✅ Approve with suggestions.** Проект находится в стабильном рабочем состоянии. Критические проблемы безопасности и дизайна закрыты. B3, B4 и C1–C4 выполнены; C5.1/C5.2a также прошли verification. Следующий bounded этап — C5.2b: Smart Import.
 
 ---
 
