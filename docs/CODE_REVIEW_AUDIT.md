@@ -1,26 +1,28 @@
 # EMS-Platform — Отчёт о инспекции кода
 
-> **Дата аудита:** 2026-08-27  
-> **Инструмент:** `code_quality_checker.py` (TypeScript/TSX) + ручной анализ  
-> **Покрытие:** `apps/web/src` — 219 файлов
-> **Итоговая оценка:** **C (73.7 / 100)**
-> **Вердикт:** ✅ **Remediation baseline verified** — критические security/UI findings из исходного аудита устранены в рамках проверенных историй; автоматический checker по-прежнему фиксирует остаточные low-priority smells и ограничения парсера.
+> **Дата аудита:** 2026-08-27 (baseline remediation)
+> **Повторная инспекция:** 2026-08-29 — см. [`PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md)
+> **Инструмент:** `code_quality_checker.py` (TypeScript/TSX) + ручной анализ
+> **Покрытие (2026-08-29):** `apps/web/src` — 279 файлов; `packages` — 30 файлов
+> **Итоговая оценка web:** **C (78.3 / 100)**; packages **A (94.1 / 100)**
+> **Вердикт:** ✅ **Quality baseline PASS** (`pnpm check:quality`). Критические security/UI findings из исходного аудита устранены; автоматический checker фиксирует остаточные low-priority smells и ограничения парсера TSX.
 
 ---
 
 ## Сводка результатов
 
-| Метрика | Значение |
-|---|---|
-| Проанализировано файлов | 219 |
-| Средний балл качества | 73.7 / 100 |
-| Общая оценка | **C** |
-| Итого замечаний (code smells) | **2 325** |
-| Нарушений SOLID | **28** |
-| Lint | ✅ Нет предупреждений и ошибок |
-| TypeScript | ✅ `tsc --noEmit` прошёл |
-| Production build | ✅ Next.js build прошёл |
-| Tests | ✅ 113 passed, 0 failed |
+| Метрика | 2026-08-27 | 2026-08-29 |
+|---|---|---|
+| Проанализировано файлов (web) | 219 | **279** |
+| Средний балл web | 73.7 / 100 | **78.3 / 100** |
+| Общая оценка web | C | **C** |
+| Code smells (web) | 2 325 | **2 353** |
+| SOLID (web) | 28 | **25** |
+| F-grade (web / packages) | — | **38 / 0** |
+| Packages score | — | **94.1 / 100 (A)** |
+| Quality baseline | — | **PASS** |
+| Theme hex | — | **0** |
+| Rate-limit gaps | — | **0 / 85 routes** |
 
 ### Ограничения автоматического отчёта
 
@@ -74,7 +76,7 @@ pnpm --filter @ems/web build
 python .agents\\skills\\code-reviewer\\scripts\\code_quality_checker.py apps\\web\\src --language typescript --json
 ```
 
-Результаты:
+Результаты 2026-08-27:
 
 - lint: pass, без warnings/errors;
 - TypeScript: pass;
@@ -82,8 +84,10 @@ python .agents\\skills\\code-reviewer\\scripts\\code_quality_checker.py apps\\we
 - production build: pass, 33 static pages generated;
 - quality scan: 219 files, 73.7/100, grade C, 2 325 smells, 28 SOLID findings.
 
+Повтор 2026-08-29 (`pnpm check:quality`, route audit, theme check): web 78.3/100, 2 353 smells, 25 SOLID, 38 F-grade; packages 94.1/100, 0 F-grade; baseline PASS. Актуальный план остаточного долга — [`PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md).
+
 Оставшиеся quality-scan findings относятся преимущественно к широкому legacy smell inventory, остаточной типизации/размеру отдельных presentation files и policy cleanup вне подтверждённых critical paths. Их следует устранять отдельными bounded stories с ручной проверкой, а не массовыми автоматическими заменами.
 
 ---
 
-*Аудит обновлён после remediation baseline. Версия правил: 2.0 (AGENTS.md).*
+*Аудит обновлён после инспекции 2026-08-29. Версия правил: 2.0 (AGENTS.md).*

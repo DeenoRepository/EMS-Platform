@@ -1,8 +1,8 @@
 # Стандарты качества кода — EMS-Platform
 
-> Обновлено: 2026-08-27 (по результатам code quality audit)  
-> Инструмент: `.agents/skills/code-reviewer/scripts/code_quality_checker.py`  
-> Текущий балл: apps/web — **72.8/100 (C)**, packages — **89.3/100 (B+)**
+> Обновлено: 2026-08-29 (повторная инспекция)
+> Инструмент: `.agents/skills/code-reviewer/scripts/code_quality_checker.py`
+> Текущий балл: apps/web — **78.3/100 (C)**, packages — **94.1/100 (A)**; `pnpm check:quality` PASS
 
 ---
 
