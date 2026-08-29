@@ -40,6 +40,7 @@ import { InventoryCountSheetDialog } from '@/components/wms';
 import { TableSortLabel } from '@mui/material';
 import WmsInventoryFilters from '@/components/wms/WmsInventoryFilters';
 import { countActiveInventoryFilters } from './filter-state';
+import { filterInventories, type InventoryItemSummary } from './inventory-filter';
 
 const INVENTORY_COLUMNS: TableColumnOption[] = [
   { id: 'code', label: 'Номер / Акт', defaultVisible: true, required: true },
@@ -50,19 +51,6 @@ const INVENTORY_COLUMNS: TableColumnOption[] = [
   { id: 'author', label: 'Ответственный', defaultVisible: true },
   { id: 'actions', label: 'Действия', defaultVisible: true, required: true },
 ];
-
-interface InventoryItemSummary {
-  id: string;
-  warehouseId: string;
-  status: string;
-  date: string;
-  comment?: string | null;
-  closedAt?: string | null;
-  createdAt: string;
-  warehouse: { name: string; code: string };
-  createdBy: { displayName: string };
-  _count: { items: number };
-}
 
 interface WarehouseOption {
   id: string;
@@ -194,20 +182,10 @@ export default function WmsInventoryListPage() {
 
   const activeFilterCount = countActiveInventoryFilters(search, selectedWarehouse, selectedStatus);
 
-  const filteredInventories = useMemo(() => {
-    return inventories.filter((inv) => {
-      if (selectedWarehouse && inv.warehouseId !== selectedWarehouse) return false;
-      if (selectedStatus && inv.status !== selectedStatus) return false;
-      if (search) {
-        const query = search.toLowerCase();
-        const codeMatch = `INV-${inv.id.slice(-6)}`.toLowerCase().includes(query);
-        const warehouseMatch = inv.warehouse.name.toLowerCase().includes(query) || inv.warehouse.code.toLowerCase().includes(query);
-        const authorMatch = inv.createdBy.displayName.toLowerCase().includes(query);
-        if (!codeMatch && !warehouseMatch && !authorMatch) return false;
-      }
-      return true;
-    });
-  }, [inventories, selectedWarehouse, selectedStatus, search]);
+  const filteredInventories = useMemo(
+    () => filterInventories(inventories, selectedWarehouse, selectedStatus, search),
+    [inventories, selectedWarehouse, selectedStatus, search]
+  );
 
   const sortedInventories = useMemo(() => {
     if (!sortField) return filteredInventories;
