@@ -481,7 +481,7 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 
 ### Story C6 — Остальные P1 страницы > 600 строк (decomposed into bounded stories)
 
-По одному коммиту, тот же рецепт. C6.1 inventory актуализирован; C6.2a, C6.3 и C6.5 завершены:
+По одному коммиту, тот же рецепт. C6.1 inventory актуализирован; C6.2a, C6.3, C6.5, C6.6 и C6.7 завершены:
 
 - [x] **C6.2a** — filter toolbar WMS inventory вынесен в [`WmsInventoryFilters.tsx`](../apps/web/src/components/wms/WmsInventoryFilters.tsx); filter/reset/pagination behavior сохранены. Проверки: lint, tsc, 160 тестов, route audit, theme check и quality baseline (web 79.3, F=36, SOLID=25) — PASS.
 - [x] **C6.3** — lifecycle-event mapping EPS equipment passport page вынесен в [`equipment-lifecycle-events.ts`](../apps/web/src/components/eps/equipment-lifecycle-events.ts); state, handlers и API contracts сохранены в [`page.tsx`](../apps/web/src/app/eps/[id]/page.tsx). Проверки: lint, tsc, 160 тестов, route audit, theme check, `git diff --check` и quality baseline (web 79.4, F=36, SOLID=25; packages 94.1, F=0, SOLID=0) — PASS.
@@ -490,7 +490,7 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 
 - [x] **C6.6** — warehouse submit request builder вынесен в [`warehouse-submit.ts`](../apps/web/src/app/wms/warehouses/warehouse-submit.ts); submit payload, endpoint selection и validation behavior сохранены. Commit: `5613e7a`.
 
-Следующий bounded этап — C6.6: оставшиеся P1/F-grade файлы.
+Следующий bounded этап — C6.8: оставшиеся P1/F-grade файлы.
 
 C6.5 закрыта отдельным коммитом `9203fa6`; последующие изменения должны сохранять payload shape и API contract setup flow.
 
@@ -607,7 +607,7 @@ Commit template: `refactor(srm): type webhook payload as unknown and narrow`
 5. **Quality checker** некорректно режет границы TSX-функций — всегда проверять вручную.
 6. **Не трогать:** `temp/`, `.env`, `uploads/`, `docker/jira/server.js` без отдельной задачи.
 7. **Не** массово заменять magic_number.
-8. **B3, B4, C1–C5, C6.2a, C6.3 и C6.5 завершены.** Следующий этап — C6.6: следующий P1/F-grade bounded файл.
+8. **B3, B4, C1–C5, C6.2a, C6.3, C6.5, C6.6 и C6.7 завершены.** Следующий этап — C6.8: следующий P1/F-grade bounded файл.
 9. **C-stories** могут идти параллельно на разных файлах (не пересекающихся).
 10. **Не снижать** quality baseline: web ≥ 78.0, F ≤ 38, packages ≥ 94.0, F=0.
 
