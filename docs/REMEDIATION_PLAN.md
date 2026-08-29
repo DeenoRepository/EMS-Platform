@@ -20,7 +20,7 @@
 | **B4 — console.* остаток в API** | ✅ Выполнено (2026-08-29) | LOW |
 | C1 — Admin settings page | ✅ Выполнено: C1.1–C1.4 | MEDIUM |
 | C2 — Warehouse topology modal | ✅ Выполнено: C2.1–C2.3 | MEDIUM |
-| C3 — WMS stock page | ⏳ Открыта | MEDIUM |
+| C3 — WMS stock page | ⏳ В работе: C3.1 ✅; C3.2–C3.4 открыты | MEDIUM |
 | C4 — Equipment wizard form | ⏳ Открыта | MEDIUM |
 | C5 — EPS reports + import | ⏳ Открыта | MEDIUM |
 | C6 — P1 страницы > 600 строк | ⏳ Открыта | MEDIUM |
@@ -408,7 +408,7 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 
 Коммиты: `46b1e10` — `refactor(wms): extract warehouse zones navigation`; `f463c9d` — `refactor(wms): extract active zone and cell grid panel`.
 
-### Story C3 — WMS stock page (905 строк)
+### Story C3 — WMS stock page (905 строк; decomposed into C3.1–C3.4)
 
 **Файл:** [`apps/web/src/app/wms/stock/page.tsx`](../apps/web/src/app/wms/stock/page.tsx)  
 **Скиллы:** `senior-frontend`  
@@ -417,7 +417,19 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 Вынести: filter model, sort handler, zone loader, table section.  
 Использовать `FilterToolbar`, `SearchInput`, `DataTableWrapper`, `EmptyState`.
 
-Коммит: `refactor(wms): extract stock page data and filter model`
+### C3.1 — Filter toolbar/model ✅
+
+**Статус:** завершено 2026-08-29.
+**Файлы:** [`WmsStockFilters.tsx`](../apps/web/src/components/wms/WmsStockFilters.tsx), [`wms/stock/page.tsx`](../apps/web/src/app/wms/stock/page.tsx).
+**Результат:** фильтры склада/зоны/категории, SearchInput, low-stock switch и ExportButton вынесены в typed shared-UI wrapper; state, pagination, export и dictionary loading остались в route owner. Option-типы экспортированы из page для type-safe props. API и поведение не изменены.
+**Проверки:** lint, tsc, 160 тестов, route audit, theme check, quality baseline (web 78.7, F=37, SOLID=25) — PASS.
+
+**Следующие под-stories C3:**
+
+- [ ] **C3.2** — финально проверить/при необходимости доработать [`WmsStockTable.tsx`](../apps/web/src/components/wms/WmsStockTable.tsx) и вынести только оставшиеся table-owner concerns.
+- [ ] **C3.3** — полный verification после table story и обновление inspection docs.
+- [ ] **C3.4** — отдельный Conventional Commit для C3.
+
 
 ### Story C4 — Equipment wizard form (843 строк)
 

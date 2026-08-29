@@ -9,8 +9,6 @@ import {
   Grid,
   TextField,
   MenuItem,
-  FormControlLabel,
-  Switch,
   Button,
   Checkbox,
   Table,
@@ -39,7 +37,6 @@ import CreateNomenclatureDialog from '@/components/wms/CreateNomenclatureDialog'
 import {
   StockDetailDrawer,
   PrintBarcodeModal,
-  WarehouseSelect,
   WmsOperationWizardDialog,
   EditNomenclatureDialog,
   type PrintableLabelItem,
@@ -52,19 +49,17 @@ import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS } from '@ems/shared';
 import {
   StatusBadge,
-  SearchInput,
-  FilterToolbar,
   EmptyState,
   DataTableWrapper,
   CriticalAlertBanner,
   BulkActionBar,
   PageLoading,
   FormDialog,
-  ExportButton,
   type ExportFormat,
   type TableColumnOption,
 } from '@/components/ui';
 import { WmsStockTable } from '@/components/wms/WmsStockTable';
+import WmsStockFilters from '@/components/wms/WmsStockFilters';
 
 export interface StockRow {
   id: string;
@@ -92,18 +87,18 @@ export interface StockRow {
   updatedAt: string;
 }
 
-interface WarehouseOption {
+export interface WarehouseOption {
   id: string;
   name: string;
   code: string;
 }
 
-interface CategoryOption {
+export interface CategoryOption {
   id: string;
   name: string;
 }
 
-interface ZoneOption {
+export interface ZoneOption {
   id: string;
   name: string;
   code: string;
@@ -603,126 +598,43 @@ function WmsStockContent() {
           />
         }
         toolbar={
-          <FilterToolbar
-            variant="embedded"
+          <WmsStockFilters
             activeFilterCount={activeFilterCount}
+            selectedWarehouse={selectedWarehouse}
+            selectedZone={selectedZone}
+            selectedCategory={selectedCategory}
+            search={search}
+            lowStockOnly={lowStockOnly}
+            warehouses={warehouses}
+            zones={zones}
+            categories={categories}
+            items={items}
+            currentUserId={user?.userId}
+            canManageSettings={hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) || user?.roles?.includes('admin') === true}
             onResetFilters={handleResetFilters}
-            actions={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: 'wrap' }}>
-                <WarehouseSelect
-                  value={selectedWarehouse}
-                  onChange={(val) => {
-                    setSelectedWarehouse(val);
-                    setSelectedZone('');
-                    setPage(0);
-                  }}
-                  warehouses={warehouses}
-                  isAdmin={hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) || user?.roles?.includes('admin')}
-                  currentUserId={user?.userId}
-                />
-
-                {selectedWarehouse && zones.length > 0 && (
-                  <TextField
-                    select
-                    size="small"
-                    value={selectedZone}
-                    onChange={(e) => {
-                      setSelectedZone(e.target.value);
-                      setPage(0);
-                    }}
-                    SelectProps={{
-                      displayEmpty: true,
-                    }}
-                    sx={{
-                      minWidth: 140,
-                      backgroundColor: 'background.paper',
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: '8px',
-                        fontSize: '0.8125rem',
-                        height: 36,
-                        '& fieldset': { borderColor: 'divider' },
-                        '&:hover fieldset': { borderColor: 'grey.400' },
-                      },
-                    }}
-                  >
-                    <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все зоны</MenuItem>
-                    {zones.map((z) => (
-                      <MenuItem key={z.id} value={z.id} sx={{ fontSize: '0.8125rem' }}>
-                        {z.name} ({z.code})
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                )}
-
-                <TextField
-                  select
-                  size="small"
-                  value={selectedCategory}
-                  onChange={(e) => {
-                    setSelectedCategory(e.target.value);
-                    setPage(0);
-                  }}
-                  SelectProps={{
-                    displayEmpty: true,
-                  }}
-                  sx={{
-                    minWidth: 160,
-                    backgroundColor: 'background.paper',
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '8px',
-                      fontSize: '0.8125rem',
-                      height: 36,
-                      '& fieldset': { borderColor: 'divider' },
-                      '&:hover fieldset': { borderColor: 'grey.400' },
-                    },
-                  }}
-                >
-                  <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все категории</MenuItem>
-                  {categories.map((c) => (
-                    <MenuItem key={c.id} value={c.id} sx={{ fontSize: '0.8125rem' }}>
-                      {c.name}
-                    </MenuItem>
-                  ))}
-                </TextField>
-
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={lowStockOnly}
-                      color="warning"
-                      size="small"
-                      onChange={(e) => {
-                        setLowStockOnly(e.target.checked);
-                        setPage(0);
-                      }}
-                    />
-                  }
-                  label={
-                    <Typography variant="body2" fontWeight={600} color={lowStockOnly ? 'warning.dark' : 'text.primary'} sx={{ fontSize: '0.8125rem' }}>
-                      Только дефицит
-                    </Typography>
-                  }
-                  sx={{ m: 0 }}
-                />
-                <ExportButton
-                  onExport={handleExport}
-                  formats={['xlsx', 'csv']}
-                  disabled={items.length === 0}
-                />
-              </Box>
-            }
-          >
-            <Box sx={{ minWidth: { xs: '100%', sm: 260, md: 320 }, flexGrow: 1 }}>
-              <SearchInput
-                value={search}
-                placeholder="Поиск по названию или артикулу..."
-                onSearch={(val) => {
-                  setSearch(val);
-                  setPage(0);
-                }}
-              />
-            </Box>
-          </FilterToolbar>
+            onWarehouseChange={(value) => {
+              setSelectedWarehouse(value);
+              setSelectedZone('');
+              setPage(0);
+            }}
+            onZoneChange={(value) => {
+              setSelectedZone(value);
+              setPage(0);
+            }}
+            onCategoryChange={(value) => {
+              setSelectedCategory(value);
+              setPage(0);
+            }}
+            onLowStockChange={(value) => {
+              setLowStockOnly(value);
+              setPage(0);
+            }}
+            onSearchChange={(value) => {
+              setSearch(value);
+              setPage(0);
+            }}
+            onExport={handleExport}
+          />
         }
       >
         <WmsStockTable
