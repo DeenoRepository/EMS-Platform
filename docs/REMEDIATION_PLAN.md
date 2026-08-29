@@ -22,7 +22,7 @@
 | C2 — Warehouse topology modal | ✅ Выполнено: C2.1–C2.3 | MEDIUM |
 | C3 — WMS stock page | ✅ Выполнено: C3.1–C3.4 | MEDIUM |
 | C4 — Equipment wizard form | ✅ Выполнено: C4.1–C4.3 | MEDIUM |
-| C5 — EPS reports + import | ⏳ В работе: C5.1 ✅; C5.2a ✅; C5.2b–C5.4 открыты | MEDIUM |
+| C5 — EPS reports + import | ⏳ В работе: C5.1 ✅; C5.2a ✅; C5.2b.1 ✅; C5.2b.2–C5.4 открыты | MEDIUM |
 | C6 — P1 страницы > 600 строк | ⏳ Открыта | MEDIUM |
 | C7 — P2 F-файлы < 500 строк | ⏳ Открыта | LOW |
 | D — Типизация | ⏳ Открыта | P2 |
@@ -456,12 +456,25 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 
 ### Story C5 — EPS reports (842) + Smart import (820)
 
-**Оценка:** 2 дня, **два коммита**
+**Оценка:** 2 дня, **несколько bounded коммитов**
 
 - Reports: column builder / export JSON уже частично в `components/eps/reports/` — донести остаток `ReportBuilderContent`.
 - Import: `handleAnalyzeFile` / `handleExecuteImport` в service helpers рядом с [`eps-import-helpers.ts`](../apps/web/src/lib/eps-import-helpers.ts). Добавить fixture test на collision/error counts.
 
-Коммиты:
+### C5.2b.1 — Smart Import upload step ✅
+
+**Статус:** завершено 2026-08-29.
+**Файлы:** [`SmartImportUploadStep.tsx`](../apps/web/src/components/eps/SmartImportUploadStep.tsx), [`SmartImportWizard.tsx`](../apps/web/src/components/eps/SmartImportWizard.tsx).
+**Результат:** STEP 0 загрузки файла и reference-template panel вынесены в presentation-компонент; selected file, analyzing state и analyze/download handlers сохранены в wizard. API behavior не изменён.
+**Проверки:** lint, tsc, 160 тестов, route audit, theme check и quality baseline (web 79.1, F=36, SOLID=25) — PASS.
+
+**Следующие под-stories C5.2b:**
+
+- [ ] **C5.2b.2** — вынести mapping/missing-fields presentation.
+- [ ] **C5.2b.3** — вынести preview/conflict presentation.
+- [ ] **C5.2b.4** — вынести execute payload preparation без изменения API contract.
+
+Коммит:
 
 - `refactor(eps): extract report builder content from page`
 - `refactor(eps): extract smart import analyze/execute handlers`
