@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback, Suspense, useMemo } from 'react';
-import { Box, Grid, MenuItem, TextField } from '@mui/material';
+import { Box, Grid } from '@mui/material';
 import { useSearchParams, useRouter } from 'next/navigation';
 import PageHeader from '@/components/layout/PageHeader';
 import MoveToInboxIcon from '@mui/icons-material/MoveToInbox';
@@ -17,10 +17,7 @@ import { useWarehouseAccess } from '@/hooks/useWarehouseAccess';
 import { PERMISSIONS } from '@ems/shared';
 import {
   StatCard,
-  FilterToolbar,
-  DataTableWrapper,
   PageLoading,
-  SearchInput,
   NavTabsContainer,
   type TableColumnOption,
   type TabItem,
@@ -33,7 +30,8 @@ import {
   TransferRequestDialog,
   type OperationType,
 } from '@/components/wms';
-import WmsOperationsTable, { StockOperationRecord } from '@/components/wms/WmsOperationsTable';
+import { StockOperationRecord } from '@/components/wms/WmsOperationsTable';
+import WmsOperationsTablePanel from '@/components/wms/WmsOperationsTablePanel';
 import WmsTransfersTablePanel from '@/components/wms/WmsTransfersTablePanel';
 import type { StockTransferRecord } from '@/components/wms/WmsTransfersTable';
 import { dispatchWmsTransfer } from './quick-dispatch';
@@ -338,81 +336,51 @@ function WmsOperationsContent() {
             </Grid>
           </Grid>
 
-          <DataTableWrapper
+          <WmsOperationsTablePanel
+            operations={operations}
+            isLoading={isLoadingOps}
             columns={OPERATIONS_COLUMNS}
             visibleColumns={visibleOpsColumns}
-            onVisibleColumnsChange={setVisibleOpsColumns}
-            storageKey="wms_operations_table_v2"
-            toolbar={
-              <FilterToolbar
-                variant="embedded"
-                activeFilterCount={activeFiltersCount}
-                onResetFilters={() => {
-                  setSelectedType('');
-                  setSelectedWarehouse('');
-                  setOpsSearch('');
-                  setOpsPage(0);
-                }}
-              >
-                <Box sx={{ minWidth: { xs: '100%', sm: 260 } }}>
-                  <SearchInput
-                    placeholder="Поиск по ТМЦ, получателю..."
-                    value={opsSearch}
-                    onSearch={(v: string) => {
-                      setOpsSearch(v);
-                      setOpsPage(0);
-                    }}
-                  />
-                </Box>
-                <TextField
-                  select
-                  size="small"
-                  label="Тип операции"
-                  value={selectedType}
-                  onChange={(e) => {
-                    setSelectedType(e.target.value);
-                    setOpsPage(0);
-                  }}
-                  sx={{ minWidth: { xs: '100%', sm: 200 } }}
-                >
-                  <MenuItem value="">Все типы</MenuItem>
-                  <MenuItem value="RECEIPT">Приход ТМЦ</MenuItem>
-                  <MenuItem value="ISSUE_EMPLOYEE">Выдача сотруднику</MenuItem>
-                  <MenuItem value="ISSUE_WRITE_OFF">Списание ТМЦ / ТОиР</MenuItem>
-                  <MenuItem value="TRANSFER">Межскладское перемещение</MenuItem>
-                </TextField>
-                <WarehouseSelect
-                  value={selectedWarehouse}
-                  onChange={(val) => {
-                    setSelectedWarehouse(val);
-                    setOpsPage(0);
-                  }}
-                  warehouses={availableWarehouses}
-                  isAdmin={isAdmin}
-                  currentUserId={user?.userId}
-                />
-              </FilterToolbar>
-            }
-            total={opsTotal}
+            selectedType={selectedType}
+            selectedWarehouse={selectedWarehouse}
+            search={opsSearch}
+            activeFilterCount={activeFiltersCount}
             page={opsPage}
-            pageSize={opsRowsPerPage}
-            onPageChange={(_, newPage) => setOpsPage(newPage)}
-            onPageSizeChange={(e) => {
-              setOpsRowsPerPage(parseInt(e.target.value, 10));
+            rowsPerPage={opsRowsPerPage}
+            total={opsTotal}
+            availableWarehouses={availableWarehouses}
+            isAdmin={isAdmin}
+            currentUserId={user?.userId}
+            canCreateOperation={canCreate}
+            onVisibleColumnsChange={setVisibleOpsColumns}
+            onTypeChange={(value) => {
+              setSelectedType(value);
               setOpsPage(0);
             }}
-            loading={isLoadingOps}
-          >
-            <WmsOperationsTable
-              operations={operations}
-              visibleColumns={visibleOpsColumns}
-              canCreateOperation={canCreate}
-              onOpenWizard={() => {
-                setWizardType('RECEIPT');
-                setIsWizardOpen(true);
-              }}
-            />
-          </DataTableWrapper>
+            onWarehouseChange={(value) => {
+              setSelectedWarehouse(value);
+              setOpsPage(0);
+            }}
+            onSearchChange={(value) => {
+              setOpsSearch(value);
+              setOpsPage(0);
+            }}
+            onResetFilters={() => {
+              setSelectedType('');
+              setSelectedWarehouse('');
+              setOpsSearch('');
+              setOpsPage(0);
+            }}
+            onPageChange={setOpsPage}
+            onPageSizeChange={(pageSize) => {
+              setOpsRowsPerPage(pageSize);
+              setOpsPage(0);
+            }}
+            onOpenWizard={() => {
+              setWizardType('RECEIPT');
+              setIsWizardOpen(true);
+            }}
+          />
         </>
       )}
 
