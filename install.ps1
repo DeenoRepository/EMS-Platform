@@ -2,7 +2,7 @@
 # Encoding: UTF-8
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-$Host.UI.RawUI.WindowTitle = "Установщик EMS Platform (Production & Setup Wizard)"
+$Host.UI.RawUI.WindowTitle = "Установщик EMS Platform (Local Development & Setup Wizard)"
 
 function Write-Header {
     Clear-Host
@@ -47,7 +47,7 @@ if (-not (Test-Path ".env")) {
 # 3. Выбор сценария запуска
 Write-Host "`n[3/4] Выбор сценария развертывания EMS Platform:" -ForegroundColor Cyan
 Write-Host "----------------------------------------------------------------------" -ForegroundColor Gray
-Write-Host " 1. [Рекомендуется] Запустить Production стек в Docker (Postgres + OpenLDAP + Web)" -ForegroundColor White
+Write-Host " 1. [Рекомендуется] Запустить локальный Docker dev-стек (Postgres + OpenLDAP + Web)" -ForegroundColor White
 Write-Host " 2. Запустить локальный Production билд (pnpm build && pnpm start)" -ForegroundColor White
 Write-Host " 3. Запустить режим разработки (pnpm dev)" -ForegroundColor White
 Write-Host " 4. Запустить диагностические тесты (pnpm test)" -ForegroundColor White
@@ -59,7 +59,7 @@ if (-not $choice) { $choice = "1" }
 
 switch ($choice) {
     "1" {
-        Write-Host "`n[4/4] Сборка и запуск Production стека через Docker Compose..." -ForegroundColor Green
+        Write-Host "`n[4/4] Сборка и запуск локального dev-стека через Docker Compose..." -ForegroundColor Green
         docker compose up -d --build
         if ($LASTEXITCODE -eq 0) {
             Write-Host "`n✓ Все контейнеры успешно запущены!" -ForegroundColor Green

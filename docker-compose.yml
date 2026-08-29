@@ -1,3 +1,8 @@
+# EMS Platform — LOCAL DEVELOPMENT ONLY
+# Do not use this file for production deployments.
+# Production: docker compose -f docker-compose.prod.yml up -d --build
+# Offline production: docker compose -f docker-compose.offline.yml up -d
+
 services:
   # ----------------------------------------------------------------------------
   # 1. PostgreSQL Database Service
@@ -8,7 +13,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgrespassword}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required; copy .env.example for local development}
       POSTGRES_DB: ${POSTGRES_DB:-ems_db}
     ports:
       - "${POSTGRES_BIND_IP:-127.0.0.1}:5432:5432"
@@ -33,7 +38,7 @@ services:
     environment:
       LDAP_ORGANISATION: "EMS Enterprise"
       LDAP_DOMAIN: "company.local"
-      LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD:-adminpassword}
+      LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD:?LDAP_ADMIN_PASSWORD is required; copy .env.example for local development}
     ports:
       - "389:389"
       - "636:636"
@@ -41,7 +46,7 @@ services:
       - ldap_data:/var/lib/ldap
       - ldap_config:/etc/ldap/slapd.d
     healthcheck:
-      test: ["CMD-SHELL", "ldapsearch -x -H ldap://localhost:389 -b dc=company,dc=local -D cn=admin,dc=company,dc=local -w ${LDAP_ADMIN_PASSWORD:-adminpassword} '(objectclass=*)' || exit 1"]
+      test: ["CMD-SHELL", "ldapsearch -x -H ldap://localhost:389 -b dc=company,dc=local -D cn=admin,dc=company,dc=local -w ${LDAP_ADMIN_PASSWORD:?LDAP_ADMIN_PASSWORD is required} '(objectclass=*)' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -59,11 +64,11 @@ services:
     container_name: ems_platform
     restart: unless-stopped
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgrespassword@postgres:5432/ems_db?schema=public}
-      JWT_SECRET: ${JWT_SECRET:-8f7b2c9a1d4e6f3a5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f90}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required; copy .env.example for local development}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required; copy .env.example for local development}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-8h}
-      NODE_ENV: production
+      NODE_ENV: development
       UPLOAD_DIR: "/app/uploads"
       PORT: 3000
       LDAP_ENABLED: ${LDAP_ENABLED:-true}
@@ -75,7 +80,7 @@ services:
       SRM_PROVIDER_URL: ${SRM_PROVIDER_URL:-http://jira:8080}
       SRM_PROVIDER_TYPE: ${SRM_PROVIDER_TYPE:-JIRA}
       LDAP_BIND_DN: ${LDAP_BIND_DN:-cn=admin,dc=company,dc=local}
-      LDAP_BIND_PASSWORD: ${LDAP_BIND_PASSWORD:-adminpassword}
+      LDAP_BIND_PASSWORD: ${LDAP_BIND_PASSWORD:?LDAP_BIND_PASSWORD is required; copy .env.example for local development}
       LDAP_SEARCH_BASE: ${LDAP_SEARCH_BASE:-dc=company,dc=local}
     ports:
       - "3000:3000"

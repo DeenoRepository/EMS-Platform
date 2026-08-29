@@ -209,10 +209,16 @@ describe('API Security and Hardening Regressions', () => {
       }
     });
 
-    test('production compose templates require secrets without fallback defaults', () => {
+    test('compose templates require secrets without committed fallback defaults', () => {
+      const devCompose = readRepositoryFile('docker-compose.yml');
       const prodCompose = readRepositoryFile('docker-compose.prod.yml');
       const offlineCompose = readRepositoryFile('docker-compose.offline.yml');
 
+      assert.match(devCompose, /^# EMS Platform — LOCAL DEVELOPMENT ONLY$/m);
+      assert.match(devCompose, /NODE_ENV:\s*development/);
+      assert.match(devCompose, /POSTGRES_PASSWORD:\s*\$\{POSTGRES_PASSWORD:\?/);
+      assert.match(devCompose, /JWT_SECRET:\s*\$\{JWT_SECRET:\?/);
+      assert.doesNotMatch(devCompose, /postgrespassword|adminpassword|8f7b2c9a1d4e6f3a5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f90/);
       assert.match(prodCompose, /POSTGRES_PASSWORD:\s*\$\{POSTGRES_PASSWORD:\?/);
       assert.match(prodCompose, /JWT_SECRET:\s*\$\{JWT_SECRET:\?/);
       assert.match(offlineCompose, /POSTGRES_PASSWORD:\s*\$\{POSTGRES_PASSWORD:\?/);

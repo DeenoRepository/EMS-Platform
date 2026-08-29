@@ -100,9 +100,10 @@
 
 ---
 
-### Story A3 — Dev compose не маскируется под production (S1)
+### Story A3 — Dev compose не маскируется под production (S1) — ✅ выполнено
 
-**Приоритет:** P2 / Medium  
+**Статус:** завершено 2026-08-29; local compose явно отделён от production, требует `.env` variables и использует `NODE_ENV=development`.
+**Приоритет:** P2 / Medium
 **Скиллы:** `docker-development`, `senior-security`  
 **Оценка:** 0.5–1 день
 
@@ -117,8 +118,11 @@
 
 **DoD:**
 
-- Prod/offline compose без plaintext fallback JWT/password.
-- Документ деплоя указывает только `docker-compose.prod.yml` / `docker-compose.offline.yml`.
+- [x] `docker-compose.yml` помечен LOCAL DEVELOPMENT ONLY и использует `NODE_ENV=development`.
+- [x] Dev compose требует `POSTGRES_PASSWORD`, `DATABASE_URL`, `JWT_SECRET`, LDAP passwords без plaintext fallback.
+- [x] Prod/offline compose без plaintext fallback JWT/password.
+- [x] Установщики обозначают основной compose как local dev; production guide указывает только `docker-compose.prod.yml` / `docker-compose.offline.yml`.
+- [x] Compose config validation и security regression test проходят.
 - Коммит: `fix(security): stop shipping production NODE_ENV with default secrets in dev compose`
 
 ---

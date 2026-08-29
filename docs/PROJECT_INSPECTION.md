@@ -1,11 +1,11 @@
 # EMS-Platform — инспекция проекта
 
-**Дата инспекции:** 2026-08-29 (повтор, HEAD `0f57ab3`)
-**Ветка:** `main` @ `0f57ab3` (`docs: add bounded remediation plan from 2026-08-29 inspection`)
+**Дата инспекции:** 2026-08-29 (обновляется bounded remediation stories)
+**Ветка:** `main` (см. последние Conventional Commits в Git history)
 **Инструменты:** `code-reviewer` (`code_quality_checker.py`, `pr_analyzer.py`), [`scripts/inspect_summary.py`](../scripts/inspect_summary.py), [`scripts/fgrade_detail.py`](../scripts/fgrade_detail.py), [`scripts/route_audit.py`](../scripts/route_audit.py), [`scripts/check-theme-tokens.mjs`](../scripts/check-theme-tokens.mjs), [`scripts/check-quality-baseline.mjs`](../scripts/check-quality-baseline.mjs)
 **Правила:** [`AGENTS.md`](../AGENTS.md), [`.agents/rules/security.md`](../.agents/rules/security.md), [`.agents/rules/code_quality.md`](../.agents/rules/code_quality.md), [`.agents/rules/ui_design_code.md`](../.agents/rules/ui_design_code.md), `.agents/skills/code-reviewer/rules/universal.md`, `.agents/skills/code-reviewer/languages/typescript.md`.
 
-> **Вердикт:** Approve with suggestions. Quality baseline проходит. Критические security findings из аудита 2026-08-27 закрыты. Остаточный долг — F-grade presentation-файлы (ровно на пороге 38), local-dev секреты в `docker-compose.yml`, unsigned webhook без секрета, `console.error` на async-путях, Chip вместо `StatusBadge` в паспорте оборудования.
+> **Вердикт:** Approve with suggestions. Quality baseline проходит. Критические security/UI findings из аудита 2026-08-27 закрыты bounded stories A1–A3, B1–B2. Остаточный долг — F-grade presentation-файлы (ровно на пороге 38) и legacy raw `console.error` вне B1.
 
 ---
 
@@ -60,7 +60,7 @@ Lint / tsc / full test / production build в этой сессии не пере
 - Files API: auth + `normalizeStoredFilePath` + `canReadStoredFile` + `resolvedFullPath.startsWith(uploadRoot)`.
 - Notifications: фильтр `where: { userId: user.userId }` — object-level ownership, RBAC не требуется.
 - Setup reinstall: после `.installed` требуется роль `admin`.
-- Production compose: `POSTGRES_PASSWORD:?` и `JWT_SECRET:?` без fallback.
+- Compose policy: [`docker-compose.yml`](../docker-compose.yml) — explicit local development only (`NODE_ENV=development`, required secrets); production/offline compose требуют `POSTGRES_PASSWORD` и `JWT_SECRET` без fallback.
 - Setup UI: пустые password fields; `reset-admin` требует `ADMIN_PASSWORD` / argv, без `admin123`.
 - `dangerouslySetInnerHTML` только в [`ThemeRegistry.tsx`](../apps/web/src/theme/ThemeRegistry.tsx) для Emotion CSS (не user HTML).
 
@@ -73,13 +73,11 @@ Heuristic `getCurrentUser` без `PERMISSIONS.*` (10 маршрутов): logou
 
 ### Остаточный риск (не P0, но не закрывать молча)
 
-| ID | Severity | Finding | Evidence | Рекомендация |
-|---|---|---|---|---|
-| S1 | Medium | Dev [`docker-compose.yml`](../docker-compose.yml:11) содержит fallback `postgrespassword`, `adminpassword`, статический JWT. `NODE_ENV=production` на этом стеке. | compose lines 11, 36, 62–63, 78 | Оставить только для local-dev; не использовать файл как prod path. `docker-compose.prod.yml` уже строгий. |
-| S5 | Low | Login route логирует LDAP-ошибки через `console.error`, не `logger`. | [`login/route.ts`](../apps/web/src/app/api/auth/login/route.ts:49) | Перевести на structured logger. |
+Legacy raw `console.error` в routes/components вне B1 остаётся отдельным observability debt. Он должен устраняться короткими bounded batches, не массовой заменой.
 
 Закрыто в Story A1: S2 (`JIRA_API_TOKEN` заменён на placeholder) и S3 (LDAP-пароли проверяются по общему `DANGEROUS_DEFAULTS`); добавлены regression-тесты.
 Закрыто в Story A2: S4 — активные интеграции без секрета отклоняются с 401/400, unsigned режим доступен только при явном `allowUnsignedWebhooks === true`; секреты маскируются в API-ответах.
+Закрыто в Story A3: S1 — [`docker-compose.yml`](../docker-compose.yml) явно local-only, требует secrets из `.env` и запускает web container в development mode.
 
 Локальный `.env` содержит demo-пароли — файл в `.gitignore`, в Git не попадает.
 
@@ -153,10 +151,9 @@ B1 закрыла подтверждённый bounded список:
 
 Подробный план с шагами, DoD и расписанием: [`docs/REMEDIATION_PLAN.md`](REMEDIATION_PLAN.md).
 
-1. **A3:** убрать production-like default secrets из dev [`docker-compose.yml`](../docker-compose.yml:11) или явно отделить local-only профиль.
-2. **Legacy logging:** отдельная полная миграция оставшихся raw `console.error` с bounded batches.
-3. **Admin settings / WMS topology / EPS wizard** — по одному PR, без смены API contract.
-4. **Не трогать** массово 1911 `magic_number`: выделять только domain constants (лимиты, статусы, timeouts).
+1. **Legacy logging:** отдельная полная миграция оставшихся raw `console.error` с bounded batches.
+2. **Admin settings / WMS topology / EPS wizard** — по одному PR, без смены API contract.
+3. **Не трогать** массово 1911 `magic_number`: выделять только domain constants (лимиты, статусы, timeouts).
 
 Каждая story: Conventional Commit, lint + tsc + targeted tests; security/API — полный `pnpm test` и `python scripts/route_audit.py`.
 
@@ -168,7 +165,7 @@ B1 закрыла подтверждённый bounded список:
 - [x] Theme token check PASS
 - [x] Route audit: 0 rate-limit gaps
 - [x] Webhook fail-closed при заданном секрете
-- [x] Production compose требует секреты
+- [x] Dev/prod/offline compose profiles require secrets and are correctly separated
 - [x] Packages без F-grade
 - [x] `.env.example` без demo Jira token; LDAP `adminpassword` блокируется валидатором
 - [x] Unsigned webhook закрыт политикой: секрет обязателен для active, либо явный opt-in

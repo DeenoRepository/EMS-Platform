@@ -35,7 +35,7 @@ choice=${choice:-1}
 
 case $choice in
     1)
-        echo -e "\n${GREEN}Сборка и запуск Production стека через Docker Compose...${NC}"
+        echo -e "\n${GREEN}Сборка и запуск локального dev-стека через Docker Compose...${NC}"
         docker compose up -d --build
         echo -e "\n${GREEN}✓ Контейнеры запущены! Откройте в браузере: http://localhost:3000/setup${NC}"
         ;;

@@ -74,6 +74,8 @@ chmod +x scripts/prod-deploy.sh
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
+> Не используйте [`docker-compose.yml`](../docker-compose.yml) для production: это локальный development stack, который запускается только с явными значениями из `.env` и использует `NODE_ENV=development`. Для изолированной среды используйте [`docker-compose.offline.yml`](../docker-compose.offline.yml).
+
 ---
 
 ## 4. Конфигурация Nginx & SSL/TLS (HTTPS)
