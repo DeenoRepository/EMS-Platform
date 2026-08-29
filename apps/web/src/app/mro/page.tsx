@@ -33,6 +33,7 @@ import { useSnackbar } from 'notistack';
 import MroSchedulesTable, { MaintenanceScheduleRow } from '@/components/mro/MroSchedulesTable';
 import { compareMaintenanceSchedules } from './schedule-sort';
 import { getMaintenanceScheduleStats } from './schedule-stats';
+import { toMroExecutionSchedule, type MroExecutionSchedule } from './schedule-execution-model';
 
 const MRO_COLUMNS: TableColumnOption[] = [
   { id: 'scheduledDate', label: 'Плановый срок проведения', defaultVisible: true },
@@ -60,7 +61,7 @@ function MroPageContent() {
   const [periodicityFilter, setPeriodicityFilter] = useState('');
 
   // Execution Wizard State
-  const [selectedSchedule, setSelectedSchedule] = useState<any | null>(null);
+  const [selectedSchedule, setSelectedSchedule] = useState<MroExecutionSchedule | null>(null);
   const [isExecutionWizardOpen, setIsExecutionWizardOpen] = useState(false);
 
   // Sorting & Columns
@@ -163,12 +164,7 @@ function MroPageContent() {
   };
 
   const handleExecuteMro = (schedule: MaintenanceScheduleRow) => {
-    setSelectedSchedule({
-      id: schedule.id,
-      scheduledDate: schedule.scheduledDate,
-      equipment: schedule.equipment,
-      plan: schedule.plan,
-    });
+    setSelectedSchedule(toMroExecutionSchedule(schedule));
     setIsExecutionWizardOpen(true);
   };
 
