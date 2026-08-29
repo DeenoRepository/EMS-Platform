@@ -33,6 +33,7 @@ import {
 import { useRouter } from 'next/navigation';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { SetupAdminLdapStep } from '@/components/setup/SetupAdminLdapStep';
+import { buildSetupPayload } from './setup-payload';
 import { SetupDatabaseStep } from '@/components/setup/SetupDatabaseStep';
 import { SetupDependencyStep } from '@/components/setup/SetupDependencyStep';
 import { SetupStorageSrmStep } from '@/components/setup/SetupStorageSrmStep';
@@ -328,41 +329,28 @@ export default function SetupWizardPage() {
     setIsExecuting(true);
     setExecError(null);
     try {
-      const payload = {
-        dbConfig: {
-          host: dbHost,
-          port: dbPort,
-          database: dbName,
-          user: dbUser,
-          password: dbPassword,
-        },
-        adminConfig: {
-          login: adminLogin,
-          displayName: adminDisplayName,
-          email: adminEmail,
-          password: authMode === 'ldap' ? '' : adminPassword,
-          authType: authMode,
-        },
-        ldapConfig: {
-          enabled: authMode === 'ldap' || ldapEnabled,
-          authType: authMode,
-          useForAdmin: authMode === 'ldap',
-          url: ldapUrl,
-          bindDn: ldapBindDn,
-          bindPassword: ldapBindPassword,
-          searchBase: ldapSearchBase,
-          searchFilter: ldapSearchFilter,
-        },
-        storageConfig: {
-          dir: storageDir,
-        },
-        jiraConfig: {
-          host: srmUrl,
-          email: '',
-          apiToken: srmApiKey,
-          projectKey: srmProjectKey,
-        },
-      };
+      const payload = buildSetupPayload({
+        dbHost,
+        dbPort,
+        dbName,
+        dbUser,
+        dbPassword,
+        adminLogin,
+        adminDisplayName,
+        adminEmail,
+        adminPassword,
+        authMode,
+        ldapEnabled,
+        ldapUrl,
+        ldapBindDn,
+        ldapBindPassword,
+        ldapSearchBase,
+        ldapSearchFilter,
+        storageDir,
+        srmUrl,
+        srmProjectKey,
+        srmApiKey,
+      });
 
       const res = await fetch('/api/setup/execute', {
         method: 'POST',
