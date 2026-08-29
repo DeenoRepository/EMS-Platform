@@ -10,7 +10,6 @@ import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import AssignmentOutlinedIcon from '@mui/icons-material/AssignmentOutlined';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
 import { useWarehouseAccess } from '@/hooks/useWarehouseAccess';
@@ -35,7 +34,8 @@ import {
   type OperationType,
 } from '@/components/wms';
 import WmsOperationsTable, { StockOperationRecord } from '@/components/wms/WmsOperationsTable';
-import WmsTransfersTable, { StockTransferRecord } from '@/components/wms/WmsTransfersTable';
+import WmsTransfersTablePanel from '@/components/wms/WmsTransfersTablePanel';
+import type { StockTransferRecord } from '@/components/wms/WmsTransfersTable';
 import { dispatchWmsTransfer } from './quick-dispatch';
 
 const OPERATIONS_COLUMNS: TableColumnOption[] = [
@@ -224,39 +224,6 @@ function WmsOperationsContent() {
       icon: <SwapHorizIcon sx={{ fontSize: 18 }} />,
       badge: transferCounts.inbound + transferCounts.requests > 0 ? transferCounts.inbound + transferCounts.requests : undefined,
       badgeColor: 'warning',
-    },
-  ];
-
-  const transferSubTabs: TabItem[] = [
-    {
-      value: 'inbound',
-      label: 'Входящие на приемку',
-      icon: <MoveToInboxIcon sx={{ fontSize: 16 }} />,
-      badge: transferCounts.inbound || undefined,
-      badgeColor: 'error',
-    },
-    {
-      value: 'requests',
-      label: 'Запросы на мой склад',
-      icon: <HourglassEmptyIcon sx={{ fontSize: 16 }} />,
-      badge: transferCounts.requests || undefined,
-      badgeColor: 'warning',
-    },
-    {
-      value: 'outbound',
-      label: 'Исходящие (В пути)',
-      icon: <LocalShippingOutlinedIcon sx={{ fontSize: 16 }} />,
-      badge: transferCounts.outbound || undefined,
-    },
-    {
-      value: 'my_requests',
-      label: 'Мои заявки',
-      icon: <AssignmentOutlinedIcon sx={{ fontSize: 16 }} />,
-    },
-    {
-      value: 'all',
-      label: 'Все перемещения',
-      icon: <SwapHorizIcon sx={{ fontSize: 16 }} />,
     },
   ];
 
@@ -510,73 +477,46 @@ function WmsOperationsContent() {
             </Grid>
           </Grid>
 
-          <DataTableWrapper
-            tabs={
-              <NavTabsContainer
-                tabs={transferSubTabs}
-                value={transferTab}
-                onChange={(val) => {
-                  if (typeof val === 'string' && ['inbound', 'requests', 'outbound', 'my_requests', 'all'].includes(val)) {
-                    setTransferTab(val as TransferTab);
-                  }
-                  setTransfersPage(0);
-                }}
-              />
-            }
-            toolbar={
-              <FilterToolbar
-                variant="embedded"
-                activeFilterCount={(transfersSearch ? 1 : 0) + (selectedWarehouse ? 1 : 0)}
-                onResetFilters={() => {
-                  setTransfersSearch('');
-                  setSelectedWarehouse('');
-                  setTransfersPage(0);
-                }}
-              >
-                <Box sx={{ minWidth: { xs: '100%', sm: 280 } }}>
-                  <SearchInput
-                    placeholder="Поиск по номеру, складу, ТМЦ..."
-                    value={transfersSearch}
-                    onSearch={(v: string) => {
-                      setTransfersSearch(v);
-                      setTransfersPage(0);
-                    }}
-                  />
-                </Box>
-                <WarehouseSelect
-                  value={selectedWarehouse}
-                  onChange={(val) => {
-                    setSelectedWarehouse(val);
-                    setTransfersPage(0);
-                  }}
-                  warehouses={availableWarehouses}
-                  isAdmin={isAdmin}
-                  currentUserId={user?.userId}
-                />
-              </FilterToolbar>
-            }
-            total={transferTotal}
-            page={transfersPage}
-            pageSize={transfersRowsPerPage}
-            onPageChange={(_, newPage) => setTransfersPage(newPage)}
-            onPageSizeChange={(e) => {
-              setTransfersRowsPerPage(parseInt(e.target.value, 10));
+          <WmsTransfersTablePanel
+            transfers={transfers}
+            isLoading={isLoadingTransfers}
+            transferTab={transferTab}
+            transfersSearch={transfersSearch}
+            transfersPage={transfersPage}
+            transfersRowsPerPage={transfersRowsPerPage}
+            transferTotal={transferTotal}
+            transferCounts={transferCounts}
+            selectedWarehouse={selectedWarehouse}
+            availableWarehouses={availableWarehouses}
+            isAdmin={isAdmin}
+            currentUserId={user?.userId}
+            isDispatchingId={isDispatchingId}
+            onTransferTabChange={(tab) => {
+              setTransferTab(tab);
               setTransfersPage(0);
             }}
-            loading={isLoadingTransfers}
-          >
-            <WmsTransfersTable
-              transfers={transfers}
-              isLoading={isLoadingTransfers}
-              transferTab={transferTab}
-              currentUserId={user?.userId}
-              isAdmin={isAdmin}
-              isDispatchingId={isDispatchingId}
-              onReceive={(t) => setReceiveTransfer(t)}
-              onReject={(t) => setRejectTransfer(t)}
-              onQuickDispatch={handleQuickDispatch}
-            />
-          </DataTableWrapper>
+            onSearchChange={(value) => {
+              setTransfersSearch(value);
+              setTransfersPage(0);
+            }}
+            onWarehouseChange={(value) => {
+              setSelectedWarehouse(value);
+              setTransfersPage(0);
+            }}
+            onResetFilters={() => {
+              setTransfersSearch('');
+              setSelectedWarehouse('');
+              setTransfersPage(0);
+            }}
+            onPageChange={setTransfersPage}
+            onPageSizeChange={(pageSize) => {
+              setTransfersRowsPerPage(pageSize);
+              setTransfersPage(0);
+            }}
+            onReceive={setReceiveTransfer}
+            onReject={setRejectTransfer}
+            onQuickDispatch={handleQuickDispatch}
+          />
         </>
       )}
 
