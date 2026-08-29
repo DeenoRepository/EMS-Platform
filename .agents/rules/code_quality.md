@@ -2,7 +2,7 @@
 
 > Обновлено: 2026-08-29 (повторная инспекция)
 > Инструмент: `.agents/skills/code-reviewer/scripts/code_quality_checker.py`
-> Текущий балл: apps/web — **78.3/100 (C)**, packages — **94.1/100 (A)**; `pnpm check:quality` PASS
+> Текущий балл: apps/web — **79.4/100 (C)**, packages — **94.1/100 (A)**; `node scripts/check-quality-baseline.mjs` PASS
 
 ---
 
@@ -23,33 +23,34 @@
 
 ```bash
 # Анализ всего фронтенда (TypeScript)
-python3 .agents/skills/code-reviewer/scripts/code_quality_checker.py apps/web/src --recursive --language typescript
+python .agents/skills/code-reviewer/scripts/code_quality_checker.py apps/web/src --recursive --language typescript
 
-# JSON-отчёт для CI
-python3 .agents/skills/code-reviewer/scripts/code_quality_checker.py apps/web/src --recursive --language typescript --json > docs/code-review-report.json
+# Проверка baseline без сохранения сгенерированных JSON-отчётов
+node scripts/check-quality-baseline.mjs
 
 # Анализ пакетов
-python3 .agents/skills/code-reviewer/scripts/code_quality_checker.py packages --recursive --language typescript
+python .agents/skills/code-reviewer/scripts/code_quality_checker.py packages --recursive --language typescript
 
 # Анализ конкретного файла
-python3 .agents/skills/code-reviewer/scripts/code_quality_checker.py apps/web/src/lib/jira-service.ts --language typescript
+python .agents/skills/code-reviewer/scripts/code_quality_checker.py apps/web/src/lib/jira-service.ts --language typescript
 ```
 
 ---
 
 ## 3. Файлы с оценкой F — Приоритеты рефакторинга
 
-По состоянию на 2026-08-27 следующие файлы требуют обязательного рефакторинга:
+По состоянию на 2026-08-29 quality baseline для web: average **79.4**, F-grade **36**, SOLID violations **25**. Packages: average **94.1**, F-grade **0**, SOLID violations **0**. Ниже приведены актуальные P1/P2 кандидаты; список не является разрешением на массовый рефакторинг.
 
 | Файл | Проблема | Приоритет |
 |---|---|---|
-| `apps/web/src/lib/jira-service.ts` | 1060 строк, complexity 40, 5 функций >50 строк | **P2 (высокий)** |
-| `apps/web/src/app/setup/page.tsx` | >1500 строк, монолитный компонент | P3 |
-| `apps/web/src/app/eps/[id]/page.tsx` | >1500 строк, монолитный компонент | P3 |
-| `apps/web/src/app/eps/page.tsx` | >1100 строк | P3 |
-| `apps/web/src/app/eps/approvals/page.tsx` | >1200 строк | P3 |
-| `apps/web/src/components/eps/SmartImportWizard.tsx` | Большой компонент | P3 |
-| `apps/web/src/components/wms/WmsOperationWizardDialog.tsx` | Большой компонент | P3 |
+| `apps/web/src/app/setup/page.tsx` | крупный setup flow; steps уже вынесены частично | P1/P2 |
+| `apps/web/src/app/eps/[id]/page.tsx` | крупный passport flow; tabs/dialogs и lifecycle mapping вынесены частично | P1/P2 |
+| `apps/web/src/app/wms/warehouses/page.tsx` | submit complexity 18 | P1/P2 |
+| `apps/web/src/app/srm/page.tsx` | page orchestration и details drawer | P1/P2 |
+| `apps/web/src/app/wms/page.tsx` | dashboard fetch/stats orchestration | P1/P2 |
+| `apps/web/src/components/layout/Sidebar.tsx` | осторожно: collapsed flyout и permission gating | P1/P2 |
+| `apps/web/src/components/mro/MroExecutionWizardDialog.tsx` | wizard orchestration | P2 |
+| `apps/web/src/components/wms/WmsOperationWizardDialog.tsx` | wizard orchestration | P2 |
 
 ---
 
@@ -152,7 +153,11 @@ interface AuthConfig {
 const auth = (integration.authConfig as AuthConfig) || {};
 ```
 
-**Исключение**: `any` допустим только в типах для legacy-интеграций с внешними API (Jira, Redmine) где схема нестабильна.
+**Исключение**: `any` допустим только в типах для legacy-интеграций с внешними API (Jira, Redmine) где схема нестабильна. Для новых response boundaries сначала использовать `unknown`, затем локальный type guard или Zod-схему.
+
+Текущие bounded improvements Phase D: GitLab и Redmine `testConnection()` responses уже narrowed из `unknown` через локальные guards; не расширять это изменение до массовой миграции всех JSON boundaries.
+
+Текущие bounded improvements Phase D: GitLab и Redmine `testConnection()` responses уже narrowed из `unknown` через локальные guards; не расширять это изменение до массовой миграции всех JSON boundaries.
 
 ---
 
@@ -203,11 +208,17 @@ pnpm test
 pnpm test
 
 # 2. Проверить качество изменённых файлов
-python3 .agents/skills/code-reviewer/scripts/code_quality_checker.py <path_to_changed_files> --language typescript
+python .agents/skills/code-reviewer/scripts/code_quality_checker.py <path_to_changed_files> --language typescript
 
-# 3. Убедиться что нет файлов с оценкой F в изменённых файлах
+# 3. Проверить baseline без сохранения сгенерированных JSON-файлов
+node scripts/check-quality-baseline.mjs
 
-# 4. Сделать git commit (Conventional Commits)
+# 4. Убедиться, что нет непреднамеренных F-grade regressions и ошибок форматирования
+git diff --check
+
+# 5. Сделать git commit (Conventional Commits)
 git add <files>
 git commit -m "feat|fix|refactor|docs|test|chore: описание"
 ```
+
+`quality-web.json`, `quality-packages.json` и `docs/code-review-report.json` не являются обязательными артефактами и не должны коммититься.
