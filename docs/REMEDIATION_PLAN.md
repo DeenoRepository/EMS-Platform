@@ -502,6 +502,8 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 
 - [x] **C11** — maintenance branch of [`EquipmentOperationalTabs.tsx`](../apps/web/src/components/eps/EquipmentOperationalTabs.tsx) вынесен в [`EquipmentMaintenanceTab.tsx`](../apps/web/src/components/eps/EquipmentMaintenanceTab.tsx); maintenance data, formatting, empty state and shared UI contracts preserved. Проверки: lint, tsc, targeted quality checker, quality baseline и `git diff --check` — PASS. Commit: `d7a10ad`.
 
+- [x] **C12** — SRM incident branch of [`EquipmentOperationalTabs.tsx`](../apps/web/src/components/eps/EquipmentOperationalTabs.tsx) вынесен в [`EquipmentSrmIncidentsTab.tsx`](../apps/web/src/components/eps/EquipmentSrmIncidentsTab.tsx); MRO/SRM routing, callbacks, StatusBadge, DataTableWrapper and EmptyState behavior preserved. Проверки: lint, tsc, targeted quality checker (78/100, C), quality baseline (web 80.3, F=34, SOLID=24) и `git diff --check` — PASS. Commit: `44f1dd6`.
+
 Следующий bounded этап — C8: remaining P2/F-grade files and typed JSON boundaries.
 
 C6.5 закрыта отдельным коммитом `9203fa6`; последующие изменения должны сохранять payload shape и API contract setup flow.
