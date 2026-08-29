@@ -1,10 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { WmsOperationItemsStep } from './WmsOperationItemsStep';
-import { WmsOperationReviewStep } from './WmsOperationReviewStep';
-import { WmsOperationSetupStep } from './WmsOperationSetupStep';
-import { Box } from '@mui/material';
+import { WmsOperationStepContent } from './WmsOperationStepContent';
 import MoveToInboxIcon from '@mui/icons-material/MoveToInbox';
 import PersonIcon from '@mui/icons-material/Person';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
@@ -519,79 +516,53 @@ export function WmsOperationWizardDialog({
       onStepChange={(step) => setActiveStep(step)}
       hideActions
     >
-      <Box sx={{ mt: 1.5 }}>
-        {activeStep === 0 && (
-          <WmsOperationSetupStep
-            operationType={operationType}
-            operationTypes={OPERATION_TYPES}
-            warehouses={warehouses}
-            transferWarehouses={transferWarehouses}
-            warehouseId={warehouseId}
-            targetWarehouseId={targetWarehouseId}
-            recipientName={recipientName}
-            isAdmin={isAdmin}
-            currentWarehouse={currentWarehouse}
-            userDisplayName={user?.displayName}
-            onOperationTypeChange={setOperationType}
-            onWarehouseChange={setWarehouseId}
-            onTargetWarehouseChange={setTargetWarehouseId}
-            onRecipientNameChange={setRecipientName}
-            onNext={handleNextStep}
-          />
-        )}
-
-        {activeStep === 1 && (
-          <WmsOperationItemsStep
-            operationType={operationType}
-            currentOpMeta={currentOpMeta}
-            currentWarehouse={currentWarehouse}
-            targetWarehouseId={targetWarehouseId}
-            warehouses={warehouses}
-            recipientName={recipientName}
-            itemWriteOffType={itemWriteOffType}
-            equipmentList={equipmentList}
-            selectedItemEquipment={selectedItemEquipment}
-            nomenclatures={nomenclatures}
-            selectedNomenclature={selectedNomenclature}
-            searchInputValue={searchInputValue}
-            itemQty={itemQty}
-            lineItems={lineItems}
-            isOutflow={isOutflow}
-            getWarehouseStock={getWarehouseStock}
-            getAvailableStock={getAvailableStock}
-            getCurrentOpBannerTitle={getCurrentOpBannerTitle}
-            onItemWriteOffTypeChange={setItemWriteOffType}
-            onSelectedItemEquipmentChange={(equipment) => {
-              setSelectedItemEquipment(equipment);
-              setItemEquipmentId(equipment?.id || '');
-            }}
-            onSearchInputValueChange={setSearchInputValue}
-            onSelectedNomenclatureChange={setSelectedNomenclature}
-            onOpenCreateNomenclatureDialog={handleOpenCreateNomDialog}
-            onItemQuantityChange={setItemQty}
-            onAddItem={handleAddItem}
-            onRemoveItem={handleRemoveItem}
-            onBack={() => setActiveStep(0)}
-            onNext={handleNextStep}
-          />
-        )}
-
-        {activeStep === 2 && (
-          <WmsOperationReviewStep
-            operationType={operationType}
-            operationSummaryLabel={getOperationSummaryLabel()}
-            currentWarehouse={currentWarehouse}
-            targetWarehouseName={warehouses.find((warehouse) => warehouse.id === targetWarehouseId)?.name}
-            recipientName={recipientName}
-            comment={comment}
-            lineItems={lineItems}
-            getWarehouseStock={getWarehouseStock}
-            isSubmitting={isSubmitting}
-            onBack={() => setActiveStep(1)}
-            onSubmit={handleSubmit}
-          />
-        )}
-      </Box>
+      <WmsOperationStepContent
+        activeStep={activeStep}
+        operationType={operationType}
+        operationTypes={OPERATION_TYPES}
+        warehouses={warehouses}
+        transferWarehouses={transferWarehouses}
+        warehouseId={warehouseId}
+        targetWarehouseId={targetWarehouseId}
+        recipientName={recipientName}
+        isAdmin={isAdmin}
+        currentWarehouse={currentWarehouse}
+        userDisplayName={user?.displayName}
+        itemWriteOffType={itemWriteOffType}
+        equipmentList={equipmentList}
+        selectedItemEquipment={selectedItemEquipment}
+        nomenclatures={nomenclatures}
+        selectedNomenclature={selectedNomenclature}
+        searchInputValue={searchInputValue}
+        itemQty={itemQty}
+        lineItems={lineItems}
+        isOutflow={isOutflow}
+        getWarehouseStock={getWarehouseStock}
+        getAvailableStock={getAvailableStock}
+        getCurrentOpBannerTitle={getCurrentOpBannerTitle}
+        operationSummaryLabel={getOperationSummaryLabel()}
+        comment={comment}
+        isSubmitting={isSubmitting}
+        targetWarehouseName={warehouses.find((warehouse) => warehouse.id === targetWarehouseId)?.name}
+        onOperationTypeChange={setOperationType}
+        onWarehouseChange={setWarehouseId}
+        onTargetWarehouseChange={setTargetWarehouseId}
+        onRecipientNameChange={setRecipientName}
+        onItemWriteOffTypeChange={setItemWriteOffType}
+        onSelectedItemEquipmentChange={(equipment) => {
+          setSelectedItemEquipment(equipment);
+          setItemEquipmentId(equipment?.id || '');
+        }}
+        onSearchInputValueChange={setSearchInputValue}
+        onSelectedNomenclatureChange={setSelectedNomenclature}
+        onOpenCreateNomenclatureDialog={handleOpenCreateNomDialog}
+        onItemQuantityChange={setItemQty}
+        onAddItem={handleAddItem}
+        onRemoveItem={handleRemoveItem}
+        onBack={() => setActiveStep(activeStep === 2 ? 1 : 0)}
+        onNext={handleNextStep}
+        onSubmit={handleSubmit}
+      />
 
       <CreateNomenclatureDialog
         open={isCreateNomDialogOpen}
