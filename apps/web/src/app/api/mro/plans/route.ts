@@ -3,6 +3,7 @@ import { prisma } from '@ems/database';
 import { requireAuth } from '@/lib/auth-guard';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { PERMISSIONS } from '@ems/shared';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,7 +52,10 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: plans });
   } catch (error: unknown) {
-    console.error('Ошибка получения планов ТО:', error);
+    logger.error('Failed to fetch MRO maintenance plans', {
+      endpoint: 'mro-plans-get',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Внутренняя ошибка сервера' }, { status: 500 });
   }
 }
@@ -92,7 +96,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: plan }, { status: 201 });
   } catch (error: unknown) {
-    console.error('Ошибка создания плана ТО:', error);
+    logger.error('Failed to create MRO maintenance plan', {
+      endpoint: 'mro-plans-post',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Не удалось создать план ТО' }, { status: 500 });
   }
 }

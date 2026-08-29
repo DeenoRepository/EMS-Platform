@@ -132,6 +132,7 @@
 ### Story B1 — Structured logging вместо `console.error` (S5 + §6 инспекции) — ✅ выполнено для bounded списка
 
 **Статус:** завершено 2026-08-29; подтверждённые API best-effort и UI loading paths переведены на structured logging/snackbar. Остальные legacy `console.error` вне bounded списка оставлены отдельным долгом.
+**Последующий batch:** MRO API checklists/plans/schedules (9 raw logs) также переведён на structured `logger.error` в отдельном коммите.
 **Приоритет:** P2
 **Скиллы:** `senior-backend`, `senior-frontend`  
 **Оценка:** 1 день
@@ -159,8 +160,9 @@
 - [x] WMS transfer notification failures используют `logger.warn` и сохраняют best-effort semantics.
 - [x] Bounded UI dictionary/history failures показывают snackbar/error feedback.
 - [x] `pnpm test`: 156 passed; lint/tsc/route audit/quality baseline PASS.
-- [ ] Полная миграция оставшихся legacy `console.error` в `apps/web/src` — отдельная story, не смешивать с B1.
-- Коммит: `refactor: replace console.error catch paths with logger and UI errors`
+- [x] MRO API batch (checklists, plans, schedules) переведён на `logger.error` с endpoint context.
+- [ ] Полная миграция оставшихся legacy `console.error` в `apps/web/src` — отдельные bounded batches.
+- Коммиты: `refactor: replace console.error catch paths with logger and UI errors`; MRO batch — следующий Conventional Commit.
 
 ---
 

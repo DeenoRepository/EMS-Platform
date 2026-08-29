@@ -103,6 +103,21 @@ describe('API Security and Hardening Regressions', () => {
   });
 
   describe('Route Security Policy', () => {
+    test('bounded MRO API logging batch uses structured logger', () => {
+      const routePaths = [
+        'apps/web/src/app/api/mro/checklists/route.ts',
+        'apps/web/src/app/api/mro/plans/route.ts',
+        'apps/web/src/app/api/mro/schedules/route.ts',
+        'apps/web/src/app/api/mro/schedules/[id]/route.ts',
+      ];
+
+      for (const routePath of routePaths) {
+        const source = readRepositoryFile(routePath);
+        assert.match(source, /from ['"]@\/lib\/logger['"]/);
+        assert.doesNotMatch(source, /console\.error/);
+      }
+    });
+
     test('configured webhook secret cannot be bypassed by an absent token', () => {
       const source = readRepositoryFile('apps/web/src/app/api/srm/webhooks/[id]/route.ts');
       assert.match(source, /if\s*\(\s*!providedToken\s*\|\|\s*providedToken\s*!==\s*webhookAuth\.secret\s*\)/);

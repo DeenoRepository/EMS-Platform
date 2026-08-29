@@ -3,6 +3,7 @@ import { prisma } from '@ems/database';
 import { requireAuth } from '@/lib/auth-guard';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { PERMISSIONS } from '@ems/shared';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,7 +30,10 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: templates });
   } catch (error: unknown) {
-    console.error('Ошибка получения шаблонов чек-листов:', error);
+    logger.error('Failed to fetch MRO checklist templates', {
+      endpoint: 'mro-checklists-get',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Внутренняя ошибка сервера' }, { status: 500 });
   }
 }
@@ -74,7 +78,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: template }, { status: 201 });
   } catch (error: unknown) {
-    console.error('Ошибка создания шаблона чек-листа:', error);
+    logger.error('Failed to create MRO checklist template', {
+      endpoint: 'mro-checklists-post',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Не удалось создать шаблон' }, { status: 500 });
   }
 }
