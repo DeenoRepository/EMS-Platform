@@ -41,6 +41,7 @@ import {
   CriticalAlertBanner,
 } from '@/components/ui';
 import SmartImportUploadStep from './SmartImportUploadStep';
+import SmartImportMappingStep from './SmartImportMappingStep';
 
 export interface MissingFieldItem {
   header: string;
@@ -282,193 +283,16 @@ export function SmartImportWizard() {
 
       {/* ─── STEP 1: Сопоставление колонок и недостающие поля ─── */}
       {activeStep === 1 && (
-        <Box>
-          {missingFields.length > 0 && (
-            <Box sx={{ mb: 3 }}>
-              <CriticalAlertBanner
-                alerts={[
-                  {
-                    id: 'missing-fields-alert',
-                    severity: 'INFO',
-                    title: `Обнаружено новых колонок: ${missingFields.length}`,
-                    description:
-                      'В загруженном файле найдены колонки, которых пока нет в справочнике характеристик оборудования. Вы можете добавить их в систему как новые поля или пропустить.',
-                  },
-                ]}
-              />
-            </Box>
-          )}
-
-          {/* Missing Fields Cards */}
-          {missingFields.length > 0 && (
-            <Card sx={{ mb: 3, border: '1px solid primary.main', borderRadius: '12px' }}>
-              <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <AddCircleOutlineIcon color="primary" sx={{ fontSize: 24 }} />
-                  <Typography variant="h6" fontWeight={700}>
-                    Разрешение недостающих полей ({missingFields.length})
-                  </Typography>
-                </Box>
-
-                <Grid container spacing={2.5}>
-                  {missingFields.map((mf) => {
-                    const res = resolutions[mf.header] || {
-                      action: 'CREATE',
-                      name: mf.suggestedName,
-                      key: mf.suggestedKey,
-                      fieldType: mf.suggestedType,
-                      unit: '',
-                      sectionId: '',
-                    };
-
-                    return (
-                      <Grid item xs={12} key={mf.header}>
-                        <Paper variant="outlined" sx={{ p: 2.5, backgroundColor: res.action === 'CREATE' ? 'success.light' : 'background.default', borderRadius: '8px' }}>
-                          <Grid container spacing={2} alignItems="center">
-                            <Grid item xs={12} md={3}>
-                              <Typography variant="subtitle2" fontWeight={700} color="primary.main">
-                                «{mf.header}»
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary" display="block">
-                                Примеры из файла: {mf.sampleValues.slice(0, 2).join(', ') || '—'}
-                              </Typography>
-                            </Grid>
-
-                            <Grid item xs={12} md={3}>
-                              <FormControl component="fieldset">
-                                <RadioGroup
-                                  row
-                                  value={res.action}
-                                  onChange={(e) => handleUpdateResolution(mf.header, { action: e.target.value as any })}
-                                >
-                                  <FormControlLabel value="CREATE" control={<Radio size="small" />} label="Добавить в справочник" />
-                                  <FormControlLabel value="IGNORE" control={<Radio size="small" />} label="Игнорировать" />
-                                </RadioGroup>
-                              </FormControl>
-                            </Grid>
-
-                            {res.action === 'CREATE' && (
-                              <>
-                                <Grid item xs={12} sm={4} md={2}>
-                                  <TextField
-                                    label="Название поля"
-                                    size="small"
-                                    fullWidth
-                                    value={res.name}
-                                    onChange={(e) => handleUpdateResolution(mf.header, { name: e.target.value })}
-                                  />
-                                </Grid>
-                                <Grid item xs={12} sm={4} md={1.5}>
-                                  <TextField
-                                    select
-                                    label="Тип данных"
-                                    size="small"
-                                    fullWidth
-                                    value={res.fieldType}
-                                    onChange={(e) => handleUpdateResolution(mf.header, { fieldType: e.target.value as any })}
-                                  >
-                                    <MenuItem value="TEXT">Текст</MenuItem>
-                                    <MenuItem value="NUMBER">Число</MenuItem>
-                                    <MenuItem value="DATE">Дата</MenuItem>
-                                    <MenuItem value="BOOLEAN">Да/Нет</MenuItem>
-                                  </TextField>
-                                </Grid>
-                                <Grid item xs={12} sm={4} md={1}>
-                                  <TextField
-                                    label="Ед. изм."
-                                    size="small"
-                                    fullWidth
-                                    value={res.unit}
-                                    placeholder="кВт, бар..."
-                                    onChange={(e) => handleUpdateResolution(mf.header, { unit: e.target.value })}
-                                  />
-                                </Grid>
-                                <Grid item xs={12} sm={6} md={1.5}>
-                                  <TextField
-                                    select
-                                    label="Раздел"
-                                    size="small"
-                                    fullWidth
-                                    value={res.sectionId}
-                                    onChange={(e) => handleUpdateResolution(mf.header, { sectionId: e.target.value })}
-                                  >
-                                    <MenuItem value="">Общий раздел</MenuItem>
-                                    {availableSections.map((sec) => (
-                                      <MenuItem key={sec.id} value={sec.id}>
-                                        {sec.name}
-                                      </MenuItem>
-                                    ))}
-                                  </TextField>
-                                </Grid>
-                              </>
-                            )}
-                          </Grid>
-                        </Paper>
-                      </Grid>
-                    );
-                  })}
-                </Grid>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* All Mapped Columns Summary */}
-          <Card sx={{ mb: 3, borderRadius: '12px' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" fontWeight={700} gutterBottom>
-                Итоговая карта сопоставления колонок
-              </Typography>
-              <DataTableWrapper total={fileHeaders.length} stickyHeader>
-                <Table size="small" aria-label="Карта сопоставления колонок">
-                  <TableHead sx={{ backgroundColor: 'action.hover' }}>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 700 }}>Колонка в файле</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Статус распознавания</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Поле в EMS</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {fileHeaders.map((header) => {
-                      const isMissing = missingFields.some((mf) => mf.header === header);
-                      const res = resolutions[header];
-                      const mappedKey = columnMapping[header];
-
-                      return (
-                        <TableRow key={header} hover>
-                          <TableCell sx={{ fontWeight: 600 }}>{header}</TableCell>
-                          <TableCell>
-                            {isMissing ? (
-                              res?.action === 'CREATE' ? (
-                                <StatusBadge status="ACTIVE" label="Будет создано новое поле" size="small" />
-                              ) : (
-                                <StatusBadge status="DECOMMISSIONED" label="Будет пропущено (Игнорируется)" size="small" />
-                              )
-                            ) : (
-                              <StatusBadge status="ACTIVE" label="Распознано автоматически" size="small" variant="outlined" />
-                            )}
-                          </TableCell>
-                          <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
-                            {isMissing ? (res?.action === 'CREATE' ? `${res.name} (${res.key})` : '—') : mappedKey}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </DataTableWrapper>
-            </CardContent>
-          </Card>
-
-          {/* Navigation Buttons */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
-            <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={() => setActiveStep(0)}>
-              Назад к выбору файла
-            </Button>
-            <Button variant="contained" endIcon={<ArrowForwardIcon />} onClick={handleProceedToCollisions} sx={{ fontWeight: 700, px: 3 }}>
-              Продолжить к проверке коллизий
-            </Button>
-          </Box>
-        </Box>
+        <SmartImportMappingStep
+          fileHeaders={fileHeaders}
+          columnMapping={columnMapping}
+          missingFields={missingFields}
+          resolutions={resolutions}
+          availableSections={availableSections}
+          onUpdateResolution={handleUpdateResolution}
+          onBack={() => setActiveStep(0)}
+          onProceed={handleProceedToCollisions}
+        />
       )}
 
       {/* ─── STEP 2: Проверка коллизий и предпросмотр ─── */}

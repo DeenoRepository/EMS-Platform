@@ -22,7 +22,7 @@
 | C2 — Warehouse topology modal | ✅ Выполнено: C2.1–C2.3 | MEDIUM |
 | C3 — WMS stock page | ✅ Выполнено: C3.1–C3.4 | MEDIUM |
 | C4 — Equipment wizard form | ✅ Выполнено: C4.1–C4.3 | MEDIUM |
-| C5 — EPS reports + import | ⏳ В работе: C5.1 ✅; C5.2a ✅; C5.2b.1 ✅; C5.2b.2–C5.4 открыты | MEDIUM |
+| C5 — EPS reports + import | ⏳ В работе: C5.1 ✅; C5.2a ✅; C5.2b.1 ✅; C5.2b.2 ✅; C5.2b.3–C5.4 открыты | MEDIUM |
 | C6 — P1 страницы > 600 строк | ⏳ Открыта | MEDIUM |
 | C7 — P2 F-файлы < 500 строк | ⏳ Открыта | LOW |
 | D — Типизация | ⏳ Открыта | P2 |
@@ -470,7 +470,7 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 
 **Следующие под-stories C5.2b:**
 
-- [ ] **C5.2b.2** — вынести mapping/missing-fields presentation.
+- [x] **C5.2b.2** — mapping/missing-fields presentation вынесен в [`SmartImportMappingStep.tsx`](../apps/web/src/components/eps/SmartImportMappingStep.tsx); resolutions, column mapping и callbacks сохранены. Проверки: lint, tsc, 160 тестов, route audit, theme check и quality baseline (web 79.1, F=36, SOLID=25) — PASS.
 - [ ] **C5.2b.3** — вынести preview/conflict presentation.
 - [ ] **C5.2b.4** — вынести execute payload preparation без изменения API contract.
 
