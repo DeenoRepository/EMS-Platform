@@ -17,7 +17,7 @@
 | B1 — Structured logging (bounded) | ✅ Выполнено (bounded) | P2 |
 | B2 — StatusBadge в паспорте | ✅ Выполнено | P2 |
 | **B3 — Role string унификация** | ✅ Выполнено (2026-08-29) | LOW |
-| **B4 — console.* остаток в API** | ⏳ Следующая | LOW |
+| **B4 — console.* остаток в API** | ✅ Выполнено (2026-08-29) | LOW |
 | C1 — Admin settings page | ⏳ Открыта | MEDIUM |
 | C2 — Warehouse topology modal | ⏳ Открыта | MEDIUM |
 | C3 — WMS stock page | ⏳ Открыта | MEDIUM |
@@ -296,9 +296,9 @@ pnpm test
 
 ---
 
-### Story B4 — Замена остаточных `console.*` на `logger` в API (новая, 2026-08-29) ⏳
+### Story B4 — Замена остаточных `console.*` на `logger` в API ✅
 
-**Статус:** открыта
+**Статус:** завершена 2026-08-29; четыре production API logging paths переведены на structured [`logger`](../apps/web/src/lib/logger.ts), поведение обработчиков сохранено.
 **Приоритет:** LOW
 **Скиллы:** `senior-backend`
 **Оценка:** 0.5 дня
@@ -333,8 +333,9 @@ pnpm --filter @ems/web lint
 
 **DoD:**
 
-- [ ] 0 вхождений `console.warn/error` в `apps/web/src/app/api/**/*.ts`.
-- [ ] lint/tsc PASS.
+- [x] 0 вхождений `console.warn/error/log` в `apps/web/src/app/api/**/*.ts`.
+- [x] `pnpm test`: 160 passed, 0 failed; lint/tsc PASS.
+- [x] `route_audit.py`, theme check и quality baseline PASS.
 - Коммит: `refactor(api): replace remaining console.warn/error with structured logger`
 
 ---
@@ -483,8 +484,8 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 | ~~1~~ | ~~A1, A2, A3, B1~~ | ✅ security residual закрыт, logging (bounded) |
 | ~~2~~ | ~~B2~~ | ✅ StatusBadge в паспорте |
 | ~~Текущая~~ | ~~B3~~ | ✅ role string унификация завершена |
-| **Следующая** | **B4** | console.* cleanup |
-| +1 | C1, C2, C3 | 3 крупнейших UI-монолита |
+| ~~Следующая~~ | ~~B4~~ | ✅ console.* cleanup завершён |
+| **Следующая** | **C1, C2, C3** | 3 крупнейших UI-монолита |
 | +2 | C4, C5 | EPS wizard + import/report |
 | +3 | C6 (4–6 файлов) | F-grade < 38 |
 | backlog | C7, D, E | parser false-positives, typing, rules sync |
@@ -500,7 +501,7 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 - [x] 0 hex-цветов в компонентах вне theme-файлов
 - [x] 0 rate-limit gaps на 85 маршрутах
 - [x] `isAdminUser()` хелпер унифицирует admin-role проверки в API routes (B3)
-- [ ] 0 `console.warn/error` в `apps/web/src/app/api/**` (B4)
+- [x] 0 `console.warn/error` в `apps/web/src/app/api/**` (B4)
 - [ ] Web F-grade < 38, baseline PASS (C1–C6)
 - [ ] `pnpm check:quality`, `check:theme`, `route_audit.py`, `pnpm test` зелёные
 - [ ] [`PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md) обновлён после каждой story
@@ -524,8 +525,8 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 5. **Quality checker** некорректно режет границы TSX-функций — всегда проверять вручную.
 6. **Не трогать:** `temp/`, `.env`, `uploads/`, `docker/jira/server.js` без отдельной задачи.
 7. **Не** массово заменять magic_number.
-8. **B3 завершена.** B4 независима и может выполняться следующей.
+8. **B3 и B4 завершены.** Следующий этап — bounded UI-декомпозиция C1–C3.
 9. **C-stories** могут идти параллельно на разных файлах (не пересекающихся).
 10. **Не снижать** quality baseline: web ≥ 78.0, F ≤ 38, packages ≥ 94.0, F=0.
 
-*Обновлено 2026-08-29 по результатам повторной инспекции. Предыдущие stories A1–A3, B1–B2 закрыты.*
+*Обновлено 2026-08-29 после завершения B3 и B4. Предыдущие stories A1–A3, B1–B2 также закрыты.*

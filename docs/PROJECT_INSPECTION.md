@@ -8,7 +8,7 @@
 > **Вердикт: ✅ Approve with suggestions.**  
 > Все критические security findings из аудита 2026-08-27 (Stories A1–A3, B1–B2) подтверждены закрытыми.  
 > Quality baseline PASS: 78.3/100 (C), 0 rate-limit gaps, 0 hex-hardcode в компонентах.
-> B3 завершена: admin-role checks в API унифицированы через `isAdminUser()`. Остаточный долг — `console.error/warn` в 3 API-роутах и 7 файлов ≥ 700 строк без деградации качества ниже F.
+> B3 и B4 завершены: admin-role checks унифицированы через `isAdminUser()`, а production API logging paths переведены на structured `logger`. Остаточный долг — 7 файлов ≥ 700 строк без деградации качества ниже F.
 
 ---
 
@@ -28,7 +28,7 @@
 | `StatusBadge` для статусов | **✅** — сквозное применение | обязательно | ✅ PASS |
 | `Chip` вместо `StatusBadge` для статусов сущностей | **0 нарушений** (Chip только для метаданных) | 0 | ✅ PASS |
 | `StatCard` для KPI | **✅** — сквозное применение | обязательно | ✅ PASS |
-| `console.error/warn` в API | **4 вхождения / 3 файла** | 0 в production paths | ⚠️ LOW |
+| `console.error/warn` в API | **0 вхождений** | 0 в production paths | ✅ PASS |
 | Роль-строка унификация | B3 закрыта; `auth/login` имеет локальный массив roles | documented exception | ✅ PASS |
 | Файлы > 500 строк | **20 файлов** (presentation-heavy pages) | требует bounded refactor | ⚠️ MEDIUM |
 
@@ -100,9 +100,9 @@ user.roles.includes('admin') || user.roles.includes('administrator')  // auth/lo
 **Риск до B3:** Если в БД роль хранится как `'administrator'`, то маршруты, проверяющие только `'admin'`, неверно откажут в доступе (и наоборот).
 **Решение:** [`isAdminUser()`](../apps/web/src/lib/auth-guard.ts:50) принимает `roles` из `JwtUserPayload` и поддерживает обе строки. Добавлены unit-тесты для `admin`, `administrator` и regular user; миграция API завершена без изменения permission-логики.
 
-### 2.8 ⚠️ `console.error/warn` в production API (LOW)
+### 2.8 ✅ Structured logging в production API (B4 завершена)
 
-Обнаружены в 3 файлах вместо использования централизованного [`logger`](../apps/web/src/lib/logger.ts):
+Все 4 ранее обнаруженных production API logging paths переведены на централизованный [`logger`](../apps/web/src/lib/logger.ts). Внешние ответы и best-effort semantics сохранены:
 
 | Файл | Строка | Тип |
 |---|---|---|
@@ -111,7 +111,7 @@ user.roles.includes('admin') || user.roles.includes('administrator')  // auth/lo
 | [`eps/import/execute/route.ts:326`](../apps/web/src/app/api/eps/import/execute/route.ts) | `console.error(...)` | import error |
 | [`setup/execute/route.ts:162`](../apps/web/src/app/api/setup/execute/route.ts) | `console.warn(...)` | env write error |
 
-Замена: `logger.warn(...)` / `logger.error(...)`.
+Проверка по `apps/web/src/app/api/**/*.ts` подтверждает: `console.error`, `console.warn` и `console.log` отсутствуют.
 
 ---
 
@@ -259,13 +259,9 @@ packages/shared/   — типы, константы, permissions, formatters
 **Результат:** добавлен `isAdminUser()`, inline-проверки API переведены на helper, добавлены 3 unit-теста. `auth/login` оставлен с локальной проверкой массива ролей как documented exception.
 **Проверки:** 160 тестов, lint, tsc, route audit, theme check и quality baseline — PASS.
 
-### Story C2 — Заменить `console.*` на `logger.*` в API (LOW, 0.5h)
+### Story B4 — Structured logging в API (LOW) — ✅ выполнено
 
-| Файл | Строки | Замена |
-|---|---|---|
-| [`srm/issues/route.ts`](../apps/web/src/app/api/srm/issues/route.ts) | 156 | `logger.warn` |
-| [`eps/import/execute/route.ts`](../apps/web/src/app/api/eps/import/execute/route.ts) | 134, 326 | `logger.error` |
-| [`setup/execute/route.ts`](../apps/web/src/app/api/setup/execute/route.ts) | 162 | `logger.warn` |
+**Результат:** 4 production API logging paths в [`srm/issues/route.ts`](../apps/web/src/app/api/srm/issues/route.ts:156), [`eps/import/execute/route.ts`](../apps/web/src/app/api/eps/import/execute/route.ts:134), [`eps/import/execute/route.ts`](../apps/web/src/app/api/eps/import/execute/route.ts:330) и [`setup/execute/route.ts`](../apps/web/src/app/api/setup/execute/route.ts:162) переведены на `logger.warn/error` с endpoint context. Проверка: 0 `console.*` в API, полный тестовый набор 160/160.
 
 ### Story C3 — Декомпозиция `AdminSettingsPage` (MEDIUM, 2d)
 
@@ -313,7 +309,7 @@ pnpm --filter @ems/web build
 | Quality baseline (78.3, F≤38) | ✅ PASS | поддерживать |
 | Test coverage (157 passed) | ✅ PASS | поддерживать |
 
-**Общий вердикт: ✅ Approve with suggestions.** Проект находится в стабильном рабочем состоянии. Критические проблемы безопасности и дизайна закрыты. B3 выполнена; следующий bounded этап — B4 (structured logging), затем C1–C4.
+**Общий вердикт: ✅ Approve with suggestions.** Проект находится в стабильном рабочем состоянии. Критические проблемы безопасности и дизайна закрыты. B3 и B4 выполнены; следующий bounded этап — UI-декомпозиция C1–C4.
 
 ---
 

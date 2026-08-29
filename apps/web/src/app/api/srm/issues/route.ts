@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@ems/database';
 import { requireAuth } from '@/lib/auth-guard';
 import { safeErrorResponse } from '@/lib/safe-error';
+import { logger } from '@/lib/logger';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { PERMISSIONS } from '@ems/shared';
 import { syncJiraIssues, createInternalServiceRequest } from '@/lib/jira-service';
@@ -152,8 +153,12 @@ export async function POST(req: NextRequest) {
           },
         },
       });
-    } catch (e) {
-      console.warn('Не удалось записать лог аудита SRM:', e);
+    } catch (error) {
+      logger.warn('Не удалось записать лог аудита SRM', {
+        endpoint: 'srm-issues-create',
+        issueId: issue.id,
+        error,
+      });
     }
 
     return NextResponse.json({ success: true, data: issue, message: `Заявка ${issue.issueKey} успешно зарегистрирована` }, { status: 201 });

@@ -4,6 +4,7 @@ import { prisma, EquipmentStatus, FieldType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { enforceRateLimit } from '@/lib/rate-limit';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -130,8 +131,12 @@ export async function POST(req: NextRequest) {
               data: { sectionId },
             });
           }
-        } catch (err) {
-          console.error(`Ошибка создания поля ${def.key}:`, err);
+        } catch (error) {
+          logger.error('Ошибка создания кастомного поля при импорте', {
+            endpoint: 'eps-import-execute',
+            fieldKey: def.key,
+            error,
+          });
         }
       }
     }
@@ -323,7 +328,10 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    console.error('Ошибка выполнения импорта оборудования:', error);
+    logger.error('Ошибка выполнения импорта оборудования', {
+      endpoint: 'eps-import-execute',
+      error,
+    });
     return NextResponse.json({ success: false, error: 'Ошибка выполнения импорта' }, { status: 500 });
   }
 }

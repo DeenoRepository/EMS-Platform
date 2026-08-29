@@ -158,8 +158,11 @@ export async function POST(req: NextRequest) {
         fs.writeFileSync(rootEnvPath, envLines, 'utf-8');
       }
       fs.writeFileSync(webEnvPath, envLines, 'utf-8');
-    } catch (envErr) {
-      console.warn('Could not write to disk .env:', envErr);
+    } catch (error) {
+      logger.warn('Could not write .env to disk', {
+        endpoint: 'setup-execute',
+        error,
+      });
     }
 
     // Automatically synchronize database schema if schema.prisma is found
