@@ -35,6 +35,7 @@ import WmsOperationsTablePanel from '@/components/wms/WmsOperationsTablePanel';
 import WmsTransfersTablePanel from '@/components/wms/WmsTransfersTablePanel';
 import type { StockTransferRecord } from '@/components/wms/WmsTransfersTable';
 import { dispatchWmsTransfer } from './quick-dispatch';
+import { countActiveOperationFilters } from './filter-state';
 
 const OPERATIONS_COLUMNS: TableColumnOption[] = [
   { id: 'date', label: 'Дата / Время', defaultVisible: true },
@@ -226,7 +227,7 @@ function WmsOperationsContent() {
   ];
 
   const activeFiltersCount = useMemo(() => {
-    return (selectedType ? 1 : 0) + (selectedWarehouse ? 1 : 0) + (opsSearch ? 1 : 0);
+    return countActiveOperationFilters(selectedType, selectedWarehouse, opsSearch);
   }, [selectedType, selectedWarehouse, opsSearch]);
 
   const canCreate = hasPermission(PERMISSIONS.WMS_OPERATIONS_CREATE);
