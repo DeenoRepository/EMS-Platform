@@ -187,5 +187,23 @@ describe('API Security and Hardening Regressions', () => {
       assert.match(resetAdminSource, /process\.env\.ADMIN_PASSWORD\s*\|\|\s*process\.argv\[2\]/);
       assert.doesNotMatch(resetAdminSource, /hashPassword\('admin123'\)/);
     });
+
+    test('files API endpoint performs authentication, traversal guard and object access check', () => {
+      const filesRouteSource = readRepositoryFile('apps/web/src/app/api/files/[...path]/route.ts');
+      assert.match(filesRouteSource, /getCurrentUser\(req\)/);
+      assert.match(filesRouteSource, /normalizeStoredFilePath/);
+      assert.match(filesRouteSource, /canReadStoredFile/);
+      assert.match(filesRouteSource, /resolvedFullPath\.startsWith\(uploadRoot\)/);
+    });
+
+    test('setup API endpoints guard against re-installation by non-admin users', () => {
+      const setupExecSource = readRepositoryFile('apps/web/src/app/api/setup/execute/route.ts');
+      const setupTestDbSource = readRepositoryFile('apps/web/src/app/api/setup/test-db/route.ts');
+      const setupTestLdapSource = readRepositoryFile('apps/web/src/app/api/setup/test-ldap/route.ts');
+
+      assert.match(setupExecSource, /fileInstalled[\s\S]*?!user\s*\|\|\s*!user\.roles\?\.includes\('admin'\)/);
+      assert.match(setupTestDbSource, /fileInstalled[\s\S]*?!user\s*\|\|\s*!user\.roles\.includes\('admin'\)/);
+      assert.match(setupTestLdapSource, /fileInstalled[\s\S]*?!user\s*\|\|\s*!user\.roles\.includes\('admin'\)/);
+    });
   });
 });
