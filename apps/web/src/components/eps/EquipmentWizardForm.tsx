@@ -42,6 +42,7 @@ import { useSnackbar } from 'notistack';
 import { StatusBadge, DatePickerField } from '@/components/ui';
 import { EQUIPMENT_STATUS_MAP } from '@ems/shared';
 import EquipmentCustomFieldRenderer from './EquipmentCustomFieldRenderer';
+import { buildEquipmentWizardPayload, validateEquipmentWizardInput } from './equipment-wizard-submit';
 
 export interface TagItem {
   id: string;
@@ -189,28 +190,28 @@ export function EquipmentWizardForm({
   };
 
   const handleSave = async (submitForApproval: boolean) => {
-    if (!name.trim()) {
-      enqueueSnackbar('Наименование оборудования обязательно', { variant: 'warning' });
+    const validationError = validateEquipmentWizardInput({ name });
+    if (validationError) {
+      enqueueSnackbar(validationError, { variant: 'warning' });
       setActiveStep(0);
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const payload = {
-        name: name.trim(),
-        inventoryNumber: inventoryNumber.trim() || undefined,
-        serialNumber: serialNumber.trim() || undefined,
-        manufacturer: manufacturer.trim() || undefined,
-        model: model.trim() || undefined,
-        location: location.trim() || undefined,
+      const payload = buildEquipmentWizardPayload({
+        name,
+        inventoryNumber,
+        serialNumber,
+        manufacturer,
+        model,
+        location,
         status,
         commissionDate,
         tagIds: selectedTagIds,
         customFields: customFieldValues,
-        asDraft: !submitForApproval,
         submitForApproval,
-      };
+      });
 
       const res = await fetch('/api/eps/equipment', {
         method: 'POST',

@@ -21,7 +21,7 @@
 | C1 — Admin settings page | ✅ Выполнено: C1.1–C1.4 | MEDIUM |
 | C2 — Warehouse topology modal | ✅ Выполнено: C2.1–C2.3 | MEDIUM |
 | C3 — WMS stock page | ✅ Выполнено: C3.1–C3.4 | MEDIUM |
-| C4 — Equipment wizard form | ⏳ В работе: C4.1 ✅; C4.2–C4.3 открыты | MEDIUM |
+| C4 — Equipment wizard form | ⏳ В работе: C4.1 ✅; C4.2 ✅; C4.3 открыта | MEDIUM |
 | C5 — EPS reports + import | ⏳ Открыта | MEDIUM |
 | C6 — P1 страницы > 600 строк | ⏳ Открыта | MEDIUM |
 | C7 — P2 F-файлы < 500 строк | ⏳ Открыта | LOW |
@@ -449,7 +449,7 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 
 **Следующие под-stories C4:**
 
-- [ ] **C4.2** — вынести validation/payload preparation из `handleSave`; сохранить submit-for-approval workflow.
+- [x] **C4.2** — validation и payload preparation вынесены в [`equipment-wizard-submit.ts`](../apps/web/src/components/eps/equipment-wizard-submit.ts); поля payload, `asDraft` и `submitForApproval` сохранены. Проверки: lint, tsc, 160 тестов, theme check и quality baseline (web 79.0, F=36, SOLID=25) — PASS.
 - [ ] **C4.3** — финально проверить размер формы, imports и полный gate C4.
 
 Коммит: `refactor(eps): extract equipment custom field renderer`
@@ -578,8 +578,8 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 5. **Quality checker** некорректно режет границы TSX-функций — всегда проверять вручную.
 6. **Не трогать:** `temp/`, `.env`, `uploads/`, `docker/jira/server.js` без отдельной задачи.
 7. **Не** массово заменять magic_number.
-8. **B3, B4, C1, C2, C3 и C4.1 завершены.** Следующий этап — C4.2: validation/payload preparation.
+8. **B3, B4, C1, C2, C3, C4.1 и C4.2 завершены.** Следующий этап — C4.3: финальная проверка C4.
 9. **C-stories** могут идти параллельно на разных файлах (не пересекающихся).
 10. **Не снижать** quality baseline: web ≥ 78.0, F ≤ 38, packages ≥ 94.0, F=0.
 
-*Обновлено 2026-08-29 после завершения C4.1. Stories A1–A3, B1–B4, C1–C3 и C4.1 закрыты.*
+*Обновлено 2026-08-29 после завершения C4.2. Stories A1–A3, B1–B4, C1–C3 и C4.1–C4.2 закрыты.*

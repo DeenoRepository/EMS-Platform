@@ -8,7 +8,7 @@
 > **Вердикт: ✅ Approve with suggestions.**  
 > Все критические security findings из аудита 2026-08-27 (Stories A1–A3, B1–B2) подтверждены закрытыми.  
 > Quality baseline PASS: 78.8/100 (C), 0 rate-limit gaps, 0 hex-hardcode в компонентах.
-> B3, B4, C1, C2, C3 и C4.1 завершены: admin-role checks унифицированы, production API logging paths переведены на structured `logger`, а крупные UI-области декомпозированы. Остаточный долг — 5 файлов ≥ 700 строк без деградации качества ниже F.
+> B3, B4, C1, C2, C3, C4.1 и C4.2 завершены: admin-role checks унифицированы, production API logging paths переведены на structured `logger`, а крупные UI-области декомпозированы. Остаточный долг — 4 файла ≥ 700 строк без деградации качества ниже F.
 
 ---
 
@@ -16,7 +16,7 @@
 
 | Область | Значение | Baseline | Статус |
 |---|---|---|---|
-| `apps/web/src` (код) | 279 файлов, **78.8/100**, grade C | ≥ 78.0 | ✅ PASS |
+| `apps/web/src` (код) | 279 файлов, **79.0/100**, grade C | ≥ 78.0 | ✅ PASS |
 | `packages` | 30 файлов, **94.1/100**, grade A | ≥ 94.0 | ✅ PASS |
 | F-grade файлы (web) | **36** | ≤ 38 | ✅ PASS |
 | API routes rate-limit | **0 gaps / 85 маршрутов** | 0 gaps | ✅ PASS |
@@ -270,6 +270,12 @@ packages/shared/   — типы, константы, permissions, formatters
 **Проверки:** lint, tsc, 160 тестов, route audit, theme check, quality baseline 78.8/F36/SOLID25 — PASS.
 **Коммиты:** `4bea600` — toolbar extraction; `6a89fb5` — `WmsStockZoneCell` renderer и финализация C3.
 
+### Story C4.2 — Equipment Wizard validation/payload preparation ✅
+
+**Файл:** [`EquipmentWizardForm.tsx`](../apps/web/src/components/eps/EquipmentWizardForm.tsx), helper [`equipment-wizard-submit.ts`](../apps/web/src/components/eps/equipment-wizard-submit.ts).
+**Результат:** pure validation и payload builder вынесены из `handleSave`; поля payload, `asDraft` и `submitForApproval` сохранены.
+**Проверки:** lint, tsc, 160 тестов, theme check и quality baseline 79.0/F36/SOLID25 — PASS.
+
 ### Story C1 — Декомпозиция `AdminSettingsPage` (MEDIUM, завершена)
 
 **Файлы:** [`app/admin/settings/page.tsx`](../apps/web/src/app/admin/settings/page.tsx) и выделенные панели в [`components/admin/settings/`](../apps/web/src/components/admin/settings/).
@@ -284,7 +290,7 @@ packages/shared/   — типы, константы, permissions, formatters
 
 **Файлы:** [`EquipmentWizardForm.tsx`](../apps/web/src/components/eps/EquipmentWizardForm.tsx), [`EquipmentCustomFieldRenderer.tsx`](../apps/web/src/components/eps/EquipmentCustomFieldRenderer.tsx).
 **Результат:** ветки custom fields вынесены в typed presentation-компонент; состояние значений и callback изменения сохранены в родителе.
-**Проверки:** lint, tsc, 160 тестов, theme check и quality baseline 78.9/F36/SOLID25 — PASS. Следующий bounded этап — C4.2: validation/payload preparation в `handleSave`.
+**Проверки:** lint, tsc, 160 тестов, theme check и quality baseline 78.9/F36/SOLID25 — PASS. Следующий bounded этап — C4.3: финальная проверка C4.
 
 ---
 
@@ -318,11 +324,11 @@ pnpm --filter @ems/web build
 | API pattern consistency | ✅ PASS | — |
 | Role string consistency | ✅ PASS | B3 завершена |
 | `console.*` в API | ✅ PASS | B4 завершена |
-| Large files (> 500 строк) | ⚠️ MEDIUM | C4.2, C5–C6 |
-| Quality baseline (78.9, F≤38) | ✅ PASS | поддерживать |
+| Large files (> 500 строк) | ⚠️ MEDIUM | C4.3, C5–C6 |
+| Quality baseline (79.0, F≤38) | ✅ PASS | поддерживать |
 | Test coverage (160 passed) | ✅ PASS | поддерживать |
 
-**Общий вердикт: ✅ Approve with suggestions.** Проект находится в стабильном рабочем состоянии. Критические проблемы безопасности и дизайна закрыты. B3, B4, C1, C2, C3 и C4.1 выполнены; следующий bounded этап — C4.2: Equipment Wizard validation/payload preparation.
+**Общий вердикт: ✅ Approve with suggestions.** Проект находится в стабильном рабочем состоянии. Критические проблемы безопасности и дизайна закрыты. B3, B4, C1, C2, C3, C4.1 и C4.2 выполнены; следующий bounded этап — C4.3: финальная проверка C4.
 
 ---
 
