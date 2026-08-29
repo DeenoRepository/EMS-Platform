@@ -490,6 +490,8 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 
 - [x] **C6.6** — warehouse submit request builder вынесен в [`warehouse-submit.ts`](../apps/web/src/app/wms/warehouses/warehouse-submit.ts); submit payload, endpoint selection и validation behavior сохранены. Commit: `5613e7a`.
 
+- [x] **C6.7** — audit-history branch [`EquipmentOperationalTabs.tsx`](../apps/web/src/components/eps/EquipmentOperationalTabs.tsx) вынесен в [`EquipmentAuditHistoryTab.tsx`](../apps/web/src/components/eps/EquipmentAuditHistoryTab.tsx); lifecycle timeline, loading/empty states, `StatusBadge`, `DataTableWrapper` и JSON changes rendering сохранены. Проверки: quality baseline (web 80.3, F=34, SOLID=24; packages 94.1, F=0, SOLID=0) — PASS. Commit: `f3950df`.
+
 - [x] **C6.8** — WMS dashboard deficit item вынесен в [`WmsDeficitItem.tsx`](../apps/web/src/components/wms/WmsDeficitItem.tsx); deficit presentation и расчет индикатора сохранены, dashboard data fetching/API contracts не изменены. Проверки: lint, tsc, quality baseline (web 79.7, F=36, SOLID=25) и `git diff --check` — PASS. Commit: `370bf87`.
 
 - [x] **C7** — StockDetailDrawer overview tab вынесен в [`StockDetailOverviewTab.tsx`](../apps/web/src/components/wms/StockDetailOverviewTab.tsx); drawer state, operations loading, permissions и callbacks сохранены. Проверки: lint, tsc, targeted quality checker (72/100, C), `git diff --check` — PASS. Commit: `eab0fa1`.
@@ -504,7 +506,7 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 
 - [x] **C12** — SRM incident branch of [`EquipmentOperationalTabs.tsx`](../apps/web/src/components/eps/EquipmentOperationalTabs.tsx) вынесен в [`EquipmentSrmIncidentsTab.tsx`](../apps/web/src/components/eps/EquipmentSrmIncidentsTab.tsx); MRO/SRM routing, callbacks, StatusBadge, DataTableWrapper and EmptyState behavior preserved. Проверки: lint, tsc, targeted quality checker (78/100, C), quality baseline (web 80.3, F=34, SOLID=24) и `git diff --check` — PASS. Commit: `44f1dd6`.
 
-Следующий bounded этап — C8: remaining P2/F-grade files and typed JSON boundaries.
+Следующий bounded этап — C6.8: remaining P1/F-grade files; audit-history extraction завершена в C6.7.
 
 C6.5 закрыта отдельным коммитом `9203fa6`; последующие изменения должны сохранять payload shape и API contract setup flow.
 
@@ -582,7 +584,8 @@ Commit template: `refactor(srm): type webhook payload as unknown and narrow`
 | ~~Следующая~~ | ~~B4~~ | ✅ console.* cleanup завершён |
 | ~~Следующая~~ | ~~C1, C2, C3~~ | ✅ крупные UI-монолиты декомпозированы |
 | ~~Текущая~~ | ~~C5.2b.4~~ | ✅ execute payload preparation и финальная проверка C5 завершены |
-| **Следующая** | **C6** | остальные P1-файлы > 600 строк |
+| ~~Текущая~~ | ~~C6.7~~ | ✅ audit-history branch вынесена в `EquipmentAuditHistoryTab.tsx`, baseline подтверждён |
+| **Следующая** | **C6.8** | следующий P1/F-grade bounded файл |
 | +3 | C6 (4–6 файлов) | F-grade < 38 |
 | backlog | C7, D, E | parser false-positives, typing, rules sync |
 
@@ -621,8 +624,8 @@ Commit template: `refactor(srm): type webhook payload as unknown and narrow`
 5. **Quality checker** некорректно режет границы TSX-функций — всегда проверять вручную.
 6. **Не трогать:** `temp/`, `.env`, `uploads/`, `docker/jira/server.js` без отдельной задачи.
 7. **Не** массово заменять magic_number.
-8. **B3, B4, C1–C5, C6.2a, C6.3, C6.5, C6.6, C6.7 и C7 завершены.** Следующий этап — C6.8: следующий P1/F-grade bounded файл.
+8. **B3, B4, C1–C5, C6.2a, C6.3, C6.5, C6.6, C6.7 и C7 завершены.** Следующий этап — C6.8: следующий P1/F-grade bounded файл; audit-history branch больше не является pending.
 9. **C-stories** могут идти параллельно на разных файлах (не пересекающихся).
 10. **Не снижать** quality baseline: web ≥ 78.0, F ≤ 38, packages ≥ 94.0, F=0.
 
-*Updated 2026-08-29 after D.4. Stories A1–A3, B1–B4, C1–C5, C6.2a, C6.3, D.1 and D.4 are closed.*
+*Updated 2026-08-29 after C6.7. Stories A1–A3, B1–B4, C1–C5, C6.2a, C6.3, C6.5–C6.7, C9–C12, D.1 and D.4 are closed.*
