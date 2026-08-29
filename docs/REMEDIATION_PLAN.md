@@ -20,7 +20,7 @@
 | **B4 — console.* остаток в API** | ✅ Выполнено (2026-08-29) | LOW |
 | C1 — Admin settings page | ✅ Выполнено: C1.1–C1.4 | MEDIUM |
 | C2 — Warehouse topology modal | ✅ Выполнено: C2.1–C2.3 | MEDIUM |
-| C3 — WMS stock page | ⏳ В работе: C3.1 ✅; C3.2–C3.4 открыты | MEDIUM |
+| C3 — WMS stock page | ✅ Выполнено: C3.1–C3.4 | MEDIUM |
 | C4 — Equipment wizard form | ⏳ Открыта | MEDIUM |
 | C5 — EPS reports + import | ⏳ Открыта | MEDIUM |
 | C6 — P1 страницы > 600 строк | ⏳ Открыта | MEDIUM |
@@ -426,9 +426,9 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 
 **Следующие под-stories C3:**
 
-- [ ] **C3.2** — финально проверить/при необходимости доработать [`WmsStockTable.tsx`](../apps/web/src/components/wms/WmsStockTable.tsx) и вынести только оставшиеся table-owner concerns.
-- [ ] **C3.3** — полный verification после table story и обновление inspection docs.
-- [ ] **C3.4** — отдельный Conventional Commit для C3.
+- [x] **C3.2** — `ZoneCell` вынесен в [`WmsStockZoneCell.tsx`](../apps/web/src/components/wms/WmsStockZoneCell.tsx); table props, click behavior и permission gating сохранены.
+- [x] **C3.3** — полный verification: lint/tsc, 160 тестов, route audit, theme check и quality baseline (web 78.8, F=36, SOLID=25) — PASS.
+- [x] **C3.4** — C3 зафиксирована коммитом `refactor(wms): extract stock filters toolbar` и отдельным изменением `WmsStockZoneCell`.
 
 
 ### Story C4 — Equipment wizard form (843 строк)
@@ -543,9 +543,9 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 - [x] 0 rate-limit gaps на 85 маршрутах
 - [x] `isAdminUser()` хелпер унифицирует admin-role проверки в API routes (B3)
 - [x] 0 `console.warn/error` в `apps/web/src/app/api/**` (B4)
-- [x] Web F-grade < 38, baseline PASS (C1/C2; F-grade 37)
-- [ ] `pnpm check:quality`, `check:theme`, `route_audit.py`, `pnpm test` зелёные
-- [x] [`PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md) обновлён после B3/B4; C1.4 и C2.3 завершены без новых findings
+- [x] Web F-grade < 38, baseline PASS (C1/C2/C3; F-grade 36)
+- [x] `pnpm check:quality`, `check:theme`, `route_audit.py`, `pnpm test` зелёные для завершённых stories
+- [x] [`PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md) обновлён после B3/B4; C1.4, C2.3 и C3.3 завершены без новых findings
 
 ---
 
@@ -566,8 +566,8 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 5. **Quality checker** некорректно режет границы TSX-функций — всегда проверять вручную.
 6. **Не трогать:** `temp/`, `.env`, `uploads/`, `docker/jira/server.js` без отдельной задачи.
 7. **Не** массово заменять magic_number.
-8. **B3, B4 и C1 завершены.** Следующий этап — C2, затем C3.
+8. **B3, B4, C1, C2 и C3 завершены.** Следующий этап — C4: Equipment wizard form.
 9. **C-stories** могут идти параллельно на разных файлах (не пересекающихся).
 10. **Не снижать** quality baseline: web ≥ 78.0, F ≤ 38, packages ≥ 94.0, F=0.
 
-*Обновлено 2026-08-29 после завершения C1. Предыдущие stories A1–A3, B1–B4 также закрыты.*
+*Обновлено 2026-08-29 после завершения C3. Stories A1–A3, B1–B4 и C1–C3 закрыты.*

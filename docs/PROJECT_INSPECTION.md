@@ -7,8 +7,8 @@
 
 > **Вердикт: ✅ Approve with suggestions.**  
 > Все критические security findings из аудита 2026-08-27 (Stories A1–A3, B1–B2) подтверждены закрытыми.  
-> Quality baseline PASS: 78.3/100 (C), 0 rate-limit gaps, 0 hex-hardcode в компонентах.
-> B3 и B4 завершены: admin-role checks унифицированы через `isAdminUser()`, а production API logging paths переведены на structured `logger`. Остаточный долг — 7 файлов ≥ 700 строк без деградации качества ниже F.
+> Quality baseline PASS: 78.8/100 (C), 0 rate-limit gaps, 0 hex-hardcode в компонентах.
+> B3, B4, C1, C2 и C3 завершены: admin-role checks унифицированы, production API logging paths переведены на structured `logger`, а три крупных UI-области декомпозированы. Остаточный долг — 6 файлов ≥ 700 строк без деградации качества ниже F.
 
 ---
 
@@ -16,9 +16,9 @@
 
 | Область | Значение | Baseline | Статус |
 |---|---|---|---|
-| `apps/web/src` (код) | 279 файлов, **78.3/100**, grade C | ≥ 78.0 | ✅ PASS |
+| `apps/web/src` (код) | 279 файлов, **78.8/100**, grade C | ≥ 78.0 | ✅ PASS |
 | `packages` | 30 файлов, **94.1/100**, grade A | ≥ 94.0 | ✅ PASS |
-| F-grade файлы (web) | **38** | ≤ 38 | ✅ PASS |
+| F-grade файлы (web) | **36** | ≤ 38 | ✅ PASS |
 | API routes rate-limit | **0 gaps / 85 маршрутов** | 0 gaps | ✅ PASS |
 | RBAC на всех routes | **100%** — `requireAuth` или `hasPermission` | обязательно | ✅ PASS |
 | Webhook secret validation | **✅ Корректно** (`!providedToken \|\| providedToken !== secret`) | обязательно | ✅ PASS |
@@ -30,7 +30,7 @@
 | `StatCard` для KPI | **✅** — сквозное применение | обязательно | ✅ PASS |
 | `console.error/warn` в API | **0 вхождений** | 0 в production paths | ✅ PASS |
 | Роль-строка унификация | B3 закрыта; `auth/login` имеет локальный массив roles | documented exception | ✅ PASS |
-| Файлы > 500 строк | **20 файлов** (presentation-heavy pages) | требует bounded refactor | ⚠️ MEDIUM |
+| Файлы > 500 строк | **18 файлов** (presentation-heavy pages) | требует bounded refactor | ⚠️ MEDIUM |
 
 ---
 
@@ -263,15 +263,22 @@ packages/shared/   — типы, константы, permissions, formatters
 
 **Результат:** 4 production API logging paths в [`srm/issues/route.ts`](../apps/web/src/app/api/srm/issues/route.ts:156), [`eps/import/execute/route.ts`](../apps/web/src/app/api/eps/import/execute/route.ts:134), [`eps/import/execute/route.ts`](../apps/web/src/app/api/eps/import/execute/route.ts:330) и [`setup/execute/route.ts`](../apps/web/src/app/api/setup/execute/route.ts:162) переведены на `logger.warn/error` с endpoint context. Проверка: 0 `console.*` в API, полный тестовый набор 160/160.
 
-### Story C3 — Декомпозиция `AdminSettingsPage` (MEDIUM, 2d)
+### Story C3 — Декомпозиция WMS stock page ✅
 
-**Файл:** [`app/admin/settings/page.tsx`](../apps/web/src/app/admin/settings/page.tsx) (1 097 строк)  
-**Действие:** Вынести каждую секцию настроек в отдельный tab-компонент (`AdminLdapSettingsTab`, `AdminSrmSettingsTab`, `AdminStorageTab`, `AdminMaintenanceTab`). Сохранить state и handlers в родителе.
+**Файлы:** [`wms/stock/page.tsx`](../apps/web/src/app/wms/stock/page.tsx), [`WmsStockFilters.tsx`](../apps/web/src/components/wms/WmsStockFilters.tsx), [`WmsStockZoneCell.tsx`](../apps/web/src/components/wms/WmsStockZoneCell.tsx), [`WmsStockTable.tsx`](../apps/web/src/components/wms/WmsStockTable.tsx).
+**Результат:** фильтры и zone-cell renderer выделены в focused components; state, pagination, export и table contracts сохранены.
+**Проверки:** lint, tsc, 160 тестов, route audit, theme check, quality baseline 78.8/F36/SOLID25 — PASS.
+**Коммиты:** `4bea600` — toolbar extraction; C3.2 `WmsStockZoneCell` renderer готовится к фиксации после успешного verification.
 
-### Story C4 — Декомпозиция `WarehouseTopologyModal` (MEDIUM, 1d)
+### Story C1 — Декомпозиция `AdminSettingsPage` (MEDIUM, завершена)
+
+**Файлы:** [`app/admin/settings/page.tsx`](../apps/web/src/app/admin/settings/page.tsx) и выделенные панели в [`components/admin/settings/`](../apps/web/src/components/admin/settings/).
+**Результат:** maintenance, LDAP, SRM и database dump panels вынесены в typed presentation-компоненты; state, fetch и handlers сохранены в route owner. Итоговый размер страницы — 516 строк.
+
+### Story C2 — Декомпозиция `WarehouseTopologyModal` (MEDIUM, завершена)
 
 **Файл:** [`components/wms/WarehouseTopologyModal.tsx`](../apps/web/src/components/wms/WarehouseTopologyModal.tsx) (878 строк)  
-**Действие:** Вынести секцию зон/ячеек в `WarehouseZonePanel`, секцию карточки зоны в `WarehouseZoneCard`.
+**Действие:** Зоны и active-zone/cell grid вынесены в [`WarehouseZonesNavigation.tsx`](../apps/web/src/components/wms/WarehouseZonesNavigation.tsx) и [`WarehouseActiveZonePanel.tsx`](../apps/web/src/components/wms/WarehouseActiveZonePanel.tsx); modal state, fetch и CRUD handlers сохранены в родителе. Итоговый размер parent — 615 строк.
 
 ---
 
@@ -303,13 +310,13 @@ pnpm --filter @ems/web build
 | Security (rate limit, RBAC, webhook, LDAP, SQL) | ✅ ALL PASS | — |
 | UI Design System (StatusBadge, StatCard, Chip, hex) | ✅ ALL PASS | — |
 | API pattern consistency | ✅ PASS | — |
-| Role string consistency | ⚠️ LOW | Story C1 |
-| `console.*` в API | ⚠️ LOW | Story C2 |
-| Large files (> 500 строк) | ⚠️ MEDIUM | Stories C3, C4 |
-| Quality baseline (78.3, F≤38) | ✅ PASS | поддерживать |
-| Test coverage (157 passed) | ✅ PASS | поддерживать |
+| Role string consistency | ✅ PASS | B3 завершена |
+| `console.*` в API | ✅ PASS | B4 завершена |
+| Large files (> 500 строк) | ⚠️ MEDIUM | C4–C6 |
+| Quality baseline (78.8, F≤38) | ✅ PASS | поддерживать |
+| Test coverage (160 passed) | ✅ PASS | поддерживать |
 
-**Общий вердикт: ✅ Approve with suggestions.** Проект находится в стабильном рабочем состоянии. Критические проблемы безопасности и дизайна закрыты. B3 и B4 выполнены; следующий bounded этап — UI-декомпозиция C1–C4.
+**Общий вердикт: ✅ Approve with suggestions.** Проект находится в стабильном рабочем состоянии. Критические проблемы безопасности и дизайна закрыты. B3, B4, C1, C2 и C3 выполнены; следующий bounded этап — C4: Equipment wizard form.
 
 ---
 
