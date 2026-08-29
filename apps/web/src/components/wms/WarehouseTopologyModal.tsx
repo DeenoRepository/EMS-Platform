@@ -6,15 +6,10 @@ import {
   Typography,
   Grid,
   Button,
-  Chip,
   IconButton,
   TextField,
   Stack,
-  Tooltip,
   Paper,
-  Tabs,
-  Tab,
-  InputAdornment,
   CircularProgress,
   Dialog,
   DialogTitle,
@@ -24,17 +19,16 @@ import {
 } from '@mui/material';
 import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
 import GridViewIcon from '@mui/icons-material/GridView';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import LayersOutlinedIcon from '@mui/icons-material/LayersOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import { useSnackbar } from 'notistack';
-import { FormDialog, EmptyState, useConfirm, SearchInput } from '@/components/ui';
+import { FormDialog, EmptyState, useConfirm } from '@/components/ui';
 import { PERMISSIONS } from '@ems/shared';
 import { useAuth } from '@/lib/auth-client';
 import WarehouseZonesNavigation from './WarehouseZonesNavigation';
+import WarehouseActiveZonePanel from './WarehouseActiveZonePanel';
 
 export interface StorageCell {
   id: string;
@@ -431,250 +425,21 @@ export default function WarehouseTopologyModal({
                 onCreateZone={() => setIsCreateZoneOpen(true)}
               />
 
-              {/* Active Zone Content Area */}
               {activeZone && (
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 2.5,
-                    borderRadius: '12px',
-                    border: '1px solid divider',
-                    bgcolor: 'background.paper',
-                    flexGrow: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
+                <WarehouseActiveZonePanel
+                  activeZone={activeZone}
+                  filteredCells={filteredCells}
+                  searchQuery={searchQuery}
+                  canManageZones={canManageZones}
+                  onSearchChange={setSearchQuery}
+                  onOpenBatchGenerator={() => {
+                    setBatchPrefix(activeZone.code);
+                    setIsBatchOpen(true);
                   }}
-                >
-                  {/* Zone Header Controls */}
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      flexWrap: 'wrap',
-                      gap: 2,
-                      mb: 2.5,
-                      pb: 2,
-                      borderBottom: '1px solid action.hover',
-                    }}
-                  >
-                    <Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                          {activeZone.name}
-                        </Typography>
-                        <Chip
-                          label={`Код: ${activeZone.code}`}
-                          size="small"
-                          sx={{
-                            fontWeight: 700,
-                            borderRadius: '6px',
-                            bgcolor: 'action.hover',
-                            color: 'text.secondary',
-                            height: 22,
-                            fontSize: '0.6875rem',
-                          }}
-                        />
-                        {activeZone.description && (
-                          <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8125rem' }}>
-                            • {activeZone.description}
-                          </Typography>
-                        )}
-                      </Box>
-                      <Typography variant="caption" sx={{ color: 'text.disabled' }}>
-                        Всего {activeZone.cells.length} ячеек адресного хранения в этой зоне
-                      </Typography>
-                    </Box>
-
-                    {/* Search & Action Buttons */}
-                    <Stack direction="row" spacing={1.5} alignItems="center">
-                      <Box sx={{ width: 190 }}>
-                        <SearchInput
-                          size="small"
-                          placeholder="Поиск ячейки..."
-                          value={searchQuery}
-                          onSearch={(val) => setSearchQuery(val)}
-                        />
-                      </Box>
-
-                      {canManageZones && (
-                        <>
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            startIcon={<AutoAwesomeIcon sx={{ color: 'secondary.main' }} />}
-                            onClick={() => {
-                              setBatchPrefix(activeZone.code);
-                              setIsBatchOpen(true);
-                            }}
-                            sx={{
-                              height: 36,
-                              borderRadius: '8px',
-                              fontWeight: 600,
-                              fontSize: '0.75rem',
-                              textTransform: 'none',
-                              borderColor: 'secondary.light',
-                              color: 'secondary.dark',
-                              bgcolor: 'secondary.light',
-                              '&:hover': { bgcolor: 'secondary.light', borderColor: 'secondary.light' },
-                            }}
-                          >
-                            Мастер генерации ячеек
-                          </Button>
-
-                          <Button
-                            variant="contained"
-                            size="small"
-                            startIcon={<AddIcon />}
-                            onClick={() => setIsCreateCellOpen(true)}
-                            sx={{
-                              height: 36,
-                              borderRadius: '8px',
-                              fontWeight: 600,
-                              fontSize: '0.75rem',
-                              textTransform: 'none',
-                              bgcolor: 'primary.main',
-                              '&:hover': { bgcolor: 'primary.dark' },
-                            }}
-                          >
-                            Добавить ячейку
-                          </Button>
-
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => handleDeleteZone(activeZone)}
-                            aria-label="Удалить зону"
-                            sx={{ bgcolor: 'error.light', '&:hover': { bgcolor: 'error.light' } }}
-                          >
-                            <DeleteOutlineIcon fontSize="small" />
-                          </IconButton>
-                        </>
-                      )}
-                    </Stack>
-                  </Box>
-
-                  {/* 2D Interactive Rack / Cell Grid */}
-                  {filteredCells.length === 0 ? (
-                    <Box sx={{ py: 6, textAlign: 'center' }}>
-                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                        {searchQuery ? 'Ячейки по запросу не найдены' : 'В этой зоне пока нет созданных ячеек.'}
-                      </Typography>
-                      {!searchQuery && canManageZones && (
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          startIcon={<AutoAwesomeIcon />}
-                          onClick={() => {
-                            setBatchPrefix(activeZone.code);
-                            setIsBatchOpen(true);
-                          }}
-                          sx={{ mt: 2, borderRadius: '8px', textTransform: 'none' }}
-                        >
-                          Сгенерировать сетку ячеек (Ряд-Стеллаж-Полка)
-                        </Button>
-                      )}
-                    </Box>
-                  ) : (
-                    <Box sx={{ flexGrow: 1, overflowY: 'auto', pr: 0.5 }}>
-                      <Grid container spacing={1.5}>
-                        {filteredCells.map((cell) => {
-                          const stockCount = cell._count?.stockItems || 0;
-                          const isOccupied = stockCount > 0;
-
-                          return (
-                            <Grid item xs={6} sm={4} md={3} lg={2.4} key={cell.id}>
-                              <Paper
-                                elevation={0}
-                                sx={{
-                                  p: 1.5,
-                                  borderRadius: '10px',
-                                  border: '1px solid',
-                                  borderColor: isOccupied ? 'primary.light' : 'divider',
-                                  bgcolor: isOccupied ? 'rgba(239, 246, 255, 0.6)' : 'background.paper',
-                                  transition: 'all 0.18s ease',
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  justifyContent: 'space-between',
-                                  minHeight: 88,
-                                  position: 'relative',
-                                  '&:hover': {
-                                    borderColor: 'primary.main',
-                                    transform: 'translateY(-2px)',
-                                    boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08)',
-                                    '& .cell-del-btn': { opacity: 1 },
-                                  },
-                                }}
-                              >
-                                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                                  <Box>
-                                    <Typography
-                                      variant="subtitle2"
-                                      sx={{
-                                        fontWeight: 700,
-                                        fontSize: '0.875rem',
-                                        color: 'text.primary',
-                                        fontFeatureSettings: '"tnum"',
-                                      }}
-                                    >
-                                      {cell.code}
-                                    </Typography>
-                                    {cell.name && (
-                                      <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6875rem' }} noWrap>
-                                        {cell.name}
-                                      </Typography>
-                                    )}
-                                  </Box>
-
-                                  {canManageZones && (
-                                    <IconButton
-                                      className="cell-del-btn"
-                                      size="small"
-                                      onClick={() => handleDeleteCell(cell)}
-                                      aria-label={`Удалить ${cell.code}`}
-                                      sx={{
-                                        opacity: 0,
-                                        p: 0.25,
-                                        color: 'error.main',
-                                        transition: 'opacity 0.15s ease',
-                                      }}
-                                    >
-                                      <CloseIcon sx={{ fontSize: 16 }} />
-                                    </IconButton>
-                                  )}
-                                </Box>
-
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
-                                  <Chip
-                                    label={isOccupied ? `${stockCount} поз. ТМЦ` : 'Свободна'}
-                                    size="small"
-                                    sx={{
-                                      height: 18,
-                                      fontSize: '0.625rem',
-                                      fontWeight: 600,
-                                      borderRadius: '4px',
-                                      bgcolor: isOccupied ? 'info.light' : 'action.hover',
-                                      color: isOccupied ? 'info.dark' : 'text.secondary',
-                                    }}
-                                  />
-
-                                  <Box
-                                    sx={{
-                                      width: 8,
-                                      height: 8,
-                                      borderRadius: '50%',
-                                      bgcolor: isOccupied ? 'info.main' : 'success.main',
-                                    }}
-                                  />
-                                </Box>
-                              </Paper>
-                            </Grid>
-                          );
-                        })}
-                      </Grid>
-                    </Box>
-                  )}
-                </Paper>
+                  onOpenCreateCell={() => setIsCreateCellOpen(true)}
+                  onDeleteZone={handleDeleteZone}
+                  onDeleteCell={handleDeleteCell}
+                />
               )}
             </>
           )}

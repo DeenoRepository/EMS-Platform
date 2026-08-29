@@ -19,7 +19,7 @@
 | **B3 — Role string унификация** | ✅ Выполнено (2026-08-29) | LOW |
 | **B4 — console.* остаток в API** | ✅ Выполнено (2026-08-29) | LOW |
 | C1 — Admin settings page | ✅ Выполнено: C1.1–C1.4 | MEDIUM |
-| C2 — Warehouse topology modal | ⏳ В работе: C2.1 ✅; C2.2–C2.3 открыты | MEDIUM |
+| C2 — Warehouse topology modal | ⏳ В работе: C2.1 ✅; C2.2 ✅; C2.3 открыта | MEDIUM |
 | C3 — WMS stock page | ⏳ Открыта | MEDIUM |
 | C4 — Equipment wizard form | ⏳ Открыта | MEDIUM |
 | C5 — EPS reports + import | ⏳ Открыта | MEDIUM |
@@ -403,7 +403,7 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 
 **Следующие под-stories C2:**
 
-- [ ] **C2.2** — вынести cell grid и active-zone content; сохранить `filteredCells`, delete-cell callback и empty state.
+- [x] **C2.2** — active-zone content и cell grid вынесены в [`WarehouseActiveZonePanel.tsx`](../apps/web/src/components/wms/WarehouseActiveZonePanel.tsx); `filteredCells`, search, create/batch/delete callbacks и empty state сохранены. Удалены ставшие неиспользуемыми imports. Проверки: 160 тестов, lint, tsc, route audit, theme check и quality baseline (web 78.7, F=37, SOLID=25) — PASS.
 - [ ] **C2.3** — финально проверить imports/handlers, запустить полный gate и закрыть C2.
 
 Коммит: `refactor(wms): extract warehouse zones navigation`
