@@ -29,6 +29,7 @@ import { EquipmentPassportOverview } from '@/components/eps/EquipmentPassportOve
 import { EquipmentDocumentsTab } from '@/components/eps/EquipmentDocumentsTab';
 import { EquipmentApprovalsTab } from '@/components/eps/EquipmentApprovalsTab';
 import { EquipmentOperationalTabs } from '@/components/eps/EquipmentOperationalTabs';
+import type { EquipmentAuditLog } from '@/components/eps/EquipmentAuditHistoryTab';
 import { EquipmentEditDialog } from '@/components/eps/EquipmentEditDialog';
 import { EquipmentPassportAuxiliaryDialogs } from '@/components/eps/EquipmentPassportAuxiliaryDialogs';
 import { buildEquipmentLifecycleEvents } from '@/components/eps/equipment-lifecycle-events';
@@ -175,7 +176,7 @@ function EquipmentPassportContent() {
 
   const [docModalOpen, setDocModalOpen] = useState(false);
   const [previewDocUrl, setPreviewDocUrl] = useState<string | null>(null);
-  const [auditLogs, setAuditLogs] = useState<Record<string, unknown>[]>([]);
+  const [auditLogs, setAuditLogs] = useState<EquipmentAuditLog[]>([]);
   const [loadingAudit, setLoadingAudit] = useState(false);
 
   // Approval Modal State
