@@ -514,7 +514,9 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 
 - [x] **C16** — MRO schedule KPI/statistics calculation was extracted into [`schedule-stats.ts`](../apps/web/src/app/mro/schedule-stats.ts:1) while API calls, state ownership, routing, filtering, sorting, pagination, and shared UI contracts were preserved in [`page.tsx`](../apps/web/src/app/mro/page.tsx:128). Verified baseline: web 80.5, F-grade 33, smells 2361, SOLID 24; packages 94.1, F-grade 0, SOLID 0. Commit: `4bd77de`.
 
-Следующий bounded этап — выбрать следующий P1/F-grade файл после завершённых C6.8 и C7–C16, включая C16 schedule statistics extraction.
+- [x] **C17** — MRO schedule normalization was extracted into [`schedule-execution-model.ts`](../apps/web/src/app/mro/schedule-execution-model.ts:1), while checklist mapping, equipment/plan data, notes, wizard behavior, execution request body, state ownership, and API contracts were preserved in [`page.tsx`](../apps/web/src/app/mro/page.tsx:166). Verified baseline: web 80.6, F-grade 33, smells 2361, SOLID 24; packages 94.1, F-grade 0, SOLID 0. Commit: `8f2b4e0`.
+
+Следующий bounded этап — выбрать следующий P1/F-grade файл после завершённых C6.8 и C7–C17, включая C16 schedule statistics и C17 schedule execution adapter.
 
 C6.5 закрыта отдельным коммитом `9203fa6`; последующие изменения должны сохранять payload shape и API contract setup flow.
 
