@@ -498,6 +498,8 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 
 - [x] **C9** — four-card KPI panel from [`EquipmentPassportOverview.tsx`](../apps/web/src/components/eps/EquipmentPassportOverview.tsx) вынесен в [`EquipmentPassportKpiPanel.tsx`](../apps/web/src/components/eps/EquipmentPassportKpiPanel.tsx); typed equipment contract and shared StatCard usage preserved. Проверки: lint, tsc, targeted quality checker, quality baseline и `git diff --check` — PASS. Commit: `667a03c`.
 
+- [x] **C10** — technical sections/default parameters from [`EquipmentPassportOverview.tsx`](../apps/web/src/components/eps/EquipmentPassportOverview.tsx) вынесены в [`EquipmentPassportTechnicalSections.tsx`](../apps/web/src/components/eps/EquipmentPassportTechnicalSections.tsx); typed field/section/equipment contracts, field filtering, units, icons and copy callbacks preserved. Проверки: lint, tsc, targeted quality checker, quality baseline и `git diff --check` — PASS. Commit: `8ed2b97`.
+
 Следующий bounded этап — C8: remaining P2/F-grade files and typed JSON boundaries.
 
 C6.5 закрыта отдельным коммитом `9203fa6`; последующие изменения должны сохранять payload shape и API contract setup flow.
