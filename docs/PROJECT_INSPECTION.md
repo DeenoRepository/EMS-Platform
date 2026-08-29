@@ -8,7 +8,7 @@
 > **Вердикт: ✅ Approve with suggestions.**  
 > Все критические security findings из аудита 2026-08-27 (Stories A1–A3, B1–B2) подтверждены закрытыми.  
 > Quality baseline PASS: 78.8/100 (C), 0 rate-limit gaps, 0 hex-hardcode в компонентах.
-> B3, B4, C1, C2 и C3 завершены: admin-role checks унифицированы, production API logging paths переведены на structured `logger`, а три крупных UI-области декомпозированы. Остаточный долг — 6 файлов ≥ 700 строк без деградации качества ниже F.
+> B3, B4, C1, C2, C3 и C4.1 завершены: admin-role checks унифицированы, production API logging paths переведены на structured `logger`, а крупные UI-области декомпозированы. Остаточный долг — 5 файлов ≥ 700 строк без деградации качества ниже F.
 
 ---
 
@@ -268,7 +268,7 @@ packages/shared/   — типы, константы, permissions, formatters
 **Файлы:** [`wms/stock/page.tsx`](../apps/web/src/app/wms/stock/page.tsx), [`WmsStockFilters.tsx`](../apps/web/src/components/wms/WmsStockFilters.tsx), [`WmsStockZoneCell.tsx`](../apps/web/src/components/wms/WmsStockZoneCell.tsx), [`WmsStockTable.tsx`](../apps/web/src/components/wms/WmsStockTable.tsx).
 **Результат:** фильтры и zone-cell renderer выделены в focused components; state, pagination, export и table contracts сохранены.
 **Проверки:** lint, tsc, 160 тестов, route audit, theme check, quality baseline 78.8/F36/SOLID25 — PASS.
-**Коммиты:** `4bea600` — toolbar extraction; C3.2 `WmsStockZoneCell` renderer готовится к фиксации после успешного verification.
+**Коммиты:** `4bea600` — toolbar extraction; `6a89fb5` — `WmsStockZoneCell` renderer и финализация C3.
 
 ### Story C1 — Декомпозиция `AdminSettingsPage` (MEDIUM, завершена)
 
@@ -279,6 +279,12 @@ packages/shared/   — типы, константы, permissions, formatters
 
 **Файл:** [`components/wms/WarehouseTopologyModal.tsx`](../apps/web/src/components/wms/WarehouseTopologyModal.tsx) (878 строк)  
 **Действие:** Зоны и active-zone/cell grid вынесены в [`WarehouseZonesNavigation.tsx`](../apps/web/src/components/wms/WarehouseZonesNavigation.tsx) и [`WarehouseActiveZonePanel.tsx`](../apps/web/src/components/wms/WarehouseActiveZonePanel.tsx); modal state, fetch и CRUD handlers сохранены в родителе. Итоговый размер parent — 615 строк.
+
+### Story C4.1 — Custom field renderer для Equipment Wizard ✅
+
+**Файлы:** [`EquipmentWizardForm.tsx`](../apps/web/src/components/eps/EquipmentWizardForm.tsx), [`EquipmentCustomFieldRenderer.tsx`](../apps/web/src/components/eps/EquipmentCustomFieldRenderer.tsx).
+**Результат:** ветки custom fields вынесены в typed presentation-компонент; состояние значений и callback изменения сохранены в родителе.
+**Проверки:** lint, tsc, 160 тестов, theme check и quality baseline 78.9/F36/SOLID25 — PASS. Следующий bounded этап — C4.2: validation/payload preparation в `handleSave`.
 
 ---
 
@@ -312,11 +318,11 @@ pnpm --filter @ems/web build
 | API pattern consistency | ✅ PASS | — |
 | Role string consistency | ✅ PASS | B3 завершена |
 | `console.*` в API | ✅ PASS | B4 завершена |
-| Large files (> 500 строк) | ⚠️ MEDIUM | C4–C6 |
-| Quality baseline (78.8, F≤38) | ✅ PASS | поддерживать |
+| Large files (> 500 строк) | ⚠️ MEDIUM | C4.2, C5–C6 |
+| Quality baseline (78.9, F≤38) | ✅ PASS | поддерживать |
 | Test coverage (160 passed) | ✅ PASS | поддерживать |
 
-**Общий вердикт: ✅ Approve with suggestions.** Проект находится в стабильном рабочем состоянии. Критические проблемы безопасности и дизайна закрыты. B3, B4, C1, C2 и C3 выполнены; следующий bounded этап — C4: Equipment wizard form.
+**Общий вердикт: ✅ Approve with suggestions.** Проект находится в стабильном рабочем состоянии. Критические проблемы безопасности и дизайна закрыты. B3, B4, C1, C2, C3 и C4.1 выполнены; следующий bounded этап — C4.2: Equipment Wizard validation/payload preparation.
 
 ---
 

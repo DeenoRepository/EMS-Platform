@@ -41,6 +41,7 @@ import SendIcon from '@mui/icons-material/Send';
 import { useSnackbar } from 'notistack';
 import { StatusBadge, DatePickerField } from '@/components/ui';
 import { EQUIPMENT_STATUS_MAP } from '@ems/shared';
+import EquipmentCustomFieldRenderer from './EquipmentCustomFieldRenderer';
 
 export interface TagItem {
   id: string;
@@ -165,101 +166,13 @@ export function EquipmentWizardForm({
     setCustomFieldValues((prev) => ({ ...prev, [key]: value }));
   };
 
-  const renderFieldInput = (def: CustomFieldDef) => {
-    if (def.fieldType === 'BOOLEAN') {
-      return (
-        <Box key={def.key} sx={{ gridColumn: { xs: 'span 1', sm: 'span 1' } }}>
-          <Paper variant="outlined" sx={{ p: 1.5, height: '100%', display: 'flex', alignItems: 'center', borderRadius: '8px' }}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={Boolean(customFieldValues[def.key])}
-                  onChange={(e) => handleCustomFieldChange(def.key, e.target.checked)}
-                  color="primary"
-                />
-              }
-              label={
-                <Typography variant="body2" fontWeight={600}>
-                  {def.name}
-                </Typography>
-              }
-            />
-          </Paper>
-        </Box>
-      );
-    }
-
-    if (def.fieldType === 'SELECT' && def.options && Array.isArray(def.options)) {
-      return (
-        <Box key={def.key} sx={{ gridColumn: { xs: 'span 1', sm: 'span 1' } }}>
-          <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ mb: 0.5 }}>
-            {def.name} {def.isRequired && <Box component="span" sx={{ color: 'error.main' }}>*</Box>}
-          </Typography>
-          <TextField
-            select
-            fullWidth
-            size="small"
-            required={def.isRequired}
-            value={customFieldValues[def.key] || ''}
-            onChange={(e) => handleCustomFieldChange(def.key, e.target.value)}
-          >
-            <MenuItem value="">— Не выбрано —</MenuItem>
-            {def.options.map((opt: string) => (
-              <MenuItem key={opt} value={opt}>
-                {opt}
-              </MenuItem>
-            ))}
-          </TextField>
-        </Box>
-      );
-    }
-
-    if (def.fieldType === 'TEXTAREA') {
-      return (
-        <Box key={def.key} sx={{ gridColumn: { xs: 'span 1', sm: 'span 2' } }}>
-          <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ mb: 0.5 }}>
-            {def.name} {def.isRequired && <Box component="span" sx={{ color: 'error.main' }}>*</Box>}
-          </Typography>
-          <TextField
-            multiline
-            rows={2}
-            fullWidth
-            size="small"
-            required={def.isRequired}
-            value={customFieldValues[def.key] || ''}
-            onChange={(e) => handleCustomFieldChange(def.key, e.target.value)}
-          />
-        </Box>
-      );
-    }
-
-    return (
-      <Box key={def.key} sx={{ gridColumn: { xs: 'span 1', sm: 'span 1' } }}>
-        <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ mb: 0.5 }}>
-          {def.name} {def.isRequired && <Box component="span" sx={{ color: 'error.main' }}>*</Box>}
-        </Typography>
-        <TextField
-          type={def.fieldType === 'NUMBER' ? 'number' : def.fieldType === 'DATE' ? 'date' : 'text'}
-          InputProps={
-            def.unit
-              ? {
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <Chip label={def.unit} size="small" variant="outlined" sx={{ fontWeight: 700, height: 22 }} />
-                    </InputAdornment>
-                  ),
-                }
-              : undefined
-          }
-          fullWidth
-          size="small"
-          required={def.isRequired}
-          value={customFieldValues[def.key] || ''}
-          onChange={(e) => handleCustomFieldChange(def.key, e.target.value)}
-        />
-      </Box>
-    );
-  };
+  const renderFieldInput = (definition: CustomFieldDef) => (
+    <EquipmentCustomFieldRenderer
+      definition={definition}
+      value={customFieldValues[definition.key]}
+      onChange={handleCustomFieldChange}
+    />
+  );
 
   const handleNextStep = () => {
     if (activeStep === 0) {
