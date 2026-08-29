@@ -23,7 +23,7 @@
 | C3 — WMS stock page | ✅ Выполнено: C3.1–C3.4 | MEDIUM |
 | C4 — Equipment wizard form | ✅ Выполнено: C4.1–C4.3 | MEDIUM |
 | C5 — EPS reports + import | ✅ Выполнено: C5.1–C5.4 | MEDIUM |
-| C6 — P1 страницы > 600 строк | ⏳ В работе: C6.1 ✅; C6.2a ✅; C6.3 ✅ | MEDIUM |
+| C6 — P1 страницы > 600 строк | ⏳ В работе: C6.1 ✅; C6.2a ✅; C6.3 ✅; C6.5 ✅ | MEDIUM |
 | C7 — P2 F-файлы < 500 строк | ⏳ Открыта | LOW |
 | D — Типизация | ⏳ В работе: D.1 ✅ (GitLab connection JSON boundary) | P2 |
 | E — Tooling и документация | ⏳ Открыта | LOW |
@@ -481,12 +481,16 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 
 ### Story C6 — Остальные P1 страницы > 600 строк (decomposed into bounded stories)
 
-По одному коммиту, тот же рецепт. C6.1 inventory актуализирован; C6.2a и C6.3 завершены:
+По одному коммиту, тот же рецепт. C6.1 inventory актуализирован; C6.2a, C6.3 и C6.5 завершены:
 
 - [x] **C6.2a** — filter toolbar WMS inventory вынесен в [`WmsInventoryFilters.tsx`](../apps/web/src/components/wms/WmsInventoryFilters.tsx); filter/reset/pagination behavior сохранены. Проверки: lint, tsc, 160 тестов, route audit, theme check и quality baseline (web 79.3, F=36, SOLID=25) — PASS.
 - [x] **C6.3** — lifecycle-event mapping EPS equipment passport page вынесен в [`equipment-lifecycle-events.ts`](../apps/web/src/components/eps/equipment-lifecycle-events.ts); state, handlers и API contracts сохранены в [`page.tsx`](../apps/web/src/app/eps/[id]/page.tsx). Проверки: lint, tsc, 160 тестов, route audit, theme check, `git diff --check` и quality baseline (web 79.4, F=36, SOLID=25; packages 94.1, F=0, SOLID=0) — PASS.
 
-Следующий bounded этап — C6.4–C6.6: оставшиеся P1/F-grade файлы.
+- [x] **C6.5** — setup wizard payload builder вынесен в [`setup-payload.ts`](../apps/web/src/app/setup/setup-payload.ts); [`handleExecuteSetup`](../apps/web/src/app/setup/page.tsx) сохранил payload shape, API contract и navigation behavior. Проверки: lint, tsc, targeted quality checker и `git diff --check` — PASS; web baseline до story: 79.4, F=36, SOLID=25. Commit: `9203fa6`.
+
+Следующий bounded этап — C6.6: оставшиеся P1/F-grade файлы.
+
+C6.5 закрыта отдельным коммитом `9203fa6`; последующие изменения должны сохранять payload shape и API contract setup flow.
 
 | Порядок | Файл | Фокус |
 |---|---|---|
@@ -601,7 +605,7 @@ Commit template: `refactor(srm): type webhook payload as unknown and narrow`
 5. **Quality checker** некорректно режет границы TSX-функций — всегда проверять вручную.
 6. **Не трогать:** `temp/`, `.env`, `uploads/`, `docker/jira/server.js` без отдельной задачи.
 7. **Не** массово заменять magic_number.
-8. **B3, B4, C1–C5, C6.2a и C6.3 завершены.** Следующий этап — C6.4: следующий P1/F-grade bounded файл.
+8. **B3, B4, C1–C5, C6.2a, C6.3 и C6.5 завершены.** Следующий этап — C6.6: следующий P1/F-grade bounded файл.
 9. **C-stories** могут идти параллельно на разных файлах (не пересекающихся).
 10. **Не снижать** quality baseline: web ≥ 78.0, F ≤ 38, packages ≥ 94.0, F=0.
 
