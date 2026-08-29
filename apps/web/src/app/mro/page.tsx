@@ -31,6 +31,7 @@ import { PERMISSIONS, PlatformMaintenanceStatus } from '@ems/shared';
 import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
 import MroSchedulesTable, { MaintenanceScheduleRow } from '@/components/mro/MroSchedulesTable';
+import { compareMaintenanceSchedules } from './schedule-sort';
 
 const MRO_COLUMNS: TableColumnOption[] = [
   { id: 'scheduledDate', label: 'Плановый срок проведения', defaultVisible: true },
@@ -152,28 +153,7 @@ function MroPageContent() {
       return true;
     });
 
-    list.sort((a, b) => {
-      let valA: any = '';
-      let valB: any = '';
-
-      if (sortField === 'scheduledDate') {
-        valA = new Date(a.scheduledDate).getTime();
-        valB = new Date(b.scheduledDate).getTime();
-      } else if (sortField === 'equipment') {
-        valA = a.equipment?.name || '';
-        valB = b.equipment?.name || '';
-      } else if (sortField === 'plan') {
-        valA = a.plan?.name || '';
-        valB = b.plan?.name || '';
-      } else if (sortField === 'status') {
-        valA = a.status;
-        valB = b.status;
-      }
-
-      if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
-      if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
+    list.sort((a, b) => compareMaintenanceSchedules(a, b, sortField, sortDirection));
 
     return list;
   }, [schedules, search, periodicityFilter, statusFilter, sortField, sortDirection]);
