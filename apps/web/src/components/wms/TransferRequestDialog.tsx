@@ -28,6 +28,7 @@ import MoveToInboxIcon from '@mui/icons-material/MoveToInbox';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
 import { FormDialog } from '@/components/ui';
+import { buildTransferRequestPayload, validateTransferRequest } from './transfer-request-submit';
 
 interface WarehouseOption {
   id: string;
@@ -187,16 +188,14 @@ export default function TransferRequestDialog({
   };
 
   const handleSubmit = async () => {
-    if (!sourceWarehouseId) {
-      enqueueSnackbar('Выберите склад-донор, у которого запрашиваются ТМЦ', { variant: 'warning' });
-      return;
-    }
-    if (!targetWarehouseId) {
-      enqueueSnackbar('Не определен ваш целевой склад', { variant: 'warning' });
-      return;
-    }
-    if (lineItems.length === 0) {
-      enqueueSnackbar('Добавьте хотя бы одну позицию ТМЦ в заявку', { variant: 'warning' });
+    const validationError = validateTransferRequest({
+      sourceWarehouseId,
+      targetWarehouseId,
+      requestReason,
+      lineItems,
+    });
+    if (validationError) {
+      enqueueSnackbar(validationError, { variant: 'warning' });
       return;
     }
 
@@ -205,16 +204,12 @@ export default function TransferRequestDialog({
       const res = await fetch('/api/wms/transfers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(buildTransferRequestPayload({
           sourceWarehouseId,
           targetWarehouseId,
-          isRequest: true,
-          requestReason: requestReason.trim() || undefined,
-          items: lineItems.map((it) => ({
-            nomenclatureId: it.nomenclatureId,
-            quantity: it.quantity,
-          })),
-        }),
+          requestReason,
+          lineItems,
+        })),
       });
 
       const json = await res.json();
