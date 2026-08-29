@@ -19,7 +19,7 @@
 | **B3 — Role string унификация** | ✅ Выполнено (2026-08-29) | LOW |
 | **B4 — console.* остаток в API** | ✅ Выполнено (2026-08-29) | LOW |
 | C1 — Admin settings page | ✅ Выполнено: C1.1–C1.4 | MEDIUM |
-| C2 — Warehouse topology modal | ⏳ Открыта | MEDIUM |
+| C2 — Warehouse topology modal | ⏳ В работе: C2.1 ✅; C2.2–C2.3 открыты | MEDIUM |
 | C3 — WMS stock page | ⏳ Открыта | MEDIUM |
 | C4 — Equipment wizard form | ⏳ Открыта | MEDIUM |
 | C5 — EPS reports + import | ⏳ Открыта | MEDIUM |
@@ -384,7 +384,7 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 
 Коммит: `refactor(admin): split settings page into focused panels`
 
-### Story C2 — Warehouse topology modal (927 строк, cx 12.7)
+### Story C2 — Warehouse topology modal (927 строк, cx 12.7; decomposed into C2.1–C2.3)
 
 **Файл:** [`apps/web/src/components/wms/WarehouseTopologyModal.tsx`](../apps/web/src/components/wms/WarehouseTopologyModal.tsx)  
 **Скиллы:** `senior-frontend`, `senior-backend` (cell CRUD invariants)  
@@ -394,7 +394,19 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 Особо проверить rollback при ошибке `handleDeleteCell` / `handleBatchGenerate`.  
 Не менять API зон/ячеек.
 
-Коммит: `refactor(wms): decompose warehouse topology modal`
+### C2.1 — Zone navigation panel ✅
+
+**Статус:** завершено 2026-08-29.
+**Файлы:** [`WarehouseZonesNavigation.tsx`](../apps/web/src/components/wms/WarehouseZonesNavigation.tsx), [`WarehouseTopologyModal`](../apps/web/src/components/wms/WarehouseTopologyModal.tsx).
+**Результат:** навигация зон и кнопка создания зоны вынесены в presentation-компонент; selection/search state и CRUD handlers остались в родителе. Удалён реальный unused `SearchIcon`; API и поведение не изменены.
+**Проверки:** lint, tsc, 160 тестов, route audit, theme check, quality baseline (web 78.6, F=37, SOLID=25) — PASS.
+
+**Следующие под-stories C2:**
+
+- [ ] **C2.2** — вынести cell grid и active-zone content; сохранить `filteredCells`, delete-cell callback и empty state.
+- [ ] **C2.3** — финально проверить imports/handlers, запустить полный gate и закрыть C2.
+
+Коммит: `refactor(wms): extract warehouse zones navigation`
 
 ### Story C3 — WMS stock page (905 строк)
 

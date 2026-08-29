@@ -27,7 +27,6 @@ import GridViewIcon from '@mui/icons-material/GridView';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import SearchIcon from '@mui/icons-material/Search';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import LayersOutlinedIcon from '@mui/icons-material/LayersOutlined';
 import CloseIcon from '@mui/icons-material/Close';
@@ -35,6 +34,7 @@ import { useSnackbar } from 'notistack';
 import { FormDialog, EmptyState, useConfirm, SearchInput } from '@/components/ui';
 import { PERMISSIONS } from '@ems/shared';
 import { useAuth } from '@/lib/auth-client';
+import WarehouseZonesNavigation from './WarehouseZonesNavigation';
 
 export interface StorageCell {
   id: string;
@@ -420,92 +420,16 @@ export default function WarehouseTopologyModal({
             </Box>
           ) : (
             <>
-              {/* Zones Navigation Bar */}
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 1.5,
-                  borderRadius: '12px',
-                  border: '1px solid divider',
-                  bgcolor: 'background.paper',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 2,
-                  flexWrap: 'wrap',
+              <WarehouseZonesNavigation
+                zones={zones}
+                selectedZoneIndex={selectedZoneIndex}
+                canManageZones={canManageZones}
+                onZoneChange={(index) => {
+                  setSelectedZoneIndex(index);
+                  setSearchQuery('');
                 }}
-              >
-                <Tabs
-                  value={selectedZoneIndex}
-                  onChange={(_, val) => {
-                    setSelectedZoneIndex(val);
-                    setSearchQuery('');
-                  }}
-                  variant="scrollable"
-                  scrollButtons="auto"
-                  sx={{
-                    minHeight: 40,
-                    '& .MuiTab-root': {
-                      minHeight: 38,
-                      py: 0.75,
-                      px: 2,
-                      fontSize: '0.8125rem',
-                      fontWeight: 600,
-                      borderRadius: '8px',
-                      textTransform: 'none',
-                      mr: 1,
-                      transition: 'all 0.2s ease',
-                      '&.Mui-selected': {
-                        bgcolor: 'rgba(2, 132, 199, 0.08)',
-                        color: 'primary.main',
-                      },
-                    },
-                    '& .MuiTabs-indicator': {
-                      display: 'none',
-                    },
-                  }}
-                >
-                  {zones.map((zone, idx) => (
-                    <Tab
-                      key={zone.id}
-                      label={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <span>{zone.name}</span>
-                          <Chip
-                            label={zone.cells.length}
-                            size="small"
-                            sx={{
-                              height: 18,
-                              fontSize: '0.6875rem',
-                              fontWeight: 700,
-                              bgcolor: idx === selectedZoneIndex ? 'primary.main' : 'action.hover',
-                              color: idx === selectedZoneIndex ? 'background.paper' : 'text.secondary',
-                            }}
-                          />
-                        </Box>
-                      }
-                    />
-                  ))}
-                </Tabs>
-
-                {canManageZones && (
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<AddIcon />}
-                    onClick={() => setIsCreateZoneOpen(true)}
-                    sx={{
-                      borderRadius: '8px',
-                      fontWeight: 600,
-                      fontSize: '0.75rem',
-                      textTransform: 'none',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    + Новая зона
-                  </Button>
-                )}
-              </Paper>
+                onCreateZone={() => setIsCreateZoneOpen(true)}
+              />
 
               {/* Active Zone Content Area */}
               {activeZone && (
