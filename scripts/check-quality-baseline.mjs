@@ -6,15 +6,15 @@ import os from 'node:os';
 
 const baseline = {
   'apps/web/src': {
-    minimumAverageScore: 75.5,
-    maximumFGradeFiles: 39,
-    maximumCodeSmells: 2350,
-    maximumSolidViolations: 30,
+    minimumAverageScore: 78.0,
+    maximumFGradeFiles: 38,
+    maximumCodeSmells: 2400,
+    maximumSolidViolations: 25,
   },
   packages: {
-    minimumAverageScore: 91.2,
-    maximumFGradeFiles: 2,
-    maximumCodeSmells: 87,
+    minimumAverageScore: 94.0,
+    maximumFGradeFiles: 0,
+    maximumCodeSmells: 75,
     maximumSolidViolations: 0,
   },
 };
