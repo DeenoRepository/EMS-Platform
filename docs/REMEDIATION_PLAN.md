@@ -19,7 +19,7 @@
 | **B3 — Role string унификация** | ✅ Выполнено (2026-08-29) | LOW |
 | **B4 — console.* остаток в API** | ✅ Выполнено (2026-08-29) | LOW |
 | C1 — Admin settings page | ✅ Выполнено: C1.1–C1.4 | MEDIUM |
-| C2 — Warehouse topology modal | ⏳ В работе: C2.1 ✅; C2.2 ✅; C2.3 открыта | MEDIUM |
+| C2 — Warehouse topology modal | ✅ Выполнено: C2.1–C2.3 | MEDIUM |
 | C3 — WMS stock page | ⏳ Открыта | MEDIUM |
 | C4 — Equipment wizard form | ⏳ Открыта | MEDIUM |
 | C5 — EPS reports + import | ⏳ Открыта | MEDIUM |
@@ -404,9 +404,9 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 **Следующие под-stories C2:**
 
 - [x] **C2.2** — active-zone content и cell grid вынесены в [`WarehouseActiveZonePanel.tsx`](../apps/web/src/components/wms/WarehouseActiveZonePanel.tsx); `filteredCells`, search, create/batch/delete callbacks и empty state сохранены. Удалены ставшие неиспользуемыми imports. Проверки: 160 тестов, lint, tsc, route audit, theme check и quality baseline (web 78.7, F=37, SOLID=25) — PASS.
-- [ ] **C2.3** — финально проверить imports/handlers, запустить полный gate и закрыть C2.
+- [x] **C2.3** — modal и выделенные панели проверены: parent 615 строк, navigation 114, active-zone 272; lint/tsc, 160 тестов, route audit, theme check и quality baseline (web 78.7, F=37, SOLID=25) — PASS. API contracts, CRUD callbacks и state ownership сохранены.
 
-Коммит: `refactor(wms): extract warehouse zones navigation`
+Коммиты: `46b1e10` — `refactor(wms): extract warehouse zones navigation`; `f463c9d` — `refactor(wms): extract active zone and cell grid panel`.
 
 ### Story C3 — WMS stock page (905 строк)
 
@@ -531,9 +531,9 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 - [x] 0 rate-limit gaps на 85 маршрутах
 - [x] `isAdminUser()` хелпер унифицирует admin-role проверки в API routes (B3)
 - [x] 0 `console.warn/error` в `apps/web/src/app/api/**` (B4)
-- [x] Web F-grade < 38, baseline PASS (C1; F-grade 37)
+- [x] Web F-grade < 38, baseline PASS (C1/C2; F-grade 37)
 - [ ] `pnpm check:quality`, `check:theme`, `route_audit.py`, `pnpm test` зелёные
-- [x] [`PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md) обновлён после B3/B4; C1.4 завершена без новых findings
+- [x] [`PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md) обновлён после B3/B4; C1.4 и C2.3 завершены без новых findings
 
 ---
 
