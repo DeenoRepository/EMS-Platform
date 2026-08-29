@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { getCurrentUser, unauthorizedResponse, forbiddenResponse, isAdminUser } from '@/lib/auth-guard';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { hasPermission } from '@ems/auth';
 import { prisma } from '@ems/database';
@@ -18,8 +18,8 @@ export async function GET(req: NextRequest) {
     if (!user) return unauthorizedResponse();
 
     const canViewUsers =
-      user.roles.includes('admin') ||
-      user.roles.includes('administrator') ||
+      isAdminUser(user) ||
+      isAdminUser(user) ||
       hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_VIEW) ||
       hasPermission(user, PERMISSIONS.WMS_STOCK_VIEW) ||
       hasPermission(user, PERMISSIONS.MRO_SCHEDULE_VIEW) ||

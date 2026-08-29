@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { getCurrentUser, unauthorizedResponse, forbiddenResponse, isAdminUser } from '@/lib/auth-guard';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@ems/database';
 import { PERMISSIONS, PlatformMaintenanceStatus } from '@ems/shared';
@@ -93,7 +93,7 @@ export async function PATCH(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
-    if (!user.roles?.includes('admin') && !user.roles?.includes('administrator') && !hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE)) {
+    if (!isAdminUser(user) && !hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE)) {
       return forbiddenResponse('Доступ к управлению техническим обслуживанием разрешен только администраторам');
     }
 

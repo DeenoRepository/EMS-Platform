@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { PrismaClient, prisma } from '@ems/database';
 import { enforceRateLimit } from '@/lib/rate-limit';
-import { getCurrentUser } from '@/lib/auth-guard';
+import { getCurrentUser, isAdminUser } from '@/lib/auth-guard';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
   if (fileInstalled) {
     const user = await getCurrentUser(req);
-    if (!user || !user.roles.includes('admin')) {
+    if (!user || !isAdminUser(user)) {
       return NextResponse.json(
         { success: false, error: 'Диагностика подключения доступна только авторизованному администратору.' },
         { status: 403 }

@@ -5,7 +5,7 @@ import os from 'os';
 import net from 'net';
 import crypto from 'crypto';
 import { prisma } from '@ems/database';
-import { getCurrentUser } from '@/lib/auth-guard';
+import { getCurrentUser, isAdminUser } from '@/lib/auth-guard';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { safeErrorResponse } from '@/lib/safe-error';
 
@@ -217,7 +217,7 @@ export async function GET(req: NextRequest) {
 
     // Check if user is admin
     const currentUser = await getCurrentUser(req);
-    const isAdmin = currentUser?.roles.includes('admin') || false;
+    const isAdmin = (currentUser ? isAdminUser(currentUser) : false);
 
     const systemInfo = isAdmin
       ? {

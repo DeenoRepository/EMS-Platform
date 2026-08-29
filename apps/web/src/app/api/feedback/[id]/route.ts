@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { getCurrentUser, unauthorizedResponse, forbiddenResponse, isAdminUser } from '@/lib/auth-guard';
 import { safeErrorResponse } from '@/lib/safe-error';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@ems/database';
@@ -25,8 +25,8 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const { id } = await params;
 
     const isAdmin =
-      user.roles?.includes('admin') ||
-      user.roles?.includes('administrator') ||
+      isAdminUser(user) ||
+      isAdminUser(user) ||
       hasPermission(user, PERMISSIONS.ADMIN_FEEDBACK_MANAGE);
 
     const ticket = await prisma.feedbackTicket.findUnique({
@@ -94,8 +94,8 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
 
     const isAdmin =
-      user.roles?.includes('admin') ||
-      user.roles?.includes('administrator') ||
+      isAdminUser(user) ||
+      isAdminUser(user) ||
       hasPermission(user, PERMISSIONS.ADMIN_FEEDBACK_MANAGE);
 
     if (!isAdmin) {
@@ -217,8 +217,8 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
     if (!user) return unauthorizedResponse();
 
     const isAdmin =
-      user.roles?.includes('admin') ||
-      user.roles?.includes('administrator') ||
+      isAdminUser(user) ||
+      isAdminUser(user) ||
       hasPermission(user, PERMISSIONS.ADMIN_FEEDBACK_MANAGE);
 
     if (!isAdmin) {

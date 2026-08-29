@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { safeErrorResponse } from '@/lib/safe-error';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { getCurrentUser, unauthorizedResponse, forbiddenResponse, isAdminUser } from '@/lib/auth-guard';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma, OperationType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '25', 10)));
 
     const isAdmin =
-      user.roles.includes('admin') ||
+      isAdminUser(user) ||
       user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
       user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
 
@@ -167,7 +167,7 @@ export async function POST(req: NextRequest) {
     }
 
     const isAdmin =
-      user.roles.includes('admin') ||
+      isAdminUser(user) ||
       user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
       user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
 

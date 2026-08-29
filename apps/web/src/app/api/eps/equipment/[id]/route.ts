@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { getCurrentUser, unauthorizedResponse, forbiddenResponse, isAdminUser } from '@/lib/auth-guard';
 import { safeErrorResponse } from '@/lib/safe-error';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma, EquipmentStatus } from '@ems/database';
@@ -154,7 +154,7 @@ export async function PATCH(
     const rawDate = commissionDate !== undefined ? commissionDate : parsedBody.commissioningDate;
     const parsedCommissionDate = parseDateSafe(rawDate);
 
-    const canManageDirectly = hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) || user.roles.includes('admin');
+    const canManageDirectly = hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) || isAdminUser(user);
     const isOwner = currentEquipment.createdById === user.userId;
     const isDraft = currentEquipment.status === 'DRAFT';
 

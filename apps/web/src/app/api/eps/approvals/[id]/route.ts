@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { getCurrentUser, unauthorizedResponse, forbiddenResponse, isAdminUser } from '@/lib/auth-guard';
 import { safeErrorResponse } from '@/lib/safe-error';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma, ApprovalStatus, EquipmentStatus } from '@ems/database';
@@ -22,7 +22,7 @@ export async function GET(
       !hasPermission(user, PERMISSIONS.EPS_APPROVALS_VIEW) &&
       !hasPermission(user, PERMISSIONS.EPS_APPROVALS_CREATE) &&
       !hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) &&
-      !user.roles.includes('admin')
+      !isAdminUser(user)
     ) {
       return forbiddenResponse();
     }

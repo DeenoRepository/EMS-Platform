@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { getCurrentUser, unauthorizedResponse, forbiddenResponse, isAdminUser } from '@/lib/auth-guard';
 import { safeErrorResponse } from '@/lib/safe-error';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@ems/database';
@@ -44,8 +44,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     }
 
     const isAdmin =
-      user.roles?.includes('admin') ||
-      user.roles?.includes('administrator') ||
+      isAdminUser(user) ||
+      isAdminUser(user) ||
       hasPermission(user, PERMISSIONS.ADMIN_FEEDBACK_MANAGE);
 
     // Обычный пользователь не может писать в чужие обращения и не может создавать внутренние заметки

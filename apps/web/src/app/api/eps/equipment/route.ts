@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { getCurrentUser, unauthorizedResponse, forbiddenResponse, isAdminUser } from '@/lib/auth-guard';
 import { safeErrorResponse } from '@/lib/safe-error';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma, EquipmentStatus, Prisma } from '@ems/database';
@@ -190,7 +190,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const canManageDirectly = hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) || user.roles.includes('admin');
+    const canManageDirectly = hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) || isAdminUser(user);
     
     // Если пользователь запросил черновик или отправку на согласование, либо у него нет прав прямого утверждения
     const initialStatus: EquipmentStatus = (asDraft || submitForApproval || !canManageDirectly)

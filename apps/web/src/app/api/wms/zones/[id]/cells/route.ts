@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { getCurrentUser, unauthorizedResponse, forbiddenResponse, isAdminUser } from '@/lib/auth-guard';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
@@ -58,7 +58,7 @@ export async function POST(
     if (
       !hasPermission(user, PERMISSIONS.WMS_ZONES_MANAGE) &&
       !hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE) &&
-      !user.roles.includes('admin')
+      !isAdminUser(user)
     ) {
       return forbiddenResponse();
     }
@@ -77,7 +77,7 @@ export async function POST(
     }
 
     const isAdmin =
-      user.roles.includes('admin') ||
+      isAdminUser(user) ||
       hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
       hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE);
 
@@ -205,7 +205,7 @@ export async function DELETE(
     }
 
     const isAdmin =
-      user.roles.includes('admin') ||
+      isAdminUser(user) ||
       hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
       hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE);
 

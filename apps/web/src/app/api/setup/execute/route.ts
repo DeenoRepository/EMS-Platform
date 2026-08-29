@@ -7,7 +7,7 @@ import { PrismaClient, prisma } from '@ems/database';
 import { hashPassword } from '@ems/auth';
 import { PERMISSIONS, PERMISSION_DEFINITIONS } from '@ems/shared';
 import { enforceRateLimit } from '@/lib/rate-limit';
-import { getCurrentUser } from '@/lib/auth-guard';
+import { getCurrentUser, isAdminUser } from '@/lib/auth-guard';
 import { safeErrorResponse } from '@/lib/safe-error';
 import { logger } from '@/lib/logger';
 
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     // If installed file already exists, require superadmin session
     if (fileInstalled) {
       const user = await getCurrentUser(req);
-      if (!user || !user.roles?.includes('admin')) {
+      if (!user || !isAdminUser(user)) {
         return NextResponse.json(
           { success: false, error: 'Система уже установлена. Повторная инициализация заблокирована.' },
           { status: 403 }

@@ -46,6 +46,11 @@ export function unauthorizedResponse(message = 'Требуется автори�
   return NextResponse.json({ success: false, error: message }, { status: 401 });
 }
 
+/** Returns true when the user has either supported administrator role name. */
+export function isAdminUser(user: Pick<JwtUserPayload, 'roles'>): boolean {
+  return user.roles.includes('admin') || user.roles.includes('administrator');
+}
+
 export function forbiddenResponse(message = 'Недостаточно прав для выполнения операции') {
   return NextResponse.json({ success: false, error: message }, { status: 403 });
 }
@@ -76,7 +81,7 @@ export async function requireAuth(
     return { errorResponse: unauthorizedResponse() };
   }
 
-  const isAdmin = user.roles?.includes('admin') || user.roles?.includes('administrator');
+  const isAdmin = isAdminUser(user);
 
   if (!isAdmin) {
     try {

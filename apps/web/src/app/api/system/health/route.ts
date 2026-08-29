@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import net from 'net';
 import { prisma } from '@ems/database';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { getCurrentUser, unauthorizedResponse, forbiddenResponse, isAdminUser } from '@/lib/auth-guard';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { hasPermission } from '@ems/auth';
 import { PERMISSIONS } from '@ems/shared';
@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
     user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
     if (
-      !user.roles.includes('admin') &&
+      !isAdminUser(user) &&
       !hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE) &&
       !hasPermission(user, PERMISSIONS.ADMIN_AUDIT_VIEW)
     ) {

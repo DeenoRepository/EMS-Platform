@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { getCurrentUser, unauthorizedResponse, forbiddenResponse, isAdminUser } from '@/lib/auth-guard';
 import { prisma, EquipmentStatus } from '@ems/database';
 import { PERMISSIONS, EQUIPMENT_STATUS_MAP, formatDate, formatDateTime } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     if (
       !hasPermission(user, PERMISSIONS.EPS_REPORTS_VIEW) &&
       !hasPermission(user, PERMISSIONS.EPS_REPORTS_MANAGE) &&
-      !user.roles.includes('admin')
+      !isAdminUser(user)
     ) {
       return forbiddenResponse();
     }

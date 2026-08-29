@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse } from '@/lib/auth-guard';
+import { getCurrentUser, unauthorizedResponse, isAdminUser } from '@/lib/auth-guard';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma, Prisma } from '@ems/database';
 import { safeErrorResponse } from '@/lib/safe-error';
@@ -20,8 +20,8 @@ export async function GET(req: NextRequest) {
     const scopeParam = searchParams.get('scope') || 'auto';
 
     const isAdmin =
-      user.roles?.includes('admin') ||
-      user.roles?.includes('administrator') ||
+      isAdminUser(user) ||
+      isAdminUser(user) ||
       hasPermission(user, PERMISSIONS.ADMIN_USERS_MANAGE);
 
     // Effective scope determination (default to enterprise-wide visibility)

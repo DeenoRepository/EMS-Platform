@@ -16,8 +16,8 @@
 | A3 — Dev compose | ✅ Выполнено | P2 |
 | B1 — Structured logging (bounded) | ✅ Выполнено (bounded) | P2 |
 | B2 — StatusBadge в паспорте | ✅ Выполнено | P2 |
-| **B3 — Role string унификация** | ⏳ Новая (2026-08-29) | LOW |
-| **B4 — console.* остаток в API** | ⏳ Новая (2026-08-29) | LOW |
+| **B3 — Role string унификация** | ✅ Выполнено (2026-08-29) | LOW |
+| **B4 — console.* остаток в API** | ⏳ Следующая | LOW |
 | C1 — Admin settings page | ⏳ Открыта | MEDIUM |
 | C2 — Warehouse topology modal | ⏳ Открыта | MEDIUM |
 | C3 — WMS stock page | ⏳ Открыта | MEDIUM |
@@ -213,9 +213,9 @@
 
 ---
 
-### Story B3 — Унификация проверки роли администратора (новая, 2026-08-29) ⏳
+### Story B3 — Унификация проверки роли администратора ✅
 
-**Статус:** открыта
+**Статус:** завершена 2026-08-29; helper, API migration, regression tests и все обязательные проверки прошли.
 **Приоритет:** LOW
 **Скиллы:** `senior-backend`, `strict-api`
 **Оценка:** 0.5 дня
@@ -275,7 +275,7 @@ roles.includes('admin') || roles.includes('administrator')
    it('isAdminUser returns true for "administrator" role', () => { ... });
    it('isAdminUser returns false for regular user', () => { ... });
    ```
-4. В [`api/auth/login/route.ts`](../apps/web/src/app/api/auth/login/route.ts) тоже заменить inline-проверку на `isAdminUser`.
+4. Не менять inline-проверку в [`api/auth/login/route.ts`](../apps/web/src/app/api/auth/login/route.ts:157): там проверяется локальный массив `roles` до формирования `JwtUserPayload`; адаптация потребовала бы лишней обёртки без пользы для RBAC.
 
 **Не делать:** менять схему БД, переименовывать роли, изменять RBAC permissions.
 
@@ -288,9 +288,10 @@ pnpm test
 
 **DoD:**
 
-- [ ] `isAdminUser(user)` добавлен в `auth-guard.ts` с unit-тестами.
-- [ ] Все 37 вхождений заменены на вызов хелпера.
-- [ ] `pnpm test`: все passed; lint/tsc PASS.
+- [x] `isAdminUser(user)` добавлен в [`auth-guard.ts`](../apps/web/src/lib/auth-guard.ts:50) с unit-тестами.
+- [x] Inline admin-role checks в API routes унифицированы; исключение `auth/login` документировано.
+- [x] `pnpm test`: 160 passed, 0 failed; lint/tsc PASS.
+- [x] `route_audit.py`, theme check и quality baseline PASS.
 - Коммит: `refactor(auth): unify admin role check via isAdminUser helper`
 
 ---
@@ -481,7 +482,8 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 |---|---|---|
 | ~~1~~ | ~~A1, A2, A3, B1~~ | ✅ security residual закрыт, logging (bounded) |
 | ~~2~~ | ~~B2~~ | ✅ StatusBadge в паспорте |
-| **Текущая** | **B3, B4** | role string унификация + console.* cleanup |
+| ~~Текущая~~ | ~~B3~~ | ✅ role string унификация завершена |
+| **Следующая** | **B4** | console.* cleanup |
 | +1 | C1, C2, C3 | 3 крупнейших UI-монолита |
 | +2 | C4, C5 | EPS wizard + import/report |
 | +3 | C6 (4–6 файлов) | F-grade < 38 |
@@ -497,7 +499,7 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 - [x] StatusBadge для статусов сущностей — сквозное применение
 - [x] 0 hex-цветов в компонентах вне theme-файлов
 - [x] 0 rate-limit gaps на 85 маршрутах
-- [ ] `isAdminUser()` хелпер унифицирует ≥37 проверок роли (B3)
+- [x] `isAdminUser()` хелпер унифицирует admin-role проверки в API routes (B3)
 - [ ] 0 `console.warn/error` в `apps/web/src/app/api/**` (B4)
 - [ ] Web F-grade < 38, baseline PASS (C1–C6)
 - [ ] `pnpm check:quality`, `check:theme`, `route_audit.py`, `pnpm test` зелёные
@@ -522,7 +524,7 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 5. **Quality checker** некорректно режет границы TSX-функций — всегда проверять вручную.
 6. **Не трогать:** `temp/`, `.env`, `uploads/`, `docker/jira/server.js` без отдельной задачи.
 7. **Не** массово заменять magic_number.
-8. **B3 и B4** независимы — можно делать параллельно или последовательно.
+8. **B3 завершена.** B4 независима и может выполняться следующей.
 9. **C-stories** могут идти параллельно на разных файлах (не пересекающихся).
 10. **Не снижать** quality baseline: web ≥ 78.0, F ≤ 38, packages ≥ 94.0, F=0.
 

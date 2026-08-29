@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert';
-import { getCurrentUser, requireAuth, unauthorizedResponse, forbiddenResponse } from '../auth-guard';
+import { getCurrentUser, isAdminUser, requireAuth, unauthorizedResponse, forbiddenResponse } from '../auth-guard';
 import { signSessionToken } from '@ems/auth';
 import { PERMISSIONS, JwtUserPayload } from '@ems/shared';
 import type { NextRequest } from 'next/server';
@@ -81,6 +81,20 @@ describe('auth-guard unit tests', () => {
       const data = await res.json();
       assert.strictEqual(data.success, false);
       assert.strictEqual(data.error, 'Недостаточно прав');
+    });
+  });
+
+  describe('isAdminUser', () => {
+    test('returns true for the admin role', () => {
+      assert.strictEqual(isAdminUser({ roles: ['admin'] }), true);
+    });
+
+    test('returns true for the administrator role', () => {
+      assert.strictEqual(isAdminUser({ roles: ['administrator'] }), true);
+    });
+
+    test('returns false for a regular user', () => {
+      assert.strictEqual(isAdminUser({ roles: ['guest'] }), false);
     });
   });
 

@@ -5,7 +5,7 @@ import { testLdapConnection } from '@ems/auth';
 import { prisma } from '@ems/database';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { safeErrorResponse } from '@/lib/safe-error';
-import { getCurrentUser } from '@/lib/auth-guard';
+import { getCurrentUser, isAdminUser } from '@/lib/auth-guard';
 import { validateOutboundUrl } from '@/lib/outbound-url';
 
 export const dynamic = 'force-dynamic';
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
 
   if (fileInstalled) {
     const user = await getCurrentUser(req);
-    if (!user || !user.roles.includes('admin')) {
+    if (!user || !isAdminUser(user)) {
       return NextResponse.json(
         { success: false, error: 'Диагностика LDAP доступна только авторизованному администратору.' },
         { status: 403 }

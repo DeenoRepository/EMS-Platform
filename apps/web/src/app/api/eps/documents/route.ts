@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { getCurrentUser, unauthorizedResponse, forbiddenResponse, isAdminUser } from '@/lib/auth-guard';
 import { safeErrorResponse } from '@/lib/safe-error';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma, DocumentType } from '@ems/database';
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     if (
       !hasPermission(user, PERMISSIONS.EPS_DOCUMENTS_VIEW) &&
       !hasPermission(user, PERMISSIONS.EPS_DOCUMENTS_UPLOAD) &&
-      !user.roles.includes('admin')
+      !isAdminUser(user)
     ) {
       return forbiddenResponse();
     }

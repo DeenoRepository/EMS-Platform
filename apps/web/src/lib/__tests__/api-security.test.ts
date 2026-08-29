@@ -295,9 +295,9 @@ describe('API Security and Hardening Regressions', () => {
       const setupTestDbSource = readRepositoryFile('apps/web/src/app/api/setup/test-db/route.ts');
       const setupTestLdapSource = readRepositoryFile('apps/web/src/app/api/setup/test-ldap/route.ts');
 
-      assert.match(setupExecSource, /fileInstalled[\s\S]*?!user\s*\|\|\s*!user\.roles\?\.includes\('admin'\)/);
-      assert.match(setupTestDbSource, /fileInstalled[\s\S]*?!user\s*\|\|\s*!user\.roles\.includes\('admin'\)/);
-      assert.match(setupTestLdapSource, /fileInstalled[\s\S]*?!user\s*\|\|\s*!user\.roles\.includes\('admin'\)/);
+      assert.match(setupExecSource, /fileInstalled[\s\S]*?!user\s*\|\|\s*!isAdminUser\(user\)/);
+      assert.match(setupTestDbSource, /fileInstalled[\s\S]*?!user\s*\|\|\s*!isAdminUser\(user\)/);
+      assert.match(setupTestLdapSource, /fileInstalled[\s\S]*?!user\s*\|\|\s*!isAdminUser\(user\)/);
     });
   });
 });

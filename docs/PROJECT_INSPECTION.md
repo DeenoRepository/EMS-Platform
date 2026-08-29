@@ -7,8 +7,8 @@
 
 > **Вердикт: ✅ Approve with suggestions.**  
 > Все критические security findings из аудита 2026-08-27 (Stories A1–A3, B1–B2) подтверждены закрытыми.  
-> Quality baseline PASS: 78.3/100 (C), 0 rate-limit gaps, 0 hex-hardcode в компонентах.  
-> Остаточный долг — умеренный: `console.error/warn` в 3 API-роутах, роль-строковая нестабильность (`'admin'` vs `'administrator'`), `Chip` для не-статусных метаданных (допустимо), и 7 файлов ≥ 700 строк без деградации качества ниже F.
+> Quality baseline PASS: 78.3/100 (C), 0 rate-limit gaps, 0 hex-hardcode в компонентах.
+> B3 завершена: admin-role checks в API унифицированы через `isAdminUser()`. Остаточный долг — `console.error/warn` в 3 API-роутах и 7 файлов ≥ 700 строк без деградации качества ниже F.
 
 ---
 
@@ -28,8 +28,8 @@
 | `StatusBadge` для статусов | **✅** — сквозное применение | обязательно | ✅ PASS |
 | `Chip` вместо `StatusBadge` для статусов сущностей | **0 нарушений** (Chip только для метаданных) | 0 | ✅ PASS |
 | `StatCard` для KPI | **✅** — сквозное применение | обязательно | ✅ PASS |
-| `console.error/warn` в API | **3 файла** | 0 в production paths | ⚠️ LOW |
-| Роль-строка нестабильность | `'admin'` vs `'administrator'` смешивается | согласованность | ⚠️ LOW |
+| `console.error/warn` в API | **4 вхождения / 3 файла** | 0 в production paths | ⚠️ LOW |
+| Роль-строка унификация | B3 закрыта; `auth/login` имеет локальный массив roles | documented exception | ✅ PASS |
 | Файлы > 500 строк | **20 файлов** (presentation-heavy pages) | требует bounded refactor | ⚠️ MEDIUM |
 
 ---
@@ -84,9 +84,11 @@ if (!providedToken || providedToken !== webhookAuth.secret) { return 401; }
 
 [`/api/setup/execute`](../apps/web/src/app/api/setup/execute/route.ts:30) допускает вызов без авторизации **только до первой установки** (`.installed` файл отсутствует). После первой установки требует `admin`-роль. Это намеренный design-паттерн для первоначальной конфигурации. Приемлемо.
 
-### 2.7 ⚠️ Роль-строковая нестабильность (LOW)
+### 2.7 ✅ Унификация role checks (B3 завершена)
 
-В API-маршрутах смешиваются два вариант строки для проверки администратора:
+В API-маршрутах проверки пользовательского payload унифицированы через `isAdminUser()` из [`auth-guard.ts`](../apps/web/src/lib/auth-guard.ts:50). Сохраняется только локальная проверка массива ролей в [`auth/login/route.ts`](../apps/web/src/app/api/auth/login/route.ts:157), поскольку на этом этапе ещё нет объекта `JwtUserPayload`.
+
+До B3 в API-маршрутах смешивались два варианта строки:
 
 ```typescript
 // В разных маршрутах:
@@ -95,8 +97,8 @@ user.roles.includes('administrator')   // users/route.ts, feedback/*, dashboard
 user.roles.includes('admin') || user.roles.includes('administrator')  // auth/login
 ```
 
-**Риск:** Если в БД роль хранится как `'administrator'`, то маршруты, проверяющие только `'admin'`, неверно откажут в доступе (или наоборот).  
-**Рекомендация:** Вынести в shared-хелпер `isAdmin(user)` в `@ems/auth` или `@/lib/auth-guard`.
+**Риск до B3:** Если в БД роль хранится как `'administrator'`, то маршруты, проверяющие только `'admin'`, неверно откажут в доступе (и наоборот).
+**Решение:** [`isAdminUser()`](../apps/web/src/lib/auth-guard.ts:50) принимает `roles` из `JwtUserPayload` и поддерживает обе строки. Добавлены unit-тесты для `admin`, `administrator` и regular user; миграция API завершена без изменения permission-логики.
 
 ### 2.8 ⚠️ `console.error/warn` в production API (LOW)
 
@@ -251,11 +253,11 @@ packages/shared/   — типы, константы, permissions, formatters
 
 ## 7. Находки для включения в REMEDIATION_PLAN.md
 
-### Story C1 — Унификация роль-строки (LOW, 0.5h)
+### Story B3 — Унификация role checks (LOW) — ✅ выполнено
 
-**Файл:** [`apps/web/src/lib/auth-guard.ts`](../apps/web/src/lib/auth-guard.ts)  
-**Действие:** Добавить хелпер `isAdminUser(user)` → `user.roles.includes('admin') || user.roles.includes('administrator')`. Заменить разрозненные проверки ≥ 20 файлах.  
-**Тесты:** unit-тест в `auth-guard.test.ts`.
+**Файлы:** [`auth-guard.ts`](../apps/web/src/lib/auth-guard.ts:50), [`auth-guard.test.ts`](../apps/web/src/lib/__tests__/auth-guard.test.ts:87), 35 API routes.
+**Результат:** добавлен `isAdminUser()`, inline-проверки API переведены на helper, добавлены 3 unit-теста. `auth/login` оставлен с локальной проверкой массива ролей как documented exception.
+**Проверки:** 160 тестов, lint, tsc, route audit, theme check и quality baseline — PASS.
 
 ### Story C2 — Заменить `console.*` на `logger.*` в API (LOW, 0.5h)
 
@@ -311,7 +313,7 @@ pnpm --filter @ems/web build
 | Quality baseline (78.3, F≤38) | ✅ PASS | поддерживать |
 | Test coverage (157 passed) | ✅ PASS | поддерживать |
 
-**Общий вердикт: ✅ Approve with suggestions.** Проект находится в стабильном рабочем состоянии. Критические проблемы безопасности и дизайна закрыты. Остаточный долг — некритический, устраняется bounded stories C1–C4.
+**Общий вердикт: ✅ Approve with suggestions.** Проект находится в стабильном рабочем состоянии. Критические проблемы безопасности и дизайна закрыты. B3 выполнена; следующий bounded этап — B4 (structured logging), затем C1–C4.
 
 ---
 
