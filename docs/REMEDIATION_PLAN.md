@@ -494,6 +494,8 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 
 - [x] **C7** — StockDetailDrawer overview tab вынесен в [`StockDetailOverviewTab.tsx`](../apps/web/src/components/wms/StockDetailOverviewTab.tsx); drawer state, operations loading, permissions и callbacks сохранены. Проверки: lint, tsc, targeted quality checker (72/100, C), `git diff --check` — PASS. Commit: `eab0fa1`.
 
+- [x] **C7.1** — spare-parts branch of [`EquipmentOperationalTabs.tsx`](../apps/web/src/components/eps/EquipmentOperationalTabs.tsx) вынесен в [`EquipmentSparePartsTab.tsx`](../apps/web/src/components/eps/EquipmentSparePartsTab.tsx); existing data, StatusBadge, DataTableWrapper and EmptyState contracts preserved. Проверки: lint, tsc, targeted quality checker, quality baseline и `git diff --check` — PASS. Commit: `15c8dc6`.
+
 Следующий bounded этап — C8: remaining P2/F-grade files and typed JSON boundaries.
 
 C6.5 закрыта отдельным коммитом `9203fa6`; последующие изменения должны сохранять payload shape и API contract setup flow.
@@ -611,7 +613,7 @@ Commit template: `refactor(srm): type webhook payload as unknown and narrow`
 5. **Quality checker** некорректно режет границы TSX-функций — всегда проверять вручную.
 6. **Не трогать:** `temp/`, `.env`, `uploads/`, `docker/jira/server.js` без отдельной задачи.
 7. **Не** массово заменять magic_number.
-8. **B3, B4, C1–C5, C6.2a, C6.3, C6.5, C6.6 и C6.7 завершены.** Следующий этап — C6.8: следующий P1/F-grade bounded файл.
+8. **B3, B4, C1–C5, C6.2a, C6.3, C6.5, C6.6, C6.7 и C7 завершены.** Следующий этап — C6.8: следующий P1/F-grade bounded файл.
 9. **C-stories** могут идти параллельно на разных файлах (не пересекающихся).
 10. **Не снижать** quality baseline: web ≥ 78.0, F ≤ 38, packages ≥ 94.0, F=0.
 
