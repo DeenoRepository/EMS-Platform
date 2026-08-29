@@ -51,6 +51,7 @@ import {
   SrmIntegrationWizardDialog,
 } from '@/components/srm';
 import { formatDateTime, formatDate, PERMISSIONS, PlatformMaintenanceStatus } from '@ems/shared';
+import { sortSrmIssues } from './srm-issue-sorting';
 import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
 
@@ -246,29 +247,10 @@ function SrmPageContent() {
     setSortField(field);
   };
 
-  const sortedIssues = useMemo(() => {
-    const list = [...issues];
-    list.sort((a, b) => {
-      let valA: any = (a as any)[sortField];
-      let valB: any = (b as any)[sortField];
-
-      if (sortField === 'equipment') {
-        valA = a.equipment?.name || '';
-        valB = b.equipment?.name || '';
-      } else if (sortField === 'reportedBy') {
-        valA = a.reportedBy?.displayName || '';
-        valB = b.reportedBy?.displayName || '';
-      } else if (sortField === 'createdAt') {
-        valA = new Date(a.createdAt).getTime();
-        valB = new Date(b.createdAt).getTime();
-      }
-
-      if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
-      if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
-    return list;
-  }, [issues, sortField, sortDirection]);
+  const sortedIssues = useMemo(
+    () => sortSrmIssues(issues, sortField, sortDirection),
+    [issues, sortField, sortDirection]
+  );
 
   const paginatedIssues = useMemo(() => {
     return sortedIssues.slice((page - 1) * pageSize, page * pageSize);
