@@ -21,7 +21,7 @@
 | C1 — Admin settings page | ✅ Выполнено: C1.1–C1.4 | MEDIUM |
 | C2 — Warehouse topology modal | ✅ Выполнено: C2.1–C2.3 | MEDIUM |
 | C3 — WMS stock page | ✅ Выполнено: C3.1–C3.4 | MEDIUM |
-| C4 — Equipment wizard form | ⏳ В работе: C4.1 ✅; C4.2 ✅; C4.3 открыта | MEDIUM |
+| C4 — Equipment wizard form | ✅ Выполнено: C4.1–C4.3 | MEDIUM |
 | C5 — EPS reports + import | ⏳ Открыта | MEDIUM |
 | C6 — P1 страницы > 600 строк | ⏳ Открыта | MEDIUM |
 | C7 — P2 F-файлы < 500 строк | ⏳ Открыта | LOW |
@@ -450,7 +450,7 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 **Следующие под-stories C4:**
 
 - [x] **C4.2** — validation и payload preparation вынесены в [`equipment-wizard-submit.ts`](../apps/web/src/components/eps/equipment-wizard-submit.ts); поля payload, `asDraft` и `submitForApproval` сохранены. Проверки: lint, tsc, 160 тестов, theme check и quality baseline (web 79.0, F=36, SOLID=25) — PASS.
-- [ ] **C4.3** — финально проверить размер формы, imports и полный gate C4.
+- [x] **C4.3** — финально проверены размер формы (756 строк), imports и полный gate: lint/tsc, 160 тестов, theme check и quality baseline (web 79.0, F=36, SOLID=25) — PASS.
 
 Коммит: `refactor(eps): extract equipment custom field renderer`
 
@@ -538,8 +538,8 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 | ~~2~~ | ~~B2~~ | ✅ StatusBadge в паспорте |
 | ~~Текущая~~ | ~~B3~~ | ✅ role string унификация завершена |
 | ~~Следующая~~ | ~~B4~~ | ✅ console.* cleanup завершён |
-| **Следующая** | **C1, C2, C3** | 3 крупнейших UI-монолита |
-| +2 | C4, C5 | EPS wizard + import/report |
+| ~~Следующая~~ | ~~C1, C2, C3~~ | ✅ крупные UI-монолиты декомпозированы |
+| **Следующая** | **C5** | EPS reports + Smart import |
 | +3 | C6 (4–6 файлов) | F-grade < 38 |
 | backlog | C7, D, E | parser false-positives, typing, rules sync |
 
@@ -555,9 +555,9 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 - [x] 0 rate-limit gaps на 85 маршрутах
 - [x] `isAdminUser()` хелпер унифицирует admin-role проверки в API routes (B3)
 - [x] 0 `console.warn/error` в `apps/web/src/app/api/**` (B4)
-- [x] Web F-grade < 38, baseline PASS (C1/C2/C3; F-grade 36; C4.1 verified)
+- [x] Web F-grade < 38, baseline PASS (C1/C2/C3/C4; F-grade 36)
 - [x] `pnpm check:quality`, `check:theme`, `route_audit.py`, `pnpm test` зелёные для завершённых stories
-- [x] [`PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md) обновлён после B3/B4; C1.4, C2.3 и C3.3 завершены без новых findings
+- [x] [`PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md) обновлён после B3/B4 и C1–C4; завершённые stories не добавили новых findings
 
 ---
 
@@ -582,4 +582,4 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 9. **C-stories** могут идти параллельно на разных файлах (не пересекающихся).
 10. **Не снижать** quality baseline: web ≥ 78.0, F ≤ 38, packages ≥ 94.0, F=0.
 
-*Обновлено 2026-08-29 после завершения C4.2. Stories A1–A3, B1–B4, C1–C3 и C4.1–C4.2 закрыты.*
+*Обновлено 2026-08-29 после завершения C4.3. Stories A1–A3, B1–B4 и C1–C4 закрыты.*
