@@ -143,9 +143,9 @@ B1 закрыла подтверждённый bounded список:
 - WMS transfer notification failures → [`logger.warn()`](../apps/web/src/lib/logger.ts:71), best-effort semantics сохранена.
 - UI dictionary/history failures: snackbar/error feedback в MRO, approvals, transfers, nomenclature и stock detail.
 
-MRO API batch (checklists, plans, schedules) дополнительно переведён на `logger.error` с endpoint context; regression guard предотвращает возврат raw `console.error` в этих routes.
+MRO API batch (checklists, plans, schedules) и WMS core collection batch (categories, nomenclature, warehouses, operations) переведены на `logger.error` с endpoint context; общий regression guard предотвращает возврат raw `console.error` в этих routes.
 
-Оставшиеся raw `console.error` в legacy routes/components и допустимые localStorage guards не являются частью B1; их следует устранять отдельными bounded batches. Полный тестовый набор после MRO batch: **157 passed**.
+Оставшиеся raw `console.error` в legacy routes/components и допустимые localStorage guards не являются частью B1; их следует устранять отдельными bounded batches. Полный тестовый набор после WMS batch: **157 passed**.
 
 ---
 
@@ -153,7 +153,7 @@ MRO API batch (checklists, plans, schedules) дополнительно пере
 
 Подробный план с шагами, DoD и расписанием: [`docs/REMEDIATION_PLAN.md`](REMEDIATION_PLAN.md).
 
-1. **Legacy logging:** следующий bounded batch raw `console.error` в WMS/feedback/API routes.
+1. **Legacy logging:** следующий bounded batch raw `console.error` в WMS detail/zones или feedback API routes.
 2. **Admin settings / WMS topology / EPS wizard** — по одному PR, без смены API contract.
 3. **Не трогать** массово 1911 `magic_number`: выделять только domain constants (лимиты, статусы, timeouts).
 

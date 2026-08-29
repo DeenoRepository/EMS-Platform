@@ -103,12 +103,16 @@ describe('API Security and Hardening Regressions', () => {
   });
 
   describe('Route Security Policy', () => {
-    test('bounded MRO API logging batch uses structured logger', () => {
+    test('bounded MRO and WMS API logging batches use structured logger', () => {
       const routePaths = [
         'apps/web/src/app/api/mro/checklists/route.ts',
         'apps/web/src/app/api/mro/plans/route.ts',
         'apps/web/src/app/api/mro/schedules/route.ts',
         'apps/web/src/app/api/mro/schedules/[id]/route.ts',
+        'apps/web/src/app/api/wms/categories/route.ts',
+        'apps/web/src/app/api/wms/nomenclature/route.ts',
+        'apps/web/src/app/api/wms/warehouses/route.ts',
+        'apps/web/src/app/api/wms/operations/route.ts',
       ];
 
       for (const routePath of routePaths) {

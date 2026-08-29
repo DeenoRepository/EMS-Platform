@@ -4,6 +4,7 @@ import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,7 +65,10 @@ export async function GET(req: NextRequest) {
       data: warehouses,
     });
   } catch (error: unknown) {
-    console.error('Ошибка получения складов:', error);
+    logger.error('Failed to fetch WMS warehouses', {
+      endpoint: 'wms-warehouses-get',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Ошибка получения списка складов' }, { status: 500 });
   }
 }
@@ -125,7 +129,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: warehouse });
   } catch (error: unknown) {
-    console.error('Ошибка создания склада:', error);
+    logger.error('Failed to create WMS warehouse', {
+      endpoint: 'wms-warehouses-post',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Ошибка создания склада' }, { status: 500 });
   }
 }

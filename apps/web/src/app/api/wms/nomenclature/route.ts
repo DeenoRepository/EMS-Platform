@@ -4,6 +4,7 @@ import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,7 +61,10 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: enriched });
   } catch (error: unknown) {
-    console.error('Ошибка получения номенклатуры:', error);
+    logger.error('Failed to fetch WMS nomenclature', {
+      endpoint: 'wms-nomenclature-get',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Ошибка получения номенклатуры' }, { status: 500 });
   }
 }
@@ -115,7 +119,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: nomenclature });
   } catch (error: unknown) {
-    console.error('Ошибка создания номенклатуры:', error);
+    logger.error('Failed to create WMS nomenclature', {
+      endpoint: 'wms-nomenclature-post',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Ошибка создания номенклатуры' }, { status: 500 });
   }
 }

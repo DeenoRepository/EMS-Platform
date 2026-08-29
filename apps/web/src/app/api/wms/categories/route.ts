@@ -4,6 +4,7 @@ import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +29,10 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: categories });
   } catch (error: unknown) {
-    console.error('Ошибка получения категорий:', error);
+    logger.error('Failed to fetch WMS nomenclature categories', {
+      endpoint: 'wms-categories-get',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Ошибка получения категорий' }, { status: 500 });
   }
 }
@@ -60,7 +64,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: category });
   } catch (error: unknown) {
-    console.error('Ошибка создания категории:', error);
+    logger.error('Failed to create WMS nomenclature category', {
+      endpoint: 'wms-categories-post',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Ошибка создания категории' }, { status: 500 });
   }
 }
