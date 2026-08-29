@@ -84,7 +84,7 @@ python .agents\\skills\\code-reviewer\\scripts\\code_quality_checker.py apps\\we
 - production build: pass, 33 static pages generated;
 - quality scan: 219 files, 73.7/100, grade C, 2 325 smells, 28 SOLID findings.
 
-Повтор 2026-08-29: web 78.3/100, 2 357 smells, 25 SOLID, 38 F-grade; packages 94.1/100, 0 F-grade; baseline PASS. Stories A1/A2 закрыли demo Jira token, LDAP default-password gap и unsigned SRM webhook gap; полный набор тестов — 156 passed. Актуальный план — [`PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md), [`REMEDIATION_PLAN.md`](REMEDIATION_PLAN.md).
+Повтор 2026-08-29: web 78.3/100, 2 357 smells, 25 SOLID, 38 F-grade; packages 94.1/100, 0 F-grade; baseline PASS. Stories A1/A2/B1 закрыли demo Jira token, LDAP default-password gap, unsigned SRM webhook gap и bounded logging/UI feedback paths; полный набор тестов — 156 passed. Актуальный план — [`PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md), [`REMEDIATION_PLAN.md`](REMEDIATION_PLAN.md).
 
 Оставшиеся quality-scan findings относятся преимущественно к широкому legacy smell inventory, остаточной типизации/размеру отдельных presentation files и policy cleanup вне подтверждённых critical paths. Их следует устранять отдельными bounded stories с ручной проверкой, а не массовыми автоматическими заменами.
 

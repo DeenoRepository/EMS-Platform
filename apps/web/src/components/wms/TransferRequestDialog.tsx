@@ -110,7 +110,9 @@ export default function TransferRequestDialog({
             }
           }
         })
-        .catch(console.error);
+        .catch(() => {
+          enqueueSnackbar('Не удалось загрузить склады для перемещения', { variant: 'error' });
+        });
 
       // Load nomenclatures
       fetch('/api/wms/nomenclature?limit=500')
@@ -120,9 +122,11 @@ export default function TransferRequestDialog({
             setNomenclatures(json.data.items || json.data || []);
           }
         })
-        .catch(console.error);
+        .catch(() => {
+          enqueueSnackbar('Не удалось загрузить номенклатуру ТМЦ', { variant: 'error' });
+        });
     }
-  }, [open, user?.userId]);
+  }, [open, user?.userId, enqueueSnackbar]);
 
   // Load donor warehouse stock
   useEffect(() => {
@@ -139,12 +143,14 @@ export default function TransferRequestDialog({
             setStockMap(map);
           }
         })
-        .catch(console.error)
+        .catch(() => {
+          enqueueSnackbar('Не удалось загрузить остатки склада', { variant: 'error' });
+        })
         .finally(() => setIsLoadingStock(false));
     } else {
       setStockMap({});
     }
-  }, [sourceWarehouseId]);
+  }, [sourceWarehouseId, enqueueSnackbar]);
 
   const handleAddItem = () => {
     if (!selectedNomenclature) return;

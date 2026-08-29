@@ -140,12 +140,14 @@ Packages F-grade: **нет**. Худший package-файл — [`packages/datab
 
 ## 6. Async / logging (universal + TypeScript rules)
 
-`.catch(console.error)` без пользовательского feedback:
+B1 закрыла подтверждённый bounded список:
 
-- UI: MRO execution wizard, Approval wizard, Transfer request/receive, StockDetailDrawer, Create/Edit nomenclature.
-- API best-effort notifications: WMS transfers create/dispatch/reject/receive.
+- Login LDAP failure → [`logger.warn()`](../apps/web/src/lib/logger.ts:71).
+- Notifications API failure → [`logger.error()`](../apps/web/src/lib/logger.ts:72).
+- WMS transfer notification failures → [`logger.warn()`](../apps/web/src/lib/logger.ts:71), best-effort semantics сохранена.
+- UI dictionary/history failures: snackbar/error feedback в MRO, approvals, transfers, nomenclature и stock detail.
 
-Пустые `catch (e) {}` в [`DataTableWrapper.tsx`](../apps/web/src/components/ui/DataTableWrapper.tsx:313) вокруг `localStorage` — допустимый private-mode guard, лучше логировать debug.
+Оставшиеся raw `console.error` в legacy routes/components и допустимые localStorage guards не являются частью B1; их следует устранять отдельной bounded story. Полный тестовый набор после B1: **156 passed**.
 
 ---
 
@@ -153,9 +155,9 @@ Packages F-grade: **нет**. Худший package-файл — [`packages/datab
 
 Подробный план с шагами, DoD и расписанием: [`docs/REMEDIATION_PLAN.md`](REMEDIATION_PLAN.md).
 
-1. **Logging:** заменить `.catch(console.error)` и login `console.error` на `logger` + UI error state.
-2. **UI-1:** `StatusBadge` вместо `Chip` в [`EquipmentPassportOverview.tsx`](../apps/web/src/components/eps/EquipmentPassportOverview.tsx:285).
-3. **A3:** убрать production-like default secrets из dev [`docker-compose.yml`](../docker-compose.yml:11) или явно отделить local-only профиль.
+1. **UI-1:** `StatusBadge` вместо `Chip` в [`EquipmentPassportOverview.tsx`](../apps/web/src/components/eps/EquipmentPassportOverview.tsx:285).
+2. **A3:** убрать production-like default secrets из dev [`docker-compose.yml`](../docker-compose.yml:11) или явно отделить local-only профиль.
+3. **Legacy logging:** отдельная полная миграция оставшихся raw `console.error` с bounded batches.
 4. **Admin settings / WMS topology / EPS wizard** — по одному PR, без смены API contract.
 5. **Не трогать** массово 1911 `magic_number`: выделять только domain constants (лимиты, статусы, timeouts).
 
@@ -173,6 +175,7 @@ Packages F-grade: **нет**. Худший package-файл — [`packages/datab
 - [x] Packages без F-grade
 - [x] `.env.example` без demo Jira token; LDAP `adminpassword` блокируется валидатором
 - [x] Unsigned webhook закрыт политикой: секрет обязателен для active, либо явный opt-in
+- [x] B1 bounded logging/UI error paths завершены; полный тестовый набор 156 passed
 - [ ] Web F-grade < 38 (сейчас ровно на пороге)
 - [ ] `EquipmentPassportOverview` использует `StatusBadge` для статуса оборудования
 

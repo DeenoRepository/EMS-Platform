@@ -5,6 +5,7 @@ import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma, StockTransferStatus, OperationType, Prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { logger } from '@/lib/logger';
 import {
   generateTransferNumber,
   buildTransferWhereInput,
@@ -318,7 +319,7 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Отправляем уведомление МОЛ склада-получателя об отгрузке
+      // Best-effort уведомление: ошибка не отменяет успешно созданное перемещение.
       if (targetWh.responsibleUserId && targetWh.responsibleUserId !== user.userId) {
         await prisma.notification.create({
           data: {
@@ -328,7 +329,12 @@ export async function POST(req: NextRequest) {
             type: 'SYSTEM',
             link: '/wms/transfers?mode=inbound',
           },
-        }).catch(console.error);
+        }).catch((error: unknown) => {
+          logger.warn('Не удалось отправить уведомление об отгрузке перемещения', {
+            transferId: result.id,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        });
       }
 
       return NextResponse.json({
@@ -375,7 +381,7 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Отправляем уведомление МОЛ склада-донора о новом запросе
+      // Best-effort уведомление: ошибка не отменяет успешно созданный запрос.
       if (sourceWh.responsibleUserId && sourceWh.responsibleUserId !== user.userId) {
         await prisma.notification.create({
           data: {
@@ -385,7 +391,12 @@ export async function POST(req: NextRequest) {
             type: 'SYSTEM',
             link: '/wms/transfers?mode=requests',
           },
-        }).catch(console.error);
+        }).catch((error: unknown) => {
+          logger.warn('Не удалось отправить уведомление о запросе перемещения', {
+            transferId: transfer.id,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        });
       }
 
       return NextResponse.json({

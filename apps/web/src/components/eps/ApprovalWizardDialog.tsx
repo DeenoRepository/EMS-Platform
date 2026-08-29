@@ -81,9 +81,11 @@ export default function ApprovalWizardDialog({
             }
           }
         })
-        .catch(console.error);
+        .catch(() => {
+          enqueueSnackbar('Не удалось загрузить список оборудования', { variant: 'error' });
+        });
     }
-  }, [open, initialEquipmentId]);
+  }, [open, initialEquipmentId, enqueueSnackbar]);
 
   // Auto-generate title suggestion when type or equipment changes
   useEffect(() => {

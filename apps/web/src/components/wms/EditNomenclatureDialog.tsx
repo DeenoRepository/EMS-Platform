@@ -91,9 +91,11 @@ export default function EditNomenclatureDialog({
             }
           }
         })
-        .catch(console.error);
+        .catch(() => {
+          enqueueSnackbar('Не удалось загрузить категории ТМЦ', { variant: 'error' });
+        });
     }
-  }, [open, item]);
+  }, [open, item, enqueueSnackbar]);
 
   const handleSubmit = async () => {
     if (!name.trim()) {

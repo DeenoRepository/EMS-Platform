@@ -5,6 +5,7 @@ import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma, StockTransferStatus } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -155,7 +156,12 @@ export async function POST(
           type: 'SYSTEM',
           link: isStockRestored ? '/wms/transfers?mode=outbound' : '/wms/transfers?mode=my_requests',
         },
-      }).catch(console.error);
+      }).catch((error: unknown) => {
+        logger.warn('Не удалось отправить уведомление об отклонении перемещения', {
+          transferId: transfer.id,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
     }
 
     return NextResponse.json({

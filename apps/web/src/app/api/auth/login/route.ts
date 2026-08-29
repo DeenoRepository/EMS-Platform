@@ -46,7 +46,10 @@ export async function POST(req: NextRequest) {
         logger.debug('[LOGIN ROUTE] Результат authenticateLdap', { success: !!ldapResult });
       } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : String(err);
-        console.error('[LOGIN ROUTE] Ошибка вызова authenticateLdap:', errorMessage);
+        logger.warn('LDAP authentication attempt failed', {
+          username: trimmedUsername,
+          error: errorMessage,
+        });
       }
     }
 

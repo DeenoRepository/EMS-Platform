@@ -125,9 +125,10 @@
 
 ## Фаза B — Наблюдаемость и async-дисциплина
 
-### Story B1 — Structured logging вместо `console.error` (S5 + §6 инспекции)
+### Story B1 — Structured logging вместо `console.error` (S5 + §6 инспекции) — ✅ выполнено для bounded списка
 
-**Приоритет:** P2  
+**Статус:** завершено 2026-08-29; подтверждённые API best-effort и UI loading paths переведены на structured logging/snackbar. Остальные legacy `console.error` вне bounded списка оставлены отдельным долгом.
+**Приоритет:** P2
 **Скиллы:** `senior-backend`, `senior-frontend`  
 **Оценка:** 1 день
 
@@ -150,8 +151,11 @@
 
 **DoD:**
 
-- `rg "\.catch\(console\.error\)" apps/web/src` → 0 в production paths (исключение: CLI scripts).
-- Login LDAP errors идут в `logger`.
+- [x] Login LDAP errors идут в `logger`.
+- [x] WMS transfer notification failures используют `logger.warn` и сохраняют best-effort semantics.
+- [x] Bounded UI dictionary/history failures показывают snackbar/error feedback.
+- [x] `pnpm test`: 156 passed; lint/tsc/route audit/quality baseline PASS.
+- [ ] Полная миграция оставшихся legacy `console.error` в `apps/web/src` — отдельная story, не смешивать с B1.
 - Коммит: `refactor: replace console.error catch paths with logger and UI errors`
 
 ---

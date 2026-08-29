@@ -81,9 +81,11 @@ export default function CreateNomenclatureDialog({
         .then((json) => {
           if (json.success) setCategories(json.data);
         })
-        .catch(console.error);
+        .catch(() => {
+          enqueueSnackbar('Не удалось загрузить категории ТМЦ', { variant: 'error' });
+        });
     }
-  }, [open, initialCategories]);
+  }, [open, initialCategories, enqueueSnackbar]);
 
   const handleReset = () => {
     setSelectedType('SPARE_PART');

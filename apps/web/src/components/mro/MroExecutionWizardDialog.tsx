@@ -154,9 +154,11 @@ export default function MroExecutionWizardDialog({
             }
           }
         })
-        .catch(console.error);
+        .catch(() => {
+          enqueueSnackbar('Не удалось загрузить справочники для выполнения ТО', { variant: 'error' });
+        });
     }
-  }, [open, schedule]);
+  }, [open, schedule, enqueueSnackbar]);
 
   const checklistItems = schedule?.plan?.checklist?.items || [];
 

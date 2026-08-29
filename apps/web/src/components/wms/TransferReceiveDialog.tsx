@@ -99,7 +99,7 @@ export default function TransferReceiveDialog({
             setCells(allCells);
           }
         })
-        .catch(console.error)
+        .catch(() => setError('Не удалось загрузить ячейки целевого склада'))
         .finally(() => setIsLoadingCells(false));
     }
   }, [open, transfer]);

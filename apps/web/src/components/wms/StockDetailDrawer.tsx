@@ -35,6 +35,7 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import EditLocationAltIcon from '@mui/icons-material/EditLocationAlt';
 import { StatusBadge, EmptyState } from '@/components/ui';
 import { formatDateTime, PERMISSIONS } from '@ems/shared';
+import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
 import { useRouter } from 'next/navigation';
 import { StockDetailOperationsTab } from './StockDetailOperationsTab';
@@ -86,6 +87,7 @@ export default function StockDetailDrawer({
   onEdit,
 }: StockDetailDrawerProps) {
   const router = useRouter();
+  const { enqueueSnackbar } = useSnackbar();
   const { user, hasPermission } = useAuth();
   const [tabIndex, setTabIndex] = useState(0);
   const [operations, setOperations] = useState<any[]>([]);
@@ -119,10 +121,12 @@ export default function StockDetailDrawer({
             setOperations(json.data.items || json.data || []);
           }
         })
-        .catch(console.error)
+        .catch(() => {
+          enqueueSnackbar('Не удалось загрузить историю операций', { variant: 'error' });
+        })
         .finally(() => setIsLoadingOps(false));
     }
-  }, [open, stockItem]);
+  }, [open, stockItem, enqueueSnackbar]);
 
   if (!stockItem) return null;
 
