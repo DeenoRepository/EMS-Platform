@@ -8,7 +8,7 @@
 > **Вердикт: ✅ Approve with suggestions.**  
 > Все критические security findings из аудита 2026-08-27 (Stories A1–A3, B1–B2) подтверждены закрытыми.  
 > Quality baseline PASS: 79.3/100 (C), 0 rate-limit gaps, 0 hex-hardcode в компонентах.
-> B3, B4, C1, C2, C3 и C4 завершены; C5.1 и C5.2a–C5.2b.4 выполнены: admin-role checks унифицированы, production API logging paths переведены на structured `logger`, а крупные UI-области декомпозированы. Следующий этап — C5.3 final verification.
+> B3, B4 и C1–C5 завершены: admin-role checks унифицированы, production API logging paths переведены на structured `logger`, а крупные UI-области декомпозированы. Следующий этап — C6: остальные P1-файлы.
 
 ---
 
@@ -296,7 +296,7 @@ packages/shared/   — типы, константы, permissions, formatters
 
 **Файлы:** [`EquipmentWizardForm.tsx`](../apps/web/src/components/eps/EquipmentWizardForm.tsx), [`EquipmentCustomFieldRenderer.tsx`](../apps/web/src/components/eps/EquipmentCustomFieldRenderer.tsx).
 **Результат:** ветки custom fields вынесены в typed presentation-компонент; состояние значений и callback изменения сохранены в родителе.
-**Проверки:** lint, tsc, 160 тестов, theme check и quality baseline 78.9/F36/SOLID25 — PASS. C4 завершена; следующие bounded stories — C5.2b.2 Smart Import mapping/missing-fields.
+**Проверки:** lint, tsc, 160 тестов, theme check и quality baseline 78.9/F36/SOLID25 — PASS. C4 завершена; следующие bounded stories — C5.2b.4 Smart Import execute payload preparation.
 
 ### Story C5.2b.2 — Smart Import mapping/missing-fields ✅
 
@@ -352,7 +352,7 @@ pnpm --filter @ems/web build
 | Quality baseline (79.3, F≤38) | ✅ PASS | поддерживать |
 | Test coverage (160 passed) | ✅ PASS | поддерживать |
 
-**Общий вердикт: ✅ Approve with suggestions.** Проект находится в стабильном рабочем состоянии. Критические проблемы безопасности и дизайна закрыты. B3, B4 и C1–C4 выполнены; C5.1/C5.2a/C5.2b.1–C5.2b.4 также прошли verification. Следующий bounded этап — C5.3: финальная проверка C5.
+**Общий вердикт: ✅ Approve with suggestions.** Проект находится в стабильном рабочем состоянии. Критические проблемы безопасности и дизайна закрыты. B3, B4 и C1–C5 выполнены и прошли verification. Следующий bounded этап — C6: остальные P1-файлы.
 
 ---
 

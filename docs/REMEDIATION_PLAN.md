@@ -22,7 +22,7 @@
 | C2 — Warehouse topology modal | ✅ Выполнено: C2.1–C2.3 | MEDIUM |
 | C3 — WMS stock page | ✅ Выполнено: C3.1–C3.4 | MEDIUM |
 | C4 — Equipment wizard form | ✅ Выполнено: C4.1–C4.3 | MEDIUM |
-| C5 — EPS reports + import | ⏳ В работе: C5.1 ✅; C5.2a ✅; C5.2b.1–C5.2b.4 ✅; C5.3–C5.4 открыты | MEDIUM |
+| C5 — EPS reports + import | ✅ Выполнено: C5.1–C5.4 | MEDIUM |
 | C6 — P1 страницы > 600 строк | ⏳ Открыта | MEDIUM |
 | C7 — P2 F-файлы < 500 строк | ⏳ Открыта | LOW |
 | D — Типизация | ⏳ Открыта | P2 |
@@ -552,7 +552,8 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 | ~~Текущая~~ | ~~B3~~ | ✅ role string унификация завершена |
 | ~~Следующая~~ | ~~B4~~ | ✅ console.* cleanup завершён |
 | ~~Следующая~~ | ~~C1, C2, C3~~ | ✅ крупные UI-монолиты декомпозированы |
-| **Текущая** | **C5.2b.4** | execute payload preparation завершена; далее финальная проверка C5 |
+| ~~Текущая~~ | ~~C5.2b.4~~ | ✅ execute payload preparation и финальная проверка C5 завершены |
+| **Следующая** | **C6** | остальные P1-файлы > 600 строк |
 | +3 | C6 (4–6 файлов) | F-grade < 38 |
 | backlog | C7, D, E | parser false-positives, typing, rules sync |
 
@@ -591,8 +592,8 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 5. **Quality checker** некорректно режет границы TSX-функций — всегда проверять вручную.
 6. **Не трогать:** `temp/`, `.env`, `uploads/`, `docker/jira/server.js` без отдельной задачи.
 7. **Не** массово заменять magic_number.
-8. **B3, B4, C1–C4 и C5.1–C5.2b.4 завершены.** Следующий этап — C5.3: финальная проверка C5.
+8. **B3, B4, C1–C5 завершены.** Следующий этап — C6: остальные P1-файлы.
 9. **C-stories** могут идти параллельно на разных файлах (не пересекающихся).
 10. **Не снижать** quality baseline: web ≥ 78.0, F ≤ 38, packages ≥ 94.0, F=0.
 
-*Обновлено 2026-08-29 после завершения C5.2b.4. Stories A1–A3, B1–B4, C1–C4 и C5.1–C5.2b.4 закрыты.*
+*Обновлено 2026-08-29 после завершения C5.3. Stories A1–A3, B1–B4 и C1–C5 закрыты.*
