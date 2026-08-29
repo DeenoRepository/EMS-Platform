@@ -7,8 +7,8 @@
 
 > **Вердикт: ✅ Approve with suggestions.**  
 > Все критические security findings из аудита 2026-08-27 (Stories A1–A3, B1–B2) подтверждены закрытыми.  
-> Quality baseline PASS: 79.0/100 (C), 0 rate-limit gaps, 0 hex-hardcode в компонентах.
-> B3, B4, C1, C2, C3 и C4 завершены; C5.1, C5.2a, C5.2b.1 и C5.2b.2 выполнены: admin-role checks унифицированы, production API logging paths переведены на structured `logger`, а крупные UI-области декомпозированы. Следующий этап — C5.2b.3 Smart Import preview/conflict.
+> Quality baseline PASS: 79.2/100 (C), 0 rate-limit gaps, 0 hex-hardcode в компонентах.
+> B3, B4, C1, C2, C3 и C4 завершены; C5.1, C5.2a и C5.2b.1–C5.2b.3 выполнены: admin-role checks унифицированы, production API logging paths переведены на structured `logger`, а крупные UI-области декомпозированы. Следующий этап — C5.2b.4 Smart Import execute payload preparation.
 
 ---
 
@@ -298,6 +298,12 @@ packages/shared/   — типы, константы, permissions, formatters
 **Результат:** missing-field resolution, mapping summary и navigation вынесены в typed presentation-компонент; resolutions, columnMapping и callbacks сохранены в wizard.
 **Проверки:** lint, tsc, 160 тестов, route audit, theme check и quality baseline 79.1/F36/SOLID25 — PASS.
 
+### Story C5.2b.3 — Smart Import preview/conflict step ✅
+
+**Файлы:** [`SmartImportWizard.tsx`](../apps/web/src/components/eps/SmartImportWizard.tsx), [`SmartImportPreviewStep.tsx`](../apps/web/src/components/eps/SmartImportPreviewStep.tsx).
+**Результат:** conflict strategy, preview filters/counts, preview table и execute/back callbacks вынесены в presentation-компонент; state и execute handler сохранены в wizard.
+**Проверки:** lint, tsc, 160 тестов, route audit, theme check и quality baseline 79.2/F36/SOLID25 — PASS.
+
 ### Story C5.2b.1 — Smart Import upload step ✅
 
 **Файлы:** [`SmartImportWizard.tsx`](../apps/web/src/components/eps/SmartImportWizard.tsx), [`SmartImportUploadStep.tsx`](../apps/web/src/components/eps/SmartImportUploadStep.tsx).
@@ -340,7 +346,7 @@ pnpm --filter @ems/web build
 | Quality baseline (79.1, F≤38) | ✅ PASS | поддерживать |
 | Test coverage (160 passed) | ✅ PASS | поддерживать |
 
-**Общий вердикт: ✅ Approve with suggestions.** Проект находится в стабильном рабочем состоянии. Критические проблемы безопасности и дизайна закрыты. B3, B4 и C1–C4 выполнены; C5.1/C5.2a/C5.2b.1/C5.2b.2 также прошли verification. Следующий bounded этап — C5.2b.3: Smart Import preview/conflict.
+**Общий вердикт: ✅ Approve with suggestions.** Проект находится в стабильном рабочем состоянии. Критические проблемы безопасности и дизайна закрыты. B3, B4 и C1–C4 выполнены; C5.1/C5.2a/C5.2b.1–C5.2b.3 также прошли verification. Следующий bounded этап — C5.2b.4: Smart Import execute payload preparation.
 
 ---
 
