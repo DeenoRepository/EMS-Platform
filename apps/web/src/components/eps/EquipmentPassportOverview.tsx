@@ -14,7 +14,7 @@ import TuneIcon from '@mui/icons-material/Tune';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import { EQUIPMENT_STATUS_MAP, formatDate } from '@ems/shared';
 import { CustomFieldValueRenderer } from '@/components/eps/CustomFieldValueRenderer';
-import { HealthScoreGauge, StatCard } from '@/components/ui';
+import { HealthScoreGauge, StatCard, StatusBadge } from '@/components/ui';
 import type { CustomFieldDef, CustomSectionDef, EquipmentDetails } from '@/app/eps/[id]/page';
 
 const SECTION_ICONS: Record<string, React.ReactNode> = {
@@ -282,14 +282,7 @@ export function EquipmentPassportOverview({ activeTab, equipment, sections, unas
                         <Typography variant="caption" color="text.secondary" display="block">
                           Текущий статус:
                         </Typography>
-                        <Chip
-                          label={statusInfo.label}
-                          size="small"
-                          sx={{
-                            fontWeight: 700,
-                            borderRadius: '6px',
-                          }}
-                        />
+                        <StatusBadge status={equipment.status} />
                       </Box>
                       <Box>
                         <Typography variant="caption" color="text.secondary" display="block">

@@ -88,13 +88,11 @@ Heuristic `getCurrentUser` без `PERMISSIONS.*` (10 маршрутов): logou
 ## 4. UI design-code
 
 - Hex вне theme-файлов: **0** (`pnpm check:theme`).
-- Entity statuses в большинстве мест идут через [`StatusBadge`](../apps/web/src/components/ui/StatusBadge.tsx) (81+ usages). Эталон: [`ApprovalWizardDialog.tsx`](../apps/web/src/components/eps/ApprovalWizardDialog.tsx:214).
-- `<Chip>` остаётся для metadata: коды складов, артикулы, счётчики, единицы, shortcuts, вложения. Это соответствует решению аудита 2026-08-27.
+- Entity statuses идут через [`StatusBadge`](../apps/web/src/components/ui/StatusBadge.tsx) (81+ usages), включая паспорт оборудования: [`EquipmentPassportOverview.tsx`](../apps/web/src/components/eps/EquipmentPassportOverview.tsx:285).
+- `<Chip>` остаётся для metadata: коды складов, артикулы, счётчики, единицы, shortcuts, вложения и теги оборудования. Это соответствует решению аудита 2026-08-27.
 - Shared UI library на месте: `StatCard`, `SearchInput`, `FilterToolbar`, `EmptyState`, `DataTableWrapper`, `ConfirmDialog`.
 
-### UI-1 — Chip вместо StatusBadge (entity status)
-
-[`EquipmentPassportOverview.tsx`](../apps/web/src/components/eps/EquipmentPassportOverview.tsx:285) рендерит «Текущий статус» через `<Chip label={statusInfo.label} />`. Это статус оборудования — нарушение [`.agents/rules/ui_design_code.md`](../.agents/rules/ui_design_code.md) §1. Замена: `<StatusBadge status={equipment.status} />`. Bounded story, без рефакторинга всего паспорта.
+Закрыто в Story B2/UI-1: статус оборудования в паспорте заменён с `Chip` на shared `StatusBadge`; bounded изменение не затрагивает metadata Chips.
 
 ---
 
@@ -155,11 +153,10 @@ B1 закрыла подтверждённый bounded список:
 
 Подробный план с шагами, DoD и расписанием: [`docs/REMEDIATION_PLAN.md`](REMEDIATION_PLAN.md).
 
-1. **UI-1:** `StatusBadge` вместо `Chip` в [`EquipmentPassportOverview.tsx`](../apps/web/src/components/eps/EquipmentPassportOverview.tsx:285).
-2. **A3:** убрать production-like default secrets из dev [`docker-compose.yml`](../docker-compose.yml:11) или явно отделить local-only профиль.
-3. **Legacy logging:** отдельная полная миграция оставшихся raw `console.error` с bounded batches.
-4. **Admin settings / WMS topology / EPS wizard** — по одному PR, без смены API contract.
-5. **Не трогать** массово 1911 `magic_number`: выделять только domain constants (лимиты, статусы, timeouts).
+1. **A3:** убрать production-like default secrets из dev [`docker-compose.yml`](../docker-compose.yml:11) или явно отделить local-only профиль.
+2. **Legacy logging:** отдельная полная миграция оставшихся raw `console.error` с bounded batches.
+3. **Admin settings / WMS topology / EPS wizard** — по одному PR, без смены API contract.
+4. **Не трогать** массово 1911 `magic_number`: выделять только domain constants (лимиты, статусы, timeouts).
 
 Каждая story: Conventional Commit, lint + tsc + targeted tests; security/API — полный `pnpm test` и `python scripts/route_audit.py`.
 
@@ -176,8 +173,8 @@ B1 закрыла подтверждённый bounded список:
 - [x] `.env.example` без demo Jira token; LDAP `adminpassword` блокируется валидатором
 - [x] Unsigned webhook закрыт политикой: секрет обязателен для active, либо явный opt-in
 - [x] B1 bounded logging/UI error paths завершены; полный тестовый набор 156 passed
+- [x] `EquipmentPassportOverview` использует `StatusBadge` для статуса оборудования
 - [ ] Web F-grade < 38 (сейчас ровно на пороге)
-- [ ] `EquipmentPassportOverview` использует `StatusBadge` для статуса оборудования
 
 ---
 

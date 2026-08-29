@@ -160,8 +160,9 @@
 
 ---
 
-### Story B2 — StatusBadge в паспорте оборудования (UI-1)
+### Story B2 — StatusBadge в паспорте оборудования (UI-1) — ✅ выполнено
 
+**Статус:** завершено 2026-08-29; entity-status использует shared `StatusBadge`, metadata Chips сохранены.
 **Приоритет:** P2 / Low
 **Скиллы:** `senior-frontend`
 **Оценка:** 0.5 часа
@@ -177,8 +178,9 @@
 
 **DoD:**
 
-- В паспорте статус оборудования только через `StatusBadge`.
-- `pnpm --filter @ems/web lint` + `tsc --noEmit`.
+- [x] В паспорте статус оборудования только через `StatusBadge`.
+- [x] Metadata Chips оборудования сохранены.
+- [x] `pnpm --filter @ems/web lint` + `tsc --noEmit`; theme check, 156 tests и quality baseline PASS.
 - Коммит: `fix(ui): use StatusBadge for equipment status in passport overview`
 
 ---
