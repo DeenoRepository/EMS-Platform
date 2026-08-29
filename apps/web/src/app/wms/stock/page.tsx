@@ -60,6 +60,7 @@ import {
 } from '@/components/ui';
 import { WmsStockTable } from '@/components/wms/WmsStockTable';
 import WmsStockFilters from '@/components/wms/WmsStockFilters';
+import { countActiveStockFilters } from './filter-state';
 
 export interface StockRow {
   id: string;
@@ -356,12 +357,13 @@ function WmsStockContent() {
     setPage(0);
   };
 
-  const activeFilterCount =
-    (selectedWarehouse ? 1 : 0) +
-    (selectedZone ? 1 : 0) +
-    (selectedCategory ? 1 : 0) +
-    (search ? 1 : 0) +
-    (lowStockOnly ? 1 : 0);
+  const activeFilterCount = countActiveStockFilters(
+    selectedWarehouse,
+    selectedZone,
+    selectedCategory,
+    search,
+    lowStockOnly
+  );
 
   const handleExport = (format: ExportFormat) => {
     const targetItems = selectedIds.length > 0
