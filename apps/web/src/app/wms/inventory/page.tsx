@@ -42,6 +42,7 @@ import WmsInventoryFilters from '@/components/wms/WmsInventoryFilters';
 import { countActiveInventoryFilters } from './filter-state';
 import { filterInventories, type InventoryItemSummary } from './inventory-filter';
 import { sortInventories } from './inventory-sort';
+import { getInventoryStats } from './inventory-stats';
 
 const INVENTORY_COLUMNS: TableColumnOption[] = [
   { id: 'code', label: 'Номер / Акт', defaultVisible: true, required: true },
@@ -201,9 +202,7 @@ export default function WmsInventoryListPage() {
     return sortedInventories.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
   }, [sortedInventories, page, rowsPerPage]);
 
-  const totalInventories = inventories.length;
-  const inProgressCount = inventories.filter((i) => i.status === 'IN_PROGRESS' || i.status === 'DRAFT').length;
-  const completedCount = inventories.filter((i) => i.status === 'COMPLETED').length;
+  const { totalInventories, inProgressCount, completedCount } = getInventoryStats(inventories);
 
   if (!canAccessInventory) {
     return (
