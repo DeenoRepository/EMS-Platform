@@ -1,6 +1,15 @@
 import { SrmIntegration, SrmProviderType } from '@ems/database';
 import { ISrmProviderAdapter, SrmProviderMetadata, SrmTestConnectionResult } from './types';
 
+type GitLabUserResponse = Record<string, unknown> & {
+  name?: unknown;
+  username?: unknown;
+};
+
+function isGitLabUserResponse(value: unknown): value is GitLabUserResponse {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 export class GitLabProviderAdapter implements ISrmProviderAdapter {
   readonly providerType: SrmProviderType = 'GITLAB_ISSUES';
 
@@ -68,7 +77,8 @@ export class GitLabProviderAdapter implements ISrmProviderAdapter {
         };
       }
 
-      const data = await res.json();
+      const rawData: unknown = await res.json();
+      const data = isGitLabUserResponse(rawData) ? rawData : {};
       return {
         success: true,
         statusCode: res.status,
