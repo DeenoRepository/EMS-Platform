@@ -33,6 +33,7 @@ import {
   InputAdornment,
 } from '@mui/material';
 import PageHeader from '@/components/layout/PageHeader';
+import { buildWarehouseSubmitRequest, validateWarehouseName } from './warehouse-submit';
 import AddIcon from '@mui/icons-material/Add';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
@@ -165,26 +166,26 @@ export default function WmsWarehousesPage() {
   };
 
   const handleSubmit = async () => {
-    if (!name.trim()) {
-      enqueueSnackbar('Укажите наименование склада', { variant: 'warning' });
+    const validationError = validateWarehouseName(name);
+    if (validationError) {
+      enqueueSnackbar(validationError, { variant: 'warning' });
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const url = editingId ? `/api/wms/warehouses/${editingId}` : '/api/wms/warehouses';
-      const method = editingId ? 'PATCH' : 'POST';
-
-      const res = await fetch(url, {
-        method,
+      const request = buildWarehouseSubmitRequest({
+        editingId,
+        name,
+        code,
+        location,
+        responsibleUserId,
+        isActive,
+      });
+      const res = await fetch(request.url, {
+        method: request.method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name.trim(),
-          code: code.trim() || undefined,
-          location: location.trim() || undefined,
-          responsibleUserId: responsibleUserId ? responsibleUserId.trim() : null,
-          isActive,
-        }),
+        body: JSON.stringify(request.body),
       });
 
       const json = await res.json();
