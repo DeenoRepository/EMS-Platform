@@ -40,7 +40,7 @@
    pnpm --filter @ems/web lint
    pnpm --filter @ems/web exec tsc --noEmit
    ```
-   Security/API: дополнительно `pnpm test` и `python scripts/route_audit.py`.  
+   Security/API: дополнительно `pnpm test` и `python scripts/route_audit.py`.
    Декомпозиция F-файлов: `python scripts/fgrade_detail.py` + `node scripts/check-quality-baseline.mjs`.
 5. Quality checker **не** является единственным источником истины для TSX: проверять реальные границы функций вручную.
 6. Не трогать `temp/`, `.env`, `uploads/`, `docker/jira/server.js` без отдельной задачи.
@@ -65,7 +65,7 @@
 
 **Статус:** завершено 2026-08-29; regression suite, lint, TypeScript, route audit и quality baseline прошли.
 **Приоритет:** P1 / Low–Medium
-**Скиллы:** `senior-security`, `senior-backend`  
+**Скиллы:** `senior-security`, `senior-backend`
 **Оценка:** 0.5 дня
 
 **Проблема:** [`.env.example`](../.env.example:81) содержит `JIRA_API_TOKEN=adminpassword`. [`validateEnv()`](../apps/web/src/lib/env-validate.ts:105) для LDAP запрещает только `password`/`changeme`, не `adminpassword`.
@@ -93,7 +93,7 @@
 
 **Статус:** завершено 2026-08-29; runtime policy, integration CRUD validation, secret masking, regression suite, lint, TypeScript, full tests и route audit прошли.
 **Приоритет:** P1 / Medium
-**Скиллы:** `senior-security`, `senior-backend`, `strict-api`, `jira-expert`  
+**Скиллы:** `senior-security`, `senior-backend`, `strict-api`, `jira-expert`
 **Оценка:** 1 день
 
 **Проблема:** если у интеграции нет `webhookSecret` / `apiToken` / `apiKey` / `token`, [`POST /api/srm/webhooks/[id]`](../apps/web/src/app/api/srm/webhooks/[id]/route.ts:53) принимает inbound без аутентификации.
@@ -125,7 +125,7 @@
 
 **Статус:** завершено 2026-08-29; local compose явно отделён от production, требует `.env` variables и использует `NODE_ENV=development`.
 **Приоритет:** P2 / Medium
-**Скиллы:** `docker-development`, `senior-security`  
+**Скиллы:** `docker-development`, `senior-security`
 **Оценка:** 0.5–1 день
 
 **Проблема:** [`docker-compose.yml`](../docker-compose.yml) задаёт fallback `postgrespassword`, `adminpassword`, статический JWT и `NODE_ENV=production`. Prod-файл уже строгий.
@@ -155,7 +155,7 @@
 **Статус:** завершено 2026-08-29; подтверждённые API best-effort и UI loading paths переведены на structured logging/snackbar. Остальные legacy `console.error` вне bounded списка оставлены отдельным долгом.
 **Последующие batches:** MRO API checklists/plans/schedules (7 raw logs) и WMS core collection routes (categories, nomenclature, warehouses, operations; 7 raw logs) переведены на structured `logger.error` отдельными коммитами.
 **Приоритет:** P2
-**Скиллы:** `senior-backend`, `senior-frontend`  
+**Скиллы:** `senior-backend`, `senior-frontend`
 **Оценка:** 1 день
 
 **Файлы (подтверждённый список):**
@@ -359,7 +359,7 @@ pnpm --filter @ems/web lint
 
 ## Фаза C — Снижение F-grade (качество, без смены поведения)
 
-Цель фазы: **F-grade web < 38**, average не ниже 78.0, SOLID ≤ 25.  
+Цель фазы: **F-grade web < 38**, average не ниже 78.0, SOLID ≤ 25.
 Порядок — по размеру × доменной чувствительности. **Один файл / один кластер на коммит.**
 
 Общий рецепт декомпозиции:
@@ -374,24 +374,24 @@ pnpm --filter @ems/web lint
 
 ### Story C1 — Admin settings page (1097 строк)
 
-**Файл:** [`apps/web/src/app/admin/settings/page.tsx`](../apps/web/src/app/admin/settings/page.tsx)  
-**Скиллы:** `senior-frontend`  
+**Файл:** [`apps/web/src/app/admin/settings/page.tsx`](../apps/web/src/app/admin/settings/page.tsx)
+**Скиллы:** `senior-frontend`
 **Оценка:** 1–1.5 дня
 
-Вынести: LDAP test panel, SRM test panel, dump download, maintenance toggles → `components/admin/settings/*`.  
-Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдельные modules.  
+Вынести: LDAP test panel, SRM test panel, dump download, maintenance toggles → `components/admin/settings/*`.
+Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдельные modules.
 Страница остаётся оркестратором.
 
 Коммит: `refactor(admin): split settings page into focused panels`
 
 ### Story C2 — Warehouse topology modal (927 строк, cx 12.7; decomposed into C2.1–C2.3)
 
-**Файл:** [`apps/web/src/components/wms/WarehouseTopologyModal.tsx`](../apps/web/src/components/wms/WarehouseTopologyModal.tsx)  
-**Скиллы:** `senior-frontend`, `senior-backend` (cell CRUD invariants)  
+**Файл:** [`apps/web/src/components/wms/WarehouseTopologyModal.tsx`](../apps/web/src/components/wms/WarehouseTopologyModal.tsx)
+**Скиллы:** `senior-frontend`, `senior-backend` (cell CRUD invariants)
 **Оценка:** 1.5 дня
 
-Вынести: zone list, cell grid, batch generate, delete confirm.  
-Особо проверить rollback при ошибке `handleDeleteCell` / `handleBatchGenerate`.  
+Вынести: zone list, cell grid, batch generate, delete confirm.
+Особо проверить rollback при ошибке `handleDeleteCell` / `handleBatchGenerate`.
 Не менять API зон/ячеек.
 
 ### C2.1 — Zone navigation panel ✅
@@ -410,11 +410,11 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 
 ### Story C3 — WMS stock page (905 строк; decomposed into C3.1–C3.4)
 
-**Файл:** [`apps/web/src/app/wms/stock/page.tsx`](../apps/web/src/app/wms/stock/page.tsx)  
-**Скиллы:** `senior-frontend`  
+**Файл:** [`apps/web/src/app/wms/stock/page.tsx`](../apps/web/src/app/wms/stock/page.tsx)
+**Скиллы:** `senior-frontend`
 **Оценка:** 1 день
 
-Вынести: filter model, sort handler, zone loader, table section.  
+Вынести: filter model, sort handler, zone loader, table section.
 Использовать `FilterToolbar`, `SearchInput`, `DataTableWrapper`, `EmptyState`.
 
 ### C3.1 — Filter toolbar/model ✅
@@ -433,11 +433,11 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 
 ### Story C4 — Equipment wizard form (843 строк; decomposed into C4.1–C4.3)
 
-**Файл:** [`apps/web/src/components/eps/EquipmentWizardForm.tsx`](../apps/web/src/components/eps/EquipmentWizardForm.tsx)  
-**Скиллы:** `senior-frontend`  
+**Файл:** [`apps/web/src/components/eps/EquipmentWizardForm.tsx`](../apps/web/src/components/eps/EquipmentWizardForm.tsx)
+**Скиллы:** `senior-frontend`
 **Оценка:** 1.5 дня
 
-Вынести: `renderFieldInput` → field renderer map; `handleSave` validation → pure function.  
+Вынести: `renderFieldInput` → field renderer map; `handleSave` validation → pure function.
 Не дублировать `CustomFieldValueRenderer`.
 
 ### C4.1 — Custom field renderer ✅
@@ -515,21 +515,20 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 
 ---
 
-## Р¤Р°Р·Р° D вЂ” РўРёРїРёР·Р°С†РёСЏ (РЅРµ СЃРјРµС€РёРІР°С‚СЊ СЃ C)
+## Phase D — Type safety (keep separate from C)
 
-**РџСЂРёРѕСЂРёС‚РµС‚:** P2
-**РЎРєРёР»Р»С‹:** `strict-api`, `senior-backend`
+**Priority:** P2
+**Skills:** `strict-api`, `senior-backend`
 
-1. Р’РЅРµС€РЅРёРµ JSON boundaries: `unknown` + type guard / Zod (login СѓР¶Рµ РЅР° Zod).
-2. РџСЂРёРѕСЂРёС‚РµС‚: `apps/web/src/lib/srm-providers`, `apps/web/src/lib/jira`, WMS/EPS API bodies.
-3. РЈРґР°Р»СЏС‚СЊ `as any` С‚РѕР»СЊРєРѕ РІ С‚РѕРј Р¶Рµ С„Р°Р№Р»Рµ, С‡С‚Рѕ Рё schema. РќРµ РїРѕ РІСЃРµРјСѓ СЂРµРїРѕР·РёС‚РѕСЂРёСЋ.
-4. D.1: GitLab `testConnection()` response narrowed from `unknown` through a local type guard; behavior and API contract preserved. Commit `c5b39df`.
-5. РЎР»РµРґСѓСЋС‰Р°СЏ story: РІС‹Р±СЂР°С‚СЊ РѕРґРёРЅ СЃРѕСЃРµРґРЅРёР№ РІРЅРµС€РЅРёР№ boundary РІ SRM/Jira Р±РµР· РјР°СЃСЃРѕРІРѕР№ Р·Р°РјРµРЅС‹ `any`.
+1. External JSON boundaries: use `unknown` plus a type guard or Zod (login already uses Zod).
+2. Priority areas: `apps/web/src/lib/srm-providers`, `apps/web/src/lib/jira`, and WMS/EPS API bodies.
+3. Remove `as any` only together with a schema or guard in the same file; do not perform a repository-wide replacement.
+4. **D.1 ✅** — GitLab `testConnection()` response narrowed from `unknown` through a local type guard; behavior and API contract preserved. Commit: `c5b39df`.
+5. **D.4 ✅** — Redmine `testConnection()` response narrowed from `unknown` through a local type guard; behavior and API contract preserved. Commit: `06f7964`.
 
-РљРѕРјРјРёС‚-С€Р°Р±Р»РѕРЅ: `refactor(srm): type webhook payload as unknown and narrow`
+Next story: select one adjacent external boundary in SRM/Jira without broad `any` cleanup.
 
----
-## Фаза D — Типизация (не смешивать с C)`r`n`r`n**Приоритет:** P2  `r`n**Скиллы:** `strict-api`, `senior-backend``r`n`r`n1. Внешние JSON boundaries: `unknown` + type guard / Zod (login уже на Zod).`r`n2. Приоритет: `apps/web/src/lib/srm-providers`, `apps/web/src/lib/jira`, WMS/EPS API bodies.`r`n3. Удалять `as any` только в том же файле, что и schema. Не по всему репозиторию.`r`n4. **D.1 ✅** — граница ответа GitLab `testConnection()` сужена из `unknown` через локальный type guard; сохранены поведение адаптера и API contract. Commit: `c5b39df`.`r`n5. Следующая story: выбрать один соседний внешний boundary в SRM/Jira без массовой замены `any`.`r`n`r`nКоммит-шаблон: `refactor(srm): type webhook payload as unknown and narrow`
+Commit template: `refactor(srm): type webhook payload as unknown and narrow`
 
 ---
 
@@ -606,4 +605,4 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 9. **C-stories** могут идти параллельно на разных файлах (не пересекающихся).
 10. **Не снижать** quality baseline: web ≥ 78.0, F ≤ 38, packages ≥ 94.0, F=0.
 
-*Обновлено 2026-08-29 после завершения D.1. Stories A1–A3, B1–B4, C1–C5, C6.2a, C6.3 и D.1 закрыты.*
+*Updated 2026-08-29 after D.4. Stories A1–A3, B1–B4, C1–C5, C6.2a, C6.3, D.1 and D.4 are closed.*
