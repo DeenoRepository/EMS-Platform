@@ -18,7 +18,7 @@
 | B2 — StatusBadge в паспорте | ✅ Выполнено | P2 |
 | **B3 — Role string унификация** | ✅ Выполнено (2026-08-29) | LOW |
 | **B4 — console.* остаток в API** | ✅ Выполнено (2026-08-29) | LOW |
-| C1 — Admin settings page | ⏳ В работе: C1.1 ✅; C1.2a ✅; C1.2b ✅; C1.3 ✅; C1.4 открыта | MEDIUM |
+| C1 — Admin settings page | ✅ Выполнено: C1.1–C1.4 | MEDIUM |
 | C2 — Warehouse topology modal | ⏳ Открыта | MEDIUM |
 | C3 — WMS stock page | ⏳ Открыта | MEDIUM |
 | C4 — Equipment wizard form | ⏳ Открыта | MEDIUM |
@@ -353,7 +353,7 @@ pnpm --filter @ems/web lint
 - [x] **C1.2a** — LDAP integration panel вынесен в [`AdminLdapIntegrationPanel.tsx`](../apps/web/src/components/admin/settings/AdminLdapIntegrationPanel.tsx); result DTO и callbacks сохранены.
 - [x] **C1.2b** — SRM integration panel вынесен в [`AdminSrmIntegrationPanel.tsx`](../apps/web/src/components/admin/settings/AdminSrmIntegrationPanel.tsx); provider-specific fields, diagnostics и callbacks сохранены. Проверки: 160 тестов, lint, tsc, route audit, theme check и quality baseline (web 78.5, F=38) — PASS.
 - [x] **C1.3** — database dump panel вынесен в [`AdminDatabaseDumpPanel.tsx`](../apps/web/src/components/admin/settings/AdminDatabaseDumpPanel.tsx); `dumpMode`, confirmation flow и download behavior сохранены. Проверки: 160 тестов, lint, tsc, route audit, theme check и quality baseline (web 78.5, F=37) — PASS.
-- [ ] **C1.4** — проверить размер страницы и удалить только ставшие неиспользуемыми imports; не смешивать с C1.2b/C1.3.
+- [x] **C1.4** — страница проверена после extraction: 516 строк, все imports используются, lint/tsc и diff-check PASS. Дополнительное дробление orchestration/state не требуется.
 
 ---
 
@@ -519,9 +519,9 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 - [x] 0 rate-limit gaps на 85 маршрутах
 - [x] `isAdminUser()` хелпер унифицирует admin-role проверки в API routes (B3)
 - [x] 0 `console.warn/error` в `apps/web/src/app/api/**` (B4)
-- [ ] Web F-grade < 38, baseline PASS (C1–C6)
+- [x] Web F-grade < 38, baseline PASS (C1; F-grade 37)
 - [ ] `pnpm check:quality`, `check:theme`, `route_audit.py`, `pnpm test` зелёные
-- [ ] [`PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md) обновлён после каждой story
+- [x] [`PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md) обновлён после B3/B4; C1.4 завершена без новых findings
 
 ---
 
@@ -542,8 +542,8 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 5. **Quality checker** некорректно режет границы TSX-функций — всегда проверять вручную.
 6. **Не трогать:** `temp/`, `.env`, `uploads/`, `docker/jira/server.js` без отдельной задачи.
 7. **Не** массово заменять magic_number.
-8. **B3 и B4 завершены.** Следующий этап — bounded UI-декомпозиция C1–C3.
+8. **B3, B4 и C1 завершены.** Следующий этап — C2, затем C3.
 9. **C-stories** могут идти параллельно на разных файлах (не пересекающихся).
 10. **Не снижать** quality baseline: web ≥ 78.0, F ≤ 38, packages ≥ 94.0, F=0.
 
-*Обновлено 2026-08-29 после завершения B3 и B4. Предыдущие stories A1–A3, B1–B2 также закрыты.*
+*Обновлено 2026-08-29 после завершения C1. Предыдущие stories A1–A3, B1–B4 также закрыты.*
