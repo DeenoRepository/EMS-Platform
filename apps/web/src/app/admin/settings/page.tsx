@@ -41,6 +41,7 @@ import { StatusBadge, PageLoading, ConfirmDialog } from '@/components/ui';
 import { PlatformMaintenanceStatus } from '@ems/shared';
 import { AdminMaintenancePanel } from '@/components/admin/settings/AdminMaintenancePanel';
 import { AdminLdapIntegrationPanel } from '@/components/admin/settings/AdminLdapIntegrationPanel';
+import { AdminSrmIntegrationPanel } from '@/components/admin/settings/AdminSrmIntegrationPanel';
 
 export default function AdminSettingsPage() {
   const { enqueueSnackbar } = useSnackbar();
@@ -443,261 +444,21 @@ export default function AdminSettingsPage() {
               onTestConnection={handleTestLdap}
             />
 
-            {/* Polymorphic External ServiceDesk / SRM Settings */}
-            <Grid item xs={12} md={6}>
-              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <CardContent sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, flexWrap: 'wrap', gap: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <AssessmentIcon color="primary" />
-                      <Typography variant="h6" fontWeight={700}>
-                        Внешняя интеграция Service Desk (SRM)
-                      </Typography>
-                    </Box>
-                    {settings.SRM_PROVIDER_TYPE !== 'DISABLED' && (
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={testingSrm ? <CircularProgress size={14} color="inherit" /> : <NetworkCheckIcon />}
-                        disabled={testingSrm}
-                        onClick={handleTestSrm}
-                        sx={{ textTransform: 'none', fontWeight: 600, borderRadius: '8px' }}
-                      >
-                        {testingSrm ? 'Проверка...' : 'Проверить подключение'}
-                      </Button>
-                    )}
-                  </Box>
-                  <Typography variant="caption" color="text.secondary" paragraph>
-                    Протокол синхронизации заявок и дефектов с внешней корпоративной системой
-                  </Typography>
-                  <Divider sx={{ mb: 2.5 }} />
-
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <TextField
-                      select
-                      label="Тип внешней ServiceDesk-системы"
-                      value={settings.SRM_PROVIDER_TYPE}
-                      onChange={(e) => handleChange('SRM_PROVIDER_TYPE', e.target.value)}
-                      fullWidth
-                      size="small"
-                      helperText="Выберите используемый протокол или платформу Service Desk"
-                    >
-                      <MenuItem value="JIRA">Jira Service Desk / Jira Data Center</MenuItem>
-                      <MenuItem value="REDMINE">Redmine Issue Tracker</MenuItem>
-                      <MenuItem value="GITLAB">GitLab Issues</MenuItem>
-                      <MenuItem value="GENERIC_REST">Универсальный REST API</MenuItem>
-                      <MenuItem value="DISABLED">Отключено (Автономный локальный SRM)</MenuItem>
-                    </TextField>
-
-                    {settings.SRM_PROVIDER_TYPE === 'JIRA' && (
-                      <>
-                        <TextField
-                          label="Jira Base URL"
-                          placeholder="https://jira.company.local"
-                          fullWidth
-                          size="small"
-                          value={settings.SRM_PROVIDER_URL}
-                          onChange={(e) => handleChange('SRM_PROVIDER_URL', e.target.value)}
-                          helperText="Базовый URL Jira инстанса"
-                        />
-
-                        <TextField
-                          label="Ключ проекта Jira"
-                          placeholder="SD"
-                          fullWidth
-                          size="small"
-                          value={settings.SRM_PROJECT_KEY}
-                          onChange={(e) => handleChange('SRM_PROJECT_KEY', e.target.value)}
-                          helperText="Короткий префикс проекта Jira (например: SD, IT, EMS)"
-                        />
-
-                        <TextField
-                          label="API-токен / Personal Access Token (PAT)"
-                          placeholder="Укажите токен доступа Jira"
-                          fullWidth
-                          size="small"
-                          type="password"
-                          value={settings.SRM_API_KEY}
-                          onChange={(e) => handleChange('SRM_API_KEY', e.target.value)}
-                          helperText="Персональный токен доступа (PAT) для Jira Data Center или API-токен"
-                        />
-
-                        <TextField
-                          label="Custom Field ID оборудования"
-                          placeholder="customfield_10100"
-                          fullWidth
-                          size="small"
-                          value={settings.SRM_CUSTOM_FIELD_ID}
-                          onChange={(e) => handleChange('SRM_CUSTOM_FIELD_ID', e.target.value)}
-                          helperText="ID кастомного поля Jira для привязки инвентарного номера"
-                        />
-                      </>
-                    )}
-
-                    {settings.SRM_PROVIDER_TYPE === 'REDMINE' && (
-                      <>
-                        <TextField
-                          label="Redmine Host URL"
-                          placeholder="https://redmine.company.local"
-                          fullWidth
-                          size="small"
-                          value={settings.SRM_PROVIDER_URL}
-                          onChange={(e) => handleChange('SRM_PROVIDER_URL', e.target.value)}
-                          helperText="Адрес сервера Redmine REST API"
-                        />
-
-                        <TextField
-                          label="API-ключ (X-Redmine-API-Key)"
-                          placeholder="Укажите API-токен"
-                          fullWidth
-                          size="small"
-                          type="password"
-                          value={settings.SRM_API_KEY}
-                          onChange={(e) => handleChange('SRM_API_KEY', e.target.value)}
-                          helperText="Ключ доступа из профиля Redmine"
-                        />
-
-                        <TextField
-                          label="Идентификатор или ID проекта"
-                          placeholder="operations"
-                          fullWidth
-                          size="small"
-                          value={settings.SRM_PROJECT_KEY}
-                          onChange={(e) => handleChange('SRM_PROJECT_KEY', e.target.value)}
-                          helperText="Символьный или числовой идентификатор проекта"
-                        />
-
-                        <TextField
-                          label="ID кастомного поля инвентарного номера"
-                          placeholder="customfield_1"
-                          fullWidth
-                          size="small"
-                          value={settings.SRM_CUSTOM_FIELD_ID}
-                          onChange={(e) => handleChange('SRM_CUSTOM_FIELD_ID', e.target.value)}
-                          helperText="Поле задачи Redmine для привязки оборудования"
-                        />
-                      </>
-                    )}
-
-                    {settings.SRM_PROVIDER_TYPE === 'GITLAB' && (
-                      <>
-                        <TextField
-                          label="GitLab Instance URL"
-                          placeholder="https://gitlab.company.local"
-                          fullWidth
-                          size="small"
-                          value={settings.SRM_PROVIDER_URL}
-                          onChange={(e) => handleChange('SRM_PROVIDER_URL', e.target.value)}
-                          helperText="Адрес инстанса GitLab"
-                        />
-
-                        <TextField
-                          label="Private Access Token (Bearer)"
-                          placeholder="glpat-xxxxxxxxxxxxxxxx"
-                          fullWidth
-                          size="small"
-                          type="password"
-                          value={settings.SRM_API_KEY}
-                          onChange={(e) => handleChange('SRM_API_KEY', e.target.value)}
-                          helperText="Токен с правами доступа к API"
-                        />
-
-                        <TextField
-                          label="Путь к проекту (Project Path)"
-                          placeholder="group/infrastructure-maint"
-                          fullWidth
-                          size="small"
-                          value={settings.SRM_PROJECT_KEY}
-                          onChange={(e) => handleChange('SRM_PROJECT_KEY', e.target.value)}
-                          helperText="Namespace и название проекта в GitLab"
-                        />
-                      </>
-                    )}
-
-                    {settings.SRM_PROVIDER_TYPE === 'GENERIC_REST' && (
-                      <>
-                        <TextField
-                          label="Базовый Endpoint REST API"
-                          placeholder="https://servicedesk.company.local/api/v1"
-                          fullWidth
-                          size="small"
-                          value={settings.SRM_PROVIDER_URL}
-                          onChange={(e) => handleChange('SRM_PROVIDER_URL', e.target.value)}
-                          helperText="Базовый URL внешнего сервиса заявок"
-                        />
-
-                        <TextField
-                          label="Токен авторизации (Bearer / API Key)"
-                          placeholder="Bearer eyJhbGciOi..."
-                          fullWidth
-                          size="small"
-                          type="password"
-                          value={settings.SRM_API_KEY}
-                          onChange={(e) => handleChange('SRM_API_KEY', e.target.value)}
-                          helperText="Значение заголовка авторизации"
-                        />
-
-                        <TextField
-                          label="Ресурс / Путь к списку задач"
-                          placeholder="/incidents"
-                          fullWidth
-                          size="small"
-                          value={settings.SRM_PROJECT_KEY}
-                          onChange={(e) => handleChange('SRM_PROJECT_KEY', e.target.value)}
-                          helperText="Относительный URL для выборки инцидентов"
-                        />
-                      </>
-                    )}
-
-                    {settings.SRM_PROVIDER_TYPE === 'DISABLED' && (
-                      <Alert severity="info" sx={{ borderRadius: 2, fontSize: '0.8125rem' }}>
-                        Внешняя интеграция отключена. Модуль SRM работает в автономном режиме с использованием встроенной базы данных.
-                      </Alert>
-                    )}
-
-                    {/* SRM Test Result Banner */}
-                    {srmTestResult && settings.SRM_PROVIDER_TYPE !== 'DISABLED' && (
-                      <Alert
-                        severity={srmTestResult.success ? 'success' : 'error'}
-                        icon={srmTestResult.success ? <CheckCircleOutlineIcon fontSize="inherit" /> : <ErrorOutlineIcon fontSize="inherit" />}
-                        sx={{ mt: 1, borderRadius: 2, fontSize: '0.8125rem' }}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-                          <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
-                            {srmTestResult.success
-                              ? srmTestResult.message || 'Подключение успешно проверено'
-                              : srmTestResult.error || 'Ошибка подключения'}
-                          </Typography>
-                          {srmTestResult.latencyMs !== undefined && (
-                            <Chip
-                              label={`${srmTestResult.latencyMs} мс`}
-                              size="small"
-                              color={srmTestResult.success ? 'success' : 'error'}
-                              variant="outlined"
-                              sx={{ height: 20, fontSize: '0.7rem', fontWeight: 700 }}
-                            />
-                          )}
-                        </Box>
-                        {srmTestResult.details?.serverInfo?.serverTitle && (
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                            Инстанс: {srmTestResult.details.serverInfo.serverTitle}
-                          </Typography>
-                        )}
-                        {srmTestResult.diagnostics && srmTestResult.diagnostics.length > 0 && (
-                          <Box sx={{ mt: 0.5 }}>
-                            {srmTestResult.diagnostics.map((diag, i) => (
-                              <Typography key={i} variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                                • {diag}
-                              </Typography>
-                            ))}
-                          </Box>
-                        )}
-                      </Alert>
-                    )}
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
+            <AdminSrmIntegrationPanel
+              providerType={settings.SRM_PROVIDER_TYPE}
+              providerUrl={settings.SRM_PROVIDER_URL}
+              projectKey={settings.SRM_PROJECT_KEY}
+              apiKey={settings.SRM_API_KEY}
+              customFieldId={settings.SRM_CUSTOM_FIELD_ID}
+              testing={testingSrm}
+              testResult={srmTestResult}
+              onProviderTypeChange={(value) => handleChange('SRM_PROVIDER_TYPE', value)}
+              onProviderUrlChange={(value) => handleChange('SRM_PROVIDER_URL', value)}
+              onProjectKeyChange={(value) => handleChange('SRM_PROJECT_KEY', value)}
+              onApiKeyChange={(value) => handleChange('SRM_API_KEY', value)}
+              onCustomFieldIdChange={(value) => handleChange('SRM_CUSTOM_FIELD_ID', value)}
+              onTestConnection={handleTestSrm}
+            />
           </Grid>
 
           {/* Database Backup and Dump Export Card */}
