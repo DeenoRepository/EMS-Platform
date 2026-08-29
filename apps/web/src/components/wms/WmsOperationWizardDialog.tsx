@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { WmsOperationStepContent } from './WmsOperationStepContent';
+import { buildOperationSubmitPayload } from './operation-submit';
 import MoveToInboxIcon from '@mui/icons-material/MoveToInbox';
 import PersonIcon from '@mui/icons-material/Person';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
@@ -422,16 +423,15 @@ export function WmsOperationWizardDialog({
         const res = await fetch('/api/wms/transfers', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sourceWarehouseId: warehouseId,
+          body: JSON.stringify(buildOperationSubmitPayload({
+            operationType,
+            warehouseId,
             targetWarehouseId,
-            isRequest: false,
-            requestReason: comment.trim() || undefined,
-            items: lineItems.map((item) => ({
-              nomenclatureId: item.nomenclatureId,
-              quantity: item.quantity,
-            })),
-          }),
+            equipmentId,
+            recipientName,
+            comment,
+            lineItems,
+          })),
         });
 
         const json = await res.json();
@@ -448,19 +448,15 @@ export function WmsOperationWizardDialog({
       const res = await fetch('/api/wms/operations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: operationType,
+        body: JSON.stringify(buildOperationSubmitPayload({
+          operationType,
           warehouseId,
-          targetWarehouseId: undefined,
-          equipmentId: operationType === 'ISSUE_WRITE_OFF' && equipmentId ? equipmentId : undefined,
-          recipientName: operationType === 'ISSUE_EMPLOYEE' ? recipientName.trim() : undefined,
-          comment: comment.trim() || undefined,
-          items: lineItems.map((item) => ({
-            nomenclatureId: item.nomenclatureId,
-            quantity: item.quantity,
-            equipmentId: item.equipmentId || undefined,
-          })),
-        }),
+          targetWarehouseId,
+          equipmentId,
+          recipientName,
+          comment,
+          lineItems,
+        })),
       });
 
       const json = await res.json();
