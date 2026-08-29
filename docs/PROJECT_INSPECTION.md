@@ -7,8 +7,8 @@
 
 > **Вердикт: ✅ Approve with suggestions.**  
 > Все критические security findings из аудита 2026-08-27 (Stories A1–A3, B1–B2) подтверждены закрытыми.  
-> Quality baseline PASS: 79.2/100 (C), 0 rate-limit gaps, 0 hex-hardcode в компонентах.
-> B3, B4, C1, C2, C3 и C4 завершены; C5.1, C5.2a и C5.2b.1–C5.2b.3 выполнены: admin-role checks унифицированы, production API logging paths переведены на structured `logger`, а крупные UI-области декомпозированы. Следующий этап — C5.2b.4 Smart Import execute payload preparation.
+> Quality baseline PASS: 79.3/100 (C), 0 rate-limit gaps, 0 hex-hardcode в компонентах.
+> B3, B4, C1, C2, C3 и C4 завершены; C5.1 и C5.2a–C5.2b.4 выполнены: admin-role checks унифицированы, production API logging paths переведены на structured `logger`, а крупные UI-области декомпозированы. Следующий этап — C5.3 final verification.
 
 ---
 
@@ -270,6 +270,12 @@ packages/shared/   — типы, константы, permissions, formatters
 **Проверки:** lint, tsc, 160 тестов, route audit, theme check, quality baseline 78.8/F36/SOLID25 — PASS.
 **Коммиты:** `4bea600` — toolbar extraction; `6a89fb5` — `WmsStockZoneCell` renderer и финализация C3.
 
+### Story C5.2b.4 — Smart Import execute payload preparation ✅
+
+**Файлы:** [`SmartImportWizard.tsx`](../apps/web/src/components/eps/SmartImportWizard.tsx), [`smart-import-submit.ts`](../apps/web/src/components/eps/smart-import-submit.ts).
+**Результат:** создание `newFieldDefinitions` и `ignoredHeaders` вынесено в pure helper; execute request body (`rows`, `columnMapping`, `newFieldDefinitions`, `ignoredHeaders`, `conflictStrategy`) сохранён без изменения API contract.
+**Проверки:** lint, tsc, 160 тестов, route audit, theme check и quality baseline 79.3/F36/SOLID25 — PASS.
+
 ### Story C4.2 — Equipment Wizard validation/payload preparation ✅
 
 **Файл:** [`EquipmentWizardForm.tsx`](../apps/web/src/components/eps/EquipmentWizardForm.tsx), helper [`equipment-wizard-submit.ts`](../apps/web/src/components/eps/equipment-wizard-submit.ts).
@@ -342,11 +348,11 @@ pnpm --filter @ems/web build
 | API pattern consistency | ✅ PASS | — |
 | Role string consistency | ✅ PASS | B3 завершена |
 | `console.*` в API | ✅ PASS | B4 завершена |
-| Large files (> 500 строк) | ⚠️ MEDIUM | C5.2b.2–C6 |
-| Quality baseline (79.1, F≤38) | ✅ PASS | поддерживать |
+| Large files (> 500 строк) | ⚠️ MEDIUM | C5.3, C6 |
+| Quality baseline (79.3, F≤38) | ✅ PASS | поддерживать |
 | Test coverage (160 passed) | ✅ PASS | поддерживать |
 
-**Общий вердикт: ✅ Approve with suggestions.** Проект находится в стабильном рабочем состоянии. Критические проблемы безопасности и дизайна закрыты. B3, B4 и C1–C4 выполнены; C5.1/C5.2a/C5.2b.1–C5.2b.3 также прошли verification. Следующий bounded этап — C5.2b.4: Smart Import execute payload preparation.
+**Общий вердикт: ✅ Approve with suggestions.** Проект находится в стабильном рабочем состоянии. Критические проблемы безопасности и дизайна закрыты. B3, B4 и C1–C4 выполнены; C5.1/C5.2a/C5.2b.1–C5.2b.4 также прошли verification. Следующий bounded этап — C5.3: финальная проверка C5.
 
 ---
 

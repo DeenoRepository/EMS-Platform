@@ -43,6 +43,7 @@ import {
 import SmartImportUploadStep from './SmartImportUploadStep';
 import SmartImportMappingStep from './SmartImportMappingStep';
 import SmartImportPreviewStep from './SmartImportPreviewStep';
+import { buildSmartImportSubmitPayload } from './smart-import-submit';
 
 export interface MissingFieldItem {
   header: string;
@@ -61,6 +62,8 @@ export interface MissingFieldResolution {
   fieldType: 'TEXT' | 'NUMBER' | 'DATE' | 'BOOLEAN' | 'SELECT';
   unit: string;
   sectionId: string;
+  sectionName?: string;
+  sectionCode?: string;
 }
 
 export interface ValidatedRow {
@@ -207,34 +210,18 @@ export function SmartImportWizard() {
   const handleExecuteImport = async () => {
     setExecutingImport(true);
 
-    const newFieldDefs = Object.values(resolutions)
-      .filter((r) => r.action === 'CREATE')
-      .map((r: any) => ({
-        header: r.header,
-        key: r.key,
-        name: r.name,
-        fieldType: r.fieldType,
-        unit: r.unit || undefined,
-        sectionId: r.sectionId || undefined,
-        sectionName: r.sectionName || undefined,
-        sectionCode: r.sectionCode || undefined,
-      }));
-
-    const ignoredHeaders = Object.values(resolutions)
-      .filter((r) => r.action === 'IGNORE')
-      .map((r) => r.header);
+    const payload = buildSmartImportSubmitPayload({
+      rows: validatedRows,
+      columnMapping,
+      resolutions,
+      conflictStrategy,
+    });
 
     try {
       const res = await fetch('/api/eps/import/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          rows: validatedRows,
-          columnMapping,
-          newFieldDefinitions: newFieldDefs,
-          ignoredHeaders,
-          conflictStrategy,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const json = await res.json();
