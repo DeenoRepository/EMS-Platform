@@ -25,7 +25,7 @@
 | C5 — EPS reports + import | ✅ Выполнено: C5.1–C5.4 | MEDIUM |
 | C6 — P1 страницы > 600 строк | ⏳ В работе: C6.1 ✅; C6.2a ✅; C6.3 ✅ | MEDIUM |
 | C7 — P2 F-файлы < 500 строк | ⏳ Открыта | LOW |
-| D — Типизация | ⏳ Открыта | P2 |
+| D — Типизация | ⏳ В работе: D.1 ✅ (GitLab connection JSON boundary) | P2 |
 | E — Tooling и документация | ⏳ Открыта | LOW |
 
 ---
@@ -515,16 +515,21 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 
 ---
 
-## Фаза D — Типизация (не смешивать с C)
+## Р¤Р°Р·Р° D вЂ” РўРёРїРёР·Р°С†РёСЏ (РЅРµ СЃРјРµС€РёРІР°С‚СЊ СЃ C)
 
-**Приоритет:** P2  
-**Скиллы:** `strict-api`, `senior-backend`
+**РџСЂРёРѕСЂРёС‚РµС‚:** P2
+**РЎРєРёР»Р»С‹:** `strict-api`, `senior-backend`
 
-1. Внешние JSON boundaries: `unknown` + type guard / Zod (login уже на Zod).
-2. Приоритет: `apps/web/src/lib/srm-providers`, `apps/web/src/lib/jira`, WMS/EPS API bodies.
-3. Удалять `as any` только в том же файле, что и schema. Не по всему репозиторию.
+1. Р’РЅРµС€РЅРёРµ JSON boundaries: `unknown` + type guard / Zod (login СѓР¶Рµ РЅР° Zod).
+2. РџСЂРёРѕСЂРёС‚РµС‚: `apps/web/src/lib/srm-providers`, `apps/web/src/lib/jira`, WMS/EPS API bodies.
+3. РЈРґР°Р»СЏС‚СЊ `as any` С‚РѕР»СЊРєРѕ РІ С‚РѕРј Р¶Рµ С„Р°Р№Р»Рµ, С‡С‚Рѕ Рё schema. РќРµ РїРѕ РІСЃРµРјСѓ СЂРµРїРѕР·РёС‚РѕСЂРёСЋ.
+4. D.1: GitLab `testConnection()` response narrowed from `unknown` through a local type guard; behavior and API contract preserved. Commit `c5b39df`.
+5. РЎР»РµРґСѓСЋС‰Р°СЏ story: РІС‹Р±СЂР°С‚СЊ РѕРґРёРЅ СЃРѕСЃРµРґРЅРёР№ РІРЅРµС€РЅРёР№ boundary РІ SRM/Jira Р±РµР· РјР°СЃСЃРѕРІРѕР№ Р·Р°РјРµРЅС‹ `any`.
 
-Коммит-шаблон: `refactor(srm): type webhook payload as unknown and narrow`
+РљРѕРјРјРёС‚-С€Р°Р±Р»РѕРЅ: `refactor(srm): type webhook payload as unknown and narrow`
+
+---
+## Фаза D — Типизация (не смешивать с C)`r`n`r`n**Приоритет:** P2  `r`n**Скиллы:** `strict-api`, `senior-backend``r`n`r`n1. Внешние JSON boundaries: `unknown` + type guard / Zod (login уже на Zod).`r`n2. Приоритет: `apps/web/src/lib/srm-providers`, `apps/web/src/lib/jira`, WMS/EPS API bodies.`r`n3. Удалять `as any` только в том же файле, что и schema. Не по всему репозиторию.`r`n4. **D.1 ✅** — граница ответа GitLab `testConnection()` сужена из `unknown` через локальный type guard; сохранены поведение адаптера и API contract. Commit: `c5b39df`.`r`n5. Следующая story: выбрать один соседний внешний boundary в SRM/Jira без массовой замены `any`.`r`n`r`nКоммит-шаблон: `refactor(srm): type webhook payload as unknown and narrow`
 
 ---
 
@@ -601,4 +606,4 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 9. **C-stories** могут идти параллельно на разных файлах (не пересекающихся).
 10. **Не снижать** quality baseline: web ≥ 78.0, F ≤ 38, packages ≥ 94.0, F=0.
 
-*Обновлено 2026-08-29 после завершения C6.3. Stories A1–A3, B1–B4, C1–C5, C6.2a и C6.3 закрыты.*
+*Обновлено 2026-08-29 после завершения D.1. Stories A1–A3, B1–B4, C1–C5, C6.2a, C6.3 и D.1 закрыты.*
