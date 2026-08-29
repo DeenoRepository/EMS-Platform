@@ -636,7 +636,7 @@ Commit template: `refactor(srm): type webhook payload as unknown and narrow`
 5. **Quality checker** некорректно режет границы TSX-функций — всегда проверять вручную.
 6. **Не трогать:** `temp/`, `.env`, `uploads/`, `docker/jira/server.js` без отдельной задачи.
 7. **Не** массово заменять magic_number.
-8. **B3, B4, C1–C5, C6.2a, C6.3, C6.5–C6.8 и C7–C15 завершены.** Следующий этап — C15: следующий P1/F-grade bounded файл; audit-history branch и завершённые UI-decompositions больше не являются pending.
+8. **B3, B4, C1–C5, C6.2a, C6.3, C6.5–C6.8 и C7–C19 завершены.** Следующий этап — C15: следующий P1/F-grade bounded файл; audit-history branch и завершённые UI-decompositions больше не являются pending.
 9. **C-stories** могут идти параллельно на разных файлах (не пересекающихся).
 10. **Не снижать** quality baseline: web ≥ 78.0, F ≤ 38, packages ≥ 94.0, F=0.
 
