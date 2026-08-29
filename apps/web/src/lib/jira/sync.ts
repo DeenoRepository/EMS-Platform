@@ -1,4 +1,4 @@
-import { prisma } from '@ems/database';
+import { prisma, Prisma } from '@ems/database';
 import { logger } from '../logger';
 import { getSystemSettings } from '../system-settings-service';
 import { applyJiraFieldMapping, getJiraFieldMapping, type JiraFieldMappingConfig } from './field-mapping';
@@ -11,7 +11,7 @@ export async function syncJiraIssues(targetIntegrationId?: string): Promise<{ co
   const defaultGlobalMapping = await getJiraFieldMapping();
 
   // 1. Проверяем наличие настроенных интеграций в базе данных
-  const integrationWhere: any = { isActive: true };
+  const integrationWhere: Prisma.SrmIntegrationWhereInput = { isActive: true };
   if (targetIntegrationId) {
     integrationWhere.id = targetIntegrationId;
   }

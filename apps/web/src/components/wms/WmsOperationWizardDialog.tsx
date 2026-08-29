@@ -272,9 +272,11 @@ export function WmsOperationWizardDialog({
             setCategories(catData.data);
           }
         })
-        .catch(console.error);
+        .catch(() => {
+          enqueueSnackbar('Не удалось загрузить данные для мастера складских операций', { variant: 'error' });
+        });
     }
-  }, [open, initialType, initialNomenclatureId, user?.userId]);
+  }, [open, initialType, initialNomenclatureId, user?.userId, enqueueSnackbar]);
 
   const handleOpenCreateNomDialog = (suggestedName?: string) => {
     const nameToSet = (suggestedName || searchInputValue || '').trim();
