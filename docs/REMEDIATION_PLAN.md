@@ -23,8 +23,8 @@
 | C3 — WMS stock page | ✅ Выполнено: C3.1–C3.4 | MEDIUM |
 | C4 — Equipment wizard form | ✅ Выполнено: C4.1–C4.3 | MEDIUM |
 | C5 — EPS reports + import | ✅ Выполнено: C5.1–C5.4 | MEDIUM |
-| C6 — P1 страницы > 600 строк | ⏳ В работе: C6.1 ✅; C6.2a ✅; C6.3 ✅; C6.5 ✅; C6.5 ✅ | MEDIUM |
-| C7 — P2 F-файлы < 500 строк | ⏳ Открыта | LOW |
+| C6 — P1 страницы > 600 строк | ✅ Выполнено: C6.1–C6.8 | MEDIUM |
+| C7–C14 — bounded UI-декомпозиция | ✅ Выполнено | LOW |
 | D — Типизация | ⏳ В работе: D.1 ✅ (GitLab connection JSON boundary) | P2 |
 | E — Tooling и документация | ⏳ Открыта | LOW |
 
@@ -481,7 +481,7 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 
 ### Story C6 — Остальные P1 страницы > 600 строк (decomposed into bounded stories)
 
-По одному коммиту, тот же рецепт. C6.1 inventory актуализирован; C6.2a, C6.3, C6.5, C6.6, C6.7, C6.8, C7 и C9 завершены:
+По одному коммиту, тот же рецепт. C6.1 inventory актуализирован; C6.2a, C6.3, C6.5, C6.6, C6.7 и C6.8, а также C7–C14 завершены:
 
 - [x] **C6.2a** — filter toolbar WMS inventory вынесен в [`WmsInventoryFilters.tsx`](../apps/web/src/components/wms/WmsInventoryFilters.tsx); filter/reset/pagination behavior сохранены. Проверки: lint, tsc, 160 тестов, route audit, theme check и quality baseline (web 79.3, F=36, SOLID=25) — PASS.
 - [x] **C6.3** — lifecycle-event mapping EPS equipment passport page вынесен в [`equipment-lifecycle-events.ts`](../apps/web/src/components/eps/equipment-lifecycle-events.ts); state, handlers и API contracts сохранены в [`page.tsx`](../apps/web/src/app/eps/[id]/page.tsx). Проверки: lint, tsc, 160 тестов, route audit, theme check, `git diff --check` и quality baseline (web 79.4, F=36, SOLID=25; packages 94.1, F=0, SOLID=0) — PASS.
@@ -490,23 +490,27 @@ Handlers `handleDownloadDump`, `handleTestSrm`, `handleTestLdap` — отдел�
 
 - [x] **C6.6** — warehouse submit request builder вынесен в [`warehouse-submit.ts`](../apps/web/src/app/wms/warehouses/warehouse-submit.ts); submit payload, endpoint selection и validation behavior сохранены. Commit: `5613e7a`.
 
-- [x] **C6.7** — audit-history branch [`EquipmentOperationalTabs.tsx`](../apps/web/src/components/eps/EquipmentOperationalTabs.tsx) вынесен в [`EquipmentAuditHistoryTab.tsx`](../apps/web/src/components/eps/EquipmentAuditHistoryTab.tsx); lifecycle timeline, loading/empty states, `StatusBadge`, `DataTableWrapper` и JSON changes rendering сохранены. Проверки: quality baseline (web 80.3, F=34, SOLID=24; packages 94.1, F=0, SOLID=0) — PASS. Commit: `f3950df`.
+- [x] **C6.7** — audit-history branch [`EquipmentOperationalTabs.tsx`](../apps/web/src/components/eps/EquipmentOperationalTabs.tsx) вынесен в [`EquipmentAuditHistoryTab.tsx`](../apps/web/src/components/eps/EquipmentAuditHistoryTab.tsx); lifecycle timeline, loading/empty states, `StatusBadge`, `DataTableWrapper` и JSON changes rendering сохранены. Проверки: quality baseline (web 80.3, F=34, SOLID=24; packages 94.1, F=0, SOLID=0) — PASS. Commits: `f3950df` (implementation), `6ea24e1` (documentation).
 
-- [x] **C6.8** — WMS dashboard deficit item вынесен в [`WmsDeficitItem.tsx`](../apps/web/src/components/wms/WmsDeficitItem.tsx); deficit presentation и расчет индикатора сохранены, dashboard data fetching/API contracts не изменены. Проверки: lint, tsc, quality baseline (web 79.7, F=36, SOLID=25) и `git diff --check` — PASS. Commit: `370bf87`.
+- [x] **C6.8** — WMS dashboard deficit item вынесен в [`WmsDeficitItem.tsx`](../apps/web/src/components/wms/WmsDeficitItem.tsx); deficit presentation и расчет индикатора сохранены, dashboard data fetching/API contracts не изменены. Проверки: lint, tsc, quality baseline (web 79.7, F=36, SOLID=25) и `git diff --check` — PASS. Commits: `370bf87` (implementation), `8d7ffe3` (documentation).
 
-- [x] **C7** — StockDetailDrawer overview tab вынесен в [`StockDetailOverviewTab.tsx`](../apps/web/src/components/wms/StockDetailOverviewTab.tsx); drawer state, operations loading, permissions и callbacks сохранены. Проверки: lint, tsc, targeted quality checker (72/100, C), `git diff --check` — PASS. Commit: `eab0fa1`.
+- [x] **C7** — StockDetailDrawer overview tab вынесен в [`StockDetailOverviewTab.tsx`](../apps/web/src/components/wms/StockDetailOverviewTab.tsx); drawer state, operations loading, permissions и callbacks сохранены. Проверки: lint, tsc, targeted quality checker (72/100, C), `git diff --check` — PASS. Commits: `eab0fa1` (implementation), `e036690` (documentation).
 
-- [x] **C7.1** — spare-parts branch of [`EquipmentOperationalTabs.tsx`](../apps/web/src/components/eps/EquipmentOperationalTabs.tsx) вынесен в [`EquipmentSparePartsTab.tsx`](../apps/web/src/components/eps/EquipmentSparePartsTab.tsx); existing data, StatusBadge, DataTableWrapper and EmptyState contracts preserved. Проверки: lint, tsc, targeted quality checker, quality baseline и `git diff --check` — PASS. Commit: `15c8dc6`.
+- [x] **C8** — spare-parts branch of [`EquipmentOperationalTabs.tsx`](../apps/web/src/components/eps/EquipmentOperationalTabs.tsx) вынесен в [`EquipmentSparePartsTab.tsx`](../apps/web/src/components/eps/EquipmentSparePartsTab.tsx); existing data, StatusBadge, DataTableWrapper and EmptyState contracts preserved. Проверки: lint, tsc, targeted quality checker, quality baseline и `git diff --check` — PASS. Commits: `15c8dc6` (implementation), `2c7f7c7` (documentation).
 
-- [x] **C9** — four-card KPI panel from [`EquipmentPassportOverview.tsx`](../apps/web/src/components/eps/EquipmentPassportOverview.tsx) вынесен в [`EquipmentPassportKpiPanel.tsx`](../apps/web/src/components/eps/EquipmentPassportKpiPanel.tsx); typed equipment contract and shared StatCard usage preserved. Проверки: lint, tsc, targeted quality checker, quality baseline и `git diff --check` — PASS. Commit: `667a03c`.
+- [x] **C9** — four-card KPI panel from [`EquipmentPassportOverview.tsx`](../apps/web/src/components/eps/EquipmentPassportOverview.tsx) вынесен в [`EquipmentPassportKpiPanel.tsx`](../apps/web/src/components/eps/EquipmentPassportKpiPanel.tsx); typed equipment contract and shared StatCard usage preserved. Проверки: lint, tsc, targeted quality checker, quality baseline и `git diff --check` — PASS. Commits: `667a03c` (implementation), `d7dc693` (documentation).
 
-- [x] **C10** — technical sections/default parameters from [`EquipmentPassportOverview.tsx`](../apps/web/src/components/eps/EquipmentPassportOverview.tsx) вынесены в [`EquipmentPassportTechnicalSections.tsx`](../apps/web/src/components/eps/EquipmentPassportTechnicalSections.tsx); typed field/section/equipment contracts, field filtering, units, icons and copy callbacks preserved. Проверки: lint, tsc, targeted quality checker, quality baseline и `git diff --check` — PASS. Commit: `8ed2b97`.
+- [x] **C10** — technical sections/default parameters from [`EquipmentPassportOverview.tsx`](../apps/web/src/components/eps/EquipmentPassportOverview.tsx) вынесены в [`EquipmentPassportTechnicalSections.tsx`](../apps/web/src/components/eps/EquipmentPassportTechnicalSections.tsx); typed field/section/equipment contracts, field filtering, units, icons and copy callbacks preserved. Проверки: lint, tsc, targeted quality checker, quality baseline и `git diff --check` — PASS. Commits: `8ed2b97` (implementation), `32cc014` (documentation).
 
-- [x] **C11** — maintenance branch of [`EquipmentOperationalTabs.tsx`](../apps/web/src/components/eps/EquipmentOperationalTabs.tsx) вынесен в [`EquipmentMaintenanceTab.tsx`](../apps/web/src/components/eps/EquipmentMaintenanceTab.tsx); maintenance data, formatting, empty state and shared UI contracts preserved. Проверки: lint, tsc, targeted quality checker, quality baseline и `git diff --check` — PASS. Commit: `d7a10ad`.
+- [x] **C11** — maintenance branch of [`EquipmentOperationalTabs.tsx`](../apps/web/src/components/eps/EquipmentOperationalTabs.tsx) вынесен в [`EquipmentMaintenanceTab.tsx`](../apps/web/src/components/eps/EquipmentMaintenanceTab.tsx); maintenance data, formatting, empty state and shared UI contracts preserved. Проверки: lint, tsc, targeted quality checker, quality baseline и `git diff --check` — PASS. Commits: `d7a10ad` (implementation), `abef082` (documentation).
 
-- [x] **C12** — SRM incident branch of [`EquipmentOperationalTabs.tsx`](../apps/web/src/components/eps/EquipmentOperationalTabs.tsx) вынесен в [`EquipmentSrmIncidentsTab.tsx`](../apps/web/src/components/eps/EquipmentSrmIncidentsTab.tsx); MRO/SRM routing, callbacks, StatusBadge, DataTableWrapper and EmptyState behavior preserved. Проверки: lint, tsc, targeted quality checker (78/100, C), quality baseline (web 80.3, F=34, SOLID=24) и `git diff --check` — PASS. Commit: `44f1dd6`.
+- [x] **C12** — SRM incident branch of [`EquipmentOperationalTabs.tsx`](../apps/web/src/components/eps/EquipmentOperationalTabs.tsx) вынесен в [`EquipmentSrmIncidentsTab.tsx`](../apps/web/src/components/eps/EquipmentSrmIncidentsTab.tsx); MRO/SRM routing, callbacks, StatusBadge, DataTableWrapper and EmptyState behavior preserved. Проверки: lint, tsc, targeted quality checker (78/100, C), quality baseline (web 80.3, F=34, SOLID=24) и `git diff --check` — PASS. Commits: `44f1dd6` (implementation), `d099c31` (documentation).
 
-Следующий bounded этап — C6.8: remaining P1/F-grade files; audit-history extraction завершена в C6.7.
+- [x] **C13** — transfer-request payload preparation вынесена в [`transfer-request-submit.ts`](../apps/web/src/components/wms/transfer-request-submit.ts); submit payload, validation and endpoint behavior preserved. Commit: `eb3e82a`.
+
+- [x] **C14** — WMS operation wizard step presentation вынесена в [`WmsOperationStepContent.tsx`](../apps/web/src/components/wms/WmsOperationStepContent.tsx); wizard state, navigation, validation and API behavior preserved. Commit: `93b0e1a`.
+
+Следующий bounded этап — C15: выбрать следующий P1/F-grade файл после завершённых C6.8 и C7–C14.
 
 C6.5 закрыта отдельным коммитом `9203fa6`; последующие изменения должны сохранять payload shape и API contract setup flow.
 
@@ -585,9 +589,10 @@ Commit template: `refactor(srm): type webhook payload as unknown and narrow`
 | ~~Следующая~~ | ~~C1, C2, C3~~ | ✅ крупные UI-монолиты декомпозированы |
 | ~~Текущая~~ | ~~C5.2b.4~~ | ✅ execute payload preparation и финальная проверка C5 завершены |
 | ~~Текущая~~ | ~~C6.7~~ | ✅ audit-history branch вынесена в `EquipmentAuditHistoryTab.tsx`, baseline подтверждён |
-| **Следующая** | **C6.8** | следующий P1/F-grade bounded файл |
-| +3 | C6 (4–6 файлов) | F-grade < 38 |
-| backlog | C7, D, E | parser false-positives, typing, rules sync |
+| ~~Текущая~~ | ~~C6.8~~ | ✅ WMS dashboard deficit item вынесен, baseline подтверждён |
+| ~~Текущая~~ | ~~C7–C14~~ | ✅ bounded UI-декомпозиция завершена; последний коммит — `93b0e1a` |
+| **Следующая** | **C15** | следующий P1/F-grade bounded файл |
+| backlog | D, E | typing, rules sync |
 
 ---
 
@@ -603,6 +608,7 @@ Commit template: `refactor(srm): type webhook payload as unknown and narrow`
 - [x] 0 `console.warn/error` в `apps/web/src/app/api/**` (B4)
 - [x] Web F-grade < 38, baseline PASS (C1/C2/C3/C4; F-grade 36)
 - [x] `pnpm check:quality`, `check:theme`, `route_audit.py`, `pnpm test` зелёные для завершённых stories
+- [x] C6.8 и C7–C14 завершены verified commits through `93b0e1a`; documentation close-out commits recorded where applicable
 - [x] [`PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md) обновлён после B3/B4 и C1–C4; завершённые stories не добавили новых findings
 
 ---
@@ -624,8 +630,8 @@ Commit template: `refactor(srm): type webhook payload as unknown and narrow`
 5. **Quality checker** некорректно режет границы TSX-функций — всегда проверять вручную.
 6. **Не трогать:** `temp/`, `.env`, `uploads/`, `docker/jira/server.js` без отдельной задачи.
 7. **Не** массово заменять magic_number.
-8. **B3, B4, C1–C5, C6.2a, C6.3, C6.5, C6.6, C6.7 и C7 завершены.** Следующий этап — C6.8: следующий P1/F-grade bounded файл; audit-history branch больше не является pending.
+8. **B3, B4, C1–C5, C6.2a, C6.3, C6.5–C6.8 и C7–C14 завершены.** Следующий этап — C15: следующий P1/F-grade bounded файл; audit-history branch и завершённые UI-decompositions больше не являются pending.
 9. **C-stories** могут идти параллельно на разных файлах (не пересекающихся).
 10. **Не снижать** quality baseline: web ≥ 78.0, F ≤ 38, packages ≥ 94.0, F=0.
 
-*Updated 2026-08-29 after C6.7. Stories A1–A3, B1–B4, C1–C5, C6.2a, C6.3, C6.5–C6.7, C9–C12, D.1 and D.4 are closed.*
+*Updated 2026-08-29 after `93b0e1a`. Stories A1–A3, B1–B4, C1–C5, C6.2a, C6.3, C6.5–C6.8, C7–C14, D.1 and D.4 are closed.*
