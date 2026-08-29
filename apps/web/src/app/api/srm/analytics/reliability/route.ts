@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/auth-guard';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { PERMISSIONS } from '@ems/shared';
 import { calculateAdvancedRamsMetrics } from '@/lib/jira-service';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +23,10 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, data });
   } catch (error: unknown) {
-    console.error('Ошибка расчета RAMS аналитики надежности SRM:', error);
+    logger.error('Failed to calculate SRM RAMS reliability analytics', {
+      endpoint: 'srm-reliability-get',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
       { success: false, error: 'Ошибка сервера при расчете аналитических метрик' },
       { status: 500 }

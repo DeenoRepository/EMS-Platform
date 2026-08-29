@@ -3,6 +3,7 @@ import { prisma } from '@ems/database';
 import { requireAuth } from '@/lib/auth-guard';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { PERMISSIONS } from '@ems/shared';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,7 +75,10 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
       },
     });
   } catch (error: unknown) {
-    console.error('Ошибка получения деталей заявки SRM:', error);
+    logger.error('Failed to get SRM issue details', {
+      endpoint: 'srm-issue-id-get',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Внутренняя ошибка сервера' }, { status: 500 });
   }
 }
@@ -163,7 +167,10 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
             data: { status: 'ACTIVE' },
           });
         } catch (e) {
-          console.warn('Не удалось обновить статус оборудования:', e);
+          logger.warn('Failed to update equipment status after SRM issue resolution', {
+            endpoint: 'srm-issue-id-patch',
+            error: e instanceof Error ? e.message : String(e),
+          });
         }
       }
     }
@@ -184,12 +191,18 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
         },
       });
     } catch (e) {
-      console.warn('Ошибка записи аудита SRM:', e);
+      logger.warn('Failed to write SRM audit log', {
+        endpoint: 'srm-issue-id-patch',
+        error: e instanceof Error ? e.message : String(e),
+      });
     }
 
     return NextResponse.json({ success: true, data: updated, message: 'Заявка успешно обновлена' });
   } catch (error: unknown) {
-    console.error('Ошибка обновления заявки SRM:', error);
+    logger.error('Failed to update SRM issue', {
+      endpoint: 'srm-issue-id-patch',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Ошибка сервера при обновлении заявки' }, { status: 500 });
   }
 }
@@ -221,7 +234,10 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ success: true, message: 'Заявка успешно удалена' });
   } catch (error: unknown) {
-    console.error('Ошибка удаления заявки SRM:', error);
+    logger.error('Failed to delete SRM issue', {
+      endpoint: 'srm-issue-id-delete',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Ошибка сервера при удалении' }, { status: 500 });
   }
 }

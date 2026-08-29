@@ -6,6 +6,7 @@ import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { saveFile } from '@/lib/storage';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -231,7 +232,10 @@ export async function POST(req: NextRequest) {
             },
           });
         } catch (uploadErr) {
-          console.error('Ошибка сохранения вложения обратной связи:', uploadErr);
+          logger.warn('Failed to save feedback attachment', {
+            endpoint: 'feedback-post',
+            error: uploadErr instanceof Error ? uploadErr.message : String(uploadErr),
+          });
         }
       }
     }
@@ -273,7 +277,10 @@ export async function POST(req: NextRequest) {
         }
       }
     } catch (notifErr) {
-      console.error('Ошибка отправки уведомлений администраторам:', notifErr);
+      logger.warn('Failed to send admin notifications for new feedback', {
+        endpoint: 'feedback-post',
+        error: notifErr instanceof Error ? notifErr.message : String(notifErr),
+      });
     }
 
     await logAuditEvent({

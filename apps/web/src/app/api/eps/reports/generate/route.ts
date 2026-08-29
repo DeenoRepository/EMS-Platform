@@ -4,6 +4,7 @@ import { prisma, EquipmentStatus } from '@ems/database';
 import { PERMISSIONS, EQUIPMENT_STATUS_MAP, formatDate, formatDateTime } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
 import { enforceRateLimit } from '@/lib/rate-limit';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -239,7 +240,10 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    console.error('Ошибка формирования отчета EPS:', error);
+    logger.error('Failed to generate EPS report', {
+      endpoint: 'eps-reports-generate-post',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Ошибка формирования отчета' }, { status: 500 });
   }
 }

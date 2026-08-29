@@ -5,6 +5,7 @@ import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -177,7 +178,10 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
           },
         });
       } catch (notifErr) {
-        console.error('Ошибка отправки уведомления об изменении статуса:', notifErr);
+        logger.warn('Failed to send status-change notification for feedback', {
+          endpoint: 'feedback-id-patch',
+          error: notifErr instanceof Error ? notifErr.message : String(notifErr),
+        });
       }
     }
 

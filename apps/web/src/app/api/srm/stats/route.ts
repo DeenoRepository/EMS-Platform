@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/auth-guard';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { PERMISSIONS } from '@ems/shared';
 import { calculateSrmStats, syncJiraIssues } from '@/lib/jira-service';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +25,10 @@ export async function GET(req: NextRequest) {
     const stats = await calculateSrmStats();
     return NextResponse.json({ success: true, data: stats });
   } catch (error: unknown) {
-    console.error('Ошибка получения статистики SRM:', error);
+    logger.error('Failed to get SRM stats', {
+      endpoint: 'srm-stats-get',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Внутренняя ошибка сервера' }, { status: 500 });
   }
 }

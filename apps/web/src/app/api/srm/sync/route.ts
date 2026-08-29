@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/auth-guard';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { PERMISSIONS } from '@ems/shared';
 import { syncJiraIssues } from '@/lib/jira-service';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +23,10 @@ export async function POST(req: NextRequest) {
       source: result.source,
     });
   } catch (error: unknown) {
-    console.error('Ошибка синхронизации Jira:', error);
+    logger.error('Failed to sync Jira issues', {
+      endpoint: 'srm-sync-post',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Сбой синхронизации с Jira' }, { status: 500 });
   }
 }

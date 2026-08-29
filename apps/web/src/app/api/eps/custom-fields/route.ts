@@ -4,6 +4,7 @@ import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma, FieldType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +26,10 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: fields });
   } catch (error: unknown) {
-    console.error('Ошибка GET /api/eps/custom-fields:', error);
+    logger.error('Failed to get EPS custom fields', {
+      endpoint: 'eps-custom-fields-get',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Ошибка получения кастомных полей' }, { status: 500 });
   }
 }
@@ -86,7 +90,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: field });
   } catch (error: unknown) {
-    console.error('Ошибка POST /api/eps/custom-fields:', error);
+    logger.error('Failed to create EPS custom field', {
+      endpoint: 'eps-custom-fields-post',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Ошибка сохранения кастомного поля' }, { status: 500 });
   }
 }
@@ -118,7 +125,10 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ success: true, message: 'Поле удалено' });
   } catch (error: unknown) {
-    console.error('Ошибка DELETE /api/eps/custom-fields:', error);
+    logger.error('Failed to delete EPS custom field', {
+      endpoint: 'eps-custom-fields-delete',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Ошибка удаления поля' }, { status: 500 });
   }
 }

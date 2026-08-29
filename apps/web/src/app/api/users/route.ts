@@ -4,6 +4,7 @@ import { enforceRateLimit } from '@/lib/rate-limit';
 import { hasPermission } from '@ems/auth';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,7 +61,10 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: formattedUsers });
   } catch (error: unknown) {
-    console.error('Ошибка получения списка пользователей:', error);
+    logger.error('Failed to get users list', {
+      endpoint: 'users-list-get',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Ошибка получения пользователей' }, { status: 500 });
   }
 }

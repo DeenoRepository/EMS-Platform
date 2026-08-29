@@ -9,6 +9,7 @@ import { PERMISSIONS, PERMISSION_DEFINITIONS } from '@ems/shared';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { getCurrentUser } from '@/lib/auth-guard';
 import { safeErrorResponse } from '@/lib/safe-error';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -190,7 +191,10 @@ export async function POST(req: NextRequest) {
       }
     } catch (schemaSyncErr: unknown) {
       const commandError = schemaSyncErr as { message?: string; stderr?: Buffer | string };
-      console.error('Database schema sync error:', commandError.message || schemaSyncErr);
+      logger.error('Database schema sync error', {
+        endpoint: 'setup-execute',
+        error: commandError.message || String(schemaSyncErr),
+      });
       const stderr = commandError.stderr?.toString() || commandError.message || String(schemaSyncErr);
       return NextResponse.json(
         {
@@ -336,7 +340,10 @@ export async function POST(req: NextRequest) {
         fs.writeFileSync(rootInstallMeta, installMeta, 'utf-8');
       }
     } catch (lockErr) {
-      console.warn('Could not write .installed marker:', lockErr);
+      logger.warn('Could not write .installed marker', {
+        endpoint: 'setup-execute',
+        error: lockErr instanceof Error ? lockErr.message : String(lockErr),
+      });
     }
 
     return NextResponse.json({

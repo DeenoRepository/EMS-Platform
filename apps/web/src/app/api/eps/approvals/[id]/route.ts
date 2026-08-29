@@ -6,6 +6,7 @@ import { prisma, ApprovalStatus, EquipmentStatus } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { z } from 'zod';
+import { logger } from '@/lib/logger';
 
 export async function GET(
   req: NextRequest,
@@ -262,7 +263,10 @@ export async function PATCH(
         });
       }
     } catch (notifErr) {
-      console.error('Ошибка отправки уведомления:', notifErr);
+      logger.warn('Failed to send approval notification', {
+        endpoint: 'eps-approval-id-patch',
+        error: notifErr instanceof Error ? notifErr.message : String(notifErr),
+      });
     }
 
     await logAuditEvent({

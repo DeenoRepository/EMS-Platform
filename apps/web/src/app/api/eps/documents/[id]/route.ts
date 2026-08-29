@@ -5,6 +5,7 @@ import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { deleteFile } from '@/lib/storage';
+import { logger } from '@/lib/logger';
 
 export async function DELETE(
   req: NextRequest,
@@ -53,7 +54,10 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, message: 'Документ успешно удален' });
   } catch (error: unknown) {
-    console.error('Ошибка удаления документа:', error);
+    logger.error('Failed to delete EPS document', {
+      endpoint: 'eps-document-delete',
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ success: false, error: 'Ошибка удаления документа' }, { status: 500 });
   }
 }

@@ -126,6 +126,25 @@ describe('API Security and Hardening Regressions', () => {
         'apps/web/src/app/api/wms/stock/route.ts',
         'apps/web/src/app/api/wms/stock/[id]/location/route.ts',
         'apps/web/src/app/api/wms/transfers/route.ts',
+        // Feedback batch
+        'apps/web/src/app/api/feedback/route.ts',
+        'apps/web/src/app/api/feedback/[id]/route.ts',
+        'apps/web/src/app/api/feedback/[id]/comments/route.ts',
+        // SRM batch
+        'apps/web/src/app/api/srm/sync/route.ts',
+        'apps/web/src/app/api/srm/stats/route.ts',
+        'apps/web/src/app/api/srm/issues/[id]/route.ts',
+        'apps/web/src/app/api/srm/analytics/reliability/route.ts',
+        // EPS batch
+        'apps/web/src/app/api/eps/reports/generate/route.ts',
+        'apps/web/src/app/api/eps/history/route.ts',
+        'apps/web/src/app/api/eps/documents/[id]/route.ts',
+        'apps/web/src/app/api/eps/custom-sections/route.ts',
+        'apps/web/src/app/api/eps/custom-fields/route.ts',
+        'apps/web/src/app/api/eps/approvals/[id]/route.ts',
+        // Misc batch
+        'apps/web/src/app/api/users/route.ts',
+        'apps/web/src/app/api/setup/execute/route.ts',
       ];
 
       for (const routePath of routePaths) {

@@ -5,6 +5,7 @@ import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -119,7 +120,10 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
           }
         }
       } catch (notifErr) {
-        console.error('Ошибка отправки уведомления о комментарии:', notifErr);
+        logger.warn('Failed to send comment notification for feedback', {
+          endpoint: 'feedback-comments-post',
+          error: notifErr instanceof Error ? notifErr.message : String(notifErr),
+        });
       }
     }
 
