@@ -15,7 +15,6 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
   EQUIPMENT_STATUS_MAP,
   PERMISSIONS,
-  AUDIT_ACTION_MAP,
 } from '@ems/shared';
 import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
@@ -32,6 +31,7 @@ import { EquipmentApprovalsTab } from '@/components/eps/EquipmentApprovalsTab';
 import { EquipmentOperationalTabs } from '@/components/eps/EquipmentOperationalTabs';
 import { EquipmentEditDialog } from '@/components/eps/EquipmentEditDialog';
 import { EquipmentPassportAuxiliaryDialogs } from '@/components/eps/EquipmentPassportAuxiliaryDialogs';
+import { buildEquipmentLifecycleEvents } from '@/components/eps/equipment-lifecycle-events';
 
 export interface CustomFieldDef {
   id: string;
@@ -445,70 +445,10 @@ function EquipmentPassportContent() {
     return Math.max(50, Math.min(100, 95 - openIssues * 10 + (plansCount > 0 ? 5 : 0)));
   }, [equipment]);
 
-  const lifecycleEvents: LifecycleEvent[] = useMemo(() => {
-    if (!equipment) return [];
-    const evts: LifecycleEvent[] = [];
-
-    // Commissioning event
-    if (equipment.commissionDate) {
-      evts.push({
-        id: `commissioning-${equipment.id}`,
-        type: 'COMMISSIONING',
-        title: 'Ввод единицы оборудования в эксплуатацию',
-        description: `Оборудование «${equipment.name}» (инв. № ${equipment.inventoryNumber || 'Б/Н'}) введено в эксплуатацию на площадке ${equipment.location || 'Основная'}.`,
-        date: equipment.commissionDate,
-        author: 'Главный механик',
-      });
-    }
-
-    // Maintenance events
-    (equipment.maintenancePlans || []).forEach((mp) => {
-      evts.push({
-        id: `mro-${mp.id}`,
-        type: 'MAINTENANCE',
-        title: `Регламент ТО: ${mp.name || 'Периодическое обслуживание'}`,
-        description: `Периодичность: ${mp.frequency || 'Регламент'}.`,
-        date: equipment.createdAt,
-      });
-    });
-
-    // Spare parts replacements
-    (equipment.spareParts || []).forEach((sp, idx) => {
-      evts.push({
-        id: `wms-${sp.nomenclature?.id || idx}`,
-        type: 'PARTS_REPLACED',
-        title: `Установка комплектующих: ${sp.nomenclature?.name || 'ТМЦ'}`,
-        description: `Артикул: ${sp.nomenclature?.article || 'Б/А'}. Ед. изм.: ${sp.nomenclature?.unit || 'шт.'}.`,
-        date: equipment.createdAt,
-      });
-    });
-
-    // Jira / SRM Incidents
-    (equipment.jiraIssues || []).forEach((issue) => {
-      evts.push({
-        id: `srm-${issue.id}`,
-        type: 'INCIDENT',
-        title: `Инцидент ServiceDesk: [${issue.issueKey}] ${issue.summary}`,
-        description: `Приоритет: ${issue.priority}. Статус: ${issue.status}.`,
-        date: issue.createdDate,
-      });
-    });
-
-    // Audit changes
-    (auditLogs || []).forEach((log, idx) => {
-      const actionKey = String(log.action || 'UPDATE') as keyof typeof AUDIT_ACTION_MAP;
-      evts.push({
-        id: `audit-${String(log.id || idx)}`,
-        type: actionKey === 'CREATE' ? 'COMMISSIONING' : 'AUDIT',
-        title: `Аудит: ${AUDIT_ACTION_MAP[actionKey]?.label || actionKey} данных паспорта`,
-        date: String(log.createdAt || equipment.updatedAt),
-        description: 'Зафиксированы изменения в структуре паспорта или атрибутов оборудования.',
-      });
-    });
-
-    // Sort descending by date
-    return evts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [equipment, auditLogs]);
+  const lifecycleEvents = useMemo(
+    () => (equipment ? buildEquipmentLifecycleEvents(equipment, auditLogs) : []),
+    [equipment, auditLogs]
+  );
 
   if (loading || !equipment) {
     return <PageLoading text="Загрузка электронного паспорта оборудования..." />;
