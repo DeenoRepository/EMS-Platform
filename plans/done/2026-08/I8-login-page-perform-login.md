@@ -1,14 +1,14 @@
 ---
 id: I8
 title: Extract performLogin from login/page.tsx (cx 12)
-status: active
+status: done
 phase: I
 priority: P2
 risk: low
 skills: [senior-frontend, senior-security]
 opened: 2026-08-30
-closed: null
-commits: []
+closed: 2026-08-30
+commits: [f289635]
 gates: [lint, tsc, check:quality]
 ---
 
@@ -37,11 +37,13 @@ API layer.
 
 ## Definition of Done
 
-- [ ] `performLogin` in the component ≤ 30 lines, cx ≤ 8.
-- [ ] Login success/failure/redirect behavior unchanged (manual smoke:
+- [x] `performLogin` in the component ≤ 30 lines, cx ≤ 8.
+- [x] Login success/failure/redirect behavior unchanged (manual smoke:
       valid login, invalid credentials, LDAP failure message).
-- [ ] Full gate green: lint, tsc, `pnpm test`, quality baseline.
+- [x] Full gate green: lint, tsc, `pnpm test`, quality baseline.
 
 ## Result
 
-_Not yet closed._
+Extracted login validation and error-message mapping into [`login-flow.ts`](../../apps/web/src/app/login/login-flow.ts). The page retains authentication invocation, local-storage handling, loading/error state, and UI event wiring. The `/api/auth/login` contract was not changed.
+
+Verification: web lint, web TypeScript check, 160 tests, quality baseline, and `git diff --check` passed.
