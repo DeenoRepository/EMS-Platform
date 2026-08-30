@@ -1,5 +1,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert';
+import { StockTransferStatus } from '@ems/database';
+import { buildTransferWhereModel } from '../wms-transfer-where-model';
 
 describe('WMS Transfers Business Logic & ID Generation', () => {
   test('generates collision-resistant transfer number with crypto random suffix', () => {
@@ -51,5 +53,56 @@ describe('WMS Transfers Business Logic & ID Generation', () => {
     const targetWh = 'wh-main';
     const isSame = sourceWh === targetWh;
     assert.strictEqual(isSame, true);
+  });
+});
+
+describe('WMS transfer where model', () => {
+  const userId = 'user-1';
+
+  test('applies inbound warehouse scope and overrides status', () => {
+    assert.deepStrictEqual(buildTransferWhereModel({
+      mode: 'inbound',
+      status: StockTransferStatus.COMPLETED,
+      warehouseId: 'warehouse-1',
+      userId,
+    }), {
+      status: StockTransferStatus.IN_TRANSIT,
+      targetWarehouseId: 'warehouse-1',
+    });
+  });
+
+  test('applies my requests scope without overriding explicit status', () => {
+    assert.deepStrictEqual(buildTransferWhereModel({
+      mode: 'my_requests',
+      status: StockTransferStatus.REJECTED,
+      userId,
+    }), {
+      status: StockTransferStatus.REJECTED,
+      createdById: userId,
+    });
+  });
+
+  test('combines all-warehouse scope and relation search filter', () => {
+    assert.deepStrictEqual(buildTransferWhereModel({
+      mode: 'all',
+      warehouseId: 'warehouse-1',
+      search: ' bearing ',
+      userId,
+    }), {
+      OR: [
+        { sourceWarehouseId: 'warehouse-1' },
+        { targetWarehouseId: 'warehouse-1' },
+      ],
+      AND: [{
+        OR: [
+          { transferNumber: { contains: ' bearing ', mode: 'insensitive' } },
+          { requestReason: { contains: ' bearing ', mode: 'insensitive' } },
+          { rejectionReason: { contains: ' bearing ', mode: 'insensitive' } },
+          { sourceWarehouse: { name: { contains: ' bearing ', mode: 'insensitive' } } },
+          { targetWarehouse: { name: { contains: ' bearing ', mode: 'insensitive' } } },
+          { items: { some: { nomenclature: { name: { contains: ' bearing ', mode: 'insensitive' } } } } },
+        ],
+      }],
+    });
   });
 });

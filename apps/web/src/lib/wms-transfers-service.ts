@@ -1,6 +1,10 @@
-import { prisma, StockTransferStatus, Prisma } from '@ems/database';
+import { prisma, StockTransferStatus } from '@ems/database';
 import { isAdminUser } from '@/lib/auth-guard';
 import { PERMISSIONS, JwtUserPayload } from '@ems/shared';
+import {
+  buildTransferWhereModel,
+  TransferWhereParams,
+} from './wms-transfer-where-model';
 
 /**
  * True when the user has unrestricted access to transfers across all warehouses
@@ -43,76 +47,8 @@ export function generateTransferNumber(isRequest: boolean): string {
   return `${prefix}-${dateStr}-${uniqueSuffix}`;
 }
 
-export function buildTransferWhereInput(params: {
-  mode: string;
-  status?: StockTransferStatus;
-  warehouseId?: string | null;
-  search?: string;
-  userId: string;
-}): Prisma.StockTransferWhereInput {
-  const { mode, status, warehouseId, search, userId } = params;
-  const where: Prisma.StockTransferWhereInput = {};
-
-  if (status && Object.values(StockTransferStatus).includes(status)) {
-    where.status = status;
-  }
-
-  if (warehouseId) {
-    if (mode === 'inbound') {
-      where.targetWarehouseId = warehouseId;
-      where.status = StockTransferStatus.IN_TRANSIT;
-    } else if (mode === 'requests') {
-      where.sourceWarehouseId = warehouseId;
-      where.status = StockTransferStatus.REQUESTED;
-    } else if (mode === 'outbound') {
-      where.sourceWarehouseId = warehouseId;
-      where.status = StockTransferStatus.IN_TRANSIT;
-    } else if (mode === 'my_requests') {
-      where.createdById = userId;
-      if (!status) where.status = StockTransferStatus.REQUESTED;
-    } else {
-      where.OR = [
-        { sourceWarehouseId: warehouseId },
-        { targetWarehouseId: warehouseId },
-      ];
-    }
-  } else {
-    if (mode === 'inbound') {
-      where.status = StockTransferStatus.IN_TRANSIT;
-    } else if (mode === 'requests') {
-      where.status = StockTransferStatus.REQUESTED;
-    } else if (mode === 'outbound') {
-      where.status = StockTransferStatus.IN_TRANSIT;
-    } else if (mode === 'my_requests') {
-      where.createdById = userId;
-      if (!status) where.status = StockTransferStatus.REQUESTED;
-    }
-  }
-
-  if (search) {
-    where.AND = [
-      {
-        OR: [
-          { transferNumber: { contains: search, mode: 'insensitive' } },
-          { requestReason: { contains: search, mode: 'insensitive' } },
-          { rejectionReason: { contains: search, mode: 'insensitive' } },
-          { sourceWarehouse: { name: { contains: search, mode: 'insensitive' } } },
-          { targetWarehouse: { name: { contains: search, mode: 'insensitive' } } },
-          {
-            items: {
-              some: {
-                nomenclature: {
-                  name: { contains: search, mode: 'insensitive' },
-                },
-              },
-            },
-          },
-        ],
-      },
-    ];
-  }
-
-  return where;
+export function buildTransferWhereInput(params: TransferWhereParams) {
+  return buildTransferWhereModel(params);
 }
 
 export async function getTransferTabCounts(params: {
