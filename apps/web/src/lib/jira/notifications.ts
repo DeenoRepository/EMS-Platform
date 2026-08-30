@@ -1,4 +1,5 @@
 import { prisma } from '@ems/database';
+import { logger } from '../logger';
 import { MILLISECONDS_PER_HOUR, SLA_TARGET_HOURS } from './constants';
 import type { JiraIssueData } from './field-mapping';
 
@@ -57,6 +58,8 @@ export async function notifySrmIncident(issue: JiraIssueData, equipmentName?: st
       });
     }
   } catch (err) {
-    console.warn('Ошибка отправки уведомления об инциденте SRM:', err);
+    logger.warn('Ошибка отправки уведомления об инциденте SRM', {
+      errorType: err instanceof Error ? err.name : typeof err,
+    });
   }
 }

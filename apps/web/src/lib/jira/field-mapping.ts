@@ -1,4 +1,5 @@
 import { prisma } from '@ems/database';
+import { logger } from '../logger';
 
 export interface JiraFieldMappingItem {
   srmField: string;          // Target SRM field (e.g. 'summary', 'status', 'priority', 'issueType', 'assignee', 'reporter', 'createdDate', 'resolvedDate')
@@ -176,7 +177,9 @@ export async function getJiraFieldMapping(): Promise<JiraFieldMappingConfig> {
       };
     }
   } catch (error) {
-    console.error('Ошибка чтения конфигурации маппинга Jira, используются дефолтные значения:', error);
+    logger.error('Ошибка чтения конфигурации маппинга Jira, используются дефолтные значения', {
+      errorType: error instanceof Error ? error.name : typeof error,
+    });
   }
 
   return DEFAULT_JIRA_FIELD_MAPPING;
@@ -322,7 +325,9 @@ function extractEquipmentSearchValue(rawIssue: any, config: EquipmentMatchConfig
       const match = searchValue.match(new RegExp(config.regexPattern, 'i'));
       if (match?.[1]) searchValue = match[1].trim();
     } catch (error) {
-      console.warn('Ошибка выполнения regex для сопоставления оборудования:', error);
+      logger.warn('Ошибка выполнения regex для сопоставления оборудования', {
+        errorType: error instanceof Error ? error.name : typeof error,
+      });
     }
   }
 

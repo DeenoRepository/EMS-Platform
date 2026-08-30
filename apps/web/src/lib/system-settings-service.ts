@@ -1,4 +1,5 @@
 import { prisma } from '@ems/database';
+import { logger } from './logger';
 
 export type SrmProviderChoice = 'JIRA' | 'REDMINE' | 'GITLAB' | 'GENERIC_REST' | 'DISABLED';
 
@@ -65,7 +66,9 @@ export async function getSystemSettings(): Promise<SystemSettingsConfig> {
 
     return config;
   } catch (error) {
-    console.error('Ошибка чтения SystemSetting из БД, используются fallback-значения:', error);
+    logger.error('Ошибка чтения SystemSetting из БД, используются fallback-значения', {
+      errorType: error instanceof Error ? error.name : typeof error,
+    });
     const fallbackUrl = process.env.JIRA_BASE_URL || process.env.JIRA_HOST || '';
     return {
       APP_NAME: process.env.NEXT_PUBLIC_APP_NAME || 'EMS — Equipment Management System',

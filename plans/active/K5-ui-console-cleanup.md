@@ -11,7 +11,7 @@ closed: null
 commits: []
 gates: [test, lint, tsc, check:quality]
 classification_commit: pending
-current_batch: K5.2 WMS inventory dictionary and topology UI error sinks
+current_batch: K5.3 server/service diagnostics logger migration
 batch_status: implementation complete; all gates passed
 ---
 
@@ -68,7 +68,7 @@ API-пути уже очищены. Часть оставшихся вызово
 
 1. **K5.1 — WMS inventory UI sinks (current):** remove the two direct console calls that duplicate existing user-visible snackbar errors in the inventory list and inventory detail pages. No behavior change beyond eliminating duplicate developer-console output. Implementation and verification complete.
 2. **K5.2 — WMS inventory dictionary and topology UI error sinks (current):** replace the inventory warehouse dictionary console call with the existing snackbar error path and remove the duplicate topology console call while preserving its existing snackbar behavior. Targeted and full gates passed.
-3. K5.3 — server/service diagnostics migrated to the existing structured logger, with safe error context only.
+3. **K5.3 — server/service diagnostics migrated to the existing structured logger, with safe error context only.** Five named server/service modules updated; intentional sinks excluded.
 
 ## Steps
 
@@ -94,6 +94,14 @@ API-пути уже очищены. Часть оставшихся вызово
 - Excluded: intentional logger/ErrorBoundary sinks and server diagnostics were not modified.
 - Verification: targeted API/security test, full test suite (165/165), web lint, workspace lint, web TypeScript, and quality baseline all passed.
 
+## K5.3 Result
+
+- Scope: `lib/custom-sections-defaults.ts:282`, `lib/storage.ts:106`, `lib/system-settings-service.ts:68`, `lib/jira/field-mapping.ts:179,325`, and `lib/jira/notifications.ts:60`.
+- Classification verified: all six calls were server/service diagnostics; intentional sinks in `logger.ts`, `components/ui/ErrorBoundary.tsx`, and `app/error.tsx` were excluded.
+- Result: replaced direct console calls with the existing `logger.error`/`logger.warn` API. Context is limited to error type and excludes error messages, paths, issue content, equipment names, settings, credentials, and other PII/secrets.
+- Behavior preserved: migration, file deletion, settings fallback, field-mapping fallback/regex handling, and notification failure swallowing remain unchanged.
+- Verification: targeted API/security test (18/18), full test suite (165/165), workspace lint, web TypeScript, and quality baseline all passed. `git diff --check` passed; the follow-up Windows `findstr` scan command returned exit 1 after tests passed because no matches were found in the changed files.
+
 ## Result
 
-K5.2 completed; K5.3 remains pending.
+K5.3 completed; K5 remains active because other non-intentional UI console calls are still documented and pending.

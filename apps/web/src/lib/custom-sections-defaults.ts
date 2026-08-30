@@ -1,4 +1,5 @@
 import { prisma } from '@ems/database';
+import { logger } from './logger';
 
 export const STANDARD_SECTIONS = [
   { code: 'classifiers', name: 'Общероссийские и отраслевые классификаторы', description: 'Коды ОКОФ (ОК 013-2014), ОКПД2, классификаторы техпроцесса и децимальные номера', icon: 'Category', sortOrder: 1 },
@@ -279,6 +280,8 @@ export async function migrateEquipmentCustomFields(): Promise<void> {
       }
     }
   } catch (err) {
-    console.error('Ошибка миграции customFields в Equipment:', err);
+    logger.error('Ошибка миграции customFields в Equipment', {
+      errorType: err instanceof Error ? err.name : typeof err,
+    });
   }
 }

@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { logger } from './logger';
 
 const UPLOAD_ROOT = path.resolve(process.cwd(), process.env.UPLOAD_DIR || process.env.STORAGE_LOCAL_DIR || './uploads');
 
@@ -103,7 +104,9 @@ export function deleteFile(relativeFilePath: string): boolean {
     }
     return false;
   } catch (e) {
-    console.error('Ошибка удаления файла:', e);
+    logger.error('Ошибка удаления файла', {
+      errorType: e instanceof Error ? e.name : typeof e,
+    });
     return false;
   }
 }
