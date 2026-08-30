@@ -1,14 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
-import {
-  Box,
-  Grid,
-  TextField,
-  MenuItem,
-  Button,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Typography } from '@mui/material';
 import ViewColumnOutlinedIcon from '@mui/icons-material/ViewColumnOutlined';
 import PageHeader from '@/components/layout/PageHeader';
 import { useSnackbar } from 'notistack';
@@ -19,11 +12,8 @@ import { exportReportExcel, buildReportCsv, buildReportJson, downloadReportFile 
 import {
   EmptyState,
   DataTableWrapper,
-  SearchInput,
   ExportButton,
-  DatePickerField,
   ConfirmDialog,
-  FilterToolbar,
   PageLoading,
 } from '@/components/ui';
 import ReportColumnBuilderDialog, { ReportColumn, IndustryPreset } from '@/components/eps/reports/ReportColumnBuilderDialog';
@@ -31,6 +21,7 @@ import ReportSaveTemplateDialog from '@/components/eps/reports/ReportSaveTemplat
 import ReportDataTable from '@/components/eps/reports/ReportDataTable';
 import ReportPresetsToolbar from '@/components/eps/reports/ReportPresetsToolbar';
 import { ReportStatsCards } from '@/components/eps/reports/ReportStatsCards';
+import { ReportFiltersToolbar } from '@/components/eps/reports/ReportFiltersToolbar';
 import { applyReportPreset, applyReportTemplate, type ReportFilterState, type ReportSortState } from './report-template-handlers';
 
 export interface SavedTemplate {
@@ -539,64 +530,18 @@ function ReportBuilderContent() {
           />
         }
         toolbar={
-          <FilterToolbar
-            variant="embedded"
+          <ReportFiltersToolbar
             activeFilterCount={activeFilterCount}
-            onResetFilters={handleResetFilters}
-          >
-            <Box sx={{ minWidth: { xs: '100%', sm: 240 }, flexGrow: 1 }}>
-              <SearchInput
-                placeholder="Поиск по инв. номеру, названию..."
-                value={searchQuery}
-                onSearch={(val) => {
-                  setSearchQuery(val);
-                  setPage(1);
-                }}
-              />
-            </Box>
-
-            <TextField
-              select
-              size="small"
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-              sx={{ minWidth: 150 }}
-            >
-              <MenuItem value="">Все статусы</MenuItem>
-              {Object.entries(EQUIPMENT_STATUS_MAP).map(([key, info]) => (
-                <MenuItem key={key} value={key}>
-                  {typeof info === 'string' ? info : (info as any).label}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <Box sx={{ width: 140 }}>
-              <DatePickerField
-                size="small"
-                label="Ввод с"
-                value={dateFrom}
-                onChange={(val) => {
-                  setDateFrom(val || '');
-                  setPage(1);
-                }}
-              />
-            </Box>
-
-            <Box sx={{ width: 140 }}>
-              <DatePickerField
-                size="small"
-                label="Ввод по"
-                value={dateTo}
-                onChange={(val) => {
-                  setDateTo(val || '');
-                  setPage(1);
-                }}
-              />
-            </Box>
-          </FilterToolbar>
+            searchQuery={searchQuery}
+            statusFilter={statusFilter}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onReset={handleResetFilters}
+            onSearchChange={(value) => { setSearchQuery(value); setPage(1); }}
+            onStatusChange={(value) => { setStatusFilter(value); setPage(1); }}
+            onDateFromChange={(value) => { setDateFrom(value); setPage(1); }}
+            onDateToChange={(value) => { setDateTo(value); setPage(1); }}
+          />
         }
       >
         <ReportDataTable
