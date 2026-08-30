@@ -2,10 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse, isAdminUser } from '@/lib/auth-guard';
 import { safeErrorResponse } from '@/lib/safe-error';
 import { enforceRateLimit } from '@/lib/rate-limit';
-import { prisma, ApprovalStatus, ApprovalType, Prisma } from '@ems/database';
+import { prisma, ApprovalStatus, ApprovalType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { z } from 'zod';
+import {
+  buildApprovalStats,
+  buildApprovalWhereInput,
+  parseApprovalListQuery,
+} from './get-query';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,51 +30,9 @@ export async function GET(req: NextRequest) {
       return forbiddenResponse();
     }
 
-    const { searchParams } = new URL(req.url);
-    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
-    const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '25', 10)));
-    const status = searchParams.get('status')?.trim() || '';
-    const type = searchParams.get('type')?.trim() || '';
-    const equipmentId = searchParams.get('equipmentId')?.trim() || '';
-    const search = searchParams.get('search')?.trim() || '';
-    const scope = searchParams.get('scope')?.trim() || 'all'; // all | my_requests | to_review
-
-    const where: Prisma.EquipmentApprovalWhereInput = {};
-
-    if (equipmentId) {
-      where.equipmentId = equipmentId;
-    }
-
-    if (status && Object.keys(ApprovalStatus).includes(status)) {
-      where.status = status as ApprovalStatus;
-    }
-
-    if (type && Object.keys(ApprovalType).includes(type)) {
-      where.type = type as ApprovalType;
-    }
-
-    if (scope === 'my_requests') {
-      where.requesterId = user.userId;
-    } else if (scope === 'to_review') {
-      where.status = 'PENDING';
-    }
-
-    if (search) {
-      where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        {
-          equipment: {
-            OR: [
-              { name: { contains: search, mode: 'insensitive' } },
-              { inventoryNumber: { contains: search, mode: 'insensitive' } },
-              { serialNumber: { contains: search, mode: 'insensitive' } },
-              { manufacturer: { contains: search, mode: 'insensitive' } },
-            ],
-          },
-        },
-      ];
-    }
+    const query = parseApprovalListQuery(new URL(req.url).searchParams);
+    const { page, pageSize, status, type, equipmentId, search, scope } = query;
+    const where = buildApprovalWhereInput(query, user.userId);
 
     const canReview =
       isAdminUser(user) ||
@@ -119,29 +82,7 @@ export async function GET(req: NextRequest) {
       }),
     ]);
 
-    const toReviewCount = canReview ? allApprovals.filter((a) => a.status === 'PENDING').length : 0;
-    const myRejectedCount = userApprovals.filter((a) => a.status === 'REJECTED').length;
-    const myPendingCount = userApprovals.filter((a) => a.status === 'PENDING').length;
-
-    const targetApprovals =
-      scope === 'my_requests'
-        ? userApprovals
-        : scope === 'to_review'
-        ? allApprovals.filter((a) => a.status === 'PENDING')
-        : allApprovals;
-
-    const stats = {
-      total: targetApprovals.length,
-      pending: targetApprovals.filter((a) => a.status === 'PENDING').length,
-      approved: targetApprovals.filter((a) => a.status === 'APPROVED').length,
-      rejected: targetApprovals.filter((a) => a.status === 'REJECTED').length,
-      cancelled: targetApprovals.filter((a) => a.status === 'CANCELLED').length,
-      // User-scoped and review stats
-      toReview: toReviewCount,
-      myRejected: myRejectedCount,
-      myPending: myPendingCount,
-      actionableCount: toReviewCount + myRejectedCount,
-    };
+    const stats = buildApprovalStats(allApprovals, userApprovals, scope, canReview);
 
     return NextResponse.json({
       success: true,

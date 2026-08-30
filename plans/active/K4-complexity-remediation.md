@@ -8,7 +8,7 @@ risk: medium
 skills: [senior-frontend, senior-backend, zero-hallucination-coder]
 opened: 2026-08-30
 closed: null
-commits: [5ef7e08, 6dd9624, pending]
+commits: [5ef7e08, 6dd9624, d7b0bd6, pending]
 gates: [test, lint, tsc, check:quality]
 ---
 
@@ -96,5 +96,17 @@ smells в `apps/web/src`.
 и env/database fallback mapping в
 [`system-settings-builder.ts`](../../apps/web/src/lib/system-settings-builder.ts),
 добавла 4 focused tests и снизила service function до `cx 4` / 28 строк.
-Targeted/full tests, lint, web tsc, quality и docs links зелёные; stage готова к
-закрывающему Conventional Commit.
+Targeted/full tests, lint, web tsc и quality зелёные; stage закрыта коммитом
+`d7b0bd6`. Историческая docs-link проверка после stage выявила устаревшие
+относительные ссылки в ранее закрытой K4.6 story; они не относятся к текущему
+K4.7 source change.
+
+Седьмое измерение 2026-08-30: после K4.6 максимальный числовой результат
+checker — `WmsOperationWizardDialog` `cx 42`, но это presentation boundary.
+Первый следующий verified business candidate — [`GET()`](../../apps/web/src/app/api/eps/approvals/route.ts:12)
+с `cx 29` / 159 строками. Bounded-подистория создана в
+[`K4.7-eps-approvals-get-query.md`](K4.7-eps-approvals-get-query.md): в текущем
+stage вынесены только pure query parsing/filter/stat construction, добавлены
+focused tests и сохранены GET/POST route contracts. Targeted tests, full tests,
+web lint, web tsc и quality baseline зелёные; docs gate требует исправления
+исторических K4.6 links перед закрытием stage.
