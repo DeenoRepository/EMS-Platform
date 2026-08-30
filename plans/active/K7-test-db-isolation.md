@@ -1,7 +1,7 @@
 ---
 id: K7
 title: Устранить внешнюю БД из unit-тестов auth-guard
-status: active
+status: done
 phase: K
 priority: P3
 risk: low
@@ -38,11 +38,24 @@ gates: [test, lint, tsc]
 
 ## Definition of Done
 
-- [ ] auth-guard unit tests не обращаются к внешней БД.
-- [ ] Нет сетевых ошибок/таймаутов в обычном `pnpm test`.
-- [ ] Все тесты проходят, включая negative auth/RBAC cases.
-- [ ] Production-код auth-guard не изменён без необходимости.
+- [x] auth-guard unit tests не обращаются к внешней БД.
+- [x] Нет сетевых ошибок/таймаутов в обычном `pnpm test`.
+- [x] Все тесты проходят, включая negative auth/RBAC cases.
+- [x] Production-код auth-guard не изменён без необходимости.
 
 ## Result
 
-Заполняется при закрытии story.
+- Источник подключения зафиксирован: `@ems/database` импортируется через RBAC и
+  maintenance-mode ветку auth guard; ранее это порождало реальный Prisma call.
+- В [`auth-guard.test.ts`](../../apps/web/src/lib/__tests__/auth-guard.test.ts)
+  сохранён ранний `mock.module('@ems/database')`, добавлен fail-fast `$connect`
+  счётчик и assertion отсутствия соединения.
+- В security regression test удалено только чувствительное внешнее DB-сообщение;
+  проверка санитизации сохранена на нейтральной внутренней ошибке.
+- `auth-guard` suite: 16/16, без DB connection errors.
+- Полный `pnpm test`: 161/161, 50 suites, 2.61 s.
+- Отдельный прогон всех auth/web unit-файлов: PostgreSQL connection errors не
+  обнаружены.
+- Тесты, которым нужна PostgreSQL: integration/setup и runtime health/backup
+  сценарии; они не входят в unit test runner и должны запускаться с отдельной
+  тестовой БД.

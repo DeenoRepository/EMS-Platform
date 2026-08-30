@@ -6,6 +6,8 @@ import type { NextRequest } from 'next/server';
 // Обеспечиваем наличие JWT_SECRET для тестов
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'super_secret_test_jwt_key_32_characters_long_min';
 
+let databaseConnectionAttempts = 0;
+
 const adminUserRecord = {
   id: 'admin-id-123',
   isActive: true,
@@ -37,6 +39,10 @@ const guestUserRecord = {
 mock.module('@ems/database', {
   namedExports: {
     prisma: {
+      $connect: async () => {
+        databaseConnectionAttempts += 1;
+        throw new Error('auth-guard unit tests must not connect to PostgreSQL');
+      },
       user: {
         findUnique: async ({ where }: { where: { id: string } }) => {
           if (where.id === adminUserRecord.id) return adminUserRecord;
@@ -100,6 +106,10 @@ const guestUser: JwtUserPayload = {
 };
 
 describe('auth-guard unit tests', () => {
+  test('does not create an external database connection', () => {
+    assert.strictEqual(databaseConnectionAttempts, 0);
+  });
+
   describe('getCurrentUser', () => {
     test('returns null when no token present', async () => {
       const req = makeNextRequest();

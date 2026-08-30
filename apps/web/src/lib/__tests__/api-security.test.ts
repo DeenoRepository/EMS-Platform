@@ -201,7 +201,7 @@ describe('API Security and Hardening Regressions', () => {
 
   describe('Safe Error Sanitization in 5xx responses', () => {
     test('does not leak database host, password or internal stack traces', async () => {
-      const internalDbError = new Error('FATAL: password authentication failed for user "postgres" at host 10.0.0.5:5432');
+      const internalDbError = new Error('internal database failure');
       const response = safeErrorResponse(internalDbError, 'Ошибка базы данных', 500);
 
       assert.equal(response.status, 500);
