@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { loadSidebarData, mapSidebarResponses } from './sidebar-load-data';
+import { applySidebarDataUpdate, loadSidebarData, mapSidebarResponses, type SidebarDataSetters } from './sidebar-load-data';
 
 function response(payload: unknown, ok = true): Response {
   return new Response(JSON.stringify(payload), { status: ok ? 200 : 500 });
@@ -45,6 +45,27 @@ test('loadSidebarData ignores rejected and non-ok endpoint responses', async () 
   });
 
   assert.deepEqual(data, {});
+});
+
+test('applySidebarDataUpdate applies only present fields, including null and zero', () => {
+  const calls: string[] = [];
+  const setters: SidebarDataSetters = {
+    setRepairCount: (value) => calls.push(`repair:${value}`),
+    setModuleStatus: (value) => calls.push(`modules:${value.wms}`),
+    setPendingApprovalsCount: (value) => calls.push(`pending:${value}`),
+    setRejectedApprovalsCount: (value) => calls.push(`rejected:${value}`),
+    setWmsLowStockCount: (value) => calls.push(`low:${value}`),
+    setWmsActiveInventoriesCount: (value) => calls.push(`inventory:${value}`),
+    setWmsPendingTransfersCount: (value) => calls.push(`transfers:${value}`),
+    setSrmOpenCount: (value) => calls.push(`srm-open:${value}`),
+    setSrmInProgressCount: (value) => calls.push(`srm-progress:${value}`),
+    setMroOverdueCount: (value) => calls.push(`overdue:${value}`),
+    setMroPlannedCount: (value) => calls.push(`planned:${value}`),
+  };
+
+  applySidebarDataUpdate({ repairCount: 0, moduleStatus: { wms: false }, srmOpenCount: 0, mroOverdueCount: null }, setters);
+
+  assert.deepEqual(calls, ['repair:0', 'modules:false', 'srm-open:0', 'overdue:null']);
 });
 
 test('mapSidebarResponses preserves fallback and zero-value mappings', () => {

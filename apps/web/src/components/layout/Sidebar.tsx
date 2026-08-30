@@ -20,7 +20,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import FeedbackOutlinedIcon from '@mui/icons-material/FeedbackOutlined';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS, PlatformMaintenanceStatus } from '@ems/shared';
-import { loadSidebarData } from './sidebar-load-data';
+import { applySidebarDataUpdate, loadSidebarData, type SidebarDataSetters } from './sidebar-load-data';
 import { StatusBadge } from '@/components/ui';
 import FeedbackDialog from '@/components/feedback/FeedbackDialog';
 import {
@@ -108,20 +108,23 @@ export default function Sidebar({
   }, []);
 
   useEffect(() => {
+    const setters: SidebarDataSetters = {
+      setRepairCount,
+      setModuleStatus,
+      setPendingApprovalsCount,
+      setRejectedApprovalsCount,
+      setWmsLowStockCount,
+      setWmsActiveInventoriesCount,
+      setWmsPendingTransfersCount,
+      setSrmOpenCount,
+      setSrmInProgressCount,
+      setMroOverdueCount,
+      setMroPlannedCount,
+    };
+
     async function loadData() {
       try {
-        const data = await loadSidebarData();
-        if (data.repairCount !== undefined) setRepairCount(data.repairCount);
-        if (data.moduleStatus !== undefined) setModuleStatus(data.moduleStatus);
-        if (data.pendingApprovalsCount !== undefined) setPendingApprovalsCount(data.pendingApprovalsCount);
-        if (data.rejectedApprovalsCount !== undefined) setRejectedApprovalsCount(data.rejectedApprovalsCount);
-        if (data.wmsLowStockCount !== undefined) setWmsLowStockCount(data.wmsLowStockCount);
-        if (data.wmsActiveInventoriesCount !== undefined) setWmsActiveInventoriesCount(data.wmsActiveInventoriesCount);
-        if (data.wmsPendingTransfersCount !== undefined) setWmsPendingTransfersCount(data.wmsPendingTransfersCount);
-        if (data.srmOpenCount !== undefined) setSrmOpenCount(data.srmOpenCount);
-        if (data.srmInProgressCount !== undefined) setSrmInProgressCount(data.srmInProgressCount);
-        if (data.mroOverdueCount !== undefined) setMroOverdueCount(data.mroOverdueCount);
-        if (data.mroPlannedCount !== undefined) setMroPlannedCount(data.mroPlannedCount);
+        applySidebarDataUpdate(await loadSidebarData(), setters);
       } catch {
         // ignore
       }

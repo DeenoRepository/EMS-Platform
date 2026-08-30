@@ -119,6 +119,40 @@ function mapSrm(data: unknown): Pick<SidebarDataUpdate, 'srmOpenCount' | 'srmInP
     : {};
 }
 
+export interface SidebarDataSetters {
+  setRepairCount: (value: number | null) => void;
+  setModuleStatus: (value: Record<string, boolean>) => void;
+  setPendingApprovalsCount: (value: number | null) => void;
+  setRejectedApprovalsCount: (value: number | null) => void;
+  setWmsLowStockCount: (value: number | null) => void;
+  setWmsActiveInventoriesCount: (value: number | null) => void;
+  setWmsPendingTransfersCount: (value: number | null) => void;
+  setSrmOpenCount: (value: number | null) => void;
+  setSrmInProgressCount: (value: number | null) => void;
+  setMroOverdueCount: (value: number | null) => void;
+  setMroPlannedCount: (value: number | null) => void;
+}
+
+export function applySidebarDataUpdate(data: SidebarDataUpdate, setters: SidebarDataSetters): void {
+  const updates: Array<[keyof SidebarDataUpdate, () => void]> = [
+    ['repairCount', () => setters.setRepairCount(data.repairCount ?? null)],
+    ['moduleStatus', () => setters.setModuleStatus(data.moduleStatus as Record<string, boolean>)],
+    ['pendingApprovalsCount', () => setters.setPendingApprovalsCount(data.pendingApprovalsCount ?? null)],
+    ['rejectedApprovalsCount', () => setters.setRejectedApprovalsCount(data.rejectedApprovalsCount ?? null)],
+    ['wmsLowStockCount', () => setters.setWmsLowStockCount(data.wmsLowStockCount ?? null)],
+    ['wmsActiveInventoriesCount', () => setters.setWmsActiveInventoriesCount(data.wmsActiveInventoriesCount ?? null)],
+    ['wmsPendingTransfersCount', () => setters.setWmsPendingTransfersCount(data.wmsPendingTransfersCount ?? null)],
+    ['srmOpenCount', () => setters.setSrmOpenCount(data.srmOpenCount ?? null)],
+    ['srmInProgressCount', () => setters.setSrmInProgressCount(data.srmInProgressCount ?? null)],
+    ['mroOverdueCount', () => setters.setMroOverdueCount(data.mroOverdueCount ?? null)],
+    ['mroPlannedCount', () => setters.setMroPlannedCount(data.mroPlannedCount ?? null)],
+  ];
+
+  for (const [key, update] of updates) {
+    if (data[key] !== undefined) update();
+  }
+}
+
 export function mapSidebarResponses(responses: readonly SettledResponse[], payloads: readonly unknown[]): SidebarDataUpdate {
   const [equipment, modules, approvals, wms, srm, mro, transfers] = payloads;
   return {
