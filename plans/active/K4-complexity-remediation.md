@@ -105,8 +105,8 @@ K4.7 source change.
 checker — `WmsOperationWizardDialog` `cx 42`, но это presentation boundary.
 Первый следующий verified business candidate — [`GET()`](../../apps/web/src/app/api/eps/approvals/route.ts:12)
 с `cx 29` / 159 строками. Bounded-подистория создана в
-[`K4.7-eps-approvals-get-query.md`](K4.7-eps-approvals-get-query.md): в текущем
+[`K4.7-eps-approvals-get-query.md`](../done/2026-08/K4.7-eps-approvals-get-query.md): в текущем
 stage вынесены только pure query parsing/filter/stat construction, добавлены
 focused tests и сохранены GET/POST route contracts. Targeted tests, full tests,
-web lint, web tsc и quality baseline зелёные; docs gate требует исправления
-исторических K4.6 links перед закрытием stage.
+web lint, web tsc, quality baseline и docs link check зелёные; stage закрыта
+коммитом `7615f8e`.
