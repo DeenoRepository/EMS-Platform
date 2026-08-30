@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { safeErrorResponse } from '@/lib/safe-error';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse, isAdminUser } from '@/lib/auth-guard';
+import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma, OperationType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { logger } from '@/lib/logger';
+import { isOperationsAdmin, buildOperationsWhereInput } from '@/lib/wms-operations-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,19 +25,7 @@ export async function GET(req: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
     const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '25', 10)));
 
-    const isAdmin =
-      isAdminUser(user) ||
-      user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-      user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
-
-    const where: any = {};
-    if (warehouseId) {
-      where.warehouseId = warehouseId;
-    }
-
-    if (type && type in OperationType) {
-      where.type = type;
-    }
+    const where = buildOperationsWhereInput({ warehouseId: warehouseId || undefined, type });
 
     const [total, operations] = await Promise.all([
       prisma.stockOperation.count({ where }),
@@ -166,10 +155,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Склад не найден' }, { status: 404 });
     }
 
-    const isAdmin =
-      isAdminUser(user) ||
-      user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-      user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+    const isAdmin = isOperationsAdmin(user);
 
     if (!isAdmin && warehouse.responsibleUserId !== user.userId) {
       return forbiddenResponse(`Вы не являетесь ответственным лицом за склад "${warehouse.name}". Выполнение операций разрешено только назначенному материально ответственному лицу.`);
