@@ -1,14 +1,14 @@
 ---
 id: I1
 title: Decompose EquipmentWizardForm into step components
-status: active
+status: done
 phase: I
 priority: P2
 risk: low
 skills: [senior-frontend]
 opened: 2026-08-30
-closed: null
-commits: []
+closed: 2026-08-30
+commits: [e8ee97d]
 gates: [lint, tsc, check:quality]
 ---
 
@@ -42,12 +42,18 @@ Will NOT change: form field names, validation rules, submit payload shape
 
 ## Definition of Done
 
-- [ ] `EquipmentWizardForm.tsx` reduced below 500 lines OR each remaining
+- [x] `EquipmentWizardForm.tsx` reduced below 500 lines OR each remaining
       block is a thin orchestrator with no repeated JSX blocks.
-- [ ] `handleSave` behavior and payload unchanged (verified by existing
+- [x] `handleSave` behavior and payload unchanged (verified by existing
       tests / manual submit smoke test).
-- [ ] Full gate green: lint, tsc, `pnpm test`, `node scripts/check-quality-baseline.mjs`.
+- [x] Full gate green: lint, tsc, `pnpm test`, `node scripts/check-quality-baseline.mjs`.
 
 ## Result
 
-_Not yet closed._
+Extracted the four wizard presentation steps into dedicated components. The
+parent remains responsible for state, metadata loading, navigation, validation,
+and submit orchestration. `EquipmentWizardForm.tsx` is now 166 lines.
+
+Verification: web lint, web TypeScript check, 160 tests, and quality baseline
+all passed. The test run also emitted the existing external database connection
+log, but no tests failed.
