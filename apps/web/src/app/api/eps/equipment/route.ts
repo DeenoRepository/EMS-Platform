@@ -2,10 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse, isAdminUser } from '@/lib/auth-guard';
 import { safeErrorResponse } from '@/lib/safe-error';
 import { enforceRateLimit } from '@/lib/rate-limit';
-import { prisma, EquipmentStatus, Prisma } from '@ems/database';
+import { prisma, EquipmentStatus } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { z } from 'zod';
+import {
+  buildEquipmentStatusCounts,
+  buildEquipmentWhereInput,
+  parseEquipmentListQuery,
+} from './get-query';
 
 export async function GET(req: NextRequest) {
   const rateLimitError = await enforceRateLimit(req, { limit: 120, windowMs: 60 * 1000, prefix: 'eps-equipment-get' });
@@ -16,40 +21,9 @@ export async function GET(req: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_VIEW)) return forbiddenResponse();
 
-    const { searchParams } = new URL(req.url);
-    const search = searchParams.get('search');
-    const status = searchParams.get('status') as EquipmentStatus | null;
-    const tagId = searchParams.get('tagId');
-    const manufacturer = searchParams.get('manufacturer');
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const pageSize = Math.min(1000, Math.max(1, parseInt(searchParams.get('pageSize') || searchParams.get('limit') || '20', 10)));
-
-    const where: Prisma.EquipmentWhereInput = {};
-
-    if (status) {
-      where.status = status;
-    }
-
-    if (manufacturer) {
-      where.manufacturer = { contains: manufacturer, mode: 'insensitive' };
-    }
-
-    if (tagId) {
-      where.tags = {
-        some: { tagId },
-      };
-    }
-
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { inventoryNumber: { contains: search, mode: 'insensitive' } },
-        { serialNumber: { contains: search, mode: 'insensitive' } },
-        { manufacturer: { contains: search, mode: 'insensitive' } },
-        { model: { contains: search, mode: 'insensitive' } },
-        { location: { contains: search, mode: 'insensitive' } },
-      ];
-    }
+    const query = parseEquipmentListQuery(new URL(req.url).searchParams);
+    const { page, pageSize } = query;
+    const where = buildEquipmentWhereInput(query);
 
     const [total, items, statusGroup] = await Promise.all([
       prisma.equipment.count({ where }),
@@ -82,24 +56,7 @@ export async function GET(req: NextRequest) {
       }),
     ]);
 
-    const statusCounts = {
-      total: 0,
-      active: 0,
-      underRepair: 0,
-      inStorage: 0,
-      decommissioned: 0,
-      draft: 0,
-    };
-
-    statusGroup.forEach((g) => {
-      const count = g._count.status;
-      statusCounts.total += count;
-      if (g.status === 'ACTIVE') statusCounts.active = count;
-      else if (g.status === 'UNDER_REPAIR') statusCounts.underRepair = count;
-      else if (g.status === 'IN_STORAGE') statusCounts.inStorage = count;
-      else if (g.status === 'DECOMMISSIONED') statusCounts.decommissioned = count;
-      else if (g.status === 'DRAFT') statusCounts.draft = count;
-    });
+    const statusCounts = buildEquipmentStatusCounts(statusGroup);
 
     const formatted = items.map((item) => ({
       id: item.id,
