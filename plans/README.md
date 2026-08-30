@@ -22,7 +22,7 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (5)
+## Active (6)
 
 | ID | Title | Phase | Priority | Risk | Skills | Opened |
 |---|---|---|---|---|---|---|
@@ -30,6 +30,7 @@ Current quality metrics are **not** tracked in this file — see
 | [K4.1](active/K4.1-sidebar-load-data.md) | Декомпозировать загрузку operational counters в Sidebar | K | P2 | medium | senior-frontend, zero-hallucination-coder | 2026-08-30 |
 | [K4.2](active/K4.2-wms-warehouses-handle-submit.md) | Декомпозировать сохранение складов WMS | K | P2 | medium | senior-frontend, zero-hallucination-coder | 2026-08-30 |
 | [K4.3](active/K4.3-setup-ldap-auth-handler.md) | Декомпозировать проверку LDAP-аутентификации администратора | K | P2 | medium | senior-frontend, zero-hallucination-coder | 2026-08-30 |
+| [K4.9](active/K4.9-eps-history-get-query.md) | Декомпозировать GET истории аудита EPS | K | P2 | medium | senior-backend, zero-hallucination-coder | 2026-08-30 |
 | [K6](active/K6-eslint-cli-migration.md) | Перевести web lint с next lint на ESLint CLI | K | P3 | low | senior-frontend, ci-cd-pipeline-builder | 2026-08-30 |
 
 ---
