@@ -278,39 +278,34 @@ export const RU_WORD_TRANSLATE: Record<string, string> = {
   импортный: 'imported',
 };
 
+const RU_TO_EN: Record<string, string> = {
+  а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'yo', ж: 'zh', з: 'z', и: 'i',
+  й: 'y', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't',
+  у: 'u', ф: 'f', х: 'h', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'sch', ъ: '', ы: 'y', ь: '',
+  э: 'e', ю: 'yu', я: 'ya',
+};
+
+function findCanonicalField(norm: string): CanonicalField | undefined {
+  return CANONICAL_FIELD_DICTIONARY[norm] || Object.entries(CANONICAL_FIELD_DICTIONARY)
+    .find(([phrase]) => norm === phrase || norm.startsWith(phrase) || norm.includes(phrase))?.[1];
+}
+
+function translateSlugWord(word: string): string {
+  if (RU_WORD_TRANSLATE[word]) return RU_WORD_TRANSLATE[word];
+  return word.split('').map((character) => RU_TO_EN[character] || character).join('');
+}
+
+function sanitizeSlug(words: string[]): string {
+  return words.join('_').replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '');
+}
+
 export function makeEnglishSlug(str: string): string {
   const norm = normalizeHeader(str);
-
-  if (CANONICAL_FIELD_DICTIONARY[norm]) {
-    return CANONICAL_FIELD_DICTIONARY[norm].key;
-  }
-
-  for (const [phrase, def] of Object.entries(CANONICAL_FIELD_DICTIONARY)) {
-    if (norm === phrase || norm.startsWith(phrase) || norm.includes(phrase)) {
-      return def.key;
-    }
-  }
+  const canonicalField = findCanonicalField(norm);
+  if (canonicalField) return canonicalField.key;
 
   const words = norm.split(/[\s_\-./\\]+/).filter(Boolean);
-  const translatedWords = words.map((w) => {
-    if (RU_WORD_TRANSLATE[w]) return RU_WORD_TRANSLATE[w];
-    const ruToEn: Record<string, string> = {
-      а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'yo', ж: 'zh', з: 'z', и: 'i',
-      й: 'y', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't',
-      у: 'u', ф: 'f', х: 'h', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'sch', ъ: '', ы: 'y', ь: '',
-      э: 'e', ю: 'yu', я: 'ya',
-    };
-    return w
-      .split('')
-      .map((c) => ruToEn[c] || c)
-      .join('');
-  });
-
-  const slug = translatedWords
-    .join('_')
-    .replace(/[^a-z0-9_]+/g, '_')
-    .replace(/^_+|_+$/g, '');
-
+  const slug = sanitizeSlug(words.map(translateSlugWord));
   return slug || 'custom_field_' + crypto.randomUUID().replace(/-/g, '').slice(0, 8);
 }
 

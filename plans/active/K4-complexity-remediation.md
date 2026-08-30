@@ -8,7 +8,7 @@ risk: medium
 skills: [senior-frontend, senior-backend, zero-hallucination-coder]
 opened: 2026-08-30
 closed: null
-commits: [5ef7e08]
+commits: [5ef7e08, 6dd9624]
 gates: [test, lint, tsc, check:quality]
 ---
 
@@ -75,3 +75,11 @@ orchestration/response mapping `loadData`, затем покрыть ветвл�
 вынесены из `handleTestLdapAuth`, добавлены focused tests, а complexity функции
 снижена с `cx 13` до `cx 4`. Полные test, lint, web tsc и quality gates зелёные;
 stage ожидает отдельного Conventional Commit.
+
+Четвёртая bounded-подистория [`K4.4-eps-import-slug-builder.md`](K4.4-eps-import-slug-builder.md)
+реализована 2026-08-30: из `makeEnglishSlug` вынесены canonical lookup,
+translation и slug sanitization helpers, добавлены 5 focused tests. Публичный
+API и единственный consumer в `eps-import-matcher.ts` не изменены. Полные test,
+lint, web tsc и quality gates зелёные; quality baseline после stage показывает
+23 F-grade files и 2339 code smells в `apps/web/src`. Stage ожидает отдельного
+Conventional Commit.
