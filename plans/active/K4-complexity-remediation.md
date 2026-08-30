@@ -8,7 +8,7 @@ risk: medium
 skills: [senior-frontend, senior-backend, zero-hallucination-coder]
 opened: 2026-08-30
 closed: null
-commits: [5ef7e08, 6dd9624, d7b0bd6, pending]
+commits: [5ef7e08, 6dd9624, d7b0bd6, f54b0c8]
 gates: [test, lint, tsc, check:quality]
 ---
 
@@ -110,3 +110,11 @@ stage вынесены только pure query parsing/filter/stat construction,
 focused tests и сохранены GET/POST route contracts. Targeted tests, full tests,
 web lint, web tsc, quality baseline и docs link check зелёные; stage закрыта
 коммитом `7615f8e`.
+
+Восьмое измерение 2026-08-30: после закрытия K4.7 числовой максимум checker —
+`WmsOperationWizardDialog` с `cx 42`, но это presentation boundary. Следующий
+проверенный business candidate — [`GET()`](../../apps/web/src/app/api/eps/equipment/route.ts:10)
+с `cx 24` / 145 строками: query parsing, Prisma filter, status aggregation и
+response mapping находятся в одном route handler. Для следующей bounded stage
+выбран только GET equipment query/status construction; POST, UI и прочие K4
+candidates не входят в scope.
