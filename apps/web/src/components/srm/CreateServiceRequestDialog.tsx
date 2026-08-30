@@ -91,12 +91,14 @@ export default function CreateServiceRequestDialog({
               const matched = json.data.items.find((e: any) => e.id === initialEquipmentId);
               if (matched) setSelectedEquipment(matched);
             }
+          } else {
+            enqueueSnackbar(json.error || 'Ошибка загрузки оборудования', { variant: 'error' });
           }
         })
-        .catch((err) => console.error('Ошибка загрузки оборудования:', err))
+        .catch(() => enqueueSnackbar('Ошибка загрузки оборудования', { variant: 'error' }))
         .finally(() => setLoadingEquipment(false));
     }
-  }, [open, initialEquipmentId]);
+  }, [open, initialEquipmentId, enqueueSnackbar]);
 
   const handleSubmit = async () => {
     if (!summary.trim()) {

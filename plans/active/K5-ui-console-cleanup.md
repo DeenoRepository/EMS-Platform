@@ -11,7 +11,7 @@ closed: null
 commits: []
 gates: [test, lint, tsc, check:quality]
 classification_commit: pending
-current_batch: K5.3 server/service diagnostics logger migration
+current_batch: K5.4 EPS wizard and SRM dialog UI error sinks
 batch_status: implementation complete; all gates passed
 ---
 
@@ -69,6 +69,7 @@ API-пути уже очищены. Часть оставшихся вызово
 1. **K5.1 — WMS inventory UI sinks (current):** remove the two direct console calls that duplicate existing user-visible snackbar errors in the inventory list and inventory detail pages. No behavior change beyond eliminating duplicate developer-console output. Implementation and verification complete.
 2. **K5.2 — WMS inventory dictionary and topology UI error sinks (current):** replace the inventory warehouse dictionary console call with the existing snackbar error path and remove the duplicate topology console call while preserving its existing snackbar behavior. Targeted and full gates passed.
 3. **K5.3 — server/service diagnostics migrated to the existing structured logger, with safe error context only.** Five named server/service modules updated; intentional sinks excluded.
+4. **K5.4 — EPS wizard and SRM dialog UI error sinks:** preserve existing EPS wizard snackbar handling while removing its duplicate console diagnostic; surface equipment-list load failures in the SRM dialog through the existing snackbar mechanism. Intentional sinks and unrelated UI calls excluded.
 
 ## Steps
 
@@ -102,6 +103,15 @@ API-пути уже очищены. Часть оставшихся вызово
 - Behavior preserved: migration, file deletion, settings fallback, field-mapping fallback/regex handling, and notification failure swallowing remain unchanged.
 - Verification: targeted API/security test (18/18), full test suite (165/165), workspace lint, web TypeScript, and quality baseline all passed. `git diff --check` passed; the follow-up Windows `findstr` scan command returned exit 1 after tests passed because no matches were found in the changed files.
 
+## K5.4 Result
+
+- Scope: `components/eps/EquipmentWizardForm.tsx:97` and `components/srm/CreateServiceRequestDialog.tsx:85`.
+- Classification verified through consumers: the EPS wizard already had a user-visible snackbar for metadata loading failures; the SRM dialog had no visible error state for equipment-list loading.
+- Result: removed the duplicate EPS console diagnostic and added snackbar handling for unsuccessful or failed equipment-list loading, including the API error when available. The effect dependency list was updated for the existing snackbar callback.
+- Behavior preserved: metadata and equipment loading state cleanup remains in `finally`; submission flows and consumer callbacks were not changed. No secrets, error details, or PII are logged.
+- Excluded: intentional logger/ErrorBoundary/app error sinks and unrelated UI calls.
+- Verification: full test suite (165/165), web lint, web TypeScript, quality baseline, `git diff --check`, and changed-file console scan all passed.
+
 ## Result
 
-K5.3 completed; K5 remains active because other non-intentional UI console calls are still documented and pending.
+K5.4 completed; K5 remains active because other non-intentional UI console calls are still documented and pending.

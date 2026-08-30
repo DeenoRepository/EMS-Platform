@@ -94,8 +94,7 @@ export function EquipmentWizardForm({ mode = 'dialog', onSuccess, onCancel }: Eq
           setCustomFieldValues(initialValues);
         }
       })
-      .catch((error) => {
-        console.error('Ошибка загрузки метаданных EPS:', error);
+      .catch(() => {
         enqueueSnackbar('Ошибка загрузки справочников полей', { variant: 'error' });
       })
       .finally(() => setIsLoadingMeta(false));
