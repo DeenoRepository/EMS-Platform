@@ -1,14 +1,14 @@
 ---
 id: I6
 title: Extract loadZones from wms/stock/page.tsx
-status: active
+status: done
 phase: I
 priority: P2
 risk: low
 skills: [senior-frontend]
 opened: 2026-08-30
-closed: null
-commits: []
+closed: 2026-08-30
+commits: [1c06fce]
 gates: [lint, tsc, check:quality]
 ---
 
@@ -35,11 +35,13 @@ already applied to filters and zone cell rendering.
 
 ## Definition of Done
 
-- [ ] `loadZones` in the page ≤ 30 lines; mapping logic in a pure, tested
+- [x] `loadZones` in the page ≤ 30 lines; mapping logic in a pure, tested
       helper.
-- [ ] Zone list rendering and selection unchanged.
-- [ ] Full gate green: lint, tsc, `pnpm test`, quality baseline.
+- [x] Zone list rendering and selection unchanged.
+- [x] Full gate green: lint, tsc, `pnpm test`, quality baseline.
 
 ## Result
 
-_Not yet closed._
+Extracted response-to-zone-list mapping into [`zone-response.ts`](../../apps/web/src/app/wms/stock/zone-response.ts). The page retains the fetch call, loading/error ownership, and selection reset behavior while delegating response validation to the pure helper.
+
+Verification: web lint, web TypeScript check, 160 tests, quality baseline, and `git diff --check` passed.
