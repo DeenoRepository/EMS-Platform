@@ -263,8 +263,8 @@ export function DataTableWrapper({
         setInternalDensity(savedDensity);
         onDensityChangeRef.current?.(savedDensity);
       }
-    } catch (e) {
-      console.error('Failed to load table settings from localStorage:', e);
+    } catch {
+      // localStorage is an optional persistence layer; defaults remain in use when it is unavailable or contains invalid data.
     }
   }, [columns, computedStorageKey]);
 
@@ -272,8 +272,8 @@ export function DataTableWrapper({
     if (!computedStorageKey || typeof window === 'undefined') return;
     try {
       localStorage.setItem(`ems_cols_${computedStorageKey}`, JSON.stringify(cols));
-    } catch (e) {
-      console.error('Failed to save visible columns to localStorage:', e);
+    } catch {
+      // localStorage is an optional persistence layer; the current selection remains active for this session.
     }
   };
 

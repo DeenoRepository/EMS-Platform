@@ -187,26 +187,28 @@ export default function SetupWizardPage() {
   const [isExecuting, setIsExecuting] = useState(false);
   const [execError, setExecError] = useState<string | null>(null);
   const [execSuccess, setExecSuccess] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   const fetchStatus = async () => {
     try {
       const res = await fetch('/api/setup/status');
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success) {
-          setIsInstalled(json.data.isInstalled);
-          setSystemInfo(json.data.systemInfo);
-          setDependencies(json.data.dependencies);
-          if (json.data.systemInfo?.dbHost) {
-            setDbHost(json.data.systemInfo.dbHost);
-          }
-          if (json.data.systemInfo?.dbPort) {
-            setDbPort(String(json.data.systemInfo.dbPort));
-          }
+      const json = await res.json();
+      if (res.ok && json.success) {
+        setStatusError(null);
+        setIsInstalled(json.data.isInstalled);
+        setSystemInfo(json.data.systemInfo);
+        setDependencies(json.data.dependencies);
+        if (json.data.systemInfo?.dbHost) {
+          setDbHost(json.data.systemInfo.dbHost);
         }
+        if (json.data.systemInfo?.dbPort) {
+          setDbPort(String(json.data.systemInfo.dbPort));
+        }
+      } else {
+        setStatusError(json.error || 'Не удалось проверить статус инициализации платформы');
       }
-    } catch (err) {
-      console.error('Error checking setup status:', err);
+    } catch {
+      setStatusError('Ошибка сети при проверке статуса инициализации платформы');
     } finally {
       setIsCheckingStatus(false);
       setIsRefreshingDeps(false);
@@ -491,6 +493,12 @@ export default function SetupWizardPage() {
         </Box>
 
         <CardContent sx={{ p: { xs: 3, md: 4.5 } }}>
+          {statusError && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {statusError}
+            </Alert>
+          )}
+
           {/* =========================================================================
               STEP 1: System Checks & Dependencies
              ========================================================================= */}

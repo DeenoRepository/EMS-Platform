@@ -8,7 +8,7 @@ risk: low
 skills: [senior-frontend, code-reviewer]
 opened: 2026-08-30
 closed: null
-commits: [90a2134, 44550a8, b0f4c5f, d1c8672]
+commits: [90a2134, 44550a8, b0f4c5f, d1c8672, 50dade2]
 gates: [test, lint, tsc, check:quality]
 classification_commit: pending
 current_batch: K5.5 WMS stock page and operation wizard UI error sinks
@@ -71,7 +71,8 @@ API-пути уже очищены. Часть оставшихся вызово
 3. **K5.3 — server/service diagnostics migrated to the existing structured logger, with safe error context only.** Five named server/service modules updated; intentional sinks excluded.
 4. **K5.4 — EPS wizard and SRM dialog UI error sinks:** preserve existing EPS wizard snackbar handling while removing its duplicate console diagnostic; surface equipment-list load failures in the SRM dialog through the existing snackbar mechanism. Intentional sinks and unrelated UI calls excluded.
 5. **K5.5 — Warehouse access hook and WMS dashboard UI error sinks:** replace direct console diagnostics with user-visible snackbar errors for warehouse-access and dashboard data-loading failures, including non-success API responses. Preserve loading, filtering, auto-selection, maintenance handling, and refresh behavior. Completed.
-6. **K5.5 follow-up — WMS stock page and operation wizard UI error sinks:** replace recoverable dictionary, zone, storage-cell, and stock-balance console diagnostics with existing snackbar paths, including unsuccessful API payloads. Preserve loading/state cleanup and API contracts.
+6. **K5.5 follow-up — WMS stock page and operation wizard UI error sinks:** replace recoverable dictionary, zone, storage-cell, and stock-balance console diagnostics with existing snackbar paths, including unsuccessful API payloads. Preserve loading/state cleanup and API contracts. Completed.
+7. **K5.5 follow-up 2 — setup status and shared table persistence UI error sinks:** surface setup-status failures in the existing setup page error state and intentionally suppress non-fatal localStorage persistence diagnostics while preserving in-session table settings and fallback defaults. Completed.
 
 ## Steps
 
@@ -132,6 +133,15 @@ API-пути уже очищены. Часть оставшихся вызово
 - Excluded: intentional logger/ErrorBoundary/app error sinks and unrelated files.
 - Verification: targeted changed-file console scan, full test suite (165/165), web lint, workspace lint, web TypeScript, quality baseline, and `git diff --check` all passed. The test output includes the existing structured database-error diagnostic from the test suite; all tests passed.
 
+## K5.5 Follow-up 2 Result
+
+- Scope: `app/setup/page.tsx:209` and `components/ui/DataTableWrapper.tsx:267,276`.
+- Classification verified: setup-status loading is a recoverable failure with existing loading/locked-state behavior; table localStorage failures are intentionally non-fatal because defaults and current in-session settings remain usable.
+- Result: setup status now surfaces unsuccessful responses and network failures through an inline error alert; DataTable localStorage load/save catches no longer emit noisy console diagnostics and retain fallback behavior.
+- Behavior preserved: setup loading completion, dependency refresh cleanup, installed-state handling, table settings restoration, current-session column selection, density selection, and localStorage guards remain unchanged.
+- Excluded: intentional logger/ErrorBoundary/app error sinks and other pending non-intentional UI calls.
+- Verification: pending in this batch.
+
 ## Result
 
-K5.5 completed; K5 remains active because other non-intentional UI console calls are still documented and pending.
+K5.5 follow-up 2 implemented; K5 remains active because other non-intentional UI console calls are still documented and pending.
