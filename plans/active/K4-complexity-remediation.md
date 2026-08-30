@@ -69,3 +69,9 @@ orchestration/response mapping `loadData`, затем покрыть ветвл�
 складов вынесены из `handleSubmit`, добавлены focused tests, а остаточная
 сложность `cx 12` документирована как orchestration boundary с двумя
 неустранимыми без изменения поведения ветвлениями. Все gates зелёные.
+
+Третья bounded-подистория [`K4.3-setup-ldap-auth-handler.md`](K4.3-setup-ldap-auth-handler.md)
+реализована 2026-08-30: response и network-error mapping проверки LDAP
+вынесены из `handleTestLdapAuth`, добавлены focused tests, а complexity функции
+снижена с `cx 13` до `cx 4`. Полные test, lint, web tsc и quality gates зелёные;
+stage ожидает отдельного Conventional Commit.

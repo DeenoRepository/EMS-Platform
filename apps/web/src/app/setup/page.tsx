@@ -34,6 +34,7 @@ import { useRouter } from 'next/navigation';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { SetupAdminLdapStep } from '@/components/setup/SetupAdminLdapStep';
 import { buildSetupPayload } from './setup-payload';
+import { mapLdapAuthNetworkError, mapLdapAuthResponse } from './ldap-auth-result';
 import { SetupDatabaseStep } from '@/components/setup/SetupDatabaseStep';
 import { SetupDependencyStep } from '@/components/setup/SetupDependencyStep';
 import { SetupStorageSrmStep } from '@/components/setup/SetupStorageSrmStep';
@@ -274,24 +275,19 @@ export default function SetupWizardPage() {
         }),
       });
       const json = await res.json();
-      if (res.ok && json.success) {
-        setLdapTestResult({ success: true, message: json.message });
-        setLdapAuthVerified(true);
-        if (json.user) {
-          if (json.user.displayName && (!adminDisplayName || adminDisplayName === 'Главный Администратор')) {
-            setAdminDisplayName(json.user.displayName);
-          }
-          if (json.user.email && (!adminEmail || adminEmail === 'admin@company.local')) {
-            setAdminEmail(json.user.email);
-          }
-        }
-      } else {
-        setLdapTestResult({ success: false, message: json.error || 'Ошибка аутентификации в каталоге LDAP' });
-        setLdapAuthVerified(false);
+      const outcome = mapLdapAuthResponse(res.ok, json, { adminDisplayName, adminEmail });
+      setLdapTestResult(outcome.result);
+      setLdapAuthVerified(outcome.ldapAuthVerified);
+      if (outcome.adminDisplayName) {
+        setAdminDisplayName(outcome.adminDisplayName);
+      }
+      if (outcome.adminEmail) {
+        setAdminEmail(outcome.adminEmail);
       }
     } catch (err) {
-      setLdapTestResult({ success: false, message: 'Ошибка сети при проверке службы LDAP' });
-      setLdapAuthVerified(false);
+      const outcome = mapLdapAuthNetworkError();
+      setLdapTestResult(outcome.result);
+      setLdapAuthVerified(outcome.ldapAuthVerified);
     } finally {
       setIsTestingLdap(false);
     }
