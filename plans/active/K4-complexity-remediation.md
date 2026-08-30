@@ -52,4 +52,14 @@ false-positive границы render-функций. Наиболее ценны
 
 ## Result
 
-Заполняется при закрытии story или после разделения на конкретные подистории.
+Шаг 1 выполнен 2026-08-30: quality checker повторно измерил кандидатов,
+после чего границы функций проверены чтением исходников. Максимальная реальная
+цикломатическая сложность среди проверенных приоритетных кандидатов — `loadData`
+в [`Sidebar.tsx`](../../apps/web/src/components/layout/Sidebar.tsx): `cx 46`,
+79 строк, семь независимых response branches. Presentation-only и известные
+false-positive кандидаты исключены из приоритета.
+
+Первая bounded-подистория создана в
+[`K4.1-sidebar-load-data.md`](K4.1-sidebar-load-data.md): вынести только
+orchestration/response mapping `loadData`, затем покрыть ветвления pure helper
+тестами и проверить отсутствие изменений sidebar/API-поведения.
