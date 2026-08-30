@@ -8,7 +8,7 @@ risk: medium
 skills: [senior-frontend, senior-backend, zero-hallucination-coder]
 opened: 2026-08-30
 closed: null
-commits: []
+commits: [5ef7e08]
 gates: [test, lint, tsc, check:quality]
 ---
 
@@ -63,3 +63,9 @@ false-positive кандидаты исключены из приоритета.
 [`K4.1-sidebar-load-data.md`](K4.1-sidebar-load-data.md): вынести только
 orchestration/response mapping `loadData`, затем покрыть ветвления pure helper
 тестами и проверить отсутствие изменений sidebar/API-поведения.
+
+Вторая bounded-подистория [`K4.2-wms-warehouses-handle-submit.md`](K4.2-wms-warehouses-handle-submit.md)
+закрыта коммитом `5ef7e08`: request execution и response mapping сохранения
+складов вынесены из `handleSubmit`, добавлены focused tests, а остаточная
+сложность `cx 12` документирована как orchestration boundary с двумя
+неустранимыми без изменения поведения ветвлениями. Все gates зелёные.
