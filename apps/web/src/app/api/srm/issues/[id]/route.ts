@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/auth-guard';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { PERMISSIONS } from '@ems/shared';
 import { logger } from '@/lib/logger';
+import { buildSrmIssuePatchModel } from './patch-update-model';
 
 export const dynamic = 'force-dynamic';
 
@@ -105,42 +106,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     }
 
     const body = await req.json();
-    const {
-      status,
-      priority,
-      assignee,
-      resolutionNotes,
-      downtimeMinutes,
-      failureCategory,
-      warrantyClaim,
-      contractorName,
-      equipmentId,
-    } = body;
-
-    const dataToUpdate: any = {};
-    if (status !== undefined) dataToUpdate.status = status;
-    if (priority !== undefined) dataToUpdate.priority = priority;
-    if (assignee !== undefined) dataToUpdate.assignee = assignee;
-    if (resolutionNotes !== undefined) dataToUpdate.resolutionNotes = resolutionNotes;
-    if (downtimeMinutes !== undefined) dataToUpdate.downtimeMinutes = Number(downtimeMinutes) || 0;
-    if (failureCategory !== undefined) dataToUpdate.failureCategory = failureCategory;
-    if (warrantyClaim !== undefined) dataToUpdate.warrantyClaim = Boolean(warrantyClaim);
-    if (contractorName !== undefined) dataToUpdate.contractorName = contractorName;
-    if (equipmentId !== undefined) dataToUpdate.equipmentId = equipmentId;
-
-    // Если статус переводится в RESOLVED или CLOSED - проставляем дату решения
-    const isNowResolved = status && ['CLOSED', 'RESOLVED', 'DONE', 'РЕШЕН', 'ГОТОВ', 'ЗАКРЫТ'].some((s) =>
-      status.toUpperCase().includes(s)
-    );
-
-    if (isNowResolved && !existing.resolvedDate) {
-      dataToUpdate.resolvedDate = new Date();
-      // Если downtimeMinutes не был передан вручную, вычисляем его как время между createdDate и resolvedDate
-      if (downtimeMinutes === undefined && !existing.downtimeMinutes) {
-        const diffMinutes = Math.round((Date.now() - existing.createdDate.getTime()) / (1000 * 60));
-        dataToUpdate.downtimeMinutes = diffMinutes;
-      }
-    }
+    const { dataToUpdate, isNowResolved } = buildSrmIssuePatchModel(body, existing);
 
     const updated = await prisma.jiraIssueCache.update({
       where: { id: existing.id },

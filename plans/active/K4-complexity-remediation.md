@@ -8,7 +8,7 @@ risk: medium
 skills: [senior-frontend, senior-backend, zero-hallucination-coder]
 opened: 2026-08-30
 closed: null
-commits: [5ef7e08, 6dd9624, d7b0bd6, f54b0c8, a84ccab]
+commits: [5ef7e08, 6dd9624, d7b0bd6, f54b0c8, a84ccab, dc36a68]
 gates: [test, lint, tsc, check:quality]
 ---
 
@@ -118,3 +118,16 @@ web lint, web tsc, quality baseline Рё docs link check Р·РµР»С‘РЅС
 response mapping РЅР°С…РѕРґСЏС‚СЃСЏ РІ РѕРґРЅРѕРј route handler. Р”Р»СЏ СЃР»РµРґСѓСЋС‰РµР№ bounded stage
 РІС‹Р±СЂР°РЅ С‚РѕР»СЊРєРѕ GET equipment query/status construction; POST, UI Рё РїСЂРѕС‡РёРµ K4
 candidates РЅРµ РІС…РѕРґСЏС‚ РІ scope.
+
+Девятое измерение после K4.10: quality checker подтвердил следующим verified
+business candidate [`PATCH()`](../../apps/web/src/app/api/srm/issues/[id]/route.ts:87)
+с `cx 26`. Проверка чтением исходника подтвердила, что complexity сосредоточена в
+partial update и derived resolved/downtime model; численно более высокий
+`handleOpenDetails` в SRM является трёхстрочным state setter и исключён как
+presentation-only false positive.
+
+Для него создана bounded-подистория
+[`K4.11-srm-issue-patch-update-model.md`](K4.11-srm-issue-patch-update-model.md):
+в текущем stage вынесены только pure update-field/resolution calculations,
+добавлены focused tests, а Prisma side effects, RBAC, rate limiting, audit и
+response contract остаются в route.
