@@ -204,12 +204,15 @@ function WmsStockContent() {
           const cData = await cRes.json();
           if (cData.success) setCategories(cData.data);
         }
-      } catch (err) {
-        console.error('Ошибка загрузки справочников WMS:', err);
+        if (!wRes.ok || !cRes.ok) {
+          enqueueSnackbar('Ошибка загрузки справочников WMS', { variant: 'error' });
+        }
+      } catch {
+        enqueueSnackbar('Ошибка загрузки справочников WMS', { variant: 'error' });
       }
     }
     loadDictionaries();
-  }, []);
+  }, [enqueueSnackbar]);
 
   // When warehouse changes, fetch its storage zones for detailed filtering
   useEffect(() => {
@@ -224,13 +227,15 @@ function WmsStockContent() {
         if (res.ok) {
           const zonesData = parseZoneResponse(await res.json());
           if (zonesData) setZones(zonesData);
+        } else {
+          enqueueSnackbar('Ошибка загрузки зон склада', { variant: 'error' });
         }
-      } catch (err) {
-        console.error('Ошибка загрузки зон склада:', err);
+      } catch {
+        enqueueSnackbar('Ошибка загрузки зон склада', { variant: 'error' });
       }
     }
     loadZones();
-  }, [selectedWarehouse]);
+  }, [selectedWarehouse, enqueueSnackbar]);
 
   // Fetch Stock Items
   const fetchStock = useCallback(async () => {
@@ -307,10 +312,14 @@ function WmsStockContent() {
         const json = await res.json();
         if (json.success) {
           setWarehouseZonesForLoc(json.data);
+        } else {
+          enqueueSnackbar('Ошибка загрузки ячеек для склада', { variant: 'error' });
         }
+      } else {
+        enqueueSnackbar('Ошибка загрузки ячеек для склада', { variant: 'error' });
       }
-    } catch (err) {
-      console.error('Ошибка загрузки ячеек для склада:', err);
+    } catch {
+      enqueueSnackbar('Ошибка загрузки ячеек для склада', { variant: 'error' });
     }
   };
 

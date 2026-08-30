@@ -11,7 +11,7 @@ closed: null
 commits: [90a2134, 44550a8, b0f4c5f, d1c8672]
 gates: [test, lint, tsc, check:quality]
 classification_commit: pending
-current_batch: K5.5 warehouse access hook and WMS dashboard UI error sinks
+current_batch: K5.5 WMS stock page and operation wizard UI error sinks
 batch_status: implementation complete; all gates passed
 ---
 
@@ -70,7 +70,8 @@ API-пути уже очищены. Часть оставшихся вызово
 2. **K5.2 — WMS inventory dictionary and topology UI error sinks (current):** replace the inventory warehouse dictionary console call with the existing snackbar error path and remove the duplicate topology console call while preserving its existing snackbar behavior. Targeted and full gates passed.
 3. **K5.3 — server/service diagnostics migrated to the existing structured logger, with safe error context only.** Five named server/service modules updated; intentional sinks excluded.
 4. **K5.4 — EPS wizard and SRM dialog UI error sinks:** preserve existing EPS wizard snackbar handling while removing its duplicate console diagnostic; surface equipment-list load failures in the SRM dialog through the existing snackbar mechanism. Intentional sinks and unrelated UI calls excluded.
-5. **K5.5 — Warehouse access hook and WMS dashboard UI error sinks:** replace direct console diagnostics with user-visible snackbar errors for warehouse-access and dashboard data-loading failures, including non-success API responses. Preserve loading, filtering, auto-selection, maintenance handling, and refresh behavior.
+5. **K5.5 — Warehouse access hook and WMS dashboard UI error sinks:** replace direct console diagnostics with user-visible snackbar errors for warehouse-access and dashboard data-loading failures, including non-success API responses. Preserve loading, filtering, auto-selection, maintenance handling, and refresh behavior. Completed.
+6. **K5.5 follow-up — WMS stock page and operation wizard UI error sinks:** replace recoverable dictionary, zone, storage-cell, and stock-balance console diagnostics with existing snackbar paths, including unsuccessful API payloads. Preserve loading/state cleanup and API contracts.
 
 ## Steps
 
@@ -121,6 +122,15 @@ API-пути уже очищены. Часть оставшихся вызово
 - Behavior preserved: metadata and equipment loading state cleanup remains in `finally`; submission flows and consumer callbacks were not changed. No secrets, error details, or PII are logged.
 - Excluded: intentional logger/ErrorBoundary/app error sinks and unrelated UI calls.
 - Verification: full test suite (165/165), web lint, web TypeScript, quality baseline, `git diff --check`, and changed-file console scan all passed.
+
+## K5.5 Follow-up Result
+
+- Scope: `app/wms/stock/page.tsx:208,229,313` and `components/wms/WmsOperationWizardDialog.tsx:191`.
+- Classification verified through existing consumers and local error handling: all four calls were recoverable UI load failures; the stock page already used snackbars for stock and location-save failures, while the wizard already used snackbars for metadata and submission failures.
+- Result: replaced direct console diagnostics with user-visible snackbar errors for dictionary, warehouse-zone, storage-cell, and wizard stock-balance failures. Non-success API responses are surfaced without exposing response details. The wizard stock loader retains its `finally` loading cleanup and now declares the snackbar callback dependency; stock-page effects declare the callback dependency as well.
+- Behavior preserved: successful data mapping, filtering, modal opening, stock cache handling, loading cleanup, and API request/response contracts remain unchanged.
+- Excluded: intentional logger/ErrorBoundary/app error sinks and unrelated files.
+- Verification: targeted changed-file console scan, full test suite (165/165), web lint, workspace lint, web TypeScript, quality baseline, and `git diff --check` all passed. The test output includes the existing structured database-error diagnostic from the test suite; all tests passed.
 
 ## Result
 

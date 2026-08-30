@@ -185,14 +185,18 @@ export function WmsOperationWizardDialog({
             };
           });
           setStockMap(map);
+        } else {
+          enqueueSnackbar('Ошибка загрузки остатков склада', { variant: 'error' });
         }
+      } else {
+        enqueueSnackbar('Ошибка загрузки остатков склада', { variant: 'error' });
       }
-    } catch (err) {
-      console.error('Ошибка загрузки остатков склада:', err);
+    } catch {
+      enqueueSnackbar('Ошибка загрузки остатков склада', { variant: 'error' });
     } finally {
       setIsLoadingStock(false);
     }
-  }, []);
+  }, [enqueueSnackbar]);
 
   const getWarehouseStock = useCallback((nomId: string) => {
     return stockMap[nomId]?.quantity || 0;
