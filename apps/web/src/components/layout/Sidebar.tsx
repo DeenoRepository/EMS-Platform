@@ -108,7 +108,7 @@ export default function Sidebar({
   }, []);
 
   useEffect(() => {
-    const setters: SidebarDataSetters = {
+    const sidebarDataSetters: SidebarDataSetters = {
       setRepairCount,
       setModuleStatus,
       setPendingApprovalsCount,
@@ -124,7 +124,7 @@ export default function Sidebar({
 
     async function loadData() {
       try {
-        applySidebarDataUpdate(await loadSidebarData(), setters);
+        applySidebarDataUpdate(await loadSidebarData(), sidebarDataSetters);
       } catch {
         // ignore
       }
