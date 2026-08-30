@@ -7,6 +7,17 @@
  * Usage:
  *   node scripts/plans-index.mjs            # regenerate plans/README.md
  *   node scripts/plans-index.mjs --check    # verify plans/README.md is up to date (CI)
+ *
+ * Validation performed on every run (fails the process, exit 1):
+ *   - required front-matter fields present on every story
+ *   - status: done is not allowed inside plans/active/
+ *   - files under plans/done/ must have status: done and a closed date
+ *   - files under plans/done/ must list at least one commit OR explicitly
+ *     document why not (see ALLOW_EMPTY_COMMITS below)
+ *   - closed date must not be earlier than opened date
+ *
+ * Non-fatal warnings (printed, do not fail the process):
+ *   - stories in plans/active/ older than STALE_DAYS with no recent commits
  */
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
@@ -16,6 +27,26 @@ const plansDir = path.join(repositoryRoot, 'plans');
 const activeDir = path.join(plansDir, 'active');
 const doneDir = path.join(plansDir, 'done');
 const readmePath = path.join(plansDir, 'README.md');
+
+// Days after which an open story with no forward progress is flagged as
+// potentially stuck. This is a warning, not a gate — some stories are
+// legitimately long-running (e.g. Sidebar.tsx stop-file work).
+const STALE_DAYS = 30;
+
+// Story IDs allowed to have an empty commits list in plans/done/ because
+// the source material (original REMEDIATION_PLAN.md) recorded only a
+// commit *message*, not a SHA, for these stories at migration time — see
+// each story's "Result" section for the recorded message. Do not invent a
+// SHA to satisfy this check; add the real one when it becomes known and
+// remove the ID from this list. Do not add new IDs here casually — an
+// empty commits list on a done story is normally a sign the Result section
+// was never filled in.
+const ALLOW_EMPTY_COMMITS = new Set([
+  'A1', 'A2', 'A3',
+  'B1', 'B2', 'B3', 'B4',
+  'C1', 'C3', 'C4', 'C5',
+  'E', 'J3',
+]);
 
 const REQUIRED_FIELDS = [
   'id',
@@ -114,6 +145,10 @@ for (const filePath of walkMarkdownFiles(activeDir)) {
   }
 }
 
+function isValidIsoDate(value) {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
 for (const filePath of walkMarkdownFiles(doneDir)) {
   try {
     const story = loadStory(filePath);
@@ -122,6 +157,15 @@ for (const filePath of walkMarkdownFiles(doneDir)) {
     }
     if (!story.closed) {
       errors.push(`${story.filePath}: files under plans/done/ must set a closed date`);
+    } else if (isValidIsoDate(story.opened) && isValidIsoDate(story.closed) && story.closed < story.opened) {
+      errors.push(`${story.filePath}: closed (${story.closed}) is earlier than opened (${story.opened})`);
+    }
+    const hasCommits = Array.isArray(story.commits) && story.commits.length > 0;
+    if (!hasCommits && !ALLOW_EMPTY_COMMITS.has(story.id)) {
+      errors.push(
+        `${story.filePath}: done story has an empty commits list and is not in ALLOW_EMPTY_COMMITS — ` +
+          `either record the commit SHA or add the ID to the allowlist in scripts/plans-index.mjs with a reason`
+      );
     }
     doneStories.push(story);
   } catch (err) {
@@ -133,6 +177,23 @@ if (errors.length > 0) {
   console.error('plans-index: validation errors:');
   for (const e of errors) console.error(`  - ${e}`);
   process.exit(1);
+}
+
+// --- Non-fatal: warn about active stories with no forward progress ---
+const staleWarnings = [];
+const now = Date.now();
+for (const story of activeStories) {
+  if (!isValidIsoDate(story.opened)) continue;
+  const openedMs = Date.parse(story.opened + 'T00:00:00Z');
+  const ageDays = Math.floor((now - openedMs) / (24 * 60 * 60 * 1000));
+  const hasCommits = Array.isArray(story.commits) && story.commits.length > 0;
+  if (ageDays >= STALE_DAYS && !hasCommits) {
+    staleWarnings.push(`${story.filePath}: opened ${ageDays} days ago, no commits recorded yet (stale threshold: ${STALE_DAYS}d)`);
+  }
+}
+if (staleWarnings.length > 0) {
+  console.warn('plans-index: stale active story warnings (not blocking):');
+  for (const w of staleWarnings) console.warn(`  - ${w}`);
 }
 
 function sortByPhaseThenId(a, b) {

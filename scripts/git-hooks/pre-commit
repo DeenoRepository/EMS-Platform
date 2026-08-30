@@ -1,0 +1,38 @@
+#!/usr/bin/env node
+/**
+ * Pre-commit hook: if a staged change touches plans/**\/*.md, regenerate
+ * plans/README.md and re-stage it so the commit always includes an
+ * up-to-date index. No-op (fast exit) for commits that don't touch plans/.
+ *
+ * Enable with: git config core.hooksPath scripts/git-hooks
+ * (see scripts/git-hooks/README.md for the one-time setup command)
+ */
+import { execSync } from 'node:child_process';
+
+function run(cmd) {
+  return execSync(cmd, { encoding: 'utf8' }).trim();
+}
+
+const staged = run('git diff --cached --name-only').split('\n').filter(Boolean);
+
+const touchesPlans = staged.some(
+  (f) => f.startsWith('plans/') && f.endsWith('.md') && f !== 'plans/README.md'
+);
+
+if (!touchesPlans) {
+  process.exit(0);
+}
+
+console.log('[pre-commit] plans/ story file(s) staged — regenerating plans/README.md...');
+
+try {
+  run('node scripts/plans-index.mjs');
+} catch (err) {
+  console.error('[pre-commit] plans-index.mjs failed — fix the reported error before committing:');
+  console.error(err.stdout || err.message);
+  process.exit(1);
+}
+
+run('git add plans/README.md');
+console.log('[pre-commit] plans/README.md regenerated and staged.');
+process.exit(0);

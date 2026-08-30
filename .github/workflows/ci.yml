@@ -70,6 +70,11 @@ jobs:
           node scripts/check-quality-baseline.mjs --report
           git diff --exit-code -- docs/quality/QUALITY_BASELINE.md
 
+      - name: Verify docs/quality/SECURITY_BASELINE.md is up to date
+        run: |
+          python3 scripts/route_audit.py --report
+          git diff --exit-code -- docs/quality/SECURITY_BASELINE.md
+
       - name: Run Automated Test Suite (Domain, SecOps, RBAC)
         run: pnpm test
 

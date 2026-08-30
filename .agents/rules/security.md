@@ -1,7 +1,10 @@
 # Правила безопасности и авторизации — EMS-Platform
 
-> Обновлено: 2026-08-27 (по результатам security-аудита)  
-> Уязвимости: [`docs/CODE_REVIEW_AUDIT.md`](../../docs/CODE_REVIEW_AUDIT.md)
+> Обновлено: 2026-08-27 (по результатам security-аудита)
+> Текущее покрытие rate-limit/RBAC по маршрутам (генерируется):
+> [`docs/quality/SECURITY_BASELINE.md`](../../docs/quality/SECURITY_BASELINE.md)
+> (`python scripts/route_audit.py --report`)
+> Инспекции: [`docs/quality/inspections/`](../../docs/quality/inspections/)
 
 ---
 

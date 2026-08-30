@@ -13,13 +13,14 @@ stale by definition and should be replaced with a link.
 | What tasks are done and how | [`plans/done/`](../plans/done/) (one file per story) |
 | What's queued but not scheduled | [`plans/BACKLOG.md`](../plans/BACKLOG.md) |
 | Current code quality score / F-grade count / thresholds | [`docs/quality/QUALITY_BASELINE.md`](quality/QUALITY_BASELINE.md) (generated) |
+| Current route-level rate-limit/RBAC coverage | [`docs/quality/SECURITY_BASELINE.md`](quality/SECURITY_BASELINE.md) (generated) |
 | What a specific past inspection found | [`docs/quality/inspections/`](quality/inspections/) (dated, immutable) |
 | Security rules (webhook auth, RBAC, LDAP, rate limiting) | [`.agents/rules/security.md`](../.agents/rules/security.md) |
 | UI component / design-system rules | [`.agents/rules/ui_design_code.md`](../.agents/rules/ui_design_code.md) |
 | Code quality thresholds and how to run the checker | [`.agents/rules/code_quality.md`](../.agents/rules/code_quality.md) |
 | Which skill to use for a task | [`.agents/rules/skills_usage.md`](../.agents/rules/skills_usage.md) |
 | Database schema / ERD | [`docs/architecture/DATABASE_TOPOLOGY.md`](architecture/DATABASE_TOPOLOGY.md) |
-| Why a significant architectural choice was made | [`docs/architecture/decisions/`](architecture/decisions/) (ADRs) |
+| Why a significant architectural choice was made | [`docs/architecture/decisions/`](architecture/decisions/) (ADRs, see ADR-0001 for the plans/ + QUALITY_BASELINE.md structure itself) |
 | How to deploy to production | [`docs/operations/PRODUCTION_DEPLOYMENT.md`](operations/PRODUCTION_DEPLOYMENT.md) |
 | How to deploy air-gapped / bare metal | [`docs/operations/BAREMETAL_OFFLINE_DEPLOYMENT.md`](operations/BAREMETAL_OFFLINE_DEPLOYMENT.md) |
 | How to configure the Jira/SRM integration | [`docs/operations/JIRA_SRM_SETUP.md`](operations/JIRA_SRM_SETUP.md) |
@@ -34,6 +35,7 @@ docs/
 ├── REMEDIATION_PLAN.md           ← stub redirect to plans/ (kept for old links)
 ├── quality/
 │   ├── QUALITY_BASELINE.md       ← GENERATED — sole current-metrics source
+│   ├── SECURITY_BASELINE.md      ← GENERATED — route rate-limit/RBAC scan
 │   └── inspections/              ← dated, immutable point-in-time reports
 ├── architecture/
 │   ├── DATABASE_TOPOLOGY.md, topology_*.mmd, database_topology.html
