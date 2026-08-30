@@ -101,8 +101,7 @@ export default function WmsInventoryListPage() {
           setInventories(json.data);
         }
       }
-    } catch (err) {
-      console.error('Ошибка загрузки инвентаризаций:', err);
+    } catch {
       enqueueSnackbar('Ошибка загрузки актов инвентаризации', { variant: 'error' });
     } finally {
       setIsLoading(false);

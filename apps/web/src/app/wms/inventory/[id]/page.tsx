@@ -103,8 +103,7 @@ export default function WmsInventoryDetailPage() {
       } else {
         enqueueSnackbar('Акт инвентаризации не найден', { variant: 'error' });
       }
-    } catch (err) {
-      console.error('Ошибка загрузки данных инвентаризации:', err);
+    } catch {
       enqueueSnackbar('Ошибка сети', { variant: 'error' });
     } finally {
       setIsLoading(false);

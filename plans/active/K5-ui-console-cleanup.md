@@ -10,6 +10,9 @@ opened: 2026-08-30
 closed: null
 commits: []
 gates: [test, lint, tsc, check:quality]
+classification_commit: pending
+current_batch: WMS inventory UI error sinks
+batch_status: implementation complete; all gates passed
 ---
 
 # K5 — Заменить остаточные console-вызовы в UI и сервисах
@@ -33,6 +36,39 @@ API-пути уже очищены. Часть оставшихся вызово
 - Сохранить обоснованные console sinks в [`logger.ts`](../../apps/web/src/lib/logger.ts)
   и error boundary, если они являются последней линией диагностики.
 - Не вводить новый logging framework и не смешивать cleanup с UI refactoring.
+
+## Classification
+
+Проверено по `apps/web/src` (24 вызова):
+
+| Location | Classification | Disposition |
+|---|---|---|
+| `lib/logger.ts:57,60,63` | intentional logger implementation sink | retain |
+| `components/ui/ErrorBoundary.tsx:39` | intentional React error boundary sink | retain |
+| `app/error.tsx:15` | intentional App Router boundary sink | retain |
+| `app/wms/inventory/page.tsx:105` | user-visible recoverable error; snackbar already present | remove direct console |
+| `app/wms/inventory/page.tsx:134` | recoverable dictionary-load failure; no visible state | bounded follow-up batch |
+| `app/wms/inventory/[id]/page.tsx:107` | user-visible recoverable error; snackbar already present | remove direct console |
+| `components/eps/EquipmentWizardForm.tsx:98` | user-visible recoverable error; snackbar already present | bounded follow-up batch |
+| `components/wms/WarehouseTopologyModal.tsx:116` | user-visible recoverable error; snackbar already present | bounded follow-up batch |
+| `components/srm/CreateServiceRequestDialog.tsx:96` | recoverable load failure; no visible error state | bounded follow-up batch |
+| `app/wms/stock/page.tsx:208,229,313` | recoverable load failures; mixed/no visible state | bounded follow-up batch |
+| `app/wms/page.tsx:121` | recoverable load failure; no visible state | bounded follow-up batch |
+| `app/setup/page.tsx:209` | recoverable setup-status failure; existing status state needs verification | bounded follow-up batch |
+| `hooks/useWarehouseAccess.ts:54` | recoverable hook fetch failure; no error state | bounded follow-up batch |
+| `components/wms/WmsOperationWizardDialog.tsx:191` | recoverable stock-load failure; no visible state | bounded follow-up batch |
+| `lib/custom-sections-defaults.ts:282` | server migration diagnostic | replace with structured logger |
+| `lib/storage.ts:106` | server file-operation diagnostic | replace with structured logger |
+| `lib/system-settings-service.ts:68` | server fallback diagnostic | replace with structured logger |
+| `lib/jira/field-mapping.ts:179` | server fallback diagnostic | replace with structured logger |
+| `lib/jira/field-mapping.ts:325` | server regex configuration diagnostic | replace with structured logger |
+| `lib/jira/notifications.ts:60` | server notification diagnostic | replace with structured logger |
+
+## Batches
+
+1. **K5.1 — WMS inventory UI sinks (current):** remove the two direct console calls that duplicate existing user-visible snackbar errors in the inventory list and inventory detail pages. No behavior change beyond eliminating duplicate developer-console output. Implementation and verification complete.
+2. K5.2 — remaining UI recoverable errors, grouped by module after consumer/state verification.
+3. K5.3 — server/service diagnostics migrated to the existing structured logger, with safe error context only.
 
 ## Steps
 
