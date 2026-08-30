@@ -28,15 +28,14 @@ import MoveToInboxIcon from '@mui/icons-material/MoveToInbox';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
 import { FormDialog } from '@/components/ui';
-import { buildTransferRequestPayload, validateTransferRequest } from './transfer-request-submit';
-
-interface WarehouseOption {
-  id: string;
-  name: string;
-  code: string;
-  responsibleUserId?: string | null;
-  responsibleUser?: { displayName: string } | null;
-}
+import {
+  buildTransferRequestPayload,
+  validateTransferRequest,
+  resolveInitialWarehouseSelection,
+  addOrMergeLineItem,
+  type WarehouseOption,
+  type TransferRequestLineItem as RequestLineItem,
+} from './transfer-request-submit';
 
 interface NomenclatureOption {
   id: string;
@@ -44,14 +43,6 @@ interface NomenclatureOption {
   article?: string | null;
   unit: string;
   category?: { name: string } | null;
-}
-
-interface RequestLineItem {
-  nomenclatureId: string;
-  nomenclatureName: string;
-  nomenclatureArticle?: string;
-  unit: string;
-  quantity: number;
 }
 
 interface TransferRequestDialogProps {
@@ -101,14 +92,9 @@ export default function TransferRequestDialog({
         .then((json) => {
           if (json.success && Array.isArray(json.data)) {
             setWarehouses(json.data);
-            const myWh = json.data.find((w: any) => w.responsibleUserId === user?.userId) || json.data[0];
-            if (myWh) {
-              setTargetWarehouseId(myWh.id);
-              const firstDonor = json.data.find((w: any) => w.id !== myWh.id);
-              if (firstDonor) {
-                setSourceWarehouseId(firstDonor.id);
-              }
-            }
+            const selection = resolveInitialWarehouseSelection(json.data, user?.userId);
+            if (selection.targetWarehouseId) setTargetWarehouseId(selection.targetWarehouseId);
+            if (selection.sourceWarehouseId) setSourceWarehouseId(selection.sourceWarehouseId);
           }
         })
         .catch(() => {
@@ -161,23 +147,15 @@ export default function TransferRequestDialog({
       return;
     }
 
-    const existingIdx = lineItems.findIndex((it) => it.nomenclatureId === selectedNomenclature.id);
-    if (existingIdx >= 0) {
-      const updated = [...lineItems];
-      updated[existingIdx].quantity += qty;
-      setLineItems(updated);
-    } else {
-      setLineItems((prev) => [
-        ...prev,
-        {
-          nomenclatureId: selectedNomenclature.id,
-          nomenclatureName: selectedNomenclature.name,
-          nomenclatureArticle: selectedNomenclature.article || undefined,
-          unit: selectedNomenclature.unit,
-          quantity: qty,
-        },
-      ]);
-    }
+    setLineItems((prev) =>
+      addOrMergeLineItem(prev, {
+        nomenclatureId: selectedNomenclature.id,
+        nomenclatureName: selectedNomenclature.name,
+        nomenclatureArticle: selectedNomenclature.article || undefined,
+        unit: selectedNomenclature.unit,
+        quantity: qty,
+      })
+    );
 
     setSelectedNomenclature(null);
     setItemQty('1');

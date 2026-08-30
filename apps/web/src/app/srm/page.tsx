@@ -52,6 +52,7 @@ import {
 } from '@/components/srm';
 import { formatDateTime, formatDate, PERMISSIONS, PlatformMaintenanceStatus } from '@ems/shared';
 import { sortSrmIssues } from './srm-issue-sorting';
+import { fetchSrmStatsAndMaintenance, fetchSrmIssuesList, syncJiraIssues } from './srm-issues-service';
 import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
 
@@ -156,22 +157,9 @@ function SrmPageContent() {
 
   const fetchStats = useCallback(async () => {
     try {
-      const [statsRes, maintRes] = await Promise.all([
-        fetch('/api/srm/stats'),
-        fetch('/api/system/maintenance'),
-      ]);
-      if (statsRes.ok) {
-        const json = await statsRes.json();
-        if (json.success && json.data) {
-          setStats(json.data);
-        }
-      }
-      if (maintRes.ok) {
-        const maintJson = await maintRes.json();
-        if (maintJson.success && maintJson.data) {
-          setMaintStatus(maintJson.data);
-        }
-      }
+      const result = await fetchSrmStatsAndMaintenance();
+      if (result.stats) setStats(result.stats);
+      if (result.maintStatus) setMaintStatus(result.maintStatus);
     } catch {
       // ignore
     }
@@ -180,24 +168,15 @@ function SrmPageContent() {
   const fetchIssues = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      params.append('page', String(page));
-      params.append('pageSize', String(pageSize));
-      if (search) params.append('search', search);
-      if (statusFilter) params.append('status', statusFilter);
-      if (priorityFilter) params.append('priority', priorityFilter);
-
-      const res = await fetch(`/api/srm/issues?${params.toString()}`);
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success && json.data) {
-          setIssues(json.data.items || []);
-          setTotal(json.data.total || 0);
-        } else {
-          setIssues([]);
-          setTotal(0);
-        }
-      }
+      const result = await fetchSrmIssuesList<SrmIssueItem>({
+        page,
+        pageSize,
+        search,
+        statusFilter,
+        priorityFilter,
+      });
+      setIssues(result.items);
+      setTotal(result.total);
     } catch {
       enqueueSnackbar('Ошибка при загрузке заявок SRM', { variant: 'error' });
       setIssues([]);
@@ -221,18 +200,15 @@ function SrmPageContent() {
   const handleSyncJira = async () => {
     setSyncing(true);
     try {
-      const res = await fetch('/api/srm/sync', { method: 'POST' });
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success) {
-          enqueueSnackbar(`Синхронизация завершена: обновлено ${json.data?.synced || 0} заявок`, {
-            variant: 'success',
-          });
-          fetchIssues();
-          fetchStats();
-        } else {
-          enqueueSnackbar(json.error || 'Ошибка синхронизации', { variant: 'warning' });
-        }
+      const result = await syncJiraIssues();
+      if (result.success) {
+        enqueueSnackbar(`Синхронизация завершена: обновлено ${result.synced} заявок`, {
+          variant: 'success',
+        });
+        fetchIssues();
+        fetchStats();
+      } else {
+        enqueueSnackbar(result.error || 'Ошибка синхронизации', { variant: 'warning' });
       }
     } catch {
       enqueueSnackbar('Сбой при вызове сервиса синхронизации', { variant: 'error' });
