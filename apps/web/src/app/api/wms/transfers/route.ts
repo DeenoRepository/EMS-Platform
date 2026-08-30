@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { safeErrorResponse } from '@/lib/safe-error';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse, isAdminUser } from '@/lib/auth-guard';
+import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { prisma, StockTransferStatus, OperationType, Prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
@@ -10,6 +10,8 @@ import {
   generateTransferNumber,
   buildTransferWhereInput,
   getTransferTabCounts,
+  isTransfersAdmin,
+  resolveUserWarehouseIds,
 } from '@/lib/wms-transfers-service';
 
 export const dynamic = 'force-dynamic';
@@ -32,22 +34,12 @@ export async function GET(req: NextRequest) {
     const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '25', 10)));
     const search = searchParams.get('search')?.trim().toLowerCase() || '';
 
-    const isAdmin =
-      isAdminUser(user) ||
-      user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-      user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
-
-    // Находим склады пользователя, если он не админ
-    let userWarehouseIds: string[] = [];
-    if (warehouseId) {
-      userWarehouseIds = [warehouseId];
-    } else if (!isAdmin) {
-      const userWhs = await prisma.warehouse.findMany({
-        where: { responsibleUserId: user.userId },
-        select: { id: true },
-      });
-      userWarehouseIds = userWhs.map((w) => w.id);
-    }
+    const isAdmin = isTransfersAdmin(user);
+    const userWarehouseIds = await resolveUserWarehouseIds({
+      isAdmin,
+      warehouseId,
+      userId: user.userId,
+    });
 
     const where = buildTransferWhereInput({
       mode,
@@ -200,10 +192,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const isAdmin =
-      isAdminUser(user) ||
-      user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-      user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+    const isAdmin = isTransfersAdmin(user);
 
     // Проверка складов
     const [sourceWh, targetWh] = await Promise.all([
