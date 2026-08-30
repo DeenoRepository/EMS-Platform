@@ -1,8 +1,11 @@
-# EMS-Platform — Отчёт о инспекции кода
+# EMS-Platform — Отчёт о инспекции кода (снимок 2026-08-27)
 
+> **Неизменяемый снимок.** Актуальные метрики — только в
+> [`docs/quality/QUALITY_BASELINE.md`](../QUALITY_BASELINE.md).
+>
 > **Дата аудита:** 2026-08-27 (baseline remediation)
-> **Последняя инспекция:** 2026-08-30 — см. [`PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md)
-> **Инструмент:** `code_quality_checker.py` (TypeScript/TSX) + ручной анализ по скиллу [`code-reviewer`](../.agents/skills/code-reviewer/SKILL.md)
+> **Следующая инспекция:** [`2026-08-30-inspection.md`](2026-08-30-inspection.md)
+> **Инструмент:** `code_quality_checker.py` (TypeScript/TSX) + ручной анализ по скиллу [`code-reviewer`](../../../.agents/skills/code-reviewer/SKILL.md)
 > **Покрытие (2026-08-30):** `apps/web/src` — 323 файла; `packages` — 30 файлов
 > **Итоговая оценка web:** **B (81.1 / 100)**; packages **A (94.1 / 100)**
 > **Вердикт:** ✅ **Approve.** Quality baseline PASS (8/8 порогов), 160/160 тестов, lint и `tsc` чистые. Все критические security findings исходного аудита закрыты и закреплены регрессионными тестами. Остаточный долг — структурный (сложность в WMS API-маршрутах и крупные presentation-файлы).
@@ -36,25 +39,25 @@
 
 ### Security
 
-- [`apps/web/src/app/api/users/route.ts`](../apps/web/src/app/api/users/route.ts) получил RBAC-проверку после аутентификации: неавторизованные пользователи получают `403`.
-- [`apps/web/src/app/api/admin/settings/test-ldap/route.ts`](../apps/web/src/app/api/admin/settings/test-ldap/route.ts) и [`apps/web/src/app/api/admin/settings/test-srm/route.ts`](../apps/web/src/app/api/admin/settings/test-srm/route.ts) используют rate limiting `5/min`.
+- [`apps/web/src/app/api/users/route.ts`](../../../apps/web/src/app/api/users/route.ts) получил RBAC-проверку после аутентификации: неавторизованные пользователи получают `403`.
+- [`apps/web/src/app/api/admin/settings/test-ldap/route.ts`](../../../apps/web/src/app/api/admin/settings/test-ldap/route.ts) и [`apps/web/src/app/api/admin/settings/test-srm/route.ts`](../../../apps/web/src/app/api/admin/settings/test-srm/route.ts) используют rate limiting `5/min`.
 - Jira connectivity proxy не получил второй limiter, поскольку делегирует запрос SRM handler и двойное ограничение ухудшило бы quota semantics.
 - Webhook secret validation, LDAP escaping, RBAC на ключевых API и Prisma ORM сохранены и проверены.
 
 ### UI consistency
 
 - Theme token migration выполнена в Sidebar, login и FeedbackDialog; прямые hex-значения в этих затронутых областях заменены на semantic tokens либо `alpha(theme.palette.*)`.
-- Entity statuses мигрированы с [`Chip`](../apps/web/src/components/ui/StatusBadge.tsx) на [`StatusBadge`](../apps/web/src/components/ui/StatusBadge.tsx). Chips для идентификаторов, количества, единиц измерения, вложений и прочих metadata сохранены намеренно.
+- Entity statuses мигрированы с [`Chip`](../../../apps/web/src/components/ui/StatusBadge.tsx) на [`StatusBadge`](../../../apps/web/src/components/ui/StatusBadge.tsx). Chips для идентификаторов, количества, единиц измерения, вложений и прочих metadata сохранены намеренно.
 - Исправлено предупреждение `DataTableWrapper`: effect восстановления настроек учитывает `columns`.
 
 ### Modularization
 
-- EPS custom-field renderer вынесен в [`CustomFieldValueRenderer`](../apps/web/src/components/eps/CustomFieldValueRenderer.tsx).
-- Jira/SRM service разделён на focused modules с compatibility barrel в [`jira-service.ts`](../apps/web/src/lib/jira-service.ts).
+- EPS custom-field renderer вынесен в [`CustomFieldValueRenderer`](../../../apps/web/src/components/eps/CustomFieldValueRenderer.tsx).
+- Jira/SRM service разделён на focused modules с compatibility barrel в [`jira-service.ts`](../../../apps/web/src/lib/jira-service.ts).
 - Setup wizard разделён на три presentation steps с сохранением state и handlers в route owner.
-- WMS operation wizard разделён на [`WmsOperationSetupStep`](../apps/web/src/components/wms/WmsOperationSetupStep.tsx), [`WmsOperationItemsStep`](../apps/web/src/components/wms/WmsOperationItemsStep.tsx) и [`WmsOperationReviewStep`](../apps/web/src/components/wms/WmsOperationReviewStep.tsx); state, fetching, validation и submit logic остались в родителе.
+- WMS operation wizard разделён на [`WmsOperationSetupStep`](../../../apps/web/src/components/wms/WmsOperationSetupStep.tsx), [`WmsOperationItemsStep`](../../../apps/web/src/components/wms/WmsOperationItemsStep.tsx) и [`WmsOperationReviewStep`](../../../apps/web/src/components/wms/WmsOperationReviewStep.tsx); state, fetching, validation и submit logic остались в родителе.
 - Sidebar decomposition исследована, но небезопасная extraction была отменена после проверки зависимости и поведения; исходный файл восстановлен без незакоммиченных изменений.
-- Approval type branching заменён на явные strategy maps в [`approvals/page.tsx`](../apps/web/src/app/eps/approvals/page.tsx).
+- Approval type branching заменён на явные strategy maps в [`approvals/page.tsx`](../../../apps/web/src/app/eps/approvals/page.tsx).
 
 ---
 
@@ -86,7 +89,7 @@ python .agents\\skills\\code-reviewer\\scripts\\code_quality_checker.py apps\\we
 - production build: pass, 33 static pages generated;
 - quality scan: 219 files, 73.7/100, grade C, 2 325 smells, 28 SOLID findings.
 
-Повтор 2026-08-29: web 78.3/100, 2 357 smells, 25 SOLID, 38 F-grade; packages 94.1/100, 0 F-grade; baseline PASS. Stories A1/A2/A3/B1/B2 и MRO/WMS logging batches закрыли demo Jira token, LDAP default-password gap, unsigned SRM webhook gap, production-like dev compose defaults, bounded logging/UI feedback paths, 14 MRO/WMS core API raw logs и Chip-for-status в паспорте оборудования. Полный набор — 157 tests passed. Актуальный план — [`PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md), [`REMEDIATION_PLAN.md`](REMEDIATION_PLAN.md).
+Повтор 2026-08-29: web 78.3/100, 2 357 smells, 25 SOLID, 38 F-grade; packages 94.1/100, 0 F-grade; baseline PASS. Stories A1/A2/A3/B1/B2 и MRO/WMS logging batches закрыли demo Jira token, LDAP default-password gap, unsigned SRM webhook gap, production-like dev compose defaults, bounded logging/UI feedback paths, 14 MRO/WMS core API raw logs и Chip-for-status в паспорте оборудования. Полный набор — 157 tests passed. Актуальный план — [`2026-08-30-inspection.md`](2026-08-30-inspection.md), [`plans/README.md`](../../../plans/README.md).
 
 Оставшиеся quality-scan findings относятся преимущественно к широкому legacy smell inventory, остаточной типизации/размеру отдельных presentation files и policy cleanup вне подтверждённых critical paths. Их следует устранять отдельными bounded stories с ручной проверкой, а не массовыми автоматическими заменами.
 

@@ -1,60 +1,49 @@
 # Правила использования специализированных скиллов и процесса разработки в EMS-Platform
 
-> Обновлено: 2026-08-27 (по результатам аудита)  
-> Полный список правил: [`AGENTS.md`](../../AGENTS.md)
+> Обновлено: 2026-08-30 (структурная реорганизация отчётности)
+> Полный список обязательных правил (git commit, UI, security, quality
+> thresholds): [`AGENTS.md`](../../AGENTS.md) — не дублируется здесь.
 
 ---
 
-## 🚨 Обязательные правила разработки
+## Жизненный цикл задачи (story) и отчётность
 
-### 1. Фиксация изменений (Git Commit)
-* **После успешного завершения любой задачи, фичи, фикса или логического этапа агент ОБЯЗАН создать Git-коммит.**
-* Коммиты должны быть атомарными, содержать понятный заголовок по стандарту Conventional Commits:
-  - `feat: <описание>` — добавление нового функционала
-  - `fix: <описание>` — исправление ошибок
-  - `refactor: <описание>` — оптимизация структуры без изменения поведения
-  - `test: <описание>` — добавление тестов
-  - `docs: <описание>` — обновление документации
-  - `chore: <описание>` — правка конфигураций, зависимостей, скиллов
+Все задачи по улучшению/рефакторингу проекта отслеживаются в
+[`plans/`](../../plans/), а не в единой длинной инструкции или чек-листе.
 
-### 2. Единый дизайн-код (Запрет хардкода UI)
+1. **Создание.** Новая задача — новый файл
+   `plans/active/<id>-<slug>.md`, созданный из шаблона
+   [`plans/templates/story.md`](../../plans/templates/story.md). Обязательные
+   поля front-matter: `id, title, status, phase, priority, risk, skills,
+   opened, closed, commits, gates`.
+2. **Работа.** Один файл = одна story = один Conventional Commit при
+   закрытии. Не смешивать security-фикс, логирование и UI-декомпозицию в
+   одной story.
+3. **Закрытие.** Установить `status: done`, заполнить `closed:` и
+   `commits:`, описать реальный результат в разделе **Result** файла, затем
+   `git mv` файл в `plans/done/YYYY-MM/`.
+4. **Регенерация индекса.** После любого изменения story-файла — обязательно
+   `node scripts/plans-index.mjs`. Этот скрипт — единственный писатель
+   [`plans/README.md`](../../plans/README.md); руками этот файл не
+   редактируется.
+5. **Незапланированная работа.** Условные/отложенные задачи — в
+   [`plans/BACKLOG.md`](../../plans/BACKLOG.md), не в `active/`.
 
-Детальные правила: [`.agents/rules/ui_design_code.md`](ui_design_code.md)
-
-Кратко:
-* Использовать только компоненты из `@/components/ui`: `StatCard`, `StatusBadge`, `SearchInput`, `FilterToolbar`, `EmptyState`, `DataTableWrapper`, `ConfirmDialog`
-* **Запрещены hex-цвета** в `sx={}` пропах — только `theme.palette.*` токены
-* **Запрещён `<Chip>`** для статусов — только `<StatusBadge>`
-
-### 3. Безопасность (по результатам аудита 2026-08-27)
-
-Детальные правила: [`.agents/rules/security.md`](security.md)
-
-Ключевые требования:
-* **Webhook auth**: `if (!providedToken || providedToken !== secret)` — НЕ `if (provided && provided !== secret)`
-* **Rate limiting** на всех чувствительных эндпоинтах через `enforceRateLimit()`
-* **RBAC** через `requireAuth(req, PERMISSIONS.*)` на каждом API-роуте
-* **Нет raw SQL** — только Prisma ORM
-* **LDAP**: всегда `escapeLdapFilter()` перед подстановкой
-
-### 4. Качество кода
-
-Детальные правила: [`.agents/rules/code_quality.md`](code_quality.md)
-
-Пороги:
-| Метрика | Лимит |
-|---|---|
-| Длина функции | ≤ 50 строк |
-| Цикломатическая сложность | ≤ 10 |
-| Размер файла | ≤ 500 строк |
-| Параметры функции | ≤ 5 |
-| Вложенность | ≤ 4 уровня |
+**Правило отчётности:** ни в одном markdown-файле не должно быть числа или
+статуса, который уже вычисляется скриптом или хранится в одном
+конкретном файле. Текущие метрики качества — только в
+[`docs/quality/QUALITY_BASELINE.md`](../../docs/quality/QUALITY_BASELINE.md)
+(генерируется `node scripts/check-quality-baseline.mjs --report`). Статус
+задач — только в [`plans/README.md`](../../plans/README.md) (генерируется
+`node scripts/plans-index.mjs`). Именно дублирование этих чисел в 5+
+местах привело к рассинхронизации, устранённой этой реорганизацией.
 
 ---
 
 ## Использование специализированных скиллов (`.agents/skills/*`)
 
-При выполнении задач в данном репозитории агент ОБЯЗАН обращаться к соответствующим локальным скиллам.
+При выполнении задач в данном репозитории агент ОБЯЗАН обращаться к
+соответствующим локальным скиллам.
 
 ### 1. Фронтенд и компоненты интерфейса (Next.js 14, React 18, MUI v5)
 * **`senior-frontend`**: страницы `apps/web/src/app/`, компоненты `apps/web/src/components/`, оптимизация рендеринга таблиц и графиков.
@@ -76,7 +65,7 @@
 * **`playwright-pro`**: E2E-тесты пользовательских сценариев (жизненный цикл оборудования, согласования, инвентаризация) с архитектурой Page Object Model.
 
 ### 5. Архитектура и надёжность
-* **`senior-architect`**: добавление новых пакетов в монорепозиторий, проектирование связей между модулями, ADR-документы.
+* **`senior-architect`**: добавление новых пакетов в монорепозиторий, проектирование связей между модулями, ADR-документы (см. [`docs/architecture/decisions/`](../../docs/architecture/decisions/)).
 * **`zero-hallucination-coder`**: точное соответствие кодовой базе, TypeScript-типам и ТЗ без выдумывания невалидных интерфейсов.
 * **`code-reviewer`**: предварительный самоанализ написанного кода, запуск `code_quality_checker.py` перед коммитом.
 
@@ -113,6 +102,7 @@ EMS-Platform/                    ← Monorepo (pnpm workspaces)
 │   ├── auth/                    ← JWT, LDAP, RBAC, пароли, аудит
 │   ├── database/                ← Prisma schema + seed
 │   └── shared/                  ← Типы, PERMISSIONS, константы
+├── plans/                       ← Work ledger (active / done / backlog)
 └── .agents/
     ├── rules/                   ← Правила для агентов
     └── skills/                  ← Специализированные скиллы
@@ -122,7 +112,9 @@ EMS-Platform/                    ← Monorepo (pnpm workspaces)
 
 ## Контакты и актуальность
 
-* **Аудит кода**: [`docs/CODE_REVIEW_AUDIT.md`](../../docs/CODE_REVIEW_AUDIT.md)
-* **JSON-отчёт**: [`docs/code-review-report.json`](../../docs/code-review-report.json)
-* **Схема БД**: [`docs/DATABASE_TOPOLOGY.md`](../../docs/DATABASE_TOPOLOGY.md)
-* **Деплой**: [`docs/PRODUCTION_DEPLOYMENT.md`](../../docs/PRODUCTION_DEPLOYMENT.md)
+* **Текущие задачи**: [`plans/README.md`](../../plans/README.md)
+* **Текущие метрики качества**: [`docs/quality/QUALITY_BASELINE.md`](../../docs/quality/QUALITY_BASELINE.md)
+* **История инспекций**: [`docs/quality/inspections/`](../../docs/quality/inspections/)
+* **Схема БД**: [`docs/architecture/DATABASE_TOPOLOGY.md`](../../docs/architecture/DATABASE_TOPOLOGY.md)
+* **Деплой**: [`docs/operations/PRODUCTION_DEPLOYMENT.md`](../../docs/operations/PRODUCTION_DEPLOYMENT.md)
+* **Полный индекс документации**: [`docs/README.md`](../../docs/README.md)

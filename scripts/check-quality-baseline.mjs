@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFileSync, unlinkSync } from 'node:fs';
+import { readFileSync, unlinkSync, writeFileSync, mkdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import os from 'node:os';
@@ -52,7 +52,10 @@ function runQualityAnalysis(targetDirectory) {
   return JSON.parse(result.stdout);
 }
 
-const reportPaths = process.argv.slice(2);
+const rawArgs = process.argv.slice(2);
+const isReportMode = rawArgs.includes('--report');
+const reportPaths = rawArgs.filter((arg) => arg !== '--report');
+
 let reports = [];
 
 if (reportPaths.length > 0) {
@@ -67,6 +70,7 @@ if (reportPaths.length > 0) {
 }
 
 let failed = false;
+const resultRows = [];
 
 for (const report of reports) {
   const normalizedDirectory = String(report.directory).replace(/\\/g, '/');
@@ -82,18 +86,34 @@ for (const report of reports) {
   const fGradeFiles = report.files.filter((file) => file.grade === 'F').length;
   const checks = [
     {
+      metric: 'Average score',
+      actual: report.average_score,
+      comparator: '>=',
+      threshold: limits.minimumAverageScore,
       passed: report.average_score >= limits.minimumAverageScore,
       message: `average score ${report.average_score} >= ${limits.minimumAverageScore}`,
     },
     {
+      metric: 'F-grade files',
+      actual: fGradeFiles,
+      comparator: '<=',
+      threshold: limits.maximumFGradeFiles,
       passed: fGradeFiles <= limits.maximumFGradeFiles,
       message: `F-grade files ${fGradeFiles} <= ${limits.maximumFGradeFiles}`,
     },
     {
+      metric: 'Code smells',
+      actual: report.total_code_smells,
+      comparator: '<=',
+      threshold: limits.maximumCodeSmells,
       passed: report.total_code_smells <= limits.maximumCodeSmells,
       message: `code smells ${report.total_code_smells} <= ${limits.maximumCodeSmells}`,
     },
     {
+      metric: 'SOLID violations',
+      actual: report.total_solid_violations,
+      comparator: '<=',
+      threshold: limits.maximumSolidViolations,
       passed: report.total_solid_violations <= limits.maximumSolidViolations,
       message: `SOLID violations ${report.total_solid_violations} <= ${limits.maximumSolidViolations}`,
     },
@@ -104,6 +124,85 @@ for (const report of reports) {
     console.log(`  ${check.passed ? 'PASS' : 'FAIL'} ${check.message}`);
     if (!check.passed) failed = true;
   }
+
+  resultRows.push({
+    directory: baselineKey,
+    fileCount: report.files.length,
+    grade: report.grade ?? null,
+    checks,
+  });
+}
+
+if (isReportMode) {
+  writeQualityBaselineReport(resultRows, failed);
 }
 
 process.exit(failed ? 1 : 0);
+
+/**
+ * Writes docs/quality/QUALITY_BASELINE.md — the single generated source of
+ * truth for current quality metrics and thresholds. No other markdown file
+ * in this repository should hardcode these numbers; they should link here
+ * instead.
+ */
+function writeQualityBaselineReport(rows, anyFailed) {
+  const outDir = path.join(repositoryRoot, 'docs', 'quality');
+  const outPath = path.join(outDir, 'QUALITY_BASELINE.md');
+  mkdirSync(outDir, { recursive: true });
+
+  const measuredAt = new Date().toISOString().slice(0, 10);
+  const overallStatus = anyFailed ? '❌ FAIL' : '✅ PASS';
+
+  const sections = rows
+    .map((row) => {
+      const header = `### \`${row.directory}\`\n\n`;
+      const meta = `Files analyzed: **${row.fileCount}**${row.grade ? `, grade **${row.grade}**` : ''}\n\n`;
+      const tableHeader = '| Metric | Actual | Threshold | Status |\n|---|---:|---:|---|\n';
+      const tableRows = row.checks
+        .map(
+          (c) =>
+            `| ${c.metric} | ${c.actual} | ${c.comparator} ${c.threshold} | ${c.passed ? '✅ PASS' : '❌ FAIL'} |`
+        )
+        .join('\n');
+      return header + meta + tableHeader + tableRows + '\n';
+    })
+    .join('\n');
+
+  const content = `# Quality baseline
+
+> **Generated file — do not hand-edit.** Regenerate with
+> \`node scripts/check-quality-baseline.mjs --report\`. Thresholds are
+> defined in [\`scripts/check-quality-baseline.mjs\`](../../scripts/check-quality-baseline.mjs)
+> — that file is the single source of truth for threshold values; this
+> document only reports the last measured actuals against them.
+>
+> Measured at: ${measuredAt}
+> Overall gate: ${overallStatus}
+
+No other file in this repository should restate these numbers. Rules files
+(e.g. [\`.agents/rules/code_quality.md\`](../../.agents/rules/code_quality.md))
+should link here instead of embedding metric values, since any embedded
+number goes stale the next time this report is regenerated.
+
+For the detailed per-file F-grade breakdown and specific findings, see the
+latest dated snapshot in [\`docs/quality/inspections/\`](inspections/).
+
+---
+
+${sections}
+---
+
+## Reproducing this report
+
+\`\`\`bash
+node scripts/check-quality-baseline.mjs --report
+\`\`\`
+
+This runs \`code_quality_checker.py\` in-memory against \`apps/web/src\` and
+\`packages\`, evaluates the results against the thresholds in this script,
+and writes this file. It does not commit any intermediate JSON artifacts.
+`;
+
+  writeFileSync(outPath, content, 'utf8');
+  console.log(`\nWrote ${path.relative(repositoryRoot, outPath)}`);
+}
