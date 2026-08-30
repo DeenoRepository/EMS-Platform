@@ -6,6 +6,11 @@ import { prisma, EquipmentStatus } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { z } from 'zod';
+import {
+  buildEquipmentApprovalProposal,
+  buildEquipmentUpdateData,
+  getEffectiveCommissionDate,
+} from './patch-update-model';
 
 export const dynamic = 'force-dynamic';
 
@@ -123,17 +128,9 @@ export async function PATCH(
     const {
       name,
       inventoryNumber,
-      serialNumber,
-      manufacturer,
-      model,
-      location,
       status,
-      commissionDate,
-      customFields,
-      tagIds,
       submitForApproval,
       approvalComment,
-      directSave,
     } = parsedBody;
 
     const currentEquipment = await prisma.equipment.findUnique({
@@ -145,14 +142,7 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: 'Оборудование не найдено' }, { status: 404 });
     }
 
-    function parseDateSafe(val: any): Date | null {
-      if (!val || typeof val !== 'string' || !val.trim()) return null;
-      const d = new Date(val);
-      return isNaN(d.getTime()) ? null : d;
-    }
-
-    const rawDate = commissionDate !== undefined ? commissionDate : parsedBody.commissioningDate;
-    const parsedCommissionDate = parseDateSafe(rawDate);
+    const parsedCommissionDate = getEffectiveCommissionDate(parsedBody);
 
     const canManageDirectly = hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) || isAdminUser(user);
     const isOwner = currentEquipment.createdById === user.userId;
@@ -160,18 +150,7 @@ export async function PATCH(
 
     // Случай 1: Отправка на согласование или сохранение черновика изменений для утвержденного оборудования
     if (!isDraft && (!canManageDirectly || submitForApproval)) {
-      const proposedData: Record<string, any> = {
-        name: name !== undefined ? name.trim() : currentEquipment.name,
-        inventoryNumber: inventoryNumber !== undefined ? (inventoryNumber?.trim() || null) : currentEquipment.inventoryNumber,
-        serialNumber: serialNumber !== undefined ? (serialNumber?.trim() || null) : currentEquipment.serialNumber,
-        manufacturer: manufacturer !== undefined ? (manufacturer?.trim() || null) : currentEquipment.manufacturer,
-        model: model !== undefined ? (model?.trim() || null) : currentEquipment.model,
-        location: location !== undefined ? (location?.trim() || null) : currentEquipment.location,
-        status: status !== undefined ? status : currentEquipment.status,
-        commissionDate: parsedCommissionDate ? parsedCommissionDate.toISOString() : (currentEquipment.commissionDate ? currentEquipment.commissionDate.toISOString() : null),
-        customFields: customFields !== undefined ? (customFields ? JSON.parse(JSON.stringify(customFields)) : null) : currentEquipment.customFields,
-        tagIds: Array.isArray(tagIds) ? tagIds : currentEquipment.tags.map((t) => t.tagId),
-      };
+      const proposedData = buildEquipmentApprovalProposal(parsedBody, currentEquipment, parsedCommissionDate);
 
       const approval = await prisma.equipmentApproval.create({
         data: {
@@ -207,27 +186,18 @@ export async function PATCH(
     // Случай 2: Редактирование черновика оборудования с отправкой на согласование (COMMISSIONING)
     if (submitForApproval && isDraft) {
       const updated = await prisma.$transaction(async (tx) => {
-        if (Array.isArray(tagIds)) {
+        if (Array.isArray(parsedBody.tagIds)) {
           await tx.equipmentTag.deleteMany({ where: { equipmentId: id } });
-          if (tagIds.length > 0) {
+          if (parsedBody.tagIds.length > 0) {
             await tx.equipmentTag.createMany({
-              data: tagIds.map((tagId: string) => ({ equipmentId: id, tagId })),
+              data: parsedBody.tagIds.map((tagId: string) => ({ equipmentId: id, tagId })),
             });
           }
         }
 
         return tx.equipment.update({
           where: { id },
-          data: {
-            name: name !== undefined ? name.trim() : undefined,
-            inventoryNumber: inventoryNumber !== undefined ? (inventoryNumber?.trim() || null) : undefined,
-            serialNumber: serialNumber !== undefined ? (serialNumber?.trim() || null) : undefined,
-            manufacturer: manufacturer !== undefined ? (manufacturer?.trim() || null) : undefined,
-            model: model !== undefined ? (model?.trim() || null) : undefined,
-            location: location !== undefined ? (location?.trim() || null) : undefined,
-            commissionDate: rawDate !== undefined ? parsedCommissionDate : undefined,
-            customFields: customFields !== undefined ? (customFields ? JSON.parse(JSON.stringify(customFields)) : {}) : undefined,
-          },
+          data: buildEquipmentUpdateData(parsedBody, parsedCommissionDate),
           include: { tags: { include: { tag: true } } },
         });
       });
@@ -263,28 +233,18 @@ export async function PATCH(
 
     // Случай 3: Прямое обновление черновика или прямое сохранение администратором
     const updated = await prisma.$transaction(async (tx) => {
-      if (Array.isArray(tagIds)) {
+      if (Array.isArray(parsedBody.tagIds)) {
         await tx.equipmentTag.deleteMany({ where: { equipmentId: id } });
-        if (tagIds.length > 0) {
+        if (parsedBody.tagIds.length > 0) {
           await tx.equipmentTag.createMany({
-            data: tagIds.map((tagId: string) => ({ equipmentId: id, tagId })),
+            data: parsedBody.tagIds.map((tagId: string) => ({ equipmentId: id, tagId })),
           });
         }
       }
 
       return tx.equipment.update({
         where: { id },
-        data: {
-          name: name !== undefined ? name.trim() : undefined,
-          inventoryNumber: inventoryNumber !== undefined ? (inventoryNumber?.trim() || null) : undefined,
-          serialNumber: serialNumber !== undefined ? (serialNumber?.trim() || null) : undefined,
-          manufacturer: manufacturer !== undefined ? (manufacturer?.trim() || null) : undefined,
-          model: model !== undefined ? (model?.trim() || null) : undefined,
-          location: location !== undefined ? (location?.trim() || null) : undefined,
-          status: status as EquipmentStatus | undefined,
-          commissionDate: rawDate !== undefined ? parsedCommissionDate : undefined,
-          customFields: customFields !== undefined ? (customFields ? JSON.parse(JSON.stringify(customFields)) : {}) : undefined,
-        },
+        data: buildEquipmentUpdateData(parsedBody, parsedCommissionDate),
         include: {
           tags: { include: { tag: true } },
         },
@@ -295,8 +255,8 @@ export async function PATCH(
     const diff: Record<string, any> = {};
     if (name && name !== currentEquipment.name) diff.name = { old: currentEquipment.name, new: name };
     if (status && status !== currentEquipment.status) diff.status = { old: currentEquipment.status, new: status };
-    if (inventoryNumber !== undefined && inventoryNumber !== currentEquipment.inventoryNumber) {
-      diff.inventoryNumber = { old: currentEquipment.inventoryNumber, new: inventoryNumber };
+    if (parsedBody.inventoryNumber !== undefined && parsedBody.inventoryNumber !== currentEquipment.inventoryNumber) {
+      diff.inventoryNumber = { old: currentEquipment.inventoryNumber, new: parsedBody.inventoryNumber };
     }
 
     await logAuditEvent({

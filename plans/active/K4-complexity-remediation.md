@@ -127,7 +127,7 @@ partial update и derived resolved/downtime model; численно более �
 presentation-only false positive.
 
 Для него создана bounded-подистория
-[`K4.11-srm-issue-patch-update-model.md`](K4.11-srm-issue-patch-update-model.md):
+[`K4.11-srm-issue-patch-update-model.md`](../done/2026-08/K4.11-srm-issue-patch-update-model.md):
 в текущем stage вынесены только pure update-field/resolution calculations,
 добавлены focused tests, а Prisma side effects, RBAC, rate limiting, audit и
 response contract остаются в route.
