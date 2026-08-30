@@ -1,14 +1,14 @@
 ---
 id: I2
 title: Extract MroExecutionWizardDialog submit module
-status: active
+status: done
 phase: I
 priority: P2
 risk: low
 skills: [senior-frontend]
 opened: 2026-08-30
-closed: null
-commits: []
+closed: 2026-08-30
+commits: [b10ff28]
 gates: [lint, tsc, check:quality]
 ---
 
@@ -38,10 +38,16 @@ Will NOT change: request body shape, API endpoint, dialog state ownership.
 
 ## Definition of Done
 
-- [ ] `handleSubmit` in the dialog component ≤ 50 lines, cx ≤ 10.
-- [ ] Request payload byte-identical to before for the same inputs.
-- [ ] Full gate green: lint, tsc, `pnpm test`, quality baseline.
+- [x] `handleSubmit` in the dialog component ≤ 50 lines, cx ≤ 10.
+- [x] Request payload byte-identical to before for the same inputs.
+- [x] Full gate green: lint, tsc, `pnpm test`, quality baseline.
 
 ## Result
 
-_Not yet closed._
+Extracted checklist and used-parts payload preparation into
+[`mro-execution-submit.ts`](../../apps/web/src/components/mro/mro-execution-submit.ts).
+The dialog retains request, snackbar, success, and error orchestration while
+`handleSubmit` delegates pure payload construction.
+
+Verification: web lint, web TypeScript check, 160 tests, quality baseline, and
+`git diff --check` passed.
