@@ -40,7 +40,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 
 ---
 
-## Done (59)
+## Done (60)
 
 | ID | Title | Phase | Closed | Commits |
 |---|---|---|---|---|
@@ -101,5 +101,6 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [K4.8](done/2026-08/K4.8-eps-equipment-get-query.md) | Декомпозировать GET реестра оборудования EPS | K | 2026-08-30 | a84ccab |
 | [K4.9](done/2026-08/K4.9-eps-history-get-query.md) | Декомпозировать GET истории аудита EPS | K | 2026-08-30 | ad9b4a2 |
 | [K4.10](done/2026-08/K4.10-eps-history-sort-model.md) | Декомпозировать сортировку истории аудита EPS | K | 2026-08-30 | 4dcc735 |
+| [K4.11](done/2026-08/K4.11-srm-issue-patch-update-model.md) | Декомпозировать модель обновления SRM-заявки | K | 2026-08-30 | e8528c9 |
 | [K5](done/2026-08/K5-ui-console-cleanup.md) | Заменить остаточные console-вызовы в UI и сервисах | K | 2026-08-30 | 90a2134, 44550a8, b0f4c5f, d1c8672, 50dade2, pending |
 | [K7](done/2026-08/K7-test-db-isolation.md) | Устранить внешнюю БД из unit-тестов auth-guard | K | 2026-08-30 | 2f56249 |
