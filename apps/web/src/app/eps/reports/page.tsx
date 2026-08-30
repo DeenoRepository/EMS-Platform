@@ -35,6 +35,7 @@ import ReportColumnBuilderDialog, { ReportColumn, IndustryPreset } from '@/compo
 import ReportSaveTemplateDialog from '@/components/eps/reports/ReportSaveTemplateDialog';
 import ReportDataTable from '@/components/eps/reports/ReportDataTable';
 import ReportPresetsToolbar from '@/components/eps/reports/ReportPresetsToolbar';
+import { ReportStatsCards } from '@/components/eps/reports/ReportStatsCards';
 import { applyReportPreset, applyReportTemplate, type ReportFilterState, type ReportSortState } from './report-template-handlers';
 
 export interface SavedTemplate {
@@ -499,75 +500,17 @@ function ReportBuilderContent() {
         }
       />
 
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Строк в ведомости"
-            value={rows.length}
-            subtitle={activeFilterCount > 0 ? `Фильтров активно: ${activeFilterCount}` : 'Полная выборка'}
-            icon={<PrecisionManufacturingIcon sx={{ fontSize: 22 }} />}
-            accentColor="primary.main"
-            iconColor="primary.main"
-            iconBgColor="rgba(2, 132, 199, 0.08)"
-            loading={loadingData && rows.length === 0}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Выбрано колонок"
-            value={`${selectedColumnKeys.length} из ${availableColumns.length || 38}`}
-            subtitle="Полей в формируемой таблице"
-            icon={<LayersIcon sx={{ fontSize: 22 }} />}
-            accentColor="secondary.main"
-            iconColor="secondary.main"
-            iconBgColor="rgba(124, 58, 237, 0.08)"
-            onClick={() => setColumnBuilderOpen(true)}
-            loading={loadingData && rows.length === 0}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Средний износ"
-            value={averageWear !== null ? `${averageWear}%` : '—'}
-            subtitle="По отфильтрованному списку"
-            icon={<SpeedIcon sx={{ fontSize: 22 }} />}
-            accentColor={
-              averageWear !== null && averageWear > 70
-                ? 'error.main'
-                : averageWear !== null && averageWear > 30
-                ? 'warning.main'
-                : 'success.main'
-            }
-            iconColor={
-              averageWear !== null && averageWear > 70
-                ? 'error.main'
-                : averageWear !== null && averageWear > 30
-                ? 'warning.main'
-                : 'success.main'
-            }
-            iconBgColor={
-              averageWear !== null && averageWear > 70
-                ? 'error.light'
-                : averageWear !== null && averageWear > 30
-                ? 'warning.light'
-                : 'success.light'
-            }
-            loading={loadingData && rows.length === 0}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Шаблоны отчетов"
-            value={templates.length + INDUSTRY_PRESETS.length}
-            subtitle={`${INDUSTRY_PRESETS.length} системных, ${templates.length} пользовательских`}
-            icon={<AssignmentTurnedInIcon sx={{ fontSize: 22 }} />}
-            accentColor="success.main"
-            iconColor="success.main"
-            iconBgColor="rgba(5, 150, 105, 0.08)"
-            loading={loadingData && rows.length === 0}
-          />
-        </Grid>
-      </Grid>
+      <ReportStatsCards
+        rowsCount={rows.length}
+        selectedColumnsCount={selectedColumnKeys.length}
+        availableColumnsCount={availableColumns.length}
+        averageWear={averageWear}
+        templatesCount={templates.length}
+        presetsCount={INDUSTRY_PRESETS.length}
+        activeFilterCount={activeFilterCount}
+        loading={loadingData && rows.length === 0}
+        onOpenColumnBuilder={() => setColumnBuilderOpen(true)}
+      />
 
       <ReportPresetsToolbar
         presets={INDUSTRY_PRESETS}
