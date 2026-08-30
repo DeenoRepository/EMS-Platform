@@ -16,7 +16,7 @@ gates: [lint, tsc, check:quality]
 
 ## Problem
 
-[`apps/web/src/app/wms/stock/page.tsx`](../../apps/web/src/app/wms/stock/page.tsx)
+[`apps/web/src/app/wms/stock/page.tsx`](../../../apps/web/src/app/wms/stock/page.tsx)
 is 819 lines; `loadZones` is 71 lines (cx 6.8 average — size and one long
 function are the drivers, not branching complexity).
 
@@ -42,6 +42,6 @@ already applied to filters and zone cell rendering.
 
 ## Result
 
-Extracted response-to-zone-list mapping into [`zone-response.ts`](../../apps/web/src/app/wms/stock/zone-response.ts). The page retains the fetch call, loading/error ownership, and selection reset behavior while delegating response validation to the pure helper.
+Extracted response-to-zone-list mapping into [`zone-response.ts`](../../../apps/web/src/app/wms/stock/zone-response.ts). The page retains the fetch call, loading/error ownership, and selection reset behavior while delegating response validation to the pure helper.
 
 Verification: web lint, web TypeScript check, 160 tests, quality baseline, and `git diff --check` passed.

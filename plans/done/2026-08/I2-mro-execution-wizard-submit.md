@@ -16,15 +16,15 @@ gates: [lint, tsc, check:quality]
 
 ## Problem
 
-[`apps/web/src/components/mro/MroExecutionWizardDialog.tsx`](../../apps/web/src/components/mro/MroExecutionWizardDialog.tsx)
+[`apps/web/src/components/mro/MroExecutionWizardDialog.tsx`](../../../apps/web/src/components/mro/MroExecutionWizardDialog.tsx)
 is 652 lines; `handleSubmit` is 67 lines / cx 13.
 
 ## Scope
 
 Extract `handleSubmit` payload preparation into a sibling submit module,
 following the pattern already used in
-[`operation-submit.ts`](../../apps/web/src/components/wms/operation-submit.ts) (C15) and
-[`equipment-wizard-submit.ts`](../../apps/web/src/components/eps/equipment-wizard-submit.ts) (C4.2).
+[`operation-submit.ts`](../../../apps/web/src/components/wms/operation-submit.ts) (C15) and
+[`equipment-wizard-submit.ts`](../../../apps/web/src/components/eps/equipment-wizard-submit.ts) (C4.2).
 
 Will NOT change: request body shape, API endpoint, dialog state ownership.
 
@@ -45,7 +45,7 @@ Will NOT change: request body shape, API endpoint, dialog state ownership.
 ## Result
 
 Extracted checklist and used-parts payload preparation into
-[`mro-execution-submit.ts`](../../apps/web/src/components/mro/mro-execution-submit.ts).
+[`mro-execution-submit.ts`](../../../apps/web/src/components/mro/mro-execution-submit.ts).
 The dialog retains request, snackbar, success, and error orchestration while
 `handleSubmit` delegates pure payload construction.
 

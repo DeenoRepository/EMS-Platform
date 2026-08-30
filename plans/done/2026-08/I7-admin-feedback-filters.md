@@ -16,14 +16,14 @@ gates: [lint, tsc, check:quality]
 
 ## Problem
 
-[`apps/web/src/app/admin/feedback/page.tsx`](../../apps/web/src/app/admin/feedback/page.tsx)
+[`apps/web/src/app/admin/feedback/page.tsx`](../../../apps/web/src/app/admin/feedback/page.tsx)
 is 619 lines with the page component at cx 17.
 
 ## Scope
 
 Extract filter state and filter-toolbar wiring into a shared pattern
 consistent with `FilterToolbar` usage elsewhere (per
-[`.agents/rules/ui_design_code.md`](../../.agents/rules/ui_design_code.md)).
+[`.agents/rules/ui_design_code.md`](../../../.agents/rules/ui_design_code.md)).
 
 ## Steps
 
@@ -39,6 +39,6 @@ consistent with `FilterToolbar` usage elsewhere (per
 
 ## Result
 
-Extracted filter query and active-count logic into [`feedback-filters.ts`](../../apps/web/src/app/admin/feedback/feedback-filters.ts) and filter toolbar presentation into [`AdminFeedbackFilters.tsx`](../../apps/web/src/components/feedback/AdminFeedbackFilters.tsx). The page retains API fetches, mutations, pagination, and ticket actions while delegating filter UI and query construction.
+Extracted filter query and active-count logic into [`feedback-filters.ts`](../../../apps/web/src/app/admin/feedback/feedback-filters.ts) and filter toolbar presentation into [`AdminFeedbackFilters.tsx`](../../../apps/web/src/components/feedback/AdminFeedbackFilters.tsx). The page retains API fetches, mutations, pagination, and ticket actions while delegating filter UI and query construction.
 
 Verification: web lint, web TypeScript check, 160 tests, quality baseline, and `git diff --check` passed.

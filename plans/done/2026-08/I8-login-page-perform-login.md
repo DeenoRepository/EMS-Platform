@@ -16,7 +16,7 @@ gates: [lint, tsc, check:quality]
 
 ## Problem
 
-[`apps/web/src/app/login/page.tsx`](../../apps/web/src/app/login/page.tsx)
+[`apps/web/src/app/login/page.tsx`](../../../apps/web/src/app/login/page.tsx)
 is 642 lines; `performLogin` is cx 12.
 
 ## Scope
@@ -24,7 +24,7 @@ is 642 lines; `performLogin` is cx 12.
 Extract `performLogin` branching (credential validation, error mapping,
 redirect logic) into a pure/testable function. This file is
 security-adjacent (auth entry point) — sign off with
-[`.agents/rules/security.md`](../../.agents/rules/security.md) before merge,
+[`.agents/rules/security.md`](../../../.agents/rules/security.md) before merge,
 no behavior change to rate-limit or Zod validation already in place at the
 API layer.
 
@@ -44,6 +44,6 @@ API layer.
 
 ## Result
 
-Extracted login validation and error-message mapping into [`login-flow.ts`](../../apps/web/src/app/login/login-flow.ts). The page retains authentication invocation, local-storage handling, loading/error state, and UI event wiring. The `/api/auth/login` contract was not changed.
+Extracted login validation and error-message mapping into [`login-flow.ts`](../../../apps/web/src/app/login/login-flow.ts). The page retains authentication invocation, local-storage handling, loading/error state, and UI event wiring. The `/api/auth/login` contract was not changed.
 
 Verification: web lint, web TypeScript check, 160 tests, quality baseline, and `git diff --check` passed.

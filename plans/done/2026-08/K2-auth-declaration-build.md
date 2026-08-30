@@ -18,14 +18,14 @@ gates: [build, test, lint, tsc, check:quality, check:docs]
 
 Полный `pnpm build` падает с TS2742 при генерации деклараций для `@ems/auth`.
 TypeScript не может сформировать переносимые inferred return types для
-[`createInternalServiceRequest()`](../../apps/web/src/lib/jira/service-requests.ts:118)
-и [`createMroWorkOrderFromIssue()`](../../apps/web/src/lib/jira/service-requests.ts:164)
+[`createInternalServiceRequest()`](../../../apps/web/src/lib/jira/service-requests.ts:159)
+и [`createMroWorkOrderFromIssue()`](../../../apps/web/src/lib/jira/service-requests.ts:201)
 без ссылки на приватный Prisma runtime внутри `packages/database/node_modules`.
 Web-only `tsc --noEmit` эту ошибку не выявляет.
 
 ## Scope
 
-- Определить, почему [`packages/auth/tsconfig.json`](../../packages/auth/tsconfig.json)
+- Определить, почему [`packages/auth/tsconfig.json`](../../../packages/auth/tsconfig.json)
   включает web service-request source в declaration surface.
 - Выбрать минимальное исправление: явные стабильные return types либо коррекция
   package boundary/tsconfig/import graph.
@@ -53,8 +53,8 @@ Web-only `tsc --noEmit` эту ошибку не выявляет.
 
 ## Result
 
-- Причина TS2742 подтверждена import graph: [`jira-service.ts`](../../apps/web/src/lib/jira-service.ts) реэкспортирует функции из web [`service-requests.ts`](../../apps/web/src/lib/jira/service-requests.ts), а inferred Prisma payload попадал в declaration surface пакета auth.
-- В [`service-requests.ts`](../../apps/web/src/lib/jira/service-requests.ts) добавлены стабильные именованные [`InternalServiceRequestResult`](../../apps/web/src/lib/jira/service-requests.ts:119) и [`MroWorkOrderResult`](../../apps/web/src/lib/jira/service-requests.ts:143), а двум экспортам назначены явные return types.
+- Причина TS2742 подтверждена import graph: [`jira-service.ts`](../../../apps/web/src/lib/jira-service.ts) реэкспортирует функции из web [`service-requests.ts`](../../../apps/web/src/lib/jira/service-requests.ts), а inferred Prisma payload попадал в declaration surface пакета auth.
+- В [`service-requests.ts`](../../../apps/web/src/lib/jira/service-requests.ts) добавлены стабильные именованные [`InternalServiceRequestResult`](../../../apps/web/src/lib/jira/service-requests.ts:119) и [`MroWorkOrderResult`](../../../apps/web/src/lib/jira/service-requests.ts:143), а двум экспортам назначены явные return types.
 - Публичные result types используют только переносимые примитивы, `Date` и `unknown`; deep/private Prisma runtime paths не экспортируются.
 - `pnpm --filter @ems/auth build`: PASS; `pnpm build`: PASS (4/4 packages, Next.js 33/33 static pages).
 - Unit tests: 165/165; lint, web tsc и quality: PASS.

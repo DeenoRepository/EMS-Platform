@@ -16,7 +16,7 @@ gates: [lint, tsc, check:quality]
 
 ## Problem
 
-[`apps/web/src/app/eps/reports/page.tsx`](../../apps/web/src/app/eps/reports/page.tsx)
+[`apps/web/src/app/eps/reports/page.tsx`](../../../apps/web/src/app/eps/reports/page.tsx)
 is 788 lines with 15 functions (the largest file in the project by line
 count), cx 5.9 (moderate, not the priority driver — size is).
 
@@ -42,6 +42,6 @@ export logic, template management.
 
 ## Result
 
-Extracted report export builders into [`report-export.ts`](../../apps/web/src/app/eps/reports/report-export.ts), template/preset application into [`report-template-handlers.ts`](../../apps/web/src/app/eps/reports/report-template-handlers.ts), statistics into [`ReportStatsCards.tsx`](../../apps/web/src/components/eps/reports/ReportStatsCards.tsx), and filters into [`ReportFiltersToolbar.tsx`](../../apps/web/src/components/eps/reports/ReportFiltersToolbar.tsx). The report page was reduced from 788 to 619 lines during this sequence; remaining content is an orchestrator plus report-specific dialogs and table wiring.
+Extracted report export builders into [`report-export.ts`](../../../apps/web/src/app/eps/reports/report-export.ts), template/preset application into [`report-template-handlers.ts`](../../../apps/web/src/app/eps/reports/report-template-handlers.ts), statistics into [`ReportStatsCards.tsx`](../../../apps/web/src/components/eps/reports/ReportStatsCards.tsx), and filters into [`ReportFiltersToolbar.tsx`](../../../apps/web/src/components/eps/reports/ReportFiltersToolbar.tsx). The report page was reduced from 788 to 619 lines during this sequence; remaining content is an orchestrator plus report-specific dialogs and table wiring.
 
 Verification: web lint, web TypeScript check, 160 tests, quality baseline, and `git diff --check` passed after each extraction stage.

@@ -16,7 +16,7 @@ gates: [lint, tsc, check:quality]
 
 ## Problem
 
-[`apps/web/src/components/wms/WmsOperationItemsStep.tsx`](../../apps/web/src/components/wms/WmsOperationItemsStep.tsx)
+[`apps/web/src/components/wms/WmsOperationItemsStep.tsx`](../../../apps/web/src/components/wms/WmsOperationItemsStep.tsx)
 is 602 lines with cx 1 (pure markup — low risk, size-only finding).
 
 ## Scope
@@ -40,7 +40,7 @@ components. This is a pure JSX split; no logic changes expected.
 ## Result
 
 Extracted row presentation into
-[`WmsOperationItemRow.tsx`](../../apps/web/src/components/wms/WmsOperationItemRow.tsx).
+[`WmsOperationItemRow.tsx`](../../../apps/web/src/components/wms/WmsOperationItemRow.tsx).
 The parent retains item state, stock calculations, add/remove handlers, and
 validation. The source file is now 545 lines and the table row logic is isolated
 without changing the request or interaction flow.

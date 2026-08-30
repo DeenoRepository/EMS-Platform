@@ -16,11 +16,11 @@ gates: [lint, tsc, check:quality]
 
 ## Problem
 
-[`apps/web/src/components/eps/EquipmentWizardForm.tsx`](../../apps/web/src/components/eps/EquipmentWizardForm.tsx)
+[`apps/web/src/components/eps/EquipmentWizardForm.tsx`](../../../apps/web/src/components/eps/EquipmentWizardForm.tsx)
 is 757 lines. `handleSave` is cx 13. This is a presentation-heavy file
-(low real risk) — see [`plans/PHASE-I-NOTES.md`](../PHASE-I-NOTES.md) for
+(low real risk) — see [`plans/PHASE-I-NOTES.md`](../../PHASE-I-NOTES.md) for
 shared phase-I rules (stop-files, known false-positives) and
-[`.agents/rules/code_quality.md`](../../.agents/rules/code_quality.md) for
+[`.agents/rules/code_quality.md`](../../../.agents/rules/code_quality.md) for
 the general priority rule (cx over raw score).
 
 ## Scope

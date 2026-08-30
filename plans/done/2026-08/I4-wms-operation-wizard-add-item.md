@@ -16,14 +16,14 @@ gates: [lint, tsc, check:quality]
 
 ## Problem
 
-[`apps/web/src/components/wms/WmsOperationWizardDialog.tsx`](../../apps/web/src/components/wms/WmsOperationWizardDialog.tsx)
+[`apps/web/src/components/wms/WmsOperationWizardDialog.tsx`](../../../apps/web/src/components/wms/WmsOperationWizardDialog.tsx)
 is 575 lines; render block is 174 lines; `handleAddItem` is 68 lines (cx 11.4
 average for the file).
 
 ## Scope
 
 Extract `handleAddItem` line-merging/validation logic into a pure function
-in [`operation-submit.ts`](../../apps/web/src/components/wms/operation-submit.ts)
+in [`operation-submit.ts`](../../../apps/web/src/components/wms/operation-submit.ts)
 (already exists from C15) or an adjacent module if scope differs from submit
 payload building.
 
@@ -43,7 +43,7 @@ payload building.
 ## Result
 
 Extracted item validation, stock checks, write-off metadata, and line-item
-construction into [`operation-item.ts`](../../apps/web/src/components/wms/operation-item.ts).
+construction into [`operation-item.ts`](../../../apps/web/src/components/wms/operation-item.ts).
 The dialog retains state updates and snackbar wiring while `handleAddItem`
 delegates pure business logic.
 
