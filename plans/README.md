@@ -39,7 +39,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 
 ---
 
-## Done (50)
+## Done (51)
 
 | ID | Title | Phase | Closed | Commits |
 |---|---|---|---|---|
@@ -92,4 +92,5 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [K1](done/2026-08/K1-inventory-print-xss.md) | Устранить DOM XSS в печатной форме инвентаризации | K | 2026-08-30 | pending |
 | [K2](done/2026-08/K2-auth-declaration-build.md) | Восстановить declaration build пакета auth | K | 2026-08-30 | da70388 |
 | [K3](done/2026-08/K3-story-links-gate.md) | Исправить ссылки story I1–I8 и закрепить docs gate | K | 2026-08-30 | pending |
+| [K4.1.1](done/2026-08/K4.1.1-sidebar-state-application.md) | Вынести применение operational counters в Sidebar | K | 2026-08-30 | pending |
 | [K7](done/2026-08/K7-test-db-isolation.md) | Устранить внешнюю БД из unit-тестов auth-guard | K | 2026-08-30 | 2f56249 |
