@@ -84,7 +84,8 @@ helpers, добавлены 5 focused tests. Публичный API и един�
 зелёные; quality baseline после stage показывает 23 F-grade files и 2339 code
 smells в `apps/web/src`.
 
-Повторное измерение после K4.4: максимальный реальный кандидат —
-`WmsOperationWizardDialog` с `cx 42` / 178 строками. Он выбран следующей
-bounded-подисторией: вынести только submit orchestration/payload execution без
-изменения endpoint contracts, UI behavior или K6.
+Пятое измерение после K4.4: максимальный реальный кандидат —
+`WmsOperationWizardDialog` с `cx 42` / 178 строками. Bounded-подистория K4.5
+вынесла submit orchestration/payload execution, снизив `handleSubmit` до
+`cx 5` / 27 строк. Фокусированные тесты и все gates зелёные; закрыта коммитом
+`669ddc3`, ledger оформлен коммитом `4a95456`.
