@@ -37,40 +37,7 @@ import { MroExecutionWizardDialog } from '@/components/mro';
 import { formatDateTime, formatDate, PERMISSIONS } from '@ems/shared';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
-
-interface MaintenanceHistoryItem {
-  id: string;
-  equipmentId: string;
-  planId: string | null;
-  scheduledDate: string;
-  actualDate: string | null;
-  status: string;
-  notes: string | null;
-  createdAt: string;
-  equipment: {
-    id: string;
-    name: string;
-    inventoryNumber: string | null;
-    serialNumber: string | null;
-    location: string | null;
-    status: string;
-  };
-  plan?: {
-    id: string;
-    name: string;
-    frequency: string;
-    checklist?: {
-      id: string;
-      title: string;
-      items: Array<{ id: string; text: string; isRequired: boolean }>;
-    } | null;
-  } | null;
-  completedBy?: {
-    id: string;
-    displayName: string;
-    ldapLogin: string;
-  } | null;
-}
+import { buildMaintenanceHistoryView, type MaintenanceHistoryItem } from './history-model';
 
 const HISTORY_COLUMNS: TableColumnOption[] = [
   { id: 'actualDate', label: 'Дата и время завершения', defaultVisible: true },
@@ -136,36 +103,10 @@ export default function MroHistoryPage() {
     fetchHistory();
   };
 
-  const filteredHistory = useMemo(() => {
-    let list = schedules.filter((sch) => {
-      if (!search) return true;
-      const q = search.toLowerCase();
-      const eqName = sch.equipment?.name?.toLowerCase() || '';
-      const eqInv = sch.equipment?.inventoryNumber?.toLowerCase() || '';
-      const planName = sch.plan?.name?.toLowerCase() || '';
-      const user = sch.completedBy?.displayName?.toLowerCase() || '';
-      return eqName.includes(q) || eqInv.includes(q) || planName.includes(q) || user.includes(q);
-    });
-
-    list.sort((a, b) => {
-      let valA: any = a.actualDate || a.scheduledDate;
-      let valB: any = b.actualDate || b.scheduledDate;
-
-      if (sortField === 'equipment') {
-        valA = a.equipment?.name || '';
-        valB = b.equipment?.name || '';
-      } else if (sortField === 'completedBy') {
-        valA = a.completedBy?.displayName || '';
-        valB = b.completedBy?.displayName || '';
-      }
-
-      if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
-      if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
-
-    return list;
-  }, [schedules, search, sortField, sortDirection]);
+  const filteredHistory = useMemo(
+    () => buildMaintenanceHistoryView(schedules, search, sortField, sortDirection),
+    [schedules, search, sortField, sortDirection]
+  );
 
   // Pagination state
   const [page, setPage] = useState(0);
