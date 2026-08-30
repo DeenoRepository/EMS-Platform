@@ -22,12 +22,11 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (5)
+## Active (4)
 
 | ID | Title | Phase | Priority | Risk | Skills | Opened |
 |---|---|---|---|---|---|---|
 | [K4](active/K4-complexity-remediation.md) | РЎРЅРёР·РёС‚СЊ СЂРµР°Р»СЊРЅСѓСЋ С†РёРєР»РѕРјР°С‚РёС‡РµСЃРєСѓСЋ СЃР»РѕР¶РЅРѕСЃС‚СЊ РїСЂРёРѕСЂРёС‚РµС‚РЅС‹С… С„СѓРЅРєС†РёР№ | K | P2 | medium | senior-frontend, senior-backend, zero-hallucination-coder | 2026-08-30 |
-| [K4.1](active/K4.1-sidebar-load-data.md) | Декомпозировать загрузку operational counters в Sidebar | K | P2 | medium | senior-frontend, zero-hallucination-coder | 2026-08-30 |
 | [K4.2](active/K4.2-wms-warehouses-handle-submit.md) | Декомпозировать сохранение складов WMS | K | P2 | medium | senior-frontend, zero-hallucination-coder | 2026-08-30 |
 | [K4.3](active/K4.3-setup-ldap-auth-handler.md) | Декомпозировать проверку LDAP-аутентификации администратора | K | P2 | medium | senior-frontend, zero-hallucination-coder | 2026-08-30 |
 | [K6](active/K6-eslint-cli-migration.md) | Перевести web lint с next lint на ESLint CLI | K | P3 | low | senior-frontend, ci-cd-pipeline-builder | 2026-08-30 |
@@ -40,7 +39,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 
 ---
 
-## Done (61)
+## Done (62)
 
 | ID | Title | Phase | Closed | Commits |
 |---|---|---|---|---|
@@ -93,6 +92,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [K1](done/2026-08/K1-inventory-print-xss.md) | Устранить DOM XSS в печатной форме инвентаризации | K | 2026-08-30 | pending |
 | [K2](done/2026-08/K2-auth-declaration-build.md) | Восстановить declaration build пакета auth | K | 2026-08-30 | da70388 |
 | [K3](done/2026-08/K3-story-links-gate.md) | Исправить ссылки story I1–I8 и закрепить docs gate | K | 2026-08-30 | pending |
+| [K4.1](done/2026-08/K4.1-sidebar-load-data.md) | Декомпозировать загрузку operational counters в Sidebar | K | 2026-08-30 | 2f1fc6d, 9516917, 6ad4412, 4e458e1 |
 | [K4.1.1](done/2026-08/K4.1.1-sidebar-state-application.md) | Вынести применение operational counters в Sidebar | K | 2026-08-30 | pending |
 | [K4.4](done/2026-08/K4.4-eps-import-slug-builder.md) | Декомпозировать генератор ключа пользовательского поля EPS | K | 2026-08-30 | 8bad0d4 |
 | [K4.5](done/2026-08/K4.5-wms-operation-wizard-submit.md) | Декомпозировать submit orchestration WMS operation wizard | K | 2026-08-30 | 669ddc3 |
