@@ -64,13 +64,13 @@ false-positive РєР°РЅРґРёРґР°С‚С‹ РёСЃРєР»СЋС‡�
 orchestration/response mapping `loadData`, Р·Р°С‚РµРј РїРѕРєСЂС‹С‚СЊ РІРµС‚РІР»РµРЅРёСЏ pure helper
 С‚РµСЃС‚Р°РјРё Рё РїСЂРѕРІРµСЂРёС‚СЊ РѕС‚СЃСѓС‚СЃС‚РІРёРµ РёР·РјРµРЅРµРЅРёР№ sidebar/API-РїРѕРІРµРґРµРЅРёСЏ.
 
-Р’С‚РѕСЂР°СЏ bounded-РїРѕРґРёСЃС‚РѕСЂРёСЏ [`K4.2-wms-warehouses-handle-submit.md`](K4.2-wms-warehouses-handle-submit.md)
+Р’С‚РѕСЂР°СЏ bounded-РїРѕРґРёСЃС‚РѕСЂРёСЏ [`K4.2-wms-warehouses-handle-submit.md`](../done/2026-08/K4.2-wms-warehouses-handle-submit.md)
 Р·Р°РєСЂС‹С‚Р° РєРѕРјРјРёС‚РѕРј `5ef7e08`: request execution Рё response mapping СЃРѕС…СЂР°РЅРµРЅРёСЏ
 СЃРєР»Р°РґРѕРІ РІС‹РЅРµСЃРµРЅС‹ РёР· `handleSubmit`, РґРѕР±Р°РІР»РµРЅС‹ focused tests, Р° РѕСЃС‚Р°С‚РѕС‡РЅР°СЏ
 СЃР»РѕР¶РЅРѕСЃС‚СЊ `cx 12` РґРѕРєСѓРјРµРЅС‚РёСЂРѕРІР°РЅР° РєР°Рє orchestration boundary СЃ РґРІСѓРјСЏ
 РЅРµСѓСЃС‚СЂР°РЅРёРјС‹РјРё Р±РµР· РёР·РјРµРЅРµРЅРёСЏ РїРѕРІРµРґРµРЅРёСЏ РІРµС‚РІР»РµРЅРёСЏРјРё. Р’СЃРµ gates Р·РµР»С‘РЅС‹Рµ.
 
-РўСЂРµС‚СЊСЏ bounded-РїРѕРґРёСЃС‚РѕСЂРёСЏ [`K4.3-setup-ldap-auth-handler.md`](K4.3-setup-ldap-auth-handler.md)
+РўСЂРµС‚СЊСЏ bounded-РїРѕРґРёСЃС‚РѕСЂРёСЏ [`K4.3-setup-ldap-auth-handler.md`](../done/2026-08/K4.3-setup-ldap-auth-handler.md)
 СЂРµР°Р»РёР·РѕРІР°РЅР° 2026-08-30: response Рё network-error mapping РїСЂРѕРІРµСЂРєРё LDAP
 РІС‹РЅРµСЃРµРЅС‹ РёР· `handleTestLdapAuth`, РґРѕР±Р°РІР»РµРЅС‹ focused tests, Р° complexity С„СѓРЅРєС†РёРё
 СЃРЅРёР¶РµРЅР° СЃ `cx 13` РґРѕ `cx 4`. РџРѕР»РЅС‹Рµ test, lint, web tsc Рё quality gates Р·РµР»С‘РЅС‹Рµ;

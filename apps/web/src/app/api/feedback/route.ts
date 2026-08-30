@@ -7,6 +7,10 @@ import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { saveFile } from '@/lib/storage';
 import { logger } from '@/lib/logger';
+import {
+  parseFeedbackJsonInput,
+  parseFeedbackMultipartInput,
+} from './input-model';
 
 export const dynamic = 'force-dynamic';
 
@@ -126,51 +130,20 @@ export async function POST(req: NextRequest) {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
 
-    let title = '';
-    let description = '';
-    let type = 'BUG';
-    let feedbackModule = 'GENERAL';
-    let priority = 'MEDIUM';
-    let pageUrl: string | null = null;
-    let browserInfo: any = null;
-    const uploadedFiles: File[] = [];
-
     const contentType = req.headers.get('content-type') || '';
-
-    if (contentType.includes('multipart/form-data')) {
-      const formData = await req.formData();
-      title = (formData.get('title') as string) || '';
-      description = (formData.get('description') as string) || '';
-      type = (formData.get('type') as string) || 'BUG';
-      feedbackModule = (formData.get('module') as string) || 'GENERAL';
-      priority = (formData.get('priority') as string) || 'MEDIUM';
-      pageUrl = (formData.get('pageUrl') as string) || null;
-
-      const rawBrowserInfo = formData.get('browserInfo');
-      if (rawBrowserInfo && typeof rawBrowserInfo === 'string') {
-        try {
-          browserInfo = JSON.parse(rawBrowserInfo);
-        } catch {
-          browserInfo = null;
-        }
-      }
-
-      const files = formData.getAll('files');
-      for (const f of files) {
-        if (f instanceof File && f.size > 0) {
-          uploadedFiles.push(f);
-        }
-      }
-    } else {
-      const body = await req.json();
-      title = body.title || '';
-      description = body.description || '';
-      type = body.type || 'BUG';
-      feedbackModule = body.module || 'GENERAL';
-      priority = body.priority || 'MEDIUM';
-      pageUrl = body.pageUrl || null;
-      browserInfo = body.browserInfo || null;
-    }
+    const input = contentType.includes('multipart/form-data')
+      ? parseFeedbackMultipartInput(await req.formData())
+      : parseFeedbackJsonInput(await req.json());
+    const {
+      title,
+      description,
+      type,
+      feedbackModule,
+      priority,
+      pageUrl,
+      browserInfo,
+      uploadedFiles,
+    } = input;
 
     if (!title.trim()) {
       return NextResponse.json({ success: false, error: 'Укажите тему обращения' }, { status: 400 });
@@ -201,7 +174,7 @@ export async function POST(req: NextRequest) {
         module: feedbackModule as any,
         priority: priority as any,
         pageUrl,
-        browserInfo,
+        browserInfo: browserInfo ?? {},
         createdById: user.userId,
       },
       include: {
