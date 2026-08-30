@@ -1,15 +1,15 @@
 ---
 id: K6
 title: Перевести web lint с next lint на ESLint CLI
-status: active
+status: done
 phase: K
 priority: P3
 risk: low
 skills: [senior-frontend, ci-cd-pipeline-builder]
 opened: 2026-08-30
-closed: null
-commits: []
-gates: [lint, test, tsc, build, check:docs]
+closed: 2026-08-30
+commits: [769b3a5]
+gates: [lint, test, tsc, build, check:docs, plans:check]
 ---
 
 # K6 — Перевести web lint с next lint на ESLint CLI
@@ -39,11 +39,14 @@ Next.js 15 предупреждает, что команда будет удал
 
 ## Definition of Done
 
-- [ ] `pnpm --filter @ems/web lint` не вызывает deprecated `next lint`.
-- [ ] ESLint проверяет те же production source paths и проектные ограничения.
-- [ ] Текущий код проходит lint без warnings/errors.
-- [ ] Full gate green: lint, tests, web tsc, monorepo build и docs check.
+- [x] `pnpm --filter @ems/web lint` не вызывает deprecated `next lint`.
+- [x] ESLint проверяет `src` с расширениями `.js`, `.jsx`, `.ts`, `.tsx`; ESLint defaults исключают generated outputs.
+- [x] Текущий код проходит lint без warnings/errors.
+- [x] Full gate green: lint, tests, web tsc, monorepo build, docs check и plans check.
 
 ## Result
 
-Заполняется при закрытии story.
+- Updated only [`apps/web/package.json`](../../apps/web/package.json:9): `lint` now runs `eslint src --ext .js,.jsx,.ts,.tsx`.
+- Preserved [`apps/web/.eslintrc.json`](../../apps/web/.eslintrc.json:1) unchanged, including `next/core-web-vitals`, restricted MUI imports, and `no-console` policy.
+- No direct current CI or documentation command reference required updating; CI continues to invoke the package/monorepo lint scripts.
+- Verification passed: web lint, full monorepo lint, 187 tests, web TypeScript check, monorepo build, docs links, and plans check.

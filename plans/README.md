@@ -22,11 +22,9 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (1)
+## Active (0)
 
-| ID | Title | Phase | Priority | Risk | Skills | Opened |
-|---|---|---|---|---|---|---|
-| [K6](active/K6-eslint-cli-migration.md) | Перевести web lint с next lint на ESLint CLI | K | P3 | low | senior-frontend, ci-cd-pipeline-builder | 2026-08-30 |
+_No active stories._
 
 ---
 
@@ -36,7 +34,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 
 ---
 
-## Done (67)
+## Done (68)
 
 | ID | Title | Phase | Closed | Commits |
 |---|---|---|---|---|
@@ -106,4 +104,5 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [K4.13](done/2026-08/K4.13-feedback-create-input-model.md) | Декомпозировать разбор входных данных создания обращений feedback | K | 2026-08-30 | 069f967 |
 | [K4.14](done/2026-08/K4.14-wms-transfers-where-model.md) | Декомпозировать построение фильтра списка перемещений WMS | K | 2026-08-30 | 92ede6f |
 | [K5](done/2026-08/K5-ui-console-cleanup.md) | Заменить остаточные console-вызовы в UI и сервисах | K | 2026-08-30 | 90a2134, 44550a8, b0f4c5f, d1c8672, 50dade2, pending |
+| [K6](done/2026-08/K6-eslint-cli-migration.md) | Перевести web lint с next lint на ESLint CLI | K | 2026-08-30 | 769b3a5 |
 | [K7](done/2026-08/K7-test-db-isolation.md) | Устранить внешнюю БД из unit-тестов auth-guard | K | 2026-08-30 | 2f56249 |
