@@ -8,7 +8,7 @@ risk: medium
 skills: [senior-frontend, senior-backend, zero-hallucination-coder]
 opened: 2026-08-30
 closed: null
-commits: [5ef7e08, 6dd9624]
+commits: [5ef7e08, 6dd9624, pending]
 gates: [test, lint, tsc, check:quality]
 ---
 
@@ -89,3 +89,12 @@ smells в `apps/web/src`.
 вынесла submit orchestration/payload execution, снизив `handleSubmit` до
 `cx 5` / 27 строк. Фокусированные тесты и все gates зелёные; закрыта коммитом
 `669ddc3`, ledger оформлен коммитом `4a95456`.
+
+Шестое измерение 2026-08-30: максимальный проверенный реальный кандидат —
+[`getSystemSettings()`](../../apps/web/src/lib/system-settings-service.ts:29) с
+`cx 32` и 65 строками. Bounded-подистория K4.6 вынесла pure config construction
+и env/database fallback mapping в
+[`system-settings-builder.ts`](../../apps/web/src/lib/system-settings-builder.ts),
+добавла 4 focused tests и снизила service function до `cx 4` / 28 строк.
+Targeted/full tests, lint, web tsc, quality и docs links зелёные; stage готова к
+закрывающему Conventional Commit.

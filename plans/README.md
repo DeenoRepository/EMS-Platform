@@ -40,7 +40,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 
 ---
 
-## Done (54)
+## Done (55)
 
 | ID | Title | Phase | Closed | Commits |
 |---|---|---|---|---|
@@ -96,5 +96,6 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [K4.1.1](done/2026-08/K4.1.1-sidebar-state-application.md) | Вынести применение operational counters в Sidebar | K | 2026-08-30 | pending |
 | [K4.4](done/2026-08/K4.4-eps-import-slug-builder.md) | Декомпозировать генератор ключа пользовательского поля EPS | K | 2026-08-30 | 8bad0d4 |
 | [K4.5](done/2026-08/K4.5-wms-operation-wizard-submit.md) | Декомпозировать submit orchestration WMS operation wizard | K | 2026-08-30 | 669ddc3 |
+| [K4.6](done/2026-08/K4.6-system-settings-builder.md) | Декомпозировать сборку системных настроек | K | 2026-08-30 | pending |
 | [K5](done/2026-08/K5-ui-console-cleanup.md) | Заменить остаточные console-вызовы в UI и сервисах | K | 2026-08-30 | 90a2134, 44550a8, b0f4c5f, d1c8672, 50dade2, pending |
 | [K7](done/2026-08/K7-test-db-isolation.md) | Устранить внешнюю БД из unit-тестов auth-guard | K | 2026-08-30 | 2f56249 |
