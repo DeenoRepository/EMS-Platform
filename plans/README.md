@@ -22,11 +22,10 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (6)
+## Active (5)
 
 | ID | Title | Phase | Priority | Risk | Skills | Opened |
 |---|---|---|---|---|---|---|
-| [I3](active/I3-wms-operation-items-step.md) | Split WmsOperationItemsStep table/row presentation | I | P2 | low | senior-frontend | 2026-08-30 |
 | [I4](active/I4-wms-operation-wizard-add-item.md) | Extract handleAddItem from WmsOperationWizardDialog | I | P2 | low | senior-frontend | 2026-08-30 |
 | [I5](active/I5-eps-reports-page-decomposition.md) | Decompose eps/reports/page.tsx (largest file, 15 functions) | I | P2 | low | senior-frontend | 2026-08-30 |
 | [I6](active/I6-wms-stock-page-load-zones.md) | Extract loadZones from wms/stock/page.tsx | I | P2 | low | senior-frontend | 2026-08-30 |
@@ -41,7 +40,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 
 ---
 
-## Done (40)
+## Done (41)
 
 | ID | Title | Phase | Closed | Commits |
 |---|---|---|---|---|
@@ -82,6 +81,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [H5](done/2026-08/H5-eps-import-infer-section.md) | Replace inferSection cascade with rule table (cx 15) | H | 2026-08-30 | 36eb1f3 |
 | [I1](done/2026-08/I1-equipment-wizard-form-steps.md) | Decompose EquipmentWizardForm into step components | I | 2026-08-30 | e8ee97d |
 | [I2](done/2026-08/I2-mro-execution-wizard-submit.md) | Extract MroExecutionWizardDialog submit module | I | 2026-08-30 | b10ff28 |
+| [I3](done/2026-08/I3-wms-operation-items-step.md) | Split WmsOperationItemsStep table/row presentation | I | 2026-08-30 | cf9b05c |
 | [J1](done/2026-08/J1-mock-prisma-auth-guard-tests.md) | Mock Prisma in auth-guard tests to remove DB dependency | J | 2026-08-30 | 9514761 |
 | [J2](done/2026-08/J2-quality-baseline-thresholds.md) | Raise quality baseline thresholds after phases G/H closed | J | 2026-08-30 | d576796 |
 | [J3](done/2026-08/J3-documentation-sync.md) | Documentation synchronization (E1, E3 follow-up) | J | 2026-08-30 | — |
