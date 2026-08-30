@@ -1,14 +1,14 @@
 ---
 id: I7
 title: Extract admin/feedback filters (cx 17)
-status: active
+status: done
 phase: I
 priority: P2
 risk: low
 skills: [senior-frontend]
 opened: 2026-08-30
-closed: null
-commits: []
+closed: 2026-08-30
+commits: [fe011e9]
 gates: [lint, tsc, check:quality]
 ---
 
@@ -33,10 +33,12 @@ consistent with `FilterToolbar` usage elsewhere (per
 
 ## Definition of Done
 
-- [ ] Page component cx ≤ 10.
-- [ ] Filter behavior (status, date range, search) unchanged.
-- [ ] Full gate green: lint, tsc, `pnpm test`, quality baseline.
+- [x] Page component cx ≤ 10.
+- [x] Filter behavior (status, date range, search) unchanged.
+- [x] Full gate green: lint, tsc, `pnpm test`, quality baseline.
 
 ## Result
 
-_Not yet closed._
+Extracted filter query and active-count logic into [`feedback-filters.ts`](../../apps/web/src/app/admin/feedback/feedback-filters.ts) and filter toolbar presentation into [`AdminFeedbackFilters.tsx`](../../apps/web/src/components/feedback/AdminFeedbackFilters.tsx). The page retains API fetches, mutations, pagination, and ticket actions while delegating filter UI and query construction.
+
+Verification: web lint, web TypeScript check, 160 tests, quality baseline, and `git diff --check` passed.

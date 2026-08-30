@@ -22,11 +22,10 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (2)
+## Active (1)
 
 | ID | Title | Phase | Priority | Risk | Skills | Opened |
 |---|---|---|---|---|---|---|
-| [I7](active/I7-admin-feedback-filters.md) | Extract admin/feedback filters (cx 17) | I | P2 | low | senior-frontend | 2026-08-30 |
 | [I8](active/I8-login-page-perform-login.md) | Extract performLogin from login/page.tsx (cx 12) | I | P2 | low | senior-frontend, senior-security | 2026-08-30 |
 
 ---
@@ -37,7 +36,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 
 ---
 
-## Done (44)
+## Done (45)
 
 | ID | Title | Phase | Closed | Commits |
 |---|---|---|---|---|
@@ -82,6 +81,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [I4](done/2026-08/I4-wms-operation-wizard-add-item.md) | Extract handleAddItem from WmsOperationWizardDialog | I | 2026-08-30 | 834bb2f |
 | [I5](done/2026-08/I5-eps-reports-page-decomposition.md) | Decompose eps/reports/page.tsx (largest file, 15 functions) | I | 2026-08-30 | 1a53512, 0acf619, 185ee2d, c27832e |
 | [I6](done/2026-08/I6-wms-stock-page-load-zones.md) | Extract loadZones from wms/stock/page.tsx | I | 2026-08-30 | 1c06fce |
+| [I7](done/2026-08/I7-admin-feedback-filters.md) | Extract admin/feedback filters (cx 17) | I | 2026-08-30 | fe011e9 |
 | [J1](done/2026-08/J1-mock-prisma-auth-guard-tests.md) | Mock Prisma in auth-guard tests to remove DB dependency | J | 2026-08-30 | 9514761 |
 | [J2](done/2026-08/J2-quality-baseline-thresholds.md) | Raise quality baseline thresholds after phases G/H closed | J | 2026-08-30 | d576796 |
 | [J3](done/2026-08/J3-documentation-sync.md) | Documentation synchronization (E1, E3 follow-up) | J | 2026-08-30 | — |
