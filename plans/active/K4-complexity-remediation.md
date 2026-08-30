@@ -1,0 +1,55 @@
+---
+id: K4
+title: Снизить реальную цикломатическую сложность приоритетных функций
+status: active
+phase: K
+priority: P2
+risk: medium
+skills: [senior-frontend, senior-backend, zero-hallucination-coder]
+opened: 2026-08-30
+closed: null
+commits: []
+gates: [test, lint, tsc, check:quality]
+---
+
+# K4 — Снизить реальную цикломатическую сложность приоритетных функций
+
+## Problem
+
+После Phase I в web остаются функции выше нормативного порога сложности.
+Приоритет инспекции — реальная бизнес-логика, а не известные TSX
+false-positive границы render-функций. Наиболее ценные цели: обработчик
+сохранения WMS warehouses, setup LDAP test handler, загрузчик статистики WMS,
+`makeEnglishSlug`, а также отдельные SRM/WMS dialog handlers.
+
+## Scope
+
+- Выполнять декомпозицию отдельными bounded-подисториями, по одной логической
+  области за commit.
+- Сначала покрыть чистые builders/validators/models тестами, затем сократить
+  orchestration handlers.
+- Сохранить API-контракты, права, rate limiting, UI-поведение и Prisma semantics.
+- Не рефакторить presentation-only F-grade файлы только ради score.
+- Не выполнять массовую замену layout magic numbers или типов.
+
+## Steps
+
+1. Повторно измерить кандидатов через quality checker и проверить границы
+   функций чтением исходников.
+2. Создать отдельную story для первой функции с максимальным реальным `cx`.
+3. Вынести pure validation/payload/response helpers рядом с владельцем.
+4. Добавить тесты на ветвления и ошибки, не меняя внешний контракт.
+5. Повторить для следующих кандидатов, закрывая каждую story отдельным
+   Conventional Commit.
+
+## Definition of Done
+
+- [ ] Для каждой подистории целевая функция имеет complexity ≤ 10 либо
+  документированное обоснование исключения.
+- [ ] Поведение покрыто тестами до/после рефакторинга.
+- [ ] Нет новых F-grade regressions, lint/tsc/test gates зелёные.
+- [ ] Изменения не смешивают security, UI и unrelated refactoring.
+
+## Result
+
+Заполняется при закрытии story или после разделения на конкретные подистории.
