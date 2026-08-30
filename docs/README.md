@@ -26,6 +26,8 @@ stale by definition and should be replaced with a link.
 | How to configure the Jira/SRM integration | [`docs/operations/JIRA_SRM_SETUP.md`](operations/JIRA_SRM_SETUP.md) |
 | Full product/technical specification | [`docs/specs/technical_specification.md`](specs/technical_specification.md) |
 | Agent entry contract, hard rules, skill routing | [`AGENTS.md`](../AGENTS.md) |
+| Available maintenance, deployment, import, and audit scripts | [`scripts/README.md`](../scripts/README.md) |
+| Docker-based offline deployment | [`docs/operations/AIRGAP_DOCKER_DEPLOYMENT.md`](operations/AIRGAP_DOCKER_DEPLOYMENT.md) |
 
 ## Directory layout
 
@@ -53,6 +55,13 @@ plans/                            ← work tracking, NOT under docs/
 ├── active/                       ← one file per open story
 └── done/YYYY-MM/                 ← one file per closed story, immutable
 ```
+
+## Scripts and generated checks
+
+The script catalog is [`scripts/README.md`](../scripts/README.md). It
+classifies manual operational tools separately from CI quality/security gates
+and records required inputs and mutation risk. Generated documentation is
+validated by [`scripts/check-doc-links.mjs`](../scripts/check-doc-links.mjs).
 
 ## The one rule that keeps this from rotting again
 

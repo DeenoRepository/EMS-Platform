@@ -53,10 +53,8 @@ Copy-Item "scripts\airgap-install.ps1" "$PackageDir\install.ps1"
 Copy-Item "scripts\backup.sh" "$PackageDir\scripts\backup.sh"
 Copy-Item "scripts\backup.ps1" "$PackageDir\scripts\backup.ps1"
 
-if (Test-Path "docs\AIRGAP_OFFLINE_DEPLOYMENT.md") {
-    Copy-Item "docs\AIRGAP_OFFLINE_DEPLOYMENT.md" "$PackageDir\docs\"
-    Copy-Item "docs\AIRGAP_OFFLINE_DEPLOYMENT.md" "$PackageDir\README.md"
-}
+Copy-Item "docs\operations\AIRGAP_DOCKER_DEPLOYMENT.md" "$PackageDir\docs\"
+Copy-Item "docs\operations\AIRGAP_DOCKER_DEPLOYMENT.md" "$PackageDir\README.md"
 
 # 7. Create Final Transferable Zip
 Write-Host "🗜️ Создание итогового дистрибутива: $ArchiveName..." -ForegroundColor Yellow

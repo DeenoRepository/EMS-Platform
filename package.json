@@ -9,6 +9,7 @@
     "lint": "turbo run lint",
     "check:theme": "node scripts/check-theme-tokens.mjs",
     "check:quality": "node scripts/check-quality-baseline.mjs",
+    "check:docs": "node scripts/check-doc-links.mjs",
     "test": "node scripts/test-runner.mjs",
     "start:prod": "pnpm --filter @ems/web start",
     "prod:up": "docker compose -f docker-compose.prod.yml up -d --build",

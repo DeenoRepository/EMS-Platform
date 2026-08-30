@@ -24,8 +24,12 @@ first to determine what remained before extracting further.
 ## Scope
 
 10 functions (copy/delete/print handlers and related passport action logic)
-extracted into
-[`equipment-passport-actions.ts`](../../../apps/web/src/app/eps/[id]/equipment-passport-actions.ts).
+were extracted into the passport action module imported by
+[`apps/web/src/app/eps/[id]/page.tsx`](../../../apps/web/src/app/eps/[id]/page.tsx).
+The current import path is
+[`components/eps/equipment-passport-actions.ts`](../../../apps/web/src/components/eps/equipment-passport-actions.ts);
+this archived story retains the implementation outcome without asserting a
+stale path that no longer exists.
 
 ## Result
 

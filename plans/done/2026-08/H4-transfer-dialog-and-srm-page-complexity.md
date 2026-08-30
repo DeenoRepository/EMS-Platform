@@ -27,10 +27,10 @@ was form validation/UI). [`srm/page.tsx`](../../../apps/web/src/app/srm/page.tsx
   into
   [`transfer-request-submit.ts`](../../../apps/web/src/components/wms/transfer-request-submit.ts)
   (already existing module from C13).
-- H4.2: details-drawer data preparation extracted into a new
-  [`srm-issues-service.ts`](../../../apps/web/src/lib/srm-issues-service.ts)
+- H4.2: details-drawer data preparation extracted into
+  [`srm-issues-service.ts`](../../../apps/web/src/app/srm/srm-issues-service.ts)
   for fetch/sync, reusing the pattern already proven in
-  `srm-issue-sorting.ts`.
+  [`srm-issue-sorting.ts`](../../../apps/web/src/app/srm/srm-issue-sorting.ts).
 
 ## Result
 

@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "description": "Jira REST API Service for EMS Platform SRM Integration",
-  "main": "server.js",
+  "main": "server.ts",
   "scripts": {
-    "start": "node server.js",
+    "start": "tsx server.ts",
     "dev": "tsx server.ts"
   },
   "dependencies": {},

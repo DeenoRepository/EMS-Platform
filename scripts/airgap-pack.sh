@@ -53,10 +53,8 @@ cp scripts/airgap-install.ps1 "$PACKAGE_DIR/install.ps1"
 cp scripts/backup.sh "$PACKAGE_DIR/scripts/backup.sh"
 cp scripts/backup.ps1 "$PACKAGE_DIR/scripts/backup.ps1"
 
-if [ -f "docs/AIRGAP_OFFLINE_DEPLOYMENT.md" ]; then
-    cp docs/AIRGAP_OFFLINE_DEPLOYMENT.md "$PACKAGE_DIR/docs/"
-    cp docs/AIRGAP_OFFLINE_DEPLOYMENT.md "$PACKAGE_DIR/README.md"
-fi
+cp docs/operations/AIRGAP_DOCKER_DEPLOYMENT.md "$PACKAGE_DIR/docs/"
+cp docs/operations/AIRGAP_DOCKER_DEPLOYMENT.md "$PACKAGE_DIR/README.md"
 
 chmod +x "$PACKAGE_DIR/install.sh" "$PACKAGE_DIR/scripts/backup.sh"
 

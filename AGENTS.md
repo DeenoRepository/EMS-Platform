@@ -97,3 +97,4 @@
 | Незапланированная работа | [`plans/BACKLOG.md`](plans/BACKLOG.md) |
 | Текущие метрики качества | [`docs/quality/QUALITY_BASELINE.md`](docs/quality/QUALITY_BASELINE.md) |
 | Вся остальная документация | [`docs/README.md`](docs/README.md) |
+| Каталог скриптов и правила их использования | [`scripts/README.md`](scripts/README.md) |

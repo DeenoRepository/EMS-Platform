@@ -1,7 +1,8 @@
 # Дизайн-система и UI-компоненты — EMS-Platform
 
-> Обновлено: 2026-08-27 (по результатам аудита — 153 нарушения хардкода)  
-> Аудит-отчёт: [`docs/CODE_REVIEW_AUDIT.md`](../../docs/CODE_REVIEW_AUDIT.md)
+> Обновлено: 2026-08-30 (структурная реорганизация отчётности)
+> Актуальные проверки качества: [`docs/quality/QUALITY_BASELINE.md`](../../docs/quality/QUALITY_BASELINE.md)
+> История инспекций: [`docs/quality/inspections/`](../../docs/quality/inspections/)
 
 ---
 

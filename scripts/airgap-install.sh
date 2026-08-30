@@ -43,15 +43,11 @@ echo "✅ Docker-образы успешно зарегистрированы в
 # 3. Setup Production Environment Variables
 if [ ! -f ".env.production" ] && [ ! -f ".env" ]; then
     echo "⚙️ Создание файла конфигурации .env.production..."
-    if [ -f ".env.production.example" ]; then
-        cp .env.production.example .env.production
-    else
-        echo "DATABASE_URL=postgresql://postgres:postgres_secure_password@postgres:5432/ems_db?schema=public" > .env.production
-        echo "POSTGRES_USER=postgres" >> .env.production
-        echo "POSTGRES_PASSWORD=postgres_secure_password" >> .env.production
-        echo "POSTGRES_DB=ems_db" >> .env.production
-        echo "JWT_SECRET=super_secret_jwt_key_ems_platform_production_change_me_32chars" >> .env.production
+    if [ ! -f ".env.production.example" ]; then
+        echo "❌ Ошибка: .env.production.example не найден. Нельзя создавать конфигурацию с demo-секретами."
+        exit 1
     fi
+    cp .env.production.example .env.production
 
     # Generate random JWT secret if openssl or urandom is available
     if command -v openssl &> /dev/null; then

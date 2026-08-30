@@ -26,18 +26,12 @@ Set-Location $InstallDir
 
 # 3. Environment configuration
 if (-not (Test-Path ".env.production")) {
-    Write-Host "⚙️ Создание .env.production..." -ForegroundColor Yellow
-    if (Test-Path ".env.production.example") {
-        Copy-Item ".env.production.example" ".env.production"
-    } else {
-        @"
-DATABASE_URL="postgresql://postgres:postgres_secure_password@localhost:5432/ems_db?schema=public"
-JWT_SECRET="super_secret_jwt_key_ems_platform_production_change_me_32chars"
-PORT=3000
-NODE_ENV=production
-UPLOAD_DIR="$InstallDir\uploads"
-"@ | Out-File -FilePath ".env.production" -Encoding utf8
+    Write-Host "Создание .env.production..." -ForegroundColor Yellow
+    if (-not (Test-Path ".env.production.example")) {
+        throw ".env.production.example не найден. Нельзя создавать конфигурацию с demo-секретами."
     }
+    Copy-Item ".env.production.example" ".env.production"
+    Write-Host ".env.production создан из шаблона. Проверьте и замените все секреты перед запуском." -ForegroundColor Yellow
 }
 
 New-Item -ItemType Directory -Path "$InstallDir\uploads" -Force | Out-Null

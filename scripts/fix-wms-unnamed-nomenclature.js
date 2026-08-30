@@ -5,44 +5,10 @@
 
 const fs = require('fs');
 const path = require('path');
-
-function loadEnvFiles() {
-  const envCandidates = [
-    path.resolve(process.cwd(), '.env.production'),
-    path.resolve(process.cwd(), '.env'),
-    path.resolve(__dirname, '../.env.production'),
-    path.resolve(__dirname, '../.env'),
-    '/opt/ems-platform/.env.production',
-    '/opt/ems-platform/.env',
-  ];
-
-  for (const envPath of envCandidates) {
-    if (fs.existsSync(envPath)) {
-      try {
-        const envContent = fs.readFileSync(envPath, 'utf8');
-        envContent.split('\n').forEach((line) => {
-          const trimmed = line.trim();
-          if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
-            const idx = trimmed.indexOf('=');
-            const key = trimmed.substring(0, idx).trim();
-            const val = trimmed.substring(idx + 1).trim().replace(/^["']|["']$/g, '');
-            if (!process.env[key]) {
-              process.env[key] = val;
-            }
-          }
-        });
-      } catch (e) {
-        // ignore
-      }
-    }
-  }
-
-  if (!process.env.DATABASE_URL) {
-    process.env.DATABASE_URL = 'postgresql://ems_user:ems_secure_password_2026@localhost:5432/ems_db?schema=public';
-  }
-}
+const { loadEnvFiles, requireDatabaseUrl } = require('./lib/load-env');
 
 loadEnvFiles();
+requireDatabaseUrl();
 
 function getPrismaClient() {
   const candidates = [

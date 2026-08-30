@@ -74,7 +74,7 @@ chmod +x scripts/prod-deploy.sh
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-> Не используйте [`docker-compose.yml`](../docker-compose.yml) для production: это локальный development stack, который запускается только с явными значениями из `.env` и использует `NODE_ENV=development`. Для изолированной среды используйте [`docker-compose.offline.yml`](../docker-compose.offline.yml).
+> Не используйте [`docker-compose.yml`](../../docker-compose.yml) для production: это локальный development stack, который запускается только с явными значениями из `.env` и использует `NODE_ENV=development`. Для изолированной среды используйте [`docker-compose.offline.yml`](../../docker-compose.offline.yml).
 
 ---
 
@@ -84,7 +84,7 @@ docker compose -f docker-compose.prod.yml up -d --build
 1. Поместите SSL-сертификаты в каталог:
    * `docker/nginx/ssl/ems.crt`
    * `docker/nginx/ssl/ems.key`
-2. Раскомментируйте секцию `listen 443 ssl` в файле [`docker/nginx/nginx.conf`](../docker/nginx/nginx.conf).
+2. Раскомментируйте секцию `listen 443 ssl` в файле [`docker/nginx/nginx.conf`](../../docker/nginx/nginx.conf).
 3. Перезапустите контейнер Nginx:
    ```bash
    docker compose -f docker-compose.prod.yml restart nginx

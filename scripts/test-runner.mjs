@@ -35,7 +35,8 @@ const testFiles = [
 // modules loaded through Node's loader chain. tsx's CLI transforms test
 // files via a CJS `Module._compile` hook that bypasses this chain, so
 // `mock.module` is `undefined` there even with the flag set (see
-// docs/PROJECT_INSPECTION.md §7 Q1 / REMEDIATION_PLAN.md Story J1).
+// docs/quality/inspections/2026-08-30-inspection.md §7 Q1 /
+// plans/done/2026-08/J1-mock-prisma-auth-guard-tests.md).
 const child = spawn(
   process.execPath,
   ['--experimental-test-module-mocks', '--import', 'tsx', '--test', ...testFiles],

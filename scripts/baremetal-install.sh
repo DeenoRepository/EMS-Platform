@@ -47,20 +47,12 @@ cd "$INSTALL_DIR"
 # 5. Setup Production Environment (.env.production)
 if [ ! -f ".env.production" ]; then
     echo "⚙️ Создание файла конфигурации .env.production..."
-    RANDOM_JWT="ems_jwt_secret_$(openssl rand -hex 24 2>/dev/null || echo 'default_secure_secret_key_ems_32chars')"
-    cat << EOF > .env.production
-DATABASE_URL="postgresql://ems_user:ems_secure_password@localhost:5432/ems_db?schema=public"
-POSTGRES_USER=ems_user
-POSTGRES_PASSWORD=ems_secure_password
-POSTGRES_DB=ems_db
-JWT_SECRET="${RANDOM_JWT}"
-PORT=3000
-NODE_ENV=production
-UPLOAD_DIR="/opt/ems-platform/uploads"
-STORAGE_LOCAL_DIR="/opt/ems-platform/uploads"
-EOF
-    cp .env.production .env
-    echo "✅ Файл .env.production сформирован (DATABASE_URL настроен на localhost:5432/ems_db)."
+    if [ ! -f ".env.production.example" ]; then
+        echo "❌ Ошибка: .env.production.example не найден. Нельзя создавать конфигурацию с demo-секретами."
+        exit 1
+    fi
+    cp .env.production.example .env.production
+    echo "✅ Файл .env.production создан из шаблона. Проверьте и замените все секретные значения перед запуском."
 fi
 
 # Ensure .env exists for Prisma CLI auto-discovery
@@ -83,9 +75,9 @@ set -e
 
 if [ $PRISMA_STATUS -ne 0 ]; then
     echo "⚠️ Внимание: Не удалось автоматически синхронизировать схему БД."
-    echo "Убедитесь, что служба PostgreSQL запущена, база данных создана и пароль в .env.production верен:"
+    echo "Убедитесь, что служба PostgreSQL запущена, база данных создана и секреты в .env.production верны:"
     echo "  sudo systemctl status postgresql"
-    echo "  sudo -u postgres psql -c \"CREATE USER ems_user WITH PASSWORD 'ems_secure_password';\""
+    echo "  sudo -u postgres psql -c \"CREATE USER ems_user;\""
     echo "  sudo -u postgres psql -c \"CREATE DATABASE ems_db OWNER ems_user;\""
 fi
 
