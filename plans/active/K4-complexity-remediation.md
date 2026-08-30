@@ -77,9 +77,14 @@ orchestration/response mapping `loadData`, затем покрыть ветвл�
 stage ожидает отдельного Conventional Commit.
 
 Четвёртая bounded-подистория [`K4.4-eps-import-slug-builder.md`](../done/2026-08/K4.4-eps-import-slug-builder.md)
-реализована 2026-08-30: из `makeEnglishSlug` вынесены canonical lookup,
-translation и slug sanitization helpers, добавлены 5 focused tests. Публичный
-API и единственный consumer в `eps-import-matcher.ts` не изменены. Полные test,
-lint, web tsc и quality gates зелёные; quality baseline после stage показывает
-23 F-grade files и 2339 code smells в `apps/web/src`. Stage ожидает отдельного
-Conventional Commit.
+закрыта коммитом `8bad0d4` и оформлена ledger-коммитом `e68230a`: из
+`makeEnglishSlug` вынесены canonical lookup, translation и slug sanitization
+helpers, добавлены 5 focused tests. Публичный API и единственный consumer в
+`eps-import-matcher.ts` не изменены. Полные test, lint, web tsc и quality gates
+зелёные; quality baseline после stage показывает 23 F-grade files и 2339 code
+smells в `apps/web/src`.
+
+Повторное измерение после K4.4: максимальный реальный кандидат —
+`WmsOperationWizardDialog` с `cx 42` / 178 строками. Он выбран следующей
+bounded-подисторией: вынести только submit orchestration/payload execution без
+изменения endpoint contracts, UI behavior или K6.
