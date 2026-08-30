@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { WmsOperationStepContent } from './WmsOperationStepContent';
-import { buildOperationSubmitPayload } from './operation-submit';
+import { submitOperationRequest } from './operation-submit';
 import { buildOperationLineItem } from './operation-item';
 import MoveToInboxIcon from '@mui/icons-material/MoveToInbox';
 import PersonIcon from '@mui/icons-material/Person';
@@ -381,53 +381,19 @@ export function WmsOperationWizardDialog({
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      if (operationType === 'TRANSFER') {
-        const res = await fetch('/api/wms/transfers', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(buildOperationSubmitPayload({
-            operationType,
-            warehouseId,
-            targetWarehouseId,
-            equipmentId,
-            recipientName,
-            comment,
-            lineItems,
-          })),
-        });
-
-        const json = await res.json();
-        if (res.ok && json.success) {
-          enqueueSnackbar(json.message || 'Перемещение успешно оформлено и ожидает приемки получателем', { variant: 'success' });
-          onSuccess(json.data.id);
-          onClose();
-        } else {
-          enqueueSnackbar(json.error || 'Ошибка оформления перемещения', { variant: 'error' });
-        }
-        return;
-      }
-
-      const res = await fetch('/api/wms/operations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildOperationSubmitPayload({
-          operationType,
-          warehouseId,
-          targetWarehouseId,
-          equipmentId,
-          recipientName,
-          comment,
-          lineItems,
-        })),
+      const outcome = await submitOperationRequest({
+        operationType,
+        warehouseId,
+        targetWarehouseId,
+        equipmentId,
+        recipientName,
+        comment,
+        lineItems,
       });
-
-      const json = await res.json();
-      if (res.ok && json.success) {
-        enqueueSnackbar('Складская операция успешно проведена', { variant: 'success' });
-        onSuccess(json.data.id);
+      enqueueSnackbar(outcome.message, { variant: outcome.variant });
+      if (outcome.kind === 'success' && outcome.operationId) {
+        onSuccess(outcome.operationId);
         onClose();
-      } else {
-        enqueueSnackbar(json.error || 'Ошибка проведения операции', { variant: 'error' });
       }
     } catch {
       enqueueSnackbar('Ошибка сети при проведении операции', { variant: 'error' });
