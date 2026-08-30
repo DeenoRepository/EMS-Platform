@@ -314,30 +314,49 @@ export function makeEnglishSlug(str: string): string {
   return slug || 'custom_field_' + crypto.randomUUID().replace(/-/g, '').slice(0, 8);
 }
 
-export function inferSection(header: string, canonicalMatch?: CanonicalField | null): { code: string; name: string } {
+interface SectionDef {
+  code: string;
+  name: string;
+}
+
+const DEFAULT_SECTION: SectionDef = {
+  code: 'classifiers',
+  name: 'Общероссийские и отраслевые классификаторы',
+};
+
+/** Section name lookup by code, used both for canonical matches and keyword rules. */
+const SECTION_NAMES: Record<string, string> = {
+  classifiers: DEFAULT_SECTION.name,
+  condition_wear: 'Техническое состояние, износ и критичность',
+  maintenance_regulations: 'Регламент ТОиР и график обслуживания',
+  electrical: 'Электротехнические параметры',
+  mechanics: 'Механика, гидравлика и среда',
+  operational: 'Эксплуатационные требования и метрология',
+};
+
+/**
+ * Keyword-to-section rule table, evaluated in order (first match wins).
+ * Extracted from the original if/else-if regex cascade in `inferSection`
+ * to remove branching from the function body; behavior and match order
+ * (condition_wear -> maintenance_regulations -> electrical -> mechanics)
+ * are preserved exactly.
+ */
+const SECTION_KEYWORD_RULES: Array<{ pattern: RegExp; code: string }> = [
+  { pattern: /износ|критичност|чистот|уникальн|импортн|стран|год|возраст/i, code: 'condition_wear' },
+  { pattern: /то|регламент|график|обслуживан|ответствен/i, code: 'maintenance_regulations' },
+  { pattern: /напряжен|мощност|ток|фаз|ибп|электр/i, code: 'electrical' },
+  { pattern: /давлен|хладагент|скорост|механ|гидравлик/i, code: 'mechanics' },
+];
+
+function sectionByCode(code: string): SectionDef {
+  return { code, name: SECTION_NAMES[code] || DEFAULT_SECTION.name };
+}
+
+export function inferSection(header: string, canonicalMatch?: CanonicalField | null): SectionDef {
   if (canonicalMatch?.sectionCode) {
-    const code = canonicalMatch.sectionCode;
-    let name = 'Общероссийские и отраслевые классификаторы';
-    if (code === 'condition_wear') name = 'Техническое состояние, износ и критичность';
-    else if (code === 'maintenance_regulations') name = 'Регламент ТОиР и график обслуживания';
-    else if (code === 'electrical') name = 'Электротехнические параметры';
-    else if (code === 'mechanics') name = 'Механика, гидравлика и среда';
-    else if (code === 'operational') name = 'Эксплуатационные требования и метрология';
-    return { code, name };
+    return sectionByCode(canonicalMatch.sectionCode);
   }
 
-  if (/износ|критичност|чистот|уникальн|импортн|стран|год|возраст/i.test(header)) {
-    return { code: 'condition_wear', name: 'Техническое состояние, износ и критичность' };
-  }
-  if (/то|регламент|график|обслуживан|ответствен/i.test(header)) {
-    return { code: 'maintenance_regulations', name: 'Регламент ТОиР и график обслуживания' };
-  }
-  if (/напряжен|мощност|ток|фаз|ибп|электр/i.test(header)) {
-    return { code: 'electrical', name: 'Электротехнические параметры' };
-  }
-  if (/давлен|хладагент|скорост|механ|гидравлик/i.test(header)) {
-    return { code: 'mechanics', name: 'Механика, гидравлика и среда' };
-  }
-
-  return { code: 'classifiers', name: 'Общероссийские и отраслевые классификаторы' };
+  const matchedRule = SECTION_KEYWORD_RULES.find((rule) => rule.pattern.test(header));
+  return matchedRule ? sectionByCode(matchedRule.code) : DEFAULT_SECTION;
 }
