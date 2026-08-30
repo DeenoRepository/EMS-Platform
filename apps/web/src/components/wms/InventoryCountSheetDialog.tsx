@@ -24,6 +24,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import { formatDateTime } from '@ems/shared';
 import { useSnackbar } from 'notistack';
+import { escapeHtml } from './inventory-count-sheet-print';
 
 export interface InventoryCountSheetItem {
   id: string;
@@ -104,30 +105,32 @@ export function InventoryCountSheetDialog({
         'Подпись счетчика / Примечание',
       ];
 
+      const csvEscape = (value: string | number | null | undefined) =>
+        `"${String(value ?? '').replace(/"/g, '""')}"`;
       const rows = inventory.items.map((item, idx) => {
         const cellAddr = getCellAddress(item);
         const actualValue = item.actualQty !== null && item.actualQty !== undefined ? String(item.actualQty) : '';
         return [
           idx + 1,
-          `"${(item.nomenclature.article || '').replace(/"/g, '""')}"`,
-          `"${item.nomenclature.name.replace(/"/g, '""')}"`,
-          `"${(item.nomenclature.category?.name || 'Основная').replace(/"/g, '""')}"`,
-          `"${item.nomenclature.unit}"`,
-          `"${cellAddr.replace(/"/g, '""')}"`,
+          csvEscape(item.nomenclature.article),
+          csvEscape(item.nomenclature.name),
+          csvEscape(item.nomenclature.category?.name || 'Основная'),
+          csvEscape(item.nomenclature.unit),
+          csvEscape(cellAddr),
           item.expectedQty,
           actualValue, // blank or filled fact
           '', // diff formula or blank
-          `"${(item.comment || '').replace(/"/g, '""')}"`,
+          csvEscape(item.comment),
         ];
       });
 
       const csvTitle = [
         `"ИНВЕНТАРИЗАЦИОННАЯ ОПИСЬ ТМЦ (БЛАНК ПЕРЕСЧЕТА)"`,
-        `"Акт инвентаризации № ${actCode}"`,
-        `"Склад: ${inventory.warehouse.name} (${inventory.warehouse.code})"`,
-        `"МОЛ: ${molName}"`,
-        `"Дата формирования: ${formatDateTime(inventory.createdAt)}"`,
-        `"Основание: ${inventory.comment || 'Плановая инвентаризация'}"`,
+        csvEscape(`Акт инвентаризации № ${actCode}`),
+        csvEscape(`Склад: ${inventory.warehouse.name} (${inventory.warehouse.code})`),
+        csvEscape(`МОЛ: ${molName}`),
+        csvEscape(`Дата формирования: ${formatDateTime(inventory.createdAt)}`),
+        csvEscape(`Основание: ${inventory.comment || 'Плановая инвентаризация'}`),
         '',
       ].join('\n');
 
@@ -164,12 +167,12 @@ export function InventoryCountSheetDialog({
         return `
           <tr>
             <td style="text-align: center;">${idx + 1}</td>
-            <td style="font-family: monospace; font-size: 11px;">${item.nomenclature.article || '—'}</td>
-            <td><strong>${item.nomenclature.name}</strong></td>
-            <td>${item.nomenclature.category?.name || '—'}</td>
-            <td style="text-align: center;">${item.nomenclature.unit}</td>
-            <td style="text-align: center; font-size: 11px;">${cellAddr}</td>
-            <td style="text-align: right; font-weight: bold; padding-right: 8px;">${item.expectedQty}</td>
+            <td style="font-family: monospace; font-size: 11px;">${escapeHtml(item.nomenclature.article || '—')}</td>
+            <td><strong>${escapeHtml(item.nomenclature.name)}</strong></td>
+            <td>${escapeHtml(item.nomenclature.category?.name || '—')}</td>
+            <td style="text-align: center;">${escapeHtml(item.nomenclature.unit)}</td>
+            <td style="text-align: center; font-size: 11px;">${escapeHtml(cellAddr)}</td>
+            <td style="text-align: right; font-weight: bold; padding-right: 8px;">${escapeHtml(item.expectedQty)}</td>
             <td style="background-color: background.default; border: 1.5px solid black; min-width: 70px;"></td>
             <td style="min-width: 90px;"></td>
           </tr>
@@ -182,7 +185,7 @@ export function InventoryCountSheetDialog({
       <html lang="ru">
       <head>
         <meta charset="utf-8" />
-        <title>Бланк пересчета ТМЦ — ${actCode}</title>
+        <title>Бланк пересчета ТМЦ — ${escapeHtml(actCode)}</title>
         <style>
           @page {
             size: A4 portrait;
@@ -293,13 +296,13 @@ export function InventoryCountSheetDialog({
         </div>
 
         <div class="doc-title">ИНВЕНТАРИЗАЦИОННАЯ ОПИСЬ ТМЦ (БЛАНК ПЕРЕСЧЕТА)</div>
-        <div class="doc-subtitle">к Акту инвентаризации № <strong>${actCode}</strong> от ${formatDateTime(inventory.createdAt)}</div>
+        <div class="doc-subtitle">к Акту инвентаризации № <strong>${escapeHtml(actCode)}</strong> от ${escapeHtml(formatDateTime(inventory.createdAt))}</div>
 
         <div class="meta-grid">
-          <div class="meta-item"><strong>Склад:</strong> ${inventory.warehouse.name} (${inventory.warehouse.code})</div>
-          <div class="meta-item"><strong>МОЛ / Ответственный:</strong> ${molName}</div>
-          <div class="meta-item"><strong>Инициатор описи:</strong> ${inventory.createdBy.displayName}</div>
-          <div class="meta-item"><strong>Основание:</strong> ${inventory.comment || 'Плановая сплошная инвентаризация'}</div>
+          <div class="meta-item"><strong>Склад:</strong> ${escapeHtml(inventory.warehouse.name)} (${escapeHtml(inventory.warehouse.code)})</div>
+          <div class="meta-item"><strong>МОЛ / Ответственный:</strong> ${escapeHtml(molName)}</div>
+          <div class="meta-item"><strong>Инициатор описи:</strong> ${escapeHtml(inventory.createdBy.displayName)}</div>
+          <div class="meta-item"><strong>Основание:</strong> ${escapeHtml(inventory.comment || 'Плановая сплошная инвентаризация')}</div>
         </div>
 
         <table>
@@ -327,7 +330,7 @@ export function InventoryCountSheetDialog({
 
         <div class="signatures">
           <div class="sig-row">
-            <div>Материально ответственное лицо: <span class="sig-line"></span> / <strong>${molName}</strong></div>
+            <div>Материально ответственное лицо: <span class="sig-line"></span> / <strong>${escapeHtml(molName)}</strong></div>
             <div>Дата: «____» ____________ 2026 г.</div>
           </div>
           <div class="sig-row">

@@ -22,17 +22,15 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (7)
+## Active (5)
 
 | ID | Title | Phase | Priority | Risk | Skills | Opened |
 |---|---|---|---|---|---|---|
-| [K1](active/K1-inventory-print-xss.md) | Устранить DOM XSS в печатной форме инвентаризации | K | P0 | high | senior-security, senior-frontend, senior-qa | 2026-08-30 |
 | [K2](active/K2-auth-declaration-build.md) | Восстановить declaration build пакета auth | K | P0 | high | senior-backend, strict-api, zero-hallucination-coder | 2026-08-30 |
 | [K3](active/K3-story-links-gate.md) | Исправить ссылки story I1–I8 и закрепить docs gate | K | P1 | medium | code-reviewer, ci-cd-pipeline-builder | 2026-08-30 |
 | [K4](active/K4-complexity-remediation.md) | Снизить реальную цикломатическую сложность приоритетных функций | K | P2 | medium | senior-frontend, senior-backend, zero-hallucination-coder | 2026-08-30 |
 | [K5](active/K5-ui-console-cleanup.md) | Заменить остаточные console-вызовы в UI и сервисах | K | P3 | low | senior-frontend, code-reviewer | 2026-08-30 |
 | [K6](active/K6-eslint-cli-migration.md) | Перевести web lint с next lint на ESLint CLI | K | P3 | low | senior-frontend, ci-cd-pipeline-builder | 2026-08-30 |
-| [K7](active/K7-test-db-isolation.md) | Устранить внешнюю БД из unit-тестов auth-guard | K | P3 | low | senior-qa, senior-backend | 2026-08-30 |
 
 ---
 
@@ -42,7 +40,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 
 ---
 
-## Done (46)
+## Done (48)
 
 | ID | Title | Phase | Closed | Commits |
 |---|---|---|---|---|
@@ -92,3 +90,5 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [J1](done/2026-08/J1-mock-prisma-auth-guard-tests.md) | Mock Prisma in auth-guard tests to remove DB dependency | J | 2026-08-30 | 9514761 |
 | [J2](done/2026-08/J2-quality-baseline-thresholds.md) | Raise quality baseline thresholds after phases G/H closed | J | 2026-08-30 | d576796 |
 | [J3](done/2026-08/J3-documentation-sync.md) | Documentation synchronization (E1, E3 follow-up) | J | 2026-08-30 | — |
+| [K1](done/2026-08/K1-inventory-print-xss.md) | Устранить DOM XSS в печатной форме инвентаризации | K | 2026-08-30 | pending |
+| [K7](done/2026-08/K7-test-db-isolation.md) | Устранить внешнюю БД из unit-тестов auth-guard | K | 2026-08-30 | 2f56249 |
