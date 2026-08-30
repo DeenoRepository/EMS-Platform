@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { WmsOperationStepContent } from './WmsOperationStepContent';
 import { buildOperationSubmitPayload } from './operation-submit';
+import { buildOperationLineItem } from './operation-item';
 import MoveToInboxIcon from '@mui/icons-material/MoveToInbox';
 import PersonIcon from '@mui/icons-material/Person';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
@@ -314,65 +315,22 @@ export function WmsOperationWizardDialog({
   };
 
   const handleAddItem = () => {
-    if (!selectedNomenclature) {
-      enqueueSnackbar('Выберите номенклатурную позицию или создайте новую', { variant: 'warning' });
+    const result = buildOperationLineItem({
+      selectedNomenclature,
+      itemQty,
+      isOutflow,
+      getAvailableStock,
+      operationType,
+      itemEquipmentId,
+      itemWriteOffType,
+      equipmentList,
+    });
+    if (result.kind === 'error') {
+      enqueueSnackbar(result.message, { variant: result.variant });
       return;
     }
-    const qty = parseFloat(itemQty);
-    if (isNaN(qty) || qty <= 0) {
-      enqueueSnackbar('Укажите корректное количество (> 0)', { variant: 'warning' });
-      return;
-    }
 
-    if (isOutflow) {
-      const available = getAvailableStock(selectedNomenclature.id);
-      if (available <= 0) {
-        enqueueSnackbar(`Позиция «${selectedNomenclature.name}» отсутствует на складе (остаток 0)`, { variant: 'error' });
-        return;
-      }
-      if (qty > available) {
-        enqueueSnackbar(`Недостаточно остатка для «${selectedNomenclature.name}». Доступно: ${available} ${selectedNomenclature.unit}, запрошено: ${qty}`, { variant: 'error' });
-        return;
-      }
-    }
-
-    const eqObj = equipmentList.find((e) => e.id === itemEquipmentId);
-    let finalEquipmentName: string | undefined = undefined;
-    let finalEquipmentId: string | undefined = undefined;
-    let finalWriteOffReason: string | undefined = undefined;
-
-    if (operationType === 'ISSUE_WRITE_OFF') {
-      if (itemWriteOffType === 'EQUIPMENT') {
-        if (eqObj) {
-          finalEquipmentId = eqObj.id;
-          finalEquipmentName = `${eqObj.name} (${eqObj.inventoryNumber})`;
-          finalWriteOffReason = `Оборудование: ${eqObj.name} (${eqObj.inventoryNumber})`;
-        } else {
-          finalWriteOffReason = 'Общее списание на оборудование';
-        }
-      } else if (itemWriteOffType === 'DEFECT') {
-        finalWriteOffReason = 'Списание в брак / дефект';
-      } else if (itemWriteOffType === 'SCRAP') {
-        finalWriteOffReason = 'Списание в неликвид';
-      } else {
-        finalWriteOffReason = 'Утилизация / износ';
-      }
-    }
-
-    setLineItems((prev) => [
-      ...prev,
-      {
-        nomenclatureId: selectedNomenclature.id,
-        nomenclatureName: selectedNomenclature.name,
-        nomenclatureArticle: selectedNomenclature.article || undefined,
-        unit: selectedNomenclature.unit,
-        quantity: qty,
-        equipmentId: finalEquipmentId,
-        equipmentName: finalEquipmentName,
-        writeOffReason: finalWriteOffReason,
-      },
-    ]);
-
+    setLineItems((prev) => [...prev, result.item]);
     setSelectedNomenclature(null);
     setSearchInputValue('');
     setItemQty('1');
