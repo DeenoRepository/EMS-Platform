@@ -8,7 +8,7 @@ risk: medium
 skills: [senior-frontend, senior-backend, zero-hallucination-coder]
 opened: 2026-08-30
 closed: null
-commits: [5ef7e08, 6dd9624, d7b0bd6, f54b0c8, a84ccab, dc36a68]
+commits: [5ef7e08, 6dd9624, d7b0bd6, f54b0c8, a84ccab, dc36a68, 92ede6f]
 gates: [test, lint, tsc, check:quality]
 ---
 
@@ -131,3 +131,15 @@ presentation-only false positive.
 в текущем stage вынесены только pure update-field/resolution calculations,
 добавлены focused tests, а Prisma side effects, RBAC, rate limiting, audit и
 response contract остаются в route.
+
+Десятое измерение после закрытия K4.13: verified business candidate
+[`buildTransferWhereInput()`](../../apps/web/src/lib/wms-transfers-service.ts:46)
+имел `cx 26` / 73 строки. Для K4.14 выделена только декомпозиция mode/warehouse
+scope и search filter в [`wms-transfer-where-model.ts`](../../apps/web/src/lib/wms-transfer-where-model.ts:1).
+Публичный consumer в [`GET()`](../../apps/web/src/app/api/wms/transfers/route.ts:20),
+Prisma where contract и POST не изменялись; focused tests добавлены в
+[`wms-transfers.test.ts`](../../apps/web/src/lib/__tests__/wms-transfers.test.ts:1).
+После stage quality checker показывает `buildTransferWhereInput()` `cx 1`,
+`buildTransferWhereModel()` `cx 3`, `applyModeScope()` `cx 10`; targeted/full tests,
+lint, web tsc, quality baseline и docs link check зелёные. Stage committed as
+`92ede6f`; story remains active until its closeout commit.

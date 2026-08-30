@@ -22,11 +22,12 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (2)
+## Active (3)
 
 | ID | Title | Phase | Priority | Risk | Skills | Opened |
 |---|---|---|---|---|---|---|
 | [K4](active/K4-complexity-remediation.md) | РЎРЅРёР·РёС‚СЊ СЂРµР°Р»СЊРЅСѓСЋ С†РёРєР»РѕРјР°С‚РёС‡РµСЃРєСѓСЋ СЃР»РѕР¶РЅРѕСЃС‚СЊ РїСЂРёРѕСЂРёС‚РµС‚РЅС‹С… С„СѓРЅРєС†РёР№ | K | P2 | medium | senior-frontend, senior-backend, zero-hallucination-coder | 2026-08-30 |
+| [K4.14](active/K4.14-wms-transfers-where-model.md) | Декомпозировать построение фильтра списка перемещений WMS | K | P2 | medium | senior-backend, zero-hallucination-coder | 2026-08-30 |
 | [K6](active/K6-eslint-cli-migration.md) | Перевести web lint с next lint на ESLint CLI | K | P3 | low | senior-frontend, ci-cd-pipeline-builder | 2026-08-30 |
 
 ---
