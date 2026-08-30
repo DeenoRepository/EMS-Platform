@@ -37,6 +37,7 @@ import EngineeringIcon from '@mui/icons-material/Engineering';
 import { useAuth } from '@/lib/auth-client';
 import { useSystemHealth, ServiceUnavailableCard } from '@/components/ui';
 import { PlatformMaintenanceStatus } from '@ems/shared';
+import { getLoginErrorMessage, getLoginExceptionMessage, getLoginValidationError } from './login-flow';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -99,13 +100,9 @@ export default function LoginPage() {
     if (loading) return;
 
     const trimmedUser = user.trim();
-    if (!trimmedUser) {
-      setError('Пожалуйста, введите ваш корпоративный логин (LDAP / sAMAccountName)');
-      return;
-    }
-
-    if (isOffline) {
-      setError('База данных PostgreSQL недоступна. Запустите Docker и выполните: docker compose up -d postgres ldap');
+    const validationError = getLoginValidationError(user, isOffline);
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -129,11 +126,11 @@ export default function LoginPage() {
 
       const res = await login(trimmedUser, pass);
       if (!res.success) {
-        setError(res.error || 'Неверный логин или пароль');
+        setError(getLoginErrorMessage(res));
         setLoading(false);
       }
-    } catch (err: any) {
-      setError(err?.message || 'Ошибка при отправке запроса авторизации');
+    } catch (err: unknown) {
+      setError(getLoginExceptionMessage(err));
       setLoading(false);
     }
   };
