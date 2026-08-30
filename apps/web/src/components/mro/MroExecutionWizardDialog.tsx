@@ -35,6 +35,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import { useSnackbar } from 'notistack';
 import { FormDialog, StatusBadge } from '@/components/ui';
+import { buildMroExecutionSubmitPayload } from './mro-execution-submit';
 
 interface NomenclatureOption {
   id: string;
@@ -221,29 +222,22 @@ export default function MroExecutionWizardDialog({
 
     setIsSubmitting(true);
     try {
-      const formattedChecklist = Object.entries(checklistAnswers).map(([itemId, ans]) => {
-        const itemDef = checklistItems.find((i) => i.id === itemId);
-        return {
-          itemId,
-          description: itemDef?.description || '',
-          itemType: itemDef?.itemType || 'BOOLEAN',
-          value: ans.value,
-          note: ans.note,
-        };
+      const payload = buildMroExecutionSubmitPayload({
+        notes,
+        checklistAnswers,
+        checklistItems,
+        usedParts: usedParts.map((part) => ({
+          nomenclatureId: part.nomenclatureId,
+          warehouseId: part.warehouseId,
+          quantity: part.quantity,
+        })),
       });
 
       const res = await fetch(`/api/mro/schedules/${schedule.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          status: 'COMPLETED',
-          notes: notes.trim() || undefined,
-          checklistItems: formattedChecklist,
-          usedParts: usedParts.map((p) => ({
-            nomenclatureId: p.nomenclatureId,
-            warehouseId: p.warehouseId,
-            quantity: p.quantity,
-          })),
+          ...payload,
         }),
       });
 
