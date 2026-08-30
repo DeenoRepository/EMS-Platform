@@ -19,7 +19,7 @@ import { useSnackbar } from 'notistack';
 import { EQUIPMENT_STATUS_MAP, PERMISSIONS } from '@ems/shared';
 import { useAuth } from '@/lib/auth-client';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
-import * as XLSX from 'xlsx';
+import { exportReportExcel, buildReportCsv, buildReportJson, downloadReportFile } from './report-export';
 import {
   EmptyState,
   DataTableWrapper,
@@ -404,31 +404,7 @@ function ReportBuilderContent() {
       return;
     }
 
-    const headers = activeColumnsDef.map((c) => c.name);
-    const exportData = rows.map((r) => {
-      const rowArr: any[] = [];
-      activeColumnsDef.forEach((c) => {
-        rowArr.push(r[c.key] ?? '—');
-      });
-      return rowArr;
-    });
-
-    const wsData = [headers, ...exportData];
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-    ws['!cols'] = activeColumnsDef.map((c, i) => {
-      const maxContentLen = Math.max(
-        c.name.length,
-        ...exportData.slice(0, 50).map((row) => String(row[i] || '').length)
-      );
-      return { wch: Math.min(Math.max(maxContentLen + 3, 14), 50) };
-    });
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Отчет оборудования');
-
-    const fileName = `EPS_Ведомость_${new Date().toISOString().slice(0, 10)}.xlsx`;
-    XLSX.writeFile(wb, fileName);
+    const fileName = exportReportExcel(rows, activeColumnsDef);
     enqueueSnackbar(`Отчет успешно экспортирован: ${fileName}`, { variant: 'success' });
   };
 
@@ -438,24 +414,8 @@ function ReportBuilderContent() {
       return;
     }
 
-    const headers = activeColumnsDef.map((c) => `"${c.name.replace(/"/g, '""')}"`).join(';');
-    const lines = rows.map((r) => {
-      return activeColumnsDef
-        .map((c) => {
-          const val = r[c.key] ?? '';
-          return `"${String(val).replace(/"/g, '""')}"`;
-        })
-        .join(';');
-    });
-
-    const csvContent = '\uFEFF' + [headers, ...lines].join('\r\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `EPS_Ведомость_${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    const csvContent = buildReportCsv(rows, activeColumnsDef);
+    downloadReportFile(csvContent, `EPS_Ведомость_${new Date().toISOString().slice(0, 10)}.csv`, 'text/csv;charset=utf-8;');
     enqueueSnackbar('CSV файл успешно выгружен', { variant: 'success' });
   };
 
@@ -465,22 +425,8 @@ function ReportBuilderContent() {
       return;
     }
 
-    const exportRows = rows.map((r) => {
-      const obj: Record<string, any> = {};
-      activeColumnsDef.forEach((c) => {
-        obj[c.name] = r[c.key] ?? null;
-      });
-      return obj;
-    });
-
-    const jsonStr = JSON.stringify(exportRows, null, 2);
-    const blob = new Blob([jsonStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `EPS_Ведомость_${new Date().toISOString().slice(0, 10)}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+    const jsonStr = buildReportJson(rows, activeColumnsDef);
+    downloadReportFile(jsonStr, `EPS_Ведомость_${new Date().toISOString().slice(0, 10)}.json`, 'application/json');
     enqueueSnackbar('JSON файл успешно выгружен', { variant: 'success' });
   };
 
