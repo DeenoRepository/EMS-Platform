@@ -23,6 +23,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
+import { WmsOperationItemRow } from './WmsOperationItemRow';
 import type {
   EquipmentOption,
   NomenclatureOption,
@@ -520,63 +521,16 @@ export function WmsOperationItemsStep({
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {lineItems.map((item, idx) => {
-                        const rawStock = getWarehouseStock(item.nomenclatureId);
-                        const hasDeficit = isOutflow && item.quantity > rawStock;
-                        return (
-                          <TableRow key={idx} hover sx={hasDeficit ? { bgcolor: 'error.light' } : {}}>
-                            <TableCell sx={{ py: 1, fontWeight: 600, fontSize: '0.8125rem' }}>
-                              {item.nomenclatureName}
-                            </TableCell>
-                            <TableCell sx={{ py: 1, color: 'text.disabled', fontSize: '0.75rem' }}>
-                              {item.nomenclatureArticle || '—'}
-                            </TableCell>
-                            {operationType === 'ISSUE_WRITE_OFF' && (
-                              <TableCell sx={{ py: 1 }}>
-                                {item.equipmentName ? (
-                                  <Chip
-                                    size="small"
-                                    icon={<PrecisionManufacturingIcon sx={{ fontSize: '14px !important' }} />}
-                                    label={item.equipmentName}
-                                    color="warning"
-                                    variant="outlined"
-                                    sx={{ fontWeight: 600, fontSize: '0.75rem', height: 24, maxWidth: 220 }}
-                                  />
-                                ) : (
-                                  <Chip
-                                    size="small"
-                                    label={item.writeOffReason || 'Списание в неликвид/брак'}
-                                    variant="outlined"
-                                    sx={{ fontWeight: 500, fontSize: '0.75rem', height: 24, color: 'text.disabled' }}
-                                  />
-                                )}
-                              </TableCell>
-                            )}
-                            <TableCell align="right" sx={{ py: 1 }}>
-                              <Chip
-                                size="small"
-                                label={`${rawStock} ${item.unit}`}
-                                color={rawStock > 0 ? (hasDeficit ? 'error' : 'default') : 'error'}
-                                variant="outlined"
-                                sx={{ fontWeight: 600, fontSize: '0.75rem', height: 22 }}
-                              />
-                            </TableCell>
-                            <TableCell align="right" sx={{ py: 1, fontWeight: 700, fontFeatureSettings: '"tnum"', color: hasDeficit ? 'error.main' : 'inherit' }}>
-                              {item.quantity} {item.unit}
-                              {hasDeficit && (
-                                <Typography variant="caption" sx={{ display: 'block', color: 'error.main', fontWeight: 700 }}>
-                                  Превышение остатка!
-                                </Typography>
-                              )}
-                            </TableCell>
-                            <TableCell align="center" sx={{ py: 0.5 }}>
-                              <IconButton size="small" color="error" onClick={() => onRemoveItem(idx)}>
-                                <DeleteOutlineIcon fontSize="small" />
-                              </IconButton>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
+                      {lineItems.map((item, idx) => (
+                        <WmsOperationItemRow
+                          key={idx}
+                          item={item}
+                          operationType={operationType}
+                          rawStock={getWarehouseStock(item.nomenclatureId)}
+                          isOutflow={isOutflow}
+                          onRemove={() => onRemoveItem(idx)}
+                        />
+                      ))}
                     </TableBody>
                   </Table>
                 </Paper>
