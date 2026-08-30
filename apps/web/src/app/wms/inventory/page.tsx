@@ -129,13 +129,13 @@ export default function WmsInventoryListPage() {
               }
             }
           }
-        } catch (err) {
-          console.error('Ошибка загрузки складов:', err);
+        } catch {
+          enqueueSnackbar('Ошибка загрузки складов', { variant: 'error' });
         }
       }
       loadWarehouses();
     }
-  }, [canAccessInventory, fetchInventories, user?.userId]);
+  }, [canAccessInventory, enqueueSnackbar, fetchInventories, user?.userId]);
 
   const handleCreateInventory = async () => {
     if (!selectedWarehouseId) {

@@ -11,7 +11,7 @@ closed: null
 commits: []
 gates: [test, lint, tsc, check:quality]
 classification_commit: pending
-current_batch: WMS inventory UI error sinks
+current_batch: K5.2 WMS inventory dictionary and topology UI error sinks
 batch_status: implementation complete; all gates passed
 ---
 
@@ -67,7 +67,7 @@ API-пути уже очищены. Часть оставшихся вызово
 ## Batches
 
 1. **K5.1 — WMS inventory UI sinks (current):** remove the two direct console calls that duplicate existing user-visible snackbar errors in the inventory list and inventory detail pages. No behavior change beyond eliminating duplicate developer-console output. Implementation and verification complete.
-2. K5.2 — remaining UI recoverable errors, grouped by module after consumer/state verification.
+2. **K5.2 — WMS inventory dictionary and topology UI error sinks (current):** replace the inventory warehouse dictionary console call with the existing snackbar error path and remove the duplicate topology console call while preserving its existing snackbar behavior. Targeted and full gates passed.
 3. K5.3 — server/service diagnostics migrated to the existing structured logger, with safe error context only.
 
 ## Steps
@@ -86,6 +86,14 @@ API-пути уже очищены. Часть оставшихся вызово
 - [ ] Ошибки не замалчиваются и secrets/PII не добавлены в лог-контекст.
 - [ ] Full gate green: tests, lint, web tsc и quality baseline.
 
+## K5.2 Result
+
+- Scope: `app/wms/inventory/page.tsx:134` and `components/wms/WarehouseTopologyModal.tsx:116`.
+- Classification verified: both are recoverable UI failures; the inventory dictionary loader had no visible error state, while the topology loader already displayed a snackbar.
+- Behavior preserved: inventory dictionary failure now displays `Ошибка загрузки складов`; topology failure retains `Не удалось загрузить топологию склада` and loading cleanup.
+- Excluded: intentional logger/ErrorBoundary sinks and server diagnostics were not modified.
+- Verification: targeted API/security test, full test suite (165/165), web lint, workspace lint, web TypeScript, and quality baseline all passed.
+
 ## Result
 
-Заполняется при закрытии story.
+K5.2 completed; K5.3 remains pending.

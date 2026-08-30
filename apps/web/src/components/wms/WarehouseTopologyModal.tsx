@@ -112,8 +112,7 @@ export default function WarehouseTopologyModal({
           }
         }
       }
-    } catch (err) {
-      console.error('Ошибка загрузки зон склада:', err);
+    } catch {
       enqueueSnackbar('Не удалось загрузить топологию склада', { variant: 'error' });
     } finally {
       setIsLoading(false);
