@@ -20,6 +20,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import FeedbackOutlinedIcon from '@mui/icons-material/FeedbackOutlined';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS, PlatformMaintenanceStatus } from '@ems/shared';
+import { loadSidebarData } from './sidebar-load-data';
 import { StatusBadge } from '@/components/ui';
 import FeedbackDialog from '@/components/feedback/FeedbackDialog';
 import {
@@ -109,73 +110,18 @@ export default function Sidebar({
   useEffect(() => {
     async function loadData() {
       try {
-        const [eqRes, modRes, appRes, wmsRes, srmRes, mroRes, trRes] = await Promise.allSettled([
-          fetch('/api/eps/equipment?pageSize=1'),
-          fetch('/api/modules/status'),
-          fetch('/api/eps/approvals?pageSize=1'),
-          fetch('/api/wms/stats'),
-          fetch('/api/srm/stats'),
-          fetch('/api/mro/schedules'),
-          fetch('/api/wms/transfers?pageSize=1'),
-        ]);
-
-        if (eqRes.status === 'fulfilled' && eqRes.value.ok) {
-          const json = await eqRes.value.json();
-          if (json.success && json.data?.statusCounts) {
-            setRepairCount(json.data.statusCounts.underRepair || null);
-          }
-        }
-        if (modRes.status === 'fulfilled' && modRes.value.ok) {
-          const modJson = await modRes.value.json();
-          if (modJson.success && modJson.data) {
-            setModuleStatus(modJson.data);
-          }
-        }
-        if (appRes.status === 'fulfilled' && appRes.value.ok) {
-          const appJson = await appRes.value.json();
-          if (appJson.success && appJson.data?.stats) {
-            const stats = appJson.data.stats;
-            setPendingApprovalsCount(stats.toReview !== undefined ? stats.toReview || null : (stats.pending || null));
-            setRejectedApprovalsCount(stats.myRejected !== undefined ? stats.myRejected || null : null);
-          }
-        }
-        if (wmsRes.status === 'fulfilled' && wmsRes.value.ok) {
-          const wmsJson = await wmsRes.value.json();
-          if (wmsJson.success && wmsJson.data) {
-            setWmsLowStockCount(wmsJson.data.lowStockCount || null);
-            setWmsActiveInventoriesCount(wmsJson.data.activeInventoriesCount || null);
-          }
-        }
-        if (trRes.status === 'fulfilled' && trRes.value.ok) {
-          const trJson = await trRes.value.json();
-          if (trJson.success && trJson.data?.counts) {
-            const pendingTr = (trJson.data.counts.inbound || 0) + (trJson.data.counts.requests || 0);
-            setWmsPendingTransfersCount(pendingTr || null);
-          }
-        }
-        if (srmRes.status === 'fulfilled' && srmRes.value.ok) {
-          const srmJson = await srmRes.value.json();
-          if (srmJson.success && srmJson.data) {
-            setSrmOpenCount(srmJson.data.openIssues || 0);
-            setSrmInProgressCount(srmJson.data.inProgressIssues || 0);
-          }
-        }
-        if (mroRes.status === 'fulfilled' && mroRes.value.ok) {
-          const mroJson = await mroRes.value.json();
-          if (mroJson.success && Array.isArray(mroJson.data)) {
-            const now = new Date();
-            const overdue = mroJson.data.filter(
-              (s: { status: string; scheduledDate: string }) =>
-                s.status === 'MISSED' || (s.status === 'PLANNED' && new Date(s.scheduledDate) < now)
-            ).length;
-            const planned = mroJson.data.filter(
-              (s: { status: string; scheduledDate: string }) =>
-                s.status === 'PLANNED' && new Date(s.scheduledDate) >= now
-            ).length;
-            setMroOverdueCount(overdue || null);
-            setMroPlannedCount(planned || null);
-          }
-        }
+        const data = await loadSidebarData();
+        if (data.repairCount !== undefined) setRepairCount(data.repairCount);
+        if (data.moduleStatus !== undefined) setModuleStatus(data.moduleStatus);
+        if (data.pendingApprovalsCount !== undefined) setPendingApprovalsCount(data.pendingApprovalsCount);
+        if (data.rejectedApprovalsCount !== undefined) setRejectedApprovalsCount(data.rejectedApprovalsCount);
+        if (data.wmsLowStockCount !== undefined) setWmsLowStockCount(data.wmsLowStockCount);
+        if (data.wmsActiveInventoriesCount !== undefined) setWmsActiveInventoriesCount(data.wmsActiveInventoriesCount);
+        if (data.wmsPendingTransfersCount !== undefined) setWmsPendingTransfersCount(data.wmsPendingTransfersCount);
+        if (data.srmOpenCount !== undefined) setSrmOpenCount(data.srmOpenCount);
+        if (data.srmInProgressCount !== undefined) setSrmInProgressCount(data.srmInProgressCount);
+        if (data.mroOverdueCount !== undefined) setMroOverdueCount(data.mroOverdueCount);
+        if (data.mroPlannedCount !== undefined) setMroPlannedCount(data.mroPlannedCount);
       } catch {
         // ignore
       }
