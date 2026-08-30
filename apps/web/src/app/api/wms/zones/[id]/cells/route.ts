@@ -5,6 +5,11 @@ import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
 import { logger } from '@/lib/logger';
+import {
+  resolveZoneCellAccess,
+  normalizeBulkCellEntry,
+  validateSingleCellInput,
+} from './cell-generation';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,10 +70,11 @@ export async function POST(
 
     const body = await req.json();
     const { code, name, bulkCodes } = body;
+    const zoneId = (await params).id;
 
     // Check if zone exists with warehouse
     const zone = await prisma.storageZone.findUnique({
-      where: { id: (await params).id },
+      where: { id: zoneId },
       include: { warehouse: true },
     });
 
@@ -76,57 +82,40 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Зона не найдена' }, { status: 404 });
     }
 
-    const isAdmin =
-      isAdminUser(user) ||
-      hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-      hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE);
-
-    const isResponsible = Boolean(
-      zone.warehouse.responsibleUserId && zone.warehouse.responsibleUserId === user.userId
-    );
-
-    const hasZonePermission =
-      hasPermission(user, PERMISSIONS.WMS_ZONES_MANAGE) ||
-      hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE);
-
-    const canManage = isAdmin || (isResponsible && hasZonePermission);
-
-    if (!canManage) {
-      return forbiddenResponse(
-        `Вы не являетесь ответственным лицом за склад "${zone.warehouse.name}". Создание ячеек чужого склада запрещено.`
-      );
+    const access = resolveZoneCellAccess(user, zone, 'create');
+    if (!access.allowed) {
+      return forbiddenResponse(access.forbiddenMessage);
     }
 
     // Bulk creation mode
     if (Array.isArray(bulkCodes) && bulkCodes.length > 0) {
       const createdCells = [];
       for (const item of bulkCodes) {
-        const itemCode = typeof item === 'string' ? item.trim() : item.code?.trim();
-        const itemName = typeof item === 'object' ? item.name?.trim() : undefined;
-        if (!itemCode) continue;
+        const normalized = normalizeBulkCellEntry(item);
+        if (!normalized) continue;
 
         try {
           const cell = await prisma.storageCell.upsert({
             where: {
               zoneId_code: {
-                zoneId: (await params).id,
-                code: itemCode,
+                zoneId,
+                code: normalized.code,
               },
             },
             update: {
-              name: itemName || undefined,
+              name: normalized.name || undefined,
             },
             create: {
-              zoneId: (await params).id,
-              code: itemCode,
-              name: itemName || undefined,
+              zoneId,
+              code: normalized.code,
+              name: normalized.name || undefined,
             },
           });
           createdCells.push(cell);
         } catch (e) {
           logger.warn('Failed to create cell in bulk', {
             endpoint: 'wms-zone-cells-post-bulk',
-            cellCode: itemCode,
+            cellCode: normalized.code,
             error: e instanceof Error ? e.message : String(e),
           });
         }
@@ -140,33 +129,32 @@ export async function POST(
     }
 
     // Single creation mode
-    if (!code) {
+    const singleInput = validateSingleCellInput(code, name);
+    if (!singleInput) {
       return NextResponse.json({ success: false, error: 'Код ячейки обязателен' }, { status: 400 });
     }
-
-    const cleanCode = String(code).trim().toUpperCase();
 
     const existing = await prisma.storageCell.findUnique({
       where: {
         zoneId_code: {
-          zoneId: (await params).id,
-          code: cleanCode,
+          zoneId,
+          code: singleInput.cleanCode,
         },
       },
     });
 
     if (existing) {
       return NextResponse.json(
-        { success: false, error: `Ячейка с кодом ${cleanCode} уже существует в этой зоне` },
+        { success: false, error: `Ячейка с кодом ${singleInput.cleanCode} уже существует в этой зоне` },
         { status: 400 }
       );
     }
 
     const cell = await prisma.storageCell.create({
       data: {
-        zoneId: (await params).id,
-        code: cleanCode,
-        name: name ? String(name).trim() : null,
+        zoneId,
+        code: singleInput.cleanCode,
+        name: singleInput.cleanName,
       },
     });
 
@@ -195,8 +183,10 @@ export async function DELETE(
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
 
+    const zoneId = (await params).id;
+
     const zone = await prisma.storageZone.findUnique({
-      where: { id: (await params).id },
+      where: { id: zoneId },
       include: { warehouse: true },
     });
 
@@ -204,25 +194,9 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'Зона не найдена' }, { status: 404 });
     }
 
-    const isAdmin =
-      isAdminUser(user) ||
-      hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-      hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE);
-
-    const isResponsible = Boolean(
-      zone.warehouse.responsibleUserId && zone.warehouse.responsibleUserId === user.userId
-    );
-
-    const hasZonePermission =
-      hasPermission(user, PERMISSIONS.WMS_ZONES_MANAGE) ||
-      hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE);
-
-    const canManage = isAdmin || (isResponsible && hasZonePermission);
-
-    if (!canManage) {
-      return forbiddenResponse(
-        `Вы не являетесь ответственным лицом за склад "${zone.warehouse.name}". Удаление ячеек чужого склада запрещено.`
-      );
+    const access = resolveZoneCellAccess(user, zone, 'delete');
+    if (!access.allowed) {
+      return forbiddenResponse(access.forbiddenMessage);
     }
 
     const { searchParams } = new URL(req.url);
@@ -233,7 +207,7 @@ export async function DELETE(
     }
 
     await prisma.storageCell.delete({
-      where: { id: cellId, zoneId: (await params).id },
+      where: { id: cellId, zoneId },
     });
 
     return NextResponse.json({ success: true, message: 'Ячейка успешно удалена' });
