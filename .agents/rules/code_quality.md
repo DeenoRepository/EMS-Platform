@@ -1,8 +1,9 @@
 # Стандарты качества кода — EMS-Platform
 
-> Обновлено: 2026-08-30 (инспекция по скиллу `code-reviewer`)
+> Обновлено: 2026-08-30 (после выполнения REMEDIATION_PLAN.md фазы G/H/J1-J2)
 > Инструмент: `.agents/skills/code-reviewer/scripts/code_quality_checker.py`
-> Текущий балл: apps/web — **81.1/100 (B)**, packages — **94.1/100 (A)**; `node scripts/check-quality-baseline.mjs` PASS (8/8)
+> Текущий балл: apps/web — **81.7/100 (B)**, packages — **94.1/100 (A)**; `node scripts/check-quality-baseline.mjs` PASS (8/8)
+> Пороги baseline подняты (Story J2): web average 78→80, F-grade 38→34 — после закрытия фаз G/H запас между фактом и порогом снова защищает от регрессии.
 
 ---
 

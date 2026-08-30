@@ -6,8 +6,8 @@ import os from 'node:os';
 
 const baseline = {
   'apps/web/src': {
-    minimumAverageScore: 78.0,
-    maximumFGradeFiles: 38,
+    minimumAverageScore: 80.0,
+    maximumFGradeFiles: 34,
     maximumCodeSmells: 2400,
     maximumSolidViolations: 25,
   },
