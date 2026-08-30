@@ -1,6 +1,6 @@
 # EMS-Platform — план устранения замечаний инспекции
 
-**Дата плана:** 2026-08-29 (обновлено по повторной инспекции 2026-08-29)
+**Дата плана:** 2026-08-30 (обновлено по инспекции 2026-08-30)
 **Источник:** [`docs/PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md), [`docs/CODE_REVIEW_AUDIT.md`](CODE_REVIEW_AUDIT.md)
 **Правила:** [`AGENTS.md`](../AGENTS.md), [`.agents/rules/security.md`](../.agents/rules/security.md), [`.agents/rules/code_quality.md`](../.agents/rules/code_quality.md), [`.agents/rules/ui_design_code.md`](../.agents/rules/ui_design_code.md)
 **Скиллы по story:** `senior-security` / `senior-secops` (S*), `senior-backend` + `strict-api` (API), `senior-frontend` (UI-декомпозиция), `senior-qa` (тесты), `code-reviewer` (quality gate).
@@ -23,10 +23,14 @@
 | C3 — WMS stock page | ✅ Выполнено: C3.1–C3.4 | MEDIUM |
 | C4 — Equipment wizard form | ✅ Выполнено: C4.1–C4.3 | MEDIUM |
 | C5 — EPS reports + import | ✅ Выполнено: C5.1–C5.4 | MEDIUM |
-| C6 — P1 страницы > 600 строк | ✅ Выполнено: C6.1–C6.8, C6.16 | MEDIUM |
-| C7–C14 — bounded UI-декомпозиция | ✅ Выполнено | LOW |
-| D — Типизация | ⏳ В работе: D.1 ✅ (GitLab connection JSON boundary) | P2 |
-| E — Tooling и документация | ⏳ Открыта | LOW |
+| C6 — P1 страницы > 600 строк | ✅ Выполнено: C6.1–C6.8 | MEDIUM |
+| C7–C17 — bounded UI-декомпозиция | ✅ Выполнено | LOW |
+| D — Типизация | ⏳ В работе: D.1 ✅, D.4 ✅ | P2 |
+| E — Tooling и документация | ✅ Выполнено 2026-08-30 (см. Story J3) | LOW |
+| **G — Сложность WMS API-маршрутов** | 🆕 Открыта (2026-08-30) | **P1** |
+| **H — Сложность handlers cx ≥ 15** | 🆕 Открыта (2026-08-30) | **P1** |
+| **I — Крупные presentation-файлы** | 🆕 Открыта (2026-08-30) | P2 |
+| **J — Гигиена процесса и tooling** | 🆕 Открыта (2026-08-30) | P2 |
 
 ---
 
@@ -38,24 +42,26 @@
 4. После каждой story:
    ```bash
    pnpm --filter @ems/web lint
-   pnpm --filter @ems/web exec tsc --noEmit
+   npx tsc --noEmit -p apps/web/tsconfig.json
    ```
    Security/API: дополнительно `pnpm test` и `python scripts/route_audit.py`.
    Декомпозиция F-файлов: `python scripts/fgrade_detail.py` + `node scripts/check-quality-baseline.mjs`.
 5. Quality checker **не** является единственным источником истины для TSX: проверять реальные границы функций вручную.
 6. Не трогать `temp/`, `.env`, `uploads/`, `docker/jira/server.js` без отдельной задачи.
-7. Не массово выносить 1911 `magic_number`. Именовать только domain constants (лимиты, timeouts, статусы).
+7. Не массово выносить `magic_number`. Именовать только domain constants (лимиты, timeouts, статусы).
+8. **Приоритет по `cx` (цикломатическая сложность), а не по score.** Файл с cx 25 опаснее файла со score 19 и cx 1.
 
-**Текущий baseline (не ухудшать):**
+**Текущий baseline (не ухудшать), замер 2026-08-30:**
 
-| Метрика | Сейчас | Не хуже чем |
-|---|---:|---:|
-| web average | 78.3 | 78.0 |
-| web F-grade | 38 | 38, цель < 38 |
-| web smells | 2353 | 2400 |
-| web SOLID | 25 | 25 |
-| packages average | 94.1 | 94.0 |
-| packages F-grade | 0 | 0 |
+| Метрика | Факт | Порог сейчас | Целевой порог (Story J2) |
+|---|---:|---:|---:|
+| web average | **81.1** | 78.0 | 80.0 |
+| web F-grade | **33** | 38 | 34 |
+| web smells | **2361** | 2400 | 2400 |
+| web SOLID | **25** | 25 | 25 |
+| packages average | **94.1** | 94.0 | 94.0 |
+| packages F-grade | **0** | 0 | 0 |
+| Тесты | **160 pass / 0 fail** | 0 fail | 0 fail |
 
 ---
 
@@ -564,13 +570,274 @@ Commit template: `refactor(srm): type webhook payload as unknown and narrow`
 
 ---
 
-## Фаза E — Tooling и документация (параллельно, низкий риск)
+## Фаза E — Tooling и документация — ✅ выполнено 2026-08-30
 
-1. Обновить §3 в [`.agents/rules/code_quality.md`](../.agents/rules/code_quality.md): таблица F-файлов 2026-08-27 устарела (`jira-service.ts` уже разделён). Заменить актуальным списком из инспекции.
-2. `code_quality.md` §2 всё ещё предлагает писать JSON в `docs/code-review-report.json` — согласовать с in-memory `pnpm check:quality`.
-3. Не коммитить `quality-web.json` / `quality-packages.json`.
+1. [x] §3 в [`.agents/rules/code_quality.md`](../.agents/rules/code_quality.md) переписан: актуальный список 33 F-файлов, разделение P1 (по `cx`) / P2 (по размеру) / false-positive.
+2. [x] §4 актуализирован: `jira-service.ts` уже разделён на [`lib/jira/*`](../apps/web/src/lib/jira/) — раздел переведён в статус эталонного примера.
+3. [x] Удалён дублирующийся абзац про Phase D (§7).
+4. [x] Ожидаемый результат `pnpm test` обновлён с «113+» на фактические 160.
+5. [x] `quality-web.json` / `quality-packages.json` не коммитятся (подтверждено).
 
-Коммит: `docs: align code quality rules with 2026-08-29 F-grade list`
+Коммит: `docs: refresh inspection reports and quality rules after 2026-08-30 audit`
+
+---
+
+# Новые фазы по инспекции 2026-08-30
+
+> **Принцип приоритизации:** сначала снижаем **реальную цикломатическую сложность** в бизнес-логике (Фазы G, H), затем — размер presentation-файлов (Фаза I). Score сам по себе целью не является.
+
+## Фаза G — Сложность WMS API-маршрутов (P1, наивысший приоритет)
+
+**Почему первое:** это единственные F-файлы, где высокая сложность находится в **серверной бизнес-логике** с доступом к БД, а не в разметке. Здесь ошибка ветвления = порча складских данных, а не косметический дефект.
+
+**Скиллы:** `senior-backend`, `strict-api`, `zero-hallucination-coder`
+**Общее ограничение:** API contract (request/response shape, коды статусов) **не меняется**. Только внутренняя декомпозиция. Обязательна проверка `python scripts/route_audit.py` — rate limit и RBAC должны остаться на месте.
+
+### Story G1 — `POST /api/wms/zones/[id]/cells` (cx 25 → ≤ 10)
+
+**Приоритет:** P1 | **Оценка:** 1 день | **Риск:** средний
+
+**Проблема:** [`route.ts`](../apps/web/src/app/api/wms/zones/[id]/cells/route.ts) — `POST` имеет **cx 25** (самая высокая в проекте) и 140 строк; `DELETE` — 60 строк. Средняя сложность файла 14.7.
+
+**Шаги:**
+1. Прочитать файл целиком, зафиксировать все ветки валидации и генерации ячеек.
+2. Вынести чистые функции в `apps/web/src/app/api/wms/zones/[id]/cells/cell-generation.ts`:
+   - парсинг/валидация диапазонов (ряды, стеллажи, полки);
+   - построение списка кодов ячеек (batch generation);
+   - определение конфликтов с существующими ячейками.
+3. В route оставить: rate limit → auth → RBAC → вызов helpers → Prisma-транзакция → `safeErrorResponse()`.
+4. Добавить unit-тесты на helper в `packages/auth/src/wms.test.ts` или новый `cell-generation.test.ts`: корректный диапазон, пустой диапазон, дубликаты, невалидный формат, превышение лимита.
+
+**Не делать:** менять схему Prisma, формат кодов ячеек, поведение при конфликте.
+
+**DoD:**
+- [ ] `POST` cx ≤ 10, длина ≤ 50 строк.
+- [ ] Helper покрыт тестами (≥ 5 кейсов).
+- [ ] `route_audit.py`: rate limit и RBAC на месте.
+- [ ] `pnpm test`, lint, tsc, quality baseline — PASS.
+- Коммит: `refactor(wms): extract warehouse cell generation from zones API`
+
+### Story G2 — `GET /api/wms/transfers` (cx 14, 131 строка)
+
+**Приоритет:** P1 | **Оценка:** 0.5 дня | **Риск:** низкий
+
+**Проблема:** [`transfers/route.ts`](../apps/web/src/app/api/wms/transfers/route.ts) — `GET` 131 строка / cx 14, `POST` 65 строк. Средняя cx файла 14.0.
+
+**Шаги:**
+1. Вынести построение Prisma-фильтра (`where`) из query-параметров в чистую функцию — расширить существующий [`wms-transfers-service.ts`](../apps/web/src/lib/wms-transfers-service.ts), а не создавать новый модуль.
+2. Вынести маппинг Prisma-результата в DTO ответа.
+3. Покрыть builder тестами в существующем [`wms-transfers.test.ts`](../apps/web/src/lib/__tests__/wms-transfers.test.ts): фильтр по складу, по статусу, по датам, комбинация, пустые параметры.
+
+**DoD:**
+- [ ] `GET` ≤ 50 строк, cx ≤ 10; форма ответа не изменена.
+- [ ] Warehouse-scoping (МОЛ) сохранён и покрыт тестом.
+- [ ] `pnpm test`, `route_audit.py`, quality baseline — PASS.
+- Коммит: `refactor(wms): extract transfers query filter builder`
+
+### Story G3 — `GET /api/wms/operations` (cx 13, 84 строки)
+
+**Приоритет:** P1 | **Оценка:** 0.5 дня | **Риск:** низкий
+
+**Проблема:** [`operations/route.ts`](../apps/web/src/app/api/wms/operations/route.ts) — `GET` 84 строки / cx 13, `POST` 57 строк. Средняя cx 13.5.
+
+**Шаги:** тот же рецепт, что G2 — вынести filter builder и DTO-маппер; переиспользовать паттерн из G2 для единообразия.
+
+**DoD:**
+- [ ] `GET` ≤ 50 строк, cx ≤ 10.
+- [ ] Права доступа по складам сохранены.
+- [ ] Полный gate — PASS.
+- Коммит: `refactor(wms): extract operations query filter builder`
+
+---
+
+## Фаза H — Handlers и сортировщики с cx ≥ 15 (P1)
+
+**Скиллы:** `senior-frontend`, `code-reviewer`
+**Общее ограничение:** извлекаются **чистые функции** (сортировка, фильтрация, валидация, маппинг). State, эффекты и вызовы API остаются в компоненте-владельце. Это доказавший себя рецепт (C13–C17).
+
+### Story H1 — `sortAuditLogs` cx 22
+
+**Приоритет:** P1 | **Оценка:** 0.5 дня | **Риск:** низкий
+
+**Проблема:** [`admin/audit-log/page.tsx`](../apps/web/src/app/admin/audit-log/page.tsx) — `sortAuditLogs` cx **22** (самая высокая cx среди UI), `handleRequestSort` cx 11, `handleResetFilters` 56 строк.
+
+**Шаги:**
+1. Вынести в `apps/web/src/app/admin/audit-log/audit-log-sort.ts` по образцу [`schedule-sort.ts`](../apps/web/src/app/mro/schedule-sort.ts) и [`inventory-sort.ts`](../apps/web/src/app/wms/inventory/inventory-sort.ts).
+2. Заменить длинную цепочку `if/switch` на **map компараторов** `Record<SortKey, Comparator>` — это и снимает cx, и убирает дублирование.
+3. Вынести счётчик/сброс фильтров в `audit-log-filter-state.ts` (образец: [`filter-state.ts`](../apps/web/src/app/wms/inventory/filter-state.ts)).
+4. Добавить unit-тесты на компараторы: по каждому полю ↑/↓, `null`-значения, стабильность.
+
+**DoD:**
+- [ ] `sortAuditLogs` cx ≤ 10; порядок сортировки идентичен прежнему.
+- [ ] Тесты на компараторы добавлены.
+- [ ] Полный gate — PASS.
+- Коммит: `refactor(admin): extract audit log sorting comparators`
+
+### Story H2 — `handleRefresh` cx 21 в MRO history
+
+**Приоритет:** P1 | **Оценка:** 0.5 дня | **Риск:** низкий
+
+**Проблема:** [`mro/history/page.tsx`](../apps/web/src/app/mro/history/page.tsx) — `handleRefresh` 59 строк / cx **21**, средняя cx файла 15.0 (самая высокая среди страниц).
+
+**Шаги:** отделить чистую обработку (фильтрация/агрегация/нормализация записей истории) от побочных эффектов (`fetch`, `setState`). Чистую часть — в `mro/history/history-model.ts` по образцу [`schedule-execution-model.ts`](../apps/web/src/app/mro/schedule-execution-model.ts).
+
+**DoD:**
+- [ ] `handleRefresh` ≤ 50 строк, cx ≤ 10; API-вызовы и состояние не изменены.
+- [ ] Полный gate — PASS.
+- Коммит: `refactor(mro): extract maintenance history model`
+
+### Story H3 — `EquipmentPassportContent` cx 21
+
+**Приоритет:** P1 | **Оценка:** 1 день | **Риск:** средний (крупный флоу, уже частично декомпозирован)
+
+**Проблема:** [`eps/[id]/page.tsx`](../apps/web/src/app/eps/[id]/page.tsx) — 696 строк, компонент cx **21**, 9 функций.
+
+**Шаги:**
+1. Файл уже прошёл несколько extractions (C6.3, C9–C12) — **сначала прочитать целиком** и определить, что осталось.
+2. Кандидаты: обработчики копирования/удаления/печати паспорта → `equipment-passport-actions.ts`; условная логика выбора вкладок → отдельный typed selector.
+3. Строго по одной extraction за коммит.
+
+**DoD:**
+- [ ] cx компонента ≤ 15 (промежуточная цель), затем ≤ 10 следующей story.
+- [ ] Вкладки, диалоги, permission gating работают без изменений.
+- [ ] Полный gate — PASS.
+- Коммит: `refactor(eps): extract equipment passport actions`
+
+### Story H4 — `TransferRequestDialog` cx 20 и `SrmPageContent` cx 18
+
+**Приоритет:** P1 | **Оценка:** 1 день (2 коммита) | **Риск:** низкий
+
+**Проблема:** [`TransferRequestDialog.tsx`](../apps/web/src/components/wms/TransferRequestDialog.tsx) cx 20 (payload уже вынесен в C13 — осталась валидация/ветвление UI); [`srm/page.tsx`](../apps/web/src/app/srm/page.tsx) cx 18.
+
+**Шаги:**
+- H4.1: вынести валидацию формы трансфера в `transfer-request-validation.ts` рядом с существующим [`transfer-request-submit.ts`](../apps/web/src/components/wms/transfer-request-submit.ts).
+- H4.2: в SRM-странице вынести подготовку данных details-drawer; сортировка уже вынесена в [`srm-issue-sorting.ts`](../apps/web/src/app/srm/srm-issue-sorting.ts) — переиспользовать паттерн.
+
+**DoD:**
+- [ ] Обе cx ≤ 12.
+- [ ] Полный gate — PASS.
+- Коммиты: `refactor(wms): extract transfer request validation`, `refactor(srm): extract issue details view model`
+
+### Story H5 — `inferSection` cx 15 в EPS import
+
+**Приоритет:** P2 | **Оценка:** 0.5 дня | **Риск:** низкий
+
+**Проблема:** [`eps-import-helpers.ts`](../apps/web/src/lib/eps-import-helpers.ts) — `guessFieldType` 201 строка (по данным парсера), `inferSection` cx 15.
+
+**Шаги:** заменить каскад `if` на таблицу правил `Array<{ match: RegExp | string[]; section: string }>` и линейный поиск. Тесты уже есть в [`eps-import.test.ts`](../packages/auth/src/eps-import.test.ts) — расширить кейсами на каждую секцию.
+
+**DoD:**
+- [ ] `inferSection` cx ≤ 10; результаты классификации идентичны (регрессионный тест на наборе заголовков).
+- Коммит: `refactor(eps): replace import section inference cascade with rule table`
+
+---
+
+## Фаза I — Крупные presentation-файлы (P2, низкий риск)
+
+**Скиллы:** `senior-frontend`
+**Рецепт:** тот же, что C7–C17 — по одному presentation-блоку за коммит.
+
+| Story | Файл | Что выносить | cx |
+|---|---|---|---|
+| I1 | [`EquipmentWizardForm.tsx`](../apps/web/src/components/eps/EquipmentWizardForm.tsx) (757 строк) | шаги мастера как отдельные step-компоненты | 13 |
+| I2 | [`MroExecutionWizardDialog.tsx`](../apps/web/src/components/mro/MroExecutionWizardDialog.tsx) (652) | `handleSubmit` 67 строк → submit-модуль | 13 |
+| I3 | [`WmsOperationItemsStep.tsx`](../apps/web/src/components/wms/WmsOperationItemsStep.tsx) (602) | таблица позиций / строка позиции | 1 |
+| I4 | [`WmsOperationWizardDialog.tsx`](../apps/web/src/components/wms/WmsOperationWizardDialog.tsx) (575) | `handleAddItem` 68 строк | 11.4 |
+| I5 | [`eps/reports/page.tsx`](../apps/web/src/app/eps/reports/page.tsx) (788) | крупнейший файл; 15 функций | 5.9 |
+| I6 | [`wms/stock/page.tsx`](../apps/web/src/app/wms/stock/page.tsx) (819) | `loadZones` 71 строка | 6.8 |
+| I7 | [`admin/feedback/page.tsx`](../apps/web/src/app/admin/feedback/page.tsx) (619) | фильтры, cx 17 | 8.0 |
+| I8 | [`login/page.tsx`](../apps/web/src/app/login/page.tsx) (642) | `performLogin` cx 12 | 6.5 |
+
+**⚠️ Отдельно — [`Sidebar.tsx`](../apps/web/src/components/layout/Sidebar.tsx) (687 строк, cx 9.9):** extraction **дважды** откатывалась (аудит 2026-08-27). Трогать только отдельной задачей с ручным регресс-тестом collapsed flyout и permission gating. **При любом отклонении поведения — немедленный откат.**
+
+**Не рефакторить ради score:** [`theme.ts`](../apps/web/src/theme/theme.ts) и [`EquipmentTableView.tsx`](../apps/web/src/components/eps/EquipmentTableView.tsx) — false-positive (0 распознанных функций).
+
+---
+
+## Фаза J — Гигиена процесса и tooling (P2)
+
+### Story J1 — Ускорить и изолировать тесты `auth-guard` (Q1)
+
+**Приоритет:** P2 | **Оценка:** 0.5 дня | **Скиллы:** `senior-qa`
+
+**Проблема:** 3 теста в [`auth-guard.test.ts`](../apps/web/src/lib/__tests__/auth-guard.test.ts) реально пытаются подключиться к Prisma (`Can't reach database server at localhost:5432`) и висят на таймаутах: 4.1 с, 4.1 с и 8.2 с — **около 20 с из 34 с** всего прогона. Тесты проходят за счёт фолбэков, но:
+- прогон замедлен более чем вдвое;
+- вывод засорён `prisma:error`, что маскирует настоящие ошибки;
+- результат зависит от того, поднята ли у разработчика БД, — риск флака в CI.
+
+**Шаги:**
+1. Замокать `@ems/database` (`prisma.user.findUnique`, `prisma.systemSetting.findUnique`) в тестах `auth-guard` через встроенный `mock` из `node:test`.
+2. Оставить один явный интеграционный тест поведения при недоступной БД — но с коротким таймаутом.
+3. Убедиться, что вывод `pnpm test` чист от `prisma:error`.
+
+**DoD:**
+- [ ] Прогон `pnpm test` ≤ 15 с (сейчас ~34 с).
+- [ ] 160/160 тестов проходят без реального подключения к БД.
+- [ ] В выводе нет `prisma:error` и LDAP-ошибок соединения.
+- Коммит: `test(auth): mock prisma in auth-guard tests to remove db dependency`
+
+### Story J2 — Подтянуть пороги quality baseline (E2)
+
+**Приоритет:** P2 | **Оценка:** 0.25 дня | **Скиллы:** `code-reviewer`
+
+**Проблема:** факт ушёл далеко от порогов (81.1 против 78.0; F=33 против 38). Регрессия качества на 3 пункта или +5 F-файлов пройдёт гейт незамеченной — гейт перестал защищать.
+
+**Шаги:**
+1. В [`check-quality-baseline.mjs`](../scripts/check-quality-baseline.mjs) поднять web: average `78 → 80`, F-grade `38 → 34`.
+2. Оставить запас в 1 пункт от факта — чтобы естественный шум не ломал сборку.
+3. Синхронизировать таблицу порогов в этом плане и в [`code_quality.md`](../.agents/rules/code_quality.md).
+
+**Важно:** выполнять **после** Фаз G–H, иначе пороги придётся двигать дважды.
+
+**DoD:**
+- [ ] Пороги подняты, `node scripts/check-quality-baseline.mjs` PASS.
+- [ ] Документация синхронизирована.
+- Коммит: `chore(quality): raise web baseline thresholds to 80/34`
+
+### Story J3 — Синхронизация документации (E1, E3) — ✅ выполнено 2026-08-30
+
+Закрыто в рамках Фазы E: актуализирован список F-файлов, снят устаревший раздел про `jira-service.ts`, удалён дублирующийся абзац, обновлено ожидаемое число тестов.
+
+### Story J4 — Redis rate-limit store (F1)
+
+**Приоритет:** P2 (infra) | **Оценка:** 2–3 дня | **Скиллы:** `senior-backend`, `senior-secops`
+
+**Проблема:** `InMemoryRateLimitStore` считает лимиты пер-инстанс. При горизонтальном масштабировании реальный лимит умножается на число реплик — защита от brute-force на `/api/auth/login` ослабевает пропорционально.
+
+**Условие запуска:** только при планировании multi-instance деплоя. Для однонодовой инсталляции — **не требуется**, текущая реализация корректна.
+
+**Шаги:**
+1. Реализовать `RedisRateLimitStore` за существующим интерфейсом store в [`rate-limit.ts`](../apps/web/src/lib/rate-limit.ts).
+2. Выбор store по env (`RATE_LIMIT_STORE=memory|redis`), по умолчанию `memory`.
+3. Fail-open при недоступности Redis + `logger.error` (недоступность инфраструктуры не должна ронять аутентификацию).
+4. Тесты на оба store через общий контракт-тест.
+
+**DoD:**
+- [ ] Оба store проходят единый контракт-тест.
+- [ ] Дефолтное поведение не изменилось.
+- [ ] Документировано в [`PRODUCTION_DEPLOYMENT.md`](PRODUCTION_DEPLOYMENT.md).
+- Коммит: `feat(security): add redis-backed rate limit store for multi-instance deployments`
+
+---
+
+## Сводная приоритизация новых работ
+
+| Story | Область | Severity | Оценка | Порядок |
+|---|---|---|---|---|
+| G1 | `POST` cells cx 25 | P1 | 1 д | 1 |
+| G2 | `GET` transfers cx 14 | P1 | 0.5 д | 2 |
+| G3 | `GET` operations cx 13 | P1 | 0.5 д | 3 |
+| H1 | `sortAuditLogs` cx 22 | P1 | 0.5 д | 4 |
+| H2 | MRO `handleRefresh` cx 21 | P1 | 0.5 д | 5 |
+| H3 | Passport cx 21 | P1 | 1 д | 6 |
+| H4 | Transfer/SRM cx 20/18 | P1 | 1 д | 7 |
+| J1 | Тесты без БД | P2 | 0.5 д | 8 (можно параллельно) |
+| H5 | `inferSection` cx 15 | P2 | 0.5 д | 9 |
+| I1–I8 | Presentation-файлы | P2 | ~4 д | 10 |
+| J2 | Пороги baseline | P2 | 0.25 д | 11 (после G–H) |
+| J4 | Redis rate limit | P2 | 2–3 д | по потребности infra |
+
+**Итого активной работы:** ~6 дней на P1 (G+H), ~5 дней на P2 (I+J без J4).
 
 ---
 
@@ -596,9 +863,14 @@ Commit template: `refactor(srm): type webhook payload as unknown and narrow`
 | ~~Текущая~~ | ~~C5.2b.4~~ | ✅ execute payload preparation и финальная проверка C5 завершены |
 | ~~Текущая~~ | ~~C6.7~~ | ✅ audit-history branch вынесена в `EquipmentAuditHistoryTab.tsx`, baseline подтверждён |
 | ~~Текущая~~ | ~~C6.8~~ | ✅ WMS dashboard deficit item вынесен, baseline подтверждён |
-| ~~Текущая~~ | ~~C7–C14~~ | ✅ bounded UI-декомпозиция завершена; последний коммит — `93b0e1a` |
-| **Следующая** | **C15** | следующий P1/F-grade bounded файл |
-| backlog | D, E | typing, rules sync |
+| ~~Текущая~~ | ~~C7–C17~~ | ✅ bounded UI-декомпозиция завершена; последний коммит — `1609d9d` |
+| ~~Текущая~~ | ~~E~~ | ✅ документация и правила синхронизированы (инспекция 2026-08-30) |
+| **Следующая** | **G1–G3** | снижение cx в WMS API-маршрутах (cx 25 → ≤ 10) |
+| Далее | H1–H5 | handlers и сортировщики с cx ≥ 15 |
+| Параллельно | J1 | тесты `auth-guard` без реального подключения к БД |
+| Далее | I1–I8 | presentation-файлы > 500 строк |
+| После G–H | J2 | поднять пороги baseline до 80/34 |
+| backlog | D, J4 | typing, Redis rate-limit (по потребности infra) |
 
 ---
 
@@ -612,10 +884,15 @@ Commit template: `refactor(srm): type webhook payload as unknown and narrow`
 - [x] 0 rate-limit gaps на 85 маршрутах
 - [x] `isAdminUser()` хелпер унифицирует admin-role проверки в API routes (B3)
 - [x] 0 `console.warn/error` в `apps/web/src/app/api/**` (B4)
-- [x] Web F-grade < 38, baseline PASS (C1/C2/C3/C4; F-grade 36)
+- [x] Web F-grade < 38, baseline PASS (F-grade 33 на 2026-08-30)
 - [x] `pnpm check:quality`, `check:theme`, `route_audit.py`, `pnpm test` зелёные для завершённых stories
-- [x] C6.8 и C7–C14 завершены verified commits through `93b0e1a`; documentation close-out commits recorded where applicable
-- [x] [`PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md) обновлён после B3/B4 и C1–C4; завершённые stories не добавили новых findings
+- [x] C6.8 и C7–C17 завершены verified commits through `1609d9d`
+- [x] [`PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md) обновлён по инспекции 2026-08-30; новых security/UI findings нет
+- [x] Web average ≥ 80 достигнут (81.1, grade B)
+- [ ] **G1–G3:** cx всех WMS API-обработчиков ≤ 10
+- [ ] **H1–H5:** нет функций с cx ≥ 15
+- [ ] **J1:** `pnpm test` ≤ 15 с, без реальных подключений к БД
+- [ ] **J2:** пороги baseline подняты до web ≥ 80.0 / F ≤ 34
 
 ---
 
@@ -629,15 +906,17 @@ Commit template: `refactor(srm): type webhook payload as unknown and narrow`
 4. **После каждой story минимально:**
    ```bash
    pnpm --filter @ems/web lint
-   pnpm --filter @ems/web exec tsc --noEmit
+   npx tsc --noEmit -p apps/web/tsconfig.json
    ```
-   Security/API stories: добавить `pnpm test` и `python scripts/route_audit.py`.
-   Декомпозиция (C*): добавить `node scripts/check-quality-baseline.mjs`.
+   Security/API stories (G*): добавить `pnpm test` и `python scripts/route_audit.py`.
+   Декомпозиция (H*, I*): добавить `node scripts/check-quality-baseline.mjs`.
 5. **Quality checker** некорректно режет границы TSX-функций — всегда проверять вручную.
 6. **Не трогать:** `temp/`, `.env`, `uploads/`, `docker/jira/server.js` без отдельной задачи.
 7. **Не** массово заменять magic_number.
-8. **B3, B4, C1–C5, C6.2a, C6.3, C6.5–C6.8 и C7–C19 завершены.** Следующий этап — C15: следующий P1/F-grade bounded файл; audit-history branch и завершённые UI-decompositions больше не являются pending.
-9. **C-stories** могут идти параллельно на разных файлах (не пересекающихся).
-10. **Не снижать** quality baseline: web ≥ 78.0, F ≤ 38, packages ≥ 94.0, F=0.
+8. **A1–A3, B1–B4, C1–C17, D.1, D.4 и E завершены.** Следующий этап — **G1** (`POST /api/wms/zones/[id]/cells`, cx 25): наивысший риск в проекте.
+9. **Stories могут идти параллельно** на непересекающихся файлах. J1 не конфликтует ни с чем.
+10. **Не снижать** quality baseline: web ≥ 78.0 (факт 81.1), F ≤ 38 (факт 33), packages ≥ 94.0, F=0.
+11. **Приоритет — `cx`, а не score.** Сначала бизнес-логика на сервере (G), затем чистые функции в UI (H), только потом размер разметки (I).
+12. **Sidebar.tsx — стоп-файл.** Extraction откатывалась дважды; только отдельная задача с ручным регресс-тестом.
 
-*Updated 2026-08-29 after `93b0e1a`. Stories A1–A3, B1–B4, C1–C5, C6.2a, C6.3, C6.5–C6.8, C7–C14, D.1 and D.4 are closed.*
+*Updated 2026-08-30 after inspection at `1609d9d`. Closed: A1–A3, B1–B4, C1–C17, D.1, D.4, E. Open: G1–G3 (P1), H1–H5 (P1/P2), I1–I8 (P2), J1–J2, J4 (P2).*

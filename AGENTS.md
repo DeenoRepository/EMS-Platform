@@ -2,8 +2,10 @@
 
 В данном проекте настроены специализированные скиллы и правила для разработки корпоративной системы управления оборудованием.
 
-> **Версия правил:** 2.0 (обновлено по результатам аудита 2026-08-27)  
-> **Аудит-отчёт:** [`docs/CODE_REVIEW_AUDIT.md`](docs/CODE_REVIEW_AUDIT.md)
+> **Версия правил:** 2.0 (обновлено по результатам инспекции 2026-08-30)
+> **Отчёт инспекции:** [`docs/PROJECT_INSPECTION.md`](docs/PROJECT_INSPECTION.md) — вердикт ✅ Approve; web 81.1/100 (B), packages 94.1/100 (A), 160/160 тестов
+> **План устранения:** [`docs/REMEDIATION_PLAN.md`](docs/REMEDIATION_PLAN.md) — активные фазы G–J
+> **История аудита:** [`docs/CODE_REVIEW_AUDIT.md`](docs/CODE_REVIEW_AUDIT.md)
 
 ---
 

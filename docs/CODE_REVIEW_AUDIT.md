@@ -1,28 +1,30 @@
 # EMS-Platform — Отчёт о инспекции кода
 
 > **Дата аудита:** 2026-08-27 (baseline remediation)
-> **Повторная инспекция:** 2026-08-29 — см. [`PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md)
-> **Инструмент:** `code_quality_checker.py` (TypeScript/TSX) + ручной анализ
-> **Покрытие (2026-08-29):** `apps/web/src` — 279 файлов; `packages` — 30 файлов
-> **Итоговая оценка web:** **C (78.3 / 100)**; packages **A (94.1 / 100)**
-> **Вердикт:** ✅ **Quality baseline PASS** (`pnpm check:quality`). Критические security findings из исходного аудита устранены. Остаточный UI-долг: Chip вместо `StatusBadge` в паспорте оборудования. Автоматический checker фиксирует low-priority smells и ограничения парсера TSX.
+> **Последняя инспекция:** 2026-08-30 — см. [`PROJECT_INSPECTION.md`](PROJECT_INSPECTION.md)
+> **Инструмент:** `code_quality_checker.py` (TypeScript/TSX) + ручной анализ по скиллу [`code-reviewer`](../.agents/skills/code-reviewer/SKILL.md)
+> **Покрытие (2026-08-30):** `apps/web/src` — 323 файла; `packages` — 30 файлов
+> **Итоговая оценка web:** **B (81.1 / 100)**; packages **A (94.1 / 100)**
+> **Вердикт:** ✅ **Approve.** Quality baseline PASS (8/8 порогов), 160/160 тестов, lint и `tsc` чистые. Все критические security findings исходного аудита закрыты и закреплены регрессионными тестами. Остаточный долг — структурный (сложность в WMS API-маршрутах и крупные presentation-файлы).
 
 ---
 
 ## Сводка результатов
 
-| Метрика | 2026-08-27 | 2026-08-29 |
-|---|---|---|
-| Проанализировано файлов (web) | 219 | **279** |
-| Средний балл web | 73.7 / 100 | **78.3 / 100** |
-| Общая оценка web | C | **C** |
-| Code smells (web) | 2 325 | **2 353** |
-| SOLID (web) | 28 | **25** |
-| F-grade (web / packages) | — | **38 / 0** |
-| Packages score | — | **94.1 / 100 (A)** |
-| Quality baseline | — | **PASS** |
-| Theme hex | — | **0** |
-| Rate-limit gaps | — | **0 / 85 routes** |
+| Метрика | 2026-08-27 | 2026-08-29 | **2026-08-30** |
+|---|---|---|---|
+| Проанализировано файлов (web) | 219 | 279 | **323** |
+| Средний балл web | 73.7 / 100 | 79.4 / 100 | **81.1 / 100** |
+| Общая оценка web | C | C | **B** |
+| Code smells (web) | 2 325 | 2 353 | **2 361** |
+| SOLID (web) | 28 | 25 | **25** |
+| F-grade (web / packages) | — | 36 / 0 | **33 / 0** |
+| Packages score | — | 94.1 (A) | **94.1 / 100 (A)** |
+| Quality baseline | — | PASS | **PASS (8/8)** |
+| Theme hex | — | 0 | **0** |
+| Rate-limit gaps | — | 0 / 85 | **0 / 85 routes** |
+| Тесты | 153 | 157 | **160 passed / 0 failed** |
+| `next lint` / `tsc --noEmit` | — | — | **0 / 0** |
 
 ### Ограничения автоматического отчёта
 
