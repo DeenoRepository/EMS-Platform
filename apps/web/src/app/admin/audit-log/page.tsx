@@ -33,70 +33,7 @@ import {
   FormDialog,
   type TableColumnOption,
 } from '@/components/ui';
-import { AuditChangeDto } from '@ems/shared';
-
-interface AuditItem {
-  id: string;
-  action: string;
-  entityType: string;
-  entityId: string;
-  changes: AuditChangeDto | null;
-  ipAddress: string | null;
-  userAgent: string | null;
-  createdAt: string;
-  user: {
-    id: string;
-    ldapLogin: string;
-    displayName: string;
-  } | null;
-}
-
-function sortAuditLogs(logs: AuditItem[], sortField: string, sortDirection: 'asc' | 'desc'): AuditItem[] {
-  if (!sortField) return logs;
-  return [...logs].sort((a, b) => {
-    let aVal: string | number = '';
-    let bVal: string | number = '';
-    switch (sortField) {
-      case 'createdAt':
-        aVal = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        break;
-      case 'user':
-        aVal = a.user?.displayName || a.user?.ldapLogin || '';
-        bVal = b.user?.displayName || b.user?.ldapLogin || '';
-        break;
-      case 'action':
-        aVal = a.action || '';
-        bVal = b.action || '';
-        break;
-      case 'entityType':
-        aVal = a.entityType || '';
-        bVal = b.entityType || '';
-        break;
-      case 'entityId':
-        aVal = a.entityId || '';
-        bVal = b.entityId || '';
-        break;
-      case 'ipAddress':
-        aVal = a.ipAddress || '';
-        bVal = b.ipAddress || '';
-        break;
-      default: {
-        const rawA = (a as unknown as Record<string, unknown>)[sortField];
-        const rawB = (b as unknown as Record<string, unknown>)[sortField];
-        aVal = typeof rawA === 'number' ? rawA : String(rawA ?? '');
-        bVal = typeof rawB === 'number' ? rawB : String(rawB ?? '');
-      }
-    }
-
-    if (typeof aVal === 'number' && typeof bVal === 'number') {
-      return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
-    }
-    return sortDirection === 'asc'
-      ? String(aVal).localeCompare(String(bVal), 'ru')
-      : String(bVal).localeCompare(String(aVal), 'ru');
-  });
-}
+import { sortAuditLogs, type AuditItem } from './audit-log-sort';
 
 export default function AdminAuditLogPage() {
   const { enqueueSnackbar } = useSnackbar();
