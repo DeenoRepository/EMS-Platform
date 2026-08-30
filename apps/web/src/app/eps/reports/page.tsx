@@ -10,10 +10,6 @@ import {
   Typography,
 } from '@mui/material';
 import ViewColumnOutlinedIcon from '@mui/icons-material/ViewColumnOutlined';
-import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
-import SpeedIcon from '@mui/icons-material/Speed';
-import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
-import LayersIcon from '@mui/icons-material/Layers';
 import PageHeader from '@/components/layout/PageHeader';
 import { useSnackbar } from 'notistack';
 import { EQUIPMENT_STATUS_MAP, PERMISSIONS } from '@ems/shared';
@@ -27,7 +23,6 @@ import {
   ExportButton,
   DatePickerField,
   ConfirmDialog,
-  StatCard,
   FilterToolbar,
   PageLoading,
 } from '@/components/ui';
