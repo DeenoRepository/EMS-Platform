@@ -33,6 +33,18 @@ import type { EquipmentAuditLog } from '@/components/eps/EquipmentAuditHistoryTa
 import { EquipmentEditDialog } from '@/components/eps/EquipmentEditDialog';
 import { EquipmentPassportAuxiliaryDialogs } from '@/components/eps/EquipmentPassportAuxiliaryDialogs';
 import { buildEquipmentLifecycleEvents } from '@/components/eps/equipment-lifecycle-events';
+import {
+  computeEquipmentHealthScore,
+  loadEquipmentAndMeta,
+  loadAuditLogs,
+  buildApprovalProposedData,
+  submitApprovalRequest,
+  saveEquipmentEdit,
+  deleteEquipmentById,
+  deleteEquipmentDocument,
+  uploadEquipmentDocument,
+  submitEquipmentForApproval,
+} from '@/components/eps/equipment-passport-actions';
 
 export interface CustomFieldDef {
   id: string;
@@ -124,7 +136,7 @@ export interface EquipmentDetails {
   }[];
 }
 
-interface EquipmentEditFormState {
+export interface EquipmentEditFormState {
   name?: string;
   inventoryNumber?: string;
   serialNumber?: string;
@@ -207,36 +219,12 @@ function EquipmentPassportContent() {
   const fetchEquipmentAndMeta = useCallback(async () => {
     setLoading(true);
     try {
-      const [eqRes, secRes] = await Promise.all([
-        fetch(`/api/eps/equipment/${id}`),
-        fetch('/api/eps/custom-sections'),
-      ]);
-
-      if (eqRes.ok) {
-        const json = await eqRes.json();
-        if (json.success && json.data) {
-          setEquipment(json.data);
-          setEditForm({
-            name: json.data.name,
-            inventoryNumber: json.data.inventoryNumber || '',
-            serialNumber: json.data.serialNumber || '',
-            manufacturer: json.data.manufacturer || '',
-            model: json.data.model || '',
-            location: json.data.location || '',
-            status: json.data.status,
-            commissionDate: json.data.commissionDate ? json.data.commissionDate.split('T')[0] : '',
-          });
-          setEditCustomFields(json.data.customFields || {});
-        }
-      }
-
-      if (secRes.ok) {
-        const secJson = await secRes.json();
-        if (secJson.success && secJson.data) {
-          setSections(secJson.data.sections || []);
-          setUnassignedFields(secJson.data.unassignedFields || []);
-        }
-      }
+      const result = await loadEquipmentAndMeta(id);
+      if (result.equipment) setEquipment(result.equipment);
+      if (result.editForm) setEditForm(result.editForm);
+      if (result.editCustomFields) setEditCustomFields(result.editCustomFields);
+      if (result.sections) setSections(result.sections);
+      if (result.unassignedFields) setUnassignedFields(result.unassignedFields);
     } catch {
       enqueueSnackbar('Ошибка загрузки паспорта оборудования', { variant: 'error' });
     } finally {
@@ -251,11 +239,8 @@ function EquipmentPassportContent() {
   const fetchAudit = useCallback(async () => {
     setLoadingAudit(true);
     try {
-      const res = await fetch(`/api/eps/equipment/${id}/audit`);
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success) setAuditLogs(json.data);
-      }
+      const logs = await loadAuditLogs(id);
+      if (logs) setAuditLogs(logs);
     } catch {
       // ignore
     } finally {
@@ -284,36 +269,22 @@ function EquipmentPassportContent() {
     }
     setSubmittingApproval(true);
     try {
-      let proposedData: Record<string, string> | null = null;
-      if (createApprovalType === 'STATUS_CHANGE') {
-        proposedData = { targetStatus: createApprovalTargetStatus };
-      } else if (createApprovalType === 'DECOMMISSIONING') {
-        proposedData = { targetStatus: 'DECOMMISSIONED' };
-      } else if (createApprovalType === 'COMMISSIONING') {
-        proposedData = { targetStatus: 'ACTIVE' };
-      }
-
-      const res = await fetch('/api/eps/approvals', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          equipmentId: id,
-          type: createApprovalType,
-          title: createApprovalTitle,
-          description: createApprovalDescription,
-          proposedData,
-        }),
+      const proposedData = buildApprovalProposedData(createApprovalType, createApprovalTargetStatus);
+      const result = await submitApprovalRequest({
+        equipmentId: id,
+        type: createApprovalType,
+        title: createApprovalTitle,
+        description: createApprovalDescription,
+        proposedData,
       });
-
-      const data = await res.json();
-      if (data.success) {
+      if (result.success) {
         enqueueSnackbar('Заявка на согласование создана', { variant: 'success' });
         setCreateApprovalModalOpen(false);
         setCreateApprovalTitle('');
         setCreateApprovalDescription('');
         fetchEquipmentAndMeta();
       } else {
-        enqueueSnackbar(data.error || 'Ошибка создания заявки', { variant: 'error' });
+        enqueueSnackbar(result.error || 'Ошибка создания заявки', { variant: 'error' });
       }
     } catch {
       enqueueSnackbar('Ошибка сети при создании заявки', { variant: 'error' });
@@ -325,17 +296,8 @@ function EquipmentPassportContent() {
   // Edit Submit
   const handleSaveEdit = async (submitForApproval = false) => {
     try {
-      const res = await fetch(`/api/eps/equipment/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...editForm,
-          customFields: editCustomFields,
-          submitForApproval,
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
+      const result = await saveEquipmentEdit({ id, editForm, editCustomFields, submitForApproval });
+      if (result.success) {
         if (submitForApproval) {
           enqueueSnackbar('Изменения паспорта отправлены на согласование', { variant: 'success' });
         } else {
@@ -344,7 +306,7 @@ function EquipmentPassportContent() {
         setEditModalOpen(false);
         fetchEquipmentAndMeta();
       } else {
-        enqueueSnackbar(data.error || 'Ошибка сохранения', { variant: 'error' });
+        enqueueSnackbar(result.error || 'Ошибка сохранения', { variant: 'error' });
       }
     } catch {
       enqueueSnackbar('Ошибка отправки данных', { variant: 'error' });
@@ -359,13 +321,12 @@ function EquipmentPassportContent() {
       message: 'Вы действительно хотите удалить эту единицу оборудования из системы?',
       onConfirm: async () => {
         try {
-          const res = await fetch(`/api/eps/equipment/${id}`, { method: 'DELETE' });
-          const data = await res.json();
-          if (data.success) {
+          const result = await deleteEquipmentById(id);
+          if (result.success) {
             enqueueSnackbar('Оборудование удалено', { variant: 'info' });
             router.push('/eps');
           } else {
-            enqueueSnackbar(data.error || 'Ошибка удаления', { variant: 'error' });
+            enqueueSnackbar(result.error || 'Ошибка удаления', { variant: 'error' });
           }
         } catch {
           enqueueSnackbar('Ошибка сети', { variant: 'error' });
@@ -381,25 +342,20 @@ function EquipmentPassportContent() {
     if (!selectedFile) return;
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append('file', selectedFile);
-      fd.append('equipmentId', id);
-      fd.append('docType', docType);
-      fd.append('description', docDescription);
-
-      const res = await fetch('/api/eps/documents', {
-        method: 'POST',
-        body: fd,
+      const result = await uploadEquipmentDocument({
+        file: selectedFile,
+        equipmentId: id,
+        docType,
+        description: docDescription,
       });
-      const data = await res.json();
-      if (data.success) {
+      if (result.success) {
         enqueueSnackbar('Документ успешно прикреплен', { variant: 'success' });
         setDocModalOpen(false);
         setSelectedFile(null);
         setDocDescription('');
         fetchEquipmentAndMeta();
       } else {
-        enqueueSnackbar(data.error || 'Ошибка загрузки документа', { variant: 'error' });
+        enqueueSnackbar(result.error || 'Ошибка загрузки документа', { variant: 'error' });
       }
     } catch {
       enqueueSnackbar('Ошибка сети при загрузке документа', { variant: 'error' });
@@ -416,13 +372,12 @@ function EquipmentPassportContent() {
       message: 'Удалить этот прикрепленный документ?',
       onConfirm: async () => {
         try {
-          const res = await fetch(`/api/eps/documents/${documentId}`, { method: 'DELETE' });
-          const data = await res.json();
-          if (data.success) {
+          const result = await deleteEquipmentDocument(documentId);
+          if (result.success) {
             enqueueSnackbar('Документ успешно удален', { variant: 'info' });
             fetchEquipmentAndMeta();
           } else {
-            enqueueSnackbar(data.error || 'Ошибка удаления', { variant: 'error' });
+            enqueueSnackbar(result.error || 'Ошибка удаления', { variant: 'error' });
           }
         } catch {
           enqueueSnackbar('Ошибка удаления', { variant: 'error' });
@@ -436,15 +391,7 @@ function EquipmentPassportContent() {
   const canEdit = hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT);
   const canDelete = hasPermission(PERMISSIONS.EPS_EQUIPMENT_DELETE);
 
-  const healthScore = useMemo(() => {
-    if (!equipment) return 100;
-    if (equipment.status === 'DECOMMISSIONED') return 10;
-    if (equipment.status === 'UNDER_REPAIR') return 45;
-    if (equipment.status === 'IN_STORAGE') return 75;
-    const openIssues = (equipment.jiraIssues || []).filter((i) => i.status !== 'Closed' && i.status !== 'Resolved').length;
-    const plansCount = (equipment.maintenancePlans || []).length;
-    return Math.max(50, Math.min(100, 95 - openIssues * 10 + (plansCount > 0 ? 5 : 0)));
-  }, [equipment]);
+  const healthScore = useMemo(() => computeEquipmentHealthScore(equipment), [equipment]);
 
   const lifecycleEvents = useMemo(
     () => (equipment ? buildEquipmentLifecycleEvents(equipment, auditLogs) : []),
@@ -565,17 +512,12 @@ function EquipmentPassportContent() {
               size="small"
               variant="outlined"
               onClick={async () => {
-                const res = await fetch(`/api/eps/equipment/${id}`, {
-                  method: 'PATCH',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ submitForApproval: true }),
-                });
-                const data = await res.json();
-                if (data.success) {
+                const result = await submitEquipmentForApproval(id);
+                if (result.success) {
                   enqueueSnackbar('Паспорт оборудования отправлен на согласование', { variant: 'success' });
                   fetchEquipmentAndMeta();
                 } else {
-                  enqueueSnackbar(data.error || 'Ошибка', { variant: 'error' });
+                  enqueueSnackbar(result.error || 'Ошибка', { variant: 'error' });
                 }
               }}
               sx={{ fontWeight: 700 }}
