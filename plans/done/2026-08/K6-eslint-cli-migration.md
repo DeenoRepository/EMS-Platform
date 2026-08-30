@@ -16,7 +16,7 @@ gates: [lint, test, tsc, build, check:docs, plans:check]
 
 ## Problem
 
-[`apps/web/package.json`](../../apps/web/package.json:9) использует `next lint`.
+[`apps/web/package.json`](../../../apps/web/package.json:9) использует `next lint`.
 Next.js 15 предупреждает, что команда будет удалена в Next.js 16. Без миграции
 следующее major-обновление сделает lint gate несовместимым.
 
@@ -30,7 +30,7 @@ Next.js 15 предупреждает, что команда будет удал
 
 ## Steps
 
-1. Проверить текущую конфигурацию [`apps/web/.eslintrc.json`](../../apps/web/.eslintrc.json).
+1. Проверить текущую конфигурацию [`apps/web/.eslintrc.json`](../../../apps/web/.eslintrc.json).
 2. Выбрать CLI-команду, покрывающую `.js`, `.jsx`, `.ts`, `.tsx` без `.next` и
    generated outputs.
 3. Заменить script и проверить отсутствие изменения набора правил.
@@ -46,7 +46,7 @@ Next.js 15 предупреждает, что команда будет удал
 
 ## Result
 
-- Updated only [`apps/web/package.json`](../../apps/web/package.json:9): `lint` now runs `eslint src --ext .js,.jsx,.ts,.tsx`.
-- Preserved [`apps/web/.eslintrc.json`](../../apps/web/.eslintrc.json:1) unchanged, including `next/core-web-vitals`, restricted MUI imports, and `no-console` policy.
+- Updated only [`apps/web/package.json`](../../../apps/web/package.json:9): `lint` now runs `eslint src --ext .js,.jsx,.ts,.tsx`.
+- Preserved [`apps/web/.eslintrc.json`](../../../apps/web/.eslintrc.json:1) unchanged, including `next/core-web-vitals`, restricted MUI imports, and `no-console` policy.
 - No direct current CI or documentation command reference required updating; CI continues to invoke the package/monorepo lint scripts.
 - Verification passed: web lint, full monorepo lint, 187 tests, web TypeScript check, monorepo build, docs links, and plans check.
