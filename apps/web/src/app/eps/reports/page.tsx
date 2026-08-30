@@ -35,6 +35,7 @@ import ReportColumnBuilderDialog, { ReportColumn, IndustryPreset } from '@/compo
 import ReportSaveTemplateDialog from '@/components/eps/reports/ReportSaveTemplateDialog';
 import ReportDataTable from '@/components/eps/reports/ReportDataTable';
 import ReportPresetsToolbar from '@/components/eps/reports/ReportPresetsToolbar';
+import { applyReportPreset, applyReportTemplate, type ReportFilterState, type ReportSortState } from './report-template-handlers';
 
 export interface SavedTemplate {
   id: string;
@@ -295,27 +296,29 @@ function ReportBuilderContent() {
   };
 
   const handleApplyPreset = (preset: IndustryPreset) => {
-    setSelectedColumnKeys(preset.columns);
-    setActivePresetOrTemplateId(preset.id);
+    applyReportPreset(preset, setSelectedColumnKeys, setActivePresetOrTemplateId);
     enqueueSnackbar(`Применен пресет «${preset.name}»`, { variant: 'info' });
   };
 
-  const handleApplyTemplate = (tmpl: SavedTemplate) => {
-    setSelectedColumnKeys(tmpl.config.selectedColumns);
-    if (tmpl.config.filters) {
-      setStatusFilter(tmpl.config.filters.status || '');
-      setSearchQuery(tmpl.config.filters.search || '');
-      setManufacturerFilter(tmpl.config.filters.manufacturer || '');
-      setLocationFilter(tmpl.config.filters.location || '');
-      setDateFrom(tmpl.config.filters.commissionDateFrom || '');
-      setDateTo(tmpl.config.filters.commissionDateTo || '');
-    }
-    if (tmpl.config.sort) {
-      setSortField(tmpl.config.sort.field || 'inventoryNumber');
-      setSortOrder(tmpl.config.sort.order || 'asc');
-    }
-    setActivePresetOrTemplateId(`tmpl_${tmpl.id}`);
-    enqueueSnackbar(`Загружен шаблон «${tmpl.name}»`, { variant: 'success' });
+  const handleApplyTemplate = (template: SavedTemplate) => {
+    applyReportTemplate(
+      template,
+      setSelectedColumnKeys,
+      (filters: ReportFilterState) => {
+        setStatusFilter(filters.status);
+        setSearchQuery(filters.search);
+        setManufacturerFilter(filters.manufacturer);
+        setLocationFilter(filters.location);
+        setDateFrom(filters.dateFrom);
+        setDateTo(filters.dateTo);
+      },
+      (sort: ReportSortState) => {
+        setSortField(sort.field);
+        setSortOrder(sort.order);
+      },
+      setActivePresetOrTemplateId,
+    );
+    enqueueSnackbar(`Загружен шаблон «${template.name}»`, { variant: 'success' });
   };
 
   const handleMoveColumn = (index: number, direction: 'up' | 'down') => {
