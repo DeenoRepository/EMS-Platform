@@ -33,7 +33,11 @@ import {
   InputAdornment,
 } from '@mui/material';
 import PageHeader from '@/components/layout/PageHeader';
-import { buildWarehouseSubmitRequest, validateWarehouseName } from './warehouse-submit';
+import {
+  handleWarehouseSubmitResponse,
+  submitWarehouseRequest,
+  validateWarehouseName,
+} from './warehouse-submit';
 import AddIcon from '@mui/icons-material/Add';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
@@ -174,7 +178,7 @@ export default function WmsWarehousesPage() {
 
     setIsSubmitting(true);
     try {
-      const request = buildWarehouseSubmitRequest({
+      const res = await submitWarehouseRequest({
         editingId,
         name,
         code,
@@ -182,20 +186,15 @@ export default function WmsWarehousesPage() {
         responsibleUserId,
         isActive,
       });
-      const res = await fetch(request.url, {
-        method: request.method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(request.body),
-      });
 
-      const json = await res.json();
-      if (res.ok && json.success) {
-        enqueueSnackbar(editingId ? 'Склад обновлен' : 'Склад успешно создан', { variant: 'success' });
-        setIsModalOpen(false);
-        fetchWarehouses();
-      } else {
-        enqueueSnackbar(json.error || 'Ошибка сохранения склада', { variant: 'error' });
-      }
+      await handleWarehouseSubmitResponse(res, editingId, {
+        onSuccess: (message) => {
+          enqueueSnackbar(message, { variant: 'success' });
+          setIsModalOpen(false);
+          fetchWarehouses();
+        },
+        onApiError: (message) => enqueueSnackbar(message, { variant: 'error' }),
+      });
     } catch {
       enqueueSnackbar('Ошибка сети при сохранении склада', { variant: 'error' });
     } finally {
