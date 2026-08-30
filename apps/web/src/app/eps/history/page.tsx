@@ -33,6 +33,7 @@ import {
 } from '@/components/ui';
 import AuditDiffModal, { AuditLogItem } from '@/components/eps/history/AuditDiffModal';
 import AuditLogTableView from '@/components/eps/history/AuditLogTableView';
+import { sortHistoryItems } from './history-sort';
 
 interface EquipmentOption {
   id: string;
@@ -141,45 +142,10 @@ function HistoryListContent() {
     loadAuditLogs();
   }, [loadAuditLogs]);
 
-  const sortedItems = useMemo(() => {
-    if (!sortField) return items;
-    return [...items].sort((a, b) => {
-      let aVal: any = '';
-      let bVal: any = '';
-      switch (sortField) {
-        case 'createdAt':
-          aVal = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-          break;
-        case 'user':
-          aVal = a.user?.displayName || a.user?.ldapLogin || '';
-          bVal = b.user?.displayName || b.user?.ldapLogin || '';
-          break;
-        case 'action':
-          aVal = a.action || '';
-          bVal = b.action || '';
-          break;
-        case 'entityType':
-          aVal = a.entityType || '';
-          bVal = b.entityType || '';
-          break;
-        case 'equipment':
-          aVal = a.equipment?.name || a.equipment?.inventoryNumber || '';
-          bVal = b.equipment?.name || b.equipment?.inventoryNumber || '';
-          break;
-        default:
-          aVal = (a as any)[sortField] || '';
-          bVal = (b as any)[sortField] || '';
-      }
-
-      if (typeof aVal === 'number' && typeof bVal === 'number') {
-        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
-      }
-      return sortDirection === 'asc'
-        ? String(aVal).localeCompare(String(bVal), 'ru')
-        : String(bVal).localeCompare(String(aVal), 'ru');
-    });
-  }, [items, sortField, sortDirection]);
+  const sortedItems = useMemo(
+    () => sortHistoryItems(items, sortField, sortDirection),
+    [items, sortField, sortDirection]
+  );
 
   const stats = useMemo(() => {
     const creates = items.filter((i) => i.action === 'CREATE').length;
