@@ -1,7 +1,8 @@
 # EMS-Platform — Инспекция проекта
 
 **Дата инспекции:** 2026-08-30 (инструментальная, полный прогон гейтов)
-**Ветка:** `main` (HEAD `1609d9d`, рабочее дерево чистое)
+**Ветка:** `main` (HEAD `d576796`, рабочее дерево чистое)
+**Обновление после инспекции:** фазы G, H и J1–J2 плана устранения выполнены в этой же сессии (10 коммитов) — см. [`REMEDIATION_PLAN.md`](REMEDIATION_PLAN.md). Метрики ниже отражают состояние **до** этих story; актуальный факт: web **81.7/100 (B)**, F-grade **27**, `pnpm test` **2.66с** (было 33.6с).
 **Скилл:** [`code-reviewer`](../.agents/skills/code-reviewer/SKILL.md) — правила `rules/universal.md` + `languages/typescript.md`
 **Инструменты:** `code_quality_checker.py`, `pr_analyzer.py`, [`check-quality-baseline.mjs`](../scripts/check-quality-baseline.mjs), [`check-theme-tokens.mjs`](../scripts/check-theme-tokens.mjs), [`route_audit.py`](../scripts/route_audit.py), [`fgrade_detail.py`](../scripts/fgrade_detail.py), `pnpm test`, `next lint`, `tsc --noEmit`
 **Правила:** [`AGENTS.md`](../AGENTS.md), [`.agents/rules/security.md`](../.agents/rules/security.md), [`.agents/rules/code_quality.md`](../.agents/rules/code_quality.md), [`.agents/rules/ui_design_code.md`](../.agents/rules/ui_design_code.md)
