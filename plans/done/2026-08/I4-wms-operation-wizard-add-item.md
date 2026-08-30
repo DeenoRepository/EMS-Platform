@@ -1,14 +1,14 @@
 ---
 id: I4
 title: Extract handleAddItem from WmsOperationWizardDialog
-status: active
+status: done
 phase: I
 priority: P2
 risk: low
 skills: [senior-frontend]
 opened: 2026-08-30
-closed: null
-commits: []
+closed: 2026-08-30
+commits: [834bb2f]
 gates: [lint, tsc, check:quality]
 ---
 
@@ -36,10 +36,16 @@ payload building.
 
 ## Definition of Done
 
-- [ ] `handleAddItem` in the component ≤ 30 lines, delegates to pure helper.
-- [ ] Add/merge/duplicate item behavior unchanged.
-- [ ] Full gate green: lint, tsc, `pnpm test`, quality baseline.
+- [x] `handleAddItem` in the component ≤ 30 lines, delegates to pure helper.
+- [x] Add/merge/duplicate item behavior unchanged.
+- [x] Full gate green: lint, tsc, `pnpm test`, quality baseline.
 
 ## Result
 
-_Not yet closed._
+Extracted item validation, stock checks, write-off metadata, and line-item
+construction into [`operation-item.ts`](../../apps/web/src/components/wms/operation-item.ts).
+The dialog retains state updates and snackbar wiring while `handleAddItem`
+delegates pure business logic.
+
+Verification: web lint, web TypeScript check, 160 tests, quality baseline, and
+`git diff --check` passed.

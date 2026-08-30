@@ -22,11 +22,10 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (5)
+## Active (4)
 
 | ID | Title | Phase | Priority | Risk | Skills | Opened |
 |---|---|---|---|---|---|---|
-| [I4](active/I4-wms-operation-wizard-add-item.md) | Extract handleAddItem from WmsOperationWizardDialog | I | P2 | low | senior-frontend | 2026-08-30 |
 | [I5](active/I5-eps-reports-page-decomposition.md) | Decompose eps/reports/page.tsx (largest file, 15 functions) | I | P2 | low | senior-frontend | 2026-08-30 |
 | [I6](active/I6-wms-stock-page-load-zones.md) | Extract loadZones from wms/stock/page.tsx | I | P2 | low | senior-frontend | 2026-08-30 |
 | [I7](active/I7-admin-feedback-filters.md) | Extract admin/feedback filters (cx 17) | I | P2 | low | senior-frontend | 2026-08-30 |
@@ -40,7 +39,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 
 ---
 
-## Done (41)
+## Done (42)
 
 | ID | Title | Phase | Closed | Commits |
 |---|---|---|---|---|
@@ -82,6 +81,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [I1](done/2026-08/I1-equipment-wizard-form-steps.md) | Decompose EquipmentWizardForm into step components | I | 2026-08-30 | e8ee97d |
 | [I2](done/2026-08/I2-mro-execution-wizard-submit.md) | Extract MroExecutionWizardDialog submit module | I | 2026-08-30 | b10ff28 |
 | [I3](done/2026-08/I3-wms-operation-items-step.md) | Split WmsOperationItemsStep table/row presentation | I | 2026-08-30 | cf9b05c |
+| [I4](done/2026-08/I4-wms-operation-wizard-add-item.md) | Extract handleAddItem from WmsOperationWizardDialog | I | 2026-08-30 | 834bb2f |
 | [J1](done/2026-08/J1-mock-prisma-auth-guard-tests.md) | Mock Prisma in auth-guard tests to remove DB dependency | J | 2026-08-30 | 9514761 |
 | [J2](done/2026-08/J2-quality-baseline-thresholds.md) | Raise quality baseline thresholds after phases G/H closed | J | 2026-08-30 | d576796 |
 | [J3](done/2026-08/J3-documentation-sync.md) | Documentation synchronization (E1, E3 follow-up) | J | 2026-08-30 | — |
