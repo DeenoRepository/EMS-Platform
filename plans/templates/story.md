@@ -38,3 +38,6 @@ UI behavior, etc.) — this is what reviewers check first.
 
 Filled in only when the story is closed. Summarizes what actually changed,
 any deviation from the original scope, and links the closing commit(s).
+
+Before moving a story from `plans/active/` to `plans/done/YYYY-MM/`, recalculate
+relative links from the final done location and run `node scripts/check-doc-links.mjs`.
