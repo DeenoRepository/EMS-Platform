@@ -61,6 +61,7 @@ import {
 import { WmsStockTable } from '@/components/wms/WmsStockTable';
 import WmsStockFilters from '@/components/wms/WmsStockFilters';
 import { countActiveStockFilters } from './filter-state';
+import { parseZoneResponse } from './zone-response';
 
 export interface StockRow {
   id: string;
@@ -221,8 +222,8 @@ function WmsStockContent() {
       try {
         const res = await fetch(`/api/wms/warehouses/${selectedWarehouse}/zones`);
         if (res.ok) {
-          const json = await res.json();
-          if (json.success) setZones(json.data);
+          const zonesData = parseZoneResponse(await res.json());
+          if (zonesData) setZones(zonesData);
         }
       } catch (err) {
         console.error('Ошибка загрузки зон склада:', err);
