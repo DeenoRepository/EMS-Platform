@@ -22,13 +22,12 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (4)
+## Active (3)
 
 | ID | Title | Phase | Priority | Risk | Skills | Opened |
 |---|---|---|---|---|---|---|
 | [K4](active/K4-complexity-remediation.md) | Снизить реальную цикломатическую сложность приоритетных функций | K | P2 | medium | senior-frontend, senior-backend, zero-hallucination-coder | 2026-08-30 |
 | [K4.1](active/K4.1-sidebar-load-data.md) | Декомпозировать загрузку operational counters в Sidebar | K | P2 | medium | senior-frontend, zero-hallucination-coder | 2026-08-30 |
-| [K5](active/K5-ui-console-cleanup.md) | Заменить остаточные console-вызовы в UI и сервисах | K | P3 | low | senior-frontend, code-reviewer | 2026-08-30 |
 | [K6](active/K6-eslint-cli-migration.md) | Перевести web lint с next lint на ESLint CLI | K | P3 | low | senior-frontend, ci-cd-pipeline-builder | 2026-08-30 |
 
 ---
@@ -39,7 +38,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 
 ---
 
-## Done (51)
+## Done (52)
 
 | ID | Title | Phase | Closed | Commits |
 |---|---|---|---|---|
@@ -93,4 +92,5 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [K2](done/2026-08/K2-auth-declaration-build.md) | Восстановить declaration build пакета auth | K | 2026-08-30 | da70388 |
 | [K3](done/2026-08/K3-story-links-gate.md) | Исправить ссылки story I1–I8 и закрепить docs gate | K | 2026-08-30 | pending |
 | [K4.1.1](done/2026-08/K4.1.1-sidebar-state-application.md) | Вынести применение operational counters в Sidebar | K | 2026-08-30 | pending |
+| [K5](done/2026-08/K5-ui-console-cleanup.md) | Заменить остаточные console-вызовы в UI и сервисах | K | 2026-08-30 | 90a2134, 44550a8, b0f4c5f, d1c8672, 50dade2, pending |
 | [K7](done/2026-08/K7-test-db-isolation.md) | Устранить внешнюю БД из unit-тестов auth-guard | K | 2026-08-30 | 2f56249 |
