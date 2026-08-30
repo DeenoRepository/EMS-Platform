@@ -1,12 +1,70 @@
-import { test, describe } from 'node:test';
+import { test, describe, before, mock } from 'node:test';
 import assert from 'node:assert';
-import { getCurrentUser, isAdminUser, requireAuth, unauthorizedResponse, forbiddenResponse } from '../auth-guard';
-import { signSessionToken } from '@ems/auth';
 import { PERMISSIONS, JwtUserPayload } from '@ems/shared';
 import type { NextRequest } from 'next/server';
 
 // Обеспечиваем наличие JWT_SECRET для тестов
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'super_secret_test_jwt_key_32_characters_long_min';
+
+const adminUserRecord = {
+  id: 'admin-id-123',
+  isActive: true,
+  roles: [{ role: { name: 'admin', permissions: [] } }],
+};
+
+const guestUserRecord = {
+  id: 'guest-id-456',
+  isActive: true,
+  roles: [
+    {
+      role: {
+        name: 'guest',
+        permissions: [{ permission: { code: PERMISSIONS.EPS_EQUIPMENT_VIEW } }],
+      },
+    },
+  ],
+};
+
+/**
+ * Mocks `@ems/database` so auth-guard tests never open a real connection.
+ * `getUserRolesAndPermissions()` (packages/auth/src/rbac.ts) and the
+ * maintenance-mode check in `requireAuth()` both read from `prisma` —
+ * without this mock every test hits a real (and here, unreachable) Postgres
+ * instance, adding several seconds of connection-timeout latency per call
+ * (see docs/PROJECT_INSPECTION.md §7 Q1). Requires
+ * `node --experimental-test-module-mocks` (wired in scripts/test-runner.mjs).
+ */
+mock.module('@ems/database', {
+  namedExports: {
+    prisma: {
+      user: {
+        findUnique: async ({ where }: { where: { id: string } }) => {
+          if (where.id === adminUserRecord.id) return adminUserRecord;
+          if (where.id === guestUserRecord.id) return guestUserRecord;
+          return null;
+        },
+      },
+      systemSetting: {
+        findUnique: async () => null,
+      },
+    },
+  },
+});
+
+// Динамический импорт после mock.module(): статический import был бы поднят
+// (hoisted) выше вызова mock.module() и получил бы немокированный prisma.
+// `before()` поддерживает async, в отличие от top-level await в этой сборке.
+let signSessionToken: typeof import('@ems/auth').signSessionToken;
+let getCurrentUser: typeof import('../auth-guard').getCurrentUser;
+let isAdminUser: typeof import('../auth-guard').isAdminUser;
+let requireAuth: typeof import('../auth-guard').requireAuth;
+let unauthorizedResponse: typeof import('../auth-guard').unauthorizedResponse;
+let forbiddenResponse: typeof import('../auth-guard').forbiddenResponse;
+
+before(async () => {
+  ({ signSessionToken } = await import('@ems/auth'));
+  ({ getCurrentUser, isAdminUser, requireAuth, unauthorizedResponse, forbiddenResponse } = await import('../auth-guard'));
+});
 
 function makeNextRequest(overrides: {
   method?: string;

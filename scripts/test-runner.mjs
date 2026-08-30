@@ -29,13 +29,21 @@ const testFiles = [
   ...findTestFiles(path.join('apps', 'web', 'src', 'lib', '__tests__')),
 ];
 
-const tsxPackagePath = path.dirname(import.meta.resolve('tsx/package.json').replace('file:///', ''));
-const tsxCli = path.join(tsxPackagePath, 'dist', 'cli.mjs');
-
-const child = spawn(process.execPath, [tsxCli, '--test', ...testFiles], {
-  stdio: 'inherit',
-  env: process.env,
-});
+// `--import tsx` (Node's native ESM loader hook) is required here rather than
+// invoking tsx's own CLI script: `node:test`'s `mock.module()` API needs
+// `--experimental-test-module-mocks`, and that flag only takes effect on
+// modules loaded through Node's loader chain. tsx's CLI transforms test
+// files via a CJS `Module._compile` hook that bypasses this chain, so
+// `mock.module` is `undefined` there even with the flag set (see
+// docs/PROJECT_INSPECTION.md §7 Q1 / REMEDIATION_PLAN.md Story J1).
+const child = spawn(
+  process.execPath,
+  ['--experimental-test-module-mocks', '--import', 'tsx', '--test', ...testFiles],
+  {
+    stdio: 'inherit',
+    env: process.env,
+  }
+);
 
 child.on('exit', (code) => {
   process.exit(code ?? 0);
