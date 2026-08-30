@@ -22,7 +22,7 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (6)
+## Active (5)
 
 | ID | Title | Phase | Priority | Risk | Skills | Opened |
 |---|---|---|---|---|---|---|
@@ -30,7 +30,6 @@ Current quality metrics are **not** tracked in this file — see
 | [K4.1](active/K4.1-sidebar-load-data.md) | Декомпозировать загрузку operational counters в Sidebar | K | P2 | medium | senior-frontend, zero-hallucination-coder | 2026-08-30 |
 | [K4.2](active/K4.2-wms-warehouses-handle-submit.md) | Декомпозировать сохранение складов WMS | K | P2 | medium | senior-frontend, zero-hallucination-coder | 2026-08-30 |
 | [K4.3](active/K4.3-setup-ldap-auth-handler.md) | Декомпозировать проверку LDAP-аутентификации администратора | K | P2 | medium | senior-frontend, zero-hallucination-coder | 2026-08-30 |
-| [K4.10](active/K4.10-eps-history-sort-model.md) | Декомпозировать сортировку истории аудита EPS | K | P2 | low | senior-frontend, zero-hallucination-coder | 2026-08-30 |
 | [K6](active/K6-eslint-cli-migration.md) | Перевести web lint с next lint на ESLint CLI | K | P3 | low | senior-frontend, ci-cd-pipeline-builder | 2026-08-30 |
 
 ---
@@ -41,7 +40,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 
 ---
 
-## Done (58)
+## Done (59)
 
 | ID | Title | Phase | Closed | Commits |
 |---|---|---|---|---|
@@ -101,5 +100,6 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [K4.7](done/2026-08/K4.7-eps-approvals-get-query.md) | Р”РµРєРѕРјРїРѕР·РёСЂРѕРІР°С‚СЊ GET СЃРїРёСЃРєР° СЃРѕРіР»Р°СЃРѕРІР°РЅРёР№ EPS | K | 2026-08-30 | 7615f8e |
 | [K4.8](done/2026-08/K4.8-eps-equipment-get-query.md) | Декомпозировать GET реестра оборудования EPS | K | 2026-08-30 | a84ccab |
 | [K4.9](done/2026-08/K4.9-eps-history-get-query.md) | Декомпозировать GET истории аудита EPS | K | 2026-08-30 | ad9b4a2 |
+| [K4.10](done/2026-08/K4.10-eps-history-sort-model.md) | Декомпозировать сортировку истории аудита EPS | K | 2026-08-30 | 4dcc735 |
 | [K5](done/2026-08/K5-ui-console-cleanup.md) | Заменить остаточные console-вызовы в UI и сервисах | K | 2026-08-30 | 90a2134, 44550a8, b0f4c5f, d1c8672, 50dade2, pending |
 | [K7](done/2026-08/K7-test-db-isolation.md) | Устранить внешнюю БД из unit-тестов auth-guard | K | 2026-08-30 | 2f56249 |
