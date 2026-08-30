@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS } from '@ems/shared';
 
@@ -19,6 +20,7 @@ export interface WarehouseOption {
 }
 
 export function useWarehouseAccess() {
+  const { enqueueSnackbar } = useSnackbar();
   const { user, hasPermission } = useAuth();
   const [warehouses, setWarehouses] = useState<WarehouseOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,26 +38,26 @@ export function useWarehouseAccess() {
     setIsLoading(true);
     try {
       const res = await fetch('/api/wms/warehouses');
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success && Array.isArray(json.data)) {
-          setWarehouses(json.data);
-          
-          // Auto-select for non-admin storekeeper if they have exactly one assigned warehouse
-          if (!isAdmin) {
-            const myWhs = json.data.filter((w: WarehouseOption) => w.responsibleUserId === user?.userId);
-            if (myWhs.length === 1 && !selectedWarehouseId) {
-              setSelectedWarehouseId(myWhs[0].id);
-            }
+      const json = await res.json();
+      if (res.ok && json.success && Array.isArray(json.data)) {
+        setWarehouses(json.data);
+
+        // Auto-select for non-admin storekeeper if they have exactly one assigned warehouse
+        if (!isAdmin) {
+          const myWhs = json.data.filter((w: WarehouseOption) => w.responsibleUserId === user?.userId);
+          if (myWhs.length === 1 && !selectedWarehouseId) {
+            setSelectedWarehouseId(myWhs[0].id);
           }
         }
+      } else {
+        enqueueSnackbar(json.error || 'Ошибка загрузки складов', { variant: 'error' });
       }
-    } catch (err) {
-      console.error('Ошибка загрузки складов:', err);
+    } catch {
+      enqueueSnackbar('Ошибка сети при загрузке складов', { variant: 'error' });
     } finally {
       setIsLoading(false);
     }
-  }, [isAdmin, user?.userId, selectedWarehouseId]);
+  }, [enqueueSnackbar, isAdmin, user?.userId, selectedWarehouseId]);
 
   useEffect(() => {
     fetchWarehouses();

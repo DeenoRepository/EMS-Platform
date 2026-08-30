@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useSnackbar } from 'notistack';
 import {
   Box,
   Grid,
@@ -86,6 +87,7 @@ interface WmsStats {
 /* ─── WMS Dashboard Page ─── */
 export default function WmsDashboardPage() {
   const router = useRouter();
+  const { enqueueSnackbar } = useSnackbar();
   const { user, hasPermission } = useAuth();
   const [stats, setStats] = useState<WmsStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -98,35 +100,36 @@ export default function WmsDashboardPage() {
     setIsWizardOpen(true);
   };
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     setIsLoading(true);
     try {
       const [statsRes, maintRes] = await Promise.all([
         fetch('/api/wms/stats'),
         fetch('/api/system/maintenance'),
       ]);
-      if (statsRes.ok) {
-        const json = await statsRes.json();
-        if (json.success) {
-          setStats(json.data);
-        }
+      const statsJson = await statsRes.json();
+      if (statsRes.ok && statsJson.success) {
+        setStats(statsJson.data);
+      } else {
+        enqueueSnackbar(statsJson.error || 'Ошибка загрузки статистики WMS', { variant: 'error' });
       }
-      if (maintRes.ok) {
-        const maintJson = await maintRes.json();
-        if (maintJson.success && maintJson.data) {
-          setMaintStatus(maintJson.data);
-        }
+
+      const maintJson = await maintRes.json();
+      if (maintRes.ok && maintJson.success && maintJson.data) {
+        setMaintStatus(maintJson.data);
+      } else if (!maintRes.ok || !maintJson.success) {
+        enqueueSnackbar(maintJson.error || 'Ошибка загрузки статуса технического обслуживания', { variant: 'error' });
       }
-    } catch (err) {
-      console.error('Ошибка загрузки статистики WMS:', err);
+    } catch {
+      enqueueSnackbar('Ошибка сети при загрузке статистики WMS', { variant: 'error' });
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [enqueueSnackbar]);
 
   useEffect(() => {
     fetchStats();
-  }, []);
+  }, [fetchStats]);
 
   const isAdmin = user?.roles?.includes('admin') || user?.roles?.includes('administrator');
   const isModuleInMaintenance = Boolean(maintStatus?.modules.wms?.enabled);

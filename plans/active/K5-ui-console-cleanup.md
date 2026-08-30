@@ -8,10 +8,10 @@ risk: low
 skills: [senior-frontend, code-reviewer]
 opened: 2026-08-30
 closed: null
-commits: []
+commits: [90a2134, 44550a8, b0f4c5f, d1c8672]
 gates: [test, lint, tsc, check:quality]
 classification_commit: pending
-current_batch: K5.4 EPS wizard and SRM dialog UI error sinks
+current_batch: K5.5 warehouse access hook and WMS dashboard UI error sinks
 batch_status: implementation complete; all gates passed
 ---
 
@@ -70,6 +70,7 @@ API-пути уже очищены. Часть оставшихся вызово
 2. **K5.2 — WMS inventory dictionary and topology UI error sinks (current):** replace the inventory warehouse dictionary console call with the existing snackbar error path and remove the duplicate topology console call while preserving its existing snackbar behavior. Targeted and full gates passed.
 3. **K5.3 — server/service diagnostics migrated to the existing structured logger, with safe error context only.** Five named server/service modules updated; intentional sinks excluded.
 4. **K5.4 — EPS wizard and SRM dialog UI error sinks:** preserve existing EPS wizard snackbar handling while removing its duplicate console diagnostic; surface equipment-list load failures in the SRM dialog through the existing snackbar mechanism. Intentional sinks and unrelated UI calls excluded.
+5. **K5.5 — Warehouse access hook and WMS dashboard UI error sinks:** replace direct console diagnostics with user-visible snackbar errors for warehouse-access and dashboard data-loading failures, including non-success API responses. Preserve loading, filtering, auto-selection, maintenance handling, and refresh behavior.
 
 ## Steps
 
@@ -103,6 +104,15 @@ API-пути уже очищены. Часть оставшихся вызово
 - Behavior preserved: migration, file deletion, settings fallback, field-mapping fallback/regex handling, and notification failure swallowing remain unchanged.
 - Verification: targeted API/security test (18/18), full test suite (165/165), workspace lint, web TypeScript, and quality baseline all passed. `git diff --check` passed; the follow-up Windows `findstr` scan command returned exit 1 after tests passed because no matches were found in the changed files.
 
+## K5.5 Result
+
+- Scope: `hooks/useWarehouseAccess.ts:54` and `app/wms/page.tsx:121`.
+- Classification verified through consumers: warehouse-access failures are consumed by WMS operations and transfer panels without an existing error state; the dashboard had loading/empty states but no recoverable load-error state. The shared `notistack` provider is available to both consumers.
+- Result: replaced both direct console diagnostics with user-visible snackbar handling for failed requests, unsuccessful API payloads, and network failures. The dashboard loader now uses `useCallback` so its refresh callback remains stable and satisfies hook dependencies.
+- Behavior preserved: warehouse filtering, automatic single-warehouse selection, loading cleanup, dashboard maintenance preview, refresh action, and wizard success refresh remain unchanged. No errors are hidden and no secrets, error details, or PII are logged.
+- Excluded: remaining documented UI files, intentional logger/ErrorBoundary/app error sinks, and unrelated UI refactoring.
+- Verification: web lint, web TypeScript, full test suite (165/165), quality baseline, and `git diff --check` all passed. The test output includes the existing structured database-error diagnostic from the test suite; all tests passed.
+
 ## K5.4 Result
 
 - Scope: `components/eps/EquipmentWizardForm.tsx:97` and `components/srm/CreateServiceRequestDialog.tsx:85`.
@@ -114,4 +124,4 @@ API-пути уже очищены. Часть оставшихся вызово
 
 ## Result
 
-K5.4 completed; K5 remains active because other non-intentional UI console calls are still documented and pending.
+K5.5 completed; K5 remains active because other non-intentional UI console calls are still documented and pending.
