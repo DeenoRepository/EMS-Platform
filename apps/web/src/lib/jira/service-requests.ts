@@ -115,7 +115,45 @@ async function dispatchIncidentNotification(
   }
 }
 
-export async function createInternalServiceRequest(data: CreateServiceRequestInput) {
+/** Stable public result shape; kept separate from generated Prisma payload types. */
+export interface InternalServiceRequestResult {
+  id: string;
+  issueKey: string;
+  summary: string;
+  description: string | null;
+  status: string;
+  priority: string;
+  issueType: string;
+  source: string;
+  failureCategory: string | null;
+  slaDeadline: Date | null;
+  slaBreached: boolean | null;
+  warrantyClaim: boolean | null;
+  contractorName: string | null;
+  equipmentId: string | null;
+  reporter: string | null;
+  createdById: string | null;
+  assignee: string | null;
+  createdDate: Date;
+  resolvedDate: Date | null;
+  rawData: unknown;
+  syncedAt: Date;
+}
+
+export interface MroWorkOrderResult {
+  schedule: {
+    id: string;
+    equipmentId: string;
+    title: string;
+    scheduledDate: Date;
+    status: string;
+    notes: string | null;
+    jiraIssueKey: string | null;
+  };
+  issue: InternalServiceRequestResult;
+}
+
+export async function createInternalServiceRequest(data: CreateServiceRequestInput): Promise<InternalServiceRequestResult> {
   const currentYear = new Date().getFullYear();
   const issueKey = await generateInternalIncidentKey(currentYear);
 
@@ -161,7 +199,7 @@ export async function createInternalServiceRequest(data: CreateServiceRequestInp
 /**
  * Создание аварийного заказ-наряда MRO на основе инцидента SRM
  */
-export async function createMroWorkOrderFromIssue(issueId: string, _userId?: string) {
+export async function createMroWorkOrderFromIssue(issueId: string, _userId?: string): Promise<MroWorkOrderResult> {
   const issue = await prisma.jiraIssueCache.findUnique({
     where: { id: issueId },
   });
