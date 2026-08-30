@@ -36,10 +36,10 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PageHeader from '@/components/layout/PageHeader';
 import { useSnackbar } from 'notistack';
 import { AdminFeedbackDetailDrawer } from '@/components/feedback/AdminFeedbackDetailDrawer';
+import { AdminFeedbackFilters } from '@/components/feedback/AdminFeedbackFilters';
+import { buildFeedbackQueryParams, countActiveFeedbackFilters } from './feedback-filters';
 import {
   StatCard,
-  FilterToolbar,
-  SearchInput,
   DataTableWrapper,
   StatusBadge,
   ConfirmDialog,
@@ -49,10 +49,8 @@ import {
   FeedbackTicketDto,
   FeedbackStatus,
   FeedbackPriority,
-  FEEDBACK_TYPE_LABELS,
   FEEDBACK_MODULE_LABELS,
   FEEDBACK_PRIORITY_LABELS,
-  FEEDBACK_STATUS_LABELS,
   formatDateTime,
   formatBytes,
 } from '@ems/shared';
@@ -113,16 +111,11 @@ export default function AdminFeedbackPage() {
   const fetchTickets = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        limit: String(rowsPerPage),
-        offset: String(page * rowsPerPage),
-      });
-
-      if (filterType !== 'ALL') params.set('type', filterType);
-      if (filterModule !== 'ALL') params.set('module', filterModule);
-      if (filterStatus !== 'ALL') params.set('status', filterStatus);
-      if (filterPriority !== 'ALL') params.set('priority', filterPriority);
-      if (searchQuery.trim()) params.set('search', searchQuery.trim());
+      const params = buildFeedbackQueryParams(
+        { searchQuery, filterType, filterModule, filterStatus, filterPriority },
+        page,
+        rowsPerPage,
+      );
 
       const res = await fetch(`/api/feedback?${params.toString()}`);
       if (res.ok) {
@@ -263,14 +256,10 @@ export default function AdminFeedbackPage() {
     }
   };
 
-  const activeFiltersCount = useMemo(() => {
-    let count = 0;
-    if (filterType !== 'ALL') count++;
-    if (filterModule !== 'ALL') count++;
-    if (filterStatus !== 'ALL') count++;
-    if (filterPriority !== 'ALL') count++;
-    return count;
-  }, [filterType, filterModule, filterStatus, filterPriority]);
+  const activeFiltersCount = useMemo(
+    () => countActiveFeedbackFilters({ searchQuery, filterType, filterModule, filterStatus, filterPriority }),
+    [searchQuery, filterType, filterModule, filterStatus, filterPriority],
+  );
 
   const handleResetFilters = () => {
     setFilterType('ALL');
@@ -376,97 +365,20 @@ export default function AdminFeedbackPage() {
       </Grid>
 
       {/* Filter Toolbar */}
-      <FilterToolbar
+      <AdminFeedbackFilters
         activeFilterCount={activeFiltersCount}
-        onResetFilters={handleResetFilters}
-      >
-        <Box sx={{ width: { xs: '100%', sm: 320 } }}>
-          <SearchInput
-            placeholder="Поиск по номеру, теме, автору..."
-            value={searchQuery}
-            onSearch={(val) => {
-              setSearchQuery(val);
-              setPage(0);
-            }}
-          />
-        </Box>
-
-        <TextField
-          select
-          size="small"
-          label="Тип"
-          value={filterType}
-          onChange={(e) => {
-            setFilterType(e.target.value);
-            setPage(0);
-          }}
-          sx={{ minWidth: 160 }}
-        >
-          <MenuItem value="ALL">Все типы</MenuItem>
-          {Object.entries(FEEDBACK_TYPE_LABELS).map(([k, v]) => (
-            <MenuItem key={k} value={k}>
-              {v.label}
-            </MenuItem>
-          ))}
-        </TextField>
-
-        <TextField
-          select
-          size="small"
-          label="Модуль"
-          value={filterModule}
-          onChange={(e) => {
-            setFilterModule(e.target.value);
-            setPage(0);
-          }}
-          sx={{ minWidth: 170 }}
-        >
-          <MenuItem value="ALL">Все модули</MenuItem>
-          {Object.entries(FEEDBACK_MODULE_LABELS).map(([k, v]) => (
-            <MenuItem key={k} value={k}>
-              {v}
-            </MenuItem>
-          ))}
-        </TextField>
-
-        <TextField
-          select
-          size="small"
-          label="Статус"
-          value={filterStatus}
-          onChange={(e) => {
-            setFilterStatus(e.target.value);
-            setPage(0);
-          }}
-          sx={{ minWidth: 160 }}
-        >
-          <MenuItem value="ALL">Все статусы</MenuItem>
-          {Object.entries(FEEDBACK_STATUS_LABELS).map(([k, v]) => (
-            <MenuItem key={k} value={k}>
-              {v.label}
-            </MenuItem>
-          ))}
-        </TextField>
-
-        <TextField
-          select
-          size="small"
-          label="Приоритет"
-          value={filterPriority}
-          onChange={(e) => {
-            setFilterPriority(e.target.value);
-            setPage(0);
-          }}
-          sx={{ minWidth: 150 }}
-        >
-          <MenuItem value="ALL">Все приоритеты</MenuItem>
-          {Object.entries(FEEDBACK_PRIORITY_LABELS).map(([k, v]) => (
-            <MenuItem key={k} value={k}>
-              {v.label}
-            </MenuItem>
-          ))}
-        </TextField>
-      </FilterToolbar>
+        searchQuery={searchQuery}
+        filterType={filterType}
+        filterModule={filterModule}
+        filterStatus={filterStatus}
+        filterPriority={filterPriority}
+        onReset={handleResetFilters}
+        onSearchChange={(value) => { setSearchQuery(value); setPage(0); }}
+        onTypeChange={(value) => { setFilterType(value); setPage(0); }}
+        onModuleChange={(value) => { setFilterModule(value); setPage(0); }}
+        onStatusChange={(value) => { setFilterStatus(value); setPage(0); }}
+        onPriorityChange={(value) => { setFilterPriority(value); setPage(0); }}
+      />
 
       {/* Registry Table */}
       <DataTableWrapper
