@@ -61,10 +61,18 @@ async function globalSetup(): Promise<void> {
 
   // 2. Apply the versioned migration baseline (not db push) — consistent
   //    with L2's production path, and exercises the same migrations that
-  //    ship to production.
+  //    ship to production. Invoke Prisma's installed Node entrypoint directly
+  //    so the setup does not depend on Windows/POSIX shell shims.
+  const prismaEntryPoint = path.join(
+    databasePackageDir,
+    'node_modules',
+    'prisma',
+    'build',
+    'index.js'
+  );
   execFileSync(
-    path.join(databasePackageDir, 'node_modules', '.bin', 'prisma'),
-    ['migrate', 'deploy', '--schema', 'prisma/schema.prisma'],
+    process.execPath,
+    [prismaEntryPoint, 'migrate', 'deploy', '--schema', 'prisma/schema.prisma'],
     {
       cwd: databasePackageDir,
       env: { ...process.env, DATABASE_URL: dbUrl },

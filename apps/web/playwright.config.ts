@@ -50,7 +50,9 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'node_modules/.bin/next start -p ' + PORT,
+    // Use pnpm exec instead of node_modules/.bin/next so the same config
+    // starts on Windows and POSIX shells.
+    command: 'pnpm exec next start -p ' + PORT,
     cwd: __dirname,
     url: BASE_URL,
     reuseExistingServer: false,
