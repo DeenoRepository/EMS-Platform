@@ -22,9 +22,18 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (0)
+## Active (8)
 
-_No active stories._
+| ID | Title | Phase | Priority | Risk | Skills | Opened |
+|---|---|---|---|---|---|---|
+| [N1](active/N1-backup-script-test-cross-platform.md) | Fix platform-dependent backup-script test that reddens the gate | N | P0 | low | senior-qa | 2026-08-31 |
+| [N2](active/N2-coverage-parser-full-paths.md) | Coverage parser must key files by full path, not basename | N | P0 | medium | senior-qa | 2026-08-31 |
+| [N3](active/N3-pin-node-version-and-rebaseline.md) | Pin the Node version and re-establish a reproducible coverage baseline | N | P0 | medium | senior-qa, ci-cd-pipeline-builder | 2026-08-31 |
+| [N4](active/N4-replace-source-text-route-tests.md) | Replace source-text route assertions with executable tests and ESLint rules | N | P1 | medium | senior-qa, senior-backend | 2026-08-31 |
+| [N5](active/N5-executable-tests-for-write-routes.md) | Executable RBAC and validation tests for the 13 uncovered write routes | N | P1 | high | senior-qa, senior-backend | 2026-08-31 |
+| [N6](active/N6-vitest-scope-and-component-coverage.md) | Widen vitest discovery beyond components/ui and measure component coverage | N | P1 | medium | senior-qa, senior-frontend | 2026-08-31 |
+| [N7](active/N7-remove-placeholder-tests-and-count-checks.md) | Remove placeholder test files and guard on check count, not file count | N | P2 | low | senior-qa | 2026-08-31 |
+| [N8](active/N8-tests-for-pure-logic-modules.md) | Tests for the highest-risk pure-logic modules extracted during phases C/H/K4 | N | P2 | low | senior-qa | 2026-08-31 |
 
 ---
 
