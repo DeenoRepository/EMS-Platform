@@ -22,8 +22,8 @@ const SUPPORTED_NODE_MAJORS = [22, 24];
 // Corrected N2/N3 baseline measured on Node 24.15.0 on 2026-08-31.
 // Thresholds are floors of measured values and act as a ratchet.
 const THRESHOLDS = {
-  lineCoverageAmongLoadedFiles: 65.0,
-  fileCoverageRatio: 15.0,
+  lineCoverageAmongLoadedFiles: 69.0,
+  fileCoverageRatio: 18.0,
 };
 
 const EXCLUDED_DIRS = new Set([

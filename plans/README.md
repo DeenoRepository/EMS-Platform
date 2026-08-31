@@ -22,11 +22,10 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (4)
+## Active (3)
 
 | ID | Title | Phase | Priority | Risk | Skills | Opened |
 |---|---|---|---|---|---|---|
-| [N5](active/N5-executable-tests-for-write-routes.md) | Executable RBAC and validation tests for the 13 uncovered write routes | N | P1 | high | senior-qa, senior-backend | 2026-08-31 |
 | [N6](active/N6-vitest-scope-and-component-coverage.md) | Widen vitest discovery beyond components/ui and measure component coverage | N | P1 | medium | senior-qa, senior-frontend | 2026-08-31 |
 | [N7](active/N7-remove-placeholder-tests-and-count-checks.md) | Remove placeholder test files and guard on check count, not file count | N | P2 | low | senior-qa | 2026-08-31 |
 | [N8](active/N8-tests-for-pure-logic-modules.md) | Tests for the highest-risk pure-logic modules extracted during phases C/H/K4 | N | P2 | low | senior-qa | 2026-08-31 |
@@ -39,7 +38,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 
 ---
 
-## Done (83)
+## Done (84)
 
 | ID | Title | Phase | Closed | Commits |
 |---|---|---|---|---|
@@ -126,3 +125,4 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [N2](done/2026-08/N2-coverage-parser-full-paths.md) | Coverage parser must key files by full path, not basename | N | 2026-08-31 | fix/N2-coverage-parser-full-paths |
 | [N3](done/2026-08/N3-pin-node-version-and-rebaseline.md) | Pin the Node version and re-establish a reproducible coverage baseline | N | 2026-08-31 | chore/N3-pin-node-and-rebaseline |
 | [N4](done/2026-08/N4-replace-source-text-route-tests.md) | Replace source-text route assertions with executable tests and ESLint rules | N | 2026-08-31 | test/N4-executable-route-security |
+| [N5](done/2026-08/N5-executable-tests-for-write-routes.md) | Executable RBAC and validation tests for the 13 uncovered write routes | N | 2026-08-31 | test/N5-write-route-contracts |

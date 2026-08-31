@@ -1,23 +1,12 @@
 /**
- * Route test harness — shared utilities for testing Next.js API route handlers.
+ * Shared utilities for executable Next.js API route tests.
  *
- * Pattern:
- *   1. Call `mock.module(...)` for every external dependency before any import.
- *   2. In `before()`, dynamically import the route module and any helpers.
- *   3. Construct requests with `makeRequest()`.
- *   4. Assert on `response.status` and `response.json()`.
- *
- * This module is a pure helper; it does not call mock.module() itself because
- * mock.module() must be called in the file that runs the tests (the mock
- * registry is per-test-file).  See auth-guard.test.ts for the canonical usage.
- *
- * TSX_TSCONFIG_PATH=apps/web/tsconfig.json must be set so that @/ path aliases
- * resolve. The test-runner.mjs sets this automatically since M1+M3.
+ * Tests register mock.module() calls in their own file before dynamically
+ * importing a route. The Prisma mock deliberately uses broad unknown return
+ * contracts so each suite can replace methods with route-specific fixtures.
  */
 import type { NextRequest } from 'next/server';
 import { PERMISSIONS, type JwtUserPayload } from '@ems/shared';
-
-// ── Canonical test users ─────────────────────────────────────────────────────
 
 export const adminUser: JwtUserPayload = {
   userId: 'admin-test-id',
@@ -47,62 +36,49 @@ export const viewOnlyUser: JwtUserPayload = {
   permissions: [PERMISSIONS.EPS_EQUIPMENT_VIEW],
 };
 
-// ── Request factory ──────────────────────────────────────────────────────────
-
 export interface MakeRequestOptions {
   method?: string;
   url?: string;
   body?: unknown;
   headers?: Record<string, string>;
   searchParams?: Record<string, string>;
+  formData?: FormData;
 }
 
-/**
- * Build a minimal NextRequest-shaped object without importing next/server
- * at the top level (which would require a full Next.js environment).
- * Sufficient for route handlers that read method, url, headers, and json().
- */
-export function makeRequest(opts: MakeRequestOptions = {}): NextRequest {
-  const method = opts.method ?? 'GET';
-  const base = opts.url ?? 'http://localhost:3000/api/test';
-  const url = new URL(base);
-
-  if (opts.searchParams) {
-    for (const [k, v] of Object.entries(opts.searchParams)) {
-      url.searchParams.set(k, v);
-    }
+export function makeRequest(options: MakeRequestOptions = {}): NextRequest {
+  const method = options.method ?? 'GET';
+  const url = new URL(options.url ?? 'http://localhost:3000/api/test');
+  for (const [key, value] of Object.entries(options.searchParams ?? {})) {
+    url.searchParams.set(key, value);
   }
 
-  const headers = new Headers(opts.headers ?? {});
-  const bodyStr = opts.body !== undefined ? JSON.stringify(opts.body) : undefined;
-  if (bodyStr) headers.set('content-type', 'application/json');
+  const headers = new Headers(options.headers ?? {});
+  const bodyText = options.body !== undefined ? JSON.stringify(options.body) : undefined;
+  if (bodyText) headers.set('content-type', 'application/json');
 
   return {
     method,
     url: url.toString(),
     headers,
-    json: async () => (opts.body !== undefined ? opts.body : undefined),
-    text: async () => bodyStr ?? '',
+    json: async () => options.body,
+    text: async () => bodyText ?? '',
+    formData: async () => options.formData ?? new FormData(),
     nextUrl: url,
   } as unknown as NextRequest;
 }
 
-/**
- * Minimal NextResponse.json-compatible object returned by route handlers.
- * Real Next.js returns a Response subclass; we only need status + json().
- */
 export interface RouteResponse {
   status: number;
   json: () => Promise<unknown>;
 }
 
-// ── Prisma mock factory ──────────────────────────────────────────────────────
+type UnknownRecord = Record<string, unknown>;
+type TransactionCallback = (transaction: ReturnType<typeof makePrismaMock>) => Promise<unknown>;
 
-/**
- * Returns a Prisma mock that counts $connect attempts (they should be 0) and
- * stubs every model with empty implementations. Override individual methods in
- * the returned object to inject test data.
- */
+const emptyList = async (): Promise<UnknownRecord[]> => [];
+const emptyCount = async (): Promise<number> => 0;
+const missing = async (): Promise<UnknownRecord | null> => null;
+
 export function makePrismaMock() {
   let connectionAttempts = 0;
 
@@ -112,41 +88,107 @@ export function makePrismaMock() {
       connectionAttempts += 1;
       throw new Error('Route unit tests must not connect to PostgreSQL');
     },
-    $transaction: async (fn: (tx: unknown) => Promise<unknown>) => fn(mock),
-    // Models — add stubs as needed; tests override per-assertion
-    stockTransfer: {
-      count: async (): Promise<number> => 0,
-      findMany: async (): Promise<unknown[]> => [],
-      findUnique: async (): Promise<unknown> => null,
-      create: async (): Promise<unknown> => ({ id: 'created-id' }),
-      update: async (): Promise<unknown> => ({ id: 'updated-id' }),
+    $transaction: async (callback: TransactionCallback) => callback(mock),
+
+    equipment: {
+      count: emptyCount,
+      findMany: emptyList,
+      groupBy: emptyList,
+      findFirst: missing,
+      findUnique: missing,
+      create: async (): Promise<UnknownRecord> => ({ id: 'equipment-id', name: 'Equipment', status: 'DRAFT', tags: [] }),
+      update: async (): Promise<UnknownRecord> => ({ id: 'equipment-id', name: 'Equipment', status: 'DRAFT', tags: [] }),
+      delete: async (): Promise<UnknownRecord> => ({ id: 'equipment-id' }),
     },
-    stockOperation: {
-      count: async (): Promise<number> => 0,
-      findMany: async (): Promise<unknown[]> => [],
-      findUnique: async (): Promise<unknown> => null,
-      create: async (): Promise<unknown> => ({ id: 'created-id' }),
+    equipmentTag: {
+      deleteMany: async () => ({ count: 0 }),
+      createMany: async () => ({ count: 0 }),
     },
-    warehouse: {
-      findMany: async () => [],
-      findUnique: async () => null,
+    equipmentApproval: {
+      count: emptyCount,
+      findMany: emptyList,
+      findUnique: missing,
+      create: async (): Promise<UnknownRecord> => ({ id: 'approval-id' }),
+      update: async (): Promise<UnknownRecord> => ({ id: 'approval-id' }),
     },
-    user: {
-      findFirst: async () => null,
-      findUnique: async () => null,
-      create: async () => ({ id: 'user-id', ldapLogin: 'user', displayName: 'User' }),
-      update: async () => ({ id: 'user-id' }),
+    equipmentDocument: {
+      count: emptyCount,
+      findMany: emptyList,
+      findUnique: missing,
+      create: async (): Promise<UnknownRecord> => ({ id: 'document-id' }),
+      update: async (): Promise<UnknownRecord> => ({ id: 'document-id' }),
+      delete: async (): Promise<UnknownRecord> => ({ id: 'document-id' }),
+    },
+    document: {
+      count: emptyCount,
+      findMany: emptyList,
+      findUnique: missing,
+      create: async (): Promise<UnknownRecord> => ({ id: 'document-id' }),
+      update: async (): Promise<UnknownRecord> => ({ id: 'document-id' }),
+      delete: async (): Promise<UnknownRecord> => ({ id: 'document-id' }),
+    },
+    tag: {
+      findMany: emptyList,
+      findUnique: missing,
+      create: async (): Promise<UnknownRecord> => ({ id: 'tag-id' }),
+      upsert: async (): Promise<UnknownRecord> => ({ id: 'tag-id', name: 'Tag' }),
+    },
+    jiraIssueCache: {
+      count: emptyCount,
+      findMany: emptyList,
+      upsert: async (): Promise<UnknownRecord> => ({ issueKey: 'TEST-1' }),
+    },
+    srmIssue: {
+      findMany: emptyList,
+      findUnique: missing,
+      create: async (): Promise<UnknownRecord> => ({ id: 'issue-id' }),
+    },
+    permission: {
+      findMany: emptyList,
+      findUnique: missing,
+      upsert: async (): Promise<UnknownRecord> => ({ id: 'permission-id' }),
     },
     role: {
-      findUnique: async () => null,
+      findMany: emptyList,
+      findUnique: missing,
+      create: async (): Promise<UnknownRecord> => ({ id: 'role-id' }),
+      update: async (): Promise<UnknownRecord> => ({ id: 'role-id' }),
+      delete: async (): Promise<UnknownRecord> => ({ id: 'role-id' }),
+    },
+    rolePermission: {
+      deleteMany: async () => ({ count: 0 }),
+      createMany: async () => ({ count: 0 }),
     },
     systemSetting: {
-      findMany: async () => [],
-      findUnique: async () => null,
+      findMany: emptyList,
+      findUnique: missing,
+      upsert: async (): Promise<UnknownRecord> => ({ id: 'setting-id' }),
     },
-    auditLog: {
-      create: async () => ({}),
+    notification: {
+      update: async (): Promise<UnknownRecord> => ({ id: 'notification-id' }),
+      updateMany: async () => ({ count: 0 }),
     },
+    stockTransfer: {
+      count: emptyCount,
+      findMany: emptyList,
+      findUnique: missing,
+      create: async (): Promise<UnknownRecord> => ({ id: 'created-id' }),
+      update: async (): Promise<UnknownRecord> => ({ id: 'updated-id' }),
+    },
+    stockOperation: {
+      count: emptyCount,
+      findMany: emptyList,
+      findUnique: missing,
+      create: async (): Promise<UnknownRecord> => ({ id: 'created-id' }),
+    },
+    warehouse: { findMany: emptyList, findUnique: missing },
+    user: {
+      findFirst: missing,
+      findUnique: missing,
+      create: async (): Promise<UnknownRecord> => ({ id: 'user-id', ldapLogin: 'user', displayName: 'User' }),
+      update: async (): Promise<UnknownRecord> => ({ id: 'user-id' }),
+    },
+    auditLog: { create: async (): Promise<UnknownRecord> => ({}) },
   };
 
   return mock;
