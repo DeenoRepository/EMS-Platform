@@ -13,16 +13,14 @@
 [`security.md`](../../../.agents/rules/security.md),
 [`code_quality.md`](../../../.agents/rules/code_quality.md)
 
-> **Вердикт: ⚠️ CONDITIONAL GO для CI-кандидата; production rollout ещё не
-> разрешён.**
+> **Вердикт: ⚠️ CONDITIONAL GO для release candidate; production rollout ещё
+> требует проверки конкретного внешнего контура.**
 >
-> Обязательные локальные code/release-гейты после исправлений зелёные:
-> production build и quality baseline проходят. Deployment path теперь явно
-> требует внешний TLS ingress, production SLO/alerting зафиксированы в runbook.
-> Docker image build и Playwright/runtime smoke в этой среде не завершены:
-> Docker Hub не отдал базовый образ из-за сетевого TLS timeout, а E2E требует
-> доступную PostgreSQL-среду. Перед фактической выкладкой эти проверки должны
-> пройти в CI/сборочном контуре.
+> Code/release-гейты, production build, Docker image build, Playwright E2E и
+> runtime migration/readiness smoke зелёные. Deployment path явно требует
+> внешний TLS ingress, а SLO/alerting contract зафиксирован в runbook. Перед
+> фактической выкладкой остаются environment-specific проверки TLS, alerting,
+> реальные secrets, backup/restore и rollback.
 
 ---
 
@@ -48,8 +46,9 @@
 | Offline Compose config | Валиден с `.env.production.example` | ✅ PASS |
 | Production build | 4/4 Turbo tasks; linting skipped in Next build, отдельный ESLint gate зелёный | ✅ PASS |
 | Quality baseline | 2302 smells ≤ 2400; F-grade 22 ≤ 34 | ✅ PASS |
-| Playwright E2E | Не запущен в этой проверке; требует PostgreSQL и браузерные зависимости | ⚠️ NOT EXECUTED |
-| Production image/runtime smoke | Не выполнен: Docker Hub TLS handshake timeout при загрузке `node:22-alpine` | ⚠️ ENVIRONMENT BLOCKED |
+| Playwright E2E | 13 тестов, 1 worker, 0 падений | ✅ PASS |
+| Production image build | `ems-platform:production-readiness` собран успешно | ✅ PASS |
+| Production runtime smoke | Prisma migration применена; контейнер healthy; `/api/system/health` → `isReady: true` | ✅ PASS |
 
 ---
 
@@ -77,9 +76,11 @@ Next.js отключена через `eslint.ignoreDuringBuilds`, а отдел
 через `--rulesdir` и остаётся CI-гейтом. После исправления `pnpm build` прошёл
 во всех 4 Turbo tasks.
 
-После исправления `pnpm build` прошёл во всех 4 Turbo tasks. Оставшиеся E2E и
-Docker runtime проверки зависят от доступных PostgreSQL, browser dependencies и
-container registry.
+После исправления `pnpm build` прошёл во всех 4 Turbo tasks. В ходе повторной
+проверки E2E также был исправлен Windows shell compatibility defect в
+[`playwright.config.ts`](../../../apps/web/playwright.config.ts) и
+[`global-setup.ts`](../../../apps/web/e2e/global-setup.ts): запуск Next.js и
+Prisma теперь не зависит от POSIX shim. Playwright прошёл 13/13.
 
 ### 2.2 [FIXED] Quality baseline регрессировал и превышал порог
 
@@ -185,21 +186,16 @@ coverage воспроизводим только на проверенных maj
 
 ## 6. Минимальный план выхода на GO
 
-1. Выполнить Playwright E2E на чистой ephemeral PostgreSQL.
-2. Собрать production Docker image после восстановления доступа к registry.
-3. Выполнить runtime smoke: migrations, readiness, upload write и fail-closed
-   старт на несовместимой БД.
-4. Проверить внешний TLS ingress, redirect, HSTS и `/healthz` с production
+1. Проверить внешний TLS ingress, redirect, HSTS и `/healthz` с production
    hostname.
-5. Подключить health/log collection и alerts с утверждёнными SLO.
-6. Перед выкладкой задать реальные secrets, создать backup, проверить restore
+2. Подключить health/log collection и alerts с утверждёнными SLO.
+3. Перед выкладкой задать реальные secrets, создать backup, проверить restore
    в отдельной среде и документировать rollback через восстановление БД.
 
 ## 7. Итоговый release decision
 
-**CONDITIONAL GO для merge/release candidate:** локальные CI-equivalent code
-гейты, production build и Compose validation зелёные. **Production rollout
-остаётся запрещённым до прохождения E2E и Docker runtime smoke, а также до
-проверки конкретного внешнего TLS/alerting контура.** Docker image в этой среде
-не собран из-за внешнего Docker Hub TLS handshake timeout; это не указывает на
-дефект Dockerfile, но требует повторить проверку в CI/сборочном контуре.
+**CONDITIONAL GO для release candidate:** локальные CI-equivalent code гейты,
+production build, Docker image, E2E и runtime health smoke зелёные.
+**Production rollout остаётся условным** до проверки конкретного внешнего TLS и
+alerting контура, настройки реальных production secrets и документированного
+backup/restore rollback.
