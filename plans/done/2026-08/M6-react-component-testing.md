@@ -1,14 +1,14 @@
 ---
 id: M6
 title: Ввести компонентное тестирование React для библиотеки @/components/ui
-status: active
+status: done
 phase: M
 priority: P3
 risk: medium
 skills: [senior-qa, senior-frontend, a11y-audit]
 opened: 2026-08-31
-closed: null
-commits: []
+closed: 2026-08-31
+commits: [feat/M6-component-tests]
 gates: [test, lint, tsc, check:theme, check:docs]
 ---
 
@@ -82,16 +82,31 @@ gates: [test, lint, tsc, check:theme, check:docs]
 
 ## Definition of Done
 
-- [ ] Решение по раннеру зафиксировано ADR с разобранными альтернативами.
-- [ ] Все компоненты `@/components/ui` имеют тесты рендера и основных
+- [x] Решение по раннеру зафиксировано ADR с разобранными альтернативами.
+- [x] Все компоненты `@/components/ui` имеют тесты рендера и основных
       состояний.
-- [ ] `ConfirmDialog` покрыт сценариями подтверждения и отмены.
-- [ ] Запросы в тестах используют доступные селекторы; `getByTestId` —
+- [x] `ConfirmDialog` покрыт сценариями подтверждения и отмены.
+- [x] Запросы в тестах используют доступные селекторы; `getByTestId` —
       только там, где это обосновано комментарием.
-- [ ] `pnpm test` не замедлился.
-- [ ] CI выполняет компонентные тесты; охват вырос, порог обновлён.
-- [ ] Полный гейт зелёный.
+- [x] `pnpm test` не замедлился.
+- [x] CI выполняет компонентные тесты; охват вырос, порог обновлён.
+- [x] Полный гейт зелёный.
 
 ## Result
 
-Заполняется при закрытии story.
+Выбран **vitest v4 + @testing-library/react v16 + jsdom** (ADR-0001).
+Причина: нативный `node:test` не трансформирует JSX без сложной ручной
+настройки; Playwright Component Testing избыточен для unit-тестов
+библиотеки.
+
+Добавлено:
+- [`docs/architecture/decisions/ADR-0001-component-test-runner.md`](../../docs/architecture/decisions/ADR-0001-component-test-runner.md) — решение зафиксировано
+- [`apps/web/vitest.config.ts`](../../apps/web/vitest.config.ts) — конфиг vitest с `jsdom`-окружением и алиасом `@/`
+- [`apps/web/src/components/ui/__tests__/setup.ts`](../../apps/web/src/components/ui/__tests__/setup.ts) — подключает `@testing-library/jest-dom`
+- [`apps/web/src/components/ui/__tests__/test-utils.tsx`](../../apps/web/src/components/ui/__tests__/test-utils.tsx) — `renderWithProviders()` с MUI ThemeProvider
+- **32 теста** в 4 файлах: `StatusBadge` (6), `StatCard` (7), `ConfirmDialog` (10), `EmptyState + SearchInput` (9)
+- `"test:components": "vitest run"` в `apps/web/package.json`
+- Шаг «Run React Component Tests (vitest + RTL)» в `.github/workflows/ci.yml`
+
+Результат `pnpm --filter @ems/web test:components`: **4 файла, 32 теста — все зелёные**.
+`pnpm test` не изменился — раннеры полностью независимы.

@@ -8,7 +8,7 @@ risk: medium
 skills: [playwright-pro, ci-cd-pipeline-builder]
 opened: 2026-08-31
 closed: 2026-08-31
-commits: [placeholder]
+commits: [a40f03b]
 gates: [test, lint, tsc, check:docs]
 ---
 

@@ -22,11 +22,9 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (1)
+## Active (0)
 
-| ID | Title | Phase | Priority | Risk | Skills | Opened |
-|---|---|---|---|---|---|---|
-| [M6](active/M6-react-component-testing.md) | Ввести компонентное тестирование React для библиотеки @/components/ui | M | P3 | medium | senior-qa, senior-frontend, a11y-audit | 2026-08-31 |
+_No active stories._
 
 ---
 
@@ -36,7 +34,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 
 ---
 
-## Done (78)
+## Done (79)
 
 | ID | Title | Phase | Closed | Commits |
 |---|---|---|---|---|
@@ -117,4 +115,5 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [M2](done/2026-08/M2-coverage-measurement-and-gate.md) | Измерять покрытие тестами и закрепить его порогом в CI | M | 2026-08-31 | 4b91888 |
 | [M3](done/2026-08/M3-api-route-handler-tests.md) | Покрыть тестами API-роуты — RBAC, rate-limit, валидация ввода | M | 2026-08-31 | b55acb2 |
 | [M4](done/2026-08/M4-eliminate-tautological-tests.md) | Устранить тавтологические тесты, проверяющие копию логики вместо кода | M | 2026-08-31 | b24e12c |
-| [M5](done/2026-08/M5-e2e-in-ci.md) | Запускать E2E-набор в CI и расширить его на критические сценарии записи | M | 2026-08-31 | placeholder |
+| [M5](done/2026-08/M5-e2e-in-ci.md) | Запускать E2E-набор в CI и расширить его на критические сценарии записи | M | 2026-08-31 | a40f03b |
+| [M6](done/2026-08/M6-react-component-testing.md) | Ввести компонентное тестирование React для библиотеки @/components/ui | M | 2026-08-31 | feat/M6-component-tests |

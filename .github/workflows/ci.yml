@@ -86,6 +86,9 @@ jobs:
       - name: Run Automated Test Suite (Domain, SecOps, RBAC)
         run: pnpm test
 
+      - name: Run React Component Tests (vitest + RTL)
+        run: pnpm --filter @ems/web test:components
+
       - name: Run Coverage Gate and Verify Baseline
         run: |
           node scripts/check-coverage.mjs --report
