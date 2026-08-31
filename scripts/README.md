@@ -17,7 +17,8 @@ below — `pnpm test` does require generated Prisma client types.
 | [`check-theme-tokens.mjs`](check-theme-tokens.mjs) | Detect hardcoded UI hex colors | `node scripts/check-theme-tokens.mjs` |
 | [`plans-index.mjs`](plans-index.mjs) | Validate story front-matter and generate plans index | `node scripts/plans-index.mjs [--check]` |
 | [`route_audit.py`](route_audit.py) | Audit API route rate-limit/auth patterns | `python scripts/route_audit.py [--report]` |
-| [`test-runner.mjs`](test-runner.mjs) | Run repository TypeScript tests through Node's loader | `pnpm test` |
+| [`test-runner.mjs`](test-runner.mjs) | Run repository TypeScript tests through Node's loader | `pnpm test` or `node scripts/test-runner.mjs --coverage` |
+| [`check-coverage.mjs`](check-coverage.mjs) | Measure and gate test coverage (dual metrics: file-coverage + line-coverage) | `node scripts/check-coverage.mjs [--report]` |
 | `apps/web/e2e/*.spec.ts` (Playwright) | E2E smoke tests: login/logout, EPS/WMS/MRO access, RBAC denial, equipment creation | `pnpm --filter @ems/web exec playwright test` |
 | [`fgrade_detail.py`](fgrade_detail.py) | Print detailed F-grade file list | `python scripts/fgrade_detail.py` |
 
@@ -38,6 +39,25 @@ testing.
 
 `inspect_summary.py` was removed: its output duplicated the generated quality
 baseline and it had no callers.
+
+### Test file co-location convention
+
+Test files (`*.test.ts`, `*.test.tsx`) may live either:
+
+* **next to the module they test** — e.g. `apps/web/src/lib/foo.ts` →
+  `apps/web/src/lib/foo.test.ts`; or
+* **in a `__tests__/` directory** — e.g.
+  `apps/web/src/lib/__tests__/foo.test.ts`.
+
+Both patterns are discovered automatically by
+[`test-runner.mjs`](test-runner.mjs), which scans `packages/` and
+`apps/web/src/` recursively while excluding `node_modules`, `.next`, `dist`,
+`.turbo`, and `e2e/`. Adding a new test file anywhere within those roots is
+sufficient; no registration or manifest update is needed.
+
+E2E specs (`apps/web/e2e/**/*.spec.ts`) are intentionally excluded: they
+require a live PostgreSQL instance and a production build, and are run via a
+separate Playwright command (see §E2E smoke tests above).
 
 ### E2E smoke tests (Playwright)
 

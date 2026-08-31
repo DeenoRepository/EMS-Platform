@@ -13,6 +13,7 @@ stale by definition and should be replaced with a link.
 | What tasks are done and how | [`plans/done/`](../plans/done/) (one file per story) |
 | What's queued but not scheduled | [`plans/BACKLOG.md`](../plans/BACKLOG.md) |
 | Current code quality score / F-grade count / thresholds | [`docs/quality/QUALITY_BASELINE.md`](quality/QUALITY_BASELINE.md) (generated) |
+| Current test coverage (line coverage + file-level охват) | [`docs/quality/COVERAGE_BASELINE.md`](quality/COVERAGE_BASELINE.md) (generated) |
 | Current route-level rate-limit/RBAC coverage | [`docs/quality/SECURITY_BASELINE.md`](quality/SECURITY_BASELINE.md) (generated) |
 | What a specific past inspection found | [`docs/quality/inspections/`](quality/inspections/) (dated, immutable) |
 | Security rules (webhook auth, RBAC, LDAP, rate limiting) | [`.agents/rules/security.md`](../.agents/rules/security.md) |
@@ -37,6 +38,7 @@ docs/
 ├── REMEDIATION_PLAN.md           ← stub redirect to plans/ (kept for old links)
 ├── quality/
 │   ├── QUALITY_BASELINE.md       ← GENERATED — sole current-metrics source
+│   ├── COVERAGE_BASELINE.md      ← GENERATED — test coverage metrics
 │   ├── SECURITY_BASELINE.md      ← GENERATED — route rate-limit/RBAC scan
 │   └── inspections/              ← dated, immutable point-in-time reports
 ├── architecture/

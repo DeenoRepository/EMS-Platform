@@ -86,6 +86,11 @@ jobs:
       - name: Run Automated Test Suite (Domain, SecOps, RBAC)
         run: pnpm test
 
+      - name: Run Coverage Gate and Verify Baseline
+        run: |
+          node scripts/check-coverage.mjs --report
+          git diff --exit-code -- docs/quality/COVERAGE_BASELINE.md
+
       - name: Build Monorepo (Turborepo & Next.js Production Build)
         run: pnpm build
         env:
