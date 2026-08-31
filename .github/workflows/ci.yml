@@ -52,7 +52,7 @@ jobs:
 
       - name: Verify Script Syntax
         run: |
-          for file in scripts/*.js scripts/*.mjs scripts/lib/*.js; do node --check "$file"; done
+          for file in scripts/*.js scripts/*.mjs scripts/lib/*.js scripts/eslint-rules/*.js; do node --check "$file"; done
           for file in scripts/*.py; do python3 -m py_compile "$file"; done
 
       - name: Run ESLint

@@ -9,7 +9,7 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
-    "lint": "turbo run lint",
+    "lint": "turbo run lint && node scripts/check-static-security-policies.mjs",
     "check:theme": "node scripts/check-theme-tokens.mjs",
     "check:quality": "node scripts/check-quality-baseline.mjs",
     "check:docs": "node scripts/check-doc-links.mjs",

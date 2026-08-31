@@ -27,5 +27,16 @@
       }
     ],
     "no-console": ["warn", { "allow": ["warn", "error"] }]
-  }
+  },
+  "overrides": [
+    {
+      "files": ["src/app/api/**/*.ts"],
+      "rules": {
+        "no-console-in-api-routes": "error",
+        "require-rate-limit-on-sensitive-routes": "error",
+        "require-safe-error-response": "error",
+        "require-route-security-guards": "error"
+      }
+    }
+  ]
 }

@@ -15,6 +15,8 @@ below — `pnpm test` does require generated Prisma client types.
 | [`check-quality-baseline.mjs`](check-quality-baseline.mjs) | Quality gate and generated quality report | `node scripts/check-quality-baseline.mjs [--report]` |
 | [`check-doc-links.mjs`](check-doc-links.mjs) | Verify local Markdown links resolve to real files | `node scripts/check-doc-links.mjs` |
 | [`check-theme-tokens.mjs`](check-theme-tokens.mjs) | Detect hardcoded UI hex colors | `node scripts/check-theme-tokens.mjs` |
+| [`check-static-security-policies.mjs`](check-static-security-policies.mjs) | Enforce named security policies for env, Compose, migrations, startup wiring, and other non-ESLint files | `node scripts/check-static-security-policies.mjs` (also part of `pnpm lint`) |
+| [`eslint-rules/`](eslint-rules/) | Local named ESLint rules for API-route console, rate-limit, safe-error, and route-specific security policies | Loaded by `apps/web` lint via `--rulesdir` |
 | [`plans-index.mjs`](plans-index.mjs) | Validate story front-matter and generate plans index | `node scripts/plans-index.mjs [--check]` |
 | [`route_audit.py`](route_audit.py) | Audit API route rate-limit/auth patterns | `python scripts/route_audit.py [--report]` |
 | [`test-runner.mjs`](test-runner.mjs) | Run repository TypeScript tests through Node's loader | `pnpm test` or `node scripts/test-runner.mjs --coverage` |
