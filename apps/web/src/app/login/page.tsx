@@ -156,14 +156,14 @@ export default function LoginPage() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'grey.900',
+        backgroundColor: 'background.default',
         backgroundImage: `
-          radial-gradient(ellipse 80% 50% at 50% -20%, ${alpha(theme.palette.primary.main, 0.25)}, transparent),
-          radial-gradient(ellipse 60% 40% at 100% 100%, ${alpha(theme.palette.secondary.main, 0.18)}, transparent),
-          linear-gradient(${alpha(theme.palette.common.white, 0.025)} 1px, transparent 1px),
-          linear-gradient(90deg, ${alpha(theme.palette.common.white, 0.025)} 1px, transparent 1px)
+          radial-gradient(ellipse 70% 45% at 50% -10%, ${alpha(theme.palette.primary.main, 0.09)}, transparent),
+          radial-gradient(ellipse 55% 35% at 100% 100%, ${alpha(theme.palette.secondary.main, 0.06)}, transparent),
+          linear-gradient(${alpha(theme.palette.primary.dark, 0.025)} 1px, transparent 1px),
+          linear-gradient(90deg, ${alpha(theme.palette.primary.dark, 0.025)} 1px, transparent 1px)
         `,
-        backgroundSize: '100% 100%, 100% 100%, 36px 36px, 36px 36px',
+        backgroundSize: '100% 100%, 100% 100%, 40px 40px, 40px 40px',
         p: { xs: 2, sm: 3 },
       })}
     >
@@ -172,7 +172,7 @@ export default function LoginPage() {
         sx={(theme) => ({
           maxWidth: 440,
           width: '100%',
-          boxShadow: `0 25px 60px -15px ${alpha(theme.palette.common.black, 0.7)}, 0 0 0 1px ${alpha(theme.palette.common.white, 0.08)}`,
+          boxShadow: `0 24px 64px -28px ${alpha(theme.palette.primary.dark, 0.28)}, 0 8px 24px ${alpha(theme.palette.text.primary, 0.08)}`,
           borderRadius: 3,
           overflow: 'hidden',
           backgroundColor: 'background.paper',
@@ -201,15 +201,15 @@ export default function LoginPage() {
             alt="Логотип системы EMS Platform"
             width={56}
             height={56}
-            sx={{
+            sx={(theme) => ({
               objectFit: 'contain',
               mb: 1.5,
-              filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35))',
+              filter: `drop-shadow(0 4px 12px ${alpha(theme.palette.primary.dark, 0.3)})`,
               transition: 'transform 0.2s ease',
               '&:hover': {
                 transform: 'scale(1.05)',
               },
-            }}
+            })}
           />
           <Typography
             variant="h5"

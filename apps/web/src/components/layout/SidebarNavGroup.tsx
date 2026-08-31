@@ -1,12 +1,7 @@
 'use client';
 
 import React from 'react';
-import {
-  Box,
-  Typography,
-  Collapse,
-  Tooltip,
-} from '@mui/material';
+import { Box, Typography, Collapse, Tooltip } from '@mui/material';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { NavItemDef, getBadgeColors } from './sidebar-items';
@@ -38,23 +33,22 @@ export function SidebarNavGroup({
 }: SidebarNavGroupProps) {
   if (!canAccess(item) || moduleDisabled) return null;
 
-  const visibleChildren = item.children ? item.children.filter((c) => canAccess(c)) : [];
+  const visibleChildren = item.children ? item.children.filter((child) => canAccess(child)) : [];
   const hasChildren = visibleChildren.length > 0;
 
   if (item.children && item.children.length > 0 && visibleChildren.length === 0 && !item.path) {
     return null;
   }
 
-  const parentBadgeCount =
-    hasChildren
-      ? visibleChildren.reduce((acc, c) => acc + (c.badge && c.badge > 0 ? c.badge : 0), 0) || item.badge
-      : item.badge;
+  const parentBadgeCount = hasChildren
+    ? visibleChildren.reduce((total, child) => total + (child.badge && child.badge > 0 ? child.badge : 0), 0) || item.badge
+    : item.badge;
 
   const effectiveBadgeColor = (() => {
     if (hasChildren) {
-      if (visibleChildren.some((c) => c.badge && c.badge > 0 && c.badgeColor === 'error')) return 'error';
-      if (visibleChildren.some((c) => c.badge && c.badge > 0 && c.badgeColor === 'warning')) return 'warning';
-      const firstWithBadge = visibleChildren.find((c) => c.badge && c.badge > 0);
+      if (visibleChildren.some((child) => child.badge && child.badge > 0 && child.badgeColor === 'error')) return 'error';
+      if (visibleChildren.some((child) => child.badge && child.badge > 0 && child.badgeColor === 'warning')) return 'warning';
+      const firstWithBadge = visibleChildren.find((child) => child.badge && child.badge > 0);
       if (firstWithBadge?.badgeColor) return firstWithBadge.badgeColor;
     }
     return item.badgeColor || 'default';
@@ -62,9 +56,11 @@ export function SidebarNavGroup({
 
   const effectiveBadgeTooltip = (() => {
     if (hasChildren) {
-      const activeChildrenWithBadge = visibleChildren.filter((c) => c.badge && c.badge > 0 && c.badgeTooltip);
+      const activeChildrenWithBadge = visibleChildren.filter(
+        (child) => child.badge && child.badge > 0 && child.badgeTooltip
+      );
       if (activeChildrenWithBadge.length > 0) {
-        return activeChildrenWithBadge.map((c) => c.badgeTooltip).join(' • ');
+        return activeChildrenWithBadge.map((child) => child.badgeTooltip).join(' • ');
       }
     }
     return item.badgeTooltip || undefined;
@@ -78,7 +74,7 @@ export function SidebarNavGroup({
     return (
       <Tooltip title={item.label} placement="right">
         <Box
-          onClick={(e) => onOpenFlyout(e, item)}
+          onClick={(event) => onOpenFlyout(event, item)}
           sx={{
             position: 'relative',
             display: 'flex',
@@ -90,12 +86,12 @@ export function SidebarNavGroup({
             my: 0.25,
             borderRadius: '8px',
             cursor: 'pointer',
-            color: active ? 'primary.light' : 'text.disabled',
-            backgroundColor: active ? 'action.selected' : 'transparent',
+            color: active ? 'primary.main' : 'text.secondary',
+            backgroundColor: active ? 'primary.light' : 'transparent',
             transition: 'all 0.15s ease',
             '&:hover': {
-              backgroundColor: active ? 'action.selected' : 'action.hover',
-              color: 'primary.light',
+              backgroundColor: active ? 'primary.light' : 'action.hover',
+              color: 'primary.main',
             },
           }}
         >
@@ -108,7 +104,7 @@ export function SidebarNavGroup({
                 bottom: 8,
                 width: 3,
                 borderRadius: '0 3px 3px 0',
-                backgroundColor: 'primary.light',
+                backgroundColor: 'primary.main',
               }}
             />
           )}
@@ -116,7 +112,11 @@ export function SidebarNavGroup({
           {item.icon}
 
           {hasBadge && (
-            <Tooltip title={effectiveBadgeTooltip || (item.badgeText ? item.badgeText : `${parentBadgeCount} событий`)} arrow placement="right">
+            <Tooltip
+              title={effectiveBadgeTooltip || (item.badgeText ? item.badgeText : `${parentBadgeCount} событий`)}
+              arrow
+              placement="right"
+            >
               <Box
                 sx={{
                   position: 'absolute',
@@ -125,8 +125,8 @@ export function SidebarNavGroup({
                   minWidth: item.badgeText ? 24 : 15,
                   height: 15,
                   borderRadius: '8px',
-                  backgroundColor: item.badgeText ? 'grey.700' : badgeColors.text,
-                  color: item.badgeText ? 'grey.50' : 'text.primary',
+                  backgroundColor: item.badgeText ? 'primary.dark' : badgeColors.text,
+                  color: item.badgeText ? 'common.white' : 'text.primary',
                   fontSize: item.badgeText ? '0.55rem' : '0.625rem',
                   fontWeight: 800,
                   display: 'flex',
@@ -165,12 +165,12 @@ export function SidebarNavGroup({
           py: 0.7,
           borderRadius: '6px',
           cursor: 'pointer',
-          color: active ? 'primary.light' : 'grey.300',
-          backgroundColor: active && !hasChildren ? 'action.selected' : 'transparent',
+          color: active ? 'primary.dark' : 'text.secondary',
+          backgroundColor: active && !hasChildren ? 'primary.light' : 'transparent',
           transition: 'all 0.12s ease',
           '&:hover': {
-            backgroundColor: active && !hasChildren ? 'action.selected' : 'action.hover',
-            color: 'common.white',
+            backgroundColor: active && !hasChildren ? 'primary.light' : 'action.hover',
+            color: 'primary.main',
           },
         }}
       >
@@ -183,7 +183,7 @@ export function SidebarNavGroup({
               bottom: 6,
               width: 3,
               borderRadius: '0 3px 3px 0',
-              backgroundColor: 'primary.light',
+              backgroundColor: 'primary.main',
             }}
           />
         )}
@@ -194,7 +194,7 @@ export function SidebarNavGroup({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: active ? 'primary.light' : 'text.disabled',
+              color: active ? 'primary.main' : 'text.secondary',
               flexShrink: 0,
             }}
           >
@@ -205,7 +205,7 @@ export function SidebarNavGroup({
             sx={{
               fontSize: '0.8125rem',
               fontWeight: active ? 700 : 500,
-              color: active ? 'common.white' : 'grey.300',
+              color: active ? 'primary.dark' : 'text.secondary',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -223,8 +223,8 @@ export function SidebarNavGroup({
                   minWidth: item.badgeText ? 24 : 16,
                   height: 16,
                   borderRadius: '8px',
-                  backgroundColor: item.badgeText ? 'grey.700' : badgeColors.bg,
-                  color: item.badgeText ? 'grey.50' : badgeColors.text,
+                  backgroundColor: item.badgeText ? 'primary.dark' : badgeColors.bg,
+                  color: item.badgeText ? 'common.white' : badgeColors.text,
                   border: '1px solid',
                   borderColor: item.badgeText ? 'transparent' : badgeColors.border,
                   fontSize: item.badgeText ? '0.55rem' : '0.625rem',
@@ -232,7 +232,7 @@ export function SidebarNavGroup({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  px: item.badgeText ? 0.4 : 0.4,
+                  px: 0.4,
                   fontFamily: item.badgeText ? 'inherit' : 'monospace',
                 }}
               >
@@ -242,7 +242,7 @@ export function SidebarNavGroup({
           )}
 
           {hasChildren && (
-            <Box sx={{ color: 'text.disabled', display: 'flex', alignItems: 'center' }}>
+            <Box sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center' }}>
               {expanded ? (
                 <KeyboardArrowDownIcon sx={{ fontSize: 16 }} />
               ) : (
@@ -273,12 +273,12 @@ export function SidebarNavGroup({
                     py: 0.55,
                     borderRadius: '5px',
                     cursor: 'pointer',
-                    color: childActive ? 'primary.light' : 'grey.400',
-                    backgroundColor: childActive ? 'action.selected' : 'transparent',
+                    color: childActive ? 'primary.main' : 'text.secondary',
+                    backgroundColor: childActive ? 'primary.light' : 'transparent',
                     transition: 'all 0.1s ease',
                     '&:hover': {
-                      backgroundColor: childActive ? 'action.selected' : 'action.hover',
-                      color: 'common.white',
+                      backgroundColor: childActive ? 'primary.light' : 'action.hover',
+                      color: 'primary.main',
                     },
                   }}
                 >
@@ -288,7 +288,7 @@ export function SidebarNavGroup({
                         sx={{
                           display: 'flex',
                           alignItems: 'center',
-                          color: childActive ? 'primary.light' : 'text.disabled',
+                          color: childActive ? 'primary.main' : 'text.secondary',
                           fontSize: 15,
                         }}
                       >
@@ -300,7 +300,7 @@ export function SidebarNavGroup({
                       sx={{
                         fontSize: '0.75rem',
                         fontWeight: childActive ? 600 : 400,
-                        color: childActive ? 'common.white' : 'grey.400',
+                        color: childActive ? 'primary.dark' : 'text.secondary',
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
