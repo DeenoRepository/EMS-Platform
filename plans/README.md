@@ -22,11 +22,9 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (1)
+## Active (0)
 
-| ID | Title | Phase | Priority | Risk | Skills | Opened |
-|---|---|---|---|---|---|---|
-| [L4](active/L4-e2e-smoke-coverage.md) | Добавить E2E smoke-покрытие критических пользовательских сценариев | L | P2 | low | playwright-pro, senior-qa | 2026-08-31 |
+_No active stories._
 
 ---
 
@@ -36,7 +34,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 
 ---
 
-## Done (71)
+## Done (72)
 
 | ID | Title | Phase | Closed | Commits |
 |---|---|---|---|---|
@@ -111,3 +109,4 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [L1](done/2026-08/L1-env-validate-runtime-wiring.md) | Подключить валидацию окружения к рантайму приложения | L | 2026-08-31 | feat(web): wire env-validate into Next.js runtime via instrumentation.ts |
 | [L2](done/2026-08/L2-prisma-migration-baseline.md) | Ввести версионированные миграции БД вместо db push | L | 2026-08-31 | feat(database): ввести версионированные миграции Prisma вместо db push |
 | [L3](done/2026-08/L3-backup-scheduling-and-restore.md) | Автоматизировать резервное копирование и проверить восстановление | L | 2026-08-31 | feat(ops): автоматизировать резервное копирование, сделать провал явным, проверить восстановление |
+| [L4](done/2026-08/L4-e2e-smoke-coverage.md) | Добавить E2E smoke-покрытие критических пользовательских сценариев | L | 2026-08-31 | feat(web): добавить Playwright E2E smoke-тесты критических сценариев |

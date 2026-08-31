@@ -18,6 +18,7 @@ below — `pnpm test` does require generated Prisma client types.
 | [`plans-index.mjs`](plans-index.mjs) | Validate story front-matter and generate plans index | `node scripts/plans-index.mjs [--check]` |
 | [`route_audit.py`](route_audit.py) | Audit API route rate-limit/auth patterns | `python scripts/route_audit.py [--report]` |
 | [`test-runner.mjs`](test-runner.mjs) | Run repository TypeScript tests through Node's loader | `pnpm test` |
+| `apps/web/e2e/*.spec.ts` (Playwright) | E2E smoke tests: login/logout, EPS/WMS/MRO access, RBAC denial, equipment creation | `pnpm --filter @ems/web exec playwright test` |
 | [`fgrade_detail.py`](fgrade_detail.py) | Print detailed F-grade file list | `python scripts/fgrade_detail.py` |
 
 ### Prerequisites before running the gates
@@ -37,6 +38,28 @@ testing.
 
 `inspect_summary.py` was removed: its output duplicated the generated quality
 baseline and it had no callers.
+
+### E2E smoke tests (Playwright)
+
+Isolated from the gates above: not part of `pnpm test`, and not currently a
+required CI step (see
+[`plans/done/2026-08/L4-e2e-smoke-coverage.md`](../plans/done/2026-08/L4-e2e-smoke-coverage.md)
+for why — the suite must first prove stability over time before it gates merges).
+
+```bash
+pnpm --filter @ems/database generate
+pnpm build                                # tests run against the production build
+pnpm --filter @ems/web exec playwright install chromium
+pnpm --filter @ems/web exec playwright test
+```
+
+Requires a reachable local PostgreSQL server (default
+`postgresql://postgres:postgres@localhost:5432`, override with
+`E2E_DB_HOST`/`E2E_DB_PORT`/`E2E_DB_USER`/`E2E_DB_PASSWORD`). The suite's
+`apps/web/e2e/global-setup.ts` provisions and migrates its own ephemeral
+`ems_e2e_test` database on that server — it never touches a developer's dev
+database or any production data — and `global-teardown.ts` drops it after
+the run. Set `E2E_KEEP_DB=true` to keep the database for local debugging.
 
 ## Deployment and operations
 
