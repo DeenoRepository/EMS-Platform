@@ -136,6 +136,7 @@ export function makePrismaMock() {
     jiraIssueCache: {
       count: emptyCount,
       findMany: emptyList,
+      groupBy: emptyList,
       upsert: async (): Promise<UnknownRecord> => ({ issueKey: 'TEST-1' }),
     },
     srmIssue: {
@@ -213,7 +214,27 @@ export function makePrismaMock() {
       findUnique: missing,
       create: async (): Promise<UnknownRecord> => ({ id: 'created-id' }),
     },
-    warehouse: { findMany: emptyList, findUnique: missing },
+    warehouse: { findMany: emptyList, findUnique: missing, count: emptyCount },
+    feedbackTicket: { count: emptyCount },
+    stockItem: {
+      count: emptyCount,
+      findMany: emptyList,
+      findFirst: missing,
+      update: async (): Promise<UnknownRecord> => ({ id: 'stock-item-id' }),
+    },
+    checklistResult: { upsert: async (): Promise<UnknownRecord> => ({ id: 'checklist-result-id' }) },
+    maintenanceUsedPart: { create: async (): Promise<UnknownRecord> => ({ id: 'used-part-id' }) },
+    nomenclature: { count: emptyCount },
+    inventory: {
+      count: emptyCount,
+      findMany: emptyList,
+      findUnique: missing,
+      create: async (): Promise<UnknownRecord> => ({ id: 'inventory-id' }),
+    },
+    maintenanceSchedule: {
+      findUnique: missing,
+      update: async (): Promise<UnknownRecord> => ({ id: 'schedule-id' }),
+    },
     user: {
       findFirst: missing,
       findUnique: missing,

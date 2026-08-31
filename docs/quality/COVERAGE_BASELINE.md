@@ -11,15 +11,15 @@
 
 | Metric | Value | Threshold | Status |
 |---|---:|---:|---|
-| Line coverage among loaded files | 72.85 % | >= 70 % | PASS |
-| File-level coverage | 30.27 % | >= 22 % | PASS |
+| Line coverage among loaded files | 73.47 % | >= 70 % | PASS |
+| File-level coverage | 32.43 % | >= 22 % | PASS |
 | Component line coverage | 1.88 % | >= 1 % | PASS |
 
 ## Detail
 
-- **Files loaded by tests:** 112
+- **Files loaded by tests:** 120
 - **Total production files:** 370 (all `.ts`/`.tsx` excluding tests, specs, and declarations)
-- **Files with zero coverage:** 258 (69.7 %)
+- **Files with zero coverage:** 250 (67.6 %)
 
 ## Metric interpretation
 
