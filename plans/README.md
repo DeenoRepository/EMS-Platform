@@ -22,11 +22,10 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (3)
+## Active (2)
 
 | ID | Title | Phase | Priority | Risk | Skills | Opened |
 |---|---|---|---|---|---|---|
-| [N6](active/N6-vitest-scope-and-component-coverage.md) | Widen vitest discovery beyond components/ui and measure component coverage | N | P1 | medium | senior-qa, senior-frontend | 2026-08-31 |
 | [N7](active/N7-remove-placeholder-tests-and-count-checks.md) | Remove placeholder test files and guard on check count, not file count | N | P2 | low | senior-qa | 2026-08-31 |
 | [N8](active/N8-tests-for-pure-logic-modules.md) | Tests for the highest-risk pure-logic modules extracted during phases C/H/K4 | N | P2 | low | senior-qa | 2026-08-31 |
 
@@ -38,7 +37,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 
 ---
 
-## Done (84)
+## Done (85)
 
 | ID | Title | Phase | Closed | Commits |
 |---|---|---|---|---|
@@ -126,3 +125,4 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [N3](done/2026-08/N3-pin-node-version-and-rebaseline.md) | Pin the Node version and re-establish a reproducible coverage baseline | N | 2026-08-31 | chore/N3-pin-node-and-rebaseline |
 | [N4](done/2026-08/N4-replace-source-text-route-tests.md) | Replace source-text route assertions with executable tests and ESLint rules | N | 2026-08-31 | test/N4-executable-route-security |
 | [N5](done/2026-08/N5-executable-tests-for-write-routes.md) | Executable RBAC and validation tests for the 13 uncovered write routes | N | 2026-08-31 | test/N5-write-route-contracts |
+| [N6](done/2026-08/N6-vitest-scope-and-component-coverage.md) | Widen vitest discovery beyond components/ui and measure component coverage | N | 2026-08-31 | test/N6-component-coverage-gate |

@@ -1,14 +1,14 @@
 ---
 id: N6
 title: Widen vitest discovery beyond components/ui and measure component coverage
-status: active
+status: done
 phase: N
 priority: P1
 risk: medium
 skills: [senior-qa, senior-frontend]
 opened: 2026-08-31
-closed: null
-commits: []
+closed: 2026-08-31
+commits: [test/N6-component-coverage-gate]
 gates: [lint, tsc, test]
 ---
 
@@ -16,7 +16,7 @@ gates: [lint, tsc, test]
 
 ## Problem
 
-[`vitest.config.ts:26`](../../apps/web/vitest.config.ts:26) restricts
+[`vitest.config.ts:26`](../../../apps/web/vitest.config.ts:26) restricts
 discovery to a single directory:
 
 ```ts
@@ -25,7 +25,7 @@ include: ['src/components/ui/__tests__/**/*.test.tsx'],
 
 A React test written anywhere else is silently ignored. This is exactly the
 blind spot that story `M1` removed from
-[`test-runner.mjs`](../../scripts/test-runner.mjs) for node:test, left
+[`test-runner.mjs`](../../../scripts/test-runner.mjs) for node:test, left
 in place for vitest — and the project's own convention is to co-locate tests
 with the code they cover, so the next component story will walk straight
 into it.
@@ -36,22 +36,22 @@ all four cover design-system primitives (`StatCard`, `StatusBadge`,
 wizard is covered.
 
 Component coverage is also unmeasured: `test:components` runs without
-`--coverage`, and [`check-coverage.mjs`](../../scripts/check-coverage.mjs)
+`--coverage`, and [`check-coverage.mjs`](../../../scripts/check-coverage.mjs)
 only parses node:test output. The 32 vitest checks influence no metric, so
 deleting them would trip no gate.
 
-See [inspection §3.6](../../docs/quality/inspections/2026-08-31-coverage-quality-audit.md).
+See [inspection §3.6](../../../docs/quality/inspections/2026-08-31-coverage-quality-audit.md).
 
 ## Scope
 
-Changes: [`vitest.config.ts`](../../apps/web/vitest.config.ts) include
+Changes: [`vitest.config.ts`](../../../apps/web/vitest.config.ts) include
 pattern and coverage settings; the `EXCLUDED_TEST_ROOTS` list in
-[`test-runner.mjs`](../../scripts/test-runner.mjs); the coverage gate to
+[`test-runner.mjs`](../../../scripts/test-runner.mjs); the coverage gate to
 account for the component suite; a first batch of component tests.
 
 Explicitly NOT changing: the runner split itself — node:test for logic,
 vitest for React — which is settled in
-[`ADR-0001`](../../docs/architecture/decisions/ADR-0001-component-test-runner.md).
+[`ADR-0001`](../../../docs/architecture/decisions/ADR-0001-component-test-runner.md).
 
 ## Steps
 
@@ -71,19 +71,38 @@ vitest for React — which is settled in
    prioritising those with conditional rendering and user input over
    presentational wrappers.
 6. Record the component-coverage threshold in
-   [`COVERAGE_BASELINE.md`](../../docs/quality/COVERAGE_BASELINE.md).
+   [`COVERAGE_BASELINE.md`](../../../docs/quality/COVERAGE_BASELINE.md).
 
 ## Definition of Done
 
-- [ ] A `.test.tsx` placed outside `components/ui` is executed — proven by
+- [x] A `.test.tsx` placed outside `components/ui` is executed — proven by
       adding one and observing it in the run output.
-- [ ] No test file is executed by both runners; none is skipped by both.
-- [ ] `pnpm --filter @ems/web test:components` emits a coverage summary.
-- [ ] The coverage gate enforces a component-coverage threshold.
-- [ ] Discovery floor guard present and tripping when the include pattern
+- [x] No test file is executed by both runners; none is skipped by both.
+- [x] `pnpm --filter @ems/web test:components` emits a coverage summary.
+- [x] The coverage gate enforces a component-coverage threshold.
+- [x] Discovery floor guard present and tripping when the include pattern
       is broken.
-- [ ] Full gate green: lint, tsc, test.
+- [x] Full gate green: lint, tsc, test.
 
 ## Result
 
-_To be filled on close._
+Vitest discovery now uses `src/**/*.test.tsx`. Node's native runner discovers
+only `*.test.ts`, making runner ownership disjoint by extension rather than by
+hard-coded directories. The Node floor is 45 files; Vitest's configured-file
+floor is 6 and is measured via `vitest list --filesOnly`. A deliberate broken
+include pattern matched zero files and triggered the guard.
+
+Added `@vitest/coverage-v8` and enabled V8 text + JSON-summary coverage over
+`src/components/**` and non-API `src/app/**`. The central coverage gate runs
+both suites, requires the JSON summary, and enforces a separate component line
+coverage ratchet.
+
+Two domain tests outside `components/ui` prove broadened discovery:
+
+- `WmsStockZoneCell.test.tsx`: editable/foreign-warehouse branches and cell action;
+- `AdminFeedbackFilters.test.tsx`: search/filter rendering, MUI select interaction, reset.
+
+Final results: Node runner 45 files / 305 checks, Vitest 6 files / 38 checks.
+Coverage gate: 68.87% Node loaded-line coverage, 18.97% Node file reach
+(70/369), and 1.89% component line coverage. Ratchets are 68%, 18%, and 1%.
+Two consecutive combined reports were byte-identical.

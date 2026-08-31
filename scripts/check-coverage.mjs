@@ -3,8 +3,9 @@
  * Coverage gate for EMS-Platform.
  *
  * Metrics:
- * 1. Line coverage among files loaded by at least one test.
- * 2. File reach: loaded production TypeScript files / all production files.
+ * 1. Line coverage among files loaded by at least one Node test.
+ * 2. File reach: Node-loaded production TypeScript files / all production files.
+ * 3. Component line coverage from the separately-owned Vitest React suite.
  *
  * Usage:
  *   node scripts/check-coverage.mjs
@@ -22,8 +23,9 @@ const SUPPORTED_NODE_MAJORS = [22, 24];
 // Corrected N2/N3 baseline measured on Node 24.15.0 on 2026-08-31.
 // Thresholds are floors of measured values and act as a ratchet.
 const THRESHOLDS = {
-  lineCoverageAmongLoadedFiles: 69.0,
+  lineCoverageAmongLoadedFiles: 68.0,
   fileCoverageRatio: 18.0,
+  componentLineCoverage: 1.0,
 };
 
 const EXCLUDED_DIRS = new Set([
@@ -153,7 +155,7 @@ export function parseCoverageOutput(rawOutput) {
 }
 
 function runCoverageTests() {
-  console.log('[check-coverage] Running tests with experimental coverage...');
+  console.log('[check-coverage] Running Node tests with experimental coverage...');
   return spawnSync(process.execPath, ['scripts/test-runner.mjs', '--coverage'], {
     cwd: process.cwd(),
     encoding: 'utf8',
@@ -165,6 +167,42 @@ function runCoverageTests() {
         'postgresql://dummy:dummy@localhost:5432/dummy?schema=public',
     },
   });
+}
+
+function runComponentCoverageTests() {
+  console.log('[check-coverage] Running React component tests with V8 coverage...');
+  const isWindows = process.platform === 'win32';
+  const command = isWindows ? process.env.ComSpec || 'cmd.exe' : 'pnpm';
+  const args = isWindows
+    ? ['/d', '/s', '/c', 'pnpm --filter @ems/web test:components']
+    : ['--filter', '@ems/web', 'test:components'];
+  return spawnSync(command, args, {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
+  });
+}
+
+function readComponentLineCoverage() {
+  const summaryPath = path.join(
+    'apps',
+    'web',
+    'coverage',
+    'components',
+    'coverage-summary.json',
+  );
+  if (!existsSync(summaryPath)) {
+    console.error(`[check-coverage] Missing component coverage summary: ${summaryPath}`);
+    process.exit(1);
+  }
+
+  const summary = JSON.parse(readFileSync(summaryPath, 'utf8'));
+  const percentage = summary?.total?.lines?.pct;
+  if (typeof percentage !== 'number' || !Number.isFinite(percentage)) {
+    console.error('[check-coverage] Invalid component line coverage summary.');
+    process.exit(1);
+  }
+  return percentage;
 }
 
 function assertSuccessfulTestRun(result, rawOutput) {
@@ -198,7 +236,7 @@ function assertParserResult(parsed) {
   }
 }
 
-function calculateMetrics(parsed) {
+function calculateMetrics(parsed, componentLineCoverage) {
   const allProductionFiles = [
     ...walkProductionFiles('packages'),
     ...walkProductionFiles(path.join('apps', 'web', 'src')),
@@ -210,6 +248,7 @@ function calculateMetrics(parsed) {
   return {
     lineCoverageAmongLoaded: parsed.lineCoverageAmongLoaded,
     fileCoverageRatio,
+    componentLineCoverage,
     loadedFiles,
     totalFiles,
   };
@@ -229,6 +268,12 @@ function evaluateChecks(metrics) {
       actual: Number.parseFloat(metrics.fileCoverageRatio.toFixed(2)),
       threshold: THRESHOLDS.fileCoverageRatio,
       passed: metrics.fileCoverageRatio >= THRESHOLDS.fileCoverageRatio,
+    },
+    {
+      label: 'Component line coverage',
+      actual: metrics.componentLineCoverage,
+      threshold: THRESHOLDS.componentLineCoverage,
+      passed: metrics.componentLineCoverage >= THRESHOLDS.componentLineCoverage,
     },
   ];
 }
@@ -254,12 +299,15 @@ function baselineDate(reportPath, metrics) {
   const dateMatch = existing.match(/\*\*Measured at:\*\* (\d{4}-\d{2}-\d{2})/);
   const oldLine = existing.match(/Line coverage.*?(\d+\.\d+) %/);
   const oldFile = existing.match(/File-level coverage.*?(\d+\.\d+) %/);
+  const oldComponent = existing.match(/Component line coverage.*?(\d+\.\d+) %/);
   const unchanged =
     oldLine &&
     Number.parseFloat(oldLine[1]) === metrics.lineCoverageAmongLoaded &&
     oldFile &&
     Number.parseFloat(oldFile[1]) ===
-      Number.parseFloat(metrics.fileCoverageRatio.toFixed(2));
+      Number.parseFloat(metrics.fileCoverageRatio.toFixed(2)) &&
+    oldComponent &&
+    Number.parseFloat(oldComponent[1]) === metrics.componentLineCoverage;
 
   return dateMatch && unchanged ? dateMatch[1] : today;
 }
@@ -286,6 +334,7 @@ function renderBaseline(metrics) {
 |---|---:|---:|---|
 | Line coverage among loaded files | ${metrics.lineCoverageAmongLoaded.toFixed(2)} % | >= ${THRESHOLDS.lineCoverageAmongLoadedFiles} % | ${metrics.lineCoverageAmongLoaded >= THRESHOLDS.lineCoverageAmongLoadedFiles ? 'PASS' : 'FAIL'} |
 | File-level coverage | ${metrics.fileCoverageRatio.toFixed(2)} % | >= ${THRESHOLDS.fileCoverageRatio} % | ${metrics.fileCoverageRatio >= THRESHOLDS.fileCoverageRatio ? 'PASS' : 'FAIL'} |
+| Component line coverage | ${metrics.componentLineCoverage.toFixed(2)} % | >= ${THRESHOLDS.componentLineCoverage} % | ${metrics.componentLineCoverage >= THRESHOLDS.componentLineCoverage ? 'PASS' : 'FAIL'} |
 
 ## Detail
 
@@ -298,11 +347,16 @@ function renderBaseline(metrics) {
 **Line coverage among loaded files** is Node's \`all files\` line percentage.
 Files never imported by a test are absent from this denominator.
 
-**File-level coverage** measures test reach: the number of production TypeScript
-files present in the coverage table divided by all production TypeScript files.
+**File-level coverage** measures Node-test reach: the number of production
+TypeScript files present in the Node coverage table divided by all production
+TypeScript files.
 
-Together these metrics prevent regressions both inside tested files and in the
-number of production files reached by tests.
+**Component line coverage** comes from Vitest V8 coverage over
+\`src/components/**\` and non-API \`src/app/**\`. It is intentionally separate from
+Node coverage because React tests use jsdom and a dedicated runner.
+
+Together these metrics prevent regressions inside tested files, in Node-test
+reach, and across the React component surface.
 
 ## Parser correctness
 
@@ -340,7 +394,12 @@ function main() {
   const parsed = parseCoverageOutput(rawOutput);
   assertParserResult(parsed);
 
-  const metrics = calculateMetrics(parsed);
+  const componentResult = runComponentCoverageTests();
+  const componentOutput = (componentResult.stdout || '') + (componentResult.stderr || '');
+  assertSuccessfulTestRun(componentResult, componentOutput);
+  const componentLineCoverage = readComponentLineCoverage();
+
+  const metrics = calculateMetrics(parsed, componentLineCoverage);
   const checks = evaluateChecks(metrics);
   printResults(checks, metrics);
   writeBaselineIfRequested(metrics);

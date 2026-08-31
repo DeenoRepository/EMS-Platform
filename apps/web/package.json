@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx --rulesdir ../../scripts/eslint-rules",
-    "test:components": "vitest run",
+    "test:components": "node ../../scripts/check-component-test-discovery.mjs && vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:report": "playwright show-report"
   },
@@ -42,6 +42,7 @@
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^6.1.1",
+    "@vitest/coverage-v8": "4.1.11",
     "eslint": "^8.57.1",
     "eslint-config-next": "15.5.21",
     "jsdom": "^30.0.1",

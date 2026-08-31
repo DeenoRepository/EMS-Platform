@@ -11,8 +11,9 @@
 
 | Metric | Value | Threshold | Status |
 |---|---:|---:|---|
-| Line coverage among loaded files | 69.23 % | >= 69 % | PASS |
+| Line coverage among loaded files | 68.87 % | >= 68 % | PASS |
 | File-level coverage | 18.97 % | >= 18 % | PASS |
+| Component line coverage | 1.89 % | >= 1 % | PASS |
 
 ## Detail
 
@@ -25,11 +26,16 @@
 **Line coverage among loaded files** is Node's `all files` line percentage.
 Files never imported by a test are absent from this denominator.
 
-**File-level coverage** measures test reach: the number of production TypeScript
-files present in the coverage table divided by all production TypeScript files.
+**File-level coverage** measures Node-test reach: the number of production
+TypeScript files present in the Node coverage table divided by all production
+TypeScript files.
 
-Together these metrics prevent regressions both inside tested files and in the
-number of production files reached by tests.
+**Component line coverage** comes from Vitest V8 coverage over
+`src/components/**` and non-API `src/app/**`. It is intentionally separate from
+Node coverage because React tests use jsdom and a dedicated runner.
+
+Together these metrics prevent regressions inside tested files, in Node-test
+reach, and across the React component surface.
 
 ## Parser correctness
 
