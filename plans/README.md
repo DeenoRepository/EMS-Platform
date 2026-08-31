@@ -22,12 +22,10 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (6)
+## Active (4)
 
 | ID | Title | Phase | Priority | Risk | Skills | Opened |
 |---|---|---|---|---|---|---|
-| [M1](active/M1-test-runner-discovers-all-tests.md) | Runner должен находить все тесты, а не два жёстко заданных каталога | M | P0 | medium | senior-qa | 2026-08-31 |
-| [M2](active/M2-coverage-measurement-and-gate.md) | Измерять покрытие тестами и закрепить его порогом в CI | M | P0 | low | senior-qa, ci-cd-pipeline-builder | 2026-08-31 |
 | [M3](active/M3-api-route-handler-tests.md) | Покрыть тестами API-роуты — RBAC, rate-limit, валидация ввода | M | P1 | medium | senior-qa, senior-backend, senior-security | 2026-08-31 |
 | [M4](active/M4-eliminate-tautological-tests.md) | Устранить тавтологические тесты, проверяющие копию логики вместо кода | M | P1 | low | senior-qa | 2026-08-31 |
 | [M5](active/M5-e2e-in-ci.md) | Запускать E2E-набор в CI и расширить его на критические сценарии записи | M | P2 | medium | playwright-pro, ci-cd-pipeline-builder | 2026-08-31 |
@@ -41,7 +39,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 
 ---
 
-## Done (73)
+## Done (75)
 
 | ID | Title | Phase | Closed | Commits |
 |---|---|---|---|---|
@@ -118,3 +116,5 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [L3](done/2026-08/L3-backup-scheduling-and-restore.md) | Автоматизировать резервное копирование и проверить восстановление | L | 2026-08-31 | feat(ops): автоматизировать резервное копирование, сделать провал явным, проверить восстановление |
 | [L4](done/2026-08/L4-e2e-smoke-coverage.md) | Добавить E2E smoke-покрытие критических пользовательских сценариев | L | 2026-08-31 | feat(web): добавить Playwright E2E smoke-тесты критических сценариев |
 | [L6](done/2026-08/L6-migration-failure-not-suppressed.md) | Не подавлять провал миграции при старте в Docker и systemd | L | 2026-08-31 | ce2f0d0 |
+| [M1](done/2026-08/M1-test-runner-discovers-all-tests.md) | Runner должен находить все тесты, а не два жёстко заданных каталога | M | 2026-08-31 | 4b91888 |
+| [M2](done/2026-08/M2-coverage-measurement-and-gate.md) | Измерять покрытие тестами и закрепить его порогом в CI | M | 2026-08-31 | 4b91888 |
