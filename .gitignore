@@ -60,3 +60,8 @@ test-results/
 ems-baremetal-release/
 ems-airgap-bundle/
 *.zip
+
+# Python bytecode cache — produced by the CI "Verify Script Syntax" step
+# (python3 -m py_compile scripts/*.py) and by local runs of the audit scripts.
+__pycache__/
+*.py[cod]

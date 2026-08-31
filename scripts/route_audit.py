@@ -82,8 +82,20 @@ def render_route_list(routes, empty_message):
     return '\n'.join(f"- `{r}`" for r in routes) + '\n'
 
 
+def read_previous_measured_at(out_path):
+    """Return the `Measured at:` date of an existing report, or None."""
+    try:
+        with open(out_path, encoding='utf-8') as f:
+            existing = f.read()
+    except FileNotFoundError:
+        return None
+    match = re.search(r'^> Measured at: (\d{4}-\d{2}-\d{2})$', existing, re.MULTILINE)
+    return match.group(1) if match else None
+
+
 def write_markdown_report(result, out_path):
     measured_at = datetime.date.today().isoformat()
+    previous_measured_at = read_previous_measured_at(out_path)
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
     content = f"""# Security route audit
@@ -135,6 +147,23 @@ Sensitive path prefixes checked: `{', '.join(SENSITIVE_PREFIXES)}`.
 python scripts/route_audit.py --report
 ```
 """
+    # CI regenerates this report and then runs `git diff --exit-code` on it.
+    # If the measurement date were always "today", an unchanged repository
+    # would still produce a diff on any day after the last commit and fail the
+    # build for no substantive reason. Only advance the date when some other
+    # part of the report actually changed.
+    if previous_measured_at and previous_measured_at != measured_at:
+        rewound = content.replace(
+            f'> Measured at: {measured_at}',
+            f'> Measured at: {previous_measured_at}',
+        )
+        try:
+            with open(out_path, encoding='utf-8') as f:
+                if f.read() == rewound:
+                    content = rewound
+        except FileNotFoundError:
+            pass
+
     with open(out_path, 'w', encoding='utf-8') as f:
         f.write(content)
     print(f"\nWrote {out_path}")

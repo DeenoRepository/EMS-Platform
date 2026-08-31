@@ -6,17 +6,34 @@ maintenance commands are intentionally manual entry points.
 
 ## Quality and security gates
 
-The following scripts are deterministic CI/project checks. They may be run
-locally without a database or production credentials unless noted otherwise.
+The following scripts are deterministic CI/project checks. They need no
+database connection and no production credentials, but see the prerequisites
+below — `pnpm test` does require generated Prisma client types.
 
 | Script | Purpose | Usage |
 |---|---|---|
 | [`check-quality-baseline.mjs`](check-quality-baseline.mjs) | Quality gate and generated quality report | `node scripts/check-quality-baseline.mjs [--report]` |
+| [`check-doc-links.mjs`](check-doc-links.mjs) | Verify local Markdown links resolve to real files | `node scripts/check-doc-links.mjs` |
 | [`check-theme-tokens.mjs`](check-theme-tokens.mjs) | Detect hardcoded UI hex colors | `node scripts/check-theme-tokens.mjs` |
 | [`plans-index.mjs`](plans-index.mjs) | Validate story front-matter and generate plans index | `node scripts/plans-index.mjs [--check]` |
 | [`route_audit.py`](route_audit.py) | Audit API route rate-limit/auth patterns | `python scripts/route_audit.py [--report]` |
 | [`test-runner.mjs`](test-runner.mjs) | Run repository TypeScript tests through Node's loader | `pnpm test` |
 | [`fgrade_detail.py`](fgrade_detail.py) | Print detailed F-grade file list | `python scripts/fgrade_detail.py` |
+
+### Prerequisites before running the gates
+
+```bash
+pnpm install --frozen-lockfile
+pnpm db:generate   # required by pnpm test
+```
+
+`pnpm db:generate` only generates Prisma client types from
+`packages/database/prisma/schema.prisma`; it does not connect to or modify a
+database. Skipping it makes every suite that imports `@ems/database` abort with
+`@prisma/client did not initialize yet`, which is an environment error and not
+a test regression. CI performs the same step ("Generate Prisma Client" in
+[`.github/workflows/ci.yml`](../.github/workflows/ci.yml)) before linting and
+testing.
 
 `inspect_summary.py` was removed: its output duplicated the generated quality
 baseline and it had no callers.
@@ -53,9 +70,22 @@ The obsolete `sync-legacy-import.js` wrapper and direct SQL feedback migration
 were removed. Schema changes must go through the Prisma schema and the
 repository's database migration workflow.
 
+## Generated reports and the `Measured at:` date
+
+[`check-quality-baseline.mjs --report`](check-quality-baseline.mjs) and
+[`route_audit.py --report`](route_audit.py) write generated Markdown that CI
+regenerates and then verifies with `git diff --exit-code`. Both keep the
+`Measured at:` date of the previous report when regeneration produces
+otherwise-identical content, and advance it only when a measured value
+actually changed. Do not "simplify" this back to an unconditional
+`today()` — that reintroduces a build failure on every day after the last
+commit, even with no code change.
+
 ## Maintenance policy
 
 - Add any new script to this catalog in the same commit.
+- A generated report must be byte-identical when regenerated from unchanged
+  inputs; never embed a wall-clock timestamp that varies per run.
 - Every script must document required inputs, target environment, and whether
   it mutates the database or filesystem.
 - Keep generated reports in `docs/quality/`; keep temporary inputs in ignored

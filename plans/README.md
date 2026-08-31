@@ -4,7 +4,7 @@
 > after adding, editing, or closing a story. Source of truth is the YAML
 > front-matter in each file under `plans/active/` and `plans/done/`.
 >
-> Last generated: 2026-08-30
+> Last generated: 2026-08-31
 
 ## Lifecycle
 
@@ -87,7 +87,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [K1](done/2026-08/K1-inventory-print-xss.md) | Устранить DOM XSS в печатной форме инвентаризации | K | 2026-08-30 | pending |
 | [K2](done/2026-08/K2-auth-declaration-build.md) | Восстановить declaration build пакета auth | K | 2026-08-30 | da70388 |
 | [K3](done/2026-08/K3-story-links-gate.md) | Исправить ссылки story I1–I8 и закрепить docs gate | K | 2026-08-30 | pending |
-| [K4](done/2026-08/K4-complexity-remediation.md) | РЎРЅРёР·РёС‚СЊ СЂРµР°Р»СЊРЅСѓСЋ С†РёРєР»РѕРјР°С‚РёС‡РµСЃРєСѓСЋ СЃР»РѕР¶РЅРѕСЃС‚СЊ РїСЂРёРѕСЂРёС‚РµС‚РЅС‹С… С„СѓРЅРєС†РёР№ | K | 2026-08-30 | 5ef7e08, 6dd9624, d7b0bd6, f54b0c8, a84ccab, dc36a68, 92ede6f |
+| [K4](done/2026-08/K4-complexity-remediation.md) | Снизить реальную цикломатическую сложность приоритетных функций | K | 2026-08-30 | 5ef7e08, 6dd9624, d7b0bd6, f54b0c8, a84ccab, dc36a68, 92ede6f |
 | [K4.1](done/2026-08/K4.1-sidebar-load-data.md) | Декомпозировать загрузку operational counters в Sidebar | K | 2026-08-30 | 2f1fc6d, 9516917, 6ad4412, 4e458e1 |
 | [K4.1.1](done/2026-08/K4.1.1-sidebar-state-application.md) | Вынести применение operational counters в Sidebar | K | 2026-08-30 | pending |
 | [K4.2](done/2026-08/K4.2-wms-warehouses-handle-submit.md) | Декомпозировать сохранение складов WMS | K | 2026-08-30 | 5ef7e08 |
@@ -95,7 +95,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [K4.4](done/2026-08/K4.4-eps-import-slug-builder.md) | Декомпозировать генератор ключа пользовательского поля EPS | K | 2026-08-30 | 8bad0d4 |
 | [K4.5](done/2026-08/K4.5-wms-operation-wizard-submit.md) | Декомпозировать submit orchestration WMS operation wizard | K | 2026-08-30 | 669ddc3 |
 | [K4.6](done/2026-08/K4.6-system-settings-builder.md) | Декомпозировать сборку системных настроек | K | 2026-08-30 | pending |
-| [K4.7](done/2026-08/K4.7-eps-approvals-get-query.md) | Р”РµРєРѕРјРїРѕР·РёСЂРѕРІР°С‚СЊ GET СЃРїРёСЃРєР° СЃРѕРіР»Р°СЃРѕРІР°РЅРёР№ EPS | K | 2026-08-30 | 7615f8e |
+| [K4.7](done/2026-08/K4.7-eps-approvals-get-query.md) | Декомпозировать GET списка согласований EPS | K | 2026-08-30 | 7615f8e |
 | [K4.8](done/2026-08/K4.8-eps-equipment-get-query.md) | Декомпозировать GET реестра оборудования EPS | K | 2026-08-30 | a84ccab |
 | [K4.9](done/2026-08/K4.9-eps-history-get-query.md) | Декомпозировать GET истории аудита EPS | K | 2026-08-30 | ad9b4a2 |
 | [K4.10](done/2026-08/K4.10-eps-history-sort-model.md) | Декомпозировать сортировку истории аудита EPS | K | 2026-08-30 | 4dcc735 |

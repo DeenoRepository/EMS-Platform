@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFileSync, unlinkSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync, unlinkSync, writeFileSync, mkdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import os from 'node:os';
@@ -152,6 +152,7 @@ function writeQualityBaselineReport(rows, anyFailed) {
 
   const measuredAt = new Date().toISOString().slice(0, 10);
   const overallStatus = anyFailed ? '❌ FAIL' : '✅ PASS';
+  const previousMeasuredAt = readPreviousMeasuredAt(outPath);
 
   const sections = rows
     .map((row) => {
@@ -203,6 +204,38 @@ This runs \`code_quality_checker.py\` in-memory against \`apps/web/src\` and
 and writes this file. It does not commit any intermediate JSON artifacts.
 `;
 
-  writeFileSync(outPath, content, 'utf8');
+  // CI regenerates this report and then runs `git diff --exit-code` on it. If
+  // the measurement date were always "today", an unchanged repository would
+  // still produce a diff on any day after the last commit and fail the build
+  // for no substantive reason. Only advance the date when something else in
+  // the report actually changed.
+  const finalContent =
+    previousMeasuredAt && previousMeasuredAt !== measuredAt
+      ? (() => {
+          const rewound = content.replace(
+            `> Measured at: ${measuredAt}`,
+            `> Measured at: ${previousMeasuredAt}`
+          );
+          return rewound === readFileIfExists(outPath) ? rewound : content;
+        })()
+      : content;
+
+  writeFileSync(outPath, finalContent, 'utf8');
   console.log(`\nWrote ${path.relative(repositoryRoot, outPath)}`);
+}
+
+/** Returns the file's current contents, or null when it does not exist. */
+function readFileIfExists(filePath) {
+  return existsSync(filePath) ? readFileSync(filePath, 'utf8') : null;
+}
+
+/**
+ * Reads the `Measured at:` date already recorded in a previously generated
+ * report, so an otherwise-identical regeneration can keep it instead of
+ * churning the date on every run.
+ */
+function readPreviousMeasuredAt(filePath) {
+  const existing = readFileIfExists(filePath);
+  const match = existing?.match(/^> Measured at: (\d{4}-\d{2}-\d{2})$/m);
+  return match ? match[1] : null;
 }

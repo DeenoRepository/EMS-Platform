@@ -1,0 +1,10 @@
+# Keeps plans/active/ present in Git when no story is open.
+#
+# This directory is part of the story lifecycle defined in ADR-0001
+# (docs/architecture/decisions/0001-plans-directory-structure.md) and is
+# linked from AGENTS.md, .agents/rules/code_quality.md, docs/REMEDIATION_PLAN.md
+# and plans/PHASE-I-NOTES.md. Git does not track empty directories, so without
+# this placeholder those links break and `pnpm check:docs` fails in CI whenever
+# the active queue is emptied.
+#
+# Do not delete. Open stories are added here as <id>-<slug>.md.
