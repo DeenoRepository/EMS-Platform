@@ -36,7 +36,7 @@
 | TypeScript `tsc --noEmit` | Ошибок типов нет | ✅ PASS |
 | Dependency audit (`high`) | Известных уязвимостей нет | ✅ PASS |
 | Theme-token gate | Hex-цветов вне разрешённых файлов нет | ✅ PASS |
-| Documentation links | 119 файлов, битых ссылок нет | ✅ PASS |
+| Documentation links | 120 файлов, битых ссылок нет | ✅ PASS |
 | ESLint CLI с локальными security rules | Нарушений нет | ✅ PASS |
 | Static security policies | PASS | ✅ PASS |
 | Route security audit | 85 routes; 0 без rate limit; 0 sensitive gaps | ✅ PASS с ручными исключениями |
