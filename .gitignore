@@ -51,6 +51,7 @@ temp/
 backups/
 *.dump
 *.sql
+!packages/database/prisma/migrations/**/*.sql
 *.sql.gz
 *.tar.gz
 .system_generated/

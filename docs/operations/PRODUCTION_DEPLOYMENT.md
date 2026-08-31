@@ -114,6 +114,34 @@ gunzip -c backups/ems_database_YYYYMMDD_HHMMSS.sql.gz | docker exec -i ems_postg
 
 ---
 
+## 5.1. Миграции базы данных при обновлении версии
+
+Контейнер `ems-web` применяет версионированные миграции Prisma
+(`prisma migrate deploy` из
+[`packages/database/prisma/migrations/`](../../packages/database/prisma/migrations/))
+автоматически при каждом старте — см. `CMD` в [`Dockerfile`](../../Dockerfile).
+Это применяет только новые миграции по порядку и не приводит схему к
+целевому виду вслепую, в отличие от `db push --accept-data-loss`.
+
+**Перед обновлением на новую версию на действующей БД — обязательно
+создайте резервную копию** (раздел 5 выше). `migrate deploy` не имеет
+команды отката: единственный путь назад — восстановление из бэкапа.
+
+**Если это первое обновление после перехода на версионированные миграции**
+(БД ранее создавалась через `db push`), при старте контейнера в логах
+появится ошибка Prisma `P3005` («The database schema is not empty») — это
+означает, что база данных не потеряна, а просто ещё не размечена как
+находящаяся на baseline-миграции. Выполните один раз:
+```bash
+docker compose -f docker-compose.prod.yml exec ems-web \
+  pnpm --filter @ems/database exec prisma migrate resolve --applied 20260831030000_init
+docker compose -f docker-compose.prod.yml restart ems-web
+```
+После этого `migrate deploy` при последующих запусках будет находить
+только миграции новее baseline.
+
+---
+
 ## 6. Мониторинг и проверка работоспособности (Health Checks)
 
 Система предоставляет стандартные эндпоинты мониторинга:

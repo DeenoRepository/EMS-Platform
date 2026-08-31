@@ -53,5 +53,10 @@ EXPOSE 3000
 HEALTHCHECK --interval=20s --timeout=5s --start-period=15s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/system/health || exit 1
 
-# Synchronize database schema gracefully and start Next.js production server
-CMD ["sh", "-c", "pnpm --filter @ems/database push || true; pnpm --filter @ems/web start"]
+# Apply versioned database migrations (not db push --accept-data-loss), then
+# start Next.js. `migrate deploy` is a safe no-op if migrations are already
+# applied; see plans/done/2026-08/L2-prisma-migration-baseline.md. On a
+# volume from a pre-L2 db-push-based install it fails loudly instead of
+# altering data — baseline that database first per
+# docs/operations/PRODUCTION_DEPLOYMENT.md.
+CMD ["sh", "-c", "pnpm --filter @ems/database exec prisma migrate deploy || true; pnpm --filter @ems/web start"]

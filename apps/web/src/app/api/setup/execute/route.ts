@@ -165,7 +165,12 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Automatically synchronize database schema if schema.prisma is found
+    // Automatically apply the versioned Prisma migration baseline if schema.prisma is found.
+    // Uses `prisma migrate deploy`, not the destructive schema-sync command this used to run:
+    // on a freshly created empty database it applies packages/database/prisma/migrations/ in
+    // order; on a database that already has this exact migration applied, it is a safe no-op.
+    // It does NOT silently drop or recreate columns the way the old command did — see
+    // plans/done/2026-08/L2-prisma-migration-baseline.md.
     try {
       const potentialSchemaPaths = [
         path.join(rootDir, 'packages', 'database', 'prisma', 'schema.prisma'),
@@ -180,8 +185,20 @@ export async function POST(req: NextRequest) {
           fs.writeFileSync(path.join(schemaDir, '.env'), `DATABASE_URL="${dbUrl}"\n`, 'utf-8');
         } catch {}
 
-        const prismaCmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-        execSync(`${prismaCmd} prisma db push --schema="${schemaPath}" --accept-data-loss --skip-generate`, {
+        // Prefer the local Prisma CLI binary installed alongside the schema package: it does
+        // not depend on network access or a globally cached `npx` package, which matters for
+        // offline/baremetal installs. Fall back to `npx prisma` only if it is missing.
+        const localPrismaBin = path.join(
+          schemaDir,
+          'node_modules',
+          '.bin',
+          process.platform === 'win32' ? 'prisma.cmd' : 'prisma'
+        );
+        const command = fs.existsSync(localPrismaBin)
+          ? `"${localPrismaBin}" migrate deploy --schema="${schemaPath}"`
+          : `${process.platform === 'win32' ? 'npx.cmd' : 'npx'} prisma migrate deploy --schema="${schemaPath}"`;
+
+        execSync(command, {
           cwd: schemaDir,
           env: {
             ...process.env,

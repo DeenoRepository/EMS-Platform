@@ -190,15 +190,31 @@ sudo /opt/ems-platform/scripts/backup.sh
    ```bash
    sudo systemctl stop ems-platform
    ```
-4. Создайте резервную копию текущей БД:
+4. **Обязательно** создайте резервную копию текущей БД перед миграцией:
    ```bash
    sudo /opt/ems-platform/scripts/backup.sh
    ```
 5. Распакуйте новые файлы поверх `/opt/ems-platform` (файл `.env.production` и папка `uploads/` сохраняются).
-6. Примените новые миграции БД:
+6. Примените версионированные миграции БД (`prisma migrate deploy`, не
+   `db push --accept-data-loss`): миграции применяются по порядку из
+   `packages/database/prisma/migrations/`, а не приводят схему к целевому
+   виду без плана и истории.
    ```bash
-   sudo su -s /bin/sh ems -c "cd /opt/ems-platform && node \$(find node_modules -wholename '*prisma/build/index.js' | head -n 1) db push --schema=packages/database/prisma/schema.prisma --accept-data-loss"
+   sudo su -s /bin/sh ems -c "cd /opt/ems-platform && export \$(grep -v '^#' .env.production | xargs) && ./packages/database/node_modules/.bin/prisma migrate deploy --schema=packages/database/prisma/schema.prisma"
    ```
+
+   **Если это первое обновление после перехода на версионированные
+   миграции** (база данных ранее создавалась через `db push`, история
+   миграций отсутствует), команда выше завершится ошибкой Prisma `P3005`
+   («The database schema is not empty») — это ожидаемо и **не является
+   потерей данных**. Прежде чем повторить `migrate deploy`, пометьте базу
+   как уже находящуюся на baseline-миграции (данные не изменяются):
+   ```bash
+   sudo su -s /bin/sh ems -c "cd /opt/ems-platform && export \$(grep -v '^#' .env.production | xargs) && ./packages/database/node_modules/.bin/prisma migrate resolve --applied 20260831030000_init --schema=packages/database/prisma/schema.prisma"
+   ```
+   После этого повторите `migrate deploy` из этого шага — команда должна
+   сообщить «No pending migrations to apply» (или применить только
+   миграции новее baseline).
 7. Запустите службу:
    ```bash
    sudo systemctl start ems-platform

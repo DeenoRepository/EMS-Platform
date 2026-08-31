@@ -290,6 +290,54 @@ describe('API Security and Hardening Regressions', () => {
       assert.match(filesRouteSource, /resolvedFullPath\.startsWith\(uploadRoot\)/);
     });
 
+    test('production database schema paths use versioned migrations, not destructive db push', () => {
+      // Regression guard for plans/done/2026-08/L2-prisma-migration-baseline.md:
+      // db push --accept-data-loss silently drops/recreates columns on schema
+      // changes and has no rollback plan. Every path that applies the schema
+      // to a real (potentially non-empty) database must use `migrate deploy`.
+      const productionPaths = [
+        'apps/web/src/app/api/setup/execute/route.ts',
+        'scripts/baremetal-install.sh',
+        'scripts/baremetal-install.ps1',
+        'scripts/ems-platform.service',
+        'Dockerfile',
+      ];
+
+      for (const filePath of productionPaths) {
+        const source = readRepositoryFile(filePath);
+        // Strip full-line comments (#, //) so that explanatory prose referencing the
+        // forbidden pattern (e.g. "not db push --accept-data-loss") doesn't trip the guard.
+        const executableLines = source
+          .split('\n')
+          .filter((line) => !/^\s*(#|\/\/)/.test(line))
+          .join('\n');
+
+        assert.doesNotMatch(
+          executableLines,
+          /db push[^\n]*--accept-data-loss/,
+          `${filePath} must not apply schema via 'db push --accept-data-loss'`
+        );
+        assert.match(
+          executableLines,
+          /migrate deploy/,
+          `${filePath} must apply schema via 'prisma migrate deploy'`
+        );
+      }
+    });
+
+    test('baseline migration exists and can build a fresh schema from scratch', () => {
+      const migrationsDir = readRepositoryFile(
+        'packages/database/prisma/migrations/migration_lock.toml'
+      );
+      assert.match(migrationsDir, /provider\s*=\s*"postgresql"/);
+
+      const baselineMigration = readRepositoryFile(
+        'packages/database/prisma/migrations/20260831030000_init/migration.sql'
+      );
+      assert.match(baselineMigration, /CREATE TABLE "User"/);
+      assert.ok(baselineMigration.length > 1000, 'baseline migration must contain the full schema');
+    });
+
     test('setup API endpoints guard against re-installation by non-admin users', () => {
       const setupExecSource = readRepositoryFile('apps/web/src/app/api/setup/execute/route.ts');
       const setupTestDbSource = readRepositoryFile('apps/web/src/app/api/setup/test-db/route.ts');

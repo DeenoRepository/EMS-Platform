@@ -66,19 +66,29 @@ find "$INSTALL_DIR/node_modules" -name "libquery_engine*.so.node" -exec cp {} "$
 chown -R ems:ems "$INSTALL_DIR"
 chmod -R 755 "$INSTALL_DIR"
 
-# 7. Push Database Schema via local Prisma Engine
-echo "🗄️ Синхронизация схемы базы данных PostgreSQL..."
+# 7. Apply versioned database migrations via local Prisma Engine.
+# `migrate deploy` (not `db push --accept-data-loss`) applies
+# packages/database/prisma/migrations/ in order and is a safe no-op if this
+# exact migration set is already applied — see
+# plans/done/2026-08/L2-prisma-migration-baseline.md. On a database from a
+# pre-L2 install (schema created via `db push`, no migration history), this
+# fails with Prisma error P3005 instead of silently altering data; that
+# database must first be baselined per
+# docs/operations/BAREMETAL_OFFLINE_DEPLOYMENT.md before retrying.
+echo "🗄️ Применение миграций базы данных PostgreSQL..."
 set +e
-su -s /bin/sh ems -c "cd '$INSTALL_DIR' && export \$(grep -v '^#' .env.production | xargs) && ./packages/database/node_modules/.bin/prisma db push --schema=packages/database/prisma/schema.prisma --accept-data-loss"
+su -s /bin/sh ems -c "cd '$INSTALL_DIR' && export \$(grep -v '^#' .env.production | xargs) && ./packages/database/node_modules/.bin/prisma migrate deploy --schema=packages/database/prisma/schema.prisma"
 PRISMA_STATUS=$?
 set -e
 
 if [ $PRISMA_STATUS -ne 0 ]; then
-    echo "⚠️ Внимание: Не удалось автоматически синхронизировать схему БД."
+    echo "⚠️ Внимание: Не удалось автоматически применить миграции БД."
     echo "Убедитесь, что служба PostgreSQL запущена, база данных создана и секреты в .env.production верны:"
     echo "  sudo systemctl status postgresql"
     echo "  sudo -u postgres psql -c \"CREATE USER ems_user;\""
     echo "  sudo -u postgres psql -c \"CREATE DATABASE ems_db OWNER ems_user;\""
+    echo "Если база данных уже существовала до этой версии (создана через db push),"
+    echo "сначала выполните процедуру baseline из docs/operations/BAREMETAL_OFFLINE_DEPLOYMENT.md."
 fi
 
 # 8. Setup & Enable Systemd Service

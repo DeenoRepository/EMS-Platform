@@ -12,6 +12,7 @@
     "push:reset": "prisma db push --force-reset --accept-data-loss",
     "migrate": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
+    "migrate:resolve-baseline": "prisma migrate resolve --applied 20260831030000_init",
     "seed": "tsx src/seed.ts",
     "studio": "prisma studio"
   },

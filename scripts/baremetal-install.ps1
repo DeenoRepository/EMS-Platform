@@ -36,13 +36,18 @@ if (-not (Test-Path ".env.production")) {
 
 New-Item -ItemType Directory -Path "$InstallDir\uploads" -Force | Out-Null
 
-# 4. Database schema push
-Write-Host "🗄️ Синхронизация схемы базы данных PostgreSQL..." -ForegroundColor Yellow
+# 4. Apply versioned database migrations (not db push --accept-data-loss):
+# see plans/done/2026-08/L2-prisma-migration-baseline.md. On a pre-existing
+# database created by an older db-push-based install, this fails with
+# Prisma error P3005 instead of silently altering data; baseline it first
+# per docs/operations/BAREMETAL_OFFLINE_DEPLOYMENT.md.
+Write-Host "🗄️ Применение миграций базы данных PostgreSQL..." -ForegroundColor Yellow
 try {
-    node node_modules\prisma\build\index.js db push --schema=packages\database\prisma\schema.prisma --accept-data-loss
-    Write-Host "✅ Схема БД синхронизирована." -ForegroundColor Green
+    node node_modules\prisma\build\index.js migrate deploy --schema=packages\database\prisma\schema.prisma
+    Write-Host "✅ Миграции БД применены." -ForegroundColor Green
 } catch {
-    Write-Warning "⚠️ Не удалось выполнить db push. Проверьте статус PostgreSQL службы и реквизиты в .env.production."
+    Write-Warning "⚠️ Не удалось применить миграции БД. Проверьте статус PostgreSQL службы и реквизиты в .env.production."
+    Write-Warning "Если база данных существовала до этой версии, сначала выполните baseline из docs/operations/BAREMETAL_OFFLINE_DEPLOYMENT.md."
 }
 
 Write-Host "======================================================================" -ForegroundColor Green
