@@ -275,3 +275,12 @@ sudo systemctl start ems-platform
    ```bash
    sudo systemctl start ems-platform
    ```
+
+   Служба сама выполняет `migrate deploy` в `ExecStartPre`. Если миграции не
+   применились (например, шаг 6 был пропущен на БД без истории миграций),
+   служба **намеренно не поднимется** — приложение не должно работать поверх
+   непромигрированной схемы. Причина будет в журнале:
+   ```bash
+   sudo systemctl status ems-platform
+   sudo journalctl -u ems-platform -n 50
+   ```

@@ -13,11 +13,16 @@ Environment=NODE_ENV=production
 Environment=PORT=3000
 
 # Apply versioned database migrations on start (not db push --accept-data-loss).
-# Safe no-op if already applied; fails loudly (without altering data) if the
-# database predates the migration baseline — see
+# Safe no-op if already applied; fails with Prisma P3005 (without altering data)
+# if the database predates the migration baseline — see
 # docs/operations/BAREMETAL_OFFLINE_DEPLOYMENT.md and
 # plans/done/2026-08/L2-prisma-migration-baseline.md.
-ExecStartPre=-/bin/sh -c 'cd /opt/ems-platform && export $(grep -v "^#" .env.production | xargs) && ./packages/database/node_modules/.bin/prisma migrate deploy --schema=packages/database/prisma/schema.prisma || true'
+#
+# Deliberately NOT prefixed with '-' and NOT ending in '|| true': a failed
+# migration must prevent ExecStart, otherwise the service comes up against an
+# unmigrated schema and reports itself healthy. On failure the unit enters
+# 'failed' with the Prisma error in `journalctl -u ems-platform`.
+ExecStartPre=/bin/sh -c 'cd /opt/ems-platform && export $(grep -v "^#" .env.production | xargs) && ./packages/database/node_modules/.bin/prisma migrate deploy --schema=packages/database/prisma/schema.prisma'
 
 # Start Next.js Web server
 ExecStart=/opt/ems-platform/apps/web/node_modules/.bin/next start /opt/ems-platform/apps/web -p 3000

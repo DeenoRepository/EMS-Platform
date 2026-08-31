@@ -34,7 +34,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 
 ---
 
-## Done (72)
+## Done (73)
 
 | ID | Title | Phase | Closed | Commits |
 |---|---|---|---|---|
@@ -110,3 +110,4 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [L2](done/2026-08/L2-prisma-migration-baseline.md) | Ввести версионированные миграции БД вместо db push | L | 2026-08-31 | feat(database): ввести версионированные миграции Prisma вместо db push |
 | [L3](done/2026-08/L3-backup-scheduling-and-restore.md) | Автоматизировать резервное копирование и проверить восстановление | L | 2026-08-31 | feat(ops): автоматизировать резервное копирование, сделать провал явным, проверить восстановление |
 | [L4](done/2026-08/L4-e2e-smoke-coverage.md) | Добавить E2E smoke-покрытие критических пользовательских сценариев | L | 2026-08-31 | feat(web): добавить Playwright E2E smoke-тесты критических сценариев |
+| [L6](done/2026-08/L6-migration-failure-not-suppressed.md) | Не подавлять провал миграции при старте в Docker и systemd | L | 2026-08-31 | pending |

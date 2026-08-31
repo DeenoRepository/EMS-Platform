@@ -325,6 +325,35 @@ describe('API Security and Hardening Regressions', () => {
       }
     });
 
+    test('startup paths do not suppress a failed migrate deploy', () => {
+      // Regression guard for plans/active/L6-migration-failure-not-suppressed.md.
+      // `migrate deploy` refuses (Prisma P3005) on a database created before the
+      // migration baseline. That refusal is the whole point of L2 — swallowing it
+      // with `|| true` starts the app against an unmigrated schema while the
+      // healthcheck reports green. Installers are excluded on purpose: they must
+      // continue and print baseline instructions instead of aborting.
+      const startupPaths = ['Dockerfile', 'scripts/ems-platform.service'];
+
+      for (const filePath of startupPaths) {
+        const source = readRepositoryFile(filePath);
+        const executableLines = source
+          .split('\n')
+          .filter((line) => !/^\s*#/.test(line))
+          .join('\n');
+
+        assert.doesNotMatch(
+          executableLines,
+          /migrate deploy[^\n]*\|\|\s*(true|:)/,
+          `${filePath} must not swallow a failed 'migrate deploy' with '|| true'`
+        );
+        assert.doesNotMatch(
+          executableLines,
+          /^ExecStartPre=-/m,
+          `${filePath} must not prefix the migration ExecStartPre with '-' (ignores failure)`
+        );
+      }
+    });
+
     test('baseline migration exists and can build a fresh schema from scratch', () => {
       const migrationsDir = readRepositoryFile(
         'packages/database/prisma/migrations/migration_lock.toml'

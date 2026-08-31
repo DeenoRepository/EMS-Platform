@@ -170,14 +170,25 @@ gunzip -c backups/ems_database_YYYYMMDD_HHMMSS.sql.gz | docker exec -i ems_postg
 (БД ранее создавалась через `db push`), при старте контейнера в логах
 появится ошибка Prisma `P3005` («The database schema is not empty») — это
 означает, что база данных не потеряна, а просто ещё не размечена как
-находящаяся на baseline-миграции. Выполните один раз:
+находящаяся на baseline-миграции.
+
+Контейнер при этом **намеренно не поднимется**: приложение не запускается
+поверх непромигрированной схемы, иначе healthcheck был бы зелёным при
+расхождении схемы и кода. Посмотреть причину:
 ```bash
-docker compose -f docker-compose.prod.yml exec ems-web \
-  pnpm --filter @ems/database exec prisma migrate resolve --applied 20260831030000_init
-docker compose -f docker-compose.prod.yml restart ems-web
+docker compose -f docker-compose.prod.yml logs --tail=50 ems-web
+```
+
+Разметьте БД как находящуюся на baseline (данные не изменяются) и запустите
+сервис заново. Так как контейнер остановлен, `exec` в него невозможен —
+используйте одноразовый контейнер `run --rm`:
+```bash
+docker compose -f docker-compose.prod.yml run --rm --no-deps --entrypoint sh ems-web -c \
+  "pnpm --filter @ems/database exec prisma migrate resolve --applied 20260831030000_init"
+docker compose -f docker-compose.prod.yml up -d ems-web
 ```
 После этого `migrate deploy` при последующих запусках будет находить
-только миграции новее baseline.
+только миграции новее baseline, и контейнер стартует штатно.
 
 ---
 
