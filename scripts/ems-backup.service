@@ -1,0 +1,18 @@
+[Unit]
+Description=EMS Platform — Database and uploads backup (one-shot)
+After=network.target postgresql.service ems-platform.service
+Wants=postgresql.service
+
+[Service]
+Type=oneshot
+User=ems
+Group=ems
+WorkingDirectory=/opt/ems-platform
+ExecStart=/opt/ems-platform/scripts/backup.sh
+# A failed dump (non-zero exit from backup.sh) is reported as a failed unit,
+# visible via `systemctl status ems-backup.service` and
+# `journalctl -u ems-backup.service` — see backup.sh's fail-closed exit code
+# and plans/done/2026-08/L3-backup-scheduling-and-restore.md.
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ems-backup

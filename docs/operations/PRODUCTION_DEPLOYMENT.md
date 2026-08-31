@@ -107,10 +107,49 @@ docker compose -f docker-compose.prod.yml up -d --build
   .\scripts\backup.ps1
   ```
 
-### Восстановление из бэкапа:
+[`backup.sh`](../../scripts/backup.sh) и [`backup.ps1`](../../scripts/backup.ps1)
+завершаются **ненулевым кодом возврата**, если снять дамп БД не удалось
+(например, контейнер PostgreSQL не запущен), и в этом случае **не выполняют**
+ретенцию — старые рабочие копии не удаляются из-за временного сбоя.
+Каталог `backups/` создаётся с правами `700` (доступ только владельцу):
+он содержит полный дамп всех данных системы и не должен раздаваться Nginx
+или быть читаемым другими системными пользователями. Ни один из
+[`nginx.conf`](../../docker/nginx/nginx.conf) не проксирует `backups/` —
+директория недоступна извне контейнера `ems-web`.
+
+### Автоматизация по расписанию (Docker Compose):
+
+Скрипт бэкапа выполняется на **хосте**, а не внутри контейнера — он сам
+находит запущенный контейнер `ems_postgres_prod` через `docker exec`.
+Поэтому расписание настраивается штатным планировщиком хост-ОС:
+
 ```bash
-gunzip -c backups/ems_database_YYYYMMDD_HHMMSS.sql.gz | docker exec -i ems_postgres_prod psql -U postgres -d ems_db
+# crontab -e (от пользователя, у которого есть доступ к docker и к каталогу проекта)
+0 3 * * * cd /path/to/EMS-Platform && ./scripts/backup.sh >> /var/log/ems-backup.log 2>&1
 ```
+
+Для baremetal-развёртывания (без Docker) используется systemd-таймер —
+см. [`BAREMETAL_OFFLINE_DEPLOYMENT.md`](BAREMETAL_OFFLINE_DEPLOYMENT.md#7-1-автоматизация-резервного-копирования-systemd-timer).
+
+### Восстановление из бэкапа:
+
+**Предупреждение:** `pg_dumpall -c` (используемый в `backup.sh`) включает
+`DROP DATABASE`/`DROP ROLE` для каждого объекта перед его пересозданием.
+Восстановление этого дампа в **не ту** среду безвозвратно удалит
+существующие в ней базы данных с теми же именами. Восстанавливайте только
+в предназначенную для этого систему.
+
+```bash
+# Дамп pg_dumpall -c содержит собственные CREATE DATABASE/DROP DATABASE —
+# подключаться нужно к системной базе postgres, а не к целевой ems_db.
+gunzip -c backups/ems_database_YYYYMMDD_HHMMSS.sql.gz | docker exec -i ems_postgres_prod psql -U postgres -d postgres
+```
+
+Процедура восстановления проверена практически (не только описана): дамп,
+снятый скриптом `backup.sh` с реальной локальной базы PostgreSQL, был
+воспроизведён через `gunzip | psql -d postgres` в кластер после удаления
+исходной базы данных — восстановленная база и её строки данных совпали с
+исходными.
 
 ---
 

@@ -1,0 +1,16 @@
+[Unit]
+Description=EMS Platform — Daily database and uploads backup schedule
+
+[Timer]
+# Runs once a day at 03:00 local time. Adjust OnCalendar= to change the
+# schedule; see `man systemd.time` for the calendar event syntax.
+OnCalendar=*-*-* 03:00:00
+# If the machine was off at the scheduled time, run the missed backup as
+# soon as it boots, instead of silently skipping a day.
+Persistent=true
+# Spread start time by up to 5 minutes to avoid load spikes if multiple
+# EMS instances share a backup target on the same schedule.
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

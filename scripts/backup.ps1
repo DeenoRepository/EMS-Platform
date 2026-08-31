@@ -1,6 +1,13 @@
 <#
 .SYNOPSIS
     EMS Platform — Production Backup Utility for PowerShell (Database + Storage)
+
+.DESCRIPTION
+    Creates a PostgreSQL dump and (best-effort) an uploads/ archive, then
+    applies a retention policy. Exits with a non-zero code if the database
+    dump could not be created, so a Task Scheduler job correctly reports
+    failure instead of silently succeeding. Retention only runs after a
+    confirmed successful database dump.
 #>
 
 param(
@@ -30,16 +37,27 @@ if ($running -notcontains $container) {
     $container = "ems_postgres"
 }
 
+$dbBackupOk = $false
 if ($running -contains $container) {
     docker exec -t $container pg_dumpall -c -U postgres | Out-File -FilePath $dbBackupFile -Encoding utf8
-    $fileInfo = Get-Item $dbBackupFile
-    $sizeKB = [math]::Round($fileInfo.Length / 1KB, 2)
-    Write-Host "  -> Дамп БД успешно создан из контейнера $container: $dbBackupFile ($sizeKB KB)" -ForegroundColor Green
+    if ($LASTEXITCODE -eq 0 -and (Test-Path $dbBackupFile) -and (Get-Item $dbBackupFile).Length -gt 0) {
+        $dbBackupOk = $true
+    }
 } else {
     Write-Warning "Контейнер PostgreSQL ($container) не запущен."
 }
 
-# 2. File Storage Archive
+if ($dbBackupOk) {
+    $fileInfo = Get-Item $dbBackupFile
+    $sizeKB = [math]::Round($fileInfo.Length / 1KB, 2)
+    Write-Host "  -> Дамп БД успешно создан из контейнера $container`: $dbBackupFile ($sizeKB KB)" -ForegroundColor Green
+} else {
+    Write-Error "Не удалось создать дамп базы данных PostgreSQL. Резервное копирование ПРЕРВАНО. Ретенция не выполняется."
+    if (Test-Path $dbBackupFile) { Remove-Item $dbBackupFile -Force -ErrorAction SilentlyContinue }
+    exit 1
+}
+
+# 2. File Storage Archive (best-effort)
 if ((Test-Path $StorageDir) -and (Get-ChildItem $StorageDir)) {
     $storageZipFile = Join-Path $BackupDir "ems_storage_$timestamp.zip"
     Write-Host "📁 [2/2] Архивация каталога файлов и чертежей ($StorageDir)..." -ForegroundColor Yellow
@@ -51,7 +69,7 @@ if ((Test-Path $StorageDir) -and (Get-ChildItem $StorageDir)) {
     Write-Host "📁 [2/2] Каталог $StorageDir пуст или отсутствует. Пропуск." -ForegroundColor DarkGray
 }
 
-# 3. Retention policy: remove backups older than $RetentionDays days
+# 3. Retention policy — only reached if the database dump above succeeded.
 Write-Host "🧹 Очистка резервных копий старше $RetentionDays дней..." -ForegroundColor Yellow
 $limit = (Get-Date).AddDays(-$RetentionDays)
 Get-ChildItem -Path $BackupDir -Filter "ems_database_*.sql" | Where-Object { $_.CreationTime -lt $limit } | Remove-Item -Force -ErrorAction SilentlyContinue

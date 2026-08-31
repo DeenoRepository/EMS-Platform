@@ -177,7 +177,63 @@ sudo journalctl -u ems-platform -n 100 --no-pager
 ```bash
 sudo /opt/ems-platform/scripts/backup.sh
 ```
-Архивы базы данных и загруженных файлов будут сохранены в `/opt/ems-platform/backups/`.
+Архивы базы данных и загруженных файлов будут сохранены в
+`/opt/ems-platform/backups/` с правами доступа `700` (только владелец) —
+каталог содержит полный дамп всех данных системы. Если снять дамп БД не
+удалось (например, служба PostgreSQL не запущена), скрипт завершится
+**ненулевым кодом** и **не выполнит** очистку по сроку хранения, чтобы не
+удалить последнюю рабочую копию из-за временного сбоя.
+
+### 7.1. Автоматизация резервного копирования (systemd timer)
+
+Резервное копирование не выполняется автоматически без явной настройки
+планировщика. Для baremetal-развёртывания используются
+[`ems-backup.service`](../../scripts/ems-backup.service) (одноразовый запуск
+`backup.sh`) и [`ems-backup.timer`](../../scripts/ems-backup.timer)
+(ежедневный запуск в 03:00 с сохранением пропущенного запуска после
+перезагрузки — `Persistent=true`):
+
+```bash
+sudo cp /opt/ems-platform/scripts/ems-backup.service /etc/systemd/system/
+sudo cp /opt/ems-platform/scripts/ems-backup.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now ems-backup.timer
+
+# Проверить расписание и статус последнего запуска:
+systemctl list-timers ems-backup.timer
+sudo systemctl status ems-backup.service
+sudo journalctl -u ems-backup.service -n 50 --no-pager
+```
+
+Провалившийся дамп отображается как `Failed` в `systemctl status
+ems-backup.service` — это и есть сигнал сбоя для мониторинга/алертинга,
+основанный на реальном коде возврата `backup.sh`, а не на факте запуска
+таймера.
+
+### Восстановление из бэкапа (проверенная процедура)
+
+**Предупреждение:** `pg_dumpall -c` включает `DROP DATABASE`/`DROP ROLE`
+перед пересозданием каждого объекта. Восстановление дампа в **не ту**
+систему безвозвратно удалит существующие в ней базы данных с теми же
+именами.
+
+```bash
+# Остановить приложение, чтобы оно не писало в БД во время восстановления
+sudo systemctl stop ems-platform
+
+# pg_dumpall -c содержит собственные CREATE DATABASE — подключаться нужно
+# к системной базе postgres, а не к целевой ems_db
+gunzip -c /opt/ems-platform/backups/ems_database_YYYYMMDD_HHMMSS.sql.gz | \
+  sudo -u postgres psql -d postgres
+
+sudo systemctl start ems-platform
+```
+
+Эта процедура проверена практически на реальном локальном PostgreSQL:
+дамп, снятый `backup.sh` с базы, содержащей контрольную запись, был
+воспроизведён через `gunzip | psql -d postgres` после полного удаления
+исходной базы данных командой `DROP DATABASE` — восстановленная база и
+контрольная запись совпали с исходными.
 
 ---
 

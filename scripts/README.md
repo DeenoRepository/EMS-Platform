@@ -47,7 +47,8 @@ baseline and it had no callers.
 | `airgap-install.sh` / `airgap-install.ps1` | Install the Docker offline bundle |
 | `baremetal-pack.sh` / `baremetal-pack.ps1` | Build a no-Docker release bundle |
 | `baremetal-install.sh` / `baremetal-install.ps1` | Install the no-Docker release |
-| `backup.sh` / `backup.ps1` | Database and uploads backup |
+| `backup.sh` / `backup.ps1` | Database and uploads backup. Exits non-zero if the database dump fails and skips retention in that case — see [`PRODUCTION_DEPLOYMENT.md`](../docs/operations/PRODUCTION_DEPLOYMENT.md) §5. |
+| `ems-backup.service` / `ems-backup.timer` | Baremetal systemd units that run `backup.sh` on a daily schedule (`OnCalendar=*-*-* 03:00:00`, `Persistent=true`) — see [`BAREMETAL_OFFLINE_DEPLOYMENT.md`](../docs/operations/BAREMETAL_OFFLINE_DEPLOYMENT.md) §7.1. Docker Compose deployments schedule the same `backup.sh` via host cron instead, since the script runs on the host and finds the Postgres container through `docker exec`. |
 
 Detailed instructions: [`docs/README.md`](../docs/README.md).
 

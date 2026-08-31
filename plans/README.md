@@ -22,11 +22,10 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (2)
+## Active (1)
 
 | ID | Title | Phase | Priority | Risk | Skills | Opened |
 |---|---|---|---|---|---|---|
-| [L3](active/L3-backup-scheduling-and-restore.md) | Автоматизировать резервное копирование и проверить восстановление | L | P1 | medium | docker-development, senior-secops | 2026-08-31 |
 | [L4](active/L4-e2e-smoke-coverage.md) | Добавить E2E smoke-покрытие критических пользовательских сценариев | L | P2 | low | playwright-pro, senior-qa | 2026-08-31 |
 
 ---
@@ -37,7 +36,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 
 ---
 
-## Done (70)
+## Done (71)
 
 | ID | Title | Phase | Closed | Commits |
 |---|---|---|---|---|
@@ -111,3 +110,4 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [K7](done/2026-08/K7-test-db-isolation.md) | Устранить внешнюю БД из unit-тестов auth-guard | K | 2026-08-30 | 2f56249 |
 | [L1](done/2026-08/L1-env-validate-runtime-wiring.md) | Подключить валидацию окружения к рантайму приложения | L | 2026-08-31 | feat(web): wire env-validate into Next.js runtime via instrumentation.ts |
 | [L2](done/2026-08/L2-prisma-migration-baseline.md) | Ввести версионированные миграции БД вместо db push | L | 2026-08-31 | feat(database): ввести версионированные миграции Prisma вместо db push |
+| [L3](done/2026-08/L3-backup-scheduling-and-restore.md) | Автоматизировать резервное копирование и проверить восстановление | L | 2026-08-31 | feat(ops): автоматизировать резервное копирование, сделать провал явным, проверить восстановление |
