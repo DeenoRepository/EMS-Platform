@@ -8,7 +8,7 @@ risk: high
 skills: [senior-secops, code-reviewer]
 opened: 2026-08-31
 closed: 2026-08-31
-commits: []
+commits: [ec75aa8]
 gates: [lint, tsc, test, coverage, quality, build]
 ---
 

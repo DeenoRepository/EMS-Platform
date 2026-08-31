@@ -34,7 +34,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 
 ---
 
-## Done (87)
+## Done (88)
 
 | ID | Title | Phase | Closed | Commits |
 |---|---|---|---|---|
@@ -111,6 +111,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [L3](done/2026-08/L3-backup-scheduling-and-restore.md) | Автоматизировать резервное копирование и проверить восстановление | L | 2026-08-31 | feat(ops): автоматизировать резервное копирование, сделать провал явным, проверить восстановление |
 | [L4](done/2026-08/L4-e2e-smoke-coverage.md) | Добавить E2E smoke-покрытие критических пользовательских сценариев | L | 2026-08-31 | feat(web): добавить Playwright E2E smoke-тесты критических сценариев |
 | [L6](done/2026-08/L6-migration-failure-not-suppressed.md) | Не подавлять провал миграции при старте в Docker и systemd | L | 2026-08-31 | ce2f0d0 |
+| [M1](done/2026-08/M1-production-readiness-findings.md) | Close production readiness inspection findings | M | 2026-08-31 | ec75aa8 |
 | [M1](done/2026-08/M1-test-runner-discovers-all-tests.md) | Runner должен находить все тесты, а не два жёстко заданных каталога | M | 2026-08-31 | 4b91888 |
 | [M2](done/2026-08/M2-coverage-measurement-and-gate.md) | Измерять покрытие тестами и закрепить его порогом в CI | M | 2026-08-31 | 4b91888 |
 | [M3](done/2026-08/M3-api-route-handler-tests.md) | Покрыть тестами API-роуты — RBAC, rate-limit, валидация ввода | M | 2026-08-31 | b55acb2 |
