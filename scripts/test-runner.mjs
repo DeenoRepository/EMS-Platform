@@ -67,7 +67,7 @@ if (emptyTestFiles.length > 0) {
 // Check count is the primary regression guard. File count is only a lower,
 // catastrophic-discovery guard; empty placeholder files cannot satisfy the
 // meaningful floor.
-const MINIMUM_EXECUTED_CHECK_COUNT = 303;
+const MINIMUM_EXECUTED_CHECK_COUNT = 342;
 const MINIMUM_TEST_FILE_COUNT = 40;
 
 console.log(`[test-runner] Found ${testFiles.length} test file(s).`);
