@@ -1,14 +1,14 @@
 ---
 id: L1
 title: Подключить валидацию окружения к рантайму приложения
-status: active
+status: done
 phase: L
 priority: P0
 risk: medium
 skills: [senior-security, senior-backend, zero-hallucination-coder]
 opened: 2026-08-31
-closed: null
-commits: []
+closed: 2026-08-31
+commits: ["feat(web): wire env-validate into Next.js runtime via instrumentation.ts"]
 gates: [test, lint, tsc, build, check:quality, check:docs]
 ---
 
@@ -81,14 +81,45 @@ gates: [test, lint, tsc, build, check:quality, check:docs]
 
 ## Definition of Done
 
-- [ ] `validateEnv()` фактически выполняется при старте сервера в production.
-- [ ] Старт с `JWT_SECRET` из `DANGEROUS_DEFAULTS` или короче 32 символов
+- [x] `validateEnv()` фактически выполняется при старте сервера в production.
+- [x] Старт с `JWT_SECRET` из `DANGEROUS_DEFAULTS` или короче 32 символов
       завершается ошибкой (проверено вручную).
-- [ ] Мастер первичной установки (без `.installed`) по-прежнему запускается.
-- [ ] `pnpm build` не падает из-за валидации.
-- [ ] Есть тест, падающий при удалении точки входа.
-- [ ] Полный набор гейтов зелёный: см. `gates:` во front-matter.
+- [x] Мастер первичной установки (без `.installed`) по-прежнему запускается.
+- [x] `pnpm build` не падает из-за валидации.
+- [x] Есть тест, падающий при удалении точки входа.
+- [x] Полный набор гейтов зелёный: см. `gates:` во front-matter.
 
 ## Result
 
-Заполняется при закрытии story.
+Добавлен [`apps/web/src/instrumentation.ts`](../../apps/web/src/instrumentation.ts)
+с `export async function register()`, который импортирует
+`@/lib/env-validate` только при `process.env.NEXT_RUNTIME === 'nodejs'`.
+Next.js 15.5.21 подхватывает `instrumentation.ts` без
+`experimental.instrumentationHook` (флаг официально deprecated в этой
+версии — подтверждено в исходниках `next/dist/server/config.js`); после
+`pnpm build` подтверждено наличие скомпилированных
+`apps/web/.next/server/instrumentation.js` и `edge-instrumentation.js` без
+изменений в `next.config.mjs`.
+
+Добавлен регрессионный тест в
+[`api-security.test.ts`](../../apps/web/src/lib/__tests__/api-security.test.ts),
+проверяющий сам факт существования точки входа и вызова импорта под
+nodejs-рантаймом (а не только логику `validateEnv()`, которая уже была
+покрыта).
+
+Ручная проверка на собранном `apps/web/.next` через `next start`:
+- `NODE_ENV=production JWT_SECRET=change_me` (9 символов) → сервер падает на
+  старте с `[env-validate] FATAL: "JWT_SECRET" слишком короткий`.
+- `NODE_ENV=production JWT_SECRET=super_secret_jwt_key_ems_platform_production_change_me_32chars`
+  (запись из `DANGEROUS_DEFAULTS`, 64 символа) → сервер падает с
+  `[env-validate] FATAL: "JWT_SECRET" содержит небезопасное значение по
+  умолчанию`.
+- `NODE_ENV=production JWT_SECRET=$(openssl rand -hex 32)` → `✓ Ready`,
+  сервер стартует штатно.
+- Без файла `.installed` (мастер первичной установки) с тем же слабым
+  секретом → `✓ Ready`, валидация не блокирует установку, как и требовалось.
+
+Гейты: `pnpm test` — 188/188 (было 187, добавлен 1 новый тест), `pnpm lint`,
+`pnpm --filter @ems/web exec tsc --noEmit`, `pnpm build`,
+`node scripts/check-quality-baseline.mjs`, `node scripts/check-doc-links.mjs`
+— все PASS.

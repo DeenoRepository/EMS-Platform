@@ -299,5 +299,12 @@ describe('API Security and Hardening Regressions', () => {
       assert.match(setupTestDbSource, /fileInstalled[\s\S]*?!user\s*\|\|\s*!isAdminUser\(user\)/);
       assert.match(setupTestLdapSource, /fileInstalled[\s\S]*?!user\s*\|\|\s*!isAdminUser\(user\)/);
     });
+
+    test('server startup actually wires validateEnv() via instrumentation.ts under the nodejs runtime', () => {
+      const instrumentationSource = readRepositoryFile('apps/web/src/instrumentation.ts');
+      assert.match(instrumentationSource, /export\s+(async\s+)?function\s+register\s*\(/);
+      assert.match(instrumentationSource, /NEXT_RUNTIME\s*===\s*['"]nodejs['"]/);
+      assert.match(instrumentationSource, /import\(['"]@\/lib\/env-validate['"]\)/);
+    });
   });
 });

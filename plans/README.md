@@ -22,11 +22,10 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (4)
+## Active (3)
 
 | ID | Title | Phase | Priority | Risk | Skills | Opened |
 |---|---|---|---|---|---|---|
-| [L1](active/L1-env-validate-runtime-wiring.md) | Подключить валидацию окружения к рантайму приложения | L | P0 | medium | senior-security, senior-backend, zero-hallucination-coder | 2026-08-31 |
 | [L2](active/L2-prisma-migration-baseline.md) | Ввести версионированные миграции БД вместо db push | L | P0 | high | database-schema-designer, senior-backend, zero-hallucination-coder | 2026-08-31 |
 | [L3](active/L3-backup-scheduling-and-restore.md) | Автоматизировать резервное копирование и проверить восстановление | L | P1 | medium | docker-development, senior-secops | 2026-08-31 |
 | [L4](active/L4-e2e-smoke-coverage.md) | Добавить E2E smoke-покрытие критических пользовательских сценариев | L | P2 | low | playwright-pro, senior-qa | 2026-08-31 |
@@ -39,7 +38,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 
 ---
 
-## Done (68)
+## Done (69)
 
 | ID | Title | Phase | Closed | Commits |
 |---|---|---|---|---|
@@ -111,3 +110,4 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [K5](done/2026-08/K5-ui-console-cleanup.md) | Заменить остаточные console-вызовы в UI и сервисах | K | 2026-08-30 | 90a2134, 44550a8, b0f4c5f, d1c8672, 50dade2, pending |
 | [K6](done/2026-08/K6-eslint-cli-migration.md) | Перевести web lint с next lint на ESLint CLI | K | 2026-08-30 | 769b3a5 |
 | [K7](done/2026-08/K7-test-db-isolation.md) | Устранить внешнюю БД из unit-тестов auth-guard | K | 2026-08-30 | 2f56249 |
+| [L1](done/2026-08/L1-env-validate-runtime-wiring.md) | Подключить валидацию окружения к рантайму приложения | L | 2026-08-31 | feat(web): wire env-validate into Next.js runtime via instrumentation.ts |
