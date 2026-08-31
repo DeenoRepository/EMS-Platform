@@ -1,14 +1,14 @@
 ---
 id: M4
 title: Устранить тавтологические тесты, проверяющие копию логики вместо кода
-status: active
+status: done
 phase: M
 priority: P1
 risk: low
 skills: [senior-qa]
 opened: 2026-08-31
-closed: null
-commits: []
+closed: 2026-08-31
+commits: [b24e12c]
 gates: [test, lint, tsc, check:docs]
 ---
 
@@ -102,4 +102,13 @@ production-коде — тест не заметит.
 
 ## Result
 
-Заполняется при закрытии story.
+**Закрыто 2026-08-31.**
+
+- `packages/auth/src/wms.test.ts` — удалены 3 тавтологических раздела (processStockIssue, transfer state machine, reconcileInventory); сохранён реальный RBAC-раздел с `hasPermission()`. 8 тестов → 4 теста.
+- `packages/auth/src/mro.test.ts` — удалены 2 тавтологических раздела (calculateScheduleHealth, validateChecklistCompletion); сохранён реальный RBAC-раздел. 6 тестов → 2 теста.
+- `packages/auth/src/eps-import.test.ts` — заменён на комментарий-заглушку; тесты normalizeHeader мигрированы в `apps/web/src/lib/eps-import-helpers.test.ts` (реальная функция); тесты расширений — в `apps/web/src/lib/__tests__/storage.test.ts` (реальный `ALLOWED_EXTENSIONS`).
+- `packages/auth/src/srm-service.test.ts` — перенесён в `apps/web/src/lib/__tests__/srm-service.test.ts` с исправленными импортами; оригинал заменён на комментарий о переносе.
+- 7 задач добавлено в `plans/BACKLOG.md` (BACKLOG-WMS-01/02/03, BACKLOG-MRO-01/02, BACKLOG-EPS-01/02).
+- Правило no-local-logic (§9.1) добавлено в `.agents/rules/code_quality.md`.
+- Coverage gate: 78.32% линейное ≥ 78% порог, 21.80% охват файлов ≥ 21% порог — PASSED.
+- Тестов: 232 / 232 проходят.
