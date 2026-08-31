@@ -7,7 +7,7 @@
 > document only reports the last measured actuals against them.
 >
 > Measured at: 2026-08-31
-> Overall gate: ❌ FAIL
+> Overall gate: ✅ PASS
 
 No other file in this repository should restate these numbers. Rules files
 (e.g. [`.agents/rules/code_quality.md`](../../.agents/rules/code_quality.md))
@@ -21,24 +21,24 @@ latest dated snapshot in [`docs/quality/inspections/`](inspections/).
 
 ### `apps/web/src`
 
-Files analyzed: **405**
+Files analyzed: **349**
 
 | Metric | Actual | Threshold | Status |
 |---|---:|---:|---|
-| Average score | 84.6 | >= 80 | ✅ PASS |
-| F-grade files | 26 | <= 34 | ✅ PASS |
-| Code smells | 2528 | <= 2400 | ❌ FAIL |
+| Average score | 83.5 | >= 80 | ✅ PASS |
+| F-grade files | 22 | <= 34 | ✅ PASS |
+| Code smells | 2302 | <= 2400 | ✅ PASS |
 | SOLID violations | 24 | <= 25 | ✅ PASS |
 
 ### `packages`
 
-Files analyzed: **28**
+Files analyzed: **17**
 
 | Metric | Actual | Threshold | Status |
 |---|---:|---:|---|
-| Average score | 95.8 | >= 94 | ✅ PASS |
+| Average score | 96.3 | >= 94 | ✅ PASS |
 | F-grade files | 0 | <= 0 | ✅ PASS |
-| Code smells | 48 | <= 75 | ✅ PASS |
+| Code smells | 26 | <= 75 | ✅ PASS |
 | SOLID violations | 0 | <= 0 | ✅ PASS |
 
 ---

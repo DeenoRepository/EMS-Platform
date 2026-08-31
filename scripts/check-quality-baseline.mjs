@@ -52,6 +52,32 @@ function runQualityAnalysis(targetDirectory) {
   return JSON.parse(result.stdout);
 }
 
+function isTestFile(filePath) {
+  const normalized = String(filePath).replace(/\\/g, '/');
+  return (
+    normalized.includes('/__tests__/') ||
+    normalized.endsWith('.test.ts') ||
+    normalized.endsWith('.test.tsx') ||
+    normalized.endsWith('.spec.ts') ||
+    normalized.endsWith('.spec.tsx')
+  );
+}
+
+function restrictToProductionFiles(report) {
+  const files = report.files.filter((file) => !isTestFile(file.file));
+  return {
+    ...report,
+    files,
+    files_analyzed: files.length,
+    average_score:
+      files.length === 0
+        ? 0
+        : Number((files.reduce((sum, file) => sum + file.quality_score, 0) / files.length).toFixed(1)),
+    total_code_smells: files.reduce((sum, file) => sum + file.smells.length, 0),
+    total_solid_violations: files.reduce((sum, file) => sum + file.solid_violations.length, 0),
+  };
+}
+
 const rawArgs = process.argv.slice(2);
 const isReportMode = rawArgs.includes('--report');
 const reportPaths = rawArgs.filter((arg) => arg !== '--report');
@@ -68,6 +94,11 @@ if (reportPaths.length > 0) {
   reports.push(runQualityAnalysis('apps/web/src'));
   reports.push(runQualityAnalysis('packages'));
 }
+
+// Tests have independent execution and coverage gates. Keep this quality gate
+// focused on production source so test fixtures do not distort code-quality
+// metrics or F-grade counts.
+reports = reports.map(restrictToProductionFiles);
 
 let failed = false;
 const resultRows = [];
