@@ -165,8 +165,40 @@ export function makePrismaMock() {
       upsert: async (): Promise<UnknownRecord> => ({ id: 'setting-id' }),
     },
     notification: {
+      findMany: emptyList,
+      count: emptyCount,
       update: async (): Promise<UnknownRecord> => ({ id: 'notification-id' }),
       updateMany: async () => ({ count: 0 }),
+    },
+    nomenclatureCategory: {
+      findMany: emptyList,
+      findUnique: missing,
+      create: async (): Promise<UnknownRecord> => ({ id: 'category-id' }),
+    },
+    checklistTemplate: {
+      findMany: emptyList,
+      findUnique: missing,
+      create: async (): Promise<UnknownRecord> => ({ id: 'checklist-id' }),
+    },
+    maintenancePlan: {
+      findMany: emptyList,
+      findUnique: missing,
+      create: async (): Promise<UnknownRecord> => ({ id: 'plan-id' }),
+    },
+    customFieldDefinition: {
+      findMany: emptyList,
+      findUnique: missing,
+      deleteMany: async () => ({ count: 0 }),
+      updateMany: async () => ({ count: 0 }),
+      upsert: async (): Promise<UnknownRecord> => ({ id: 'field-id' }),
+      delete: async (): Promise<UnknownRecord> => ({ id: 'field-id' }),
+    },
+    customSection: {
+      findMany: emptyList,
+      findUnique: missing,
+      create: async (): Promise<UnknownRecord> => ({ id: 'section-id', code: 'section' }),
+      update: async (): Promise<UnknownRecord> => ({ id: 'section-id' }),
+      delete: async (): Promise<UnknownRecord> => ({ id: 'section-id' }),
     },
     stockTransfer: {
       count: emptyCount,
@@ -185,6 +217,8 @@ export function makePrismaMock() {
     user: {
       findFirst: missing,
       findUnique: missing,
+      findMany: emptyList,
+      count: emptyCount,
       create: async (): Promise<UnknownRecord> => ({ id: 'user-id', ldapLogin: 'user', displayName: 'User' }),
       update: async (): Promise<UnknownRecord> => ({ id: 'user-id' }),
     },
