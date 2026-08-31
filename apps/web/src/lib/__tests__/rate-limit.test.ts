@@ -92,9 +92,22 @@ describe('Rate Limiting', () => {
   });
 
   describe('getClientIp', () => {
-    test('reads IP from x-forwarded-for', () => {
+    const originalTrustedProxyCount = process.env.TRUSTED_PROXY_COUNT;
+
+    afterEach(() => {
+      if (originalTrustedProxyCount === undefined) {
+        delete process.env.TRUSTED_PROXY_COUNT;
+      } else {
+        process.env.TRUSTED_PROXY_COUNT = originalTrustedProxyCount;
+      }
+    });
+
+    // Nginx использует proxy_add_x_forwarded_for: реальный peer дописывается
+    // справа. При одном доверенном прокси (значение по умолчанию) доверять
+    // можно только последнему элементу списка.
+    test('takes the hop appended by the trusted proxy, not the client-supplied first entry', () => {
       const req = makeRequest({ 'x-forwarded-for': '1.2.3.4, 10.0.0.1' });
-      assert.strictEqual(getClientIp(req), '1.2.3.4');
+      assert.strictEqual(getClientIp(req), '10.0.0.1');
     });
 
     test('reads IP from x-real-ip if no x-forwarded-for', () => {
@@ -107,9 +120,65 @@ describe('Rate Limiting', () => {
       assert.strictEqual(getClientIp(req), '127.0.0.1');
     });
 
-    test('trims whitespace from x-forwarded-for', () => {
-      const req = makeRequest({ 'x-forwarded-for': '  9.9.9.9 , 10.0.0.1' });
-      assert.strictEqual(getClientIp(req), '9.9.9.9');
+    test('trims whitespace around the trusted hop', () => {
+      const req = makeRequest({ 'x-forwarded-for': '  9.9.9.9 ,  10.0.0.1  ' });
+      assert.strictEqual(getClientIp(req), '10.0.0.1');
+    });
+
+    // Регрессия: спуфинг X-Forwarded-For не должен давать новый bucket.
+    // До исправления брался первый элемент, поэтому произвольный префикс
+    // обнулял счётчик и позволял неограниченный перебор паролей.
+    test('a spoofed X-Forwarded-For prefix does not create a new rate limit bucket', async () => {
+      const attackerHeaders = [
+        '203.0.113.1, 10.0.0.1',
+        '203.0.113.2, 10.0.0.1',
+        '198.51.100.7, 203.0.113.9, 10.0.0.1',
+      ];
+
+      const identifiers = attackerHeaders.map((value) =>
+        getClientIp(makeRequest({ 'x-forwarded-for': value }))
+      );
+
+      assert.deepStrictEqual(identifiers, ['10.0.0.1', '10.0.0.1', '10.0.0.1']);
+
+      // Все три запроса делят один bucket, поэтому лимит 2 срабатывает.
+      const results = [];
+      for (const identifier of identifiers) {
+        results.push(await checkRateLimit(identifier, { limit: 2, windowMs: 60_000, prefix: 'login' }));
+      }
+      assert.deepStrictEqual(
+        results.map((r) => r.allowed),
+        [true, true, false]
+      );
+    });
+
+    test('an empty or whitespace-only X-Forwarded-For falls back to x-real-ip', () => {
+      const req = makeRequest({ 'x-forwarded-for': '  ,  ', 'x-real-ip': '5.6.7.8' });
+      assert.strictEqual(getClientIp(req), '5.6.7.8');
+    });
+
+    test('TRUSTED_PROXY_COUNT=0 ignores client-controlled headers entirely', () => {
+      process.env.TRUSTED_PROXY_COUNT = '0';
+      const req = makeRequest({ 'x-forwarded-for': '1.2.3.4', 'x-real-ip': '5.6.7.8' });
+      assert.strictEqual(getClientIp(req), '127.0.0.1');
+    });
+
+    test('TRUSTED_PROXY_COUNT=2 trusts the second hop from the right', () => {
+      process.env.TRUSTED_PROXY_COUNT = '2';
+      const req = makeRequest({ 'x-forwarded-for': '1.2.3.4, 203.0.113.5, 10.0.0.1' });
+      assert.strictEqual(getClientIp(req), '203.0.113.5');
+    });
+
+    test('more trusted proxies than hops clamps to the leftmost entry', () => {
+      process.env.TRUSTED_PROXY_COUNT = '5';
+      const req = makeRequest({ 'x-forwarded-for': '203.0.113.5, 10.0.0.1' });
+      assert.strictEqual(getClientIp(req), '203.0.113.5');
+    });
+
+    test('an invalid TRUSTED_PROXY_COUNT falls back to the single-proxy default', () => {
+      process.env.TRUSTED_PROXY_COUNT = 'not-a-number';
+      const req = makeRequest({ 'x-forwarded-for': '1.2.3.4, 10.0.0.1' });
+      assert.strictEqual(getClientIp(req), '10.0.0.1');
     });
   });
 });

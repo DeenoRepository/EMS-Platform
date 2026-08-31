@@ -6,6 +6,7 @@ import net from 'net';
 import crypto from 'crypto';
 import { prisma } from '@ems/database';
 import { getCurrentUser, isAdminUser } from '@/lib/auth-guard';
+import { resolveInstallState } from '@/lib/install-state';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { safeErrorResponse } from '@/lib/safe-error';
 
@@ -85,30 +86,10 @@ export async function GET(req: NextRequest) {
 
   try {
     const rootDir = process.cwd();
-    const installedFilePath = path.join(rootDir, '.installed');
-    const rootInstalledFilePath = path.join(rootDir, '..', '..', '.installed');
 
-    const fileExists = fs.existsSync(installedFilePath) || fs.existsSync(rootInstalledFilePath);
-
-    let hasAdmin = false;
-    try {
-      const adminCount = await prisma.user.count({
-        where: {
-          roles: {
-            some: {
-              role: {
-                name: 'admin',
-              },
-            },
-          },
-        },
-      });
-      hasAdmin = adminCount > 0;
-    } catch {
-      hasAdmin = false;
-    }
-
-    const isInstalled = fileExists || hasAdmin;
+    // Fail-closed: при недоступности БД система считается установленной,
+    // иначе мастер настройки открывался бы анонимному пользователю.
+    const { isInstalled } = await resolveInstallState(rootDir);
 
     // -------------------------------------------------------------------------
     // Комплексная проверка зависимостей и системных требований

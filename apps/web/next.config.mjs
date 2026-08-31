@@ -70,11 +70,22 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
+              // 'unsafe-inline' требуется рантайму Next.js для inline-скриптов
+              // гидрации; 'unsafe-eval' допускается только в dev (HMR).
               `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+              // MUI/Emotion внедряют стили инлайном.
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' data: https://fonts.gstatic.com",
-              "img-src 'self' data: blob: https: http:",
-              "connect-src 'self' https: http: ws: wss:",
+              // Приложение самодостаточно: внешние источники изображений и
+              // произвольные http/ws-назначения в production не нужны и лишь
+              // расширяют канал утечки данных.
+              isDev
+                ? "img-src 'self' data: blob: https: http:"
+                : "img-src 'self' data: blob:",
+              isDev
+                ? "connect-src 'self' https: http: ws: wss:"
+                : "connect-src 'self'",
+              "object-src 'none'",
               "frame-ancestors 'self'",
               "base-uri 'self'",
               "form-action 'self'",

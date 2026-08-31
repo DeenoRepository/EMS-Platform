@@ -19,14 +19,19 @@ const REQUIREMENTS = {
     ['files-object-access', /canReadStoredFile/, 1],
     ['files-traversal-boundary', /resolvedFullPath\.startsWith\(uploadRoot\)/, 1],
   ],
+  // Признак установки обязан браться из resolveInstallState(): он учитывает
+  // persistent маркер и наличие администратора в БД и делает fail-closed при
+  // недоступности БД. Прежняя проверка по файлу в process.cwd() обходилась
+  // пересозданием контейнера, поэтому проверка по имени переменной
+  // `fileInstalled` здесь недостаточна.
   'src/app/api/setup/execute/route.ts': [
-    ['setup-reinstallation-guard', /fileInstalled[\s\S]*?!user\s*\|\|\s*!isAdminUser\(user\)/, 1],
+    ['setup-reinstallation-guard', /resolveInstallState\([\s\S]*?!user\s*\|\|\s*!isAdminUser\(user\)/, 1],
   ],
   'src/app/api/setup/test-db/route.ts': [
-    ['setup-reinstallation-guard', /fileInstalled[\s\S]*?!user\s*\|\|\s*!isAdminUser\(user\)/, 1],
+    ['setup-reinstallation-guard', /resolveInstallState\([\s\S]*?!user\s*\|\|\s*!isAdminUser\(user\)/, 1],
   ],
   'src/app/api/setup/test-ldap/route.ts': [
-    ['setup-reinstallation-guard', /fileInstalled[\s\S]*?!user\s*\|\|\s*!isAdminUser\(user\)/, 1],
+    ['setup-reinstallation-guard', /resolveInstallState\([\s\S]*?!user\s*\|\|\s*!isAdminUser\(user\)/, 1],
   ],
   'src/app/api/srm/integrations/route.ts': [
     ['active-srm-auth-policy', /Boolean\(isActive\)\s*&&\s*!hasSecureSrmWebhookAuth\(authConfig\)/, 1],

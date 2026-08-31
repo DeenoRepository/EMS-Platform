@@ -161,19 +161,63 @@ export async function checkRateLimit(
 }
 
 /**
- * Helper to extract client IP address from NextRequest.
- * Handles X-Forwarded-For (proxies/load balancers) and X-Real-IP (nginx).
+ * Число доверенных обратных прокси между клиентом и приложением.
+ *
+ * Значение по умолчанию — 1: поставляемая топология
+ * (`docker-compose.prod.yml`) ставит перед приложением ровно один Nginx.
+ * Задайте 0, если приложение принимает соединения напрямую, и увеличьте,
+ * если перед Nginx стоит дополнительный внешний ingress/load balancer.
+ */
+function getTrustedProxyCount(): number {
+  const raw = process.env.TRUSTED_PROXY_COUNT;
+  if (raw === undefined || raw.trim() === '') return 1;
+  const parsed = Number.parseInt(raw.trim(), 10);
+  if (!Number.isFinite(parsed) || parsed < 0) return 1;
+  return parsed;
+}
+
+/**
+ * Извлекает IP клиента из NextRequest для использования в качестве ключа
+ * rate limiting и в аудите.
+ *
+ * БЕЗОПАСНОСТЬ: `X-Forwarded-For` частично контролируется клиентом. Nginx
+ * использует `proxy_add_x_forwarded_for`, который **дописывает** реальный
+ * peer-адрес справа, а не заменяет заголовок целиком. Поэтому левые элементы
+ * списка — это произвольные данные от клиента, и брать первый элемент нельзя:
+ * это позволяет получать новый rate-limit bucket на каждый запрос, подставляя
+ * случайный заголовок, и подделывать `ipAddress` в audit trail.
+ *
+ * Доверять можно только тем элементам, которые дописали наши собственные
+ * прокси. При `TRUSTED_PROXY_COUNT = N` таким является элемент с индексом
+ * `length - N`; всё, что левее, отбрасывается как недоверенное.
  */
 export function getClientIp(req: NextRequest): string {
-  const forwarded = req.headers.get('x-forwarded-for');
-  if (forwarded) {
-    // x-forwarded-for may contain a comma-separated list; take the first (client) IP
-    return forwarded.split(',')[0].trim();
+  const trustedProxyCount = getTrustedProxyCount();
+
+  if (trustedProxyCount > 0) {
+    const forwarded = req.headers.get('x-forwarded-for');
+    if (forwarded) {
+      const hops = forwarded
+        .split(',')
+        .map((value) => value.trim())
+        .filter((value) => value.length > 0);
+
+      if (hops.length > 0) {
+        // Клиент может дописать сколько угодно фиктивных элементов слева,
+        // поэтому индекс отсчитывается справа и ограничивается нулём.
+        const trustedIndex = Math.max(0, hops.length - trustedProxyCount);
+        return hops[trustedIndex];
+      }
+    }
+
+    // Nginx устанавливает X-Real-IP из $remote_addr через proxy_set_header,
+    // затирая любое присланное клиентом значение.
+    const realIp = req.headers.get('x-real-ip');
+    if (realIp && realIp.trim().length > 0) {
+      return realIp.trim();
+    }
   }
-  const realIp = req.headers.get('x-real-ip');
-  if (realIp) {
-    return realIp.trim();
-  }
+
   return '127.0.0.1';
 }
 

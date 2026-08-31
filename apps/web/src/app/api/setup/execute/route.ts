@@ -8,6 +8,7 @@ import { hashPassword } from '@ems/auth';
 import { PERMISSIONS, PERMISSION_DEFINITIONS } from '@ems/shared';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { getCurrentUser, isAdminUser } from '@/lib/auth-guard';
+import { resolveInstallState, writeInstallMarker } from '@/lib/install-state';
 import { safeErrorResponse } from '@/lib/safe-error';
 import { logger } from '@/lib/logger';
 
@@ -21,13 +22,15 @@ export async function POST(req: NextRequest) {
   let client: PrismaClient | null = null;
   try {
     const rootDir = process.cwd();
-    const installedFilePath = path.join(rootDir, '.installed');
-    const rootInstalledFilePath = path.join(rootDir, '..', '..', '.installed');
 
-    const fileInstalled = fs.existsSync(installedFilePath) || fs.existsSync(rootInstalledFilePath);
+    // Повторная инициализация требует сессии суперадминистратора. Признак
+    // установки берётся из resolveInstallState(): он учитывает persistent
+    // маркер и наличие администратора в БД, а при недоступности БД
+    // срабатывает fail-closed. Проверка только по файлу в process.cwd()
+    // обходилась пересозданием контейнера.
+    const { isInstalled } = await resolveInstallState(rootDir);
 
-    // If installed file already exists, require superadmin session
-    if (fileInstalled) {
+    if (isInstalled) {
       const user = await getCurrentUser(req);
       if (!user || !isAdminUser(user)) {
         return NextResponse.json(
@@ -343,7 +346,8 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 5. Create .installed lock file
+    // 5. Create .installed lock file (включая persistent volume, чтобы
+    // маркер пережил пересоздание контейнера)
     try {
       const installMeta = JSON.stringify(
         {
@@ -354,10 +358,11 @@ export async function POST(req: NextRequest) {
         null,
         2
       );
-      fs.writeFileSync(installedFilePath, installMeta, 'utf-8');
-      const rootInstallMeta = path.join(rootDir, '..', '..', '.installed');
-      if (fs.existsSync(path.dirname(rootInstallMeta))) {
-        fs.writeFileSync(rootInstallMeta, installMeta, 'utf-8');
+      const written = writeInstallMarker(installMeta, rootDir);
+      if (written.length === 0) {
+        logger.warn('Could not write .installed marker to any known location', {
+          endpoint: 'setup-execute',
+        });
       }
     } catch (lockErr) {
       logger.warn('Could not write .installed marker', {

@@ -65,6 +65,8 @@ services:
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-8h}
       UPLOAD_DIR: "/app/uploads"
+      # Число доверенных обратных прокси — см. .env.production.example §8.
+      TRUSTED_PROXY_COUNT: ${TRUSTED_PROXY_COUNT:-1}
       LDAP_ENABLED: ${LDAP_ENABLED:-false}
       LDAP_URL: ${LDAP_URL:-}
       LDAP_BIND_DN: ${LDAP_BIND_DN:-}

@@ -3,7 +3,10 @@
 # ==============================================================================
 
 # 1. Base Layer with pnpm
-FROM node:22-alpine AS base
+# Версия Node.js должна совпадать с .nvmrc и node-version-file в CI:
+# тесты, coverage и build верифицируются именно на этой мажорной версии,
+# поэтому production-образ не должен исполняться на другой.
+FROM node:24-alpine AS base
 RUN corepack enable && corepack prepare pnpm@11.16.0 --activate
 WORKDIR /app
 

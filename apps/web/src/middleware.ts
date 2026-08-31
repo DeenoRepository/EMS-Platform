@@ -28,7 +28,11 @@ async function isSetupCompleted(): Promise<boolean> {
     return setupCache.value;
   }
 
-  let isConfigured = false;
+  // Fail-closed: если статус установки подтвердить не удалось, считаем
+  // систему установленной и оставляем мастер настройки заблокированным.
+  // Обратное поведение открывало /api/setup/* анонимному пользователю при
+  // любой недоступности status-эндпоинта.
+  let isConfigured = true;
 
   try {
     const url = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/setup/status`;
@@ -46,7 +50,7 @@ async function isSetupCompleted(): Promise<boolean> {
       isConfigured = data?.data?.isInstalled === true;
     }
   } catch {
-    isConfigured = false;
+    isConfigured = true;
   }
 
   setupCache = { value: isConfigured, expiresAt: now + SETUP_CACHE_TTL_MS };

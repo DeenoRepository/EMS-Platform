@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 import { testLdapConnection } from '@ems/auth';
 import { prisma } from '@ems/database';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { safeErrorResponse } from '@/lib/safe-error';
 import { getCurrentUser, isAdminUser } from '@/lib/auth-guard';
+import { resolveInstallState } from '@/lib/install-state';
 import { validateOutboundUrl } from '@/lib/outbound-url';
 
 export const dynamic = 'force-dynamic';
@@ -15,11 +14,12 @@ export async function POST(req: NextRequest) {
   const rateLimitError = await enforceRateLimit(req, { limit: 10, windowMs: 60 * 1000, prefix: 'test-ldap' });
   if (rateLimitError) return rateLimitError;
 
-  // 2. SSRF Protection: If already installed, require admin auth
-  const rootDir = process.cwd();
-  const fileInstalled = fs.existsSync(path.join(rootDir, '.installed')) || fs.existsSync(path.join(rootDir, '..', '..', '.installed'));
+  // 2. SSRF Protection: If already installed, require admin auth.
+  // resolveInstallState() учитывает persistent маркер и администратора в БД
+  // и делает fail-closed при недоступности БД.
+  const { isInstalled } = await resolveInstallState();
 
-  if (fileInstalled) {
+  if (isInstalled) {
     const user = await getCurrentUser(req);
     if (!user || !isAdminUser(user)) {
       return NextResponse.json(

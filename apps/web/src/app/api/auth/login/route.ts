@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@ems/database';
 import { authenticateLdap, signSessionToken, verifyPassword, fixKeyboardLayout, getUserRolesAndPermissions, logAuditEvent } from '@ems/auth';
 import { JwtUserPayload } from '@ems/shared';
-import { enforceRateLimit } from '@/lib/rate-limit';
+import { enforceRateLimit, getClientIp } from '@/lib/rate-limit';
 import { safeErrorResponse } from '@/lib/safe-error';
 import { logger } from '@/lib/logger';
 import { getSystemSettings } from '@/lib/system-settings-service';
@@ -186,8 +186,10 @@ export async function POST(req: NextRequest) {
 
     const token = await signSessionToken(payload);
 
-    // Аудит события входа
-    const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip');
+    // Аудит события входа. IP берём через getClientIp(): сырой
+    // X-Forwarded-For частично контролируется клиентом и позволяет
+    // подделать запись в audit trail.
+    const ip = getClientIp(req);
     const userAgent = req.headers.get('user-agent');
     await logAuditEvent({
       userId: authenticatedUser.id,

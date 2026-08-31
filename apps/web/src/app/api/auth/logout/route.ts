@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth-guard';
-import { enforceRateLimit } from '@/lib/rate-limit';
+import { enforceRateLimit, getClientIp } from '@/lib/rate-limit';
 import { logAuditEvent } from '@ems/auth';
 
 export async function POST(req: NextRequest) {
@@ -14,7 +14,9 @@ export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);
     if (user) {
-      const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip');
+      // IP берём через getClientIp(): сырой X-Forwarded-For частично
+      // контролируется клиентом и позволяет подделать audit trail.
+      const ip = getClientIp(req);
       const userAgent = req.headers.get('user-agent');
       await logAuditEvent({
         userId: user.userId,
