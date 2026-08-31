@@ -26,6 +26,19 @@ walk(root);
 
 const linkPattern = /\[[^\]]*\]\(([^)]+)\)/g;
 const errors = [];
+const REMOVED_HISTORICAL_TARGETS = new Set([
+  'packages/auth/src/eps-import.test.ts',
+  'packages/auth/src/srm-service.test.ts',
+]);
+
+function isAllowedRemovedHistoricalLink(sourceFile, resolvedTarget) {
+  const relativeSource = path.relative(root, sourceFile).replace(/\\/g, '/');
+  const relativeTarget = path.relative(root, resolvedTarget).replace(/\\/g, '/');
+  const isImmutableHistory =
+    relativeSource.startsWith('docs/quality/inspections/') ||
+    relativeSource.startsWith('plans/done/');
+  return isImmutableHistory && REMOVED_HISTORICAL_TARGETS.has(relativeTarget);
+}
 
 function maskCode(source) {
   // Replace code content with spaces while preserving newlines, so match
@@ -59,7 +72,7 @@ for (const filePath of markdownFiles) {
     // e.g. `route.ts:108`. Resolve the file path, not the suffix.
     const fileTarget = withoutAnchor.replace(/:\d+(?:-\d+)?$/, '');
     const resolved = path.resolve(path.dirname(filePath), fileTarget);
-    if (!existsSync(resolved)) {
+    if (!existsSync(resolved) && !isAllowedRemovedHistoricalLink(filePath, resolved)) {
       const line = scanSource.slice(0, match.index).split(/\r?\n/).length;
       errors.push(`${path.relative(root, filePath).replace(/\\/g, '/')}:${line} -> ${target}`);
     }

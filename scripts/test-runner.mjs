@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 import process from 'node:process';
 import path from 'node:path';
-import { readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 
 process.env.DATABASE_URL =
   process.env.DATABASE_URL ||
@@ -54,12 +54,27 @@ const testFiles = [
   ...findTestFiles(path.join('apps', 'web', 'src')),
 ];
 
-const MINIMUM_TEST_FILE_COUNT = 45;
+const emptyTestFiles = testFiles.filter((filePath) => {
+  const source = readFileSync(filePath, 'utf8');
+  return !/\b(?:test|it)\s*\(/.test(source);
+});
+if (emptyTestFiles.length > 0) {
+  console.error('[test-runner] ERROR: discovered test files with zero checks:');
+  for (const filePath of emptyTestFiles) console.error(`  ${filePath}`);
+  process.exit(1);
+}
+
+// Check count is the primary regression guard. File count is only a lower,
+// catastrophic-discovery guard; empty placeholder files cannot satisfy the
+// meaningful floor.
+const MINIMUM_EXECUTED_CHECK_COUNT = 303;
+const MINIMUM_TEST_FILE_COUNT = 40;
+
 console.log(`[test-runner] Found ${testFiles.length} test file(s).`);
 if (testFiles.length < MINIMUM_TEST_FILE_COUNT) {
   console.error(
-    `[test-runner] ERROR: expected at least ${MINIMUM_TEST_FILE_COUNT} test files, ` +
-      `but found only ${testFiles.length}.`,
+    `[test-runner] ERROR: discovered ${testFiles.length} test files; ` +
+      `minimum catastrophic floor is ${MINIMUM_TEST_FILE_COUNT}.`,
   );
   process.exit(1);
 }
@@ -75,7 +90,59 @@ const nodeArgs = [
 ];
 
 const child = spawn(process.execPath, nodeArgs, {
-  stdio: 'inherit',
+  stdio: ['ignore', 'pipe', 'pipe'],
   env: process.env,
 });
-child.on('exit', (code) => process.exit(code ?? 0));
+
+let capturedOutput = '';
+function relay(chunk, target) {
+  const text = chunk.toString();
+  capturedOutput += text;
+  target.write(text);
+}
+
+child.stdout.on('data', (chunk) => relay(chunk, process.stdout));
+child.stderr.on('data', (chunk) => relay(chunk, process.stderr));
+child.on('error', (error) => {
+  console.error('[test-runner] Failed to start Node test process:', error.message);
+  process.exit(1);
+});
+child.on('exit', (code) => {
+  if ((code ?? 0) !== 0) {
+    process.exit(code ?? 1);
+    return;
+  }
+
+  const summaryMatches = [
+    ...capturedOutput.matchAll(/^\D*tests\s+(\d+)\s*$/gim),
+  ];
+  const executedChecks = summaryMatches.length
+    ? Number.parseInt(summaryMatches.at(-1)[1], 10)
+    : null;
+
+  if (executedChecks === null) {
+    console.error(
+      `[test-runner] ERROR: test process succeeded but the executed-check summary ` +
+        `could not be parsed (required floor: ${MINIMUM_EXECUTED_CHECK_COUNT}; ` +
+        `discovered files: ${testFiles.length}).`,
+    );
+    process.exit(1);
+    return;
+  }
+
+  if (executedChecks < MINIMUM_EXECUTED_CHECK_COUNT) {
+    console.error(
+      `[test-runner] ERROR: executed ${executedChecks} checks; minimum is ` +
+        `${MINIMUM_EXECUTED_CHECK_COUNT}. Discovered ${testFiles.length} test files ` +
+        `(catastrophic file floor: ${MINIMUM_TEST_FILE_COUNT}).`,
+    );
+    process.exit(1);
+    return;
+  }
+
+  console.log(
+    `[test-runner] Guard PASS: ${executedChecks} executed checks across ` +
+      `${testFiles.length} discovered files.`,
+  );
+  process.exit(0);
+});

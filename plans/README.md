@@ -22,11 +22,10 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (2)
+## Active (1)
 
 | ID | Title | Phase | Priority | Risk | Skills | Opened |
 |---|---|---|---|---|---|---|
-| [N7](active/N7-remove-placeholder-tests-and-count-checks.md) | Remove placeholder test files and guard on check count, not file count | N | P2 | low | senior-qa | 2026-08-31 |
 | [N8](active/N8-tests-for-pure-logic-modules.md) | Tests for the highest-risk pure-logic modules extracted during phases C/H/K4 | N | P2 | low | senior-qa | 2026-08-31 |
 
 ---
@@ -37,7 +36,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 
 ---
 
-## Done (85)
+## Done (86)
 
 | ID | Title | Phase | Closed | Commits |
 |---|---|---|---|---|
@@ -126,3 +125,4 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [N4](done/2026-08/N4-replace-source-text-route-tests.md) | Replace source-text route assertions with executable tests and ESLint rules | N | 2026-08-31 | test/N4-executable-route-security |
 | [N5](done/2026-08/N5-executable-tests-for-write-routes.md) | Executable RBAC and validation tests for the 13 uncovered write routes | N | 2026-08-31 | test/N5-write-route-contracts |
 | [N6](done/2026-08/N6-vitest-scope-and-component-coverage.md) | Widen vitest discovery beyond components/ui and measure component coverage | N | 2026-08-31 | test/N6-component-coverage-gate |
+| [N7](done/2026-08/N7-remove-placeholder-tests-and-count-checks.md) | Remove placeholder test files and guard on check count, not file count | N | 2026-08-31 | test/N7-check-count-guard |
