@@ -66,7 +66,8 @@ const testFiles = [
 
 // Guard: prevent a configuration error from silently dropping tests.
 // Raise this floor whenever the suite legitimately grows past it.
-const MINIMUM_TEST_FILE_COUNT = 36;
+// M1: 36 files. M3: +2 (wms-routes, auth-login-route) = 38.
+const MINIMUM_TEST_FILE_COUNT = 38;
 
 console.log(`[test-runner] Found ${testFiles.length} test file(s).`);
 

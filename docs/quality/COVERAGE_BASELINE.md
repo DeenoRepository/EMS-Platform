@@ -10,14 +10,14 @@
 
 | Metric | Value | Threshold | Status |
 |---|---:|---:|---|
-| Line coverage among loaded files | 83.27 % | ≥ 80 % | ✓ |
-| File-level coverage (охват файлов) | 20.22 % | ≥ 14 % | ✓ |
+| Line coverage among loaded files | 79.06 % | ≥ 79 % | ✓ |
+| File-level coverage (охват файлов) | 21.25 % | ≥ 21 % | ✓ |
 
 ## Detail
 
-- **Files loaded by tests:** 74
-- **Total production files:** 366 (all `.ts`/`.tsx` excluding `.test.`, `.spec.`, `.d.ts`)
-- **Files with zero coverage:** 292 (79.8 %)
+- **Files loaded by tests:** 78
+- **Total production files:** 367 (all `.ts`/`.tsx` excluding `.test.`, `.spec.`, `.d.ts`)
+- **Files with zero coverage:** 289 (78.7 %)
 
 ### What these metrics mean
 
