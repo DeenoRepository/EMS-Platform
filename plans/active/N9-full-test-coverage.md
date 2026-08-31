@@ -1,0 +1,56 @@
+---
+id: N9
+title: Увеличить покрытие проекта тестами до полного охвата критических путей
+status: active
+phase: N
+priority: P1
+risk: medium
+skills: [senior-qa]
+opened: 2026-08-31
+closed: null
+commits: []
+gates: [test, coverage, lint, tsc, docs]
+---
+
+# N9 — Увеличить покрытие проекта тестами до полного охвата критических путей
+
+## Problem
+
+Текущий baseline в [`docs/quality/COVERAGE_BASELINE.md`](../../docs/quality/COVERAGE_BASELINE.md) показывает 70.86% line coverage среди загруженных Node-тестами файлов, 22.97% file-level reach и 1.89% component line coverage. При этом 285 из 370 production-файлов не загружаются тестами. Компонентный runner ограничен Vitest и имеет только минимальный discovery floor.
+
+## Scope
+
+Постепенно покрыть тестами production-код монорепозитория без изменения бизнес-контрактов:
+
+- unit-тесты чистой логики, shared/auth/database helpers и сервисов;
+- executable contract-тесты API-роутов с RBAC, rate-limit, validation, error paths и Prisma mocks;
+- React component-тесты критических UI-сценариев через Testing Library;
+- Playwright E2E для критических read/write пользовательских потоков;
+- усиление coverage-gates и актуализация generated baseline после каждого измеримого этапа.
+
+Не входит: тестирование внешних систем в реальном окружении, требование 100% покрытия автоматически сгенерированных типов Prisma, миграций и деклараций, а также подмена интеграционных тестов статическим анализом.
+
+## Steps
+
+1. Зафиксировать воспроизводимое окружение: Node из [`.nvmrc`](../../.nvmrc), frozen lockfile и generated Prisma Client.
+2. Снять baseline Node, Vitest component и Playwright suites; сохранить failures как environment или product defects.
+3. Составить inventory production-файлов и приоритетов: security/auth/API, domain services, pure logic, UI, E2E.
+4. Закрыть pure-logic и shared/auth/database helpers с branch/error-case тестами.
+5. Закрыть API route contracts и чувствительные security paths executable-тестами.
+6. Расширять React component suite по критическим страницам и reusable UI primitives.
+7. Расширить E2E до основных EPS/WMS/MRO/SRM read/write сценариев и стабилизировать fixtures.
+8. Поднять пороги coverage ratchet по фактическим приростам и запретить регрессии.
+9. После каждого логического этапа выполнить test, coverage, lint, typecheck и docs gates; зафиксировать результат отдельным Conventional Commit.
+
+## Definition of Done
+
+- [ ] Все критические security/auth/API/domain paths имеют executable-тесты для success, validation, authorization и failure cases.
+- [ ] Все reusable UI primitives и критические пользовательские формы имеют Testing Library coverage.
+- [ ] Основные EPS/WMS/MRO/SRM read/write сценарии проходят в Playwright на изолированной БД.
+- [ ] Покрытие измеряется отдельно для Node, компонентов и E2E; thresholds повышены до согласованных целевых значений без снижения baseline.
+- [ ] Нет placeholder или тавтологических тестов; каждый тест проверяет наблюдаемое поведение.
+- [ ] Full gate green: `pnpm test`, `node scripts/check-coverage.mjs`, `pnpm lint`, typecheck, docs и Playwright smoke.
+
+## Result
+
+Заполняется при закрытии story.
