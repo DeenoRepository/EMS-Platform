@@ -3,6 +3,12 @@ const isDev = process.env.NODE_ENV === 'development';
 
 const nextConfig = {
   reactStrictMode: true,
+  // ESLint is a separate CI gate (`pnpm lint`) because API routes use
+  // repository-local rules loaded through the ESLint CLI `--rulesdir` option.
+  // Next's embedded lint runner cannot load those definitions during `next build`.
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   poweredByHeader: false,
   compress: true,
   transpilePackages: ['@ems/database', '@ems/shared', '@ems/auth'],
