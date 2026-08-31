@@ -8,8 +8,7 @@ import { getInstallMarkerPaths, installMarkerExists, resolveInstallState, writeI
 
 const originalCount = prisma.user.count;
 let countImplementation = async () => 0;
-prisma.user.count = (async (...args: Parameters<typeof originalCount>) =>
-  countImplementation(...args)) as typeof originalCount;
+prisma.user.count = ((..._args: unknown[]) => countImplementation()) as typeof originalCount;
 
 describe('install state', () => {
   it('resolves marker paths with relative and absolute persistent directories', () => {
