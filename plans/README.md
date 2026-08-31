@@ -22,9 +22,16 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (0)
+## Active (6)
 
-_No active stories._
+| ID | Title | Phase | Priority | Risk | Skills | Opened |
+|---|---|---|---|---|---|---|
+| [M1](active/M1-test-runner-discovers-all-tests.md) | Runner должен находить все тесты, а не два жёстко заданных каталога | M | P0 | medium | senior-qa | 2026-08-31 |
+| [M2](active/M2-coverage-measurement-and-gate.md) | Измерять покрытие тестами и закрепить его порогом в CI | M | P0 | low | senior-qa, ci-cd-pipeline-builder | 2026-08-31 |
+| [M3](active/M3-api-route-handler-tests.md) | Покрыть тестами API-роуты — RBAC, rate-limit, валидация ввода | M | P1 | medium | senior-qa, senior-backend, senior-security | 2026-08-31 |
+| [M4](active/M4-eliminate-tautological-tests.md) | Устранить тавтологические тесты, проверяющие копию логики вместо кода | M | P1 | low | senior-qa | 2026-08-31 |
+| [M5](active/M5-e2e-in-ci.md) | Запускать E2E-набор в CI и расширить его на критические сценарии записи | M | P2 | medium | playwright-pro, ci-cd-pipeline-builder | 2026-08-31 |
+| [M6](active/M6-react-component-testing.md) | Ввести компонентное тестирование React для библиотеки @/components/ui | M | P3 | medium | senior-qa, senior-frontend, a11y-audit | 2026-08-31 |
 
 ---
 
