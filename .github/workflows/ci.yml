@@ -96,3 +96,73 @@ jobs:
         env:
           NODE_ENV: production
           JWT_SECRET: super_secret_ci_dummy_jwt_key_minimum_32_characters_long
+
+  e2e:
+    name: E2E Smoke Tests (Playwright + PostgreSQL)
+    runs-on: ubuntu-latest
+    needs: [validate]
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+          run_install: false
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm --filter @ems/database generate
+
+      - name: Build Monorepo (required by Next.js production server for E2E)
+        run: pnpm build
+        env:
+          NODE_ENV: production
+          JWT_SECRET: super_secret_ci_dummy_jwt_key_minimum_32_characters_long
+
+      - name: Install Playwright Browsers (Chromium only)
+        run: pnpm --filter @ems/web exec playwright install --with-deps chromium
+
+      - name: Run E2E Smoke Tests
+        run: pnpm --filter @ems/web test:e2e
+        env:
+          E2E_DB_HOST: localhost
+          E2E_DB_PORT: 5432
+          E2E_DB_USER: postgres
+          E2E_DB_PASSWORD: postgres
+          E2E_PORT: 3100
+          JWT_SECRET: super_secret_ci_dummy_jwt_key_minimum_32_characters_long
+
+      - name: Upload Playwright Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 14

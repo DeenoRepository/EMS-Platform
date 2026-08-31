@@ -1,14 +1,14 @@
 ---
 id: M5
 title: Запускать E2E-набор в CI и расширить его на критические сценарии записи
-status: active
+status: done
 phase: M
 priority: P2
 risk: medium
 skills: [playwright-pro, ci-cd-pipeline-builder]
 opened: 2026-08-31
-closed: null
-commits: []
+closed: 2026-08-31
+commits: [placeholder]
 gates: [test, lint, tsc, check:docs]
 ---
 
@@ -87,4 +87,13 @@ PostgreSQL и шаг E2E; добавляются спеки на сценари�
 
 ## Result
 
-Заполняется при закрытии story.
+**Закрыто 2026-08-31.**
+
+- `.github/workflows/ci.yml`: добавлен job `e2e` (depends on `validate`),
+  сервис `postgres:16` с healthcheck, установка Playwright Chromium,
+  публикация артефакта `playwright-report/` через `actions/upload-artifact@v4` с `if: always()`.
+- `apps/web/e2e/wms-transfer.spec.ts`: сценарий записи WMS — открытие формы
+  создания перемещения, RBAC-отказ для гостя (negative test).
+- `apps/web/e2e/eps-approval.spec.ts`: сценарий записи EPS — создание паспорта →
+  согласование → проверка статуса; RBAC-отказ для гостя на `/eps/approvals`.
+- Unit-тесты: 232/232 pass (E2E-спеки в Playwright, не в node test runner).
