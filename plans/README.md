@@ -22,11 +22,10 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (6)
+## Active (5)
 
 | ID | Title | Phase | Priority | Risk | Skills | Opened |
 |---|---|---|---|---|---|---|
-| [N3](active/N3-pin-node-version-and-rebaseline.md) | Pin the Node version and re-establish a reproducible coverage baseline | N | P0 | medium | senior-qa, ci-cd-pipeline-builder | 2026-08-31 |
 | [N4](active/N4-replace-source-text-route-tests.md) | Replace source-text route assertions with executable tests and ESLint rules | N | P1 | medium | senior-qa, senior-backend | 2026-08-31 |
 | [N5](active/N5-executable-tests-for-write-routes.md) | Executable RBAC and validation tests for the 13 uncovered write routes | N | P1 | high | senior-qa, senior-backend | 2026-08-31 |
 | [N6](active/N6-vitest-scope-and-component-coverage.md) | Widen vitest discovery beyond components/ui and measure component coverage | N | P1 | medium | senior-qa, senior-frontend | 2026-08-31 |
@@ -41,7 +40,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 
 ---
 
-## Done (81)
+## Done (82)
 
 | ID | Title | Phase | Closed | Commits |
 |---|---|---|---|---|
@@ -126,3 +125,4 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [M6](done/2026-08/M6-react-component-testing.md) | Ввести компонентное тестирование React для библиотеки @/components/ui | M | 2026-08-31 | feat/M6-component-tests |
 | [N1](done/2026-08/N1-backup-script-test-cross-platform.md) | Fix platform-dependent backup-script test that reddens the gate | N | 2026-08-31 | fix/N1-backup-test-cross-platform |
 | [N2](done/2026-08/N2-coverage-parser-full-paths.md) | Coverage parser must key files by full path, not basename | N | 2026-08-31 | fix/N2-coverage-parser-full-paths |
+| [N3](done/2026-08/N3-pin-node-version-and-rebaseline.md) | Pin the Node version and re-establish a reproducible coverage baseline | N | 2026-08-31 | chore/N3-pin-node-and-rebaseline |

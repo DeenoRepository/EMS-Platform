@@ -24,7 +24,12 @@ below — `pnpm test` does require generated Prisma client types.
 
 ### Prerequisites before running the gates
 
+Use the exact Node.js version declared in [`.nvmrc`](../.nvmrc). CI reads
+the same file. This is especially important for `check-coverage.mjs`, because
+Node's experimental coverage-table format changes across major versions.
+
 ```bash
+nvm use
 pnpm install --frozen-lockfile
 pnpm db:generate   # required by pnpm test
 ```
