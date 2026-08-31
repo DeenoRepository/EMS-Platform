@@ -5,8 +5,14 @@
  * These tests actually execute the real script (not a copy or a mock of it)
  * against a mocked `pg_dumpall`/`docker` in a temporary working directory, to
  * verify the exit code and side effects, not just the source text.
+ *
+ * Requires a working POSIX `bash` on PATH (Git Bash, WSL with a distro
+ * installed, or any Linux/macOS shell). When none is available — e.g. a
+ * bare Windows box where `bash.exe` only resolves to the WSL launcher stub
+ * with no distro registered — the suite is skipped with an explicit reason
+ * rather than failing. See plans/active/N1-backup-script-test-cross-platform.md.
  */
-import { describe, test } from 'node:test';
+import { describe, test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, existsSync, readdirSync, rmSync } from 'node:fs';
@@ -22,9 +28,50 @@ function makeMockBin(dir: string, name: string, script: string): void {
   chmodSync(filePath, 0o755);
 }
 
-describe('backup.sh fail-closed behavior', () => {
+/**
+ * Removes a directory tree, tolerating the transient EPERM/EBUSY Windows
+ * raises when a just-exited child process has not yet released its handle
+ * on a file inside the tree.
+ */
+function removeWorkDirWithRetries(workDir: string): void {
+  try {
+    rmSync(workDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  } catch {
+    // Best-effort cleanup: a leftover temp dir does not fail the suite.
+  }
+}
+
+/**
+ * Detects a bash that can actually execute a script, as opposed to a
+ * `bash.exe` shim that merely exists on PATH. On some Windows machines
+ * `bash.exe` resolves to the WSL launcher, which exits non-zero immediately
+ * when no WSL distribution is registered.
+ */
+function hasWorkingBash(): boolean {
+  try {
+    execFileSync('bash', ['-c', 'exit 0'], { stdio: 'pipe' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const bashAvailable = hasWorkingBash();
+
+describe('backup.sh fail-closed behavior', { skip: !bashAvailable && 'no working bash on PATH (Git Bash, WSL distro, or Linux/macOS shell required)' }, () => {
+  let workDirs: string[] = [];
+
+  before(() => {
+    workDirs = [];
+  });
+
+  after(() => {
+    for (const dir of workDirs) removeWorkDirWithRetries(dir);
+  });
+
   test('exits non-zero and creates no dump file when the database dump fails', () => {
     const workDir = mkdtempSync(path.join(tmpdir(), 'ems-backup-fail-'));
+    workDirs.push(workDir);
     const mockBinDir = path.join(workDir, 'mockbin');
     mkdirSync(mockBinDir);
 
@@ -37,7 +84,7 @@ describe('backup.sh fail-closed behavior', () => {
     try {
       execFileSync('bash', [backupScriptPath], {
         cwd: workDir,
-        env: { ...process.env, PATH: `${mockBinDir}:${process.env.PATH}` },
+        env: { ...process.env, PATH: `${mockBinDir}${path.delimiter}${process.env.PATH}` },
         stdio: 'pipe',
       });
       exitCode = 0;
@@ -50,12 +97,11 @@ describe('backup.sh fail-closed behavior', () => {
     const backupsDir = path.join(workDir, 'backups');
     const filesCreated = existsSync(backupsDir) ? readdirSync(backupsDir) : [];
     assert.deepEqual(filesCreated, [], 'a failed dump must not leave a partial/empty backup file behind');
-
-    rmSync(workDir, { recursive: true, force: true });
   });
 
   test('exits zero and creates a non-empty dump file when the database dump succeeds', () => {
     const workDir = mkdtempSync(path.join(tmpdir(), 'ems-backup-ok-'));
+    workDirs.push(workDir);
     const mockBinDir = path.join(workDir, 'mockbin');
     mkdirSync(mockBinDir);
 
@@ -66,7 +112,7 @@ describe('backup.sh fail-closed behavior', () => {
       try {
         execFileSync('bash', [backupScriptPath], {
           cwd: workDir,
-          env: { ...process.env, PATH: `${mockBinDir}:${process.env.PATH}` },
+          env: { ...process.env, PATH: `${mockBinDir}${path.delimiter}${process.env.PATH}` },
           stdio: 'pipe',
         });
         return 0;
@@ -81,7 +127,5 @@ describe('backup.sh fail-closed behavior', () => {
     const filesCreated = existsSync(backupsDir) ? readdirSync(backupsDir) : [];
     const dumpFiles = filesCreated.filter((f) => f.startsWith('ems_database_') && f.endsWith('.sql.gz'));
     assert.equal(dumpFiles.length, 1, 'a successful dump must produce exactly one ems_database_*.sql.gz file');
-
-    rmSync(workDir, { recursive: true, force: true });
   });
 });

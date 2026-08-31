@@ -22,11 +22,10 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (8)
+## Active (7)
 
 | ID | Title | Phase | Priority | Risk | Skills | Opened |
 |---|---|---|---|---|---|---|
-| [N1](active/N1-backup-script-test-cross-platform.md) | Fix platform-dependent backup-script test that reddens the gate | N | P0 | low | senior-qa | 2026-08-31 |
 | [N2](active/N2-coverage-parser-full-paths.md) | Coverage parser must key files by full path, not basename | N | P0 | medium | senior-qa | 2026-08-31 |
 | [N3](active/N3-pin-node-version-and-rebaseline.md) | Pin the Node version and re-establish a reproducible coverage baseline | N | P0 | medium | senior-qa, ci-cd-pipeline-builder | 2026-08-31 |
 | [N4](active/N4-replace-source-text-route-tests.md) | Replace source-text route assertions with executable tests and ESLint rules | N | P1 | medium | senior-qa, senior-backend | 2026-08-31 |
@@ -43,7 +42,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 
 ---
 
-## Done (79)
+## Done (80)
 
 | ID | Title | Phase | Closed | Commits |
 |---|---|---|---|---|
@@ -126,3 +125,4 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [M4](done/2026-08/M4-eliminate-tautological-tests.md) | Устранить тавтологические тесты, проверяющие копию логики вместо кода | M | 2026-08-31 | b24e12c |
 | [M5](done/2026-08/M5-e2e-in-ci.md) | Запускать E2E-набор в CI и расширить его на критические сценарии записи | M | 2026-08-31 | a40f03b |
 | [M6](done/2026-08/M6-react-component-testing.md) | Ввести компонентное тестирование React для библиотеки @/components/ui | M | 2026-08-31 | feat/M6-component-tests |
+| [N1](done/2026-08/N1-backup-script-test-cross-platform.md) | Fix platform-dependent backup-script test that reddens the gate | N | 2026-08-31 | fix/N1-backup-test-cross-platform |
