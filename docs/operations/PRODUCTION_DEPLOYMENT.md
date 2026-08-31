@@ -56,39 +56,39 @@ cp .env.production.example .env.production
 * `LDAP_*` — параметры доменной службы Active Directory / OpenLDAP (если используется).
 * `SRM_*` — параметры внешней интеграции с Service Desk (Jira, Redmine, GitLab или Generic REST).
 
-### Шаг 3. Запуск автоматического скрипта развертывания
+### Шаг 3. Запуск production-стека Docker Compose
 
-**Для Linux / Unix серверов:**
+В репозитории поддерживается прямой запуск production Compose-файла:
+
 ```bash
-chmod +x scripts/prod-deploy.sh
-./scripts/prod-deploy.sh
-```
-
-**Для Windows Server (PowerShell):**
-```powershell
-.\scripts\prod-deploy.ps1
-```
-
-**Или прямой командой Docker Compose:**
-```bash
+docker compose -f docker-compose.prod.yml config
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-> Не используйте [`docker-compose.yml`](../../docker-compose.yml) для production: это локальный development stack, который запускается только с явными значениями из `.env` и использует `NODE_ENV=development`. Для изолированной среды используйте [`docker-compose.offline.yml`](../../docker-compose.offline.yml).
+Перед запуском `config` должен завершиться успешно и показать, что реальные
+production secrets подставлены из `.env.production` или внешнего secret store.
+Не используйте [`docker-compose.yml`](../../docker-compose.yml) для production:
+это локальный development stack, который запускается только с явными значениями
+из `.env` и использует `NODE_ENV=development`. Для изолированной среды
+используйте [`docker-compose.offline.yml`](../../docker-compose.offline.yml).
 
 ---
 
-## 4. Конфигурация Nginx & SSL/TLS (HTTPS)
+## 4. Конфигурация TLS/HTTPS
 
-Для работы по защищенному протоколу HTTPS:
-1. Поместите SSL-сертификаты в каталог:
-   * `docker/nginx/ssl/ems.crt`
-   * `docker/nginx/ssl/ems.key`
-2. Раскомментируйте секцию `listen 443 ssl` в файле [`docker/nginx/nginx.conf`](../../docker/nginx/nginx.conf).
-3. Перезапустите контейнер Nginx:
-   ```bash
-   docker compose -f docker-compose.prod.yml restart nginx
-   ```
+Production Compose публикует приложение через HTTP на внутреннем/доверенном
+контуре. TLS termination должен выполняться утверждённым внешним ingress или
+load balancer, который:
+
+1. Использует сертификат для production hostname.
+2. Перенаправляет HTTP на HTTPS.
+3. Передаёт `X-Forwarded-Proto: https` и исходный client IP.
+4. Добавляет HSTS только после фактического включения HTTPS.
+
+Текущий [`docker/nginx/nginx.conf`](../../docker/nginx/nginx.conf) намеренно не
+слушает 443 и не содержит сертификатов. Не публикуйте порт 443 этого Compose
+стека до отдельной проверки TLS-конфигурации. Для TLS smoke используйте
+внешний hostname и проверку `curl -I https://<production-host>/healthz`.
 
 ---
 
@@ -192,12 +192,27 @@ docker compose -f docker-compose.prod.yml up -d ems-web
 
 ---
 
-## 6. Мониторинг и проверка работоспособности (Health Checks)
+## 6. Мониторинг, SLO и проверка работоспособности
 
 Система предоставляет стандартные эндпоинты мониторинга:
 * **System Health:** `GET http://localhost:3000/api/system/health`
 * **Setup Status & Pre-flight:** `GET http://localhost:3000/api/setup/status`
 * **Nginx Health Probe:** `GET http://localhost/healthz`
+
+До подключения пользователей владелец production-среды должен утвердить и
+подключить измерение следующих начальных целей (или заменить их утверждёнными
+организационными значениями):
+
+* API CRUD latency: p50 ≤ 200 ms, p95 ≤ 800 ms, p99 ≤ 1500 ms.
+* Mobile 4G frontend: LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1.
+* Availability SLO: не менее 99.5% в календарный месяц, с отдельно объявленными
+  окнами технического обслуживания.
+
+Readiness считается успешным только при HTTP 200 и `isReady: true`. HTTP 503,
+ошибки миграций и failed backup должны направляться в alerting эксплуатации.
+Минимальный operational monitoring обязан проверять `/healthz` и
+`/api/system/health` с интервалом не более 60 секунд, хранить результаты и
+создавать alert после трёх последовательных неуспешных проверок.
 
 ---
 
