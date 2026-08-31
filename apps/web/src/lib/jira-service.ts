@@ -14,7 +14,7 @@ export type {
   JiraIssueData,
 } from './jira/field-mapping';
 
-export { syncJiraIssues } from './jira/sync';
+export { syncJiraIssues, SrmNotConfiguredError } from './jira/sync';
 export { calculateAdvancedRamsMetrics, calculateSrmMetrics, calculateSrmStats } from './jira/metrics';
 export { notifySrmIncident } from './jira/notifications';
 export { createInternalServiceRequest, createMroWorkOrderFromIssue } from './jira/service-requests';

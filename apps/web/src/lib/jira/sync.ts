@@ -3,6 +3,21 @@ import { logger } from '../logger';
 import { getSystemSettings } from '../system-settings-service';
 import { applyJiraFieldMapping, getJiraFieldMapping, type JiraFieldMappingConfig } from './field-mapping';
 
+/**
+ * Thrown when no active SRM/Jira integration and no legacy env/settings
+ * connection are configured. Callers that auto-trigger a sync on an empty
+ * cache (GET /api/srm/stats, GET /api/srm/issues) treat this as an expected
+ * "SRM not set up yet" state rather than an operational failure, so it must
+ * not be logged at `error` level — see
+ * plans/done/2026-08/2026-08-31-release-readiness-inspection.md §5.
+ */
+export class SrmNotConfiguredError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'SrmNotConfiguredError';
+  }
+}
+
 export async function syncJiraIssues(targetIntegrationId?: string): Promise<{ count: number; source: string }> {
   const allEquipment = await prisma.equipment.findMany({
     select: { id: true, name: true, inventoryNumber: true, serialNumber: true },
@@ -102,7 +117,7 @@ export async function syncJiraIssues(targetIntegrationId?: string): Promise<{ co
   const jql = settings?.jiraJql || process.env.JIRA_JQL || 'project = EMS ORDER BY created DESC';
 
   if (!jiraUrl) {
-    throw new Error('Подключение к Jira / SRM не настроено. Перейдите в раздел Интеграции SRM.');
+    throw new SrmNotConfiguredError('Подключение к Jira / SRM не настроено. Перейдите в раздел Интеграции SRM.');
   }
 
   const authHeader = jiraUser && jiraToken

@@ -5,7 +5,7 @@ import { safeErrorResponse } from '@/lib/safe-error';
 import { logger } from '@/lib/logger';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { PERMISSIONS } from '@ems/shared';
-import { syncJiraIssues, createInternalServiceRequest } from '@/lib/jira-service';
+import { syncJiraIssues, createInternalServiceRequest, SrmNotConfiguredError } from '@/lib/jira-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,7 +31,17 @@ export async function GET(req: NextRequest) {
     // Проверяем наличие записей в кэше, при необходимости инициализируем
     const count = await prisma.jiraIssueCache.count();
     if (count === 0) {
-      await syncJiraIssues();
+      try {
+        await syncJiraIssues();
+      } catch (syncError: unknown) {
+        if (!(syncError instanceof SrmNotConfiguredError)) throw syncError;
+        // Expected state before any SRM integration is configured — not an
+        // operational failure, so no error-level log noise (see
+        // docs/quality/inspections/2026-08-31-release-readiness-inspection.md §5).
+        logger.info('SRM issues requested before any integration is configured', {
+          endpoint: 'srm-issues-get',
+        });
+      }
     }
 
     const where: any = {};
