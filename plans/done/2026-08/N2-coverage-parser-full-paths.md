@@ -1,14 +1,14 @@
 ---
 id: N2
 title: Coverage parser must key files by full path, not basename
-status: active
+status: done
 phase: N
 priority: P0
 risk: medium
 skills: [senior-qa]
 opened: 2026-08-31
-closed: null
-commits: []
+closed: 2026-08-31
+commits: [fix/N2-coverage-parser-full-paths]
 gates: [lint, test]
 ---
 
@@ -82,13 +82,22 @@ the parser is trustworthy — not here.
 
 ## Definition of Done
 
-- [ ] `coveredFiles` contains full repository-relative paths.
-- [ ] Unique key count equals the number of percentage-carrying rows (55 in
+- [x] `coveredFiles` contains full repository-relative paths.
+- [x] Unique key count equals the number of percentage-carrying rows (55 in
       the current suite) — zero collision loss.
-- [ ] Parser unit test covers Node 22 flat output and Node 24 tree output.
-- [ ] `file-access.ts` appears in the covered set.
-- [ ] Full gate green: lint, test.
+- [x] Parser unit test covers Node 22 flat output and Node 24 tree output.
+- [x] `file-access.ts` appears in the covered set.
+- [x] Full gate green: lint, test.
 
 ## Result
 
-_To be filled on close._
+Extracted and exported `parseCoverageOutput()` from the gate. It now supports
+Node 22 flat paths and Node 24 indented trees, reconstructs repository-relative
+paths, normalizes Windows separators, filters only exact header/total rows, and
+retains names such as `file-access.ts`.
+
+The gate compares the number of percentage-bearing data rows with the number of
+unique reconstructed paths and exits non-zero on any collision. Five regression
+tests cover both table shapes, duplicate `route.ts` names, exact header
+filtering, missing totals, and directory-row exclusion. The corrected current
+report contains 56 unique loaded files with zero collision loss.

@@ -1,58 +1,41 @@
 #!/usr/bin/env node
 /**
- * scripts/check-coverage.mjs — coverage gate for EMS-Platform.
+ * Coverage gate for EMS-Platform.
  *
- * Measures two distinct metrics and enforces minimum thresholds:
- *
- *   1. line coverage among loaded files
- *      — the "all files | XX.XX %" figure from Node's
- *        --experimental-test-coverage output.  Meaningful only for files
- *        that were actually imported by at least one test.
- *
- *   2. file-level coverage (охват файлов)
- *      — (files imported by tests) / (all production *.ts/*.tsx files).
- *      This is the metric that exposed the 11.7 % real coverage in the
- *      2026-08-31 inspection; the Node reporter never shows it because it
- *      only lists files it saw.  We compute it ourselves by walking the FS.
- *
- * Thresholds are declared as constants below — the single source of truth.
- * Pass --report to regenerate docs/quality/COVERAGE_BASELINE.md.
- * The Measured-at date is preserved when no metric changes (mirrors the
- * pattern in check-quality-baseline.mjs to avoid spurious CI diffs).
+ * Metrics:
+ * 1. Line coverage among files loaded by at least one test.
+ * 2. File reach: loaded production TypeScript files / all production files.
  *
  * Usage:
- *   node scripts/check-coverage.mjs           # gate only
- *   node scripts/check-coverage.mjs --report  # gate + regenerate baseline doc
+ *   node scripts/check-coverage.mjs
+ *   node scripts/check-coverage.mjs --report
  */
 
 import { spawnSync } from 'node:child_process';
-import { readdirSync, statSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { pathToFileURL } from 'node:url';
 
-// ── Thresholds ──────────────────────────────────────────────────────────────
-// Set after M1 to match the real baseline — ratchet upward as M3–M6 land.
-// Do NOT set these above the actually-measured values: the purpose of this
-// gate is to prevent regression, not to demand untested coverage growth.
+// Corrected N2/N3 baseline measured on Node 24.15.0 on 2026-08-31.
+// Thresholds are floors of measured values and act as a ratchet.
 const THRESHOLDS = {
-  // Line coverage among files that were loaded by at least one test.
-  // Measured after M3 (wave 1+2 route tests): 79.06 %.
-  // Note: loading large route files that are only partially tested (401/403/200
-  // paths) naturally lowers this metric — the denominator grows while many
-  // internal branches remain uncovered.  The ratchet reflects the new baseline.
   lineCoverageAmongLoadedFiles: 78.0,
-  // Fraction of all production files that were loaded by at least one test.
-  // M1 baseline: 20.22 %. M3 (wave 1+2): 21.25 % (78/367 files).
-  // Ratchet: threshold = floor of measured value, never above actual.
   fileCoverageRatio: 21.0,
 };
 
-// ── File-system helpers ──────────────────────────────────────────────────────
-
 const EXCLUDED_DIRS = new Set([
-  'node_modules', '.next', 'dist', '.turbo', '.git', 'coverage',
-  'playwright-report', 'e2e',
+  'node_modules',
+  '.next',
+  'dist',
+  '.turbo',
+  '.git',
+  'coverage',
+  'playwright-report',
+  'e2e',
 ]);
+
+const leafNumberRe = /^[\d.]+$/;
 
 function isProductionFile(filePath) {
   const base = path.basename(filePath);
@@ -60,175 +43,226 @@ function isProductionFile(filePath) {
     (filePath.endsWith('.ts') || filePath.endsWith('.tsx')) &&
     !base.endsWith('.test.ts') &&
     !base.endsWith('.test.tsx') &&
-    !base.endsWith('.d.ts') &&
     !base.endsWith('.spec.ts') &&
-    !base.endsWith('.spec.tsx')
+    !base.endsWith('.spec.tsx') &&
+    !base.endsWith('.d.ts')
   );
 }
 
 function walkProductionFiles(dir, results = []) {
   let entries;
-  try { entries = readdirSync(dir); } catch { return results; }
-  for (const file of entries) {
-    const full = path.join(dir, file);
+  try {
+    entries = readdirSync(dir);
+  } catch {
+    return results;
+  }
+
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry);
     let stat;
-    try { stat = statSync(full); } catch { continue; }
+    try {
+      stat = statSync(fullPath);
+    } catch {
+      continue;
+    }
+
     if (stat.isDirectory()) {
-      if (!EXCLUDED_DIRS.has(file)) walkProductionFiles(full, results);
-    } else if (isProductionFile(full)) {
-      results.push(full);
+      if (!EXCLUDED_DIRS.has(entry)) walkProductionFiles(fullPath, results);
+    } else if (isProductionFile(fullPath)) {
+      results.push(fullPath);
     }
   }
+
   return results;
 }
 
-// ── Run tests with coverage ──────────────────────────────────────────────────
+/**
+ * Parse Node's experimental coverage table.
+ *
+ * Node 22 emits flat repository-relative paths. Node 24 emits an indented
+ * tree whose data rows contain only a leaf name. The reporter prefix is one
+ * character (for example '#' or an info glyph), so removing exactly one
+ * character preserves the indentation used to reconstruct full paths.
+ *
+ * @param {string} rawOutput
+ * @returns {{
+ *   lineCoverageAmongLoaded: number | null,
+ *   coveredFiles: Set<string>,
+ *   parsedDataRowCount: number
+ * }}
+ */
+export function parseCoverageOutput(rawOutput) {
+  const coveredFiles = new Set();
+  const pathStack = [];
+  let lineCoverageAmongLoaded = null;
+  let parsedDataRowCount = 0;
 
-console.log('[check-coverage] Running test suite with --experimental-test-coverage …');
+  for (const line of rawOutput.split('\n')) {
+    if (!line.includes('|')) continue;
 
-const result = spawnSync(
-  process.execPath,
-  ['scripts/test-runner.mjs', '--coverage'],
-  {
+    const cells = line.slice(1).split('|');
+    if (cells.length < 2) continue;
+
+    const rawName = cells[0];
+    const name = rawName.trim();
+    const lineCell = (cells[1] ?? '').trim();
+    const leadingSpaces = rawName.length - rawName.trimStart().length;
+
+    if (!name || name === 'file') continue;
+    if (name === 'all files') {
+      if (leafNumberRe.test(lineCell)) {
+        lineCoverageAmongLoaded = Number.parseFloat(lineCell);
+      }
+      continue;
+    }
+
+    const isDataRow = leafNumberRe.test(lineCell);
+    if (name.includes('/') || name.includes('\\')) {
+      if (isDataRow) {
+        coveredFiles.add(name.replaceAll('\\', '/'));
+        parsedDataRowCount += 1;
+      }
+      continue;
+    }
+
+    const depth = Math.max(0, leadingSpaces - 1);
+    pathStack[depth] = name;
+    pathStack.length = depth + 1;
+
+    if (isDataRow) {
+      coveredFiles.add(pathStack.join('/'));
+      parsedDataRowCount += 1;
+    }
+  }
+
+  return { lineCoverageAmongLoaded, coveredFiles, parsedDataRowCount };
+}
+
+function runCoverageTests() {
+  console.log('[check-coverage] Running tests with experimental coverage...');
+  return spawnSync(process.execPath, ['scripts/test-runner.mjs', '--coverage'], {
     cwd: process.cwd(),
     encoding: 'utf8',
     maxBuffer: 64 * 1024 * 1024,
     env: {
       ...process.env,
-      DATABASE_URL: process.env.DATABASE_URL || 'postgresql://dummy:dummy@localhost:5432/dummy?schema=public',
+      DATABASE_URL:
+        process.env.DATABASE_URL ||
+        'postgresql://dummy:dummy@localhost:5432/dummy?schema=public',
     },
-  },
-);
-
-if (result.error) {
-  console.error('[check-coverage] Failed to spawn test runner:', result.error.message);
-  process.exit(1);
+  });
 }
 
-const rawOutput = (result.stdout || '') + (result.stderr || '');
-
-// Print the raw test output so failures are visible.
-process.stdout.write(rawOutput);
-
-if (result.status !== 0) {
-  console.error('\n[check-coverage] Test suite failed — fix failing tests before checking coverage.');
-  process.exit(1);
-}
-
-// ── Parse coverage report ────────────────────────────────────────────────────
-// Node 22 TAP reporter writes coverage as diagnostic lines:
-//   # file | line % | branch % | funcs % | uncovered lines
-//   # all files | 80.25 | …
-// or with Unicode:
-//   ℹ file | line % | …
-//   ℹ all files | 80.25 | …
-
-const lines = rawOutput.split('\n');
-
-// Collect every covered file path from the coverage table.
-// Lines look like:   # apps/web/src/lib/foo.ts | 85.71 | …
-//                    # packages/auth/src/rbac.ts | 100.00 | …
-const coveredFiles = new Set();
-let lineCoverageAmongLoaded = null;
-
-// Coverage table line pattern (TAP diagnostic with pipe-delimited columns)
-const tableLineRe = /^[#ℹ]\s+(.+?)\s+\|\s+([\d.]+)\s+\|/;
-const allFilesRe = /^[#ℹ]\s+all files\s+\|\s+([\d.]+)/i;
-
-for (const line of lines) {
-  const allMatch = line.match(allFilesRe);
-  if (allMatch) {
-    lineCoverageAmongLoaded = parseFloat(allMatch[1]);
-    continue;
+function assertSuccessfulTestRun(result, rawOutput) {
+  if (result.error) {
+    console.error('[check-coverage] Failed to spawn test runner:', result.error.message);
+    process.exit(1);
   }
-  const fileMatch = line.match(tableLineRe);
-  if (fileMatch) {
-    const filePath = fileMatch[1].trim();
-    // Skip header-like rows
-    if (!filePath.includes('file') || filePath.includes('/')) {
-      if (filePath !== 'all files') {
-        coveredFiles.add(filePath);
-      }
-    }
+
+  process.stdout.write(rawOutput);
+  if (result.status === 0) return;
+
+  console.error('\n[check-coverage] Tests failed; coverage was not evaluated.');
+  process.exit(1);
+}
+
+function assertParserResult(parsed) {
+  if (parsed.lineCoverageAmongLoaded === null) {
+    console.error(
+      '[check-coverage] Could not parse the all-files coverage row.\n' +
+        'Run `node scripts/test-runner.mjs --coverage` and inspect its table.',
+    );
+    process.exit(1);
+  }
+
+  if (parsed.coveredFiles.size !== parsed.parsedDataRowCount) {
+    console.error(
+      `[check-coverage] Parser collision: ${parsed.parsedDataRowCount} data rows ` +
+        `produced ${parsed.coveredFiles.size} unique paths.`,
+    );
+    process.exit(1);
   }
 }
 
-if (lineCoverageAmongLoaded === null) {
-  console.error(
-    '[check-coverage] Could not parse line coverage from test output.\n' +
-    'Make sure Node 22 is used and --experimental-test-coverage is active.\n' +
-    'Tip: run `node scripts/test-runner.mjs --coverage` manually to inspect output.',
-  );
-  process.exit(1);
+function calculateMetrics(parsed) {
+  const allProductionFiles = [
+    ...walkProductionFiles('packages'),
+    ...walkProductionFiles(path.join('apps', 'web', 'src')),
+  ];
+  const totalFiles = allProductionFiles.length;
+  const loadedFiles = parsed.coveredFiles.size;
+  const fileCoverageRatio = totalFiles === 0 ? 0 : (loadedFiles / totalFiles) * 100;
+
+  return {
+    lineCoverageAmongLoaded: parsed.lineCoverageAmongLoaded,
+    fileCoverageRatio,
+    loadedFiles,
+    totalFiles,
+  };
 }
 
-// ── Count all production files ───────────────────────────────────────────────
-const allProductionFiles = [
-  ...walkProductionFiles('packages'),
-  ...walkProductionFiles(path.join('apps', 'web', 'src')),
-];
-const totalFiles = allProductionFiles.length;
-const loadedFiles = coveredFiles.size;
-const fileCoverageRatio = totalFiles > 0 ? (loadedFiles / totalFiles) * 100 : 0;
-
-// ── Gate checks ──────────────────────────────────────────────────────────────
-const checks = [
-  {
-    label: 'Line coverage among loaded files',
-    actual: lineCoverageAmongLoaded,
-    threshold: THRESHOLDS.lineCoverageAmongLoadedFiles,
-    unit: '%',
-    passed: lineCoverageAmongLoaded >= THRESHOLDS.lineCoverageAmongLoadedFiles,
-  },
-  {
-    label: 'File-level coverage (охват файлов)',
-    actual: parseFloat(fileCoverageRatio.toFixed(2)),
-    threshold: THRESHOLDS.fileCoverageRatio,
-    unit: '%',
-    passed: fileCoverageRatio >= THRESHOLDS.fileCoverageRatio,
-  },
-];
-
-let failed = false;
-console.log('\n[check-coverage] Results:');
-for (const c of checks) {
-  const status = c.passed ? '✓' : '✗';
-  console.log(
-    `  ${status} ${c.label}: ${c.actual}${c.unit}  (threshold: ≥ ${c.threshold}${c.unit})`,
-  );
-  if (!c.passed) failed = true;
+function evaluateChecks(metrics) {
+  return [
+    {
+      label: 'Line coverage among loaded files',
+      actual: metrics.lineCoverageAmongLoaded,
+      threshold: THRESHOLDS.lineCoverageAmongLoadedFiles,
+      passed:
+        metrics.lineCoverageAmongLoaded >= THRESHOLDS.lineCoverageAmongLoadedFiles,
+    },
+    {
+      label: 'File-level coverage',
+      actual: Number.parseFloat(metrics.fileCoverageRatio.toFixed(2)),
+      threshold: THRESHOLDS.fileCoverageRatio,
+      passed: metrics.fileCoverageRatio >= THRESHOLDS.fileCoverageRatio,
+    },
+  ];
 }
-console.log(`\n  Loaded files:      ${loadedFiles}`);
-console.log(`  Total prod files:  ${totalFiles}`);
 
-// ── Optional: regenerate COVERAGE_BASELINE.md ────────────────────────────────
-const rawArgs = process.argv.slice(2);
-const isReportMode = rawArgs.includes('--report');
+function printResults(checks, metrics) {
+  console.log('\n[check-coverage] Results:');
+  for (const check of checks) {
+    const status = check.passed ? 'PASS' : 'FAIL';
+    console.log(
+      `  ${status} ${check.label}: ${check.actual}% ` +
+        `(threshold: >= ${check.threshold}%)`,
+    );
+  }
+  console.log(`\n  Loaded files:      ${metrics.loadedFiles}`);
+  console.log(`  Total prod files:  ${metrics.totalFiles}`);
+}
 
-if (isReportMode) {
-  const reportPath = path.join('docs', 'quality', 'COVERAGE_BASELINE.md');
+function baselineDate(reportPath, metrics) {
   const today = new Date().toISOString().slice(0, 10);
+  if (!existsSync(reportPath)) return today;
 
-  // Preserve the date when metrics are unchanged (avoids spurious CI diffs).
-  let measuredAt = today;
-  if (existsSync(reportPath)) {
-    const existing = readFileSync(reportPath, 'utf8');
-    const dateMatch = existing.match(/\*\*Measured at:\*\* (\d{4}-\d{2}-\d{2})/);
-    const oldLine = existing.match(/Line coverage.*?(\d+\.\d+)%/);
-    const oldFile = existing.match(/File-level coverage.*?(\d+\.\d+)%/);
-    const metricsUnchanged =
-      oldLine && parseFloat(oldLine[1]) === lineCoverageAmongLoaded &&
-      oldFile && parseFloat(oldFile[1]) === parseFloat(fileCoverageRatio.toFixed(2));
-    if (dateMatch && metricsUnchanged) {
-      measuredAt = dateMatch[1];
-    }
-  }
+  const existing = readFileSync(reportPath, 'utf8');
+  const dateMatch = existing.match(/\*\*Measured at:\*\* (\d{4}-\d{2}-\d{2})/);
+  const oldLine = existing.match(/Line coverage.*?(\d+\.\d+) %/);
+  const oldFile = existing.match(/File-level coverage.*?(\d+\.\d+) %/);
+  const unchanged =
+    oldLine &&
+    Number.parseFloat(oldLine[1]) === metrics.lineCoverageAmongLoaded &&
+    oldFile &&
+    Number.parseFloat(oldFile[1]) ===
+      Number.parseFloat(metrics.fileCoverageRatio.toFixed(2));
 
-  const report = `# Coverage Baseline — EMS-Platform
+  return dateMatch && unchanged ? dateMatch[1] : today;
+}
+
+function renderBaseline(metrics) {
+  const reportPath = path.join('docs', 'quality', 'COVERAGE_BASELINE.md');
+  const measuredAt = baselineDate(reportPath, metrics);
+  const zeroFiles = metrics.totalFiles - metrics.loadedFiles;
+  const zeroRatio =
+    metrics.totalFiles === 0 ? 0 : (zeroFiles / metrics.totalFiles) * 100;
+
+  return `# Coverage Baseline - EMS-Platform
 
 > **Auto-generated.** Do not edit manually.
 > Regenerate: \`node scripts/check-coverage.mjs --report\`
 > Requires: \`pnpm install --frozen-lockfile && pnpm db:generate\`
+> Measured on Node ${process.versions.node}; use \`.nvmrc\` for reproducibility.
 
 **Measured at:** ${measuredAt}
 
@@ -236,53 +270,75 @@ if (isReportMode) {
 
 | Metric | Value | Threshold | Status |
 |---|---:|---:|---|
-| Line coverage among loaded files | ${lineCoverageAmongLoaded.toFixed(2)} % | ≥ ${THRESHOLDS.lineCoverageAmongLoadedFiles} % | ${lineCoverageAmongLoaded >= THRESHOLDS.lineCoverageAmongLoadedFiles ? '✓' : '✗'} |
-| File-level coverage (охват файлов) | ${fileCoverageRatio.toFixed(2)} % | ≥ ${THRESHOLDS.fileCoverageRatio} % | ${fileCoverageRatio >= THRESHOLDS.fileCoverageRatio ? '✓' : '✗'} |
+| Line coverage among loaded files | ${metrics.lineCoverageAmongLoaded.toFixed(2)} % | >= ${THRESHOLDS.lineCoverageAmongLoadedFiles} % | ${metrics.lineCoverageAmongLoaded >= THRESHOLDS.lineCoverageAmongLoadedFiles ? 'PASS' : 'FAIL'} |
+| File-level coverage | ${metrics.fileCoverageRatio.toFixed(2)} % | >= ${THRESHOLDS.fileCoverageRatio} % | ${metrics.fileCoverageRatio >= THRESHOLDS.fileCoverageRatio ? 'PASS' : 'FAIL'} |
 
 ## Detail
 
-- **Files loaded by tests:** ${loadedFiles}
-- **Total production files:** ${totalFiles} (all \`.ts\`/\`.tsx\` excluding \`.test.\`, \`.spec.\`, \`.d.ts\`)
-- **Files with zero coverage:** ${totalFiles - loadedFiles} (${(((totalFiles - loadedFiles) / totalFiles) * 100).toFixed(1)} %)
+- **Files loaded by tests:** ${metrics.loadedFiles}
+- **Total production files:** ${metrics.totalFiles} (all \`.ts\`/\`.tsx\` excluding tests, specs, and declarations)
+- **Files with zero coverage:** ${zeroFiles} (${zeroRatio.toFixed(1)} %)
 
-### What these metrics mean
+## Metric interpretation
 
-**Line coverage among loaded files** is what Node's \`--experimental-test-coverage\`
-reports as "all files | line %". It only counts lines inside files that were
-imported by at least one test; files never imported are excluded from the
-denominator and therefore do not appear in this number.
+**Line coverage among loaded files** is Node's \`all files\` line percentage.
+Files never imported by a test are absent from this denominator.
 
-**File-level coverage** is computed by dividing the count of files that appeared
-in the coverage report by the total count of production TypeScript files on disk.
-This is the true indicator of test *reach*: at 11.7 % (2026-08-31 baseline), a
-green \`pnpm test\` offered no protection for 88 % of files.
+**File-level coverage** measures test reach: the number of production TypeScript
+files present in the coverage table divided by all production TypeScript files.
 
-These two metrics together prevent two different forms of regression:
-- Reducing line coverage *within* tested files (metric 1).
-- Removing or disabling tests that caused previously-loaded files to drop out
-  of coverage (metric 2).
+Together these metrics prevent regressions both inside tested files and in the
+number of production files reached by tests.
+
+## Parser correctness
+
+Before N2, files were keyed by basename, so duplicate names such as \`route.ts\`
+collided. The parser now reconstructs full repository-relative paths for Node
+24's tree output, supports Node 22's flat output, preserves names containing
+\`file\`, and fails if parsed data rows collapse into fewer unique paths.
+
+See [\`check-coverage.mjs\`](../../scripts/check-coverage.mjs),
+[the parser regression test](../../apps/web/src/lib/__tests__/check-coverage-parser.test.ts),
+and [the coverage audit](inspections/2026-08-31-coverage-quality-audit.md).
 
 ## Thresholds
 
-Thresholds are declared as constants in
-[\`scripts/check-coverage.mjs\`](../../scripts/check-coverage.mjs) — the single
-source of truth. They are set as a ratchet: raise them when coverage improves,
-never lower them.
-
-| Story | Expected improvement |
-|---|---|
-| M1 (done) | +8 files discovered → охват файлов ≥ 14 % |
-| M3 | +85 API route files → охват файлов ≥ 35 % |
-| M6 | +UI components → охват файлов ≥ 50 % |
+Thresholds are declared in [\`scripts/check-coverage.mjs\`](../../scripts/check-coverage.mjs).
+They are a ratchet: raise them when coverage improves and do not lower them for
+ordinary changes.
 `;
+}
 
-  writeFileSync(reportPath, report, 'utf8');
+function writeBaselineIfRequested(metrics) {
+  if (!process.argv.slice(2).includes('--report')) return;
+
+  const reportPath = path.join('docs', 'quality', 'COVERAGE_BASELINE.md');
+  writeFileSync(reportPath, renderBaseline(metrics), 'utf8');
   console.log(`\n[check-coverage] Report written to ${reportPath}`);
 }
 
-if (failed) {
-  console.error('\n[check-coverage] Coverage gate FAILED — thresholds not met.');
-  process.exit(1);
-} else {
-  console.log('\n[check-coverage] Coverage gate PASSED ✓');
+function main() {
+  const result = runCoverageTests();
+  const rawOutput = (result.stdout || '') + (result.stderr || '');
+  assertSuccessfulTestRun(result, rawOutput);
+
+  const parsed = parseCoverageOutput(rawOutput);
+  assertParserResult(parsed);
+
+  const metrics = calculateMetrics(parsed);
+  const checks = evaluateChecks(metrics);
+  printResults(checks, metrics);
+  writeBaselineIfRequested(metrics);
+
+  if (checks.some((check) => !check.passed)) {
+    console.error('\n[check-coverage] Coverage gate FAILED.');
+    process.exit(1);
+  }
+
+  console.log('\n[check-coverage] Coverage gate PASSED.');
 }
+
+const isMainModule =
+  Boolean(process.argv[1]) && import.meta.url === pathToFileURL(process.argv[1]).href;
+
+if (isMainModule) main();
