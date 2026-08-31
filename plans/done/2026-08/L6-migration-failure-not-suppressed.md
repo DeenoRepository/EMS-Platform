@@ -8,7 +8,7 @@ risk: medium
 skills: [docker-development, senior-backend]
 opened: 2026-08-31
 closed: 2026-08-31
-commits: [pending]
+commits: [ce2f0d0]
 gates: [test, lint, tsc, build, check:quality, check:docs]
 ---
 
