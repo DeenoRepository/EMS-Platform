@@ -10,6 +10,7 @@ met, promote the item: create `plans/active/<id>-<slug>.md` from
 |---|---|---|---|
 | D | Broader type-safety pass (remove remaining `unknown`/`any` at external JSON boundaries) | Next time a bug traces back to an untyped SRM/Jira/WMS API boundary | Do not run as a repository-wide sweep. `D.1` and `D.4` (GitLab/Redmine `testConnection()` narrowing) are already closed — see `plans/done/2026-08/`. Pick one adjacent boundary at a time. |
 | J4 | Redis-backed rate limit store | Only when planning a multi-instance deployment | Single-instance `InMemoryRateLimitStore` in [`apps/web/src/lib/rate-limit.ts`](../apps/web/src/lib/rate-limit.ts) is correct as-is for one node; this is not a defect. Must implement the same store interface, default to `memory`, fail-open on Redis unavailability with `logger.error`. |
+| L5 | Согласовать правило об F-grade файлах с фактической практикой | При следующем пересмотре порогов качества | [`AGENTS.md`](../AGENTS.md) требует рефакторинга **всех** F-файлов до слияния в main, но порог в [`check-quality-baseline.mjs`](../scripts/check-quality-baseline.mjs) допускает их ненулевое количество, и гейт зелёный. Правило и гейт противоречат друг другу: либо норму смягчить до «не увеличивать количество», либо снижать порог до нуля поэтапно. Не менять пороги в отрыве от этого решения. Текущие значения — в [`QUALITY_BASELINE.md`](../docs/quality/QUALITY_BASELINE.md). |
 
 ---
 

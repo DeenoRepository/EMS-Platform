@@ -22,9 +22,14 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (0)
+## Active (4)
 
-_No active stories._
+| ID | Title | Phase | Priority | Risk | Skills | Opened |
+|---|---|---|---|---|---|---|
+| [L1](active/L1-env-validate-runtime-wiring.md) | Подключить валидацию окружения к рантайму приложения | L | P0 | medium | senior-security, senior-backend, zero-hallucination-coder | 2026-08-31 |
+| [L2](active/L2-prisma-migration-baseline.md) | Ввести версионированные миграции БД вместо db push | L | P0 | high | database-schema-designer, senior-backend, zero-hallucination-coder | 2026-08-31 |
+| [L3](active/L3-backup-scheduling-and-restore.md) | Автоматизировать резервное копирование и проверить восстановление | L | P1 | medium | docker-development, senior-secops | 2026-08-31 |
+| [L4](active/L4-e2e-smoke-coverage.md) | Добавить E2E smoke-покрытие критических пользовательских сценариев | L | P2 | low | playwright-pro, senior-qa | 2026-08-31 |
 
 ---
 
