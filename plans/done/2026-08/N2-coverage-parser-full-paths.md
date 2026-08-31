@@ -16,7 +16,7 @@ gates: [lint, test]
 
 ## Problem
 
-[`check-coverage.mjs:131-154`](../../scripts/check-coverage.mjs:131) builds
+[`check-coverage.mjs:131-154`](../../../scripts/check-coverage.mjs:131) builds
 the `coveredFiles` set from Node's TAP coverage table. Under Node 24 that
 table is rendered as an **indented tree**, not as full paths:
 
@@ -28,7 +28,7 @@ table is rendered as an **indented tree**, not as full paths:
 ℹ        route.ts                        |  31.02 |    73.53 |   73.33 | …
 ```
 
-The regex at [`:135`](../../scripts/check-coverage.mjs:135) therefore
+The regex at [`:135`](../../../scripts/check-coverage.mjs:135) therefore
 captures `route.ts`, and the `Set` collapses every same-named file into one
 entry. Measured against the real output:
 
@@ -47,16 +47,16 @@ and it is **insensitive to progress**: adding a second tested `route.ts`
 cannot move the numerator.
 
 Separately, the guard at
-[`:148`](../../scripts/check-coverage.mjs:148) —
+[`:148`](../../../scripts/check-coverage.mjs:148) —
 `!filePath.includes('file') || filePath.includes('/')` — drops any file
 whose name contains the substring `file`. It was meant to skip the `file`
 column header and instead silently discards production files.
 
-See [inspection §3.2](../../docs/quality/inspections/2026-08-31-coverage-quality-audit.md).
+See [inspection §3.2](../../../docs/quality/inspections/2026-08-31-coverage-quality-audit.md).
 
 ## Scope
 
-Changes: [`scripts/check-coverage.mjs`](../../scripts/check-coverage.mjs)
+Changes: [`scripts/check-coverage.mjs`](../../../scripts/check-coverage.mjs)
 parsing logic, plus a unit test for the parser.
 
 Explicitly NOT changing: the two metric definitions, the threshold ratchet

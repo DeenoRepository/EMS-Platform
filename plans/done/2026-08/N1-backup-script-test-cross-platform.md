@@ -16,7 +16,7 @@ gates: [lint, tsc, test]
 
 ## Problem
 
-[`backup-script.test.ts`](../../apps/web/src/lib/__tests__/backup-script.test.ts)
+[`backup-script.test.ts`](../../../apps/web/src/lib/__tests__/backup-script.test.ts)
 fails both of its checks on Windows, which makes `pnpm test` and therefore
 `node scripts/check-coverage.mjs` exit non-zero on a clean tree:
 
@@ -29,25 +29,25 @@ fails both of its checks on Windows, which makes `pnpm test` and therefore
 
 Two root causes:
 
-1. [`backup-script.test.ts:40`](../../apps/web/src/lib/__tests__/backup-script.test.ts:40)
-   and [`:69`](../../apps/web/src/lib/__tests__/backup-script.test.ts:69)
+1. [`backup-script.test.ts:40`](../../../apps/web/src/lib/__tests__/backup-script.test.ts:40)
+   and [`:69`](../../../apps/web/src/lib/__tests__/backup-script.test.ts:69)
    hard-code the POSIX `PATH` separator: `${mockBinDir}:${process.env.PATH}`.
    On Windows the separator is `;`, so the mock `docker`/`pg_dumpall` are
    never found and the real script fails.
 2. `chmodSync(filePath, 0o755)` at
-   [`:22`](../../apps/web/src/lib/__tests__/backup-script.test.ts:22) is a
+   [`:22`](../../../apps/web/src/lib/__tests__/backup-script.test.ts:22) is a
    no-op on NTFS; and `rmSync` on the temp dir races with the still-open
    `bash` child handle, producing `EPERM`.
 
 The test is genuinely valuable (it executes the real `backup.sh`), so the
 answer is to make it correct, not to delete it. See
-[inspection §3.1](../../docs/quality/inspections/2026-08-31-coverage-quality-audit.md).
+[inspection §3.1](../../../docs/quality/inspections/2026-08-31-coverage-quality-audit.md).
 
 ## Scope
 
 Changes: the test file only.
 
-Explicitly NOT changing: [`scripts/backup.sh`](../../scripts/backup.sh)
+Explicitly NOT changing: [`scripts/backup.sh`](../../../scripts/backup.sh)
 behaviour, the assertions themselves (fail-closed semantics stay verified),
 or the CI workflow.
 
