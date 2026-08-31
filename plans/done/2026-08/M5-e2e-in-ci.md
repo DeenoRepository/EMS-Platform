@@ -17,10 +17,10 @@ gates: [test, lint, tsc, check:docs]
 ## Problem
 
 E2E-инфраструктура создана story `L4`:
-[`playwright.config.ts`](../../apps/web/playwright.config.ts), `global-setup`
+[`playwright.config.ts`](../../../apps/web/playwright.config.ts), `global-setup`
 с provisioning эфемерной БД, 9 проверок в трёх спеках (`login`,
 `module-access`, `equipment-create`). Но `test:e2e` **не вызывается ни в
-одном шаге** [`ci.yml`](../../.github/workflows/ci.yml) — проверено
+одном шаге** [`ci.yml`](../../../.github/workflows/ci.yml) — проверено
 поиском по workflow.
 
 Непрогоняемый E2E-набор деградирует: селекторы разъезжаются, сценарии
@@ -29,7 +29,7 @@ E2E-инфраструктура создана story `L4`:
 
 Причина, по которой шаг не добавили, объективна: нужны живой PostgreSQL и
 предварительный `pnpm build` (см. комментарий
-[`playwright.config.ts:10-15`](../../apps/web/playwright.config.ts:10)).
+[`playwright.config.ts:10-15`](../../../apps/web/playwright.config.ts:10)).
 В GitHub Actions это решается сервисным контейнером, а не отказом от
 запуска.
 
@@ -39,16 +39,16 @@ E2E-инфраструктура создана story `L4`:
 повреждения данных.
 
 Выявлено инспекцией
-[`2026-08-31-test-coverage-inspection.md`](../../docs/quality/inspections/2026-08-31-test-coverage-inspection.md) §3.4.
+[`2026-08-31-test-coverage-inspection.md`](../../../docs/quality/inspections/2026-08-31-test-coverage-inspection.md) §3.4.
 
 ## Scope
 
-**Изменяется:** [`ci.yml`](../../.github/workflows/ci.yml) — сервис
+**Изменяется:** [`ci.yml`](../../../.github/workflows/ci.yml) — сервис
 PostgreSQL и шаг E2E; добавляются спеки на сценарии записи.
 
 **Не изменяется:**
 - Разделение раннеров: E2E не попадает в `pnpm test`
-  ([`playwright.config.ts:6-7`](../../apps/web/playwright.config.ts:6)).
+  ([`playwright.config.ts:6-7`](../../../apps/web/playwright.config.ts:6)).
 - Прикладной код. Добавление `data-testid` для стабильных селекторов
   допустимо — изменение поведения нет (то же ограничение, что в `L4`).
 - Матрица браузеров: остаётся только `chromium`. Кросс-браузерность — не
@@ -59,7 +59,7 @@ PostgreSQL и шаг E2E; добавляются спеки на сценари�
 1. Добавить в job `validate` (или в отдельный job с зависимостью от
    сборки) сервис `postgres:16` с healthcheck; пробросить
    `E2E_DB_*`-переменные, ожидаемые
-   [`playwright.config.ts:66`](../../apps/web/playwright.config.ts:66).
+   [`playwright.config.ts:66`](../../../apps/web/playwright.config.ts:66).
 2. Установить браузеры: `pnpm --filter @ems/web exec playwright install --with-deps chromium`
    с кэшированием.
 3. Добавить шаг `pnpm --filter @ems/web test:e2e` **после** `pnpm build`.

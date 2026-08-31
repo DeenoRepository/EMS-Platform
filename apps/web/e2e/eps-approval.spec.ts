@@ -42,35 +42,28 @@ test.describe('EPS equipment approval write lifecycle', () => {
 
     // Step 2: Navigate to the approvals list and find our pending item.
     await page.goto('/eps/approvals');
-    await expect(page.getByRole('heading', { name: /согласования|approvals/i })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: 'Согласование изменений оборудования' })).toBeVisible({ timeout: 10_000 });
 
     // Look for the equipment name in the approvals queue.
     // The approval row should be visible — click to open or act on it.
     const approvalRow = page.getByText(uniqueName).first();
     await expect(approvalRow).toBeVisible({ timeout: 10_000 });
 
-    // Step 3: Approve the request. The approve action button may be in-row or
-    // available after clicking into the approval detail. Try the in-row button first.
-    const approveBtn = page.getByRole('button', { name: /согласовать|approve/i }).first();
-    if (await approveBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await approveBtn.click();
-      // Confirmation dialog may appear.
-      const confirmBtn = page.getByRole('button', { name: /подтвердить|да|confirm|yes/i });
-      if (await confirmBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
-        await confirmBtn.click();
-      }
-    } else {
-      // Click the row to open the approval detail page.
-      await approvalRow.click();
-      await page.getByRole('button', { name: /согласовать|approve/i }).click();
-    }
+    // Step 3: Open the decision dialog from the specific approval row and
+    // approve through its explicit action. Scoping avoids the sortable
+    // "Решение / автор" column-header button.
+    const approvalTableRow = page.getByRole('row').filter({ hasText: uniqueName });
+    await approvalTableRow.getByRole('button', { name: 'Решение', exact: true }).click();
+    await expect(page.getByText('Рассмотрение заявки на согласование')).toBeVisible();
+    await page.getByRole('button', { name: 'Утвердить' }).click();
+
+    // Wait for the registry to refetch and reflect the saved decision before
+    // navigating away; otherwise the test can race the PATCH request.
+    await expect(page.getByText('Утверждено').first()).toBeVisible({ timeout: 10_000 });
 
     // Step 4: Navigate back to the equipment passport and verify approved status.
     await page.goto(equipmentUrl);
-    // The status badge or chip should reflect the approved state.
-    await expect(
-      page.getByText(/согласовано|approved|утверждено/i).first()
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/в работе|согласовано|approved|утверждено/i).first()).toBeVisible({ timeout: 10_000 });
   });
 
   test('guest user cannot approve equipment requests (RBAC denial)', async ({ page }) => {

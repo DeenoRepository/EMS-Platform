@@ -16,7 +16,7 @@ gates: [test, lint, tsc, check:docs]
 
 ## Problem
 
-[`scripts/test-runner.mjs:27-30`](../../scripts/test-runner.mjs:27) собирал
+[`scripts/test-runner.mjs:27-30`](../../../scripts/test-runner.mjs:27) собирал
 список файлов из **двух** директорий:
 
 ```js
@@ -31,11 +31,11 @@ const testFiles = [
 тогда как на диске их 224.
 
 Выявлено инспекцией
-[`2026-08-31-test-coverage-inspection.md`](../../docs/quality/inspections/2026-08-31-test-coverage-inspection.md) §3.1.
+[`2026-08-31-test-coverage-inspection.md`](../../../docs/quality/inspections/2026-08-31-test-coverage-inspection.md) §3.1.
 
 ## Scope
 
-**Изменён:** [`scripts/test-runner.mjs`](../../scripts/test-runner.mjs) —
+**Изменён:** [`scripts/test-runner.mjs`](../../../scripts/test-runner.mjs) —
 автообнаружение тестов по всему монорепозиторию.
 
 ## Result
@@ -48,6 +48,6 @@ const testFiles = [
   так что тесты роутов видят `@/`-алиасы.
 - ✅ E2E-файлы из `apps/web/e2e/` в прогон не попали.
 - ✅ Соглашение о размещении тестов задокументировано в
-  [`scripts/README.md`](../../scripts/README.md).
+  [`scripts/README.md`](../../../scripts/README.md).
 - ✅ Все 8 «ожившых» тестов прошли без изменений production-кода.
 - ✅ `check:docs` зелёный.

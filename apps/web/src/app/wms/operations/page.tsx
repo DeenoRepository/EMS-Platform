@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback, Suspense, useMemo } from 'react';
-import { Box, Grid } from '@mui/material';
+import { Box, Grid, Button } from '@mui/material';
 import { useSearchParams, useRouter } from 'next/navigation';
 import PageHeader from '@/components/layout/PageHeader';
 import MoveToInboxIcon from '@mui/icons-material/MoveToInbox';
@@ -22,6 +22,7 @@ import {
   type TableColumnOption,
   type TabItem,
 } from '@/components/ui';
+import AddIcon from '@mui/icons-material/Add';
 import {
   WmsOperationWizardDialog,
   WarehouseSelect,
@@ -237,6 +238,17 @@ function WmsOperationsContent() {
       <PageHeader
         title="Складские операции и перемещения"
         subtitle="Реестр приходов, списаний, выдачи в подотчет и межскладских трансферов ТМЦ"
+        actions={
+          activeMainTab === 'transfers' && canCreate ? (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setIsRequestDialogOpen(true)}
+            >
+              Создать перемещение
+            </Button>
+          ) : undefined
+        }
       />
 
       <Box sx={{ mb: 2.5 }}>

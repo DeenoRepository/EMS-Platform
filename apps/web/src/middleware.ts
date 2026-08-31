@@ -35,6 +35,11 @@ async function isSetupCompleted(): Promise<boolean> {
     const res = await fetch(url, {
       method: 'GET',
       cache: 'no-store',
+      headers: {
+        // Internal middleware probes must not consume the public per-IP setup
+        // quota shared by real browser requests and E2E login navigations.
+        'x-forwarded-for': '127.0.0.2',
+      },
     });
     if (res.ok) {
       const data = await res.json();

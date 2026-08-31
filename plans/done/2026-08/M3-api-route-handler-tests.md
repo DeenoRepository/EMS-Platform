@@ -35,4 +35,4 @@ gates: [test, lint, tsc, check:docs]
 - ✅ Ни один тест не открывает соединение с PostgreSQL.
 - ✅ Тестов: 240/240 проходят (было 234 до wave 2).
 - ✅ Покрытие файлов: 21.25 % (78/367), порог ≥ 21 %, зафиксирован в
-  [`docs/quality/COVERAGE_BASELINE.md`](../../docs/quality/COVERAGE_BASELINE.md).
+  [`docs/quality/COVERAGE_BASELINE.md`](../../../docs/quality/COVERAGE_BASELINE.md).

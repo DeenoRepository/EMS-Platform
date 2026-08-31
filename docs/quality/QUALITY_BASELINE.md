@@ -21,13 +21,13 @@ latest dated snapshot in [`docs/quality/inspections/`](inspections/).
 
 ### `apps/web/src`
 
-Files analyzed: **372**
+Files analyzed: **383**
 
 | Metric | Actual | Threshold | Status |
 |---|---:|---:|---|
-| Average score | 84.2 | >= 80 | ✅ PASS |
-| F-grade files | 22 | <= 34 | ✅ PASS |
-| Code smells | 2349 | <= 2400 | ✅ PASS |
+| Average score | 84.5 | >= 80 | ✅ PASS |
+| F-grade files | 23 | <= 34 | ✅ PASS |
+| Code smells | 2393 | <= 2400 | ✅ PASS |
 | SOLID violations | 24 | <= 25 | ✅ PASS |
 
 ### `packages`
@@ -36,9 +36,9 @@ Files analyzed: **30**
 
 | Metric | Actual | Threshold | Status |
 |---|---:|---:|---|
-| Average score | 94.1 | >= 94 | ✅ PASS |
+| Average score | 96.1 | >= 94 | ✅ PASS |
 | F-grade files | 0 | <= 0 | ✅ PASS |
-| Code smells | 74 | <= 75 | ✅ PASS |
+| Code smells | 48 | <= 75 | ✅ PASS |
 | SOLID violations | 0 | <= 0 | ✅ PASS |
 
 ---

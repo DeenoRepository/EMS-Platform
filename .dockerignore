@@ -8,7 +8,11 @@ apps/web/node_modules
 packages/*/node_modules
 .pnpm-store
 .next
+apps/*/.next
+packages/*/.next
 .turbo
+apps/*/.turbo
+packages/*/.turbo
 dist
 build
 *.tsbuildinfo

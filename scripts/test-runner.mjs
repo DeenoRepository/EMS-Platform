@@ -23,11 +23,20 @@ const EXCLUDED_DIRS = new Set([
   'coverage',
   'playwright-report',
   // E2E specs need a live Postgres + production build — excluded from pnpm test.
-  // See apps/web/playwright.config.ts and plans/active/M5-e2e-in-ci.md.
+  // See apps/web/playwright.config.ts and plans/done/2026-08/M5-e2e-in-ci.md.
   'e2e',
 ]);
 
+// React component tests use Vitest + jsdom and must not be loaded by Node's
+// native test runner. They are executed separately by `test:components` in CI.
+const EXCLUDED_TEST_ROOTS = new Set([
+  path.normalize(path.join('apps', 'web', 'src', 'components', 'ui', '__tests__')),
+]);
+
 function findTestFiles(dir) {
+  if (EXCLUDED_TEST_ROOTS.has(path.normalize(dir))) {
+    return [];
+  }
   const results = [];
   let entries;
   try {
@@ -54,11 +63,11 @@ function findTestFiles(dir) {
   return results;
 }
 
-// Discover every *.test.ts / *.test.tsx across the whole monorepo, excluding
-// directories that can never contain runnable unit tests (e2e, build outputs,
-// package manager caches).  This replaces the former two-directory hard-list
-// that silently missed tests placed next to their modules — see
-// plans/active/M1-test-runner-discovers-all-tests.md for the original defect.
+// Discover every Node-compatible *.test.ts / *.test.tsx across the monorepo,
+// excluding tests owned by dedicated runners (Playwright E2E and Vitest React
+// components) plus build outputs and package-manager caches. This replaces the
+// former two-directory hard-list that silently missed co-located tests — see
+// plans/done/2026-08/M1-test-runner-discovers-all-tests.md.
 const testFiles = [
   ...findTestFiles('packages'),
   ...findTestFiles(path.join('apps', 'web', 'src')),

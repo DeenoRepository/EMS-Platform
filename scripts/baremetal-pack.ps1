@@ -68,9 +68,9 @@ Copy-Item "scripts\ems-baremetal.nginx.conf" "$PackageDir\scripts\ems-baremetal.
 Copy-Item "scripts\backup.sh" "$PackageDir\scripts\backup.sh"
 Copy-Item "scripts\backup.ps1" "$PackageDir\scripts\backup.ps1"
 
-if (Test-Path "docs\BAREMETAL_OFFLINE_DEPLOYMENT.md") {
-    Copy-Item "docs\BAREMETAL_OFFLINE_DEPLOYMENT.md" "$PackageDir\docs\"
-    Copy-Item "docs\BAREMETAL_OFFLINE_DEPLOYMENT.md" "$PackageDir\README.md"
+if (Test-Path "docs\operations\BAREMETAL_OFFLINE_DEPLOYMENT.md") {
+    Copy-Item "docs\operations\BAREMETAL_OFFLINE_DEPLOYMENT.md" "$PackageDir\docs\"
+    Copy-Item "docs\operations\BAREMETAL_OFFLINE_DEPLOYMENT.md" "$PackageDir\README.md"
 }
 
 # 5. Compress

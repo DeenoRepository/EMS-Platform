@@ -22,11 +22,11 @@ gates: [test, lint, tsc, check:docs]
 «193 passing» есть, защиты от регрессий нет.
 
 Наиболее показательный случай —
-[`packages/auth/src/eps-import.test.ts`](../../packages/auth/src/eps-import.test.ts):
+[`packages/auth/src/eps-import.test.ts`](../../../packages/auth/src/eps-import.test.ts):
 файл объявляет собственные `normalizeHeader()`, `matchColumn()`,
 `validateImportRow()` и таблицу `KNOWN_BASE_RULES` с алиасами колонок. Ни
 одного импорта из приложения. При этом настоящая реализация живёт в
-[`eps-import-matcher.ts`](../../apps/web/src/lib/eps-import-matcher.ts) и
+[`eps-import-matcher.ts`](../../../apps/web/src/lib/eps-import-matcher.ts) и
 покрыта нулём тестов. Если правило сопоставления колонок изменят в
 production-коде — тест не заметит.
 
@@ -34,20 +34,20 @@ production-коде — тест не заметит.
 
 | Файл | Локальных функций | Импортов из приложения |
 |---|---:|---:|
-| [`packages/auth/src/eps-import.test.ts`](../../packages/auth/src/eps-import.test.ts) | 4 | 0 |
-| [`lib/__tests__/backup-script.test.ts`](../../apps/web/src/lib/__tests__/backup-script.test.ts) | 2 | 0 |
-| [`packages/auth/src/wms.test.ts`](../../packages/auth/src/wms.test.ts) | 6 | частично |
-| [`packages/auth/src/mro.test.ts`](../../packages/auth/src/mro.test.ts) | 2 | частично |
+| [`packages/auth/src/eps-import.test.ts`](../../../packages/auth/src/eps-import.test.ts) | 4 | 0 |
+| [`lib/__tests__/backup-script.test.ts`](../../../apps/web/src/lib/__tests__/backup-script.test.ts) | 2 | 0 |
+| [`packages/auth/src/wms.test.ts`](../../../packages/auth/src/wms.test.ts) | 6 | частично |
+| [`packages/auth/src/mro.test.ts`](../../../packages/auth/src/mro.test.ts) | 2 | частично |
 
 Отдельная аномалия размещения: `eps-import`, `wms`, `mro`, `eps`,
 `srm-service`, `jira-mapping` лежат в `packages/auth/src/`, но проверяют
 код из `apps/web` — часть импортирует его обходным путём
 `../../../apps/web/src/lib/...`
-(см. [`srm-service.test.ts:3`](../../packages/auth/src/srm-service.test.ts:3)).
+(см. [`srm-service.test.ts:3`](../../../packages/auth/src/srm-service.test.ts:3)).
 Пакет `@ems/auth` не должен зависеть от приложения даже в тестах.
 
 Выявлено инспекцией
-[`2026-08-31-test-coverage-inspection.md`](../../docs/quality/inspections/2026-08-31-test-coverage-inspection.md) §3.3.
+[`2026-08-31-test-coverage-inspection.md`](../../../docs/quality/inspections/2026-08-31-test-coverage-inspection.md) §3.3.
 
 ## Scope
 
@@ -72,20 +72,20 @@ production-коде — тест не заметит.
 
 1. Для каждого файла из таблицы определить реальный модуль-владелец
    логики. Для `eps-import.test.ts` это
-   [`eps-import-matcher.ts`](../../apps/web/src/lib/eps-import-matcher.ts)
-   и [`eps-import-helpers.ts`](../../apps/web/src/lib/eps-import-helpers.ts).
+   [`eps-import-matcher.ts`](../../../apps/web/src/lib/eps-import-matcher.ts)
+   и [`eps-import-helpers.ts`](../../../apps/web/src/lib/eps-import-helpers.ts).
 2. Заменить локальные объявления импортом; прогнать; расхождения
    зафиксировать письменно.
 3. Перенести тесты кода `apps/web` из `packages/auth/src/` в
    `apps/web/src/lib/__tests__/` (или рядом с модулем) и убрать импорты
    вида `../../../apps/web/...`.
 4. В `packages/auth/src/` оставить только тесты
-   [`rbac.ts`](../../packages/auth/src/rbac.ts),
-   [`jwt.ts`](../../packages/auth/src/jwt.ts),
-   [`password.ts`](../../packages/auth/src/password.ts),
-   [`ldap.ts`](../../packages/auth/src/ldap.ts),
-   [`audit.ts`](../../packages/auth/src/audit.ts).
-5. Добавить в [`.agents/rules/code_quality.md`](../../.agents/rules/code_quality.md)
+   [`rbac.ts`](../../../packages/auth/src/rbac.ts),
+   [`jwt.ts`](../../../packages/auth/src/jwt.ts),
+   [`password.ts`](../../../packages/auth/src/password.ts),
+   [`ldap.ts`](../../../packages/auth/src/ldap.ts),
+   [`audit.ts`](../../../packages/auth/src/audit.ts).
+5. Добавить в [`.agents/rules/code_quality.md`](../../../.agents/rules/code_quality.md)
    правило: тест обязан импортировать проверяемый код; объявление
    тестируемой логики внутри тестового файла запрещено.
 
@@ -93,7 +93,7 @@ production-коде — тест не заметит.
 
 - [ ] Ни один тестовый файл не объявляет проверяемую им функцию локально.
 - [ ] Ни один файл в `packages/**` не импортирует из `apps/**`.
-- [ ] [`eps-import-matcher.ts`](../../apps/web/src/lib/eps-import-matcher.ts)
+- [ ] [`eps-import-matcher.ts`](../../../apps/web/src/lib/eps-import-matcher.ts)
       покрыт реальными тестами (сейчас 0 %).
 - [ ] Число проверок не уменьшилось; расхождения между копией и
       реальностью описаны в `## Result` или вынесены в story.

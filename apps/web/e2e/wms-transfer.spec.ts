@@ -1,22 +1,17 @@
 /**
  * wms-transfer.spec.ts — E2E write scenario: WMS stock transfer lifecycle.
  *
- * Covers M5 requirement: "сценарии записи — приёмка/отправка перемещения WMS,
- * проверка изменения остатков" plus one negative (guest denied).
- *
- * Scenario:
- *  1. Admin creates a warehouse and two stock items (via API calls in beforeAll).
- *  2. Admin creates a stock transfer request from warehouse A → B.
- *  3. Admin dispatches the transfer (REQUESTED → IN_TRANSIT).
- *  4. Admin receives the transfer (IN_TRANSIT → COMPLETED).
- *  5. Guest user cannot reach the WMS transfers list (RBAC denial).
+ * Covers the currently implemented M5 WMS smoke scope: an administrator can
+ * open the transfer-request form, while an unprivileged user cannot invoke the
+ * create action. A fully seeded dispatch/receive lifecycle remains separate
+ * work because the E2E fixture has no warehouses or stock rows.
  */
-import { test, expect, request } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { E2E_ADMIN_LOGIN, E2E_ADMIN_PASSWORD, E2E_GUEST_LOGIN, E2E_GUEST_PASSWORD } from './global-setup';
 import { login } from './helpers';
 
-test.describe('WMS stock transfer write lifecycle', () => {
-  test('admin can create and process a stock transfer end-to-end', async ({ page }) => {
+test.describe('WMS stock transfer access and request form', () => {
+  test('admin can open the stock transfer request form', async ({ page }) => {
     await login(page, E2E_ADMIN_LOGIN, E2E_ADMIN_PASSWORD);
 
     // Navigate to the WMS transfers list page.
@@ -27,12 +22,12 @@ test.describe('WMS stock transfer write lifecycle', () => {
     await page.getByRole('button', { name: /создать перемещение/i }).click();
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
 
-    // The form requires at least: source warehouse, destination warehouse,
-    // at least one item. Since the E2E DB has no warehouses yet, we accept
-    // that the dropdowns may be empty and validate the presence of the form
-    // structure. A full warehouse-seeded scenario is tracked in BACKLOG-WMS-04.
-    await expect(page.getByLabel(/склад-отправитель|source warehouse/i)).toBeVisible();
-    await expect(page.getByLabel(/склад-получатель|destination warehouse/i)).toBeVisible();
+    // The E2E database intentionally has no warehouse fixture, so verify the
+    // real accessible fields and disabled submit state without claiming a
+    // complete transfer lifecycle.
+    await expect(page.getByRole('combobox', { name: '— Выберите склад-донор —' })).toBeVisible();
+    await expect(page.getByText('Склад назначения (Ваш склад):')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Направить запрос кладовщику' })).toBeDisabled();
 
     // Close dialog — we verified the form exists without a complete warehouse fixture.
     await page.keyboard.press('Escape');
@@ -42,19 +37,12 @@ test.describe('WMS stock transfer write lifecycle', () => {
   test('guest user cannot access WMS transfers (RBAC denial)', async ({ page }) => {
     await login(page, E2E_GUEST_LOGIN, E2E_GUEST_PASSWORD);
 
-    // Guest has zero permissions: navigating to /wms should show an access
-    // denied message or redirect back to dashboard.
     await page.goto('/wms/transfers');
 
-    // Either the page shows an explicit denial or the sidebar does not render
-    // the WMS navigation link (hidden via module permissions). Accept either:
-    const isDenied =
-      (await page.getByText(/нет доступа|доступ запрещён|недостаточно прав|forbidden|access denied/i).isVisible()) ||
-      (await page.url().includes('/wms') === false);
-
-    // Also verify that the direct API endpoint rejects the guest token.
-    // We can't make authenticated API requests here easily, so just confirm
-    // the UI guard works.
-    expect(isDenied || page.url().includes('/wms') === false).toBeTruthy();
+    // The page shell remains visible, but privileged API calls are rejected and
+    // surface a user-facing denial notification. The create action must also be
+    // absent for an unprivileged user.
+    await expect(page.getByText('Недостаточно прав для выполнения операции').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Создать перемещение' })).toHaveCount(0);
   });
 });
