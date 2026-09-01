@@ -28,7 +28,7 @@ Current quality metrics are **not** tracked in this file — see
 |---|---|---|---|---|---|---|
 | [N9](active/N9-full-test-coverage.md) | Увеличить покрытие проекта тестами до полного охвата критических путей | N | P1 | medium | senior-qa | 2026-08-31 |
 | [O0](active/O0-coverage-roadmap.md) | Дорожная карта полного покрытия проекта и бизнес-логики тестами | O | P1 | medium | senior-qa, playwright-pro | 2026-09-01 |
-| [O3](active/O3-domain-services-and-shared-coverage.md) | Покрыть доменные сервисы, SRM-адаптеры и пакет @ems/shared | O | P1 | medium | senior-qa, senior-backend | 2026-09-01 |
+| [O3](done/2026-09/O3-domain-services-and-shared-coverage.md) | Покрыть доменные сервисы, SRM-адаптеры и пакет @ems/shared | O | P1 | medium | senior-qa, senior-backend | 2026-09-01 |
 | [O4](active/O4-remaining-api-contract-coverage.md) | Довести контракт-тесты до 100% API-роутов и включить route-coverage gate | O | P2 | medium | senior-qa | 2026-09-01 |
 | [O5](active/O5-ui-primitives-coverage.md) | Покрыть Testing Library все reusable UI primitives из components/ui | O | P2 | low | senior-qa, senior-frontend, a11y-audit | 2026-09-01 |
 | [O6](active/O6-domain-forms-and-wizards-coverage.md) | Покрыть тестами доменные формы, мастера и таблицы EPS/WMS/MRO/SRM | O | P2 | medium | senior-qa, senior-frontend | 2026-09-01 |

@@ -71,7 +71,7 @@ gates: [test, coverage, lint, tsc, docs]
 - [`O1`](../done/2026-09/O1-security-route-coverage.md) — security-критичные роуты;
 - [`O2`](../done/2026-09/O2-write-path-business-logic-coverage.md) — write-роуты с
   необратимым бизнес-эффектом;
-- [`O3`](O3-domain-services-and-shared-coverage.md) — доменные сервисы,
+- [`O3`](../done/2026-09/O3-domain-services-and-shared-coverage.md) — доменные сервисы,
   SRM-адаптеры, `@ems/shared`;
 - [`O4`](O4-remaining-api-contract-coverage.md) — 100 % API-роутов и
   route-coverage gate;
