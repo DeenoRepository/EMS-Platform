@@ -22,13 +22,12 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (8)
+## Active (7)
 
 | ID | Title | Phase | Priority | Risk | Skills | Opened |
 |---|---|---|---|---|---|---|
 | [N9](active/N9-full-test-coverage.md) | Увеличить покрытие проекта тестами до полного охвата критических путей | N | P1 | medium | senior-qa | 2026-08-31 |
 | [O0](active/O0-coverage-roadmap.md) | Дорожная карта полного покрытия проекта и бизнес-логики тестами | O | P1 | medium | senior-qa, playwright-pro | 2026-09-01 |
-| [O2](active/O2-write-path-business-logic-coverage.md) | Покрыть тестами write-роуты с необратимым бизнес-эффектом (WMS, EPS import, SRM sync) | O | P1 | high | senior-qa, senior-backend | 2026-09-01 |
 | [O3](active/O3-domain-services-and-shared-coverage.md) | Покрыть доменные сервисы, SRM-адаптеры и пакет @ems/shared | O | P1 | medium | senior-qa, senior-backend | 2026-09-01 |
 | [O4](active/O4-remaining-api-contract-coverage.md) | Довести контракт-тесты до 100% API-роутов и включить route-coverage gate | O | P2 | medium | senior-qa | 2026-09-01 |
 | [O5](active/O5-ui-primitives-coverage.md) | Покрыть Testing Library все reusable UI primitives из components/ui | O | P2 | low | senior-qa, senior-frontend, a11y-audit | 2026-09-01 |
@@ -43,7 +42,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 
 ---
 
-## Done (89)
+## Done (90)
 
 | ID | Title | Phase | Closed | Commits |
 |---|---|---|---|---|
@@ -136,3 +135,4 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [N7](done/2026-08/N7-remove-placeholder-tests-and-count-checks.md) | Remove placeholder test files and guard on check count, not file count | N | 2026-08-31 | test/N7-check-count-guard |
 | [N8](done/2026-08/N8-tests-for-pure-logic-modules.md) | Tests for the highest-risk pure-logic modules extracted during phases C/H/K4 | N | 2026-08-31 | test/N8-pure-logic-coverage |
 | [O1](done/2026-09/O1-security-route-coverage.md) | Покрыть тестами security-критичные роуты auth, setup, files и интеграции | O | 2026-09-01 | pending |
+| [O2](done/2026-09/O2-write-path-business-logic-coverage.md) | Покрыть тестами write-роуты с необратимым бизнес-эффектом (WMS, EPS import, SRM sync) | O | 2026-09-01 | pending |
