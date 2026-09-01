@@ -1,10 +1,12 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
+import { LoginPage } from './pages';
 import { E2E_ADMIN_LOGIN, E2E_ADMIN_PASSWORD } from './global-setup';
-import { login } from './helpers';
 
 test.describe('Business scenario: create equipment end-to-end', () => {
   test('admin creates a new equipment passport and it appears in the registry', async ({ page }) => {
-    await login(page, E2E_ADMIN_LOGIN, E2E_ADMIN_PASSWORD);
+    const loginPage = new LoginPage(page);
+    await loginPage.open();
+    await loginPage.login(E2E_ADMIN_LOGIN, E2E_ADMIN_PASSWORD);
 
     const uniqueName = `E2E Smoke Test Pump ${Date.now()}`;
 
