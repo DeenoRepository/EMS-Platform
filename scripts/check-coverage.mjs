@@ -25,7 +25,7 @@ const SUPPORTED_NODE_MAJORS = [22, 24];
 const THRESHOLDS = {
   lineCoverageAmongLoadedFiles: 80.0,
   fileCoverageRatio: 62.0,
-  componentLineCoverage: 12.0,
+  componentLineCoverage: 25.0,
 };
 
 const EXCLUDED_DIRS = new Set([

@@ -13,7 +13,7 @@
 |---|---:|---:|---|
 | Line coverage among loaded files | 85.60 % | >= 80 % | PASS |
 | File-level coverage | 74.05 % | >= 62 % | PASS |
-| Component line coverage | 23.54 % | >= 12 % | PASS |
+| Component line coverage | 23.59 % | >= 25 % | FAIL |
 
 ## Detail
 
