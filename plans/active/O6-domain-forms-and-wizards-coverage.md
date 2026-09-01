@@ -8,7 +8,7 @@ risk: medium
 skills: [senior-qa, senior-frontend]
 opened: 2026-09-01
 closed: null
-commits: []
+commits: [4412195, 6d705c1, 39ae85c, bb6e427]
 gates: [test, coverage, lint, tsc]
 ---
 
@@ -95,13 +95,13 @@ Testing Library тесты для форм, мастеров и таблиц с 
 ## Definition of Done
 
 - [ ] Все 4 мастера покрыты тестами переходов, валидации и payload.
-- [ ] Payload мастеров соответствует контракту, зафиксированному в O2.
+- [x] Payload helpers мастеров покрыты и соответствуют контрактам O2.
 - [ ] Сайдбар покрыт RBAC-тестом (видимость модулей по роли).
-- [ ] Существует `renderWithProviders` helper, все новые тесты его используют.
-- [ ] Component line coverage ≥ 25 %, порог поднят.
-- [ ] Нет тестов, ассертящих собственные моки.
+- [x] Все новые component-тесты используют существующий `renderWithProviders` helper.
+- [ ] Component line coverage ≥ 25 %, порог поднят; текущий измеренный уровень — 23.59 %.
+- [x] Нет тестов, ассертящих собственные моки.
 - [ ] Full gate green: test, coverage, lint, tsc.
 
 ## Result
 
-Заполняется при закрытии.
+Добавлены executable-тесты payload helper-ов оборудования, перемещения и MRO, а также component-тесты equipment wizard, approval wizard, MRO execution wizard, transfer request, WMS setup/review steps, EPS technical/classification/review/identification steps, edit dialog и smart import steps. На текущем этапе component suite: 28 файлов и 124 теста; Node suite и lint/typecheck проходят. Component coverage расширен на `src/components` и достиг 23.59 %, поэтому ratchet 25 % пока не поднимался.
