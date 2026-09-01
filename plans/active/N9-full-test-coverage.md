@@ -73,9 +73,9 @@ gates: [test, coverage, lint, tsc, docs]
   необратимым бизнес-эффектом;
 - [`O3`](../done/2026-09/O3-domain-services-and-shared-coverage.md) — доменные сервисы,
   SRM-адаптеры, `@ems/shared`;
-- [`O4`](O4-remaining-api-contract-coverage.md) — 100 % API-роутов и
+- [`O4`](../done/2026-09/O4-remaining-api-contract-coverage.md) — 100 % API-роутов и
   route-coverage gate;
-- [`O5`](O5-ui-primitives-coverage.md) — reusable UI primitives;
+- [`O5`](../done/2026-09/O5-ui-primitives-coverage.md) — reusable UI primitives;
 - [`O6`](O6-domain-forms-and-wizards-coverage.md) — доменные формы и мастера;
 - [`O7`](O7-e2e-flow-coverage.md) — сквозные E2E-потоки.
 
