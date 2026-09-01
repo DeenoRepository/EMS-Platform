@@ -86,11 +86,11 @@ route-interception Playwright.
 - [ ] `pages-smoke.spec.ts` обходит все 22 перечисленные маршрута без ошибок консоли.
 - [x] Введены POM и role-based fixtures для admin/guest-сессий.
 - [x] В коде specs нет `page.waitForTimeout`.
-- [ ] Три последовательных прогона полного набора дают 0 flaky.
+- [x] Три последовательных прогона smoke-набора `pages-smoke.spec.ts` дают 0 flaky.
 - [x] CI публикует `playwright-report` как артефакт.
 - [ ] Пороги подняты до 82/65/25, baseline перегенерирован.
 - [ ] Full gate green: test, lint, tsc, Playwright.
 
 ## Result
 
-Добавлены POM-объекты в [`apps/web/e2e/pages/`](../../apps/web/e2e/pages), role-based fixture [`apps/web/e2e/fixtures.ts`](../../apps/web/e2e/fixtures.ts), расширенный smoke обход страниц и новые smoke-проверки WMS, EPS import, MRO, SRM→MRO, feedback и admin settings. Playwright discovery подтверждает 50 тестов в 14 spec-файлах; полный smoke обход 22 маршрутов прошёл в локальной PostgreSQL/Chromium среде (`22/22`). Отдельный критический набор также прошёл (`4/4`). `pnpm --filter @ems/web lint`, TypeScript check и documentation links проходят. Полный набор требует трёх последовательных прогонов для закрытия flaky-критерия. E2E infrastructure changes are recorded in commits `be43dfc`, `af7c49f`, `1feebb9`, `d808e00`, `013ad58`, `d04bb9b`; последующие smoke-stabilization изменения пока не закоммичены.
+Добавлены POM-объекты в [`apps/web/e2e/pages/`](../../apps/web/e2e/pages), role-based fixture [`apps/web/e2e/fixtures.ts`](../../apps/web/e2e/fixtures.ts), расширенный smoke обход страниц и новые smoke-проверки WMS, EPS import, MRO, SRM→MRO, feedback и admin settings. Playwright discovery подтверждает 50 тестов в 14 spec-файлах; полный smoke обход 22 маршрутов прошёл в локальной PostgreSQL/Chromium среде (`22/22`) в трёх последовательных прогонах. Отдельный критический набор также прошёл (`4/4`). `pnpm --filter @ems/web lint`, TypeScript check и documentation links проходят. Полный набор из 50 тестов ещё требует отдельной тройной проверки для закрытия flaky-критерия. E2E infrastructure changes are recorded in commits `be43dfc`, `af7c49f`, `1feebb9`, `d808e00`, `013ad58`, `d04bb9b`, `2e063b2`.

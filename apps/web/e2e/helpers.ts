@@ -27,5 +27,5 @@ export async function login(page: Page, username: string, password: string): Pro
   // Scope to the actual password textbox by its input id instead.
   await page.locator('#password').fill(password);
   await page.getByRole('button', { name: 'Войти в систему' }).click();
-  await page.waitForURL('/', { timeout: 10_000 });
+  await page.waitForURL((url) => url.pathname === '/' || url.pathname === '/setup', { timeout: 10_000 });
 }
