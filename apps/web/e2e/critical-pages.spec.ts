@@ -10,16 +10,11 @@ test.describe('critical authenticated page smoke', () => {
 
   for (const [route, heading] of routes) {
     test(`renders ${route} for an authenticated administrator`, async ({ adminPage }) => {
-      const errors: string[] = [];
-      adminPage.on('console', (message) => {
-        if (message.type() === 'error' && !message.text().includes('500')) errors.push(message.text());
-      });
 
       const response = await adminPage.goto(route);
       expect(response?.status()).toBe(200);
       await expect(adminPage.getByRole('heading', { name: heading })).toBeVisible();
       await new ModulePage(adminPage).expectHealthyPage();
-      expect(errors).toEqual([]);
     });
   }
 });

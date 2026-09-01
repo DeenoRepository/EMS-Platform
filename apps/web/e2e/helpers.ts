@@ -19,7 +19,8 @@ export async function login(page: Page, username: string, password: string): Pro
     'x-forwarded-for': `198.51.${thirdOctet}.${fourthOctet}`,
   });
 
-  await page.goto('/login');
+  await page.goto('/login', { waitUntil: 'domcontentloaded' });
+  if (!page.url().endsWith('/login')) return;
   await page.getByLabel('Корпоративный логин (LDAP)').fill(username);
   // getByLabel('Пароль') is ambiguous: it also matches the MUI "show
   // password" IconButton (aria-label="Показать пароль" contains "Пароль").
