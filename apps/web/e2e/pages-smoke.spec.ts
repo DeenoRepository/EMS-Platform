@@ -1,6 +1,4 @@
-import { test, expect } from '@playwright/test';
-import { E2E_ADMIN_LOGIN, E2E_ADMIN_PASSWORD } from './global-setup';
-import { login } from './helpers';
+import { test, expect } from './fixtures';
 import { ModulePage } from './pages';
 
 const ADMIN_ROUTES = [
@@ -27,23 +25,19 @@ const ADMIN_ROUTES = [
   '/admin/feedback',
   '/admin/audit-log',
   '/setup',
-];
+] as const;
 
 test.describe('admin page smoke coverage', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page, E2E_ADMIN_LOGIN, E2E_ADMIN_PASSWORD);
-  });
-
   for (const route of ADMIN_ROUTES) {
-    test(`opens ${route} without an application error`, async ({ page }) => {
+    test(`opens ${route} without an application error`, async ({ adminPage }) => {
       const consoleErrors: string[] = [];
-      page.on('console', (message) => {
+      adminPage.on('console', (message) => {
         if (message.type() === 'error') consoleErrors.push(message.text());
       });
 
-      const response = await page.goto(route);
+      const response = await adminPage.goto(route);
       expect(response?.status(), `${route} response status`).toBe(200);
-      await new ModulePage(page).expectHealthyPage();
+      await new ModulePage(adminPage).expectHealthyPage();
       expect(consoleErrors, `${route} console errors`).toEqual([]);
     });
   }
