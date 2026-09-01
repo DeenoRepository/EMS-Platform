@@ -19,7 +19,8 @@ test.describe('Login and logout', () => {
   });
 
   test('rejects an invalid password with a visible error', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/login', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('heading', { name: 'EMS PLATFORM' })).toBeVisible();
     await page.getByLabel('Корпоративный логин (LDAP)').fill(E2E_ADMIN_LOGIN);
     await page.locator('#password').fill('definitely-the-wrong-password');
     await page.getByRole('button', { name: 'Войти в систему' }).click();

@@ -6,13 +6,10 @@
  * create action. A fully seeded dispatch/receive lifecycle remains separate
  * work because the E2E fixture has no warehouses or stock rows.
  */
-import { test, expect } from '@playwright/test';
-import { E2E_ADMIN_LOGIN, E2E_ADMIN_PASSWORD, E2E_GUEST_LOGIN, E2E_GUEST_PASSWORD } from './global-setup';
-import { login } from './helpers';
+import { test, expect } from './fixtures';
 
 test.describe('WMS stock transfer access and request form', () => {
-  test('admin can open the stock transfer request form', async ({ page }) => {
-    await login(page, E2E_ADMIN_LOGIN, E2E_ADMIN_PASSWORD);
+  test('admin can open the stock transfer request form', async ({ adminPage: page }) => {
 
     // Navigate to the WMS transfers list page.
     await page.goto('/wms/transfers');
@@ -34,8 +31,7 @@ test.describe('WMS stock transfer access and request form', () => {
     await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 3_000 });
   });
 
-  test('guest user cannot access WMS transfers (RBAC denial)', async ({ page }) => {
-    await login(page, E2E_GUEST_LOGIN, E2E_GUEST_PASSWORD);
+  test('guest user cannot access WMS transfers (RBAC denial)', async ({ guestPage: page }) => {
 
     await page.goto('/wms/transfers');
 

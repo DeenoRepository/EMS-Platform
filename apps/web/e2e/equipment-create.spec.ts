@@ -8,7 +8,7 @@ test.describe('Business scenario: create equipment end-to-end', () => {
 
     const uniqueName = `E2E Smoke Test Pump ${Date.now()}`;
 
-    await page.goto('/eps/new');
+    await page.goto('/eps/new', { waitUntil: 'domcontentloaded' });
     await expect(page.getByText('Регистрация нового оборудования')).toBeVisible();
 
     // Step 1: Identification — the only required field is "Наименование".
