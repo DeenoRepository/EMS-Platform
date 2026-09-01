@@ -61,6 +61,23 @@ gates: [test, coverage, lint, tsc, docs]
 - Component line coverage: 2.63%.
 - Quality, lint, typecheck and docs gates pass.
 
-Story остаётся активной: следующий приоритет — увеличить component coverage
-критических доменных форм и закрыть оставшиеся динамические API/read-write
-flows, не снижая текущие coverage thresholds.
+## Продолжение работы
+
+Дальнейшее наращивание покрытия вынесено в фазу O с явной
+приоритизацией по риску и ratchet-графиком порогов:
+
+- [`O0`](O0-coverage-roadmap.md) — дорожная карта, целевые метрики,
+  правила качества тестов;
+- [`O1`](O1-security-route-coverage.md) — security-критичные роуты;
+- [`O2`](O2-write-path-business-logic-coverage.md) — write-роуты с
+  необратимым бизнес-эффектом;
+- [`O3`](O3-domain-services-and-shared-coverage.md) — доменные сервисы,
+  SRM-адаптеры, `@ems/shared`;
+- [`O4`](O4-remaining-api-contract-coverage.md) — 100 % API-роутов и
+  route-coverage gate;
+- [`O5`](O5-ui-primitives-coverage.md) — reusable UI primitives;
+- [`O6`](O6-domain-forms-and-wizards-coverage.md) — доменные формы и мастера;
+- [`O7`](O7-e2e-flow-coverage.md) — сквозные E2E-потоки.
+
+N9 закрывается как достигшая своих целей после старта O1; текущие
+coverage thresholds понижению не подлежат.
