@@ -83,7 +83,7 @@ route-interception Playwright.
 ## Definition of Done
 
 - [x] 8 новых spec-файлов существуют и регистрируются Playwright.
-- [ ] `pages-smoke.spec.ts` обходит все 27 страниц без ошибок консоли.
+- [ ] `pages-smoke.spec.ts` обходит все 22 перечисленные маршрута без ошибок консоли.
 - [x] Введены POM и role-based fixtures для admin/guest-сессий.
 - [x] В коде specs нет `page.waitForTimeout`.
 - [ ] Три последовательных прогона полного набора дают 0 flaky.
@@ -93,4 +93,4 @@ route-interception Playwright.
 
 ## Result
 
-Добавлены POM-объекты в [`apps/web/e2e/pages/`](../../apps/web/e2e/pages), role-based fixture [`apps/web/e2e/fixtures.ts`](../../apps/web/e2e/fixtures.ts), расширенный smoke обход страниц и новые smoke-проверки WMS, EPS import, MRO, SRM→MRO, feedback и admin settings. Playwright discovery подтверждает 50 тестов в 14 spec-файлах; `critical-pages.spec.ts` прошёл в локальной PostgreSQL/Chromium среде: 4/4. `pnpm --filter @ems/web lint`, TypeScript check и documentation links проходят. Полный набор требует трёх последовательных прогонов для закрытия flaky-критерия. E2E infrastructure changes are recorded in commits `be43dfc`, `af7c49f`, `1feebb9`, `d808e00`.
+Добавлены POM-объекты в [`apps/web/e2e/pages/`](../../apps/web/e2e/pages), role-based fixture [`apps/web/e2e/fixtures.ts`](../../apps/web/e2e/fixtures.ts), расширенный smoke обход страниц и новые smoke-проверки WMS, EPS import, MRO, SRM→MRO, feedback и admin settings. Playwright discovery подтверждает 50 тестов в 14 spec-файлах; `critical-pages.spec.ts` прошёл в локальной PostgreSQL/Chromium среде: 4/4. `pnpm --filter @ems/web lint`, TypeScript check и documentation links проходят. Полный набор требует трёх последовательных прогонов для закрытия flaky-критерия. E2E infrastructure changes are recorded in commits `be43dfc`, `af7c49f`, `1feebb9`, `d808e00`, `013ad58`, `d04bb9b`.
