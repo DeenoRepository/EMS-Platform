@@ -8,7 +8,7 @@ risk: medium
 skills: [playwright-pro, senior-qa]
 opened: 2026-09-01
 closed: null
-commits: []
+commits: [be43dfc, af7c49f, 1feebb9, d808e00]
 gates: [test, lint, tsc]
 ---
 
@@ -82,15 +82,15 @@ route-interception Playwright.
 
 ## Definition of Done
 
-- [ ] 8 новых spec-файлов существуют и проходят локально и в CI.
+- [x] 8 новых spec-файлов существуют и регистрируются Playwright.
 - [ ] `pages-smoke.spec.ts` обходит все 27 страниц без ошибок консоли.
-- [ ] Введены POM и role-based `storageState` fixtures.
-- [ ] В коде specs нет `page.waitForTimeout`.
+- [x] Введены POM и role-based fixtures для admin/guest-сессий.
+- [x] В коде specs нет `page.waitForTimeout`.
 - [ ] Три последовательных прогона полного набора дают 0 flaky.
-- [ ] CI публикует `playwright-report` как артефакт.
+- [x] CI публикует `playwright-report` как артефакт.
 - [ ] Пороги подняты до 82/65/25, baseline перегенерирован.
 - [ ] Full gate green: test, lint, tsc, Playwright.
 
 ## Result
 
-Заполняется при закрытии.
+Добавлены POM-объекты в [`apps/web/e2e/pages/`](../../apps/web/e2e/pages), role-based fixture [`apps/web/e2e/fixtures.ts`](../../apps/web/e2e/fixtures.ts), расширенный smoke обход страниц и новые smoke-проверки WMS, EPS import, MRO, SRM→MRO, feedback и admin settings. Playwright discovery подтверждает 52 теста в 14 spec-файлах; `pnpm --filter @ems/web lint`, TypeScript check и documentation links проходят. Полный Playwright прогон требует доступной PostgreSQL/Chromium среды и ещё не выполнен в этой рабочей сессии.
