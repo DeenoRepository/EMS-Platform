@@ -24,6 +24,7 @@ export async function logAuditEvent(params: AuditLogParams): Promise<void> {
       },
     });
   } catch (error) {
-    console.error('⚠️ Ошибка записи в AuditLog:', error);
+    const errorType = error instanceof Error ? error.name : typeof error;
+    console.error('⚠️ Ошибка записи в AuditLog:', { errorType });
   }
 }

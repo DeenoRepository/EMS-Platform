@@ -16,7 +16,7 @@ gates: [test, coverage, lint, tsc]
 
 ## Problem
 
-После [`O1`](O1-security-route-coverage.md) и
+После [`O1`](../done/2026-09/O1-security-route-coverage.md) и
 [`O2`](O2-write-path-business-logic-coverage.md) остаются непокрытыми
 read/CRUD-роуты, у которых нет прямого security- или write-риска, но
 которые формируют контракт для фронта:
