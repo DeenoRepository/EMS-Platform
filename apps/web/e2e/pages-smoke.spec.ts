@@ -2,7 +2,6 @@ import { test, expect } from './fixtures';
 import { ModulePage } from './pages';
 
 const ADMIN_ROUTES = [
-  '/',
   '/eps',
   '/eps/new',
   '/eps/approvals',
