@@ -22,6 +22,7 @@ below — `pnpm test` does require generated Prisma client types.
 | [`test-runner.mjs`](test-runner.mjs) | Run repository TypeScript tests through Node's loader | `pnpm test` or `node scripts/test-runner.mjs --coverage` |
 | [`check-coverage.mjs`](check-coverage.mjs) | Measure and gate Node loaded-line coverage, Node file reach, and Vitest component line coverage | `node scripts/check-coverage.mjs [--report]` |
 | [`check-component-test-discovery.mjs`](check-component-test-discovery.mjs) | Fail when Vitest configuration matches fewer component test files than the recorded floor | Invoked by `pnpm --filter @ems/web test:components` |
+| [`check-route-test-coverage.mjs`](check-route-test-coverage.mjs) | Fail when a production API route has no executable Node test import | Invoked automatically before `pnpm test`; also runnable directly |
 | `apps/web/e2e/*.spec.ts` (Playwright) | E2E smoke tests: login/logout, EPS/WMS/MRO access, RBAC denial, equipment creation | `pnpm --filter @ems/web exec playwright test` |
 | [`fgrade_detail.py`](fgrade_detail.py) | Print detailed F-grade file list | `python scripts/fgrade_detail.py` |
 
@@ -61,7 +62,10 @@ Both patterns are discovered automatically by
 [`test-runner.mjs`](test-runner.mjs), which scans `packages/` and
 `apps/web/src/` recursively while excluding `node_modules`, `.next`, `dist`,
 `.turbo`, and `e2e/`. Adding a new test file anywhere within those roots is
-sufficient; no registration or manifest update is needed.
+sufficient; no registration or manifest update is needed. Before test discovery,
+[`check-route-test-coverage.mjs`](check-route-test-coverage.mjs) verifies that
+all `apps/web/src/app/api/**/route.ts` files are imported by an executable
+`*.test.ts` suite.
 
 E2E specs (`apps/web/e2e/**/*.spec.ts`) are intentionally excluded: they
 require a live PostgreSQL instance and a production build, and are run via a

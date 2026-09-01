@@ -11,13 +11,21 @@ let schedules: any[] = [];
 let createdSchedules: any[] = [];
 let syncCalls: any[] = [];
 let mroCalls: any[] = [];
+let issueDetail: any = null;
+let issueEquipment: any = null;
+let issueSchedule: any = null;
 
 const syncUser: JwtUserPayload = {
   userId: 'srm-operator',
   ldapLogin: 'srm.operator',
   displayName: 'SRM Operator',
   roles: ['operator'],
-  permissions: [PERMISSIONS.SRM_SYNC_TRIGGER, PERMISSIONS.MRO_SCHEDULE_MANAGE, PERMISSIONS.MRO_SCHEDULE_VIEW],
+  permissions: [
+    PERMISSIONS.SRM_SYNC_TRIGGER,
+    PERMISSIONS.SRM_DASHBOARD_VIEW,
+    PERMISSIONS.MRO_SCHEDULE_MANAGE,
+    PERMISSIONS.MRO_SCHEDULE_VIEW,
+  ],
 };
 
 const viewer: JwtUserPayload = {
@@ -41,7 +49,14 @@ const prismaMock = {
   srmIntegration: {
     findUnique: async () => integration,
   },
+  jiraIssueCache: {
+    findFirst: async () => issueDetail,
+  },
+  equipment: {
+    findUnique: async () => issueEquipment,
+  },
   maintenanceSchedule: {
+    findUnique: async () => issueSchedule,
     findMany: async () => schedules,
     create: async (args: unknown) => {
       createdSchedules.push(args);
@@ -86,6 +101,7 @@ const handlers: {
   sync?: RequestHandler;
   integrationSync?: IdHandler;
   createMro?: IdHandler;
+  issueGET?: IdHandler;
   schedulesGET?: RequestHandler;
   schedulesPOST?: RequestHandler;
 } = {};
@@ -94,10 +110,12 @@ before(async () => {
   const sync = await import('@/app/api/srm/sync/route');
   const integrationSync = await import('@/app/api/srm/integrations/[id]/sync/route');
   const createMro = await import('@/app/api/srm/issues/[id]/create-mro-order/route');
+  const issue = await import('@/app/api/srm/issues/[id]/route');
   const schedules = await import('@/app/api/mro/schedules/route');
   handlers.sync = sync.POST as unknown as RequestHandler;
   handlers.integrationSync = integrationSync.POST as unknown as IdHandler;
   handlers.createMro = createMro.POST as unknown as IdHandler;
+  handlers.issueGET = issue.GET as unknown as IdHandler;
   handlers.schedulesGET = schedules.GET as unknown as RequestHandler;
   handlers.schedulesPOST = schedules.POST as unknown as RequestHandler;
 });
@@ -105,6 +123,9 @@ before(async () => {
 beforeEach(() => {
   currentUser = null;
   integration = { id: 'integration-1', name: 'Jira EMS' };
+  issueDetail = null;
+  issueEquipment = null;
+  issueSchedule = null;
   syncResult = { count: 3, source: 'mock-srm' };
   mroResult = {
     issue: { issueKey: 'EMS-42' },
@@ -145,6 +166,27 @@ describe('O2 SRM synchronization and MRO write contracts', { concurrency: false 
     const scoped = await handlers.integrationSync!(request('POST'), context('integration-1'));
     assert.equal(scoped.status, 200);
     assert.deepEqual(syncCalls[1], ['integration-1']);
+  });
+
+  test('returns SRM issue details with optional equipment and MRO schedule', async () => {
+    assert.equal((await handlers.issueGET!(request('GET'), context('issue-42'))).status, 401);
+
+    currentUser = syncUser;
+    assert.equal((await handlers.issueGET!(request('GET'), context('missing'))).status, 404);
+
+    issueDetail = {
+      id: 'issue-42', issueKey: 'EMS-42', summary: 'Pump failure', status: 'OPEN',
+      equipmentId: 'equipment-1', mroScheduleId: 'schedule-1', integration: null,
+    };
+    issueEquipment = { id: 'equipment-1', name: 'Pump A', inventoryNumber: 'INV-1' };
+    issueSchedule = { id: 'schedule-1', title: 'Emergency repair', status: 'IN_PROGRESS' };
+    const response = await handlers.issueGET!(request('GET'), context('EMS-42'));
+    const body = await response.json() as { success: boolean; data: any };
+    assert.equal(response.status, 200);
+    assert.equal(body.success, true);
+    assert.equal(body.data.issueKey, 'EMS-42');
+    assert.equal(body.data.equipment.name, 'Pump A');
+    assert.equal(body.data.mroSchedule.id, 'schedule-1');
   });
 
   test('creates an MRO order from an issue only with MRO management permission', async () => {

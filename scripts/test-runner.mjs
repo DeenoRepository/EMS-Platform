@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import process from 'node:process';
 import path from 'node:path';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
@@ -47,6 +47,15 @@ function findTestFiles(dir) {
   }
 
   return results;
+}
+
+const routeCoverageCheck = spawnSync(process.execPath, ['scripts/check-route-test-coverage.mjs'], {
+  stdio: 'inherit',
+  env: process.env,
+});
+if (routeCoverageCheck.status !== 0) {
+  console.error('[test-runner] ERROR: API route test coverage gate failed.');
+  process.exit(routeCoverageCheck.status ?? 1);
 }
 
 const testFiles = [
