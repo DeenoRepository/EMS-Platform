@@ -16,7 +16,7 @@ gates: [test, coverage, lint, tsc, docs]
 
 ## Problem
 
-Текущий baseline в [`docs/quality/COVERAGE_BASELINE.md`](../../docs/quality/COVERAGE_BASELINE.md) показывает 70.86% line coverage среди загруженных Node-тестами файлов, 22.97% file-level reach и 1.89% component line coverage. При этом 285 из 370 production-файлов не загружаются тестами. Компонентный runner ограничен Vitest и имеет только минимальный discovery floor.
+Текущий baseline в [`docs/quality/COVERAGE_BASELINE.md`](../../docs/quality/COVERAGE_BASELINE.md) показывает 83.00% line coverage среди загруженных Node-тестами файлов, 55.41% file-level reach и 2.63% component line coverage. При этом 165 из 370 production-файлов не загружаются тестами. Компонентный runner расширен за пределы `components/ui`, но доменные React-компоненты всё ещё покрыты точечно.
 
 ## Scope
 
@@ -53,4 +53,14 @@ gates: [test, coverage, lint, tsc, docs]
 
 ## Result
 
-Заполняется при закрытии story.
+Текущий измеримый результат после N9 phases 1–5:
+
+- 86 Node test files, 478 assertions/checks, 0 failures.
+- 13 Vitest component test files, 65 tests, 0 failures.
+- Node line coverage: 83.00%; Node file-level reach: 55.41%.
+- Component line coverage: 2.63%.
+- Quality, lint, typecheck and docs gates pass.
+
+Story остаётся активной: следующий приоритет — увеличить component coverage
+критических доменных форм и закрыть оставшиеся динамические API/read-write
+flows, не снижая текущие coverage thresholds.

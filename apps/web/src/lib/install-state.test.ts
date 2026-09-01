@@ -21,7 +21,7 @@ describe('install state', () => {
     ]);
 
     process.env.UPLOAD_DIR = path.join('C:', 'persistent', 'uploads');
-    assert.equal(getInstallMarkerPaths(root).at(-1), path.join('C:', 'persistent', 'uploads', '.installed'));
+    assert.equal(getInstallMarkerPaths(root).at(-1), path.join(root, 'C:', 'persistent', 'uploads', '.installed'));
     delete process.env.UPLOAD_DIR;
   });
 
@@ -39,7 +39,7 @@ describe('install state', () => {
     rmSync(root, { recursive: true, force: true });
   });
 
-  it('returns definitive state from marker and administrator count', async () => {
+  it('returns definitive state from administrator count when no marker exists', async () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'ems-install-state-'));
     countImplementation = async () => 1;
     const state = await resolveInstallState(root);
@@ -47,9 +47,10 @@ describe('install state', () => {
     assert.deepEqual(state, {
       isInstalled: true,
       isDefinitive: true,
-      markerExists: true,
+      markerExists: false,
       hasAdmin: true,
     });
+    countImplementation = async () => 0;
     rmSync(root, { recursive: true, force: true });
   });
 
@@ -63,6 +64,7 @@ describe('install state', () => {
     assert.equal(state.isInstalled, true);
     assert.equal(state.isDefinitive, false);
     assert.equal(state.hasAdmin, false);
+    countImplementation = async () => 0;
     rmSync(root, { recursive: true, force: true });
   });
 });

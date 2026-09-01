@@ -4,7 +4,7 @@
 > after adding, editing, or closing a story. Source of truth is the YAML
 > front-matter in each file under `plans/active/` and `plans/done/`.
 >
-> Last generated: 2026-08-31
+> Last generated: 2026-09-01
 
 ## Lifecycle
 
@@ -22,9 +22,11 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (0)
+## Active (1)
 
-_No active stories._
+| ID | Title | Phase | Priority | Risk | Skills | Opened |
+|---|---|---|---|---|---|---|
+| [N9](active/N9-full-test-coverage.md) | Увеличить покрытие проекта тестами до полного охвата критических путей | N | P1 | medium | senior-qa | 2026-08-31 |
 
 ---
 
