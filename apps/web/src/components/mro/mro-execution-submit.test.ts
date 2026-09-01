@@ -1,51 +1,44 @@
-import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { buildMroExecutionSubmitPayload, type ChecklistItemDefinition } from './mro-execution-submit';
+import assert from 'node:assert/strict';
+import { buildMroExecutionSubmitPayload } from './mro-execution-submit';
 
-const checklistItems: ChecklistItemDefinition[] = [
-  { id: 'i1', description: 'Check oil', itemType: 'BOOLEAN' },
-  { id: 'i2', description: 'Record pressure', itemType: 'NUMERIC' },
-];
-
-describe('mro execution submit payload builder', () => {
-  test('maps checklist answers to their definitions and preserves notes/parts', () => {
+describe('MRO execution submit helpers', () => {
+  test('formats checklist answers, trims notes, and preserves used parts', () => {
     const payload = buildMroExecutionSubmitPayload({
-      notes: '  all good  ',
+      notes: '  Completed during planned shutdown  ',
       checklistAnswers: {
-        i1: { value: true, note: 'ok' },
-        i2: { value: 4.5 },
+        'check-1': { value: true, note: '  Passed  ' },
+        'check-2': { value: 12 },
+        'unknown': { value: 'free text' },
       },
-      checklistItems,
-      usedParts: [{ nomenclatureId: 'n1', warehouseId: 'w1', quantity: 2 }],
+      checklistItems: [
+        { id: 'check-1', description: 'Inspect belt', itemType: 'BOOLEAN' },
+        { id: 'check-2', description: 'Measure vibration', itemType: 'NUMERIC' },
+      ],
+      usedParts: [{ nomenclatureId: 'nom-1', warehouseId: 'wh-1', quantity: 2 }],
     });
 
-    assert.equal(payload.status, 'COMPLETED');
-    assert.equal(payload.notes, 'all good');
-    assert.equal(payload.checklistItems.length, 2);
-    assert.deepEqual(payload.checklistItems[0], {
-      itemId: 'i1',
-      description: 'Check oil',
-      itemType: 'BOOLEAN',
-      value: true,
-      note: 'ok',
+    assert.deepEqual(payload, {
+      status: 'COMPLETED',
+      notes: 'Completed during planned shutdown',
+      checklistItems: [
+        { itemId: 'check-1', description: 'Inspect belt', itemType: 'BOOLEAN', value: true, note: '  Passed  ' },
+        { itemId: 'check-2', description: 'Measure vibration', itemType: 'NUMERIC', value: 12, note: undefined },
+        { itemId: 'unknown', description: '', itemType: 'BOOLEAN', value: 'free text', note: undefined },
+      ],
+      usedParts: [{ nomenclatureId: 'nom-1', warehouseId: 'wh-1', quantity: 2 }],
     });
-    assert.deepEqual(payload.usedParts, [{ nomenclatureId: 'n1', warehouseId: 'w1', quantity: 2 }]);
   });
 
-  test('falls back to empty description and BOOLEAN type for an unknown checklist item id', () => {
+  test('omits blank notes while retaining completed status', () => {
     const payload = buildMroExecutionSubmitPayload({
-      notes: '',
-      checklistAnswers: { unknown: { value: false } },
-      checklistItems,
+      notes: '   ',
+      checklistAnswers: {},
+      checklistItems: [],
       usedParts: [],
     });
-    assert.deepEqual(payload.checklistItems[0], {
-      itemId: 'unknown',
-      description: '',
-      itemType: 'BOOLEAN',
-      value: false,
-      note: undefined,
-    });
+    assert.equal(payload.status, 'COMPLETED');
     assert.equal(payload.notes, undefined);
+    assert.deepEqual(payload.checklistItems, []);
   });
 });

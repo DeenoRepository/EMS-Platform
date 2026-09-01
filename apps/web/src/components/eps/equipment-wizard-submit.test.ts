@@ -1,53 +1,62 @@
-import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { buildEquipmentWizardPayload, validateEquipmentWizardInput } from './equipment-wizard-submit';
+import assert from 'node:assert/strict';
+import {
+  buildEquipmentWizardPayload,
+  validateEquipmentWizardInput,
+} from './equipment-wizard-submit';
 
-describe('equipment wizard submit model', () => {
-  test('requires a non-empty trimmed name', () => {
-    assert.match(validateEquipmentWizardInput({ name: '' }) ?? '', /обязательно/);
-    assert.match(validateEquipmentWizardInput({ name: '   ' }) ?? '', /обязательно/);
+describe('equipment wizard submit helpers', () => {
+  test('rejects a blank equipment name', () => {
+    assert.equal(
+      validateEquipmentWizardInput({ name: '   ' }),
+      'Наименование оборудования обязательно',
+    );
     assert.equal(validateEquipmentWizardInput({ name: 'Pump' }), null);
   });
 
-  test('trims optional fields and converts blank strings to undefined', () => {
+  test('trims text fields and maps draft and approval modes', () => {
     const payload = buildEquipmentWizardPayload({
       name: '  Pump  ',
-      inventoryNumber: '  ',
-      serialNumber: 'SN-1',
-      manufacturer: '',
-      model: 'M-1',
-      location: '  Hall A  ',
+      inventoryNumber: ' INV-1 ',
+      serialNumber: ' ',
+      manufacturer: ' Acme ',
+      model: ' Model X ',
+      location: ' Workshop ',
       status: 'ACTIVE',
-      commissionDate: '2026-01-01',
-      tagIds: ['t1'],
-      customFields: { voltage: 220 },
-      submitForApproval: true,
-    });
-
-    assert.equal(payload.name, 'Pump');
-    assert.equal(payload.inventoryNumber, undefined);
-    assert.equal(payload.serialNumber, 'SN-1');
-    assert.equal(payload.manufacturer, undefined);
-    assert.equal(payload.location, 'Hall A');
-    assert.equal(payload.asDraft, false);
-    assert.equal(payload.submitForApproval, true);
-  });
-
-  test('sets asDraft to true when not submitting for approval', () => {
-    const payload = buildEquipmentWizardPayload({
-      name: 'Pump',
-      inventoryNumber: '',
-      serialNumber: '',
-      manufacturer: '',
-      model: '',
-      location: '',
-      status: 'DRAFT',
-      commissionDate: '',
-      tagIds: [],
-      customFields: {},
+      commissionDate: '2026-09-01',
+      tagIds: ['tag-1'],
+      customFields: { power: 5 },
       submitForApproval: false,
     });
-    assert.equal(payload.asDraft, true);
-    assert.equal(payload.submitForApproval, false);
+
+    assert.deepEqual(payload, {
+      name: 'Pump',
+      inventoryNumber: 'INV-1',
+      serialNumber: undefined,
+      manufacturer: 'Acme',
+      model: 'Model X',
+      location: 'Workshop',
+      status: 'ACTIVE',
+      commissionDate: '2026-09-01',
+      tagIds: ['tag-1'],
+      customFields: { power: 5 },
+      asDraft: true,
+      submitForApproval: false,
+    });
+
+    const approvalPayload = buildEquipmentWizardPayload({
+        name: 'Pump',
+        inventoryNumber: '',
+        serialNumber: '',
+        manufacturer: '',
+        model: '',
+        location: '',
+        status: 'ACTIVE',
+        commissionDate: '2026-09-01',
+        tagIds: [],
+        customFields: {},
+        submitForApproval: true,
+      });
+    assert.equal(approvalPayload.submitForApproval, true);
   });
 });
