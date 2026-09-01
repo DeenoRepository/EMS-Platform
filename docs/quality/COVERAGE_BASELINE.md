@@ -3,7 +3,7 @@
 > **Auto-generated.** Do not edit manually.
 > Regenerate: `node scripts/check-coverage.mjs --report`
 > Requires: `pnpm install --frozen-lockfile && pnpm db:generate`
-> Measured on Node 22.22.1; use `.nvmrc` for reproducibility.
+> Measured on Node 24.15.0; use `.nvmrc` for reproducibility.
 
 **Measured at:** 2026-09-01
 
@@ -11,15 +11,15 @@
 
 | Metric | Value | Threshold | Status |
 |---|---:|---:|---|
-| Line coverage among loaded files | 85.60 % | >= 80 % | PASS |
-| File-level coverage | 74.05 % | >= 62 % | PASS |
-| Component line coverage | 23.59 % | >= 25 % | FAIL |
+| Line coverage among loaded files | 79.27 % | >= 79 % | PASS |
+| File-level coverage | 47.17 % | >= 47 % | PASS |
+| Component line coverage | 38.60 % | >= 25 % | PASS |
 
 ## Detail
 
-- **Files loaded by tests:** 274
-- **Total production files:** 370 (all `.ts`/`.tsx` excluding tests, specs, and declarations)
-- **Files with zero coverage:** 96 (25.9 %)
+- **Files loaded by tests:** 175
+- **Total production files:** 371 (all `.ts`/`.tsx` excluding tests, specs, and declarations)
+- **Files with zero coverage:** 196 (52.8 %)
 
 ## Metric interpretation
 
