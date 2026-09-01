@@ -11,9 +11,9 @@
 
 | Metric | Value | Threshold | Status |
 |---|---:|---:|---|
-| Line coverage among loaded files | 85.58 % | >= 80 % | PASS |
+| Line coverage among loaded files | 85.60 % | >= 80 % | PASS |
 | File-level coverage | 74.05 % | >= 62 % | PASS |
-| Component line coverage | 73.92 % | >= 12 % | PASS |
+| Component line coverage | 23.54 % | >= 12 % | PASS |
 
 ## Detail
 

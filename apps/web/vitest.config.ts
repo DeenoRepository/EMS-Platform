@@ -12,7 +12,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       enabled: true,
-      include: ['src/components/ui/**/*.{ts,tsx}'],
+      include: ['src/components/**/*.{ts,tsx}'],
       exclude: [
         'src/**/*.test.{ts,tsx}',
         'src/**/__tests__/**',
