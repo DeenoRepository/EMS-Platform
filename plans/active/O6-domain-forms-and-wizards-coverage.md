@@ -8,7 +8,7 @@ risk: medium
 skills: [senior-qa, senior-frontend]
 opened: 2026-09-01
 closed: null
-commits: [4412195, 6d705c1, 39ae85c, bb6e427, 4d15658, 98047ff]
+commits: [4412195, 6d705c1, 39ae85c, bb6e427, 4d15658, 98047ff, 99a095f]
 gates: [test, coverage, lint, tsc]
 ---
 
