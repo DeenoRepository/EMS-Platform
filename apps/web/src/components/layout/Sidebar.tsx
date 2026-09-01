@@ -20,6 +20,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import FeedbackOutlinedIcon from '@mui/icons-material/FeedbackOutlined';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS, PlatformMaintenanceStatus } from '@ems/shared';
+import { canAccessNavItem } from './sidebar-rbac';
 import { applySidebarDataUpdate, loadSidebarData, type SidebarDataSetters } from './sidebar-load-data';
 import { StatusBadge } from '@/components/ui';
 import FeedbackDialog from '@/components/feedback/FeedbackDialog';
@@ -173,17 +174,7 @@ export default function Sidebar({
   };
 
   const canAccess = useCallback(
-    (nav?: { permission?: string; permissions?: string[] } | null) => {
-      if (!nav) return true;
-      if (user?.roles?.includes('admin')) return true;
-      if (nav.permissions && nav.permissions.length > 0) {
-        return nav.permissions.some((p) => hasPermission(p));
-      }
-      if (nav.permission) {
-        return hasPermission(nav.permission);
-      }
-      return true;
-    },
+    (nav?: { permission?: string; permissions?: string[] } | null) => canAccessNavItem(user, nav, hasPermission),
     [user, hasPermission]
   );
 
