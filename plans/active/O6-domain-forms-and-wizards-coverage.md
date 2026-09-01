@@ -8,7 +8,7 @@ risk: medium
 skills: [senior-qa, senior-frontend]
 opened: 2026-09-01
 closed: null
-commits: [4412195, 6d705c1, 39ae85c, bb6e427]
+commits: [4412195, 6d705c1, 39ae85c, bb6e427, 4d15658, 98047ff]
 gates: [test, coverage, lint, tsc]
 ---
 
@@ -94,14 +94,14 @@ Testing Library тесты для форм, мастеров и таблиц с 
 
 ## Definition of Done
 
-- [ ] Все 4 мастера покрыты тестами переходов, валидации и payload.
+- [x] Все 4 мастера покрыты тестами переходов, валидации и payload.
 - [x] Payload helpers мастеров покрыты и соответствуют контрактам O2.
-- [ ] Сайдбар покрыт RBAC-тестом (видимость модулей по роли).
+- [x] Сайдбар покрыт RBAC-тестом (видимость модулей по роли).
 - [x] Все новые component-тесты используют существующий `renderWithProviders` helper.
-- [ ] Component line coverage ≥ 25 %, порог поднят; текущий измеренный уровень — 23.59 %.
+- [x] Component line coverage ≥ 25 %, порог поднят; текущий измеренный уровень — 38.60 %.
 - [x] Нет тестов, ассертящих собственные моки.
 - [ ] Full gate green: test, coverage, lint, tsc.
 
 ## Result
 
-Добавлены executable-тесты payload helper-ов оборудования, перемещения и MRO, а также component-тесты equipment wizard, approval wizard, MRO execution wizard, transfer request, WMS setup/review steps, EPS technical/classification/review/identification steps, edit dialog и smart import steps. На текущем этапе component suite: 28 файлов и 124 теста; Node suite и lint/typecheck проходят. Component coverage расширен на `src/components` и достиг 23.59 %, поэтому ratchet 25 % пока не поднимался.
+Добавлены executable-тесты payload helper-ов оборудования, перемещения и MRO, component-тесты четырёх мастеров, EPS passport tabs, admin/setup/report/import компонентов и RBAC-навигации Sidebar. Все новые component-тесты используют существующий `renderWithProviders` helper. Текущий component suite: 37 файлов; измеренное component line coverage — 38.60 %, что выше ratchet 25 %. Node suite, component suite, lint и typecheck проходят. Общий coverage gate пока не закрыт: на Node 24.15.0 метрики Node coverage составляют 79.27 % line и 47.17 % file reach при порогах 80/62; это отдельная проблема измерения Node coverage, не компонентного покрытия O6.
