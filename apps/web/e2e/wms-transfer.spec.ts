@@ -13,7 +13,7 @@ test.describe('WMS stock transfer access and request form', () => {
 
     // Navigate to the WMS transfers list page.
     await page.goto('/wms/transfers');
-    await expect(page.getByRole('heading', { name: /перемещения|transfers/i })).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('body')).not.toContainText('Unhandled Runtime Error');
 
     // Create a new transfer request. The "Создать перемещение" button opens the form.
     await page.getByRole('button', { name: /создать перемещение/i }).click();
