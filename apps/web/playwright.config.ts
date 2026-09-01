@@ -25,6 +25,7 @@ const E2E_JWT_SECRET = 'e2e_playwright_smoke_test_jwt_secret_not_for_prod_use_on
 
 export default defineConfig({
   testDir: './e2e',
+  testMatch: /.*\.spec\.ts$/,
   globalSetup: require.resolve('./e2e/global-setup.ts'),
   globalTeardown: require.resolve('./e2e/global-teardown.ts'),
   fullyParallel: false, // smoke suite is small; sequential avoids DB row races
