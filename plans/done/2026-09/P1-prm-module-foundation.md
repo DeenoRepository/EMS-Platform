@@ -19,16 +19,16 @@ gates: [lint, tsc, test, coverage, quality-baseline, route-test-coverage, static
 В платформе нет контура подачи и контроля заявок на закупку ТМЦ. Существующие
 механизмы закрывают только смежные задачи:
 
-- [`StockTransfer`](../../packages/database/prisma/schema.prisma:601) реализует
+- [`StockTransfer`](../../../packages/database/prisma/schema.prisma:601) реализует
   цикл «заявка → согласование → отгрузка → приёмка», но **только между
   внутренними складами**; внешней закупки не покрывает.
-- [`EquipmentApproval`](../../packages/database/prisma/schema.prisma:341) даёт
+- [`EquipmentApproval`](../../../packages/database/prisma/schema.prisma:341) даёт
   одноуровневое согласование, но привязан к оборудованию и не имеет позиций
   с количеством.
-- [`StockOperation`](../../packages/database/prisma/schema.prisma:499) с
+- [`StockOperation`](../../../packages/database/prisma/schema.prisma:499) с
   `OperationType.RECEIPT` оформляет приход, но не знает, по какой заявке он
   пришёл; поставщик хранится строкой `counterparty`.
-- [`Nomenclature`](../../packages/database/prisma/schema.prisma:458) не содержит
+- [`Nomenclature`](../../../packages/database/prisma/schema.prisma:458) не содержит
   цены, поэтому стоимость должна фиксироваться на позиции заявки.
 
 Итого: потребность в ТМЦ, её согласование и связь с фактическим приходом нигде
@@ -55,11 +55,11 @@ gates: [lint, tsc, test, coverage, quality-baseline, route-test-coverage, static
   `MaintenanceSchedule`. Полный enum статусов заводится сразу (включая значения
   стадии исполнения), чтобы P2 не требовал второй миграции enum.
 - Новая версионированная миграция Prisma (не `db push`).
-- [`packages/shared/src/permissions.ts`](../../packages/shared/src/permissions.ts) —
+- [`packages/shared/src/permissions.ts`](../../../packages/shared/src/permissions.ts) —
   права `prm.*` и расширение union `module` значением `'prm'`.
 - [`packages/database/src/seed-data/permissions-roles.ts`](../../packages/database/src/seed-data/permissions-roles.ts) —
   выдача новых прав существующим ролям.
-- [`ModuleStatusMap` и `ALLOWED_MODULES`](../../apps/web/src/app/api/modules/status/route.ts:9) —
+- [`ModuleStatusMap` и `ALLOWED_MODULES`](../../../apps/web/src/app/api/modules/status/route.ts:9) —
   добавление `prm`.
 - Новый доменный сервис `apps/web/src/lib/prm-requests-service.ts` (scoping,
   генерация номера, построение `where`, счётчики вкладок) — по образцу
