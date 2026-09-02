@@ -6,7 +6,7 @@
 > — that file is the single source of truth for threshold values; this
 > document only reports the last measured actuals against them.
 >
-> Measured at: 2026-08-31
+> Measured at: 2026-09-02
 > Overall gate: ✅ PASS
 
 No other file in this repository should restate these numbers. Rules files
@@ -21,14 +21,14 @@ latest dated snapshot in [`docs/quality/inspections/`](inspections/).
 
 ### `apps/web/src`
 
-Files analyzed: **350**
+Files analyzed: **351**
 
 | Metric | Actual | Threshold | Status |
 |---|---:|---:|---|
 | Average score | 83.5 | >= 80 | ✅ PASS |
 | F-grade files | 22 | <= 34 | ✅ PASS |
-| Code smells | 2300 | <= 2400 | ✅ PASS |
-| SOLID violations | 24 | <= 25 | ✅ PASS |
+| Code smells | 2314 | <= 2400 | ✅ PASS |
+| SOLID violations | 25 | <= 25 | ✅ PASS |
 
 ### `packages`
 

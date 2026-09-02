@@ -5,13 +5,13 @@
 > Requires: `pnpm install --frozen-lockfile && pnpm db:generate`
 > Measured on Node 24.15.0; use `.nvmrc` for reproducibility.
 
-**Measured at:** 2026-09-01
+**Measured at:** 2026-09-02
 
 ## Metrics
 
 | Metric | Value | Threshold | Status |
 |---|---:|---:|---|
-| Line coverage among loaded files | 79.27 % | >= 79 % | PASS |
+| Line coverage among loaded files | 79.37 % | >= 79 % | PASS |
 | File-level coverage | 47.17 % | >= 47 % | PASS |
 | Component line coverage | 38.60 % | >= 25 % | PASS |
 
