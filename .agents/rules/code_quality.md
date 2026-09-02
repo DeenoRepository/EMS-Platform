@@ -97,15 +97,19 @@ Score — индикатор тренда, а не приговор. **Пере�
 
 ## 4. Пример эталонной декомпозиции сервисного слоя
 
-`apps/web/src/lib/jira-service.ts` был разделён на focused-модули в
-`apps/web/src/lib/srm/` с сохранением compatibility barrel:
+[`apps/web/src/lib/jira-service.ts`](../../apps/web/src/lib/jira-service.ts)
+был разделён на focused-модули в
+[`apps/web/src/lib/jira/`](../../apps/web/src/lib/jira/) с сохранением
+compatibility barrel:
 
 ```
-apps/web/src/lib/srm/
-  ├── jira-field-mapper.ts      ← applyJiraFieldMapping(), extractValueByPath(), transformValue()
-  ├── jira-sync.ts              ← syncJiraIssues(), getJiraFieldMapping(), saveJiraFieldMapping()
-  ├── srm-metrics.ts            ← calculateSrmMetrics(), calculateAdvancedRamsMetrics()
-  └── srm-notifications.ts      ← notifySrmIncident(), createInternalServiceRequest()
+apps/web/src/lib/jira/
+  ├── constants.ts         ← пороги SLA, множители единиц времени
+  ├── field-mapping.ts     ← applyJiraFieldMapping(), extractValueByPath()
+  ├── sync.ts              ← syncJiraIssues(), getJiraFieldMapping(), saveJiraFieldMapping()
+  ├── metrics.ts           ← calculateSrmMetrics(), calculateAdvancedRamsMetrics()
+  ├── notifications.ts     ← notifySrmIncident()
+  └── service-requests.ts  ← createInternalServiceRequest()
 ```
 
 Тот же рецепт (public props/callbacks зафиксированы → чистая логика в
@@ -237,11 +241,21 @@ Zod-схему. Оставшийся объём этой работы — см.
 
 ## 9. Тесты — Обязательные требования
 
-* Минимальное покрытие для новых модулей в `packages/auth/` — 90%
-* Тесты должны находиться рядом с кодом или в `src/lib/__tests__/`
+> **Полные правила обязательного тестирования нового кода — в
+> [`testing.md`](testing.md).** Здесь остаётся только запрет
+> тавтологических тестов, поскольку он выявляется на code-review качества.
+
+* Весь новый код с поведением покрывается тестом в том же коммите
+  ([`testing.md`](testing.md) §1).
+* Тесты находятся рядом с кодом или в `__tests__/` — обе раскладки
+  распознаются раннером автоматически.
 * Перед коммитом: `pnpm test` должен показать **0 failures**
 * Актуальный счётчик тестов и время прогона — вывод самой команды, не
   фиксировать здесь числом (устареет при первом же новом тесте).
+* Фактические значения покрытия — только в
+  [`docs/quality/COVERAGE_BASELINE.md`](../../docs/quality/COVERAGE_BASELINE.md);
+  пороги — только в
+  [`scripts/check-coverage.mjs`](../../scripts/check-coverage.mjs).
 
 ### 9.1 Запрет тавтологических тестов (no-local-logic rule)
 

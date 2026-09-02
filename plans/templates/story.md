@@ -32,6 +32,11 @@ UI behavior, etc.) — this is what reviewers check first.
 ## Definition of Done
 
 - [ ] Concrete, checkable condition (e.g. "cx ≤ 10", "0 lint warnings").
+- [ ] New/changed behavior is covered by an executable test in the same
+      commit, and the test was verified to fail when the behavior regresses
+      (see [`.agents/rules/testing.md`](../../.agents/rules/testing.md)).
+      Delete this line only for changes with no runtime behavior at all
+      (pure markup, docs, config).
 - [ ] Full gate green: see `gates:` in front-matter.
 
 ## Result

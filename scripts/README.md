@@ -49,6 +49,13 @@ testing.
 `inspect_summary.py` was removed: its output duplicated the generated quality
 baseline and it had no callers.
 
+### Обязанность покрывать новый код тестами
+
+Этот раздел описывает, **как** запускать и размещать тесты. Требование
+**писать** их для всего нового кода с поведением, критерий пригодности
+теста и оси покрытия для write-роутов — в
+[`.agents/rules/testing.md`](../.agents/rules/testing.md).
+
 ### Test file co-location convention
 
 Test files (`*.test.ts`, `*.test.tsx`) may live either:

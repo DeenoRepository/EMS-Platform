@@ -45,7 +45,7 @@
 При выполнении задач в данном репозитории агент ОБЯЗАН обращаться к
 соответствующим локальным скиллам.
 
-### 1. Фронтенд и компоненты интерфейса (Next.js 14, React 18, MUI v5)
+### 1. Фронтенд и компоненты интерфейса (Next.js 15 App Router, React 18, MUI v5)
 * **`senior-frontend`**: страницы `apps/web/src/app/`, компоненты `apps/web/src/components/`, оптимизация рендеринга таблиц и графиков.
 * **`a11y-audit`**: аудит доступности форм (паспорта оборудования, складские накладные, ТО).
 
@@ -61,8 +61,11 @@
 > ⚠️ **Важно**: при работе с `packages/auth`, webhook-эндпоинтами или любым кодом авторизации — **обязательно** сверяться с [`.agents/rules/security.md`](security.md).
 
 ### 4. Тестирование и обеспечение качества (QA & E2E)
-* **`senior-qa`**: модульные и интеграционные тесты (Jest, React Testing Library) для `packages/auth` и `apps/web/src/lib/__tests__/`.
+* **`senior-qa`**: модульные и интеграционные тесты для `packages/` и `apps/web/src/lib/__tests__/`. Jest в проекте **не используется**: логика и API-роуты тестируются через `node:test` + `tsx` (`pnpm test`), React-компоненты — через Vitest + Testing Library. Скилл написан в терминах Jest — его рецепты применять с поправкой на фактический раннер.
 * **`playwright-pro`**: E2E-тесты пользовательских сценариев (жизненный цикл оборудования, согласования, инвентаризация) с архитектурой Page Object Model.
+
+> ⚠️ Обязанность покрывать новый код тестами и критерий пригодности теста —
+> [`.agents/rules/testing.md`](testing.md).
 
 ### 5. Архитектура и надёжность
 * **`senior-architect`**: добавление новых пакетов в монорепозиторий, проектирование связей между модулями, ADR-документы (см. [`docs/architecture/decisions/`](../../docs/architecture/decisions/)).
@@ -83,7 +86,7 @@
 ```
 EMS-Platform/                    ← Monorepo (pnpm workspaces)
 ├── apps/
-│   └── web/                     ← Next.js 14 App Router (TypeScript + MUI v5)
+│   └── web/                     ← Next.js 15 App Router (TypeScript + MUI v5)
 │       └── src/
 │           ├── app/             ← Страницы и API Routes
 │           │   ├── api/         ← Backend API (auth, eps, wms, srm, mro, admin)

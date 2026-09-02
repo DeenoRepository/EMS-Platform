@@ -17,6 +17,7 @@ stale by definition and should be replaced with a link.
 | Current route-level rate-limit/RBAC coverage | [`docs/quality/SECURITY_BASELINE.md`](quality/SECURITY_BASELINE.md) (generated) |
 | What a specific past inspection found | [`docs/quality/inspections/`](quality/inspections/) (dated, immutable) |
 | Security rules (webhook auth, RBAC, LDAP, rate limiting) | [`.agents/rules/security.md`](../.agents/rules/security.md) |
+| Whether new code must ship with tests, and what counts as a valid test | [`.agents/rules/testing.md`](../.agents/rules/testing.md) |
 | UI component / design-system rules | [`.agents/rules/ui_design_code.md`](../.agents/rules/ui_design_code.md) |
 | Code quality thresholds and how to run the checker | [`.agents/rules/code_quality.md`](../.agents/rules/code_quality.md) |
 | Which skill to use for a task | [`.agents/rules/skills_usage.md`](../.agents/rules/skills_usage.md) |
