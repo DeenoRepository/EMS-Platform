@@ -22,14 +22,13 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (4)
+## Active (3)
 
 | ID | Title | Phase | Priority | Risk | Skills | Opened |
 |---|---|---|---|---|---|---|
 | [N9](active/N9-full-test-coverage.md) | Увеличить покрытие проекта тестами до полного охвата критических путей | N | P1 | medium | senior-qa | 2026-08-31 |
 | [O0](active/O0-coverage-roadmap.md) | Дорожная карта полного покрытия проекта и бизнес-логики тестами | O | P1 | medium | senior-qa, playwright-pro | 2026-09-01 |
 | [O7](active/O7-e2e-flow-coverage.md) | Расширить Playwright E2E до всех критических сквозных потоков | O | P2 | medium | playwright-pro, senior-qa | 2026-09-01 |
-| [P2](active/P2-prm-delivery-and-control.md) | PRM — приёмка с частичными поставками, дефицит и экспорт реестра | P | P1 | high | senior-backend, senior-frontend, senior-qa | 2026-09-02 |
 
 ---
 
@@ -39,7 +38,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 
 ---
 
-## Done (95)
+## Done (96)
 
 | ID | Title | Phase | Closed | Commits |
 |---|---|---|---|---|
@@ -138,3 +137,4 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [O5](done/2026-09/O5-ui-primitives-coverage.md) | Покрыть Testing Library все reusable UI primitives из components/ui | O | 2026-09-01 | pending |
 | [O6](done/2026-09/O6-domain-forms-and-wizards-coverage.md) | Покрыть тестами доменные формы, мастера и таблицы EPS/WMS/MRO/SRM | O | 2026-09-01 | 4412195, 6d705c1, 39ae85c, bb6e427, 4d15658, 98047ff, 99a095f, 6b654f2 |
 | [P1](done/2026-09/P1-prm-module-foundation.md) | Модуль PRM — схема, RBAC, API и согласование заявок на закупку ТМЦ | P | 2026-09-02 | feat(prm): foundation, RBAC, API, approval workflow and UI |
+| [P2](done/2026-09/P2-prm-delivery-and-control.md) | PRM — приёмка с частичными поставками, дефицит и экспорт реестра | P | 2026-09-02 | feat(prm): add delivery shortage and export controls, chore(quality): exclude UI layout literals from magic-number heuristic |

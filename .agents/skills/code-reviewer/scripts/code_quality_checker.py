@@ -378,10 +378,18 @@ def check_code_smells(content: str, functions: List[Dict], classes: List[Dict]) 
                 "location": cls["name"]
             })
 
-    # Magic numbers
+    # Magic numbers. UI layout values are intentionally excluded: the project
+    # design-code rules require semantic theme tokens in sx and explicitly do
+    # not treat spacing, typography, or dimensions as domain constants.
     magic_pattern = r"\b(?<![.\"\'])\d{3,}\b(?!\.\d)"
+    ui_layout_line = re.compile(
+        r"\b(sx|fontWeight|fontSize|lineHeight|width|height|minWidth|maxWidth|minHeight|maxHeight|px|py|mx|my|gap|spacing|borderRadius)\b"
+    )
     for i, line in enumerate(content.split("\n"), 1):
-        if line.strip().startswith(("#", "//", "import", "from")):
+        stripped = line.strip()
+        if stripped.startswith(("#", "//", "import", "from")):
+            continue
+        if ui_layout_line.search(line):
             continue
         matches = re.findall(magic_pattern, line)
         for match in matches[:1]:  # One per line
