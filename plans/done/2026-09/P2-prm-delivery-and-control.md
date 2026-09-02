@@ -16,19 +16,19 @@ gates: [lint, tsc, test, coverage, quality-baseline, route-test-coverage, static
 
 ## Problem
 
-После закрытия [P1](../done/2026-09/P1-prm-module-foundation.md) заявка на закупку доходит
+После закрытия [P1](P1-prm-module-foundation.md) заявка на закупку доходит
 только до статуса `APPROVED`: фактическое исполнение не отслеживается, а
 поступивший товар не связывается с заявкой. Контроль выполнения — вторая
 половина требования заказчика — остаётся нереализованным.
 
 Опорные точки в существующем коде:
 
-- [`StockOperation`](../../packages/database/prisma/schema.prisma:499) /
+- [`StockOperation`](../../../packages/database/prisma/schema.prisma:499) /
   `OperationType.RECEIPT` — целевой механизм оприходования, который должен
   создаваться автоматически при приёмке.
-- [`StockItem`](../../packages/database/prisma/schema.prisma:483) с уникальным
+- [`StockItem`](../../../packages/database/prisma/schema.prisma:483) с уникальным
   ключом `[warehouseId, nomenclatureId]` — остаток, который увеличивается при приходе.
-- [`Nomenclature.minStock`](../../packages/database/prisma/schema.prisma:465) —
+- [`Nomenclature.minStock`](../../../packages/database/prisma/schema.prisma:465) —
   источник расчёта дефицита для авто-предложения позиций.
 
 ## Scope
