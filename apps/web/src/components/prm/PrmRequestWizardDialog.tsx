@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -71,6 +71,8 @@ export default function PrmRequestWizardDialog({
   const [itemQty, setItemQty] = useState('1');
   const [itemPrice, setItemPrice] = useState('0');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingShortage, setLoadingShortage] = useState(false);
+  const deliveryKeyRef = useRef('');
 
   useEffect(() => {
     if (open) {
@@ -82,6 +84,7 @@ export default function PrmRequestWizardDialog({
       setSelectedNomenclature(null);
       setItemQty('1');
       setItemPrice('0');
+      deliveryKeyRef.current = '';
 
       fetch('/api/wms/warehouses')
         .then((r) => r.json())
@@ -138,6 +141,45 @@ export default function PrmRequestWizardDialog({
 
   const handleRemoveItem = (idx: number) => {
     setLineItems((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleAddShortageItems = async () => {
+    if (!targetWarehouseId) {
+      enqueueSnackbar('Сначала выберите склад назначения', { variant: 'warning' });
+      return;
+    }
+
+    setLoadingShortage(true);
+    try {
+      const response = await fetch(`/api/prm/shortages?warehouseId=${encodeURIComponent(targetWarehouseId)}`);
+      const body = await response.json();
+      if (!response.ok || !body.success) {
+        enqueueSnackbar(body.error || 'Не удалось получить дефицитные позиции', { variant: 'error' });
+        return;
+      }
+
+      const suggestions: Array<{ nomenclatureId: string; shortageQty: number }> = Array.isArray(body.data) ? body.data : [];
+      setLineItems((current) => suggestions.reduce((items: PrmRequestLineItem[], suggestion) => {
+        const nomenclature = nomenclatures.find((item) => item.id === suggestion.nomenclatureId);
+        if (!nomenclature) return items;
+        return addOrMergeLineItem(items, {
+          nomenclatureId: nomenclature.id,
+          nomenclatureName: nomenclature.name,
+          nomenclatureArticle: nomenclature.article || undefined,
+          unit: nomenclature.unit,
+          requestedQty: Number(suggestion.shortageQty),
+          estimatedPrice: 0,
+        });
+      }, current));
+      enqueueSnackbar(
+        suggestions.length > 0 ? `Добавлено дефицитных позиций: ${suggestions.length}` : 'Дефицитных позиций не найдено',
+        { variant: suggestions.length > 0 ? 'success' : 'info' },
+      );
+    } catch {
+      enqueueSnackbar('Ошибка сети при загрузке дефицита', { variant: 'error' });
+    } finally {
+      setLoadingShortage(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -260,9 +302,14 @@ export default function PrmRequestWizardDialog({
         </Grid>
 
         <Paper elevation={0} sx={{ p: 2, borderRadius: '8px', bgcolor: 'background.default', border: '1px solid divider' }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary', mb: 1.5 }}>
-            Позиции ТМЦ:
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, mb: 1.5, flexWrap: 'wrap' }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary' }}>
+              Позиции ТМЦ:
+            </Typography>
+            <Button size="small" variant="outlined" onClick={handleAddShortageItems} disabled={loadingShortage || !targetWarehouseId}>
+              {loadingShortage ? 'Загрузка дефицита...' : 'Добавить дефицитные позиции'}
+            </Button>
+          </Box>
 
           <Grid container spacing={1.5} alignItems="flex-start">
             <Grid item xs={12} sm={5}>

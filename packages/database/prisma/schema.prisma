@@ -47,6 +47,7 @@ model User {
   uploadedFeedbackAttachments FeedbackAttachment[] @relation("FeedbackAttachmentUploader")
   requestedPurchaseRequests PurchaseRequest[]  @relation("PurchaseRequestRequester")
   reviewedPurchaseRequests  PurchaseRequest[]  @relation("PurchaseRequestReviewer")
+  createdPurchaseDeliveries PurchaseDelivery[] @relation("PurchaseDeliveryCreatedBy")
 
   @@index([deletedAt])
 }
@@ -414,6 +415,7 @@ model Warehouse {
   receivedTransfers   StockTransfer[]     @relation("TransfersReceived")
   usedInMaintenance   MaintenanceUsedPart[]
   purchaseRequests    PurchaseRequest[]
+  purchaseDeliveries  PurchaseDelivery[]
 
   @@index([responsibleUserId])
   @@index([deletedAt])
@@ -518,6 +520,7 @@ model StockOperation {
   warehouse Warehouse            @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
   createdBy User                 @relation(fields: [createdById], references: [id])
   items     StockOperationItem[]
+  purchaseDelivery PurchaseDelivery?
 
   @@index([warehouseId])
   @@index([date])
@@ -701,6 +704,7 @@ model PurchaseRequest {
   equipment           Equipment?            @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
   maintenanceSchedule MaintenanceSchedule?  @relation(fields: [maintenanceScheduleId], references: [id], onDelete: SetNull)
   items               PurchaseRequestItem[]
+  deliveries          PurchaseDelivery[]
 
   @@index([status])
   @@index([targetWarehouseId])
@@ -741,9 +745,48 @@ model PurchaseRequestItem {
 
   request      PurchaseRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
   nomenclature Nomenclature    @relation(fields: [nomenclatureId], references: [id], onDelete: Cascade)
+  deliveryItems PurchaseDeliveryItem[]
 
   @@index([requestId])
   @@index([nomenclatureId])
+}
+
+model PurchaseDelivery {
+  id              String   @id @default(uuid())
+  requestId       String
+  warehouseId     String
+  deliveryDate    DateTime @default(now())
+  supplierName    String?
+  document        String?
+  idempotencyKey  String   @unique
+  createdById     String
+  stockOperationId String  @unique
+  createdAt       DateTime @default(now())
+
+  request        PurchaseRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  warehouse      Warehouse       @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+  createdBy      User            @relation("PurchaseDeliveryCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  stockOperation StockOperation  @relation(fields: [stockOperationId], references: [id], onDelete: Restrict)
+  items          PurchaseDeliveryItem[]
+
+  @@index([requestId])
+  @@index([warehouseId])
+  @@index([createdById])
+  @@index([deliveryDate])
+}
+
+model PurchaseDeliveryItem {
+  id               String   @id @default(uuid())
+  deliveryId       String
+  requestItemId    String
+  receivedQty      Decimal
+  actualPrice      Decimal?
+
+  delivery    PurchaseDelivery     @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  requestItem PurchaseRequestItem  @relation(fields: [requestItemId], references: [id], onDelete: Restrict)
+
+  @@unique([deliveryId, requestItemId])
+  @@index([requestItemId])
 }
 
 // ==========================================

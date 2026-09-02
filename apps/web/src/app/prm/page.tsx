@@ -21,9 +21,11 @@ import {
   PageLoading,
   ConfirmDialog,
   NavTabsContainer,
+  ExportButton,
 } from '@/components/ui';
 import {
   PrmRequestWizardDialog,
+  PrmDeliveryDialog,
   PrmRequestTableView,
   PrmRequestReviewDialog,
   PrmRequestDetailsDialog,
@@ -64,6 +66,7 @@ function PrmRegistryContent() {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<PrmRequestTableItem | null>(null);
   const [selectedForDetails, setSelectedForDetails] = useState<PrmRequestTableItem | null>(null);
+  const [selectedForDelivery, setSelectedForDelivery] = useState<PrmRequestTableItem | null>(null);
 
   const canView = hasPermission(PERMISSIONS.PRM_REQUESTS_VIEW) || hasPermission(PERMISSIONS.PRM_REQUESTS_CREATE) || hasPermission(PERMISSIONS.PRM_REQUESTS_MANAGE);
   const canCreate = hasPermission(PERMISSIONS.PRM_REQUESTS_CREATE);
@@ -193,11 +196,25 @@ function PrmRegistryContent() {
         subtitle="Подача и согласование заявок на закупку товарно-материальных ценностей"
         breadcrumbs={[{ label: 'Главная', href: '/' }, { label: 'PRM' }]}
         actions={
-          canCreate ? (
-            <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={() => setCreateModalOpen(true)} sx={{ fontWeight: 700 }}>
-              Создать заявку
-            </Button>
-          ) : undefined
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <ExportButton
+              formats={['csv']}
+              label="Экспорт"
+              onExport={() => {
+                const params = new URLSearchParams();
+                if (activeScopeTab === 'to_review') params.set('scope', 'to_review');
+                if (activeScopeTab === 'my_requests') params.set('scope', 'my_requests');
+                if (statusFilter) params.set('status', statusFilter);
+                if (search) params.set('search', search);
+                window.location.href = `/api/prm/requests/export?${params.toString()}`;
+              }}
+            />
+            {canCreate && (
+              <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={() => setCreateModalOpen(true)} sx={{ fontWeight: 700 }}>
+                Создать заявку
+              </Button>
+            )}
+          </Box>
         }
       />
 
@@ -333,6 +350,10 @@ function PrmRegistryContent() {
         currentUserId={user?.userId}
         canReview={canReview}
         onClose={() => setSelectedForDetails(null)}
+        onReceive={(item) => {
+          setSelectedForDetails(null);
+          setSelectedForDelivery(item);
+        }}
         onSubmit={async (item) => {
           setSelectedForDetails(null);
           await handleSubmitDraft(item);
@@ -346,6 +367,16 @@ function PrmRegistryContent() {
         onCancel={(item) => {
           setSelectedForDetails(null);
           setCancelTarget(item);
+        }}
+      />
+
+      <PrmDeliveryDialog
+        open={Boolean(selectedForDelivery)}
+        request={selectedForDelivery}
+        onClose={() => setSelectedForDelivery(null)}
+        onSuccess={() => {
+          setSelectedForDelivery(null);
+          fetchRequests();
         }}
       />
 

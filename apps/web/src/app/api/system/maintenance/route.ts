@@ -20,6 +20,7 @@ const DEFAULT_MAINTENANCE_STATUS: PlatformMaintenanceStatus = {
     wms: { enabled: false, message: 'Модуль складского учёта (WMS) находится на техническом обслуживании.', estimatedUntil: null },
     srm: { enabled: false, message: 'Модуль подачи заявок (SRM) находится на техническом обслуживании.', estimatedUntil: null },
     mro: { enabled: false, message: 'Модуль ТО и ремонта (MRO) находится на техническом обслуживании.', estimatedUntil: null },
+    prm: { enabled: false, message: 'Модуль закупок (PRM) находится на техническом обслуживании.', estimatedUntil: null },
   },
 };
 
@@ -41,6 +42,7 @@ async function getMaintenanceStatus(): Promise<PlatformMaintenanceStatus> {
         wms: { ...DEFAULT_MAINTENANCE_STATUS.modules.wms, ...(parsed.modules?.wms || {}) },
         srm: { ...DEFAULT_MAINTENANCE_STATUS.modules.srm, ...(parsed.modules?.srm || {}) },
         mro: { ...DEFAULT_MAINTENANCE_STATUS.modules.mro, ...(parsed.modules?.mro || {}) },
+        prm: { ...DEFAULT_MAINTENANCE_STATUS.modules.prm, ...(parsed.modules?.prm || {}) },
       },
     };
   } catch {
@@ -81,6 +83,7 @@ const updateMaintenanceSchema = z.object({
       wms: z.object({ enabled: z.boolean(), message: z.string().optional(), estimatedUntil: z.string().nullable().optional() }).optional(),
       srm: z.object({ enabled: z.boolean(), message: z.string().optional(), estimatedUntil: z.string().nullable().optional() }).optional(),
       mro: z.object({ enabled: z.boolean(), message: z.string().optional(), estimatedUntil: z.string().nullable().optional() }).optional(),
+      prm: z.object({ enabled: z.boolean(), message: z.string().optional(), estimatedUntil: z.string().nullable().optional() }).optional(),
     })
     .optional(),
 });
@@ -116,6 +119,7 @@ export async function PATCH(req: NextRequest) {
         wms: validated.modules?.wms ? { ...current.modules.wms, ...validated.modules.wms } : current.modules.wms,
         srm: validated.modules?.srm ? { ...current.modules.srm, ...validated.modules.srm } : current.modules.srm,
         mro: validated.modules?.mro ? { ...current.modules.mro, ...validated.modules.mro } : current.modules.mro,
+        prm: validated.modules?.prm ? { ...current.modules.prm, ...validated.modules.prm } : current.modules.prm,
       },
     };
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Box, Divider, Paper, Typography, Table, TableBody, TableCell, TableHead, TableRow, Button } from '@mui/material';
+import { Box, Divider, LinearProgress, Paper, Typography, Table, TableBody, TableCell, TableHead, TableRow, Button } from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { FormDialog, StatusBadge } from '@/components/ui';
 import { formatDateTime } from '@ems/shared';
@@ -13,6 +13,7 @@ interface PrmRequestDetailsDialogProps {
   currentUserId?: string;
   canReview: boolean;
   onClose: () => void;
+  onReceive: (request: PrmRequestTableItem) => void;
   onSubmit: (request: PrmRequestTableItem) => void;
   onReview: (request: PrmRequestTableItem) => void;
   onCancel: (request: PrmRequestTableItem) => void;
@@ -24,6 +25,7 @@ export function PrmRequestDetailsDialog({
   currentUserId,
   canReview,
   onClose,
+  onReceive,
   onSubmit,
   onReview,
   onCancel,
@@ -33,6 +35,7 @@ export function PrmRequestDetailsDialog({
   const isRequester = request.requester.id === currentUserId;
   const isDraft = request.status === 'DRAFT';
   const isSubmitted = request.status === 'SUBMITTED';
+  const isReceivable = ['APPROVED', 'IN_PROGRESS', 'PARTIALLY_DELIVERED'].includes(request.status);
 
   return (
     <FormDialog open={open} onClose={onClose} title={`Заявка ${request.requestNumber}`} subtitle="Детали заявки на закупку ТМЦ" maxWidth="md" hideActions>
@@ -108,7 +111,37 @@ export function PrmRequestDetailsDialog({
           </Box>
         </Paper>
 
+        {request.status !== 'DRAFT' && request.status !== 'SUBMITTED' && (
+          <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.default' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+              <Typography variant="subtitle2" fontWeight={700}>Прогресс поставки</Typography>
+              <Typography variant="subtitle2" fontWeight={700} color="primary.main">
+                {request.items.length > 0
+                  ? Math.round(request.items.reduce((sum, item) => sum + Math.min(100, (Number(item.receivedQty) / Number(item.requestedQty)) * 100), 0) / request.items.length)
+                  : 0}%
+              </Typography>
+            </Box>
+            {request.items.map((item) => {
+              const requested = Number(item.requestedQty);
+              const received = Number(item.receivedQty);
+              const progress = requested > 0 ? Math.min(100, (received / requested) * 100) : 0;
+              return (
+                <Box key={item.id} sx={{ mb: 1.25 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.35 }}>
+                    <Typography variant="caption" color="text.secondary">{item.nomenclature.name}</Typography>
+                    <Typography variant="caption" fontWeight={600}>{received} / {requested} {item.nomenclature.unit}</Typography>
+                  </Box>
+                  <LinearProgress variant="determinate" value={progress} sx={{ height: 6, borderRadius: 3 }} />
+                </Box>
+              );
+            })}
+          </Paper>
+        )}
+
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, flexWrap: 'wrap' }}>
+          {isReceivable && (
+            <Button variant="contained" color="success" onClick={() => onReceive(request)}>Принять поставку</Button>
+          )}
           {isDraft && isRequester && (
             <Button variant="contained" onClick={() => onSubmit(request)}>Подать на согласование</Button>
           )}

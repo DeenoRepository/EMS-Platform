@@ -20,7 +20,9 @@ export interface PrmRequestTableItem {
   reviewer: { id: string; displayName: string } | null;
   items: Array<{
     id: string;
+    nomenclatureId: string;
     requestedQty: number | string;
+    receivedQty: number | string;
     estimatedPrice: number | string;
     nomenclature: { name: string; unit: string };
   }>;
