@@ -18,11 +18,16 @@ build
 *.tsbuildinfo
 
 # Environment & Secret files
+# Правило: исключается ВСЁ семейство .env*, кроме шаблонов *.example.
+# Перечисление отдельных вариантов уже приводило к утечке: scripts/prod-deploy.sh
+# создаёт в корне репозитория .env.production с реальными JWT_SECRET и паролем
+# БД, а `COPY . .` в Dockerfile запекал бы его в слой образа. Секреты
+# передаются контейнеру через `environment:` в docker-compose.prod.yml, поэтому
+# внутри образа эти файлы не нужны ни на одном этапе сборки.
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
+!.env.production.example
 .installed
 
 # Logs & temp files

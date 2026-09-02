@@ -64,6 +64,22 @@ for (const file of ['docker-compose.yml', 'docker-compose.prod.yml', 'docker-com
     'Committed fallback credentials are forbidden.',
   );
 }
+// scripts/prod-deploy.sh записывает реальные секреты в .env.production в корне
+// репозитория, а Dockerfile выполняет `COPY . .`. Без исключения всего
+// семейства .env* эти секреты попадают в слой production-образа.
+requireMatch(
+  'dockerignore-excludes-env-secrets',
+  '.dockerignore',
+  /^\.env\.\*$/m,
+  'Docker build context must exclude the whole .env.* family, not individual variants.',
+);
+requireMatch(
+  'dockerignore-keeps-env-templates',
+  '.dockerignore',
+  /^!\.env\.production\.example$/m,
+  'Environment templates must stay available in the build context.',
+);
+
 requireMatch(
   'compose-dev-is-explicitly-development',
   'docker-compose.yml',
