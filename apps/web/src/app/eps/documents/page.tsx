@@ -159,7 +159,7 @@ function DocumentsListContent() {
       if (res.ok) {
         const json = await res.json();
         if (json.success) {
-          const opts: EquipmentOption[] = json.data.map((eq: { id: string; name: string; inventoryNumber: string | null }) => ({
+          const opts: EquipmentOption[] = (json.data?.items || []).map((eq: { id: string; name: string; inventoryNumber: string | null }) => ({
             id: eq.id,
             name: eq.name,
             inventoryNumber: eq.inventoryNumber,
@@ -190,10 +190,15 @@ function DocumentsListContent() {
       if (res.ok) {
         const json = await res.json();
         if (json.success) {
-          setItems(json.data || []);
-          setTotal(json.total || 0);
-          if (json.stats) {
-            setStats(json.stats);
+          const data = json.data || {};
+          setItems(data.items || []);
+          setTotal(data.total || 0);
+          if (data.stats) {
+            setStats({
+              totalCount: data.stats.totalDocuments || 0,
+              totalSize: data.stats.totalSizeBytes || 0,
+              byType: data.stats.byTypeCounts || {},
+            });
           }
         }
       } else {
