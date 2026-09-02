@@ -7,6 +7,16 @@ const HEX_MATCH = /#[0-9a-fA-F]{3,8}/g;
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx']);
 const ALLOWED_PATH_SEGMENTS = ['/theme/'];
 
+// Тесты не рендерят production-UI: hex в них — это фикстуры доменных данных
+// (например, поле `color` метки классификации, приходящее из БД), а не стиль в
+// `sx={}`, который запрещает .agents/rules/ui_design_code.md §2.
+//
+// Каталог `__tests__/` исключался и раньше, но тесты по конвенции проекта
+// (см. scripts/README.md, «Test file co-location convention») могут лежать и
+// рядом с модулем как `*.test.ts(x)`. Без этой проверки гейт зависел от того,
+// какое из двух разрешённых расположений выбрал автор теста.
+const TEST_FILE_PATTERN = /\.test\.(ts|tsx|js|jsx)$/;
+
 function scanDirectory(dir, fileList = []) {
   if (!fs.existsSync(dir)) return fileList;
 
@@ -33,6 +43,7 @@ const violations = [];
 for (const filePath of files) {
   const normalizedPath = filePath.replace(/\\/g, '/');
   if (ALLOWED_PATH_SEGMENTS.some((segment) => normalizedPath.includes(segment))) continue;
+  if (TEST_FILE_PATTERN.test(normalizedPath)) continue;
 
   const content = fs.readFileSync(filePath, 'utf8');
   const lines = content.split(/\r?\n/);
