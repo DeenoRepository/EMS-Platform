@@ -15,9 +15,11 @@ export interface PrmRequestTableItem {
   createdAt: string;
   justification: string | null;
   supplierName: string | null;
-  targetWarehouse: { id: string; name: string; code: string };
+  targetWarehouse: { id: string; name: string; code: string; responsibleUserId?: string };
   requester: { id: string; displayName: string };
   reviewer: { id: string; displayName: string } | null;
+  closedAt?: string | null;
+  closedBy?: { id: string; displayName: string } | null;
   items: Array<{
     id: string;
     nomenclatureId: string;
@@ -32,20 +34,24 @@ interface PrmRequestTableViewProps {
   items: PrmRequestTableItem[];
   currentUserId?: string;
   canReview: boolean;
+  canClose: (item: PrmRequestTableItem) => boolean;
   onSelectDetails: (item: PrmRequestTableItem) => void;
   onSubmit: (item: PrmRequestTableItem) => void;
   onReview: (item: PrmRequestTableItem) => void;
   onCancel: (item: PrmRequestTableItem) => void;
+  onCloseRequest: (item: PrmRequestTableItem) => void;
 }
 
 export function PrmRequestTableView({
   items,
   currentUserId,
   canReview,
+  canClose,
   onSelectDetails,
   onSubmit,
   onReview,
   onCancel,
+  onCloseRequest,
 }: PrmRequestTableViewProps) {
   return (
     <Table size="small">
@@ -71,6 +77,7 @@ export function PrmRequestTableView({
           const isRequester = currentUserId === req.requester.id;
           const isDraft = req.status === 'DRAFT';
           const isSubmitted = req.status === 'SUBMITTED';
+          const isDelivered = req.status === 'DELIVERED';
 
           return (
             <TableRow key={req.id} hover sx={{ cursor: 'pointer' }} onClick={() => onSelectDetails(req)}>
@@ -112,6 +119,20 @@ export function PrmRequestTableView({
                   {(isDraft || isSubmitted) && (isRequester || canReview) && (
                     <Button size="small" variant="outlined" color="inherit" onClick={() => onCancel(req)} sx={{ fontSize: '0.75rem', px: 1, borderRadius: '6px' }}>
                       Отменить
+                    </Button>
+                  )}
+                  {isDelivered && canClose(req) && (
+                    <Button
+                      size="small"
+                      variant="contained"
+                      color="success"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onCloseRequest(req);
+                      }}
+                      sx={{ fontSize: '0.75rem', px: 1.25, borderRadius: '6px' }}
+                    >
+                      Закрыть
                     </Button>
                   )}
                 </Box>

@@ -47,6 +47,7 @@ model User {
   uploadedFeedbackAttachments FeedbackAttachment[] @relation("FeedbackAttachmentUploader")
   requestedPurchaseRequests PurchaseRequest[]  @relation("PurchaseRequestRequester")
   reviewedPurchaseRequests  PurchaseRequest[]  @relation("PurchaseRequestReviewer")
+  closedPurchaseRequests    PurchaseRequest[]  @relation("PurchaseRequestClosedBy")
   createdPurchaseDeliveries PurchaseDelivery[] @relation("PurchaseDeliveryCreatedBy")
 
   @@index([deletedAt])
@@ -687,6 +688,8 @@ model PurchaseRequest {
   requesterId           String
   reviewerId            String?
   reviewedAt            DateTime?
+  closedAt              DateTime?
+  closedById            String?
   resolutionComment     String?                 @db.Text
   justification         String?                 @db.Text
   supplierName          String?
@@ -701,12 +704,14 @@ model PurchaseRequest {
   targetWarehouse     Warehouse             @relation(fields: [targetWarehouseId], references: [id])
   requester           User                  @relation("PurchaseRequestRequester", fields: [requesterId], references: [id])
   reviewer            User?                 @relation("PurchaseRequestReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  closedBy            User?                 @relation("PurchaseRequestClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
   equipment           Equipment?            @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
   maintenanceSchedule MaintenanceSchedule?  @relation(fields: [maintenanceScheduleId], references: [id], onDelete: SetNull)
   items               PurchaseRequestItem[]
   deliveries          PurchaseDelivery[]
 
   @@index([status])
+  @@index([closedById])
   @@index([targetWarehouseId])
   @@index([requesterId])
   @@index([equipmentId])

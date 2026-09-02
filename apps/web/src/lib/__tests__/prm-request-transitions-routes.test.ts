@@ -32,17 +32,23 @@ let currentUser: JwtUserPayload | null = null;
 let existingRequest: any;
 let updatedRequest: any;
 let updateCallArgs: unknown = null;
+let updateManyCallArgs: unknown = null;
 let updateShouldThrow = false;
 let detailUpdateShouldThrow = false;
+let auditShouldThrow = false;
+let notificationShouldThrow = false;
 let notificationCreates: unknown[] = [];
 let auditEvents: unknown[] = [];
+let auditCreates: unknown[] = [];
 
 interface PrismaMock {
   $transaction: (callback: (tx: PrismaMock) => Promise<unknown>) => Promise<unknown>;
   purchaseRequest: {
-    findUnique: () => Promise<unknown>;
+    findUnique: (args?: unknown) => Promise<unknown>;
     update: (args: unknown) => Promise<unknown>;
+    updateMany: (args: unknown) => Promise<{ count: number }>;
   };
+  auditLog: { create: (args: unknown) => Promise<unknown> };
   purchaseRequestItem: {
     deleteMany: (args: unknown) => Promise<unknown>;
   };
@@ -54,8 +60,29 @@ interface PrismaMock {
   };
 }
 
+let transactionQueue = Promise.resolve();
+
 const prismaMock: PrismaMock = {
-  $transaction: async (callback) => callback(prismaMock),
+  $transaction: async (callback) => {
+    const previous = transactionQueue;
+    let release!: () => void;
+    transactionQueue = new Promise<void>((resolve) => { release = resolve; });
+    await previous;
+
+    const requestSnapshot = existingRequest && { ...existingRequest };
+    const notificationCount = notificationCreates.length;
+    const auditCount = auditCreates.length;
+    try {
+      return await callback(prismaMock);
+    } catch (error) {
+      existingRequest = requestSnapshot;
+      notificationCreates.length = notificationCount;
+      auditCreates.length = auditCount;
+      throw error;
+    } finally {
+      release();
+    }
+  },
   purchaseRequest: {
     findUnique: async () => existingRequest,
     update: async (args: unknown) => {
@@ -68,6 +95,19 @@ const prismaMock: PrismaMock = {
       };
       return updatedRequest;
     },
+    updateMany: async (args: unknown) => {
+      updateManyCallArgs = args;
+      if (updateShouldThrow) throw new Error('db failure');
+      const where = (args as any).where;
+      if (existingRequest.id !== where.id || existingRequest.status !== where.status) return { count: 0 };
+      existingRequest = {
+        ...existingRequest,
+        status: (args as any).data.status,
+        closedAt: (args as any).data.closedAt,
+        closedById: (args as any).data.closedById,
+      };
+      return { count: 1 };
+    },
   },
   purchaseRequestItem: {
     deleteMany: async () => ({ count: 1 }),
@@ -77,8 +117,16 @@ const prismaMock: PrismaMock = {
   },
   notification: {
     create: async (args: unknown) => {
+      if (notificationShouldThrow) throw new Error('notification failure');
       notificationCreates.push(args);
       return { id: 'notif-1' };
+    },
+  },
+  auditLog: {
+    create: async (args: unknown) => {
+      if (auditShouldThrow) throw new Error('audit failure');
+      auditCreates.push(args);
+      return { id: 'audit-1' };
     },
   },
 };
@@ -108,6 +156,9 @@ mock.module('@ems/auth', {
 });
 mock.module('@/lib/auth-guard', {
   namedExports: {
+    requireAuth: async () => currentUser
+      ? { user: currentUser }
+      : { errorResponse: Response.json({ success: false, error: 'Unauthorized' }, { status: 401 }) },
     getCurrentUser: async () => currentUser,
     isAdminUser: (user: JwtUserPayload | null) => Boolean(user && user.roles.includes('admin')),
     unauthorizedResponse: () => Response.json({ success: false, error: 'Unauthorized' }, { status: 401 }),
@@ -150,12 +201,14 @@ before(async () => {
   const approve = await import('@/app/api/prm/requests/[id]/approve/route');
   const reject = await import('@/app/api/prm/requests/[id]/reject/route');
   const cancel = await import('@/app/api/prm/requests/[id]/cancel/route');
+  const close = await import('@/app/api/prm/requests/[id]/close/route');
   detailGET = detail.GET as unknown as Handler;
   detailPATCH = detail.PATCH as unknown as Handler;
   handlers.submit = submit.POST as unknown as Handler;
   handlers.approve = approve.POST as unknown as Handler;
   handlers.reject = reject.POST as unknown as Handler;
   handlers.cancel = cancel.POST as unknown as Handler;
+  handlers.close = close.POST as unknown as Handler;
 });
 
 function resetState(status: string = PurchaseRequestStatus.DRAFT) {
@@ -170,10 +223,15 @@ function resetState(status: string = PurchaseRequestStatus.DRAFT) {
   };
   updatedRequest = null;
   updateCallArgs = null;
+  updateManyCallArgs = null;
   updateShouldThrow = false;
   detailUpdateShouldThrow = false;
+  auditShouldThrow = false;
+  notificationShouldThrow = false;
   notificationCreates = [];
   auditEvents = [];
+  auditCreates = [];
+  transactionQueue = Promise.resolve();
 }
 
 function context(id = 'req-1'): RouteContext {
@@ -381,5 +439,120 @@ describe('POST /api/prm/requests/[id]/cancel', () => {
     currentUser = requester;
     const res = await handlers.cancel(post(), context());
     assert.equal(res.status, 400);
+  });
+});
+
+describe('POST /api/prm/requests/[id]/close', () => {
+  test('returns 401 for anonymous requests', async () => {
+    resetState(PurchaseRequestStatus.DELIVERED);
+    existingRequest.items = [{ requestedQty: 10, receivedQty: 10 }];
+    const res = await handlers.close(post(), context());
+    assert.equal(res.status, 401);
+  });
+
+  test('returns 403 without a closure permission or warehouse responsibility', async () => {
+    resetState(PurchaseRequestStatus.DELIVERED);
+    existingRequest.items = [{ requestedQty: 10, receivedQty: 10 }];
+    currentUser = otherUser;
+    existingRequest.targetWarehouse.responsibleUserId = 'someone-else';
+    const res = await handlers.close(post(), context());
+    assert.equal(res.status, 403);
+  });
+
+  test('rejects incomplete delivery and wrong source status', async () => {
+    resetState(PurchaseRequestStatus.PARTIALLY_DELIVERED);
+    existingRequest.items = [{ requestedQty: 10, receivedQty: 9 }];
+    currentUser = reviewer;
+    assert.equal((await handlers.close(post(), context())).status, 400);
+
+    resetState(PurchaseRequestStatus.DELIVERED);
+    existingRequest.items = [{ requestedQty: 10, receivedQty: 9 }];
+    currentUser = reviewer;
+    assert.equal((await handlers.close(post(), context())).status, 400);
+  });
+
+  test('closes a fully delivered request with atomic claim, closure metadata, audit and notification', async () => {
+    resetState(PurchaseRequestStatus.DELIVERED);
+    existingRequest.items = [{ requestedQty: 10, receivedQty: 10 }];
+    currentUser = reviewer;
+    const res = await handlers.close(post(), context());
+    assert.equal(res.status, 200);
+    assert.deepEqual((updateManyCallArgs as any).where, { id: 'req-1', status: PurchaseRequestStatus.DELIVERED });
+    assert.equal((updateManyCallArgs as any).data.status, PurchaseRequestStatus.CLOSED);
+    assert.equal((updateManyCallArgs as any).data.closedById, reviewer.userId);
+    assert.ok((updateManyCallArgs as any).data.closedAt instanceof Date);
+    assert.equal(auditCreates.length, 1);
+    assert.deepEqual((auditCreates[0] as any).data.changes.status, { old: PurchaseRequestStatus.DELIVERED, new: PurchaseRequestStatus.CLOSED });
+    assert.equal((auditCreates[0] as any).data.changes.action, 'CLOSE');
+    assert.equal((auditCreates[0] as any).data.userId, reviewer.userId);
+    assert.equal(notificationCreates.length, 1);
+  });
+
+  test('requester closing their own request does not notify themselves', async () => {
+    resetState(PurchaseRequestStatus.DELIVERED);
+    existingRequest.items = [{ requestedQty: 10, receivedQty: 10 }];
+    currentUser = requester;
+    existingRequest.targetWarehouse.responsibleUserId = requester.userId;
+    const res = await handlers.close(post(), context());
+    assert.equal(res.status, 200);
+    assert.equal(notificationCreates.length, 0);
+  });
+
+  test('warehouse MOL can close a delivered request', async () => {
+    resetState(PurchaseRequestStatus.DELIVERED);
+    existingRequest.items = [{ requestedQty: 10, receivedQty: 10 }];
+    currentUser = { ...requester, userId: 'mol-id', roles: ['storekeeper'], permissions: [PERMISSIONS.WMS_OPERATIONS_CREATE] };
+    existingRequest.targetWarehouse.responsibleUserId = 'mol-id';
+    const res = await handlers.close(post(), context());
+    assert.equal(res.status, 200);
+  });
+
+  test('rolls back the claimed status when audit or notification persistence fails', async () => {
+    for (const failure of ['audit', 'notification'] as const) {
+      resetState(PurchaseRequestStatus.DELIVERED);
+      existingRequest.items = [{ requestedQty: 10, receivedQty: 10 }];
+      currentUser = reviewer;
+      if (failure === 'audit') auditShouldThrow = true;
+      else notificationShouldThrow = true;
+      const res = await handlers.close(post(), context());
+      assert.equal(res.status, 500);
+      assert.equal(existingRequest.status, PurchaseRequestStatus.DELIVERED);
+      assert.equal(notificationCreates.length, 0);
+      assert.equal(auditCreates.length, 0);
+    }
+  });
+
+  test('two concurrent close contenders produce one success, one conflict, one audit and one notification', async () => {
+    resetState(PurchaseRequestStatus.DELIVERED);
+    existingRequest.items = [{ requestedQty: 10, receivedQty: 10 }];
+    currentUser = reviewer;
+
+    const responses = await Promise.all([
+      handlers.close(post(), context()),
+      handlers.close(post(), context()),
+    ]);
+
+    assert.deepEqual(responses.map((response) => response.status).sort(), [200, 409]);
+    assert.equal(auditCreates.length, 1);
+    assert.equal(notificationCreates.length, 1);
+  });
+
+  test('returns 409 for an already closed request without persistence', async () => {
+    resetState(PurchaseRequestStatus.CLOSED);
+    currentUser = reviewer;
+    const res = await handlers.close(post(), context());
+    assert.equal(res.status, 409);
+    assert.equal(updateCallArgs, null);
+  });
+
+  test('returns 500 without leaking persistence details', async () => {
+    resetState(PurchaseRequestStatus.DELIVERED);
+    existingRequest.items = [{ requestedQty: 10, receivedQty: 10 }];
+    currentUser = reviewer;
+    updateShouldThrow = true;
+    const res = await handlers.close(post(), context());
+    assert.equal(res.status, 500);
+    const body = (await res.json()) as { error: string };
+    assert.doesNotMatch(body.error, /db failure/);
   });
 });

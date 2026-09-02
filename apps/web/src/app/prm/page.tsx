@@ -119,12 +119,14 @@ function PrmRegistryContent() {
   const [cancelTarget, setCancelTarget] = useState<PrmRequestTableItem | null>(null);
   const [selectedForDetails, setSelectedForDetails] = useState<PrmRequestTableItem | null>(null);
   const [selectedForDelivery, setSelectedForDelivery] = useState<PrmRequestTableItem | null>(null);
+  const [closeTarget, setCloseTarget] = useState<PrmRequestTableItem | null>(null);
   const [deepLinkLoading, setDeepLinkLoading] = useState(false);
   const [deepLinkError, setDeepLinkError] = useState<string | null>(null);
 
   const canView = hasPermission(PERMISSIONS.PRM_REQUESTS_VIEW) || hasPermission(PERMISSIONS.PRM_REQUESTS_CREATE) || hasPermission(PERMISSIONS.PRM_REQUESTS_MANAGE);
   const canCreate = hasPermission(PERMISSIONS.PRM_REQUESTS_CREATE);
   const canReview = hasPermission(PERMISSIONS.PRM_REQUESTS_MANAGE);
+  const canClose = canReview || user?.userId === selectedForDetails?.targetWarehouse.responsibleUserId;
 
   const fetchRequests = useCallback(async () => {
     setLoading(true);
@@ -309,6 +311,22 @@ function PrmRegistryContent() {
     }
   };
 
+  const handleCloseRequest = async (item: PrmRequestTableItem) => {
+    try {
+      const res = await fetch(`/api/prm/requests/${item.id}/close`, { method: 'POST' });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        enqueueSnackbar('Заявка закрыта', { variant: 'success' });
+        closeDeepLinkedDetails();
+        fetchRequests();
+      } else {
+        enqueueSnackbar(json.error || 'Ошибка закрытия заявки', { variant: 'error' });
+      }
+    } catch {
+      enqueueSnackbar('Ошибка сети при закрытии заявки', { variant: 'error' });
+    }
+  };
+
   const scopeTabs = [
     { value: 'all', label: 'Все заявки', icon: <AssignmentOutlinedIcon sx={{ fontSize: 18 }} />, badge: stats.total },
     ...(canReview
@@ -487,10 +505,12 @@ function PrmRegistryContent() {
           items={items}
           currentUserId={user?.userId}
           canReview={canReview}
+          canClose={(item) => canReview || user?.userId === item.targetWarehouse.responsibleUserId}
           onSelectDetails={(item) => setSelectedForDetails(item)}
           onSubmit={handleSubmitDraft}
           onReview={(item) => { setSelectedForReview(item); setResolutionComment(''); setReviewModalOpen(true); }}
           onCancel={(item) => setCancelTarget(item)}
+          onCloseRequest={(item) => setCloseTarget(item)}
         />
       </DataTableWrapper>
 
@@ -501,6 +521,8 @@ function PrmRegistryContent() {
         request={selectedForDetails}
         currentUserId={user?.userId}
         canReview={canReview}
+        canClose={canClose}
+        onCloseRequest={(item) => setCloseTarget(item)}
         onClose={closeDeepLinkedDetails}
         onReceive={(item) => {
           closeDeepLinkedDetails();
@@ -553,6 +575,20 @@ function PrmRegistryContent() {
           const target = cancelTarget;
           setCancelTarget(null);
           if (target) await handleProcessReview('CANCELLED', target);
+        }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(closeTarget)}
+        title="Закрыть поставленную заявку?"
+        message={closeTarget ? `Заявка «${closeTarget.requestNumber}» будет переведена в статус «Закрыта». Повторное открытие и новые поставки не предусмотрены.` : ''}
+        confirmText="Закрыть заявку"
+        variant="success"
+        onClose={() => setCloseTarget(null)}
+        onConfirm={async () => {
+          const target = closeTarget;
+          setCloseTarget(null);
+          if (target) await handleCloseRequest(target);
         }}
       />
     </Box>

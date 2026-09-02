@@ -39,6 +39,7 @@ export async function GET(
         targetWarehouse: { select: { id: true, name: true, code: true, responsibleUserId: true } },
         requester: { select: { id: true, displayName: true, ldapLogin: true } },
         reviewer: { select: { id: true, displayName: true, ldapLogin: true } },
+        closedBy: { select: { id: true, displayName: true, ldapLogin: true } },
         equipment: { select: { id: true, name: true, inventoryNumber: true } },
         maintenanceSchedule: { select: { id: true, title: true } },
         items: {

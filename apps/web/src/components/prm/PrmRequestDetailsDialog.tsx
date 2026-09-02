@@ -17,6 +17,8 @@ interface PrmRequestDetailsDialogProps {
   onSubmit: (request: PrmRequestTableItem) => void;
   onReview: (request: PrmRequestTableItem) => void;
   onCancel: (request: PrmRequestTableItem) => void;
+  canClose: boolean;
+  onCloseRequest: (request: PrmRequestTableItem) => void;
 }
 
 export function PrmRequestDetailsDialog({
@@ -29,6 +31,8 @@ export function PrmRequestDetailsDialog({
   onSubmit,
   onReview,
   onCancel,
+  canClose,
+  onCloseRequest,
 }: PrmRequestDetailsDialogProps) {
   if (!request) return null;
 
@@ -36,6 +40,7 @@ export function PrmRequestDetailsDialog({
   const isDraft = request.status === 'DRAFT';
   const isSubmitted = request.status === 'SUBMITTED';
   const isReceivable = ['APPROVED', 'IN_PROGRESS', 'PARTIALLY_DELIVERED'].includes(request.status);
+  const isDelivered = request.status === 'DELIVERED';
 
   return (
     <FormDialog open={open} onClose={onClose} title={`Заявка ${request.requestNumber}`} subtitle="Детали заявки на закупку ТМЦ" maxWidth="md" hideActions>
@@ -69,6 +74,15 @@ export function PrmRequestDetailsDialog({
               <Typography variant="body2">{request.reviewer?.displayName || 'Не назначен'}</Typography>
             </Box>
           </Box>
+          {request.closedAt && request.closedBy && (
+            <>
+              <Divider sx={{ my: 1.5 }} />
+              <Typography variant="caption" color="text.secondary" display="block">Закрыта</Typography>
+              <Typography variant="body2" fontWeight={600}>
+                {request.closedBy.displayName}, {formatDateTime(request.closedAt)}
+              </Typography>
+            </>
+          )}
           {request.justification && (
             <>
               <Divider sx={{ my: 1.5 }} />
@@ -150,6 +164,9 @@ export function PrmRequestDetailsDialog({
           )}
           {(isDraft || isSubmitted) && (isRequester || canReview) && (
             <Button variant="outlined" color="inherit" onClick={() => onCancel(request)}>Отменить</Button>
+          )}
+          {isDelivered && canClose && (
+            <Button variant="contained" color="success" onClick={() => onCloseRequest(request)}>Закрыть заявку</Button>
           )}
           <Button variant="text" endIcon={<OpenInNewIcon />} onClick={onClose}>Закрыть</Button>
         </Box>

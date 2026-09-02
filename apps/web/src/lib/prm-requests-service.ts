@@ -1,4 +1,4 @@
-import { prisma, PurchaseRequestStatus, type Prisma } from '@ems/database';
+import { prisma, PurchaseRequestStatus } from '@ems/database';
 import { isAdminUser } from '@/lib/auth-guard';
 import { PERMISSIONS, JwtUserPayload } from '@ems/shared';
 import {
@@ -61,11 +61,9 @@ export function calculateEstimatedTotal(items: PurchaseRequestItemInput[]): numb
 }
 
 /**
- * P1 status transition matrix. Only DRAFT -> SUBMITTED -> APPROVED/REJECTED
- * and *->CANCELLED are allowed; delivery-stage statuses (IN_PROGRESS,
- * PARTIALLY_DELIVERED, DELIVERED, CLOSED) exist in the enum for P2 but are
- * rejected here so P1 cannot short-circuit the not-yet-implemented delivery
- * flow.
+ * PRM status transition matrix. Delivery statuses are calculated by the
+ * delivery service; the only manually executable delivery-stage transition is
+ * the explicit DELIVERED -> CLOSED action.
  */
 const ALLOWED_TRANSITIONS: Record<PurchaseRequestStatus, PurchaseRequestStatus[]> = {
   DRAFT: [PurchaseRequestStatus.SUBMITTED, PurchaseRequestStatus.CANCELLED],
@@ -79,14 +77,14 @@ const ALLOWED_TRANSITIONS: Record<PurchaseRequestStatus, PurchaseRequestStatus[]
   CANCELLED: [],
   IN_PROGRESS: [],
   PARTIALLY_DELIVERED: [],
-  DELIVERED: [],
+  DELIVERED: [PurchaseRequestStatus.CLOSED],
   CLOSED: [],
 };
 
 /**
  * Pure validator: true only for transitions explicitly whitelisted above.
- * Deliberately rejects every P2 delivery-stage target status so P1 cannot
- * be used to fast-forward a request past approval.
+ * Delivery-stage statuses cannot be assigned manually, except for the explicit
+ * DELIVERED -> CLOSED action.
  */
 export function isValidStatusTransition(
   from: PurchaseRequestStatus,
@@ -114,8 +112,96 @@ export function canPerformTransition(params: {
   if (to === PurchaseRequestStatus.SUBMITTED) {
     return isRequester || isAdmin;
   }
+  if (to === PurchaseRequestStatus.CLOSED) {
+    return isAdmin;
+  }
   // APPROVED / REJECTED
   return isAdmin;
+}
+
+export type DecimalLike = number | string | {
+  toString(): string;
+  comparedTo?: (value: string) => number;
+};
+
+function decimalString(value: DecimalLike): string {
+  return value.toString().trim();
+}
+
+/**
+ * Exact decimal comparison. Prisma 6's generated Decimal implementation
+ * exposes comparedTo(), which compares decimal values without a Number cast.
+ * The string/number fallback keeps this pure validator executable in isolated
+ * route tests while retaining exact base-10 semantics.
+ */
+export function compareDecimalLike(left: DecimalLike, right: DecimalLike): -1 | 0 | 1 {
+  const comparedTo = (left as { comparedTo?: (value: string) => number }).comparedTo;
+  if (typeof comparedTo === 'function') {
+    const result = comparedTo.call(left, decimalString(right));
+    return result < 0 ? -1 : result > 0 ? 1 : 0;
+  }
+
+  const parse = (value: DecimalLike) => {
+    const normalized = decimalString(value).toLowerCase();
+    const [coefficient, exponentText = '0'] = normalized.split('e');
+    const exponentSign = exponentText.startsWith('-') ? -1 : 1;
+    const exponentDigits = exponentText.replace(/^[+-]/, '') || '0';
+    const exponent = BigInt(exponentDigits) * BigInt(exponentSign);
+    const sign = coefficient.startsWith('-') ? -1n : 1n;
+    const unsigned = coefficient.replace(/^[+-]/, '');
+    const [whole, fraction = ''] = unsigned.split('.');
+    const digits = BigInt(`${whole || '0'}${fraction}` || '0');
+    return { sign, digits, scale: BigInt(fraction.length) - exponent };
+  };
+  const a = parse(left);
+  const b = parse(right);
+  const scale = a.scale > b.scale ? a.scale : b.scale;
+  const aInteger = a.sign * a.digits * 10n ** (scale - a.scale);
+  const bInteger = b.sign * b.digits * 10n ** (scale - b.scale);
+  return aInteger < bInteger ? -1 : aInteger > bInteger ? 1 : 0;
+}
+
+/**
+ * Purely validates the prerequisites for explicit closure. Quantity state is
+ * read from request items and is never changed by closure.
+ */
+export function validatePurchaseRequestClosure(params: {
+  status: PurchaseRequestStatus;
+  items: Array<{ requestedQty: DecimalLike; receivedQty: DecimalLike }>;
+}): { valid: boolean; error?: string } {
+  if (params.status !== PurchaseRequestStatus.DELIVERED) {
+    return { valid: false, error: `Закрыть заявку можно только в статусе «${PurchaseRequestStatus.DELIVERED}»` };
+  }
+  if (params.items.length === 0 || params.items.some((item) => compareDecimalLike(item.receivedQty, item.requestedQty) < 0)) {
+    return { valid: false, error: 'Нельзя закрыть заявку: не все количества поставлены' };
+  }
+  return { valid: true };
+}
+
+/**
+ * Pure authorization rule for explicit closure. A PRM manager/admin may close
+ * any request; a warehouse MOL may close only their target warehouse request.
+ */
+export function canPerformPurchaseRequestClosure(params: {
+  isPurchaseAdmin: boolean;
+  isTargetWarehouseResponsible: boolean;
+}): boolean {
+  return params.isPurchaseAdmin || params.isTargetWarehouseResponsible;
+}
+
+/**
+ * Builds the minimal persistence payload for explicit closure. Delivery
+ * quantities and delivery records are intentionally not included.
+ */
+export function buildPurchaseRequestClosureUpdate(params: {
+  actorId: string;
+  closedAt?: Date;
+}): Record<string, unknown> {
+  return {
+    status: PurchaseRequestStatus.CLOSED,
+    closedAt: params.closedAt ?? new Date(),
+    closedBy: { connect: { id: params.actorId } },
+  };
 }
 
 /**
@@ -128,7 +214,7 @@ export function buildStatusTransitionUpdate(params: {
   targetStatus: PurchaseRequestStatus;
   actorId: string;
   resolutionComment?: string | null;
-}): Prisma.PurchaseRequestUpdateInput {
+}): Record<string, unknown> {
   const { targetStatus, actorId, resolutionComment } = params;
   const isReviewDecision =
     targetStatus === PurchaseRequestStatus.APPROVED || targetStatus === PurchaseRequestStatus.REJECTED;

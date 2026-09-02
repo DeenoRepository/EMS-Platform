@@ -42,7 +42,27 @@ vi.mock('@/components/ui', () => ({
   DataTableWrapper: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   PageLoading: ({ text }: { text: string }) => <div role="status">{text}</div>,
   ErrorState: ({ title, description }: { title: string; description: string }) => <div role="alert">{title}: {description}</div>,
-  ConfirmDialog: ({ open }: { open: boolean }) => (open ? <div data-testid="confirm-dialog" /> : null),
+  ConfirmDialog: ({
+    open,
+    title,
+    confirmText,
+    onConfirm,
+    onClose,
+  }: {
+    open: boolean;
+    title?: string;
+    confirmText?: string;
+    onConfirm?: () => void;
+    onClose?: () => void;
+  }) => (
+    open ? (
+      <div data-testid="confirm-dialog" role="alertdialog">
+        {title ? <span>{title}</span> : null}
+        {onConfirm ? <button onClick={onConfirm}>{confirmText || 'confirm'}</button> : null}
+        {onClose ? <button onClick={onClose}>cancel-confirm</button> : null}
+      </div>
+    ) : null
+  ),
   NavTabsContainer: () => null,
   ExportButton: () => null,
 }));
@@ -64,19 +84,23 @@ vi.mock('@/components/prm', () => ({
   PrmRequestDetailsDialog: ({
     open,
     request,
+    canClose,
     onClose,
     onReceive,
     onSubmit,
     onReview,
     onCancel,
+    onCloseRequest,
   }: {
     open: boolean;
     request: MockRequest | null;
+    canClose?: boolean;
     onClose: () => void;
     onReceive: (request: MockRequest) => void;
     onSubmit: (request: MockRequest) => void;
     onReview: (request: MockRequest) => void;
     onCancel: (request: MockRequest) => void;
+    onCloseRequest?: (request: MockRequest) => void;
   }) => (
     open && request ? (
       <div role="dialog">
@@ -86,6 +110,9 @@ vi.mock('@/components/prm', () => ({
         <button onClick={() => onSubmit(request)}>submit</button>
         <button onClick={() => onReview(request)}>review</button>
         <button onClick={() => onCancel(request)}>cancel</button>
+        {canClose && onCloseRequest ? (
+          <button onClick={() => onCloseRequest(request)}>close-request</button>
+        ) : null}
       </div>
     ) : null
   ),
@@ -322,5 +349,128 @@ describe('PRM registry deep links', () => {
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/prm?status=APPROVED', { scroll: false }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(await screen.findByRole('alert')).toHaveTextContent('Не удалось открыть заявку.');
+  });
+
+  describe('explicit close workflow', () => {
+    it('opens confirm dialog from details, sends POST close, displays success and refreshes registry', async () => {
+      fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+        if (url === '/api/prm/requests/request-42') {
+          return response({
+            success: true,
+            data: {
+              id: 'request-42',
+              requestNumber: 'PR-42',
+              status: 'DELIVERED',
+              targetWarehouse: { id: 'wh-1', name: 'Main WH', code: 'MWH', responsibleUserId: 'requester-1' },
+            },
+          });
+        }
+        if (url === '/api/prm/requests/request-42/close' && init?.method === 'POST') {
+          return response({
+            success: true,
+            data: { id: 'request-42', status: 'CLOSED' },
+          });
+        }
+        return listResponse();
+      });
+
+      renderWithProviders(<PrmRegistryPage />);
+
+      await waitFor(() => expect(screen.getByRole('dialog')).toHaveTextContent('PR-42'));
+
+      // 1. Click close action from details dialog
+      fireEvent.click(screen.getByRole('button', { name: 'close-request' }));
+
+      // 2. ConfirmDialog is opened
+      await waitFor(() => expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument());
+      expect(screen.getByTestId('confirm-dialog')).toHaveTextContent('Закрыть поставленную заявку?');
+
+      // 3. Confirm closure
+      fireEvent.click(screen.getByRole('button', { name: 'Закрыть заявку' }));
+
+      // 4. POST /api/prm/requests/:id/close was sent
+      await waitFor(() =>
+        expect(fetchMock).toHaveBeenCalledWith('/api/prm/requests/request-42/close', { method: 'POST' })
+      );
+
+      // 5. Success feedback and deep-link details close
+      await waitFor(() =>
+        expect(enqueueSnackbar).toHaveBeenCalledWith('Заявка закрыта', { variant: 'success' })
+      );
+      expect(replace).toHaveBeenCalledWith('/prm?status=APPROVED', { scroll: false });
+      await waitFor(() => expect(screen.queryByTestId('confirm-dialog')).not.toBeInTheDocument());
+    });
+
+    it('shows error notification when close API returns error response', async () => {
+      fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+        if (url === '/api/prm/requests/request-42') {
+          return response({
+            success: true,
+            data: {
+              id: 'request-42',
+              requestNumber: 'PR-42',
+              status: 'DELIVERED',
+              targetWarehouse: { id: 'wh-1', name: 'Main WH', code: 'MWH', responsibleUserId: 'requester-1' },
+            },
+          });
+        }
+        if (url === '/api/prm/requests/request-42/close' && init?.method === 'POST') {
+          return response({
+            success: false,
+            error: 'Заявка уже закрыта или больше не находится в статусе «DELIVERED»',
+          }, false, 409);
+        }
+        return listResponse();
+      });
+
+      renderWithProviders(<PrmRegistryPage />);
+
+      await waitFor(() => expect(screen.getByRole('dialog')).toHaveTextContent('PR-42'));
+
+      fireEvent.click(screen.getByRole('button', { name: 'close-request' }));
+      await waitFor(() => expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Закрыть заявку' }));
+
+      await waitFor(() =>
+        expect(enqueueSnackbar).toHaveBeenCalledWith(
+          'Заявка уже закрыта или больше не находится в статусе «DELIVERED»',
+          { variant: 'error' }
+        )
+      );
+    });
+
+    it('shows network error notification when close request fails at network level', async () => {
+      fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+        if (url === '/api/prm/requests/request-42') {
+          return response({
+            success: true,
+            data: {
+              id: 'request-42',
+              requestNumber: 'PR-42',
+              status: 'DELIVERED',
+              targetWarehouse: { id: 'wh-1', name: 'Main WH', code: 'MWH', responsibleUserId: 'requester-1' },
+            },
+          });
+        }
+        if (url === '/api/prm/requests/request-42/close' && init?.method === 'POST') {
+          throw new Error('Network failure');
+        }
+        return listResponse();
+      });
+
+      renderWithProviders(<PrmRegistryPage />);
+
+      await waitFor(() => expect(screen.getByRole('dialog')).toHaveTextContent('PR-42'));
+
+      fireEvent.click(screen.getByRole('button', { name: 'close-request' }));
+      await waitFor(() => expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Закрыть заявку' }));
+
+      await waitFor(() =>
+        expect(enqueueSnackbar).toHaveBeenCalledWith('Ошибка сети при закрытии заявки', { variant: 'error' })
+      );
+    });
   });
 });

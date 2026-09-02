@@ -103,6 +103,10 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Заявка не найдена' }, { status: 404 });
     }
 
+    if (request.status === PurchaseRequestStatus.CLOSED) {
+      return NextResponse.json({ success: false, error: 'Закрытая заявка не допускает новые поставки' }, { status: 400 });
+    }
+
     const isAdmin = isAdminUser(user) || hasPermission(user, PERMISSIONS.PRM_REQUESTS_MANAGE);
     if (!isAdmin && request.targetWarehouse.responsibleUserId !== user.userId) {
       return forbiddenResponse('Принимать поставку может только МОЛ целевого склада');
@@ -118,16 +122,65 @@ export async function POST(
       return NextResponse.json({ success: false, error: validation.error }, { status: 400 });
     }
 
-    const operationPayload = buildReceiptOperationPayload({
-      warehouseId: request.targetWarehouseId,
-      createdById: user.userId,
-      supplierName: parsed.supplierName,
-      document: parsed.document,
-      requestNumber: request.requestNumber,
-      items: deliveryItems,
-    });
-
     const result = await prisma.$transaction(async (tx) => {
+      const claim = await tx.purchaseRequest.updateMany({
+        where: {
+          id: request.id,
+          status: {
+            in: [
+              PurchaseRequestStatus.APPROVED,
+              PurchaseRequestStatus.IN_PROGRESS,
+              PurchaseRequestStatus.PARTIALLY_DELIVERED,
+            ],
+          },
+        },
+        data: {
+          updatedAt: new Date(),
+        },
+      });
+
+      if (claim.count !== 1) {
+        throw new Error('PRM_DELIVERY_CONFLICT');
+      }
+
+      const duplicateInTx = await tx.purchaseDelivery.findUnique({
+        where: { idempotencyKey: parsed.idempotencyKey },
+        include: { items: true, stockOperation: true },
+      });
+      if (duplicateInTx) {
+        return { duplicate: true, delivery: duplicateInTx } as const;
+      }
+
+      const lockedRequest = await tx.purchaseRequest.findUnique({
+        where: { id: request.id },
+        include: requestInclude,
+      });
+      if (!lockedRequest) {
+        throw new Error('PRM_DELIVERY_NOT_FOUND');
+      }
+
+      if (!isAdmin && lockedRequest.targetWarehouse.responsibleUserId !== user.userId) {
+        throw new Error('PRM_DELIVERY_FORBIDDEN');
+      }
+
+      const lockedValidation = validateDeliveryInput({
+        requestStatus: lockedRequest.status,
+        requestItems: lockedRequest.items.map(toRequestItemState),
+        deliveryItems,
+      });
+      if (!lockedValidation.valid) {
+        throw new Error(`PRM_DELIVERY_VALIDATION_FAILED:${lockedValidation.error || 'Ошибка валидации приёмки'}`);
+      }
+
+      const operationPayload = buildReceiptOperationPayload({
+        warehouseId: lockedRequest.targetWarehouseId,
+        createdById: user.userId,
+        supplierName: parsed.supplierName,
+        document: parsed.document,
+        requestNumber: lockedRequest.requestNumber,
+        items: deliveryItems,
+      });
+
       const operation = await tx.stockOperation.create({
         data: {
           ...operationPayload,
@@ -141,13 +194,13 @@ export async function POST(
         await tx.stockItem.upsert({
           where: {
             warehouseId_nomenclatureId: {
-              warehouseId: request.targetWarehouseId,
+              warehouseId: lockedRequest.targetWarehouseId,
               nomenclatureId: item.nomenclatureId,
             },
           },
           update: { quantity: { increment: item.receivedQty } },
           create: {
-            warehouseId: request.targetWarehouseId,
+            warehouseId: lockedRequest.targetWarehouseId,
             nomenclatureId: item.nomenclatureId,
             quantity: item.receivedQty,
           },
@@ -156,8 +209,8 @@ export async function POST(
 
       const delivery = await tx.purchaseDelivery.create({
         data: {
-          requestId: request.id,
-          warehouseId: request.targetWarehouseId,
+          requestId: lockedRequest.id,
+          warehouseId: lockedRequest.targetWarehouseId,
           deliveryDate: parsed.deliveryDate ? new Date(parsed.deliveryDate) : new Date(),
           supplierName: parsed.supplierName?.trim() || null,
           document: parsed.document?.trim() || null,
@@ -175,7 +228,7 @@ export async function POST(
         include: { items: true, stockOperation: true },
       });
 
-      for (const requestItem of request.items) {
+      for (const requestItem of lockedRequest.items) {
         const deliveryItem = findDeliveryItem(deliveryItems, requestItem.id);
         if (!deliveryItem) continue;
         await tx.purchaseRequestItem.update({
@@ -187,7 +240,7 @@ export async function POST(
         });
       }
 
-      const nextItems = request.items.map((requestItem) => {
+      const nextItems = lockedRequest.items.map((requestItem) => {
         const deliveryItem = findDeliveryItem(deliveryItems, requestItem.id);
         return {
           requestedQty: Number(requestItem.requestedQty),
@@ -198,23 +251,48 @@ export async function POST(
       });
       const nextStatus = calculateDeliveryStatus(nextItems);
 
-      const updatedRequest = await tx.purchaseRequest.update({
-        where: { id: request.id },
+      const finalize = await tx.purchaseRequest.updateMany({
+        where: {
+          id: lockedRequest.id,
+          status: {
+            in: [
+              PurchaseRequestStatus.APPROVED,
+              PurchaseRequestStatus.IN_PROGRESS,
+              PurchaseRequestStatus.PARTIALLY_DELIVERED,
+            ],
+          },
+        },
         data: { status: nextStatus },
+      });
+
+      if (finalize.count !== 1) {
+        throw new Error('PRM_DELIVERY_CONFLICT');
+      }
+
+      const updatedRequest = await tx.purchaseRequest.findUnique({
+        where: { id: lockedRequest.id },
         include: requestInclude,
       });
 
-      return { delivery, operation, request: updatedRequest, nextStatus };
+      if (!updatedRequest) {
+        throw new Error('PRM_DELIVERY_NOT_FOUND');
+      }
+
+      return { duplicate: false, delivery, operation, request: updatedRequest, nextStatus } as const;
     });
+
+    if (result.duplicate) {
+      return NextResponse.json({ success: true, data: result.delivery, duplicate: true });
+    }
 
     await logAuditEvent({
       userId: user.userId,
       action: 'UPDATE',
       entityType: 'PurchaseRequest',
-      entityId: request.id,
+      entityId: result.request.id,
       changes: {
         action: 'RECEIVE_PURCHASE_DELIVERY',
-        requestNumber: request.requestNumber,
+        requestNumber: result.request.requestNumber,
         deliveryId: result.delivery.id,
         stockOperationId: result.operation.id,
         status: { old: request.status, new: result.nextStatus },
@@ -222,14 +300,14 @@ export async function POST(
       },
     });
 
-    if (request.requesterId !== user.userId) {
+    if (result.request.requesterId !== user.userId) {
       await prisma.notification.create({
         data: {
-          userId: request.requesterId,
+          userId: result.request.requesterId,
           title: 'Поставка по заявке зарегистрирована',
-          message: `По заявке № ${request.requestNumber} зарегистрирована поставка. Статус: ${result.nextStatus}.`,
+          message: `По заявке № ${result.request.requestNumber} зарегистрирована поставка. Статус: ${result.nextStatus}.`,
           type: 'SYSTEM',
-          link: buildPrmRequestDeepLink(request.id),
+          link: buildPrmRequestDeepLink(result.request.id),
         },
       }).catch(() => undefined);
     }
@@ -238,6 +316,24 @@ export async function POST(
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ success: false, error: 'Ошибка валидации', details: error.issues }, { status: 400 });
+    }
+    if (error instanceof Error && error.message.startsWith('PRM_DELIVERY_VALIDATION_FAILED:')) {
+      return NextResponse.json(
+        { success: false, error: error.message.replace('PRM_DELIVERY_VALIDATION_FAILED:', '') },
+        { status: 400 },
+      );
+    }
+    if (error instanceof Error && error.message === 'PRM_DELIVERY_FORBIDDEN') {
+      return forbiddenResponse('Принимать поставку может только МОЛ целевого склада');
+    }
+    if (error instanceof Error && error.message === 'PRM_DELIVERY_CONFLICT') {
+      return NextResponse.json(
+        { success: false, error: 'Заявка уже закрыта или не находится в статусе приёмки' },
+        { status: 409 },
+      );
+    }
+    if (error instanceof Error && error.message === 'PRM_DELIVERY_NOT_FOUND') {
+      return NextResponse.json({ success: false, error: 'Заявка не найдена' }, { status: 404 });
     }
     return safeErrorResponse(error, 'Ошибка регистрации поставки по заявке', 500, {
       endpoint: 'prm-request-delivery',

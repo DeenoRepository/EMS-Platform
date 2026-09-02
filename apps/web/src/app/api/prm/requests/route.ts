@@ -18,9 +18,10 @@ import { parsePurchaseRequestListQuery, buildPurchaseRequestStats } from './get-
 export const dynamic = 'force-dynamic';
 
 const requestInclude = {
-  targetWarehouse: { select: { id: true, name: true, code: true } },
+  targetWarehouse: { select: { id: true, name: true, code: true, responsibleUserId: true } },
   requester: { select: { id: true, displayName: true, ldapLogin: true } },
   reviewer: { select: { id: true, displayName: true, ldapLogin: true } },
+  closedBy: { select: { id: true, displayName: true, ldapLogin: true } },
   equipment: { select: { id: true, name: true, inventoryNumber: true } },
   items: {
     include: {

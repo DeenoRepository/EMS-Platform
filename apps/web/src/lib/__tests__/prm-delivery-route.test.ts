@@ -9,6 +9,7 @@ const PurchaseRequestStatus = {
   IN_PROGRESS: 'IN_PROGRESS',
   PARTIALLY_DELIVERED: 'PARTIALLY_DELIVERED',
   DELIVERED: 'DELIVERED',
+  CLOSED: 'CLOSED',
 } as const;
 const OperationType = { RECEIPT: 'RECEIPT' } as const;
 
@@ -48,6 +49,15 @@ const prismaMock: any = {
     update: async (args: any) => {
       requestUpdates.push(args);
       return { ...requestRecord, status: args.data.status };
+    },
+    updateMany: async (args: any) => {
+      requestUpdates.push(args);
+      if (args.where?.id && args.where.id !== requestRecord.id) return { count: 0 };
+      if (args.where?.status?.in && !args.where.status.in.includes(requestRecord.status)) return { count: 0 };
+      if (args.data?.status) {
+        requestRecord = { ...requestRecord, status: args.data.status };
+      }
+      return { count: 1 };
     },
   },
   stockOperation: {
@@ -197,7 +207,9 @@ describe('POST /api/prm/requests/[id]/deliveries', () => {
     assert.equal(stockUpserts.length, 1);
     assert.equal(stockUpserts[0].update.quantity.increment, 4);
     assert.equal(itemUpdates[0].data.receivedQty, 4);
-    assert.equal(requestUpdates[0].data.status, PurchaseRequestStatus.PARTIALLY_DELIVERED);
+    const statusUpdate = requestUpdates.find((u) => u.data?.status);
+    assert.ok(statusUpdate);
+    assert.equal(statusUpdate.data.status, PurchaseRequestStatus.PARTIALLY_DELIVERED);
     assert.equal(deliveryCreates.length, 1);
     assert.equal(auditEvents.length, 1);
     assert.equal(notificationCreates.length, 1);
@@ -215,6 +227,21 @@ describe('POST /api/prm/requests/[id]/deliveries', () => {
     assert.equal(body.data.id, 'delivery-existing');
     assert.equal(transactionCalls, 0);
     assert.equal(operationCreates.length, 0);
+  });
+
+  test('rejects a CLOSED request before any delivery side effect', async () => {
+    resetState(PurchaseRequestStatus.CLOSED);
+    currentUser = operator;
+    const response = await deliveryPOST(request(validBody()), context());
+    assert.equal(response.status, 400);
+    assert.equal(operationCreates.length, 0);
+    assert.equal(stockUpserts.length, 0);
+    assert.equal(itemUpdates.length, 0);
+    assert.equal(requestUpdates.length, 0);
+    assert.equal(deliveryCreates.length, 0);
+    assert.equal(auditEvents.length, 0);
+    assert.equal(notificationCreates.length, 0);
+    assert.equal(transactionCalls, 0);
   });
 
   test('rolls back all persistence work when the transaction fails', async () => {

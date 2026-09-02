@@ -189,6 +189,21 @@ describe('PRM requests service', () => {
       );
     });
 
+    test('разрешает только DELIVERED -> CLOSED для явного закрытия', () => {
+      assert.equal(
+        service.isValidStatusTransition(PurchaseRequestStatus.DELIVERED, PurchaseRequestStatus.CLOSED),
+        true,
+      );
+      assert.equal(
+        service.isValidStatusTransition(PurchaseRequestStatus.CLOSED, PurchaseRequestStatus.DELIVERED),
+        false,
+      );
+      assert.equal(
+        service.isValidStatusTransition(PurchaseRequestStatus.PARTIALLY_DELIVERED, PurchaseRequestStatus.CLOSED),
+        false,
+      );
+    });
+
     test('отклоняет все переходы из REJECTED и CANCELLED', () => {
       for (const from of [PurchaseRequestStatus.REJECTED, PurchaseRequestStatus.CANCELLED] as const) {
         for (const target of Object.values(PurchaseRequestStatus)) {
@@ -247,6 +262,61 @@ describe('PRM requests service', () => {
         service.canPerformTransition({ to: PurchaseRequestStatus.REJECTED, isRequester: false, isAdmin: true }),
         true,
       );
+    });
+  });
+
+  describe('purchase request closure', () => {
+    test('compares fractional and precision-sensitive quantities exactly', () => {
+      assert.equal(service.compareDecimalLike('0.3000000000000000001', '0.3'), 1);
+      assert.equal(service.compareDecimalLike('1.0000000000000000000', '1'), 0);
+      assert.equal(service.compareDecimalLike('9.999999999999999999', '10'), -1);
+      assert.equal(service.compareDecimalLike('1e-20', '0.00000000000000000001'), 0);
+    });
+
+    test('requires DELIVERED and complete quantities', () => {
+      assert.deepEqual(
+        service.validatePurchaseRequestClosure({
+          status: PurchaseRequestStatus.DELIVERED,
+          items: [{ requestedQty: 10, receivedQty: 10 }],
+        }),
+        { valid: true },
+      );
+      assert.equal(
+        service.validatePurchaseRequestClosure({
+          status: PurchaseRequestStatus.PARTIALLY_DELIVERED,
+          items: [{ requestedQty: 10, receivedQty: 10 }],
+        }).valid,
+        false,
+      );
+      assert.equal(
+        service.validatePurchaseRequestClosure({
+          status: PurchaseRequestStatus.DELIVERED,
+          items: [{ requestedQty: '10.000000000000000001', receivedQty: '10' }],
+        }).valid,
+        false,
+      );
+      assert.equal(
+        service.validatePurchaseRequestClosure({
+          status: PurchaseRequestStatus.DELIVERED,
+          items: [{ requestedQty: '0.3000000000000000001', receivedQty: '0.3' }],
+        }).valid,
+        false,
+      );
+    });
+
+    test('allows PRM administrators or target warehouse MOL only', () => {
+      assert.equal(service.canPerformPurchaseRequestClosure({ isPurchaseAdmin: true, isTargetWarehouseResponsible: false }), true);
+      assert.equal(service.canPerformPurchaseRequestClosure({ isPurchaseAdmin: false, isTargetWarehouseResponsible: true }), true);
+      assert.equal(service.canPerformPurchaseRequestClosure({ isPurchaseAdmin: false, isTargetWarehouseResponsible: false }), false);
+    });
+
+    test('builds closure update without changing delivery quantities', () => {
+      const closedAt = new Date('2026-09-02T12:00:00.000Z');
+      assert.deepEqual(service.buildPurchaseRequestClosureUpdate({ actorId: 'manager-1', closedAt }), {
+        status: PurchaseRequestStatus.CLOSED,
+        closedAt,
+        closedBy: { connect: { id: 'manager-1' } },
+      });
     });
   });
 
