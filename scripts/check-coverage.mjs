@@ -20,6 +20,13 @@ import { pathToFileURL } from 'node:url';
 
 const SUPPORTED_NODE_MAJORS = [22, 24];
 
+// Мажорная версия, на которой измеряется baseline и работает CI (.nvmrc).
+// На Node 22 таблица покрытия включает и сами *.test.ts, поэтому обе метрики
+// оказываются заметно выше: расхождение доходило до +6 п.п. по line и
+// +28 п.п. по reach. Локальный «PASS» на Node 22 при этом маскировал реальный
+// «FAIL» в CI, поэтому запуск на неподходящей версии обязан предупреждать.
+const BASELINE_NODE_MAJOR = 24;
+
 // Corrected N2/N3 baseline measured on Node 24.15.0 on 2026-08-31.
 // Thresholds are floors of measured values and act as a ratchet.
 const THRESHOLDS = {
@@ -43,14 +50,24 @@ const leafNumberRe = /^[\d.]+$/;
 
 function assertSupportedNodeVersion() {
   const major = Number.parseInt(process.versions.node.split('.')[0], 10);
-  if (SUPPORTED_NODE_MAJORS.includes(major)) return;
+  if (!SUPPORTED_NODE_MAJORS.includes(major)) {
+    console.error(
+      `[check-coverage] Node ${process.versions.node} is unsupported. ` +
+        `Verified majors: ${SUPPORTED_NODE_MAJORS.join(', ')}.\n` +
+        'Use the version declared in .nvmrc before regenerating coverage.',
+    );
+    process.exit(1);
+  }
 
-  console.error(
-    `[check-coverage] Node ${process.versions.node} is unsupported. ` +
-      `Verified majors: ${SUPPORTED_NODE_MAJORS.join(', ')}.\n` +
-      'Use the version declared in .nvmrc before regenerating coverage.',
-  );
-  process.exit(1);
+  if (major !== BASELINE_NODE_MAJOR) {
+    console.warn(
+      `[check-coverage] WARNING: measuring on Node ${process.versions.node}, ` +
+        `but the baseline and CI use Node ${BASELINE_NODE_MAJOR} (.nvmrc).\n` +
+        '  Node 22 also counts *.test.ts rows, which inflates both metrics.\n' +
+        '  A PASS here does not imply a PASS in CI. Do not commit a baseline ' +
+        'regenerated on this version.',
+    );
+  }
 }
 
 function isProductionFile(filePath) {
