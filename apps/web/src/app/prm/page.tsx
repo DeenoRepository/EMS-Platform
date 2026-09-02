@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, Suspense } from 'react';
+import React, { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { Box, Grid, TextField, MenuItem, Button } from '@mui/material';
+import { useRouter, useSearchParams } from 'next/navigation';
 import AddIcon from '@mui/icons-material/Add';
 import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 import PendingActionsOutlinedIcon from '@mui/icons-material/PendingActionsOutlined';
@@ -19,6 +20,7 @@ import {
   EmptyState,
   DataTableWrapper,
   PageLoading,
+  ErrorState,
   ConfirmDialog,
   NavTabsContainer,
   ExportButton,
@@ -33,7 +35,57 @@ import {
   type PrmReviewDecision,
 } from '@/components/prm';
 
+type DeepLinkDetailBody = {
+  success?: boolean;
+  data?: PrmRequestTableItem;
+  error?: string;
+} | null;
+
+type DeepLinkDetailPayload = {
+  ok: boolean;
+  status: number;
+  body: DeepLinkDetailBody;
+};
+
+/**
+ * In-flight registry for deep-link detail requests, keyed by request ID.
+ *
+ * React 18 Strict Mode replays every effect as setup -> cleanup -> setup for
+ * the same committed deep link. Sharing the still-pending promise collapses
+ * that replay into exactly one network call. Only the *pending* promise is
+ * shared: the entry is removed the moment the request settles, so neither the
+ * response payload nor an authorization failure is ever cached. Navigating
+ * away from a `requestId` and back therefore always issues a fresh request.
+ */
+const inFlightDeepLinkRequests = new Map<string, Promise<DeepLinkDetailPayload>>();
+
+function requestDeepLinkedDetailsOnce(requestId: string): Promise<DeepLinkDetailPayload> {
+  const pending = inFlightDeepLinkRequests.get(requestId);
+  if (pending) return pending;
+
+  const request = (async (): Promise<DeepLinkDetailPayload> => {
+    const response = await fetch(`/api/prm/requests/${encodeURIComponent(requestId)}`);
+    const body = (await response.json().catch(() => null)) as DeepLinkDetailBody;
+    return { ok: response.ok, status: response.status, body };
+  })();
+
+  inFlightDeepLinkRequests.set(requestId, request);
+
+  // Drop the entry as soon as the request settles — success or failure alike.
+  // Attaching both handlers here also keeps a rejected shared promise handled.
+  const forget = () => {
+    if (inFlightDeepLinkRequests.get(requestId) === request) {
+      inFlightDeepLinkRequests.delete(requestId);
+    }
+  };
+  request.then(forget, forget);
+
+  return request;
+}
+
 function PrmRegistryContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, hasPermission } = useAuth();
   const { enqueueSnackbar } = useSnackbar();
 
@@ -67,6 +119,8 @@ function PrmRegistryContent() {
   const [cancelTarget, setCancelTarget] = useState<PrmRequestTableItem | null>(null);
   const [selectedForDetails, setSelectedForDetails] = useState<PrmRequestTableItem | null>(null);
   const [selectedForDelivery, setSelectedForDelivery] = useState<PrmRequestTableItem | null>(null);
+  const [deepLinkLoading, setDeepLinkLoading] = useState(false);
+  const [deepLinkError, setDeepLinkError] = useState<string | null>(null);
 
   const canView = hasPermission(PERMISSIONS.PRM_REQUESTS_VIEW) || hasPermission(PERMISSIONS.PRM_REQUESTS_CREATE) || hasPermission(PERMISSIONS.PRM_REQUESTS_MANAGE);
   const canCreate = hasPermission(PERMISSIONS.PRM_REQUESTS_CREATE);
@@ -105,6 +159,95 @@ function PrmRegistryContent() {
   useEffect(() => {
     fetchRequests();
   }, [fetchRequests]);
+
+  // The deep link is identified by the `requestId` value alone. Keying the
+  // loader on the raw string (instead of the `searchParams` object, whose
+  // identity changes on every navigation) guarantees exactly one detail
+  // request per stable ID, even when unrelated query parameters change.
+  const deepLinkRequestId = searchParams.get('requestId');
+
+  // Latest query string and router kept in refs so `clearDeepLink` stays
+  // identity-stable across renders and can never re-trigger the loader effect
+  // through its dependency list.
+  const currentQueryRef = useRef('');
+  currentQueryRef.current = searchParams.toString();
+  const routerRef = useRef(router);
+  routerRef.current = router;
+
+  // Monotonic token: every load generation and every explicit close bumps it,
+  // so a superseded (stale/raced) response can never write component state.
+  const deepLinkTokenRef = useRef(0);
+
+  const clearDeepLink = useCallback(() => {
+    const params = new URLSearchParams(currentQueryRef.current);
+    if (!params.has('requestId')) return;
+    params.delete('requestId');
+    const query = params.toString();
+    routerRef.current.replace(query ? `/prm?${query}` : '/prm', { scroll: false });
+  }, []);
+
+  // Single exit point for the details view. Whatever closes or replaces it —
+  // the ordinary close button or any action workflow — removes only the
+  // `requestId` deep-link parameter, preserves every unrelated parameter, and
+  // invalidates any in-flight detail request so the dialog cannot reopen.
+  const closeDeepLinkedDetails = useCallback(() => {
+    deepLinkTokenRef.current += 1;
+    setSelectedForDetails(null);
+    setDeepLinkLoading(false);
+    setDeepLinkError(null);
+    clearDeepLink();
+  }, [clearDeepLink]);
+
+  useEffect(() => {
+    if (!deepLinkRequestId) return;
+
+    const token = deepLinkTokenRef.current + 1;
+    deepLinkTokenRef.current = token;
+    const isCurrent = () => deepLinkTokenRef.current === token;
+
+    setDeepLinkLoading(true);
+    setDeepLinkError(null);
+
+    const loadDeepLinkedRequest = async () => {
+      try {
+        // Strict Mode's second setup reuses the first setup's in-flight
+        // request instead of issuing a duplicate one.
+        const { ok, status, body } = await requestDeepLinkedDetailsOnce(deepLinkRequestId);
+        if (!isCurrent()) return;
+
+        if (ok && body?.success && body.data) {
+          setSelectedForDetails(body.data);
+          return;
+        }
+
+        const message = status === 401 || status === 403
+          ? 'У вас нет доступа к этой заявке.'
+          : status === 404
+            ? 'Заявка не найдена или была удалена.'
+            : body?.error || 'Не удалось открыть заявку.';
+        setSelectedForDetails(null);
+        setDeepLinkError(message);
+        enqueueSnackbar(message, { variant: 'warning' });
+        clearDeepLink();
+      } catch {
+        if (!isCurrent()) return;
+        const message = 'Не удалось загрузить заявку из уведомления.';
+        setSelectedForDetails(null);
+        setDeepLinkError(message);
+        enqueueSnackbar(message, { variant: 'error' });
+        clearDeepLink();
+      } finally {
+        if (isCurrent()) setDeepLinkLoading(false);
+      }
+    };
+
+    loadDeepLinkedRequest();
+    return () => {
+      // Invalidate this generation: a response arriving after the ID changed
+      // or after unmount must not open stale data.
+      deepLinkTokenRef.current += 1;
+    };
+  }, [clearDeepLink, enqueueSnackbar, deepLinkRequestId]);
 
   const handleSubmitDraft = async (item: PrmRequestTableItem) => {
     try {
@@ -217,6 +360,15 @@ function PrmRegistryContent() {
           </Box>
         }
       />
+
+      {deepLinkLoading && <PageLoading text="Загрузка заявки из уведомления..." minHeight={180} />}
+      {deepLinkError && !deepLinkLoading && (
+        <ErrorState
+          title="Не удалось открыть заявку"
+          description={deepLinkError}
+          minHeight={180}
+        />
+      )}
 
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
@@ -349,23 +501,23 @@ function PrmRegistryContent() {
         request={selectedForDetails}
         currentUserId={user?.userId}
         canReview={canReview}
-        onClose={() => setSelectedForDetails(null)}
+        onClose={closeDeepLinkedDetails}
         onReceive={(item) => {
-          setSelectedForDetails(null);
+          closeDeepLinkedDetails();
           setSelectedForDelivery(item);
         }}
         onSubmit={async (item) => {
-          setSelectedForDetails(null);
+          closeDeepLinkedDetails();
           await handleSubmitDraft(item);
         }}
         onReview={(item) => {
-          setSelectedForDetails(null);
+          closeDeepLinkedDetails();
           setSelectedForReview(item);
           setResolutionComment('');
           setReviewModalOpen(true);
         }}
         onCancel={(item) => {
-          setSelectedForDetails(null);
+          closeDeepLinkedDetails();
           setCancelTarget(item);
         }}
       />

@@ -83,7 +83,7 @@ gates: [lint, tsc, test, coverage, quality-baseline, route-test-coverage, static
       доступные текущему пользователю по PRM scoping; отсутствие PRM permission
       не раскрывает данные.
 - [ ] MRO строка/деталь показывает связанные PRM заявки и открывает их через
-      canonical PRM deep link, определённый [P3](P3-fix-prm-notification-navigation.md).
+      canonical PRM deep link, определённый [P3](../done/2026-09/P3-fix-prm-notification-navigation.md).
 - [ ] Создание из EPS/MRO предзаполняет только source context; пользователь явно
       выбирает/подтверждает склад, позиции, количества и отправку.
 - [ ] Сервер отклоняет несуществующие source IDs и пару schedule/equipment,
@@ -96,7 +96,7 @@ gates: [lint, tsc, test, coverage, quality-baseline, route-test-coverage, static
 - [ ] Используются существующие компоненты `@/components/ui`, статусы через
       `StatusBadge`, без новых hardcoded hex в `sx`.
 - [ ] Пороги покрытия/quality baseline не понижены; full gate green.
-- [ ] Story закрыта одним Conventional Commit; зависит от [P3](P3-fix-prm-notification-navigation.md),
+- [ ] Story закрыта одним Conventional Commit; зависит от [P3](../done/2026-09/P3-fix-prm-notification-navigation.md),
       не зависит от P4/P6–P10 и предоставляет source dimensions для [P10](P10-prm-procurement-analytics.md).
 
 ## Result

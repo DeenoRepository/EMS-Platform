@@ -79,7 +79,7 @@ P2 уже связывает каждую `PurchaseDelivery` с одним `Stoc
 - [ ] WMS журнал отмечает только автоматически созданные PRM-приходы и показывает
       номер исходной заявки; обычные приходы не получают ложную связь.
 - [ ] Переход PRM → WMS открывает конкретный приход/отфильтрованный журнал, а
-      WMS → PRM использует canonical deep link из [P3](P3-fix-prm-notification-navigation.md).
+      WMS → PRM использует canonical deep link из [P3](../done/2026-09/P3-fix-prm-notification-navigation.md).
 - [ ] Source-фильтры WMS не обходят warehouse access; PRM detail не раскрывает
       WMS-only fields пользователю без соответствующего доступа.
 - [ ] Cardinality остаётся 1:1 между delivery и stock operation, уникальные
@@ -91,7 +91,7 @@ P2 уже связывает каждую `PurchaseDelivery` с одним `Stoc
 - [ ] При наличии миграции она версионирована и проверена на чистой/заполненной
       БД; `db push` не используется.
 - [ ] Пороги покрытия/quality baseline не понижены; full gate green.
-- [ ] Story закрыта одним Conventional Commit; зависит от [P3](P3-fix-prm-notification-navigation.md),
+- [ ] Story закрыта одним Conventional Commit; зависит от [P3](../done/2026-09/P3-fix-prm-notification-navigation.md),
       не зависит от P4/P5/P7–P9 и предоставляет receipt data для [P10](P10-prm-procurement-analytics.md).
 
 ## Result

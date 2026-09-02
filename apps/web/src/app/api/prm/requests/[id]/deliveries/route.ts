@@ -14,6 +14,7 @@ import {
   type DeliveryItemInput,
   type DeliveryRequestItemState,
 } from '@/lib/prm-delivery-service';
+import { buildPrmRequestDeepLink } from '@/lib/prm-navigation';
 
 export const dynamic = 'force-dynamic';
 
@@ -228,7 +229,7 @@ export async function POST(
           title: 'Поставка по заявке зарегистрирована',
           message: `По заявке № ${request.requestNumber} зарегистрирована поставка. Статус: ${result.nextStatus}.`,
           type: 'SYSTEM',
-          link: `/prm/${request.id}`,
+          link: buildPrmRequestDeepLink(request.id),
         },
       }).catch(() => undefined);
     }

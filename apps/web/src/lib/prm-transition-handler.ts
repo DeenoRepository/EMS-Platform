@@ -3,6 +3,7 @@ import { prisma, PurchaseRequestStatus, NotificationType } from '@ems/database';
 import { JwtUserPayload } from '@ems/shared';
 import { logAuditEvent } from '@ems/auth';
 import { logger } from '@/lib/logger';
+import { buildPrmRequestDeepLink } from '@/lib/prm-navigation';
 import {
   buildStatusTransitionUpdate,
   canPerformTransition,
@@ -124,7 +125,7 @@ export async function executeStatusTransition(params: TransitionParams): Promise
                 : `отклонена. Причина: "${resolutionComment || 'не указана'}".`
           }`,
           type: notificationType,
-          link: `/prm/${id}`,
+          link: buildPrmRequestDeepLink(id),
         },
       })
       .catch((error: unknown) => {

@@ -1,5 +1,6 @@
 import { before, beforeEach, describe, mock, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { buildPrmRequestDeepLink } from '../prm-navigation';
 import { PERMISSIONS, type JwtUserPayload } from '@ems/shared';
 import { makeRequest } from './helpers/route-harness';
 
@@ -200,6 +201,7 @@ describe('POST /api/prm/requests/[id]/deliveries', () => {
     assert.equal(deliveryCreates.length, 1);
     assert.equal(auditEvents.length, 1);
     assert.equal(notificationCreates.length, 1);
+    assert.equal(notificationCreates[0].data.link, buildPrmRequestDeepLink('request-1'));
   });
 
   test('returns the existing delivery for a repeated idempotency key without opening a transaction', async () => {

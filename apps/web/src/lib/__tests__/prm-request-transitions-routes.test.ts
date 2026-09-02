@@ -14,6 +14,7 @@ import { before, describe, mock, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PERMISSIONS, type JwtUserPayload } from '@ems/shared';
 import { makeRequest } from './helpers/route-harness';
+import { buildPrmRequestDeepLink } from '../prm-navigation';
 
 const PurchaseRequestStatus = {
   DRAFT: 'DRAFT',
@@ -300,6 +301,7 @@ describe('POST /api/prm/requests/[id]/submit', () => {
     assert.equal((updateCallArgs as any).data.status, PurchaseRequestStatus.SUBMITTED);
     assert.equal(auditEvents.length, 1);
     assert.equal(notificationCreates.length, 1);
+    assert.equal((notificationCreates[0] as any).data.link, buildPrmRequestDeepLink('req-1'));
   });
 });
 
@@ -326,6 +328,7 @@ describe('POST /api/prm/requests/[id]/approve', () => {
     assert.equal((updateCallArgs as any).data.status, PurchaseRequestStatus.APPROVED);
     assert.deepEqual((updateCallArgs as any).data.reviewer, { connect: { id: 'reviewer-id' } });
     assert.equal(notificationCreates.length, 1);
+    assert.equal((notificationCreates[0] as any).data.link, buildPrmRequestDeepLink('req-1'));
   });
 
   test('returns 500 without leaking internal error when persistence fails', async () => {

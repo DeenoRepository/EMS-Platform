@@ -92,13 +92,13 @@ API принимают его в [`createSchema`](../../apps/web/src/app/api/prm
       уведомления на request/stage/threshold; следующий разрешённый repeat
       создаётся только по политике.
 - [ ] Просрочка не меняет status и не мутирует quantities; уведомления содержат
-      canonical ссылку из [P3](P3-fix-prm-notification-navigation.md).
+      canonical ссылку из [P3](../done/2026-09/P3-fix-prm-notification-navigation.md).
 - [ ] Новое и изменённое поведение покрыто исполняемыми тестами в том же коммите,
       включая fixed-time boundary tests и route axes; тесты проверены на падение
       при регрессии по [`.agents/rules/testing.md`](../../.agents/rules/testing.md).
 - [ ] Миграция проверена на чистой/заполненной БД, `db push` не используется;
       пороги покрытия и quality baseline не понижены; full gate green.
-- [ ] Story закрыта одним Conventional Commit; зависит от [P3](P3-fix-prm-notification-navigation.md),
+- [ ] Story закрыта одним Conventional Commit; зависит от [P3](../done/2026-09/P3-fix-prm-notification-navigation.md),
       предоставляет deadline/history data для [P8](P8-prm-sequential-approvals.md) и
       KPI для [P10](P10-prm-procurement-analytics.md).
 
