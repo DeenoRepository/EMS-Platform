@@ -22,13 +22,21 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (3)
+## Active (11)
 
 | ID | Title | Phase | Priority | Risk | Skills | Opened |
 |---|---|---|---|---|---|---|
 | [N9](active/N9-full-test-coverage.md) | Увеличить покрытие проекта тестами до полного охвата критических путей | N | P1 | medium | senior-qa | 2026-08-31 |
 | [O0](active/O0-coverage-roadmap.md) | Дорожная карта полного покрытия проекта и бизнес-логики тестами | O | P1 | medium | senior-qa, playwright-pro | 2026-09-01 |
 | [O7](active/O7-e2e-flow-coverage.md) | Расширить Playwright E2E до всех критических сквозных потоков | O | P2 | medium | playwright-pro, senior-qa | 2026-09-01 |
+| [P3](active/P3-fix-prm-notification-navigation.md) | Исправить переходы из уведомлений PRM к заявке | P | P1 | medium | senior-frontend, senior-backend, senior-qa | 2026-09-02 |
+| [P4](active/P4-explicit-prm-close-workflow.md) | Добавить явное закрытие поставленной заявки PRM | P | P1 | medium | senior-backend, senior-frontend, senior-qa | 2026-09-02 |
+| [P5](active/P5-prm-links-eps-mro.md) | Показать связи PRM с оборудованием EPS и графиками MRO | P | P2 | medium | senior-backend, senior-frontend, senior-qa | 2026-09-02 |
+| [P6](active/P6-prm-wms-receipt-traceability.md) | Добавить двустороннюю трассировку PRM и WMS-приходов | P | P1 | high | database-schema-designer, senior-backend, senior-frontend, senior-qa | 2026-09-02 |
+| [P7](active/P7-prm-sla-aging-escalations.md) | Добавить сроки, SLA, aging и эскалации PRM | P | P1 | high | database-schema-designer, senior-backend, senior-frontend, senior-qa | 2026-09-02 |
+| [P8](active/P8-prm-sequential-approvals.md) | Добавить настраиваемое последовательное согласование PRM | P | P1 | high | database-schema-designer, senior-backend, senior-frontend, senior-security, senior-qa | 2026-09-02 |
+| [P9](active/P9-prm-demand-consolidation.md) | Добавить пост-согласовательную консолидацию потребности PRM | P | P2 | high | database-schema-designer, senior-backend, senior-frontend, senior-qa | 2026-09-02 |
+| [P10](active/P10-prm-procurement-analytics.md) | Добавить аналитику закупочных заявок и KPI PRM | P | P2 | high | senior-backend, senior-frontend, senior-qa | 2026-09-02 |
 
 ---
 
