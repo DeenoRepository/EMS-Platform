@@ -11,6 +11,7 @@ export interface ModuleStatusMap {
   wms: boolean;
   srm: boolean;
   mro: boolean;
+  prm: boolean;
 }
 
 const DEFAULT_MODULE_STATUS: ModuleStatusMap = {
@@ -18,6 +19,7 @@ const DEFAULT_MODULE_STATUS: ModuleStatusMap = {
   wms: true,
   srm: true,
   mro: true,
+  prm: true,
 };
 
 export async function GET(req: NextRequest) {
@@ -68,7 +70,7 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json();
     const { moduleId, enabled } = body;
 
-    const ALLOWED_MODULES = ['eps', 'wms', 'srm', 'mro'] as const;
+    const ALLOWED_MODULES = ['eps', 'wms', 'srm', 'mro', 'prm'] as const;
     if (!moduleId || !ALLOWED_MODULES.includes(moduleId as any) || typeof enabled !== 'boolean') {
       return NextResponse.json(
         { success: false, error: `Некорректные параметры: допустимые moduleId: ${ALLOWED_MODULES.join(', ')}` },

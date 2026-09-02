@@ -39,6 +39,11 @@ export const PERMISSIONS_LIST = [
   { code: 'mro.schedule.manage', displayName: 'Управление графиком ТО', module: 'mro', description: 'Создание и назначение планов ТО' },
   { code: 'mro.execution.complete', displayName: 'Проведение ТО', module: 'mro', description: 'Заполнение чек-листов и списание запчастей' },
 
+  // PRM
+  { code: 'prm.requests.view', displayName: 'Просмотр заявок на закупку ТМЦ', module: 'prm', description: 'Доступ к реестру заявок на закупку ТМЦ' },
+  { code: 'prm.requests.create', displayName: 'Подача заявок на закупку ТМЦ', module: 'prm', description: 'Формирование и отправка заявок на закупку' },
+  { code: 'prm.requests.manage', displayName: 'Согласование заявок на закупку ТМЦ', module: 'prm', description: 'Утверждение, отклонение и отмена заявок на закупку' },
+
   // ADMIN
   { code: 'admin.users.manage', displayName: 'Управление пользователями', module: 'admin', description: 'Назначение ролей и блокировка' },
   { code: 'admin.roles.manage', displayName: 'Управление ролями', module: 'admin', description: 'Создание ролей и распределение прав' },
@@ -127,7 +132,9 @@ export async function seedPermissionsAndRoles(prisma: PrismaClient) {
       p.module === 'eps' ||
       p.module === 'mro' ||
       p.code === 'wms.stock.view' ||
-      p.code === 'srm.dashboard.view'
+      p.code === 'srm.dashboard.view' ||
+      p.code === 'prm.requests.view' ||
+      p.code === 'prm.requests.create'
   );
   for (const perm of engineerPermissions) {
     await prisma.rolePermission.upsert({
@@ -142,7 +149,8 @@ export async function seedPermissionsAndRoles(prisma: PrismaClient) {
     (p) =>
       (p.module === 'wms' && p.code !== 'wms.warehouses.manage') ||
       p.code === 'eps.equipment.view' ||
-      p.code === 'srm.dashboard.view'
+      p.code === 'srm.dashboard.view' ||
+      p.module === 'prm'
   );
   for (const perm of warehousePermissions) {
     await prisma.rolePermission.upsert({

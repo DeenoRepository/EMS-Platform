@@ -45,6 +45,8 @@ model User {
   assignedFeedbackTickets FeedbackTicket[]     @relation("FeedbackAssignee")
   feedbackComments       FeedbackComment[]     @relation("FeedbackAuthor")
   uploadedFeedbackAttachments FeedbackAttachment[] @relation("FeedbackAttachmentUploader")
+  requestedPurchaseRequests PurchaseRequest[]  @relation("PurchaseRequestRequester")
+  reviewedPurchaseRequests  PurchaseRequest[]  @relation("PurchaseRequestReviewer")
 
   @@index([deletedAt])
 }
@@ -150,6 +152,9 @@ enum NotificationType {
   FEEDBACK_CREATED
   FEEDBACK_STATUS_CHANGED
   FEEDBACK_REPLY
+  PURCHASE_REQUEST_SUBMITTED
+  PURCHASE_REQUEST_APPROVED
+  PURCHASE_REQUEST_REJECTED
 }
 
 model SystemSetting {
@@ -207,6 +212,7 @@ model Equipment {
   stockUsage       StockOperationItem[]
   schedules        MaintenanceSchedule[]
   approvals        EquipmentApproval[]
+  purchaseRequests PurchaseRequest[]
 
   @@index([status])
   @@index([name])
@@ -407,6 +413,7 @@ model Warehouse {
   dispatchedTransfers StockTransfer[]     @relation("TransfersDispatched")
   receivedTransfers   StockTransfer[]     @relation("TransfersReceived")
   usedInMaintenance   MaintenanceUsedPart[]
+  purchaseRequests    PurchaseRequest[]
 
   @@index([responsibleUserId])
   @@index([deletedAt])
@@ -474,6 +481,7 @@ model Nomenclature {
   inventoryItems    InventoryItem[]
   transferItems     StockTransferItem[]
   usedInMaintenance MaintenanceUsedPart[]
+  purchaseRequestItems PurchaseRequestItem[]
 
   @@index([name])
   @@index([article])
@@ -664,6 +672,81 @@ model StockTransferItem {
 }
 
 // ==========================================
+// 4.2. PRM — ЗАЯВКИ НА ЗАКУПКУ ТМЦ
+// ==========================================
+
+model PurchaseRequest {
+  id                    String                  @id @default(uuid())
+  requestNumber         String                  @unique // PR-20260902-A1B2C3
+  status                PurchaseRequestStatus   @default(DRAFT)
+  priority              PurchaseRequestPriority @default(MEDIUM)
+  targetWarehouseId     String
+  requesterId           String
+  reviewerId            String?
+  reviewedAt            DateTime?
+  resolutionComment     String?                 @db.Text
+  justification         String?                 @db.Text
+  supplierName          String?
+  requiredByDate        DateTime?
+  equipmentId           String?
+  maintenanceScheduleId String?
+  estimatedTotal        Decimal                 @default(0)
+  currency              String                  @default("RUB")
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  targetWarehouse     Warehouse             @relation(fields: [targetWarehouseId], references: [id])
+  requester           User                  @relation("PurchaseRequestRequester", fields: [requesterId], references: [id])
+  reviewer            User?                 @relation("PurchaseRequestReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  equipment           Equipment?            @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+  maintenanceSchedule MaintenanceSchedule?  @relation(fields: [maintenanceScheduleId], references: [id], onDelete: SetNull)
+  items               PurchaseRequestItem[]
+
+  @@index([status])
+  @@index([targetWarehouseId])
+  @@index([requesterId])
+  @@index([equipmentId])
+  @@index([maintenanceScheduleId])
+  @@index([createdAt])
+}
+
+enum PurchaseRequestStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  CANCELLED
+  IN_PROGRESS
+  PARTIALLY_DELIVERED
+  DELIVERED
+  CLOSED
+}
+
+enum PurchaseRequestPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model PurchaseRequestItem {
+  id             String   @id @default(uuid())
+  requestId      String
+  nomenclatureId String
+  requestedQty   Decimal
+  estimatedPrice Decimal  @default(0)
+  actualPrice    Decimal?
+  receivedQty    Decimal  @default(0)
+  comment        String?
+
+  request      PurchaseRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  nomenclature Nomenclature    @relation(fields: [nomenclatureId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@index([nomenclatureId])
+}
+
+// ==========================================
 // 5. SRM — СЕРВИС-ДЕСК И ИНТЕГРАЦИИ (JIRA, REDMINE, 1C, REST)
 // ==========================================
 
@@ -796,6 +879,7 @@ model MaintenanceSchedule {
   completedBy     User?                 @relation("CompletedBy", fields: [completedById], references: [id], onDelete: SetNull)
   checklistResult ChecklistResult?
   usedParts       MaintenanceUsedPart[]
+  purchaseRequests PurchaseRequest[]
 
   @@index([scheduledDate])
   @@index([status])

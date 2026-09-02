@@ -14,6 +14,7 @@ const emptyCounts: SidebarCounts = {
   srmInProgressCount: null,
   mroOverdueCount: null,
   mroPlannedCount: null,
+  prmPendingCount: null,
 };
 
 test('getMainItems returns the dashboard entry', () => {
@@ -39,6 +40,7 @@ test('getOperationalItems exposes module permissions and operational badges', ()
         wms: { enabled: false },
         srm: { enabled: false },
         mro: { enabled: true },
+        prm: { enabled: false },
       },
     },
   );

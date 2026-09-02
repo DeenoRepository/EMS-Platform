@@ -208,6 +208,16 @@ export function makePrismaMock() {
       create: async (): Promise<UnknownRecord> => ({ id: 'created-id' }),
       update: async (): Promise<UnknownRecord> => ({ id: 'updated-id' }),
     },
+    purchaseRequest: {
+      count: emptyCount,
+      findMany: emptyList,
+      findUnique: missing,
+      create: async (): Promise<UnknownRecord> => ({ id: 'purchase-request-id', requestNumber: 'PR-TEST' }),
+      update: async (): Promise<UnknownRecord> => ({ id: 'purchase-request-id' }),
+    },
+    purchaseRequestItem: {
+      deleteMany: async () => ({ count: 0 }),
+    },
     stockOperation: {
       count: emptyCount,
       findMany: emptyList,

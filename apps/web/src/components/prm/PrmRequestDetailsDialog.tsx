@@ -1,0 +1,128 @@
+'use client';
+
+import React from 'react';
+import { Box, Divider, Paper, Typography, Table, TableBody, TableCell, TableHead, TableRow, Button } from '@mui/material';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import { FormDialog, StatusBadge } from '@/components/ui';
+import { formatDateTime } from '@ems/shared';
+import type { PrmRequestTableItem } from './PrmRequestTableView';
+
+interface PrmRequestDetailsDialogProps {
+  open: boolean;
+  request: PrmRequestTableItem | null;
+  currentUserId?: string;
+  canReview: boolean;
+  onClose: () => void;
+  onSubmit: (request: PrmRequestTableItem) => void;
+  onReview: (request: PrmRequestTableItem) => void;
+  onCancel: (request: PrmRequestTableItem) => void;
+}
+
+export function PrmRequestDetailsDialog({
+  open,
+  request,
+  currentUserId,
+  canReview,
+  onClose,
+  onSubmit,
+  onReview,
+  onCancel,
+}: PrmRequestDetailsDialogProps) {
+  if (!request) return null;
+
+  const isRequester = request.requester.id === currentUserId;
+  const isDraft = request.status === 'DRAFT';
+  const isSubmitted = request.status === 'SUBMITTED';
+
+  return (
+    <FormDialog open={open} onClose={onClose} title={`Заявка ${request.requestNumber}`} subtitle="Детали заявки на закупку ТМЦ" maxWidth="md" hideActions>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <StatusBadge status={request.status} />
+            <StatusBadge status={request.priority} />
+          </Box>
+          <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+            Создана: {formatDateTime(request.createdAt)}
+          </Typography>
+        </Box>
+
+        <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.default' }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
+            <Box>
+              <Typography variant="caption" color="text.secondary" display="block">Склад назначения</Typography>
+              <Typography variant="body2" fontWeight={700}>{request.targetWarehouse.name} ({request.targetWarehouse.code})</Typography>
+            </Box>
+            <Box>
+              <Typography variant="caption" color="text.secondary" display="block">Инициатор</Typography>
+              <Typography variant="body2" fontWeight={600}>{request.requester.displayName}</Typography>
+            </Box>
+            <Box>
+              <Typography variant="caption" color="text.secondary" display="block">Поставщик</Typography>
+              <Typography variant="body2">{request.supplierName || 'Не указан'}</Typography>
+            </Box>
+            <Box>
+              <Typography variant="caption" color="text.secondary" display="block">Согласующий</Typography>
+              <Typography variant="body2">{request.reviewer?.displayName || 'Не назначен'}</Typography>
+            </Box>
+          </Box>
+          {request.justification && (
+            <>
+              <Divider sx={{ my: 1.5 }} />
+              <Typography variant="caption" color="text.secondary" display="block">Обоснование</Typography>
+              <Typography variant="body2">{request.justification}</Typography>
+            </>
+          )}
+        </Paper>
+
+        <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+          <Table size="small">
+            <TableHead>
+              <TableRow sx={{ bgcolor: 'background.default' }}>
+                <TableCell sx={{ fontWeight: 700 }}>Номенклатура</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700 }}>Количество</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700 }}>Цена</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700 }}>Сумма</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {request.items.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell>
+                    <Typography variant="body2" fontWeight={600}>{item.nomenclature.name}</Typography>
+                    <Typography variant="caption" color="text.secondary">{item.nomenclature.unit}</Typography>
+                  </TableCell>
+                  <TableCell align="right">{Number(item.requestedQty).toLocaleString('ru-RU')}</TableCell>
+                  <TableCell align="right">{Number(item.estimatedPrice).toLocaleString('ru-RU')} {request.currency}</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700 }}>
+                    {(Number(item.requestedQty) * Number(item.estimatedPrice)).toLocaleString('ru-RU')} {request.currency}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
+            <Typography variant="subtitle2" fontWeight={700}>
+              Итого: {Number(request.estimatedTotal).toLocaleString('ru-RU')} {request.currency}
+            </Typography>
+          </Box>
+        </Paper>
+
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, flexWrap: 'wrap' }}>
+          {isDraft && isRequester && (
+            <Button variant="contained" onClick={() => onSubmit(request)}>Подать на согласование</Button>
+          )}
+          {isSubmitted && canReview && (
+            <Button variant="contained" color="primary" onClick={() => onReview(request)}>Принять решение</Button>
+          )}
+          {(isDraft || isSubmitted) && (isRequester || canReview) && (
+            <Button variant="outlined" color="inherit" onClick={() => onCancel(request)}>Отменить</Button>
+          )}
+          <Button variant="text" endIcon={<OpenInNewIcon />} onClick={onClose}>Закрыть</Button>
+        </Box>
+      </Box>
+    </FormDialog>
+  );
+}
+
+export default PrmRequestDetailsDialog;

@@ -34,7 +34,7 @@ interface CommandItem {
   id: string;
   title: string;
   subtitle?: string;
-  category: 'EPS' | 'WMS' | 'MRO' | 'SRM' | 'ADMIN' | 'ACTIONS';
+  category: 'EPS' | 'WMS' | 'MRO' | 'SRM' | 'PRM' | 'ADMIN' | 'ACTIONS';
   icon: React.ReactNode;
   href?: string;
   action?: () => void;
@@ -149,6 +149,17 @@ const COMMAND_ITEMS: CommandItem[] = [
     keywords: ['srm', 'jira', 'тикет', 'sla', 'поставщик', 'servicedesk'],
   },
 
+  // PRM
+  {
+    id: 'prm-root',
+    title: 'PRM — Заявки на закупку ТМЦ',
+    subtitle: 'Подача и согласование заявок на закупку товарно-материальных ценностей',
+    category: 'PRM',
+    icon: <MoveToInboxIcon sx={{ fontSize: 20 }} />,
+    href: '/prm',
+    keywords: ['закупка', 'заявка', 'тмц', 'поставщик', 'prm', 'purchase'],
+  },
+
   // Admin
   {
     id: 'admin-users',
@@ -215,6 +226,7 @@ const CATEGORY_MAP: Record<string, { label: string; color: string; bg: string }>
   WMS: { label: 'Склад (WMS)', color: 'warning.main', bg: 'warning.light' },
   MRO: { label: 'ТОиР (MRO)', color: 'success.main', bg: 'success.light' },
   SRM: { label: 'Заявки (SRM)', color: 'secondary.main', bg: 'secondary.light' },
+  PRM: { label: 'Закупки (PRM)', color: 'info.main', bg: 'info.light' },
   ADMIN: { label: 'Управление', color: 'text.secondary', bg: 'action.hover' },
   ACTIONS: { label: 'Действия', color: 'error.main', bg: 'error.light' },
 };

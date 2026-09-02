@@ -19,6 +19,7 @@ import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import BugReportOutlinedIcon from '@mui/icons-material/BugReportOutlined';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import FeedbackOutlinedIcon from '@mui/icons-material/FeedbackOutlined';
+import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 import { PERMISSIONS, PlatformMaintenanceStatus } from '@ems/shared';
 
 export interface NavChild {
@@ -58,6 +59,7 @@ export interface SidebarCounts {
   srmInProgressCount: number | null;
   mroOverdueCount: number | null;
   mroPlannedCount: number | null;
+  prmPendingCount: number | null;
 }
 
 export function getMainItems(): NavItemDef[] {
@@ -84,6 +86,7 @@ export function getOperationalItems(
     wmsActiveInventoriesCount,
     srmOpenCount,
     mroOverdueCount,
+    prmPendingCount,
   } = counts;
 
   return [
@@ -275,6 +278,20 @@ export function getOperationalItems(
           permissions: [PERMISSIONS.MRO_SCHEDULE_VIEW, PERMISSIONS.MRO_EXECUTION_COMPLETE],
         },
       ],
+    },
+    {
+      id: 'prm',
+      label: 'Заявки на закупку ТМЦ (PRM)',
+      path: '/prm',
+      icon: <ShoppingCartOutlinedIcon sx={{ fontSize: 18 }} />,
+      permissions: [
+        PERMISSIONS.PRM_REQUESTS_VIEW,
+        PERMISSIONS.PRM_REQUESTS_CREATE,
+        PERMISSIONS.PRM_REQUESTS_MANAGE,
+      ],
+      badge: prmPendingCount && prmPendingCount > 0 ? prmPendingCount : null,
+      badgeColor: 'warning',
+      badgeTooltip: prmPendingCount && prmPendingCount > 0 ? `${prmPendingCount} заявок на закупку ожидает согласования` : undefined,
     },
   ];
 }

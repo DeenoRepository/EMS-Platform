@@ -63,6 +63,25 @@ export const INVENTORY_STATUS_MAP: Record<string, { label: string; color: 'warni
   COMPLETED: { label: 'Завершена', color: 'success' },
 };
 
+export const PURCHASE_REQUEST_STATUS_MAP: Record<string, { label: string; color: 'warning' | 'info' | 'success' | 'error' | 'default' }> = {
+  DRAFT: { label: 'Черновик', color: 'default' },
+  SUBMITTED: { label: 'На согласовании', color: 'warning' },
+  APPROVED: { label: 'Согласована', color: 'success' },
+  REJECTED: { label: 'Отклонена', color: 'error' },
+  CANCELLED: { label: 'Отозвана', color: 'default' },
+  IN_PROGRESS: { label: 'В исполнении', color: 'info' },
+  PARTIALLY_DELIVERED: { label: 'Частично поставлена', color: 'warning' },
+  DELIVERED: { label: 'Поставлена', color: 'success' },
+  CLOSED: { label: 'Закрыта', color: 'default' },
+};
+
+export const PURCHASE_REQUEST_PRIORITY_MAP: Record<string, { label: string; color: 'error' | 'warning' | 'info' | 'default' }> = {
+  LOW: { label: 'Низкий', color: 'info' },
+  MEDIUM: { label: 'Средний', color: 'default' },
+  HIGH: { label: 'Высокий', color: 'warning' },
+  CRITICAL: { label: 'Критический', color: 'error' },
+};
+
 export const MAINTENANCE_STATUS_MAP: Record<string, { label: string; color: 'info' | 'warning' | 'success' | 'error' | 'default' }> = {
   PLANNED: { label: 'Запланировано', color: 'info' },
   IN_PROGRESS: { label: 'В работе', color: 'warning' },

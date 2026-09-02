@@ -18,11 +18,12 @@ test('loadSidebarData requests all sidebar data sources and maps successful resp
       '/api/srm/stats': { success: true, data: { openIssues: 6, inProgressIssues: 7 } },
       '/api/mro/schedules': { success: true, data: [{ status: 'MISSED', scheduledDate: '2099-01-01' }, { status: 'PLANNED', scheduledDate: '2099-01-01' }] },
       '/api/wms/transfers?pageSize=1': { success: true, data: { counts: { inbound: 8, requests: 9 } } },
+      '/api/prm/requests?pageSize=1&scope=to_review': { success: true, data: { stats: { toReview: 10 } } },
     };
     return response(payloads[String(input)]);
   });
 
-  assert.equal(requests.length, 7);
+  assert.equal(requests.length, 8);
   assert.deepEqual(data, {
     repairCount: 3,
     moduleStatus: { eps: true, wms: false },
@@ -35,6 +36,7 @@ test('loadSidebarData requests all sidebar data sources and maps successful resp
     srmInProgressCount: 7,
     mroOverdueCount: 1,
     mroPlannedCount: 1,
+    prmPendingCount: 10,
   });
 });
 
@@ -61,6 +63,7 @@ test('applySidebarDataUpdate applies only present fields, including null and zer
     setSrmInProgressCount: (value) => calls.push(`srm-progress:${value}`),
     setMroOverdueCount: (value) => calls.push(`overdue:${value}`),
     setMroPlannedCount: (value) => calls.push(`planned:${value}`),
+    setPrmPendingCount: (value) => calls.push(`prm-pending:${value}`),
   };
 
   applySidebarDataUpdate({ repairCount: 0, moduleStatus: { wms: false }, srmOpenCount: 0, mroOverdueCount: null }, setters);
@@ -69,7 +72,7 @@ test('applySidebarDataUpdate applies only present fields, including null and zer
 });
 
 test('mapSidebarResponses preserves fallback and zero-value mappings', () => {
-  const responses = Array.from({ length: 7 }, () => ({ status: 'fulfilled', value: response({}) } as PromiseFulfilledResult<Response>));
+  const responses = Array.from({ length: 8 }, () => ({ status: 'fulfilled', value: response({}) } as PromiseFulfilledResult<Response>));
   const payloads = [
     { success: true, data: { statusCounts: { underRepair: 0 } } },
     { success: true, data: { eps: true } },
@@ -78,6 +81,7 @@ test('mapSidebarResponses preserves fallback and zero-value mappings', () => {
     { success: true, data: { data: { openIssues: 0, inProgressIssues: 0 } } },
     { success: true, data: { data: [] } },
     { success: true, data: { counts: { inbound: 0, requests: 0 } } },
+    { success: true, data: { stats: { toReview: 0 } } },
   ] as const;
 
   const update = mapSidebarResponses(responses, payloads);
@@ -85,4 +89,5 @@ test('mapSidebarResponses preserves fallback and zero-value mappings', () => {
   assert.equal(update.pendingApprovalsCount, null);
   assert.equal(update.wmsPendingTransfersCount, null);
   assert.equal(update.srmOpenCount, 0);
+  assert.equal(update.prmPendingCount, null);
 });

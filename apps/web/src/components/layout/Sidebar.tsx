@@ -66,6 +66,7 @@ export default function Sidebar({
   const [srmInProgressCount, setSrmInProgressCount] = useState<number | null>(null);
   const [mroOverdueCount, setMroOverdueCount] = useState<number | null>(null);
   const [mroPlannedCount, setMroPlannedCount] = useState<number | null>(null);
+  const [prmPendingCount, setPrmPendingCount] = useState<number | null>(null);
 
   // Expanded items in expanded sidebar mode
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
@@ -93,6 +94,7 @@ export default function Sidebar({
     wms: true,
     srm: true,
     mro: true,
+    prm: true,
   });
 
   const [maintenanceStatus, setMaintenanceStatus] = useState<PlatformMaintenanceStatus | null>(null);
@@ -121,6 +123,7 @@ export default function Sidebar({
       setSrmInProgressCount,
       setMroOverdueCount,
       setMroPlannedCount,
+      setPrmPendingCount,
     };
 
     async function loadData() {
@@ -190,6 +193,7 @@ export default function Sidebar({
       srmInProgressCount,
       mroOverdueCount,
       mroPlannedCount,
+      prmPendingCount,
     }),
     [
       repairCount,
@@ -202,6 +206,7 @@ export default function Sidebar({
       srmInProgressCount,
       mroOverdueCount,
       mroPlannedCount,
+      prmPendingCount,
     ]
   );
 

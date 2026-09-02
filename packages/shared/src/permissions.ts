@@ -41,6 +41,11 @@ export const PERMISSIONS = {
   MRO_SCHEDULE_MANAGE: 'mro.schedule.manage',
   MRO_EXECUTION_COMPLETE: 'mro.execution.complete',
 
+  // PRM
+  PRM_REQUESTS_VIEW: 'prm.requests.view',
+  PRM_REQUESTS_CREATE: 'prm.requests.create',
+  PRM_REQUESTS_MANAGE: 'prm.requests.manage',
+
   // ADMIN
   ADMIN_USERS_MANAGE: 'admin.users.manage',
   ADMIN_ROLES_MANAGE: 'admin.roles.manage',
@@ -54,7 +59,7 @@ export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 export interface PermissionDefinition {
   code: PermissionCode;
   displayName: string;
-  module: 'eps' | 'wms' | 'srm' | 'mro' | 'admin';
+  module: 'eps' | 'wms' | 'srm' | 'mro' | 'prm' | 'admin';
   description: string;
 }
 
@@ -277,5 +282,25 @@ export const PERMISSION_DEFINITIONS: Record<PermissionCode, PermissionDefinition
     displayName: 'Фиксация выполнения ТО',
     module: 'mro',
     description: 'Отметка выполнения пунктов чек-листа, списание израсходованных запчастей и закрытие нарядов',
+  },
+
+  // PRM
+  'prm.requests.view': {
+    code: 'prm.requests.view',
+    displayName: 'Просмотр заявок на закупку ТМЦ',
+    module: 'prm',
+    description: 'Доступ к реестру заявок на закупку товарно-материальных ценностей',
+  },
+  'prm.requests.create': {
+    code: 'prm.requests.create',
+    displayName: 'Подача заявок на закупку ТМЦ',
+    module: 'prm',
+    description: 'Формирование и отправка заявок на закупку с позициями номенклатуры',
+  },
+  'prm.requests.manage': {
+    code: 'prm.requests.manage',
+    displayName: 'Согласование заявок на закупку ТМЦ',
+    module: 'prm',
+    description: 'Утверждение, отклонение и отмена заявок на закупку товарно-материальных ценностей',
   },
 };

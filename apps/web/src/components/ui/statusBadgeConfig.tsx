@@ -68,6 +68,27 @@ export const BASE_STATUS_CONFIG: Record<string, StatusTheme> = {
     border: 'warning.light',
     icon: <HourglassEmptyIcon sx={{ fontSize: 13 }} />,
   },
+  SUBMITTED: {
+    label: 'На согласовании',
+    color: 'warning.main',
+    bg: 'warning.light',
+    border: 'warning.light',
+    icon: <HourglassEmptyIcon sx={{ fontSize: 13 }} />,
+  },
+  PARTIALLY_DELIVERED: {
+    label: 'Частично поставлена',
+    color: 'warning.main',
+    bg: 'warning.light',
+    border: 'warning.light',
+    icon: <LocalShippingOutlinedIcon sx={{ fontSize: 13 }} />,
+  },
+  DELIVERED: {
+    label: 'Поставлена',
+    color: 'success.main',
+    bg: 'success.light',
+    border: 'success.light',
+    icon: <CheckCircleIcon sx={{ fontSize: 13 }} />,
+  },
   APPROVED: {
     label: 'Одобрено',
     color: 'success.main',

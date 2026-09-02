@@ -10,6 +10,7 @@ export interface SidebarDataUpdate {
   srmInProgressCount?: number;
   mroOverdueCount?: number | null;
   mroPlannedCount?: number | null;
+  prmPendingCount?: number | null;
 }
 
 type FetchLike = typeof fetch;
@@ -23,6 +24,7 @@ const SIDEBAR_ENDPOINTS = [
   '/api/srm/stats',
   '/api/mro/schedules',
   '/api/wms/transfers?pageSize=1',
+  '/api/prm/requests?pageSize=1&scope=to_review',
 ] as const;
 
 interface MroSchedule {
@@ -119,6 +121,13 @@ function mapSrm(data: unknown): Pick<SidebarDataUpdate, 'srmOpenCount' | 'srmInP
     : {};
 }
 
+function mapPrm(data: unknown): Pick<SidebarDataUpdate, 'prmPendingCount'> {
+  if (!data || typeof data !== 'object') return {};
+  const stats = (data as { data?: { stats?: { toReview?: unknown } } }).data?.stats;
+  if (!stats || typeof stats !== 'object') return {};
+  return { prmPendingCount: getNumber(stats.toReview) };
+}
+
 export interface SidebarDataSetters {
   setRepairCount: (value: number | null) => void;
   setModuleStatus: (value: Record<string, boolean>) => void;
@@ -131,6 +140,7 @@ export interface SidebarDataSetters {
   setSrmInProgressCount: (value: number | null) => void;
   setMroOverdueCount: (value: number | null) => void;
   setMroPlannedCount: (value: number | null) => void;
+  setPrmPendingCount: (value: number | null) => void;
 }
 
 export function applySidebarDataUpdate(data: SidebarDataUpdate, setters: SidebarDataSetters): void {
@@ -146,6 +156,7 @@ export function applySidebarDataUpdate(data: SidebarDataUpdate, setters: Sidebar
     ['srmInProgressCount', () => setters.setSrmInProgressCount(data.srmInProgressCount ?? null)],
     ['mroOverdueCount', () => setters.setMroOverdueCount(data.mroOverdueCount ?? null)],
     ['mroPlannedCount', () => setters.setMroPlannedCount(data.mroPlannedCount ?? null)],
+    ['prmPendingCount', () => setters.setPrmPendingCount(data.prmPendingCount ?? null)],
   ];
 
   for (const [key, update] of updates) {
@@ -154,7 +165,7 @@ export function applySidebarDataUpdate(data: SidebarDataUpdate, setters: Sidebar
 }
 
 export function mapSidebarResponses(responses: readonly SettledResponse[], payloads: readonly unknown[]): SidebarDataUpdate {
-  const [equipment, modules, approvals, wms, srm, mro, transfers] = payloads;
+  const [equipment, modules, approvals, wms, srm, mro, transfers, prm] = payloads;
   return {
     ...mapEquipment(isFulfilledOk(responses[0]) ? equipment : null),
     ...mapModules(isFulfilledOk(responses[1]) ? modules : null),
@@ -163,6 +174,7 @@ export function mapSidebarResponses(responses: readonly SettledResponse[], paylo
     ...mapSrm(isFulfilledOk(responses[4]) ? srm : null),
     ...getMroCounts(isFulfilledOk(responses[5]) ? (mro as { data?: unknown })?.data : null),
     ...mapTransfers(isFulfilledOk(responses[6]) ? transfers : null),
+    ...mapPrm(isFulfilledOk(responses[7]) ? prm : null),
   };
 }
 

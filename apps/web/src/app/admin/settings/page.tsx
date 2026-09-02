@@ -95,6 +95,7 @@ export default function AdminSettingsPage() {
       wms: { enabled: false, message: 'Модуль складского учёта (WMS) находится на техническом обслуживании.', estimatedUntil: null },
       srm: { enabled: false, message: 'Модуль подачи заявок (SRM) находится на техническом обслуживании.', estimatedUntil: null },
       mro: { enabled: false, message: 'Модуль ТО и ремонта (MRO) находится на техническом обслуживании.', estimatedUntil: null },
+      prm: { enabled: false, message: 'Модуль закупок (PRM) находится на техническом обслуживании.', estimatedUntil: null },
     },
   });
 

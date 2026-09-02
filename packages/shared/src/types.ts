@@ -61,6 +61,7 @@ export interface PlatformMaintenanceStatus {
     wms: ModuleMaintenanceConfig;
     srm: ModuleMaintenanceConfig;
     mro: ModuleMaintenanceConfig;
+    prm: ModuleMaintenanceConfig;
   };
 }
 
