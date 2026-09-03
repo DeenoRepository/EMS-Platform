@@ -13,6 +13,7 @@
 | [`architecture-migration-plan/02-agent-governance-and-rules.md`](architecture-migration-plan/02-agent-governance-and-rules.md) | **Регламент для ИИ-агентов**: протокол рукопожатия (handshake), изоляция правил в отдельном репозитории, полное отсутствие AI-артефактов в рабочем коде, TDD-режим без UI-тестирования, Git-коммиты. |
 | [`architecture-migration-plan/03-claude-skills-catalog.md`](architecture-migration-plan/03-claude-skills-catalog.md) | **Каталог скиллов**: подборка инструментов из [`alirezarezvani/claude-skills`](https://github.com/alirezarezvani/claude-skills), маппинг скиллов на роли и жизненный цикл разработки/деплоя. |
 | [`architecture-migration-plan/04-components-roadmap.md`](architecture-migration-plan/04-components-roadmap.md) | **Детальная декомпозиция компонентов**: пошаговые планы для ядра (`platform-shell`), контрактов (`platform-contracts`), расширений (`ext-*`) и бизнес-модулей (`module-eps`, `module-wms`, `module-mro`, `module-prm`). |
+| [`architecture-migration-plan/05-adr-ui-integration.md`](architecture-migration-plan/05-adr-ui-integration.md) | **ADR-0002**: Архитектура интеграции пользовательского интерфейса (Microfrontends / Module Federation vs Distribution Assembly). |
 
 ---
 
