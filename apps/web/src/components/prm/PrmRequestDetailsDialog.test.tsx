@@ -59,4 +59,40 @@ describe('PrmRequestDetailsDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Закрыть заявку' }));
     expect(callbacks.onCloseRequest).toHaveBeenCalledWith(expect.objectContaining({ id: request.id }));
   });
+
+  it('renders linked equipment and maintenance schedule cards when present', () => {
+    const callbacks = props();
+    renderWithProviders(
+      <PrmRequestDetailsDialog
+        {...callbacks}
+        canViewEps
+        canViewMro
+        request={{
+          ...request,
+          equipment: { id: 'eq-1', name: 'Pump Station 1', inventoryNumber: 'INV-100' },
+          maintenanceSchedule: { id: 'sch-1', title: 'Monthly Inspection' },
+        }}
+      />,
+    );
+
+    expect(screen.getByText('Связанные объекты')).toBeInTheDocument();
+    expect(screen.getByText(/Pump Station 1/)).toBeInTheDocument();
+    expect(screen.getByText(/Monthly Inspection/)).toBeInTheDocument();
+  });
+
+  it('does not render linked objects section when equipment and schedule are null', () => {
+    const callbacks = props();
+    renderWithProviders(
+      <PrmRequestDetailsDialog
+        {...callbacks}
+        request={{
+          ...request,
+          equipment: null,
+          maintenanceSchedule: null,
+        }}
+      />,
+    );
+
+    expect(screen.queryByText('Связанные объекты')).not.toBeInTheDocument();
+  });
 });

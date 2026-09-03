@@ -7,6 +7,8 @@ export type PurchaseRequestListQuery = {
   scope: string;
   warehouseId: string | null;
   search: string;
+  equipmentId?: string | null;
+  maintenanceScheduleId?: string | null;
 };
 
 export type PurchaseRequestStatsInput = {
@@ -34,6 +36,8 @@ export function parsePurchaseRequestListQuery(searchParams: URLSearchParams): Pu
     scope: searchParams.get('scope')?.trim() || 'all',
     warehouseId: searchParams.get('warehouseId')?.trim() || null,
     search: searchParams.get('search')?.trim() || '',
+    equipmentId: searchParams.get('equipmentId')?.trim() || null,
+    maintenanceScheduleId: searchParams.get('maintenanceScheduleId')?.trim() || null,
   };
 }
 

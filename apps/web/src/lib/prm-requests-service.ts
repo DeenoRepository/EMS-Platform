@@ -66,19 +66,22 @@ export function calculateEstimatedTotal(items: PurchaseRequestItemInput[]): numb
  * the explicit DELIVERED -> CLOSED action.
  */
 const ALLOWED_TRANSITIONS: Record<PurchaseRequestStatus, PurchaseRequestStatus[]> = {
-  DRAFT: [PurchaseRequestStatus.SUBMITTED, PurchaseRequestStatus.CANCELLED],
-  SUBMITTED: [
+  [PurchaseRequestStatus.DRAFT]: [
+    PurchaseRequestStatus.SUBMITTED,
+    PurchaseRequestStatus.CANCELLED,
+  ],
+  [PurchaseRequestStatus.SUBMITTED]: [
     PurchaseRequestStatus.APPROVED,
     PurchaseRequestStatus.REJECTED,
     PurchaseRequestStatus.CANCELLED,
   ],
-  APPROVED: [],
-  REJECTED: [],
-  CANCELLED: [],
-  IN_PROGRESS: [],
-  PARTIALLY_DELIVERED: [],
-  DELIVERED: [PurchaseRequestStatus.CLOSED],
-  CLOSED: [],
+  [PurchaseRequestStatus.APPROVED]: [],
+  [PurchaseRequestStatus.REJECTED]: [],
+  [PurchaseRequestStatus.CANCELLED]: [],
+  [PurchaseRequestStatus.IN_PROGRESS]: [],
+  [PurchaseRequestStatus.PARTIALLY_DELIVERED]: [],
+  [PurchaseRequestStatus.DELIVERED]: [PurchaseRequestStatus.CLOSED],
+  [PurchaseRequestStatus.CLOSED]: [],
 };
 
 /**
@@ -228,5 +231,109 @@ export function buildStatusTransitionUpdate(params: {
         }
       : {}),
     ...(resolutionComment !== undefined ? { resolutionComment: resolutionComment?.trim() || null } : {}),
+  };
+}
+
+/**
+ * Pure validator: checks that when both equipment and schedule are specified,
+ * the schedule actually belongs to that equipment.
+ */
+export function validateScheduleEquipmentConsistency(params: {
+  equipmentId?: string | null;
+  scheduleEquipmentId?: string | null;
+}): { valid: boolean; error?: string } {
+  const { equipmentId, scheduleEquipmentId } = params;
+  if (equipmentId && scheduleEquipmentId && scheduleEquipmentId !== equipmentId) {
+    return {
+      valid: false,
+      error: 'Указанный график ТО не относится к выбранному оборудованию',
+    };
+  }
+  return { valid: true };
+}
+
+/**
+ * Validates that referenced equipment and maintenance schedule exist in the
+ * database and are consistent with each other.
+ */
+export async function validatePurchaseRequestSourceLinks(params: {
+  equipmentId?: string | null;
+  maintenanceScheduleId?: string | null;
+}): Promise<{ valid: boolean; error?: string }> {
+  const { equipmentId, maintenanceScheduleId } = params;
+
+  if (equipmentId) {
+    const equipment = await prisma.equipment.findFirst({
+      where: { id: equipmentId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!equipment) {
+      return { valid: false, error: 'Оборудование не найдено' };
+    }
+  }
+
+  if (maintenanceScheduleId) {
+    const schedule = await prisma.maintenanceSchedule.findUnique({
+      where: { id: maintenanceScheduleId },
+      select: { id: true, equipmentId: true },
+    });
+    if (!schedule) {
+      return { valid: false, error: 'График ТО не найден' };
+    }
+
+    const consistency = validateScheduleEquipmentConsistency({
+      equipmentId,
+      scheduleEquipmentId: schedule.equipmentId,
+    });
+    if (!consistency.valid) {
+      return consistency;
+    }
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Builds the Prisma include clause for purchase requests, conditionally
+ * joining EPS equipment and MRO maintenance schedule relations only when the
+ * user has the corresponding permissions to prevent unnecessary joins and
+ * unintended data disclosure.
+ */
+export function buildPurchaseRequestInclude(options: {
+  canViewEps: boolean;
+  canViewMro: boolean;
+}) {
+  return {
+    targetWarehouse: { select: { id: true, name: true, code: true, responsibleUserId: true } },
+    requester: { select: { id: true, displayName: true, ldapLogin: true } },
+    reviewer: { select: { id: true, displayName: true, ldapLogin: true } },
+    closedBy: { select: { id: true, displayName: true, ldapLogin: true } },
+    ...(options.canViewEps ? { equipment: { select: { id: true, name: true, inventoryNumber: true } } } : {}),
+    ...(options.canViewMro ? { maintenanceSchedule: { select: { id: true, title: true } } } : {}),
+    items: {
+      include: {
+        nomenclature: { select: { id: true, name: true, article: true, unit: true } },
+      },
+    },
+  };
+}
+
+/**
+ * Server-side permission-aware serialization: sanitizes relation objects and
+ * foreign keys so that callers without EPS view or MRO view receive null
+ * relations and null foreign keys (equipmentId / maintenanceScheduleId)
+ * instead of leaked labels/names/identifiers, while preserving database
+ * links in the storage layer.
+ */
+export function sanitizePurchaseRequestRelations<T extends Record<string, any>>(
+  item: T,
+  options: { canViewEps: boolean; canViewMro: boolean },
+): T {
+  return {
+    ...item,
+    equipmentId: options.canViewEps ? (item.equipmentId ?? null) : null,
+    equipment: options.canViewEps ? (item.equipment ?? null) : null,
+    maintenanceScheduleId: options.canViewMro ? (item.maintenanceScheduleId ?? null) : null,
+    maintenanceSchedule: options.canViewMro ? (item.maintenanceSchedule ?? null) : null,
   };
 }

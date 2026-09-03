@@ -7,6 +7,7 @@ import { EquipmentAuditHistoryTab, type EquipmentAuditLog } from '@/components/e
 import { EquipmentMaintenanceTab } from '@/components/eps/EquipmentMaintenanceTab';
 import { EquipmentSparePartsTab } from '@/components/eps/EquipmentSparePartsTab';
 import { EquipmentSrmIncidentsTab } from '@/components/eps/EquipmentSrmIncidentsTab';
+import { EquipmentPrmTab } from '@/components/eps/EquipmentPrmTab';
 
 interface EquipmentOperationalTabsProps {
   activeTab: number;
@@ -34,10 +35,14 @@ export function EquipmentOperationalTabs({
   }
 
   if (activeTab === 5) {
-    return <EquipmentSrmIncidentsTab equipment={equipment} onCreateSrmRequest={onCreateSrmRequest} />;
+    return <EquipmentPrmTab equipment={equipment} />;
   }
 
   if (activeTab === 6) {
+    return <EquipmentSrmIncidentsTab equipment={equipment} onCreateSrmRequest={onCreateSrmRequest} />;
+  }
+
+  if (activeTab === 7) {
     return (
       <EquipmentAuditHistoryTab
         lifecycleEvents={lifecycleEvents}

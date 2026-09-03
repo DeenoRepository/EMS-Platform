@@ -109,7 +109,7 @@ gates: [lint, tsc, test, coverage, quality-baseline, route-test-coverage, static
 - [ ] Обоснованные индексы, если нужны, поставлены версионированной миграцией;
       coverage/quality thresholds не снижены; full gate green.
 - [ ] Story закрыта одним Conventional Commit; зависит от [P4](../done/2026-09/P4-explicit-prm-close-workflow.md),
-      [P5](P5-prm-links-eps-mro.md), [P6](P6-prm-wms-receipt-traceability.md),
+      [P5](../done/2026-09/P5-prm-links-eps-mro.md), [P6](P6-prm-wms-receipt-traceability.md),
       [P7](P7-prm-sla-aging-escalations.md), [P8](P8-prm-sequential-approvals.md) и
       [P9](P9-prm-demand-consolidation.md).
 

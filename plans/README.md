@@ -4,7 +4,7 @@
 > after adding, editing, or closing a story. Source of truth is the YAML
 > front-matter in each file under `plans/active/` and `plans/done/`.
 >
-> Last generated: 2026-09-02
+> Last generated: 2026-09-03
 
 ## Lifecycle
 
@@ -22,14 +22,13 @@ Current quality metrics are **not** tracked in this file — see
 
 ---
 
-## Active (9)
+## Active (8)
 
 | ID | Title | Phase | Priority | Risk | Skills | Opened |
 |---|---|---|---|---|---|---|
 | [N9](active/N9-full-test-coverage.md) | Увеличить покрытие проекта тестами до полного охвата критических путей | N | P1 | medium | senior-qa | 2026-08-31 |
 | [O0](active/O0-coverage-roadmap.md) | Дорожная карта полного покрытия проекта и бизнес-логики тестами | O | P1 | medium | senior-qa, playwright-pro | 2026-09-01 |
 | [O7](active/O7-e2e-flow-coverage.md) | Расширить Playwright E2E до всех критических сквозных потоков | O | P2 | medium | playwright-pro, senior-qa | 2026-09-01 |
-| [P5](active/P5-prm-links-eps-mro.md) | Показать связи PRM с оборудованием EPS и графиками MRO | P | P2 | medium | senior-backend, senior-frontend, senior-qa | 2026-09-02 |
 | [P6](active/P6-prm-wms-receipt-traceability.md) | Добавить двустороннюю трассировку PRM и WMS-приходов | P | P1 | high | database-schema-designer, senior-backend, senior-frontend, senior-qa | 2026-09-02 |
 | [P7](active/P7-prm-sla-aging-escalations.md) | Добавить сроки, SLA, aging и эскалации PRM | P | P1 | high | database-schema-designer, senior-backend, senior-frontend, senior-qa | 2026-09-02 |
 | [P8](active/P8-prm-sequential-approvals.md) | Добавить настраиваемое последовательное согласование PRM | P | P1 | high | database-schema-designer, senior-backend, senior-frontend, senior-security, senior-qa | 2026-09-02 |
@@ -44,7 +43,7 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 
 ---
 
-## Done (98)
+## Done (99)
 
 | ID | Title | Phase | Closed | Commits |
 |---|---|---|---|---|
@@ -146,3 +145,4 @@ Unscheduled, conditional items — see [`plans/BACKLOG.md`](BACKLOG.md).
 | [P2](done/2026-09/P2-prm-delivery-and-control.md) | PRM — приёмка с частичными поставками, дефицит и экспорт реестра | P | 2026-09-02 | feat(prm): add delivery shortage and export controls, chore(quality): exclude UI layout literals from magic-number heuristic |
 | [P3](done/2026-09/P3-fix-prm-notification-navigation.md) | Исправить переходы из уведомлений PRM к заявке | P | 2026-09-02 | fix(prm): repair notification deep links |
 | [P4](done/2026-09/P4-explicit-prm-close-workflow.md) | Добавить явное закрытие поставленной заявки PRM | P | 2026-09-02 | feat(prm): add explicit purchase request closure |
+| [P5](done/2026-09/P5-prm-links-eps-mro.md) | Показать связи PRM с оборудованием EPS и графиками MRO | P | 2026-09-03 | feat(prm): link purchase requests to EPS and MRO |

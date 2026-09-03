@@ -140,4 +140,32 @@ describe('buildPurchaseRequestPayload', () => {
     assert.equal(payload.justification, undefined);
     assert.equal(payload.supplierName, undefined);
   });
+
+  test('includes equipmentId and maintenanceScheduleId when present', () => {
+    const payload = buildPurchaseRequestPayload({
+      targetWarehouseId: 'wh-1',
+      priority: 'HIGH',
+      justification: 'Fix pump',
+      supplierName: 'Acme',
+      equipmentId: 'eq-42',
+      maintenanceScheduleId: 'sch-10',
+      lineItems: [item()],
+    });
+    assert.equal(payload.equipmentId, 'eq-42');
+    assert.equal(payload.maintenanceScheduleId, 'sch-10');
+  });
+
+  test('omits empty equipmentId and maintenanceScheduleId', () => {
+    const payload = buildPurchaseRequestPayload({
+      targetWarehouseId: 'wh-1',
+      priority: 'MEDIUM',
+      justification: '',
+      supplierName: '',
+      equipmentId: '',
+      maintenanceScheduleId: '',
+      lineItems: [item()],
+    });
+    assert.equal(payload.equipmentId, undefined);
+    assert.equal(payload.maintenanceScheduleId, undefined);
+  });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { fireEvent, renderWithProviders, screen } from '../ui/__tests__/test-utils';
+import { fireEvent, renderWithProviders, screen, waitFor } from '../ui/__tests__/test-utils';
 import { EquipmentOperationalTabs } from './EquipmentOperationalTabs';
 import { EquipmentPassportOverview } from './EquipmentPassportOverview';
 import type { EquipmentDetails } from '@/app/eps/[id]/page';
@@ -8,6 +8,13 @@ const push = vi.fn();
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push }),
+}));
+
+vi.mock('@/lib/auth-client', () => ({
+  useAuth: () => ({
+    user: { userId: 'u1' },
+    hasPermission: () => true,
+  }),
 }));
 
 const equipment = {
@@ -123,11 +130,33 @@ describe('equipment passport operational tabs', () => {
     expect(screen.getByText('Запланировано')).toBeInTheDocument();
   });
 
+  it('renders PRM operational tab and provides procurement request overview', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, data: { items: [], total: 0 } }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    renderWithProviders(
+      <EquipmentOperationalTabs
+        activeTab={5}
+        equipment={equipment}
+        lifecycleEvents={[]}
+        auditLogs={[]}
+        loadingAudit={false}
+        onCreateSrmRequest={vi.fn()}
+      />,
+    );
+    await waitFor(() => {
+      expect(screen.getByText('Нет привязанных заявок на закупку')).toBeInTheDocument();
+    });
+  });
+
   it('renders SRM incidents, invokes creation, and opens MRO from an incident', () => {
     const onCreateSrmRequest = vi.fn();
     renderWithProviders(
       <EquipmentOperationalTabs
-        activeTab={5}
+        activeTab={6}
         equipment={equipment}
         lifecycleEvents={[]}
         auditLogs={[]}
@@ -148,7 +177,7 @@ describe('equipment passport operational tabs', () => {
   it('renders audit history loading, empty, and populated states', () => {
     const { rerender } = renderWithProviders(
       <EquipmentOperationalTabs
-        activeTab={6}
+        activeTab={7}
         equipment={equipment}
         lifecycleEvents={lifecycleEvents}
         auditLogs={[]}
@@ -160,7 +189,7 @@ describe('equipment passport operational tabs', () => {
 
     rerender(
       <EquipmentOperationalTabs
-        activeTab={6}
+        activeTab={7}
         equipment={equipment}
         lifecycleEvents={lifecycleEvents}
         auditLogs={[]}
@@ -172,7 +201,7 @@ describe('equipment passport operational tabs', () => {
 
     rerender(
       <EquipmentOperationalTabs
-        activeTab={6}
+        activeTab={7}
         equipment={equipment}
         lifecycleEvents={lifecycleEvents}
         auditLogs={[{ id: 'log-1', createdAt: '2026-08-02T10:00:00.000Z', action: 'UPDATE', changes: { status: 'ACTIVE' }, user: { displayName: 'Иван Петров' } }]}

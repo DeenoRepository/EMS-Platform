@@ -20,6 +20,10 @@ export interface PrmRequestTableItem {
   reviewer: { id: string; displayName: string } | null;
   closedAt?: string | null;
   closedBy?: { id: string; displayName: string } | null;
+  equipmentId?: string | null;
+  equipment?: { id: string; name: string; inventoryNumber?: string | null } | null;
+  maintenanceScheduleId?: string | null;
+  maintenanceSchedule?: { id: string; title: string } | null;
   items: Array<{
     id: string;
     nomenclatureId: string;

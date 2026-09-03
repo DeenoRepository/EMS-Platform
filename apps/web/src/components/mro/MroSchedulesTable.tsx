@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import {
   Table,
   TableBody,
@@ -12,9 +13,12 @@ import {
   Box,
   Paper,
   Button,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import { StatusBadge, EmptyState } from '@/components/ui';
 import { formatDate } from '@ems/shared';
 
@@ -50,6 +54,11 @@ export interface MaintenanceScheduleRow {
     displayName: string;
     ldapLogin: string;
   } | null;
+  purchaseRequests?: Array<{
+    id: string;
+    requestNumber: string;
+    status: string;
+  }>;
 }
 
 interface MroSchedulesTableProps {
@@ -58,6 +67,8 @@ interface MroSchedulesTableProps {
   sortField: string;
   sortDirection: 'asc' | 'desc';
   canExecute: boolean;
+  canCreatePrm?: boolean;
+  selectedScheduleId?: string;
   onRequestSort: (field: string) => void;
   onExecute: (sch: MaintenanceScheduleRow) => void;
 }
@@ -68,6 +79,8 @@ export function MroSchedulesTable({
   sortField,
   sortDirection,
   canExecute,
+  canCreatePrm = false,
+  selectedScheduleId,
   onRequestSort,
   onExecute,
 }: MroSchedulesTableProps) {
@@ -158,9 +171,15 @@ export function MroSchedulesTable({
           schedules.map((sch) => {
             const isMissed = sch.status === 'MISSED' || (sch.status === 'PLANNED' && new Date(sch.scheduledDate) < now);
             const isCompleted = sch.status === 'COMPLETED';
+            const isSelected = selectedScheduleId === sch.id;
 
             return (
-              <TableRow key={sch.id} hover>
+              <TableRow
+                key={sch.id}
+                hover
+                selected={isSelected}
+                sx={isSelected ? { bgcolor: 'action.selected' } : undefined}
+              >
                 {visibleColumns.includes('scheduledDate') && (
                   <TableCell sx={{ whiteSpace: 'nowrap', fontFamily: 'monospace', fontSize: '0.8125rem' }}>
                     <Typography
@@ -202,6 +221,31 @@ export function MroSchedulesTable({
                       >
                         Инв. № {sch.equipment.inventoryNumber}
                       </Paper>
+                    )}
+                    {sch.purchaseRequests && sch.purchaseRequests.length > 0 && (
+                      <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                          PRM:
+                        </Typography>
+                        {sch.purchaseRequests.map((pr) => (
+                          <Button
+                            key={pr.id}
+                            component={Link}
+                            href={`/prm?requestId=${encodeURIComponent(pr.id)}`}
+                            size="small"
+                            sx={{
+                              p: 0,
+                              minWidth: 0,
+                              fontSize: '0.7rem',
+                              fontFamily: 'monospace',
+                              textTransform: 'none',
+                              fontWeight: 700,
+                            }}
+                          >
+                            {pr.requestNumber}
+                          </Button>
+                        ))}
+                      </Box>
                     )}
                   </TableCell>
                 )}
@@ -253,25 +297,39 @@ export function MroSchedulesTable({
 
                 {visibleColumns.includes('actions') && (
                   <TableCell align="right">
-                    {!isCompleted && canExecute ? (
-                      <Button
-                        size="small"
-                        variant="contained"
-                        color={isMissed ? 'error' : 'primary'}
-                        startIcon={<PlayArrowIcon sx={{ fontSize: 16 }} />}
-                        onClick={() => onExecute(sch)}
-                        sx={{ fontSize: '0.75rem', px: 1.5, py: 0.3, textTransform: 'none', fontWeight: 700, borderRadius: '6px' }}
-                      >
-                        Исполнить ТО
-                      </Button>
-                    ) : isCompleted ? (
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5, color: 'success.main' }}>
-                        <CheckCircleOutlineIcon sx={{ fontSize: 16 }} />
-                        <Typography variant="caption" fontWeight={700}>
-                          Выполнено
-                        </Typography>
-                      </Box>
-                    ) : null}
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
+                      {canCreatePrm && (
+                        <Tooltip title="Создать заявку на закупку для данного ТО">
+                          <IconButton
+                            component={Link}
+                            href={`/prm?create=true&equipmentId=${encodeURIComponent(sch.equipmentId)}&maintenanceScheduleId=${encodeURIComponent(sch.id)}`}
+                            size="small"
+                            sx={{ color: 'text.secondary' }}
+                          >
+                            <AddShoppingCartIcon sx={{ fontSize: 18 }} />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      {!isCompleted && canExecute ? (
+                        <Button
+                          size="small"
+                          variant="contained"
+                          color={isMissed ? 'error' : 'primary'}
+                          startIcon={<PlayArrowIcon sx={{ fontSize: 16 }} />}
+                          onClick={() => onExecute(sch)}
+                          sx={{ fontSize: '0.75rem', px: 1.5, py: 0.3, textTransform: 'none', fontWeight: 700, borderRadius: '6px' }}
+                        >
+                          Исполнить ТО
+                        </Button>
+                      ) : isCompleted ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'success.main' }}>
+                          <CheckCircleOutlineIcon sx={{ fontSize: 16 }} />
+                          <Typography variant="caption" fontWeight={700}>
+                            Выполнено
+                          </Typography>
+                        </Box>
+                      ) : null}
+                    </Box>
                   </TableCell>
                 )}
               </TableRow>

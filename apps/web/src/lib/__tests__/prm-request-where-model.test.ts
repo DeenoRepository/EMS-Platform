@@ -124,4 +124,34 @@ describe('buildPurchaseRequestWhereModel', () => {
     assert.ok(Array.isArray(where.AND));
     assert.equal((where.AND as any[])[0].OR.length, 5);
   });
+
+  test('применяет equipmentId и maintenanceScheduleId фильтры', () => {
+    const where = buildPurchaseRequestWhereModel({
+      scope: 'all',
+      equipmentId: 'eq-42',
+      maintenanceScheduleId: 'sch-10',
+      userId: 'user-1',
+      isAdmin: true,
+      userWarehouseIds: [],
+    });
+    assert.equal(where.equipmentId, 'eq-42');
+    assert.equal(where.maintenanceScheduleId, 'sch-10');
+  });
+
+  test('equipmentId и maintenanceScheduleId не затирают scoping для не-администратора', () => {
+    const where = buildPurchaseRequestWhereModel({
+      scope: 'all',
+      equipmentId: 'eq-42',
+      maintenanceScheduleId: 'sch-10',
+      userId: 'user-1',
+      isAdmin: false,
+      userWarehouseIds: ['wh-1', 'wh-2'],
+    });
+    assert.equal(where.equipmentId, 'eq-42');
+    assert.equal(where.maintenanceScheduleId, 'sch-10');
+    assert.deepEqual(where.OR, [
+      { requesterId: 'user-1' },
+      { targetWarehouseId: { in: ['wh-1', 'wh-2'] } },
+    ]);
+  });
 });

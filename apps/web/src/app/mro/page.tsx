@@ -8,7 +8,7 @@ import {
   TextField,
   Button,
 } from '@mui/material';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import PageHeader from '@/components/layout/PageHeader';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import AddIcon from '@mui/icons-material/Add';
@@ -48,8 +48,11 @@ const MRO_COLUMNS: TableColumnOption[] = [
 
 function MroPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { hasPermission } = useAuth();
   const { enqueueSnackbar } = useSnackbar();
+
+  const scheduleIdParam = searchParams.get('scheduleId') || '';
 
   const [schedules, setSchedules] = useState<MaintenanceScheduleRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,6 +125,9 @@ function MroPageContent() {
   const sortedSchedules = useMemo(() => {
     const now = new Date();
     const list = schedules.filter((sch) => {
+      if (scheduleIdParam && sch.id !== scheduleIdParam) {
+        return false;
+      }
       if (search) {
         const q = search.toLowerCase();
         const eqName = sch.equipment?.name?.toLowerCase() || '';
@@ -149,13 +155,17 @@ function MroPageContent() {
     list.sort((a, b) => compareMaintenanceSchedules(a, b, sortField, sortDirection));
 
     return list;
-  }, [schedules, search, periodicityFilter, statusFilter, sortField, sortDirection]);
+  }, [schedules, search, periodicityFilter, statusFilter, sortField, sortDirection, scheduleIdParam]);
 
   const paginatedSchedules = useMemo(() => {
     return sortedSchedules.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
   }, [sortedSchedules, page, rowsPerPage]);
 
-  const activeFilterCount = (search ? 1 : 0) + (statusFilter ? 1 : 0) + (periodicityFilter ? 1 : 0);
+  const activeFilterCount =
+    (search ? 1 : 0) +
+    (statusFilter ? 1 : 0) +
+    (periodicityFilter ? 1 : 0) +
+    (scheduleIdParam ? 1 : 0);
 
   const handleRequestSort = (property: string) => {
     const isAsc = sortField === property && sortDirection === 'asc';
@@ -170,6 +180,7 @@ function MroPageContent() {
 
   const canExecute = hasPermission(PERMISSIONS.MRO_EXECUTION_COMPLETE);
   const canManage = hasPermission(PERMISSIONS.MRO_SCHEDULE_MANAGE);
+  const canCreatePrm = hasPermission(PERMISSIONS.PRM_REQUESTS_CREATE);
 
   return (
     <Box sx={{ pb: 4 }}>
@@ -281,6 +292,9 @@ function MroPageContent() {
               setSearch('');
               setStatusFilter('');
               setPeriodicityFilter('');
+              if (scheduleIdParam) {
+                router.push('/mro');
+              }
             }}
           >
             <Box sx={{ minWidth: 260 }}>
@@ -342,6 +356,8 @@ function MroPageContent() {
           sortField={sortField}
           sortDirection={sortDirection}
           canExecute={canExecute}
+          canCreatePrm={canCreatePrm}
+          selectedScheduleId={scheduleIdParam}
           onRequestSort={handleRequestSort}
           onExecute={handleExecuteMro}
         />

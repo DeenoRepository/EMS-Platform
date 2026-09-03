@@ -3,7 +3,17 @@ import assert from 'node:assert/strict';
 import { PERMISSIONS, type JwtUserPayload } from '@ems/shared';
 import { makeRequest } from './helpers/route-harness';
 
-const PurchaseRequestStatus = { DRAFT: 'DRAFT' } as const;
+const PurchaseRequestStatus = {
+  DRAFT: 'DRAFT',
+  SUBMITTED: 'SUBMITTED',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED',
+  IN_PROGRESS: 'IN_PROGRESS',
+  PARTIALLY_DELIVERED: 'PARTIALLY_DELIVERED',
+  DELIVERED: 'DELIVERED',
+  CLOSED: 'CLOSED',
+} as const;
 let currentUser: JwtUserPayload | null = null;
 let findManyArgs: unknown = null;
 

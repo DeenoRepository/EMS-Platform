@@ -106,6 +106,11 @@ export interface EquipmentDetails {
       stockItems: { quantity: string; warehouse: { name: string } }[];
     };
   }[];
+  purchaseRequests?: {
+    id: string;
+    requestNumber: string;
+    status: string;
+  }[];
   maintenancePlans: {
     id: string;
     name: string;
@@ -158,16 +163,16 @@ function EquipmentPassportContent() {
 
   const TAB_KEY_MAP: Record<string, number> = useMemo(() => ({
     overview: 0,
-    specs: 1,
-    photos: 2,
-    docs: 3,
-    'spare-parts': 4,
-    mro: 5,
+    docs: 1,
+    approvals: 2,
+    'spare-parts': 3,
+    mro: 4,
+    prm: 5,
     srm: 6,
     history: 7,
   }), []);
 
-  const TAB_INDEX_MAP = useMemo(() => ['overview', 'specs', 'photos', 'docs', 'spare-parts', 'mro', 'srm', 'history'], []);
+  const TAB_INDEX_MAP = useMemo(() => ['overview', 'docs', 'approvals', 'spare-parts', 'mro', 'prm', 'srm', 'history'], []);
 
   const [equipment, setEquipment] = useState<EquipmentDetails | null>(null);
   const [sections, setSections] = useState<CustomSectionDef[]>([]);
@@ -256,7 +261,7 @@ function EquipmentPassportContent() {
       params.set('tab', key);
       router.replace(`/eps/${id}?${params.toString()}`);
     }
-    if (newValue === 6) {
+    if (newValue === 7) {
       fetchAudit();
     }
   };
@@ -496,8 +501,9 @@ function EquipmentPassportContent() {
               { label: 'Согласования и заявки', value: 2, badge: equipment.approvals?.length || 0 },
               { label: 'Комплектующие и ЗИП', value: 3, badge: equipment.spareParts.length },
               { label: 'График ТОиР и ППР', value: 4, badge: equipment.maintenancePlans.length },
-              { label: 'Журнал инцидентов и дефектов', value: 5, badge: equipment.jiraIssues?.length || 0 },
-              { label: 'Жизненный цикл и аудит', value: 6 },
+              { label: 'Заявки на закупку (PRM)', value: 5 },
+              { label: 'Журнал инцидентов и дефектов', value: 6, badge: equipment.jiraIssues?.length || 0 },
+              { label: 'Жизненный цикл и аудит', value: 7 },
             ]}
           />
         }

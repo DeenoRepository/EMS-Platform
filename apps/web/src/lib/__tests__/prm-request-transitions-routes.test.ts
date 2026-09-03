@@ -37,6 +37,8 @@ let updateShouldThrow = false;
 let detailUpdateShouldThrow = false;
 let auditShouldThrow = false;
 let notificationShouldThrow = false;
+let equipmentLookupCount = 0;
+let scheduleLookupCount = 0;
 let notificationCreates: unknown[] = [];
 let auditEvents: unknown[] = [];
 let auditCreates: unknown[] = [];
@@ -54,6 +56,12 @@ interface PrismaMock {
   };
   warehouse: {
     findUnique: (args: unknown) => Promise<unknown>;
+  };
+  equipment?: {
+    findFirst: (args: { where: { id: string; deletedAt?: null } }) => Promise<unknown>;
+  };
+  maintenanceSchedule?: {
+    findUnique: (args: { where: { id: string } }) => Promise<unknown>;
   };
   notification: {
     create: (args: unknown) => Promise<unknown>;
@@ -88,9 +96,14 @@ const prismaMock: PrismaMock = {
     update: async (args: unknown) => {
       updateCallArgs = args;
       if (updateShouldThrow || detailUpdateShouldThrow) throw new Error('db failure');
+      const data = (args as any).data || {};
+      const cleanData: Record<string, any> = {};
+      for (const [k, v] of Object.entries(data)) {
+        if (v !== undefined) cleanData[k] = v;
+      }
       updatedRequest = {
         ...existingRequest,
-        ...(args as any).data,
+        ...cleanData,
         requestNumber: existingRequest.requestNumber,
       };
       return updatedRequest;
@@ -114,6 +127,21 @@ const prismaMock: PrismaMock = {
   },
   warehouse: {
     findUnique: async () => ({ id: 'wh-1', name: 'Main', isActive: true }),
+  },
+  equipment: {
+    findFirst: async (args: { where: { id: string; deletedAt?: null } }) => {
+      equipmentLookupCount++;
+      if (args.where.id === 'eq-1') return { id: 'eq-1', deletedAt: null };
+      return null;
+    },
+  },
+  maintenanceSchedule: {
+    findUnique: async (args: { where: { id: string } }) => {
+      scheduleLookupCount++;
+      if (args.where.id === 'sch-1') return { id: 'sch-1', equipmentId: 'eq-1' };
+      if (args.where.id === 'sch-other') return { id: 'sch-other', equipmentId: 'eq-other' };
+      return null;
+    },
   },
   notification: {
     create: async (args: unknown) => {
@@ -228,6 +256,8 @@ function resetState(status: string = PurchaseRequestStatus.DRAFT) {
   detailUpdateShouldThrow = false;
   auditShouldThrow = false;
   notificationShouldThrow = false;
+  equipmentLookupCount = 0;
+  scheduleLookupCount = 0;
   notificationCreates = [];
   auditEvents = [];
   auditCreates = [];
@@ -261,11 +291,30 @@ describe('GET /api/prm/requests/[id]', () => {
     assert.equal(res.status, 403);
   });
 
-  test('returns 200 for the requester', async () => {
+  test('returns 200 for the requester and sanitizes relations and IDs based on privacy-first permissions', async () => {
     resetState();
-    currentUser = requester;
+    // Requester has PRM permissions, but lacks EPS view and MRO view
+    currentUser = {
+      ...requester,
+      permissions: [PERMISSIONS.PRM_REQUESTS_VIEW, PERMISSIONS.PRM_REQUESTS_CREATE],
+    };
+    existingRequest = {
+      ...existingRequest,
+      equipmentId: 'eq-1',
+      maintenanceScheduleId: 'sch-1',
+      equipment: { id: 'eq-1', name: 'Pump 1', inventoryNumber: 'INV-1' },
+      maintenanceSchedule: { id: 'sch-1', title: 'Routine check' },
+    };
+
     const res = await detailGET(makeRequest({ url: 'http://localhost/api/prm/requests/req-1' }), context());
     assert.equal(res.status, 200);
+    const body = (await res.json()) as { success: boolean; data: any };
+    assert.equal(body.success, true);
+    // Under privacy-first consistency, both IDs and relation objects are sanitized to null
+    assert.equal(body.data.equipmentId, null);
+    assert.equal(body.data.equipment, null);
+    assert.equal(body.data.maintenanceScheduleId, null);
+    assert.equal(body.data.maintenanceSchedule, null);
   });
 });
 
@@ -320,6 +369,111 @@ describe('PATCH /api/prm/requests/[id]', () => {
     assert.equal(res.status, 500);
     const body = (await res.json()) as { error: string };
     assert.doesNotMatch(body.error, /db failure/);
+  });
+
+  test('rejects draft update when referenced equipment does not exist', async () => {
+    resetState();
+    currentUser = {
+      ...requester,
+      permissions: [PERMISSIONS.PRM_REQUESTS_CREATE, PERMISSIONS.EPS_EQUIPMENT_VIEW],
+    };
+
+    const res = await detailPATCH(patch({ equipmentId: 'non-existent-eq' }), context());
+    assert.equal(res.status, 400);
+    const body = (await res.json()) as { success: boolean; error: string };
+    assert.equal(body.success, false);
+    assert.match(body.error, /Оборудование не найдено/);
+  });
+
+  test('rejects draft update when maintenance schedule does not belong to equipment', async () => {
+    resetState();
+    currentUser = {
+      ...requester,
+      permissions: [
+        PERMISSIONS.PRM_REQUESTS_CREATE,
+        PERMISSIONS.EPS_EQUIPMENT_VIEW,
+        PERMISSIONS.MRO_SCHEDULE_VIEW,
+      ],
+    };
+
+    const res = await detailPATCH(patch({
+      equipmentId: 'eq-1',
+      maintenanceScheduleId: 'sch-other',
+    }), context());
+    assert.equal(res.status, 400);
+    const body = (await res.json()) as { success: boolean; error: string };
+    assert.equal(body.success, false);
+    assert.match(body.error, /не относится к выбранному оборудованию/);
+  });
+
+  test('returns 403 without database lookup when updating draft with equipmentId without EPS_EQUIPMENT_VIEW', async () => {
+    resetState();
+    currentUser = {
+      ...requester,
+      permissions: [PERMISSIONS.PRM_REQUESTS_CREATE], // lacks EPS_EQUIPMENT_VIEW
+    };
+
+    const res = await detailPATCH(patch({ equipmentId: 'eq-1' }), context());
+    assert.equal(res.status, 403);
+    assert.equal(equipmentLookupCount, 0);
+  });
+
+  test('returns 403 without database lookup when updating draft with maintenanceScheduleId without MRO_SCHEDULE_VIEW', async () => {
+    resetState();
+    currentUser = {
+      ...requester,
+      permissions: [PERMISSIONS.PRM_REQUESTS_CREATE, PERMISSIONS.EPS_EQUIPMENT_VIEW], // lacks MRO_SCHEDULE_VIEW
+    };
+
+    const res = await detailPATCH(patch({ equipmentId: 'eq-1', maintenanceScheduleId: 'sch-1' }), context());
+    assert.equal(res.status, 403);
+    assert.equal(scheduleLookupCount, 0);
+  });
+
+  test('serializes relations and IDs in PATCH response according to caller permissions (privacy-first nulling)', async () => {
+    resetState();
+    // Requester with EPS view but without MRO view
+    currentUser = {
+      ...requester,
+      permissions: [PERMISSIONS.PRM_REQUESTS_CREATE, PERMISSIONS.EPS_EQUIPMENT_VIEW],
+    };
+    existingRequest = {
+      ...existingRequest,
+      equipmentId: 'eq-1',
+      equipment: { id: 'eq-1', name: 'Pump 1', inventoryNumber: 'INV-1' },
+      maintenanceScheduleId: 'sch-1',
+      maintenanceSchedule: { id: 'sch-1', title: 'Routine check' },
+    };
+
+    // User edits priority only (does not provide maintenanceScheduleId)
+    const res = await detailPATCH(patch({ priority: 'HIGH' }), context());
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { success: boolean; data: any };
+    assert.equal(body.success, true);
+    assert.equal(body.data.equipmentId, 'eq-1');
+    assert.deepEqual(body.data.equipment, { id: 'eq-1', name: 'Pump 1', inventoryNumber: 'INV-1' });
+    assert.equal(body.data.maintenanceScheduleId, null);
+    assert.equal(body.data.maintenanceSchedule, null);
+  });
+
+  test('successfully updates draft with valid equipment and maintenance schedule when fully permitted', async () => {
+    resetState();
+    currentUser = {
+      ...requester,
+      permissions: [
+        PERMISSIONS.PRM_REQUESTS_CREATE,
+        PERMISSIONS.EPS_EQUIPMENT_VIEW,
+        PERMISSIONS.MRO_SCHEDULE_VIEW,
+      ],
+    };
+
+    const res = await detailPATCH(patch({
+      equipmentId: 'eq-1',
+      maintenanceScheduleId: 'sch-1',
+    }), context());
+    assert.equal(res.status, 200);
+    assert.equal((updateCallArgs as any).data.equipmentId, 'eq-1');
+    assert.equal((updateCallArgs as any).data.maintenanceScheduleId, 'sch-1');
   });
 });
 

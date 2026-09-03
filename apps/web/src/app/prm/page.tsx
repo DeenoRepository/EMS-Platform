@@ -111,7 +111,24 @@ function PrmRegistryContent() {
     myPending: 0,
   });
 
+  const equipmentIdFilter = searchParams.get('equipmentId') || '';
+  const maintenanceScheduleIdFilter = searchParams.get('maintenanceScheduleId') || '';
+  const autoCreateParam = searchParams.get('create');
+
+  const canView = hasPermission(PERMISSIONS.PRM_REQUESTS_VIEW) || hasPermission(PERMISSIONS.PRM_REQUESTS_CREATE) || hasPermission(PERMISSIONS.PRM_REQUESTS_MANAGE);
+  const canCreate = hasPermission(PERMISSIONS.PRM_REQUESTS_CREATE);
+  const canReview = hasPermission(PERMISSIONS.PRM_REQUESTS_MANAGE);
+  const canViewEps = hasPermission(PERMISSIONS.EPS_EQUIPMENT_VIEW);
+  const canViewMro = hasPermission(PERMISSIONS.MRO_SCHEDULE_VIEW);
+
   const [createModalOpen, setCreateModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (canCreate && (autoCreateParam === 'true' || autoCreateParam === '1')) {
+      setCreateModalOpen(true);
+    }
+  }, [canCreate, autoCreateParam]);
+
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [selectedForReview, setSelectedForReview] = useState<PrmRequestTableItem | null>(null);
   const [resolutionComment, setResolutionComment] = useState('');
@@ -123,9 +140,6 @@ function PrmRegistryContent() {
   const [deepLinkLoading, setDeepLinkLoading] = useState(false);
   const [deepLinkError, setDeepLinkError] = useState<string | null>(null);
 
-  const canView = hasPermission(PERMISSIONS.PRM_REQUESTS_VIEW) || hasPermission(PERMISSIONS.PRM_REQUESTS_CREATE) || hasPermission(PERMISSIONS.PRM_REQUESTS_MANAGE);
-  const canCreate = hasPermission(PERMISSIONS.PRM_REQUESTS_CREATE);
-  const canReview = hasPermission(PERMISSIONS.PRM_REQUESTS_MANAGE);
   const canClose = canReview || user?.userId === selectedForDetails?.targetWarehouse.responsibleUserId;
 
   const fetchRequests = useCallback(async () => {
@@ -141,6 +155,8 @@ function PrmRegistryContent() {
 
       if (search) params.set('search', search);
       if (statusFilter) params.set('status', statusFilter);
+      if (equipmentIdFilter) params.set('equipmentId', equipmentIdFilter);
+      if (maintenanceScheduleIdFilter) params.set('maintenanceScheduleId', maintenanceScheduleIdFilter);
 
       const res = await fetch(`/api/prm/requests?${params}`);
       if (res.ok) {
@@ -156,7 +172,7 @@ function PrmRegistryContent() {
     } finally {
       setLoading(false);
     }
-  }, [page, rowsPerPage, activeScopeTab, search, statusFilter, enqueueSnackbar]);
+  }, [page, rowsPerPage, activeScopeTab, search, statusFilter, equipmentIdFilter, maintenanceScheduleIdFilter, enqueueSnackbar]);
 
   useEffect(() => {
     fetchRequests();
@@ -514,7 +530,13 @@ function PrmRegistryContent() {
         />
       </DataTableWrapper>
 
-      <PrmRequestWizardDialog open={createModalOpen} onClose={() => setCreateModalOpen(false)} onSuccess={fetchRequests} />
+      <PrmRequestWizardDialog
+        open={canCreate && createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onSuccess={fetchRequests}
+        initialEquipmentId={searchParams.get('equipmentId')}
+        initialMaintenanceScheduleId={searchParams.get('maintenanceScheduleId')}
+      />
 
       <PrmRequestDetailsDialog
         open={Boolean(selectedForDetails)}
@@ -522,6 +544,8 @@ function PrmRegistryContent() {
         currentUserId={user?.userId}
         canReview={canReview}
         canClose={canClose}
+        canViewEps={canViewEps}
+        canViewMro={canViewMro}
         onCloseRequest={(item) => setCloseTarget(item)}
         onClose={closeDeepLinkedDetails}
         onReceive={(item) => {

@@ -5,6 +5,8 @@ export interface PurchaseRequestWhereParams {
   status?: string;
   warehouseId?: string | null;
   search?: string;
+  equipmentId?: string | null;
+  maintenanceScheduleId?: string | null;
   userId: string;
   isAdmin: boolean;
   userWarehouseIds: string[];
@@ -53,6 +55,19 @@ function applyScopeFilter(
   }
 }
 
+function applySourceFilter(
+  where: Prisma.PurchaseRequestWhereInput,
+  params: PurchaseRequestWhereParams,
+): void {
+  const { equipmentId, maintenanceScheduleId } = params;
+  if (equipmentId) {
+    where.equipmentId = equipmentId;
+  }
+  if (maintenanceScheduleId) {
+    where.maintenanceScheduleId = maintenanceScheduleId;
+  }
+}
+
 function applySearchFilter(
   where: Prisma.PurchaseRequestWhereInput,
   search: string | undefined,
@@ -87,6 +102,7 @@ export function buildPurchaseRequestWhereModel(
 
   applyStatusFilter(where, params);
   applyScopeFilter(where, params);
+  applySourceFilter(where, params);
   applySearchFilter(where, params.search);
   return where;
 }

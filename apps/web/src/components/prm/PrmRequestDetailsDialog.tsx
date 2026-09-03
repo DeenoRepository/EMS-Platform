@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { Box, Divider, LinearProgress, Paper, Typography, Table, TableBody, TableCell, TableHead, TableRow, Button } from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { FormDialog, StatusBadge } from '@/components/ui';
@@ -12,12 +13,14 @@ interface PrmRequestDetailsDialogProps {
   request: PrmRequestTableItem | null;
   currentUserId?: string;
   canReview: boolean;
+  canClose: boolean;
+  canViewEps?: boolean;
+  canViewMro?: boolean;
   onClose: () => void;
   onReceive: (request: PrmRequestTableItem) => void;
   onSubmit: (request: PrmRequestTableItem) => void;
   onReview: (request: PrmRequestTableItem) => void;
   onCancel: (request: PrmRequestTableItem) => void;
-  canClose: boolean;
   onCloseRequest: (request: PrmRequestTableItem) => void;
 }
 
@@ -26,12 +29,14 @@ export function PrmRequestDetailsDialog({
   request,
   currentUserId,
   canReview,
+  canClose,
+  canViewEps = true,
+  canViewMro = true,
   onClose,
   onReceive,
   onSubmit,
   onReview,
   onCancel,
-  canClose,
   onCloseRequest,
 }: PrmRequestDetailsDialogProps) {
   if (!request) return null;
@@ -88,6 +93,58 @@ export function PrmRequestDetailsDialog({
               <Divider sx={{ my: 1.5 }} />
               <Typography variant="caption" color="text.secondary" display="block">Обоснование</Typography>
               <Typography variant="body2">{request.justification}</Typography>
+            </>
+          )}
+          {(request.equipment || request.maintenanceSchedule) && (
+            <>
+              <Divider sx={{ my: 1.5 }} />
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5, fontWeight: 700 }}>
+                Связанные объекты
+              </Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
+                {request.equipment && (
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" display="block">Оборудование (EPS)</Typography>
+                    {canViewEps ? (
+                      <Button
+                        component={Link}
+                        href={`/eps/${request.equipment.id}`}
+                        size="small"
+                        sx={{ p: 0, textTransform: 'none', justifyContent: 'flex-start', textAlign: 'left', fontWeight: 600 }}
+                        endIcon={<OpenInNewIcon sx={{ fontSize: 14 }} />}
+                      >
+                        {request.equipment.name}
+                        {request.equipment.inventoryNumber ? ` (${request.equipment.inventoryNumber})` : ''}
+                      </Button>
+                    ) : (
+                      <Typography variant="body2" fontWeight={600}>
+                        {request.equipment.name}
+                        {request.equipment.inventoryNumber ? ` (${request.equipment.inventoryNumber})` : ''}
+                      </Typography>
+                    )}
+                  </Box>
+                )}
+                {request.maintenanceSchedule && (
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" display="block">График ТО (MRO)</Typography>
+                    {canViewMro ? (
+                      <Button
+                        component={Link}
+                        href={`/mro?scheduleId=${encodeURIComponent(request.maintenanceSchedule.id)}`}
+                        size="small"
+                        sx={{ p: 0, textTransform: 'none', justifyContent: 'flex-start', textAlign: 'left', fontWeight: 600 }}
+                        endIcon={<OpenInNewIcon sx={{ fontSize: 14 }} />}
+                      >
+                        {request.maintenanceSchedule.title}
+                      </Button>
+                    ) : (
+                      <Typography variant="body2" fontWeight={600}>
+                        {request.maintenanceSchedule.title}
+                      </Typography>
+                    )}
+                  </Box>
+                )}
+              </Box>
             </>
           )}
         </Paper>

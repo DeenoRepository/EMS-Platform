@@ -9,26 +9,16 @@ import { z } from 'zod';
 import {
   generatePurchaseRequestNumber,
   buildPurchaseRequestWhereInput,
+  buildPurchaseRequestInclude,
   calculateEstimatedTotal,
   isPurchaseAdmin,
   resolveUserWarehouseIds,
+  sanitizePurchaseRequestRelations,
+  validatePurchaseRequestSourceLinks,
 } from '@/lib/prm-requests-service';
 import { parsePurchaseRequestListQuery, buildPurchaseRequestStats } from './get-query';
 
 export const dynamic = 'force-dynamic';
-
-const requestInclude = {
-  targetWarehouse: { select: { id: true, name: true, code: true, responsibleUserId: true } },
-  requester: { select: { id: true, displayName: true, ldapLogin: true } },
-  reviewer: { select: { id: true, displayName: true, ldapLogin: true } },
-  closedBy: { select: { id: true, displayName: true, ldapLogin: true } },
-  equipment: { select: { id: true, name: true, inventoryNumber: true } },
-  items: {
-    include: {
-      nomenclature: { select: { id: true, name: true, article: true, unit: true } },
-    },
-  },
-} as const;
 
 // GET /api/prm/requests - Список заявок на закупку ТМЦ
 export async function GET(req: NextRequest) {
@@ -49,6 +39,16 @@ export async function GET(req: NextRequest) {
     const query = parsePurchaseRequestListQuery(new URL(req.url).searchParams);
     const { page, pageSize, status, scope, warehouseId, search } = query;
 
+    const canViewEps = hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_VIEW);
+    const canViewMro = hasPermission(user, PERMISSIONS.MRO_SCHEDULE_VIEW);
+
+    if (query.equipmentId && !canViewEps) {
+      return forbiddenResponse('Доступ к фильтрации по оборудованию запрещён');
+    }
+    if (query.maintenanceScheduleId && !canViewMro) {
+      return forbiddenResponse('Доступ к фильтрации по графикам ТО запрещён');
+    }
+
     const isAdmin = isPurchaseAdmin(user);
     const userWarehouseIds = await resolveUserWarehouseIds({ isAdmin, userId: user.userId });
 
@@ -57,6 +57,8 @@ export async function GET(req: NextRequest) {
       status,
       warehouseId,
       search,
+      equipmentId: query.equipmentId,
+      maintenanceScheduleId: query.maintenanceScheduleId,
       userId: user.userId,
       isAdmin,
       userWarehouseIds,
@@ -64,10 +66,10 @@ export async function GET(req: NextRequest) {
 
     const canReview = hasPermission(user, PERMISSIONS.PRM_REQUESTS_MANAGE) || isAdmin;
 
-    const [items, total, allForStats, myForStats] = await Promise.all([
+    const [rawItems, total, allForStats, myForStats] = await Promise.all([
       prisma.purchaseRequest.findMany({
         where,
-        include: requestInclude,
+        include: buildPurchaseRequestInclude({ canViewEps, canViewMro }),
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
@@ -80,6 +82,9 @@ export async function GET(req: NextRequest) {
       }),
     ]);
 
+    const items = rawItems.map((item) =>
+      sanitizePurchaseRequestRelations(item, { canViewEps, canViewMro }),
+    );
     const stats = buildPurchaseRequestStats(allForStats, myForStats, canReview);
 
     return NextResponse.json({
@@ -132,6 +137,16 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = createSchema.parse(body);
 
+    const canViewEps = hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_VIEW);
+    const canViewMro = hasPermission(user, PERMISSIONS.MRO_SCHEDULE_VIEW);
+
+    if (parsed.equipmentId && !canViewEps) {
+      return forbiddenResponse('У вас нет прав для привязки к оборудованию');
+    }
+    if (parsed.maintenanceScheduleId && !canViewMro) {
+      return forbiddenResponse('У вас нет прав для привязки к графику ТО');
+    }
+
     const targetWarehouse = await prisma.warehouse.findUnique({
       where: { id: parsed.targetWarehouseId },
       select: { id: true, name: true, isActive: true },
@@ -139,6 +154,17 @@ export async function POST(req: NextRequest) {
     if (!targetWarehouse || !targetWarehouse.isActive) {
       return NextResponse.json(
         { success: false, error: 'Склад назначения не найден или неактивен' },
+        { status: 400 },
+      );
+    }
+
+    const sourceValidation = await validatePurchaseRequestSourceLinks({
+      equipmentId: parsed.equipmentId,
+      maintenanceScheduleId: parsed.maintenanceScheduleId,
+    });
+    if (!sourceValidation.valid) {
+      return NextResponse.json(
+        { success: false, error: sourceValidation.error },
         { status: 400 },
       );
     }
@@ -169,7 +195,7 @@ export async function POST(req: NextRequest) {
           })),
         },
       },
-      include: requestInclude,
+      include: buildPurchaseRequestInclude({ canViewEps, canViewMro }),
     });
 
     await logAuditEvent({
@@ -185,9 +211,11 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    const responseItem = sanitizePurchaseRequestRelations(created, { canViewEps, canViewMro });
+
     return NextResponse.json({
       success: true,
-      data: created,
+      data: responseItem,
       message: `Заявка ${requestNumber} создана в статусе черновика.`,
     });
   } catch (error: unknown) {

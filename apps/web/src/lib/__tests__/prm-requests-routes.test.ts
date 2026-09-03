@@ -40,6 +40,15 @@ let findManyResult: unknown[] = [];
 let countResult = 0;
 let auditEvents: unknown[] = [];
 let createCallArgs: unknown = null;
+let equipmentLookupCount = 0;
+let scheduleLookupCount = 0;
+let equipmentRows: Record<string, { id: string; deletedAt?: Date | null }> = {
+  'eq-1': { id: 'eq-1', deletedAt: null },
+};
+let scheduleRows: Record<string, { id: string; equipmentId: string }> = {
+  'sch-1': { id: 'sch-1', equipmentId: 'eq-1' },
+  'sch-other': { id: 'sch-other', equipmentId: 'eq-other' },
+};
 
 const prismaMock = {
   purchaseRequest: {
@@ -54,6 +63,22 @@ const prismaMock = {
   warehouse: {
     findMany: async () => [],
     findUnique: async () => warehouseRow,
+  },
+  equipment: {
+    findFirst: async (args: { where: { id: string; deletedAt?: null } }) => {
+      equipmentLookupCount++;
+      const eq = equipmentRows[args.where.id];
+      if (eq && (args.where.deletedAt === null ? eq.deletedAt === null : true)) {
+        return eq;
+      }
+      return null;
+    },
+  },
+  maintenanceSchedule: {
+    findUnique: async (args: { where: { id: string } }) => {
+      scheduleLookupCount++;
+      return scheduleRows[args.where.id] || null;
+    },
   },
 };
 
@@ -123,6 +148,8 @@ function resetState() {
   countResult = 0;
   auditEvents = [];
   createCallArgs = null;
+  equipmentLookupCount = 0;
+  scheduleLookupCount = 0;
 }
 
 describe('GET /api/prm/requests', () => {
@@ -150,6 +177,62 @@ describe('GET /api/prm/requests', () => {
     assert.equal(body.success, true);
     assert.equal(body.data.total, 2);
     assert.equal(body.data.items.length, 2);
+  });
+
+  test('omits equipment label when user lacks EPS view and schedule label when user lacks MRO view', async () => {
+    resetState();
+    // User has PRM view and EPS view, but lacks MRO view
+    currentUser = {
+      ...viewerUser,
+      permissions: [PERMISSIONS.PRM_REQUESTS_VIEW, PERMISSIONS.EPS_EQUIPMENT_VIEW],
+    };
+    findManyResult = [
+      {
+        id: 'req-1',
+        equipmentId: 'eq-1',
+        maintenanceScheduleId: 'sch-1',
+        equipment: { id: 'eq-1', name: 'Pump 1', inventoryNumber: 'INV-1' },
+        maintenanceSchedule: { id: 'sch-1', title: 'Quarterly Maintenance' },
+      },
+    ];
+    countResult = 1;
+
+    const res = await GET(makeRequest({ url: 'http://localhost/api/prm/requests' }));
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { success: boolean; data: { items: Array<any> } };
+    assert.equal(body.success, true);
+    const item = body.data.items[0];
+    assert.equal(item.equipmentId, 'eq-1');
+    assert.deepEqual(item.equipment, { id: 'eq-1', name: 'Pump 1', inventoryNumber: 'INV-1' });
+    // maintenanceSchedule must be sanitized to null because user lacks MRO_SCHEDULE_VIEW
+    assert.equal(item.maintenanceSchedule, null);
+  });
+
+  test('omits equipment label when user lacks EPS view', async () => {
+    resetState();
+    // User has PRM view and MRO view, but lacks EPS view
+    currentUser = {
+      ...viewerUser,
+      permissions: [PERMISSIONS.PRM_REQUESTS_VIEW, PERMISSIONS.MRO_SCHEDULE_VIEW],
+    };
+    findManyResult = [
+      {
+        id: 'req-1',
+        equipmentId: 'eq-1',
+        maintenanceScheduleId: 'sch-1',
+        equipment: { id: 'eq-1', name: 'Pump 1', inventoryNumber: 'INV-1' },
+        maintenanceSchedule: { id: 'sch-1', title: 'Quarterly Maintenance' },
+      },
+    ];
+    countResult = 1;
+
+    const res = await GET(makeRequest({ url: 'http://localhost/api/prm/requests' }));
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { success: boolean; data: { items: Array<any> } };
+    assert.equal(body.success, true);
+    const item = body.data.items[0];
+    assert.equal(item.equipment, null);
+    assert.deepEqual(item.maintenanceSchedule, { id: 'sch-1', title: 'Quarterly Maintenance' });
   });
 });
 
@@ -265,5 +348,243 @@ describe('POST /api/prm/requests', () => {
     const body = (await res.json()) as { success: boolean; error: string };
     assert.equal(body.success, false);
     assert.doesNotMatch(body.error, /db failure/);
+  });
+
+  test('rejects creation when referenced equipment does not exist', async () => {
+    resetState();
+    currentUser = {
+      ...requesterUser,
+      permissions: [PERMISSIONS.PRM_REQUESTS_CREATE, PERMISSIONS.EPS_EQUIPMENT_VIEW],
+    };
+
+    const res = await POST(
+      makeRequest({
+        method: 'POST',
+        url: 'http://localhost/api/prm/requests',
+        body: {
+          targetWarehouseId: 'wh-1',
+          equipmentId: 'non-existent-eq',
+          items: [{ nomenclatureId: 'nom-1', requestedQty: 1, estimatedPrice: 100 }],
+        },
+      }),
+    );
+
+    assert.equal(res.status, 400);
+    const json = (await res.json()) as { success: boolean; error: string };
+    assert.equal(json.success, false);
+    assert.match(json.error, /Оборудование не найдено/);
+  });
+
+  test('rejects creation when referenced maintenance schedule does not exist', async () => {
+    resetState();
+    currentUser = {
+      ...requesterUser,
+      permissions: [PERMISSIONS.PRM_REQUESTS_CREATE, PERMISSIONS.MRO_SCHEDULE_VIEW],
+    };
+
+    const res = await POST(
+      makeRequest({
+        method: 'POST',
+        url: 'http://localhost/api/prm/requests',
+        body: {
+          targetWarehouseId: 'wh-1',
+          maintenanceScheduleId: 'non-existent-sch',
+          items: [{ nomenclatureId: 'nom-1', requestedQty: 1, estimatedPrice: 100 }],
+        },
+      }),
+    );
+
+    assert.equal(res.status, 400);
+    const json = (await res.json()) as { success: boolean; error: string };
+    assert.equal(json.success, false);
+    assert.match(json.error, /График ТО не найден/);
+  });
+
+  test('rejects creation when maintenance schedule does not belong to selected equipment', async () => {
+    resetState();
+    currentUser = {
+      ...requesterUser,
+      permissions: [
+        PERMISSIONS.PRM_REQUESTS_CREATE,
+        PERMISSIONS.EPS_EQUIPMENT_VIEW,
+        PERMISSIONS.MRO_SCHEDULE_VIEW,
+      ],
+    };
+
+    const res = await POST(
+      makeRequest({
+        method: 'POST',
+        url: 'http://localhost/api/prm/requests',
+        body: {
+          targetWarehouseId: 'wh-1',
+          equipmentId: 'eq-1',
+          maintenanceScheduleId: 'sch-other',
+          items: [{ nomenclatureId: 'nom-1', requestedQty: 1, estimatedPrice: 100 }],
+        },
+      }),
+    );
+
+    assert.equal(res.status, 400);
+    const json = (await res.json()) as { success: boolean; error: string };
+    assert.equal(json.success, false);
+    assert.match(json.error, /не относится к выбранному оборудованию/);
+  });
+
+  test('returns 403 without database lookup when creating with equipmentId without EPS_EQUIPMENT_VIEW', async () => {
+    resetState();
+    currentUser = {
+      ...requesterUser,
+      permissions: [PERMISSIONS.PRM_REQUESTS_CREATE], // lacks EPS_EQUIPMENT_VIEW
+    };
+
+    const res = await POST(
+      makeRequest({
+        method: 'POST',
+        url: 'http://localhost/api/prm/requests',
+        body: {
+          targetWarehouseId: 'wh-1',
+          equipmentId: 'eq-1',
+          items: [{ nomenclatureId: 'nom-1', requestedQty: 1, estimatedPrice: 100 }],
+        },
+      }),
+    );
+
+    assert.equal(res.status, 403);
+    assert.equal(equipmentLookupCount, 0);
+  });
+
+  test('returns 403 without database lookup when creating with maintenanceScheduleId without MRO_SCHEDULE_VIEW', async () => {
+    resetState();
+    currentUser = {
+      ...requesterUser,
+      permissions: [PERMISSIONS.PRM_REQUESTS_CREATE, PERMISSIONS.EPS_EQUIPMENT_VIEW], // lacks MRO_SCHEDULE_VIEW
+    };
+
+    const res = await POST(
+      makeRequest({
+        method: 'POST',
+        url: 'http://localhost/api/prm/requests',
+        body: {
+          targetWarehouseId: 'wh-1',
+          equipmentId: 'eq-1',
+          maintenanceScheduleId: 'sch-1',
+          items: [{ nomenclatureId: 'nom-1', requestedQty: 1, estimatedPrice: 100 }],
+        },
+      }),
+    );
+
+    assert.equal(res.status, 403);
+    assert.equal(scheduleLookupCount, 0);
+  });
+
+  test('returns 403 when GET list has equipmentId filter but user lacks EPS_EQUIPMENT_VIEW', async () => {
+    resetState();
+    currentUser = {
+      ...requesterUser,
+      permissions: [PERMISSIONS.PRM_REQUESTS_VIEW],
+    };
+
+    const res = await GET(
+      makeRequest({
+        method: 'GET',
+        url: 'http://localhost/api/prm/requests?equipmentId=eq-1',
+      }),
+    );
+
+    assert.equal(res.status, 403);
+  });
+
+  test('returns 403 when GET list has maintenanceScheduleId filter but user lacks MRO_SCHEDULE_VIEW', async () => {
+    resetState();
+    currentUser = {
+      ...requesterUser,
+      permissions: [PERMISSIONS.PRM_REQUESTS_VIEW, PERMISSIONS.EPS_EQUIPMENT_VIEW],
+    };
+
+    const res = await GET(
+      makeRequest({
+        method: 'GET',
+        url: 'http://localhost/api/prm/requests?maintenanceScheduleId=sch-1',
+      }),
+    );
+
+    assert.equal(res.status, 403);
+  });
+
+  test('privacy-first: serializes equipment and equipmentId as null when caller lacks EPS_EQUIPMENT_VIEW', async () => {
+    resetState();
+    currentUser = {
+      ...requesterUser,
+      permissions: [PERMISSIONS.PRM_REQUESTS_VIEW, PERMISSIONS.MRO_SCHEDULE_VIEW],
+    };
+    findManyResult = [
+      {
+        id: 'req-1',
+        equipmentId: 'eq-1',
+        equipment: { id: 'eq-1', name: 'Pump 1', inventoryNumber: 'INV-1' },
+        maintenanceScheduleId: 'sch-1',
+        maintenanceSchedule: { id: 'sch-1', title: 'Plan 1' },
+        targetWarehouse: { id: 'wh-1', name: 'Main', code: 'M1', responsibleUserId: 'u1' },
+        requester: { id: requesterUser.userId, displayName: 'Req', ldapLogin: 'req' },
+        reviewer: null,
+        closedBy: null,
+        items: [],
+      },
+    ];
+    countResult = 1;
+
+    const res = await GET(
+      makeRequest({
+        method: 'GET',
+        url: 'http://localhost/api/prm/requests',
+      }),
+    );
+
+    assert.equal(res.status, 200);
+    const json = (await res.json()) as { success: boolean; data: { items: any[] } };
+    assert.equal(json.data.items[0].equipment, null);
+    assert.equal(json.data.items[0].equipmentId, null);
+    assert.equal(json.data.items[0].maintenanceScheduleId, 'sch-1');
+    assert.deepEqual(json.data.items[0].maintenanceSchedule, { id: 'sch-1', title: 'Plan 1' });
+  });
+
+  test('successfully creates a request linked to valid equipment and schedule when fully permitted', async () => {
+    resetState();
+    currentUser = {
+      ...requesterUser,
+      permissions: [
+        PERMISSIONS.PRM_REQUESTS_CREATE,
+        PERMISSIONS.EPS_EQUIPMENT_VIEW,
+        PERMISSIONS.MRO_SCHEDULE_VIEW,
+      ],
+    };
+    createdRecord = {
+      id: 'created-req-1',
+      equipmentId: 'eq-1',
+      maintenanceScheduleId: 'sch-1',
+      equipment: { id: 'eq-1', name: 'Pump 1', inventoryNumber: 'INV-1' },
+      maintenanceSchedule: { id: 'sch-1', title: 'Quarterly Maintenance' },
+    };
+
+    const res = await POST(
+      makeRequest({
+        method: 'POST',
+        url: 'http://localhost/api/prm/requests',
+        body: {
+          targetWarehouseId: 'wh-1',
+          equipmentId: 'eq-1',
+          maintenanceScheduleId: 'sch-1',
+          items: [{ nomenclatureId: 'nom-1', requestedQty: 2, estimatedPrice: 50 }],
+        },
+      }),
+    );
+
+    assert.equal(res.status, 200);
+    const json = (await res.json()) as { success: boolean; data: any };
+    assert.equal(json.success, true);
+    assert.equal((createCallArgs as any)?.data?.equipmentId, 'eq-1');
+    assert.equal((createCallArgs as any)?.data?.maintenanceScheduleId, 'sch-1');
+    assert.deepEqual(json.data.equipment, { id: 'eq-1', name: 'Pump 1', inventoryNumber: 'INV-1' });
+    assert.deepEqual(json.data.maintenanceSchedule, { id: 'sch-1', title: 'Quarterly Maintenance' });
   });
 });

@@ -7,8 +7,11 @@ import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { z } from 'zod';
 import {
+  buildPurchaseRequestInclude,
   calculateEstimatedTotal,
   isPurchaseAdmin,
+  sanitizePurchaseRequestRelations,
+  validatePurchaseRequestSourceLinks,
 } from '@/lib/prm-requests-service';
 
 export const dynamic = 'force-dynamic';
@@ -32,22 +35,13 @@ export async function GET(
       return forbiddenResponse();
     }
 
+    const canViewEps = hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_VIEW);
+    const canViewMro = hasPermission(user, PERMISSIONS.MRO_SCHEDULE_VIEW);
+
     const { id } = await params;
     const request = await prisma.purchaseRequest.findUnique({
       where: { id },
-      include: {
-        targetWarehouse: { select: { id: true, name: true, code: true, responsibleUserId: true } },
-        requester: { select: { id: true, displayName: true, ldapLogin: true } },
-        reviewer: { select: { id: true, displayName: true, ldapLogin: true } },
-        closedBy: { select: { id: true, displayName: true, ldapLogin: true } },
-        equipment: { select: { id: true, name: true, inventoryNumber: true } },
-        maintenanceSchedule: { select: { id: true, title: true } },
-        items: {
-          include: {
-            nomenclature: { select: { id: true, name: true, article: true, unit: true } },
-          },
-        },
-      },
+      include: buildPurchaseRequestInclude({ canViewEps, canViewMro }),
     });
 
     if (!request) {
@@ -61,7 +55,8 @@ export async function GET(
       return forbiddenResponse('У вас нет доступа к этой заявке');
     }
 
-    return NextResponse.json({ success: true, data: request });
+    const data = sanitizePurchaseRequestRelations(request, { canViewEps, canViewMro });
+    return NextResponse.json({ success: true, data });
   } catch (error: unknown) {
     return safeErrorResponse(error, 'Ошибка получения заявки на закупку ТМЦ', 500, {
       endpoint: 'prm-request-id-get',
@@ -119,6 +114,17 @@ export async function PATCH(
     }
 
     const parsed = updateSchema.parse(await req.json());
+
+    const canViewEps = hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_VIEW);
+    const canViewMro = hasPermission(user, PERMISSIONS.MRO_SCHEDULE_VIEW);
+
+    if (parsed.equipmentId && !canViewEps) {
+      return forbiddenResponse('У вас нет прав для привязки к оборудованию');
+    }
+    if (parsed.maintenanceScheduleId && !canViewMro) {
+      return forbiddenResponse('У вас нет прав для привязки к графику ТО');
+    }
+
     const targetWarehouseId = parsed.targetWarehouseId ?? existing.targetWarehouseId;
     const targetWarehouse = await prisma.warehouse.findUnique({
       where: { id: targetWarehouseId },
@@ -126,6 +132,21 @@ export async function PATCH(
     });
     if (!targetWarehouse || !targetWarehouse.isActive) {
       return NextResponse.json({ success: false, error: 'Склад назначения не найден или неактивен' }, { status: 400 });
+    }
+
+    const finalEquipmentId = parsed.equipmentId !== undefined ? parsed.equipmentId : existing.equipmentId;
+    const finalMaintenanceScheduleId =
+      parsed.maintenanceScheduleId !== undefined ? parsed.maintenanceScheduleId : existing.maintenanceScheduleId;
+
+    const sourceValidation = await validatePurchaseRequestSourceLinks({
+      equipmentId: finalEquipmentId,
+      maintenanceScheduleId: finalMaintenanceScheduleId,
+    });
+    if (!sourceValidation.valid) {
+      return NextResponse.json(
+        { success: false, error: sourceValidation.error },
+        { status: 400 },
+      );
     }
 
     const items = parsed.items;
@@ -159,7 +180,10 @@ export async function PATCH(
               }
             : {}),
         },
-        include: { items: true },
+        include: buildPurchaseRequestInclude({
+          canViewEps: hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_VIEW),
+          canViewMro: hasPermission(user, PERMISSIONS.MRO_SCHEDULE_VIEW),
+        }),
       });
     });
 
@@ -171,7 +195,12 @@ export async function PATCH(
       changes: { requestNumber: existing.requestNumber, action: 'EDIT_DRAFT', estimatedTotal },
     });
 
-    return NextResponse.json({ success: true, data: updated });
+    const data = sanitizePurchaseRequestRelations(updated, {
+      canViewEps: hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_VIEW),
+      canViewMro: hasPermission(user, PERMISSIONS.MRO_SCHEDULE_VIEW),
+    });
+
+    return NextResponse.json({ success: true, data });
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ success: false, error: 'Ошибка валидации', details: error.issues }, { status: 400 });

@@ -3,6 +3,8 @@ import { prisma } from '@ems/database';
 import { requireAuth } from '@/lib/auth-guard';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { PERMISSIONS } from '@ems/shared';
+import { hasPermission } from '@ems/auth';
+import { isPurchaseAdmin, resolveUserWarehouseIds } from '@/lib/prm-requests-service';
 import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
@@ -32,6 +34,34 @@ export async function GET(req: NextRequest) {
       where.status = status;
     }
     if (planId) where.planId = planId;
+
+    const canViewPrm =
+      hasPermission(auth.user, PERMISSIONS.PRM_REQUESTS_VIEW) ||
+      hasPermission(auth.user, PERMISSIONS.PRM_REQUESTS_CREATE) ||
+      hasPermission(auth.user, PERMISSIONS.PRM_REQUESTS_MANAGE);
+
+    let prmRelationInclude: Record<string, unknown> | boolean = false;
+    if (canViewPrm) {
+      const isAdmin = isPurchaseAdmin(auth.user);
+      const userWarehouseIds = await resolveUserWarehouseIds({ isAdmin, userId: auth.user.userId });
+      const prmWhere = isAdmin
+        ? undefined
+        : {
+            OR: [
+              { requesterId: auth.user.userId },
+              ...(userWarehouseIds.length > 0 ? [{ targetWarehouseId: { in: userWarehouseIds } }] : []),
+            ],
+          };
+
+      prmRelationInclude = {
+        where: prmWhere,
+        select: {
+          id: true,
+          requestNumber: true,
+          status: true,
+        },
+      };
+    }
 
     const schedules = await prisma.maintenanceSchedule.findMany({
       where,
@@ -69,6 +99,7 @@ export async function GET(req: NextRequest) {
         },
         checklistResult: true,
         usedParts: true,
+        ...(prmRelationInclude ? { purchaseRequests: prmRelationInclude } : {}),
       },
       orderBy: { scheduledDate: 'asc' },
     });

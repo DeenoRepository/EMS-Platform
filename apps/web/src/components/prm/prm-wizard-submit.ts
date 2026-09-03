@@ -33,6 +33,8 @@ export interface PrmRequestSubmitInput {
   priority: string;
   justification: string;
   supplierName: string;
+  equipmentId?: string | null;
+  maintenanceScheduleId?: string | null;
   lineItems: PrmRequestLineItem[];
 }
 
@@ -65,6 +67,8 @@ export function buildPurchaseRequestPayload(input: PrmRequestSubmitInput) {
     priority: input.priority,
     justification: input.justification.trim() || undefined,
     supplierName: input.supplierName.trim() || undefined,
+    equipmentId: input.equipmentId || undefined,
+    maintenanceScheduleId: input.maintenanceScheduleId || undefined,
     items: input.lineItems.map((item) => ({
       nomenclatureId: item.nomenclatureId,
       requestedQty: item.requestedQty,

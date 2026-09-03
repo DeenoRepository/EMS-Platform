@@ -19,10 +19,12 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(query.toString()),
 }));
 
+let mockPermissions = ['prm.requests.view', 'prm.requests.create', 'prm.requests.manage'];
+
 vi.mock('@/lib/auth-client', () => ({
   useAuth: () => ({
     user: { userId: 'requester-1' },
-    hasPermission: () => true,
+    hasPermission: (p: string) => mockPermissions.includes(p),
   }),
 }));
 
@@ -73,7 +75,9 @@ type MockRequest = { id: string; requestNumber: string };
 // production callback as a button, so each action workflow is driven through
 // the real page component rather than asserted against source text.
 vi.mock('@/components/prm', () => ({
-  PrmRequestWizardDialog: () => null,
+  PrmRequestWizardDialog: ({ open }: { open: boolean }) => (
+    open ? <div data-testid="prm-wizard-dialog">wizard-open</div> : null
+  ),
   PrmDeliveryDialog: ({ open, request }: { open: boolean; request: MockRequest | null }) => (
     open ? <div data-testid="delivery-dialog">{request?.requestNumber}</div> : null
   ),
@@ -131,6 +135,7 @@ function detailCalls(id: string) {
 beforeEach(() => {
   cleanup();
   vi.clearAllMocks();
+  mockPermissions = ['prm.requests.view', 'prm.requests.create', 'prm.requests.manage'];
   query = new URLSearchParams('requestId=request-42&status=APPROVED');
   fetchMock.mockImplementation(async (url: string) => {
     if (url === '/api/prm/requests/request-42') {
@@ -471,6 +476,28 @@ describe('PRM registry deep links', () => {
       await waitFor(() =>
         expect(enqueueSnackbar).toHaveBeenCalledWith('Ошибка сети при закрытии заявки', { variant: 'error' })
       );
+    });
+  });
+
+  describe('create wizard query parameter auto-open', () => {
+    it('opens create wizard automatically when ?create=true and user has PRM_REQUESTS_CREATE', async () => {
+      query = new URLSearchParams('create=true&equipmentId=eq-1');
+      mockPermissions = ['prm.requests.view', 'prm.requests.create'];
+
+      renderWithProviders(<PrmRegistryPage />);
+
+      await waitFor(() => expect(screen.getByTestId('prm-wizard-dialog')).toBeInTheDocument());
+    });
+
+    it('does NOT open create wizard when ?create=true and user lacks PRM_REQUESTS_CREATE', async () => {
+      query = new URLSearchParams('create=true&equipmentId=eq-1');
+      // User has only VIEW permission
+      mockPermissions = ['prm.requests.view'];
+
+      renderWithProviders(<PrmRegistryPage />);
+
+      await waitFor(() => expect(screen.queryByTestId('prm-wizard-dialog')).not.toBeInTheDocument());
+      expect(screen.queryByTestId('prm-wizard-dialog')).not.toBeInTheDocument();
     });
   });
 });

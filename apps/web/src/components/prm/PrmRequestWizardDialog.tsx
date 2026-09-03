@@ -24,7 +24,8 @@ import SendIcon from '@mui/icons-material/Send';
 import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 import { useSnackbar } from 'notistack';
 import { FormDialog } from '@/components/ui';
-import { PURCHASE_REQUEST_PRIORITY_MAP } from '@ems/shared';
+import { PERMISSIONS, PURCHASE_REQUEST_PRIORITY_MAP } from '@ems/shared';
+import { useAuth } from '@/lib/auth-client';
 import {
   addOrMergeLineItem,
   buildPurchaseRequestPayload,
@@ -46,24 +47,47 @@ interface NomenclatureOption {
   unit: string;
 }
 
+interface EquipmentOption {
+  id: string;
+  name: string;
+  inventoryNumber?: string | null;
+}
+
+interface MaintenanceScheduleOption {
+  id: string;
+  title: string;
+  equipmentId: string;
+}
+
 export interface PrmRequestWizardDialogProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  initialEquipmentId?: string | null;
+  initialMaintenanceScheduleId?: string | null;
 }
 
 export default function PrmRequestWizardDialog({
   open,
   onClose,
   onSuccess,
+  initialEquipmentId,
+  initialMaintenanceScheduleId,
 }: PrmRequestWizardDialogProps) {
   const { enqueueSnackbar } = useSnackbar();
+  const { hasPermission } = useAuth();
+  const canViewEps = hasPermission(PERMISSIONS.EPS_EQUIPMENT_VIEW);
+  const canViewMro = hasPermission(PERMISSIONS.MRO_SCHEDULE_VIEW);
 
   const [warehouses, setWarehouses] = useState<WarehouseOption[]>([]);
   const [targetWarehouseId, setTargetWarehouseId] = useState('');
   const [priority, setPriority] = useState('MEDIUM');
   const [justification, setJustification] = useState('');
   const [supplierName, setSupplierName] = useState('');
+  const [equipmentList, setEquipmentList] = useState<EquipmentOption[]>([]);
+  const [equipmentId, setEquipmentId] = useState(initialEquipmentId || '');
+  const [schedules, setSchedules] = useState<MaintenanceScheduleOption[]>([]);
+  const [maintenanceScheduleId, setMaintenanceScheduleId] = useState(initialMaintenanceScheduleId || '');
 
   const [nomenclatures, setNomenclatures] = useState<NomenclatureOption[]>([]);
   const [lineItems, setLineItems] = useState<PrmRequestLineItem[]>([]);
@@ -80,6 +104,8 @@ export default function PrmRequestWizardDialog({
       setPriority('MEDIUM');
       setJustification('');
       setSupplierName('');
+      setEquipmentId(initialEquipmentId || '');
+      setMaintenanceScheduleId(initialMaintenanceScheduleId || '');
       setLineItems([]);
       setSelectedNomenclature(null);
       setItemQty('1');
@@ -107,8 +133,51 @@ export default function PrmRequestWizardDialog({
         .catch(() => {
           enqueueSnackbar('Не удалось загрузить номенклатуру ТМЦ', { variant: 'error' });
         });
+
+      if (canViewEps) {
+        fetch('/api/eps/equipment?pageSize=500')
+          .then((r) => r.json())
+          .then((json) => {
+            if (json.success && json.data) {
+              setEquipmentList(json.data.items || json.data || []);
+            }
+          })
+          .catch(() => {
+            // non-critical
+          });
+      } else {
+        setEquipmentList([]);
+      }
     }
-  }, [open, enqueueSnackbar]);
+  }, [open, initialEquipmentId, initialMaintenanceScheduleId, canViewEps, enqueueSnackbar]);
+
+  useEffect(() => {
+    if (!canViewMro || !equipmentId) {
+      setSchedules([]);
+      setMaintenanceScheduleId('');
+      return;
+    }
+
+    fetch(`/api/mro/schedules?equipmentId=${encodeURIComponent(equipmentId)}`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data)) {
+          setSchedules(json.data);
+          setMaintenanceScheduleId((current) => {
+            if (current && !json.data.some((s: MaintenanceScheduleOption) => s.id === current)) {
+              return '';
+            }
+            return current;
+          });
+        } else {
+          setSchedules([]);
+          setMaintenanceScheduleId('');
+        }
+      })
+      .catch(() => {
+        setSchedules([]);
+      });
+  }, [equipmentId, canViewMro]);
 
   const handleAddItem = () => {
     if (!selectedNomenclature) return;
@@ -188,6 +257,8 @@ export default function PrmRequestWizardDialog({
       priority,
       justification,
       supplierName,
+      equipmentId,
+      maintenanceScheduleId,
       lineItems,
     });
     if (validationError) {
@@ -201,7 +272,15 @@ export default function PrmRequestWizardDialog({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(
-          buildPurchaseRequestPayload({ targetWarehouseId, priority, justification, supplierName, lineItems }),
+          buildPurchaseRequestPayload({
+            targetWarehouseId,
+            priority,
+            justification,
+            supplierName,
+            equipmentId,
+            maintenanceScheduleId,
+            lineItems,
+          }),
         ),
       });
 
@@ -272,6 +351,82 @@ export default function PrmRequestWizardDialog({
               {Object.entries(PURCHASE_REQUEST_PRIORITY_MAP).map(([k, v]) => (
                 <MenuItem key={k} value={k}>
                   {v.label}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <TextField
+              select
+              fullWidth
+              size="small"
+              label="Оборудование (EPS, необязательно)"
+              value={equipmentId}
+              disabled={!canViewEps}
+              onChange={(e) => {
+                const nextEqId = e.target.value;
+                setEquipmentId(nextEqId);
+                if (!nextEqId) setMaintenanceScheduleId('');
+              }}
+              SelectProps={{ displayEmpty: true }}
+              helperText={
+                !canViewEps
+                  ? 'Требуется право на просмотр оборудования (EPS)'
+                  : equipmentList.length >= 500
+                  ? 'Отображены первые 500 единиц оборудования'
+                  : undefined
+              }
+            >
+              <MenuItem value="">
+                <em>— Без привязки к оборудованию —</em>
+              </MenuItem>
+              {equipmentId && !equipmentList.some((eq) => eq.id === equipmentId) && (
+                <MenuItem key={equipmentId} value={equipmentId}>
+                  Загрузка выбранного оборудования... ({equipmentId})
+                </MenuItem>
+              )}
+              {equipmentList.map((eq) => (
+                <MenuItem key={eq.id} value={eq.id}>
+                  {eq.name} {eq.inventoryNumber ? `(${eq.inventoryNumber})` : ''}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <TextField
+              select
+              fullWidth
+              size="small"
+              label="График ТО (MRO, необязательно)"
+              value={maintenanceScheduleId}
+              disabled={!canViewMro || !equipmentId || schedules.length === 0}
+              onChange={(e) => setMaintenanceScheduleId(e.target.value)}
+              SelectProps={{ displayEmpty: true }}
+              helperText={
+                !canViewMro
+                  ? 'Требуется право на просмотр графиков ТО (MRO)'
+                  : !equipmentId
+                  ? 'Сначала выберите оборудование'
+                  : schedules.length === 0
+                  ? 'Для выбранного оборудования нет графиков ТО'
+                  : schedules.length >= 500
+                  ? 'Отображены первые 500 графиков ТО'
+                  : undefined
+              }
+            >
+              <MenuItem value="">
+                <em>— Без привязки к графику ТО —</em>
+              </MenuItem>
+              {maintenanceScheduleId && !schedules.some((sch) => sch.id === maintenanceScheduleId) && (
+                <MenuItem key={maintenanceScheduleId} value={maintenanceScheduleId}>
+                  Загрузка выбранного графика ТО... ({maintenanceScheduleId})
+                </MenuItem>
+              )}
+              {schedules.map((sch) => (
+                <MenuItem key={sch.id} value={sch.id}>
+                  {sch.title}
                 </MenuItem>
               ))}
             </TextField>
