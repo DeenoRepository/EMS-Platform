@@ -8,7 +8,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgrespassword}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_secure_password}
       POSTGRES_DB: ${POSTGRES_DB:-ems_db}
     ports:
       - "${POSTGRES_BIND_IP:-127.0.0.1}:5432:5432"
@@ -82,33 +82,6 @@ services:
       - ems_uploads:/app/uploads
     networks:
       - ems_network
-
-  # ----------------------------------------------------------------------------
-  # 4. Jira REST API Service (Pre-populated with real SRM data from /temp)
-  # ----------------------------------------------------------------------------
-  jira:
-    build:
-      context: .
-      dockerfile: docker/jira/Dockerfile
-    container_name: ems_jira
-    restart: unless-stopped
-    ports:
-      - "8080:8080"
-    environment:
-      PORT: 8080
-      NODE_ENV: production
-      BASE_URL: "http://localhost:8080"
-      TEMP_DIR: "/app/temp"
-    volumes:
-      - ./temp:/app/temp:ro
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    networks:
-      - ems_network
-
 
 volumes:
   postgres_data:
