@@ -8,6 +8,11 @@ test('Windows bare-metal installer does not invoke database mutation commands', 
   assert.doesNotMatch(installer, /\bdb\s+push\b|\bmigrate\s+(?:dev|deploy|reset)\b|\bdb\s+seed\b|--accept-data-loss|--force-reset/);
 });
 
+test('Linux bare-metal installer never infers database provisioning from a local marker', () => {
+  const installer = readFileSync(resolve('scripts/baremetal-install.sh'), 'utf8');
+  assert.doesNotMatch(installer, /\bdb\s+push\b|\bmigrate\s+(?:dev|deploy|reset)\b|\bdb\s+seed\b|--accept-data-loss|--force-reset|\.installed/);
+});
+
 // The repository test runner executes from the workspace root.
 // This checks the shipped unit, not a simulated startup implementation.
 test('systemd unit only executes the application, without database lifecycle hooks', () => {

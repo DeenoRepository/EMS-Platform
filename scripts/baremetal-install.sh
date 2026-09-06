@@ -74,31 +74,10 @@ find "$INSTALL_DIR/node_modules" -name "libquery_engine*.so.node" -exec cp {} "$
 chown -R ems:ems "$INSTALL_DIR"
 chmod -R 755 "$INSTALL_DIR"
 
-# 7. Push Database Schema via local Prisma Engine (Safe Fresh Install vs Upgrade)
-echo "🗄️ Синхронизация схемы базы данных PostgreSQL..."
-set +e
-if [ -f "$INSTALL_DIR/.installed" ]; then
-    echo "ℹ️ Обнаружена существующая установка. Выполняется безопасная генерация Prisma Client без деструктивных DDL-изменений схемы..."
-    su -s /bin/sh ems -c "cd '$INSTALL_DIR' && export \$(grep -v '^#' .env.production | xargs) && ./packages/database/node_modules/.bin/prisma generate --schema=packages/database/prisma/schema.prisma"
-    PRISMA_STATUS=$?
-else
-    echo "ℹ️ Первичная установка: применение схемы без потери данных..."
-    su -s /bin/sh ems -c "cd '$INSTALL_DIR' && export \$(grep -v '^#' .env.production | xargs) && ./packages/database/node_modules/.bin/prisma db push --schema=packages/database/prisma/schema.prisma"
-    PRISMA_STATUS=$?
-    if [ $PRISMA_STATUS -eq 0 ]; then
-        touch "$INSTALL_DIR/.installed"
-        chown ems:ems "$INSTALL_DIR/.installed"
-    fi
-fi
-set -e
-
-if [ $PRISMA_STATUS -ne 0 ]; then
-    echo "⚠️ Внимание: Не удалось автоматически синхронизировать схему БД."
-    echo "Убедитесь, что служба PostgreSQL запущена, база данных создана и пароль в .env.production верен:"
-    echo "  sudo systemctl status postgresql"
-    echo "  sudo -u postgres psql -c \"CREATE USER ems_user WITH PASSWORD 'ems_secure_password';\""
-    echo "  sudo -u postgres psql -c \"CREATE DATABASE ems_db OWNER ems_user;\""
-fi
+# 7. Database provisioning is separate from application installation.
+# A local marker cannot establish whether the configured database is empty.
+echo "ℹ️ Схема БД не изменяется. Клиент Prisma должен быть сгенерирован при сборке архива."
+echo "ℹ️ Для новой установки отдельно подготовьте БД; перед обновлением проверьте совместимость схемы."
 
 # 8. Setup & Enable Systemd Service
 echo "⚙️ Регистрация системной службы systemd (ems-platform.service)..."
