@@ -47,10 +47,12 @@ cp apps/web/package.json "$PACKAGE_DIR/apps/web/package.json"
 cp apps/web/next.config.mjs "$PACKAGE_DIR/apps/web/next.config.mjs"
 
 # Copy internal packages
-echo "📄 Копирование внутренних модулей (@ems/auth, @ems/database, @ems/shared)..."
+echo "📄 Копирование внутренних модулей (@ems/auth, @ems/database, @ems/shared, @ems/eps, @ems/wms)..."
 cp -r packages/auth "$PACKAGE_DIR/packages/auth"
 cp -r packages/database "$PACKAGE_DIR/packages/database"
 cp -r packages/shared "$PACKAGE_DIR/packages/shared"
+cp -a packages/eps "$PACKAGE_DIR/packages/eps"
+cp -a packages/wms "$PACKAGE_DIR/packages/wms"
 
 # Copy root manifest & config
 cp package.json "$PACKAGE_DIR/package.json"

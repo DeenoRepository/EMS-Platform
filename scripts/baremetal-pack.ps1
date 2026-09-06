@@ -50,6 +50,8 @@ Copy-Item "apps\web\next.config.mjs" "$PackageDir\apps\web\next.config.mjs"
 Copy-Item -Path "packages\auth" -Destination "$PackageDir\packages\auth" -Recurse
 Copy-Item -Path "packages\database" -Destination "$PackageDir\packages\database" -Recurse
 Copy-Item -Path "packages\shared" -Destination "$PackageDir\packages\shared" -Recurse
+Copy-Item -Path "packages\eps" -Destination "$PackageDir\packages\eps" -Recurse
+Copy-Item -Path "packages\wms" -Destination "$PackageDir\packages\wms" -Recurse
 
 Copy-Item "package.json" "$PackageDir\package.json"
 Copy-Item "pnpm-workspace.yaml" "$PackageDir\pnpm-workspace.yaml"
