@@ -42,17 +42,13 @@ UPLOAD_DIR="$InstallDir\uploads"
 
 New-Item -ItemType Directory -Path "$InstallDir\uploads" -Force | Out-Null
 
-# 4. Database schema push
-Write-Host "🗄️ Синхронизация схемы базы данных PostgreSQL..." -ForegroundColor Yellow
-try {
-    node node_modules\prisma\build\index.js db push --schema=packages\database\prisma\schema.prisma --accept-data-loss
-    Write-Host "✅ Схема БД синхронизирована." -ForegroundColor Green
-} catch {
-    Write-Warning "⚠️ Не удалось выполнить db push. Проверьте статус PostgreSQL службы и реквизиты в .env.production."
-}
+# 4. Database provisioning is deliberately separate from application installation.
+# Never mutate an existing database as a side effect of installing application files.
+Write-Warning "Схема БД этим скриптом не изменяется. Для новой установки отдельно подготовьте БД по согласованной процедуре."
+Write-Warning "До запуска проверьте конфигурацию и совместимость существующей схемы с версией приложения."
 
 Write-Host "======================================================================" -ForegroundColor Green
-Write-Host "🎉 EMS Platform готова к запуску!" -ForegroundColor Green
+Write-Host "Файлы подготовлены. Готовность БД и приложения к запуску еще требует проверки." -ForegroundColor Yellow
 Write-Host "Для запуска выполните команду:" -ForegroundColor Yellow
 Write-Host "   node node_modules\next\dist\bin\next start apps\web -p 3000" -ForegroundColor White
 Write-Host "Или используйте NSSM для регистрации в качестве Windows Service:" -ForegroundColor Yellow

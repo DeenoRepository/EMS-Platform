@@ -3,6 +3,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+test('Windows bare-metal installer does not invoke database mutation commands', () => {
+  const installer = readFileSync(resolve('scripts/baremetal-install.ps1'), 'utf8');
+  assert.doesNotMatch(installer, /\bdb\s+push\b|\bmigrate\s+(?:dev|deploy|reset)\b|\bdb\s+seed\b|--accept-data-loss|--force-reset/);
+});
+
 // The repository test runner executes from the workspace root.
 // This checks the shipped unit, not a simulated startup implementation.
 test('systemd unit only executes the application, without database lifecycle hooks', () => {
