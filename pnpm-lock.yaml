@@ -38,6 +38,9 @@ importers:
       '@ems/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@ems/eps':
+        specifier: workspace:*
+        version: link:../../packages/eps
       '@ems/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -143,6 +146,25 @@ importers:
       tsx:
         specifier: ^4.23.12
         version: 4.23.12
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+
+  packages/eps:
+    dependencies:
+      '@ems/database':
+        specifier: workspace:*
+        version: link:../database
+      '@ems/shared':
+        specifier: workspace:*
+        version: link:../shared
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.1
+        version: 22.20.1
       typescript:
         specifier: ^5.7.3
         version: 5.9.3

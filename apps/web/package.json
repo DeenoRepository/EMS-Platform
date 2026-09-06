@@ -14,6 +14,7 @@
     "@emotion/styled": "^11.14.0",
     "@ems/auth": "workspace:*",
     "@ems/database": "workspace:*",
+    "@ems/eps": "workspace:*",
     "@ems/shared": "workspace:*",
     "@ems/wms": "workspace:*",
     "@mui/icons-material": "^5.16.14",
