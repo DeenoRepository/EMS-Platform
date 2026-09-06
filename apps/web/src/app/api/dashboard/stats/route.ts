@@ -166,116 +166,22 @@ export async function GET(req: NextRequest) {
       };
     }
 
-    // 4. SRM: SERVICE REQUESTS IN SCOPE
-    let srmWhere: any = {};
-    if (!isEnterprise) {
-      const orConditions: any[] = [
-        { reporter: user.ldapLogin },
-        { assignee: user.ldapLogin },
-        { createdById: user.userId },
-      ];
-      if (userEquipmentIds.length > 0) {
-        orConditions.push({ equipmentId: { in: userEquipmentIds } });
-      }
-      srmWhere = { OR: orConditions };
-    }
+    // SRM & MRO prototypes retired from active runtime
+    const srmStats = {
+      openIssues: 0,
+      inProgressIssues: 0,
+      resolvedIssues: 0,
+      totalIssues: 0,
+      recentIssues: [],
+    };
 
-    const [openIssues, inProgressIssues, resolvedIssues, totalIssues, recentIssuesRaw] =
-      await Promise.all([
-        prisma.jiraIssueCache.count({ where: { ...srmWhere, status: { in: ['OPEN', 'WAITING'] } } }),
-        prisma.jiraIssueCache.count({ where: { ...srmWhere, status: 'IN_PROGRESS' } }),
-        prisma.jiraIssueCache.count({ where: { ...srmWhere, status: { in: ['RESOLVED', 'CLOSED'] } } }),
-        prisma.jiraIssueCache.count({ where: srmWhere }),
-        prisma.jiraIssueCache.findMany({
-          where: srmWhere,
-          orderBy: { createdDate: 'desc' },
-          take: 4,
-          select: {
-            id: true,
-            issueKey: true,
-            summary: true,
-            status: true,
-            priority: true,
-            createdDate: true,
-            equipmentId: true,
-          },
-        }),
-      ]);
-
-    // Fetch equipment details for recent issues
-    const equipmentMap = new Map<string, { name: string; inventoryNumber: string | null }>();
-    const eqIdsToFetch = recentIssuesRaw
-      .map((i) => i.equipmentId)
-      .filter((id): id is string => Boolean(id));
-
-    if (eqIdsToFetch.length > 0) {
-      const equipments = await prisma.equipment.findMany({
-        where: { id: { in: eqIdsToFetch } },
-        select: { id: true, name: true, inventoryNumber: true },
-      });
-      for (const eq of equipments) {
-        equipmentMap.set(eq.id, { name: eq.name, inventoryNumber: eq.inventoryNumber });
-      }
-    }
-
-    const recentIssues = recentIssuesRaw.map((item) => ({
-      id: item.id,
-      key: item.issueKey,
-      title: item.summary,
-      status: item.status,
-      priority: item.priority,
-      createdAt: item.createdDate.toISOString(),
-      equipment: item.equipmentId ? equipmentMap.get(item.equipmentId) || null : null,
-    }));
-
-    // 5. MRO: MAINTENANCE SCHEDULES IN SCOPE
-    let mroWhere: any = {};
-    if (!isEnterprise) {
-      const orConditions: any[] = [{ completedById: user.userId }];
-      if (userEquipmentIds.length > 0) {
-        orConditions.push({ equipmentId: { in: userEquipmentIds } });
-      }
-      mroWhere = { OR: orConditions };
-    }
-
-    const now = new Date();
-    const [overdueCount, plannedCount, completedCount, totalMroCount, nextSchedulesRaw] =
-      await Promise.all([
-        prisma.maintenanceSchedule.count({
-          where: {
-            ...mroWhere,
-            OR: [
-              { status: 'MISSED' },
-              { status: 'PLANNED', scheduledDate: { lt: now } },
-            ],
-          },
-        }),
-        prisma.maintenanceSchedule.count({
-          where: { ...mroWhere, status: 'PLANNED', scheduledDate: { gte: now } },
-        }),
-        prisma.maintenanceSchedule.count({
-          where: { ...mroWhere, status: 'COMPLETED' },
-        }),
-        prisma.maintenanceSchedule.count({ where: mroWhere }),
-        prisma.maintenanceSchedule.findMany({
-          where: { ...mroWhere, status: { in: ['PLANNED', 'MISSED', 'IN_PROGRESS'] } },
-          orderBy: { scheduledDate: 'asc' },
-          take: 4,
-          include: {
-            equipment: { select: { id: true, name: true, inventoryNumber: true } },
-            plan: { select: { name: true, frequency: true } },
-          },
-        }),
-      ]);
-
-    const nextSchedules = nextSchedulesRaw.map((s) => ({
-      id: s.id,
-      equipmentName: s.equipment?.name || 'Оборудование',
-      title: s.title || s.plan?.name || s.notes || 'Плановое ТО',
-      scheduledDate: s.scheduledDate.toISOString(),
-      periodicity: s.plan?.frequency || 'По графику',
-      status: s.status,
-    }));
+    const mroStats = {
+      overdueCount: 0,
+      plannedCount: 0,
+      completedCount: 0,
+      totalCount: 0,
+      nextSchedules: [],
+    };
 
     return NextResponse.json({
       success: true,
@@ -301,20 +207,8 @@ export async function GET(req: NextRequest) {
           myPending: mySubmittedPendingApprovalsCount,
         },
         wms: wmsStats,
-        srm: {
-          openIssues,
-          inProgressIssues,
-          resolvedIssues,
-          totalIssues,
-          recentIssues,
-        },
-        mro: {
-          overdueCount,
-          plannedCount,
-          completedCount,
-          totalCount: totalMroCount,
-          nextSchedules,
-        },
+        srm: srmStats,
+        mro: mroStats,
       },
     });
   } catch (error: any) {

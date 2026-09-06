@@ -40,7 +40,6 @@ import {
   EmptyState,
   ErrorBoundary,
 } from '@/components/ui';
-import { CreateServiceRequestDialog } from '@/components/srm';
 import { WmsOperationWizardDialog } from '@/components/wms';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS, formatDate } from '@ems/shared';
@@ -133,7 +132,6 @@ function ExecutiveDashboardContent() {
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   // Wizards State
-  const [isSrmDialogOpen, setIsSrmDialogOpen] = useState(false);
   const [isWmsWizardOpen, setIsWmsWizardOpen] = useState(false);
 
   const fetchDashboardData = useCallback(async (scopeOverride?: string) => {
@@ -214,19 +212,6 @@ function ExecutiveDashboardContent() {
       onAction: () => router.push('/wms/stock'),
     });
   }
-  if (stats?.mro.overdueCount && stats.mro.overdueCount > 0) {
-    criticalAlerts.push({
-      id: 'mro-overdue',
-      severity: 'WARNING',
-      title: `${stats.mro.overdueCount} просроченных регламентов ТОиР`,
-      description: isPersonalScope
-        ? 'Превышен плановый срок выполнения ТО по оборудованию в вашей зоне ответственности.'
-        : 'Превышен плановый срок выполнения планово-предупредительных ремонтов.',
-      count: stats.mro.overdueCount,
-      actionLabel: 'К графику ППР',
-      onAction: () => router.push('/mro'),
-    });
-  }
   if (stats?.approvals.pending && stats.approvals.pending > 0) {
     const toReview = stats.approvals.toReview || 0;
     criticalAlerts.push({
@@ -244,9 +229,7 @@ function ExecutiveDashboardContent() {
 
   const hasCriticalRepairs = (stats?.eps.underRepair || 0) > 0;
   const hasDeficit = stats.wms.accessible !== false && (stats?.wms.lowStockCount || 0) > 0;
-  const hasOverdueMro = (stats?.mro.overdueCount || 0) > 0;
   const hasPendingApprovals = (stats?.approvals.pending || 0) > 0;
-  const hasOpenIncidents = (stats?.srm.openIssues || 0) > 0;
 
   const currentDisplayName = stats.user?.displayName || authUser?.displayName || 'Сотрудник';
 
@@ -395,31 +378,30 @@ function ExecutiveDashboardContent() {
           />
         </Grid>
 
-        {/* SRM */}
+        {/* Approvals */}
         <Grid item xs={12} sm={6} lg={3}>
           <StatCard
-            title={isPersonalScope ? 'Мои сервисные заявки (SRM)' : 'Сервисные заявки (SRM)'}
-            value={stats?.srm.totalIssues || 0}
-            subtitle={`${stats?.srm.openIssues || 0} открыто • ${stats?.srm.inProgressIssues || 0} в работе`}
-            icon={<BugReportOutlinedIcon sx={{ fontSize: 24 }} />}
-            iconColor="#d97706"
-            iconBgColor="rgba(217, 119, 6, 0.08)"
-            accentColor={hasOpenIncidents ? '#f59e0b' : undefined}
-            onClick={() => router.push('/srm')}
+            title={isPersonalScope ? 'Мои согласования' : 'Очередь согласований (EPS)'}
+            value={stats?.approvals.pending || 0}
+            subtitle={stats?.approvals.toReview ? `${stats.approvals.toReview} на моем рассмотрении` : 'В очереди утверждения'}
+            icon={<FactCheckOutlinedIcon sx={{ fontSize: 24 }} />}
+            iconColor="#7c3aed"
+            iconBgColor="rgba(124, 58, 237, 0.08)"
+            accentColor={hasPendingApprovals ? '#7c3aed' : undefined}
+            onClick={() => router.push('/eps/approvals')}
           />
         </Grid>
 
-        {/* MRO */}
+        {/* Warehouses & Inventories */}
         <Grid item xs={12} sm={6} lg={3}>
           <StatCard
-            title={isPersonalScope ? 'Мой график ТОиР (MRO)' : 'График ППР и ТО (MRO)'}
-            value={stats?.mro.plannedCount || 0}
-            subtitle={`${stats?.mro.overdueCount || 0} просрочено • ${stats?.mro.completedCount || 0} выполнено`}
-            icon={<BuildOutlinedIcon sx={{ fontSize: 24 }} />}
-            iconColor="#7c3aed"
-            iconBgColor="rgba(124, 58, 237, 0.08)"
-            accentColor={hasOverdueMro ? '#ef4444' : undefined}
-            onClick={() => router.push('/mro')}
+            title="Инвентаризации и учет (WMS)"
+            value={stats?.wms.activeInventoriesCount || 0}
+            subtitle={`${stats?.wms.warehousesCount || 0} складов • ${stats?.wms.nomenclatureCount || 0} номенклатур`}
+            icon={<WarehouseOutlinedIcon sx={{ fontSize: 24 }} />}
+            iconColor="#d97706"
+            iconBgColor="rgba(217, 119, 6, 0.08)"
+            onClick={() => router.push('/wms/inventory')}
           />
         </Grid>
       </Grid>
@@ -478,18 +460,6 @@ function ExecutiveDashboardContent() {
             </Button>
           )}
 
-          {hasPermission(PERMISSIONS.SRM_REQUESTS_CREATE) && (
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<BugReportOutlinedIcon />}
-              onClick={() => setIsSrmDialogOpen(true)}
-              sx={{ fontWeight: 600, borderRadius: '8px', textTransform: 'none', color: '#d97706', borderColor: '#fed7aa' }}
-            >
-              Подать заявку
-            </Button>
-          )}
-
           {hasPermission(PERMISSIONS.WMS_OPERATIONS_CREATE) && (
             <Button
               variant="outlined"
@@ -502,15 +472,15 @@ function ExecutiveDashboardContent() {
             </Button>
           )}
 
-          {hasPermission(PERMISSIONS.MRO_EXECUTION_COMPLETE) && (
+          {hasPermission(PERMISSIONS.EPS_APPROVALS_VIEW) && (
             <Button
-              variant="contained"
+              variant="outlined"
               size="small"
-              startIcon={<BuildOutlinedIcon />}
-              onClick={() => router.push('/mro')}
-              sx={{ fontWeight: 700, borderRadius: '8px', textTransform: 'none', bgcolor: '#7c3aed', '&:hover': { bgcolor: '#6d28d9' } }}
+              startIcon={<FactCheckOutlinedIcon />}
+              onClick={() => router.push('/eps/approvals')}
+              sx={{ fontWeight: 600, borderRadius: '8px', textTransform: 'none', color: '#7c3aed', borderColor: '#ddd6fe' }}
             >
-              Провести ТО
+              Согласования
             </Button>
           )}
         </Stack>
@@ -518,138 +488,118 @@ function ExecutiveDashboardContent() {
 
       {/* 5. Main Operational Split (Left 7 Cols, Right 5 Cols) */}
       <Grid container spacing={3}>
-        {/* Left Column: Recent SRM Incidents & Upcoming MRO Schedules */}
+        {/* Left Column: EPS Operational Status & Approvals */}
         <Grid item xs={12} lg={7}>
           <Stack spacing={3}>
-            {/* SRM Recent Issues Feed */}
+            {/* EPS Approvals Queue Card */}
             <Card sx={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}>
               <CardContent sx={{ p: 2.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-                    <BugReportOutlinedIcon sx={{ color: '#d97706', fontSize: 22 }} />
+                    <FactCheckOutlinedIcon sx={{ color: '#7c3aed', fontSize: 22 }} />
                     <Typography variant="subtitle1" fontWeight={700} color="#0f172a">
-                      {isPersonalScope ? 'Мои обращения и инциденты (SRM)' : 'Оперативные инциденты и заявки (SRM)'}
+                      {isPersonalScope ? 'Мои согласования оборудования' : 'Очередь согласований оборудования (EPS)'}
                     </Typography>
                   </Box>
                   <Button
                     size="small"
                     endIcon={<ArrowForwardIcon />}
-                    onClick={() => router.push('/srm')}
+                    onClick={() => router.push('/eps/approvals')}
                     sx={{ fontWeight: 600, textTransform: 'none' }}
                   >
-                    Все заявки ({stats?.srm.totalIssues || 0})
+                    Все заявки ({stats?.approvals.pending || 0})
                   </Button>
                 </Box>
 
-                {stats?.srm.recentIssues.length === 0 ? (
+                {(!stats?.approvals.pending || stats.approvals.pending === 0) ? (
                   <EmptyState
-                    title="Нет открытых инцидентов"
-                    description={isPersonalScope ? 'В вашей зоне ответственности активных заявок нет.' : 'Все сервисные заявки и инциденты успешно закрыты.'}
+                    title="Очередь согласований пуста"
+                    description="Все заявки на ввод в эксплуатацию, изменение параметров и списание оборудования рассмотрены."
                     minHeight={160}
                   />
                 ) : (
-                  <Stack spacing={1.5}>
-                    {stats?.srm.recentIssues.map((issue) => (
-                      <Paper
-                        key={issue.id}
-                        variant="outlined"
-                        onClick={() => router.push('/srm')}
-                        sx={{
-                          p: 1.75,
-                          borderRadius: '8px',
-                          cursor: 'pointer',
-                          borderColor: '#f1f5f9',
-                          transition: 'all 0.15s ease',
-                          '&:hover': { bgcolor: '#f8fafc', borderColor: '#cbd5e1' },
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}>
-                          <Box sx={{ minWidth: 0, flex: 1 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                              <Chip
-                                label={issue.key}
-                                size="small"
-                                sx={{ height: 20, fontSize: '0.6875rem', fontWeight: 800, bgcolor: '#f1f5f9', color: '#475569' }}
-                              />
-                              <Typography variant="subtitle2" fontWeight={700} noWrap color="#0f172a">
-                                {issue.title}
-                              </Typography>
-                            </Box>
-                            {issue.equipment && (
-                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                                Оборудование: <strong>{issue.equipment.name}</strong> ({issue.equipment.inventoryNumber || 'Б/Н'})
-                              </Typography>
-                            )}
-                          </Box>
-                          <Stack direction="row" spacing={1} alignItems="center" flexShrink={0}>
-                            <StatusBadge status={issue.priority} label={issue.priority} size="small" />
-                            <StatusBadge status={issue.status} label={issue.status} size="small" />
-                          </Stack>
-                        </Box>
-                      </Paper>
-                    ))}
-                  </Stack>
+                  <Box sx={{ p: 2, bgcolor: '#faf5ff', borderRadius: '8px', border: '1px solid #f3e8ff' }}>
+                    <Typography variant="subtitle2" fontWeight={700} color="#6b21a8" gutterBottom>
+                      Требуется внимание ответственных лиц:
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      В очереди находится <strong>{stats.approvals.pending}</strong> заявок на изменение статуса и жизненного цикла оборудования.
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={() => router.push('/eps/approvals')}
+                      sx={{ mt: 2, textTransform: 'none', bgcolor: '#7c3aed', '&:hover': { bgcolor: '#6d28d9' } }}
+                    >
+                      Перейти к утверждению
+                    </Button>
+                  </Box>
                 )}
               </CardContent>
             </Card>
 
-            {/* MRO Upcoming Maintenance Feed */}
+            {/* EPS Fleet Distribution Card */}
             <Card sx={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}>
               <CardContent sx={{ p: 2.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-                    <BuildOutlinedIcon sx={{ color: '#7c3aed', fontSize: 22 }} />
+                    <BadgeOutlinedIcon sx={{ color: '#0284c7', fontSize: 22 }} />
                     <Typography variant="subtitle1" fontWeight={700} color="#0f172a">
-                      {isPersonalScope ? 'Мои ближайшие регламенты ТО (MRO)' : 'Ближайшие регламенты ТО и ППР (MRO)'}
+                      Статус парка оборудования (EPS)
                     </Typography>
                   </Box>
                   <Button
                     size="small"
                     endIcon={<ArrowForwardIcon />}
-                    onClick={() => router.push('/mro')}
+                    onClick={() => router.push('/eps')}
                     sx={{ fontWeight: 600, textTransform: 'none' }}
                   >
-                    График ППР ({stats?.mro.totalCount || 0})
+                    Реестр ({stats?.eps.total || 0})
                   </Button>
                 </Box>
 
-                {stats?.mro.nextSchedules.length === 0 ? (
-                  <EmptyState
-                    title="График ТО свободен"
-                    description={isPersonalScope ? 'В вашей зоне ответственности нет запланированных ТО на ближайшее время.' : 'Все регламенты ТОиР выполнены в срок.'}
-                    minHeight={160}
-                  />
-                ) : (
-                  <Stack spacing={1.5}>
-                    {stats?.mro.nextSchedules.map((schedule) => (
-                      <Paper
-                        key={schedule.id}
-                        variant="outlined"
-                        onClick={() => router.push('/mro')}
-                        sx={{
-                          p: 1.75,
-                          borderRadius: '8px',
-                          cursor: 'pointer',
-                          borderColor: '#f1f5f9',
-                          transition: 'all 0.15s ease',
-                          '&:hover': { bgcolor: '#f8fafc', borderColor: '#cbd5e1' },
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <Box sx={{ minWidth: 0 }}>
-                            <Typography variant="subtitle2" fontWeight={700} color="#0f172a" noWrap>
-                              {schedule.title}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {schedule.equipmentName} • Срок: <strong>{formatDate(schedule.scheduledDate)}</strong>
-                            </Typography>
-                          </Box>
-                          <StatusBadge status={schedule.status} label={schedule.status} size="small" />
-                        </Box>
-                      </Paper>
-                    ))}
-                  </Stack>
-                )}
+                <Grid container spacing={2}>
+                  <Grid item xs={6} sm={3}>
+                    <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', borderRadius: '8px' }}>
+                      <Typography variant="h6" fontWeight={800} color="#15803d">
+                        {stats?.eps.active || 0}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        В работе
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', borderRadius: '8px' }}>
+                      <Typography variant="h6" fontWeight={800} color={stats?.eps.underRepair ? '#dc2626' : '#64748b'}>
+                        {stats?.eps.underRepair || 0}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        В ремонте
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', borderRadius: '8px' }}>
+                      <Typography variant="h6" fontWeight={800} color="#d97706">
+                        {stats?.eps.inStorage || 0}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        На консервации
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', borderRadius: '8px' }}>
+                      <Typography variant="h6" fontWeight={800} color="#64748b">
+                        {stats?.eps.decommissioned || 0}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Списано
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                </Grid>
               </CardContent>
             </Card>
           </Stack>
@@ -773,16 +723,6 @@ function ExecutiveDashboardContent() {
           </Stack>
         </Grid>
       </Grid>
-
-      {/* SRM Create Dialog */}
-      <CreateServiceRequestDialog
-        open={isSrmDialogOpen}
-        onClose={() => setIsSrmDialogOpen(false)}
-        onSuccess={() => {
-          setIsSrmDialogOpen(false);
-          handleRefresh();
-        }}
-      />
 
       {/* WMS Quick Wizard */}
       <WmsOperationWizardDialog

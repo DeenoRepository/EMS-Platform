@@ -60,7 +60,7 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json();
     const { moduleId, enabled } = body;
 
-    const ALLOWED_MODULES = ['eps', 'wms', 'srm', 'mro'] as const;
+    const ALLOWED_MODULES = ['eps', 'wms'] as const;
     if (!moduleId || !ALLOWED_MODULES.includes(moduleId as any) || typeof enabled !== 'boolean') {
       return NextResponse.json(
         { success: false, error: `Некорректные параметры: допустимые moduleId: ${ALLOWED_MODULES.join(', ')}` },

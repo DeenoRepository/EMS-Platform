@@ -86,7 +86,6 @@ import {
   DatePickerField,
   type LifecycleEvent,
 } from '@/components/ui';
-import { CreateServiceRequestDialog } from '@/components/srm';
 
 interface CustomFieldDef {
   id: string;
@@ -2106,13 +2105,6 @@ function EquipmentPassportContent() {
         onClose={() => setConfirmState((prev) => ({ ...prev, open: false }))}
       />
 
-      {/* Диалог создания инцидента SRM */}
-      <CreateServiceRequestDialog
-        open={openCreateSrmModal}
-        onClose={() => setOpenCreateSrmModal(false)}
-        initialEquipmentId={equipment.id}
-        onSuccess={() => fetchEquipmentAndMeta()}
-      />
     </Box>
   );
 }

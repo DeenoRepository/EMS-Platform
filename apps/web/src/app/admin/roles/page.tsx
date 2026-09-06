@@ -60,9 +60,9 @@ interface RoleItem {
 const MODULE_LABELS: Record<string, string> = {
   eps: 'EPS — Паспортизация оборудования',
   wms: 'WMS — Складской учёт',
-  srm: 'SRM — Система подачи заявок',
-  mro: 'MRO — Техническое обслуживание',
   admin: 'Администрирование системы',
+  srm: 'SRM — Система подачи заявок (Архив)',
+  mro: 'MRO — Техническое обслуживание (Архив)',
 };
 
 export default function AdminRolesPage() {

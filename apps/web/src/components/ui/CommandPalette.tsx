@@ -21,7 +21,6 @@ import SearchIcon from '@mui/icons-material/Search';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import BuildOutlinedIcon from '@mui/icons-material/BuildOutlined';
-import HubOutlinedIcon from '@mui/icons-material/HubOutlined';
 import AdminPanelSettingsOutlinedIcon from '@mui/icons-material/AdminPanelSettingsOutlined';
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import MoveToInboxIcon from '@mui/icons-material/MoveToInbox';
@@ -131,28 +130,6 @@ const COMMAND_ITEMS: CommandItem[] = [
     keywords: ['склады', 'зоны', 'ячейки', 'мол', 'ответственный'],
   },
 
-  // MRO
-  {
-    id: 'mro-root',
-    title: 'ТОиР — Графики и регламенты',
-    subtitle: 'Планово-предупредительный ремонт и обслуживание',
-    category: 'MRO',
-    icon: <BuildOutlinedIcon sx={{ fontSize: 20 }} />,
-    href: '/mro',
-    keywords: ['тоир', 'ремонт', 'то', 'ппр', 'график', 'регламент'],
-  },
-
-  // SRM
-  {
-    id: 'srm-root',
-    title: 'SRM — Сервис и заявки',
-    subtitle: 'Интеграция с Jira/ServiceDesk, SLA и поставщики',
-    category: 'SRM',
-    icon: <HubOutlinedIcon sx={{ fontSize: 20 }} />,
-    href: '/srm',
-    keywords: ['srm', 'jira', 'тикет', 'sla', 'поставщик', 'servicedesk'],
-  },
-
   // Admin
   {
     id: 'admin-users',
@@ -217,8 +194,6 @@ const COMMAND_ITEMS: CommandItem[] = [
 const CATEGORY_MAP: Record<string, { label: string; color: string; bg: string }> = {
   EPS: { label: 'Оборудование (EPS)', color: '#0284c7', bg: '#e0f2fe' },
   WMS: { label: 'Склад (WMS)', color: '#d97706', bg: '#fef3c7' },
-  MRO: { label: 'ТОиР (MRO)', color: '#059669', bg: '#d1fae5' },
-  SRM: { label: 'Заявки (SRM)', color: '#7c3aed', bg: '#ede9fe' },
   ADMIN: { label: 'Управление', color: '#475569', bg: '#f1f5f9' },
   ACTIONS: { label: 'Действия', color: '#dc2626', bg: '#fee2e2' },
 };

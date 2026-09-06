@@ -906,49 +906,12 @@ async function main() {
     ],
   });
 
-  // 8. Чек-листы и Планы ТО (MRO)
-  const checklist1 = await prisma.checklistTemplate.create({
-    data: {
-      name: 'Чек-лист регламентного ежемесячного ТО (ТО-1) центробежного насосного агрегата',
-      description: 'Контроль виброскорости (ГОСТ ИСО 10816-1), температуры узлов трения, рабочего давления и отсутствия утечек',
-      items: {
-        create: [
-          { description: 'Визуальный контроль отсутствия утечек рабочей среды через торцевое уплотнение вала', itemType: 'BOOLEAN', sortOrder: 1, isRequired: true },
-          { description: 'Замер среднеквадратичного значения виброскорости подшипникового узла (ГОСТ ИСО 10816-1, норма ≤ 2.8 мм/с)', itemType: 'NUMERIC', sortOrder: 2, isRequired: true },
-          { description: 'Замер температуры корпуса подшипникового узла пирометром (норма ≤ +75 °C)', itemType: 'NUMERIC', sortOrder: 3, isRequired: true },
-          { description: 'Контроль давления на напорном патрубке насоса по поверенному манометру (норма 16.0 ± 0.5 бар)', itemType: 'NUMERIC', sortOrder: 4, isRequired: true },
-          { description: 'Проверка момента затяжки болтовых соединений опорной плиты, фундамента и полумуфты', itemType: 'BOOLEAN', sortOrder: 5, isRequired: true },
-        ],
-      },
-    },
-  });
-
-  await prisma.maintenancePlan.create({
-    data: {
-      equipmentId: equipment1.id,
-      name: 'Ежемесячное техническое обслуживание (ТО-1)',
-      description: 'Регламентные работы по насосному агрегату',
-      frequency: MaintenanceFrequency.MONTHLY,
-      checklistId: checklist1.id,
-      schedules: {
-        create: [
-          {
-            equipmentId: equipment1.id,
-            title: 'ТО-1 Насоса охлаждающей воды',
-            scheduledDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // через 5 дней
-            status: 'PLANNED',
-          },
-        ],
-      },
-    },
-  });
-
-  // 9. Создание начального уведомления
+  // 8. Создание начального уведомления
   await prisma.notification.create({
     data: {
       userId: adminUser.id,
       title: 'Добро пожаловать в EMS!',
-      message: 'Система успешно развернута. Доступны модули EPS, WMS, SRM и MRO.',
+      message: 'Система успешно развернута. Доступны модули EPS и WMS.',
       type: 'SYSTEM',
       link: '/eps',
     },

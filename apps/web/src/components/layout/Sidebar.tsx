@@ -106,17 +106,10 @@ export default function Sidebar({
   const [wmsLowStockCount, setWmsLowStockCount] = useState<number | null>(null);
   const [wmsPendingTransfersCount, setWmsPendingTransfersCount] = useState<number | null>(null);
   const [wmsActiveInventoriesCount, setWmsActiveInventoriesCount] = useState<number | null>(null);
-  const [srmOpenCount, setSrmOpenCount] = useState<number | null>(null);
-  const [srmInProgressCount, setSrmInProgressCount] = useState<number | null>(null);
-  const [mroOverdueCount, setMroOverdueCount] = useState<number | null>(null);
-  const [mroPlannedCount, setMroPlannedCount] = useState<number | null>(null);
-
   // Expanded items in expanded sidebar mode
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
     eps: pathname.startsWith('/eps'),
     wms: pathname.startsWith('/wms'),
-    mro: pathname.startsWith('/mro'),
-    srm: pathname.startsWith('/srm'),
   });
 
   // User Profile Menu Anchor
@@ -130,20 +123,16 @@ export default function Sidebar({
   const [moduleStatus, setModuleStatus] = useState<Record<string, boolean>>({
     eps: true,
     wms: true,
-    srm: true,
-    mro: true,
   });
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [eqRes, modRes, appRes, wmsRes, srmRes, mroRes, trRes] = await Promise.allSettled([
+        const [eqRes, modRes, appRes, wmsRes, trRes] = await Promise.allSettled([
           fetch('/api/eps/equipment?pageSize=1'),
           fetch('/api/modules/status'),
           fetch('/api/eps/approvals?pageSize=1'),
           fetch('/api/wms/stats'),
-          fetch('/api/srm/stats'),
-          fetch('/api/mro/schedules'),
           fetch('/api/wms/transfers?pageSize=1'),
         ]);
 
@@ -179,29 +168,6 @@ export default function Sidebar({
           if (trJson.success && trJson.data?.counts) {
             const pendingTr = (trJson.data.counts.inbound || 0) + (trJson.data.counts.requests || 0);
             setWmsPendingTransfersCount(pendingTr || null);
-          }
-        }
-        if (srmRes.status === 'fulfilled' && srmRes.value.ok) {
-          const srmJson = await srmRes.value.json();
-          if (srmJson.success && srmJson.data) {
-            setSrmOpenCount(srmJson.data.openIssues || 0);
-            setSrmInProgressCount(srmJson.data.inProgressIssues || 0);
-          }
-        }
-        if (mroRes.status === 'fulfilled' && mroRes.value.ok) {
-          const mroJson = await mroRes.value.json();
-          if (mroJson.success && Array.isArray(mroJson.data)) {
-            const now = new Date();
-            const overdue = mroJson.data.filter(
-              (s: { status: string; scheduledDate: string }) =>
-                s.status === 'MISSED' || (s.status === 'PLANNED' && new Date(s.scheduledDate) < now)
-            ).length;
-            const planned = mroJson.data.filter(
-              (s: { status: string; scheduledDate: string }) =>
-                s.status === 'PLANNED' && new Date(s.scheduledDate) >= now
-            ).length;
-            setMroOverdueCount(overdue || null);
-            setMroPlannedCount(planned || null);
           }
         }
       } catch {
@@ -424,73 +390,6 @@ export default function Sidebar({
         },
       ],
     },
-    {
-      id: 'srm',
-      label: 'Управление инцидентами (SRM)',
-      icon: <BugReportOutlinedIcon sx={{ fontSize: 18 }} />,
-      permissions: [
-        PERMISSIONS.SRM_DASHBOARD_VIEW,
-        PERMISSIONS.SRM_REQUESTS_CREATE,
-        PERMISSIONS.SRM_REQUESTS_MANAGE,
-        PERMISSIONS.SRM_RELIABILITY_VIEW,
-      ],
-      badgeText: maintenanceStatus?.modules.srm?.enabled ? 'ТО' : undefined,
-      badgeColor: maintenanceStatus?.modules.srm?.enabled ? 'warning' : undefined,
-      badgeTooltip: maintenanceStatus?.modules.srm?.enabled ? 'Модуль SRM находится на техническом обслуживании' : undefined,
-      children: [
-        {
-          label: 'Журнал инцидентов и заявок',
-          path: '/srm',
-          icon: <FormatListBulletedIcon sx={{ fontSize: 15 }} />,
-          permissions: [PERMISSIONS.SRM_DASHBOARD_VIEW, PERMISSIONS.SRM_REQUESTS_CREATE, PERMISSIONS.SRM_REQUESTS_MANAGE],
-          badge: srmOpenCount && srmOpenCount > 0 ? srmOpenCount : null,
-          badgeColor: srmOpenCount && srmOpenCount > 0 ? 'warning' : 'default',
-          badgeTooltip: srmOpenCount && srmOpenCount > 0 ? `${srmOpenCount} активных сервисных заявок` : undefined,
-        },
-        {
-          label: 'Аналитика надежности и RAMS',
-          path: '/srm/analytics',
-          icon: <TimelineIcon sx={{ fontSize: 15 }} />,
-          permissions: [PERMISSIONS.SRM_RELIABILITY_VIEW, PERMISSIONS.SRM_REPORTS_EXPORT],
-        },
-      ],
-    },
-    {
-      id: 'mro',
-      label: 'Техническое обслуживание (MRO)',
-      icon: <BuildOutlinedIcon sx={{ fontSize: 18 }} />,
-      permissions: [
-        PERMISSIONS.MRO_SCHEDULE_VIEW,
-        PERMISSIONS.MRO_SCHEDULE_MANAGE,
-        PERMISSIONS.MRO_EXECUTION_COMPLETE,
-      ],
-      badgeText: maintenanceStatus?.modules.mro?.enabled ? 'ТО' : undefined,
-      badgeColor: maintenanceStatus?.modules.mro?.enabled ? 'warning' : undefined,
-      badgeTooltip: maintenanceStatus?.modules.mro?.enabled ? 'Модуль MRO находится на техническом обслуживании' : undefined,
-      children: [
-        {
-          label: 'График ППР и наряды на ТО',
-          path: '/mro',
-          icon: <CalendarMonthIcon sx={{ fontSize: 15 }} />,
-          permissions: [PERMISSIONS.MRO_SCHEDULE_VIEW, PERMISSIONS.MRO_SCHEDULE_MANAGE, PERMISSIONS.MRO_EXECUTION_COMPLETE],
-          badge: mroOverdueCount && mroOverdueCount > 0 ? mroOverdueCount : null,
-          badgeColor: mroOverdueCount && mroOverdueCount > 0 ? 'error' : 'default',
-          badgeTooltip: mroOverdueCount && mroOverdueCount > 0 ? `${mroOverdueCount} просроченных регламентов ТО` : undefined,
-        },
-        {
-          label: 'Технологические карты и регламенты',
-          path: '/mro/checklists',
-          icon: <ChecklistIcon sx={{ fontSize: 15 }} />,
-          permissions: [PERMISSIONS.MRO_SCHEDULE_VIEW, PERMISSIONS.MRO_SCHEDULE_MANAGE],
-        },
-        {
-          label: 'Журнал выполненных работ',
-          path: '/mro/history',
-          icon: <FactCheckOutlinedIcon sx={{ fontSize: 15 }} />,
-          permissions: [PERMISSIONS.MRO_SCHEDULE_VIEW, PERMISSIONS.MRO_EXECUTION_COMPLETE],
-        },
-      ],
-    },
   ];
 
   // Administration Section with Sub-groups
@@ -523,8 +422,6 @@ export default function Sidebar({
       children: [
         { label: 'Паспортизация оборудования (EPS)', path: '/admin/module-settings?tab=eps', icon: <BadgeOutlinedIcon sx={{ fontSize: 15 }} /> },
         { label: 'Складской учёт ТМЦ (WMS)', path: '/admin/module-settings?tab=wms', icon: <WarehouseOutlinedIcon sx={{ fontSize: 15 }} /> },
-        { label: 'Управление инцидентами (SRM)', path: '/admin/module-settings?tab=srm', icon: <BugReportOutlinedIcon sx={{ fontSize: 15 }} /> },
-        { label: 'ТО и Ремонт (MRO)', path: '/admin/module-settings?tab=mro', icon: <BuildOutlinedIcon sx={{ fontSize: 15 }} /> },
       ],
     },
     {

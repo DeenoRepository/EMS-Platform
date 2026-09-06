@@ -98,8 +98,8 @@ export default function AdminSettingsPage() {
     modules: {
       eps: { enabled: false, message: 'Модуль паспортизации оборудования (EPS) находится на техническом обслуживании.', estimatedUntil: null },
       wms: { enabled: false, message: 'Модуль складского учёта (WMS) находится на техническом обслуживании.', estimatedUntil: null },
-      srm: { enabled: false, message: 'Модуль подачи заявок (SRM) находится на техническом обслуживании.', estimatedUntil: null },
-      mro: { enabled: false, message: 'Модуль ТО и ремонта (MRO) находится на техническом обслуживании.', estimatedUntil: null },
+      srm: { enabled: false, message: '', estimatedUntil: null },
+      mro: { enabled: false, message: '', estimatedUntil: null },
     },
   });
 
@@ -389,18 +389,6 @@ export default function AdminSettingsPage() {
       name: 'Складской учёт ТМЦ (WMS)',
       desc: 'Управление складами, остатками ТМЦ, перемещениями, приходами, расходами и инвентаризацией.',
       icon: <WarehouseOutlinedIcon color="primary" sx={{ fontSize: 24 }} />,
-    },
-    {
-      id: 'srm',
-      name: 'Управление инцидентами и сервисом (SRM)',
-      desc: 'Учёт инцидентов, синхронизация с Service Desk, статистика отказов и расчет показателей надежности (MTTR / MTBF).',
-      icon: <AnalyticsOutlinedIcon color="primary" sx={{ fontSize: 24 }} />,
-    },
-    {
-      id: 'mro',
-      name: 'Техническое обслуживание и ремонт (MRO)',
-      desc: 'Графики ППР, технологические регламенты, проведение ТО и списание комплектующих.',
-      icon: <BuildOutlinedIcon color="primary" sx={{ fontSize: 24 }} />,
     },
   ];
 

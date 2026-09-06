@@ -120,7 +120,7 @@ import { Suspense } from 'react';
 
 const PRESET_COLORS = ['#0284c7', '#0f766e', '#16a34a', '#d97706', '#dc2626', '#7c3aed', '#db2777', '#475569'];
 
-const MODULE_KEYS = ['eps', 'wms', 'srm', 'mro'];
+const MODULE_KEYS = ['eps', 'wms'] as const;
 
 const MODULE_META: Record<string, { title: string; subtitle: string; breadcrumb: string; name: string }> = {
   eps: {
@@ -135,18 +135,6 @@ const MODULE_META: Record<string, { title: string; subtitle: string; breadcrumb:
     breadcrumb: 'Складской учёт (WMS)',
     name: 'Складской учёт (WMS)',
   },
-  srm: {
-    title: 'Настройки модуля — Система подачи заявок (SRM)',
-    subtitle: 'Управление параметрами синхронизации инцидентов и внешних интеграций ServiceDesk',
-    breadcrumb: 'Система подачи заявок (SRM)',
-    name: 'Система подачи заявок (SRM)',
-  },
-  mro: {
-    title: 'Настройки модуля — ТО и Ремонт (MRO)',
-    subtitle: 'Управление технологическими картами, регламентами и графиками ППР',
-    breadcrumb: 'ТО и Ремонт (MRO)',
-    name: 'ТО и Ремонт (MRO)',
-  },
 };
 
 function ModuleSettingsContent() {
@@ -159,10 +147,6 @@ function ModuleSettingsContent() {
     switch (tabParam) {
       case 'wms':
         return 1;
-      case 'srm':
-        return 2;
-      case 'mro':
-        return 3;
       default:
         return 0;
     }
@@ -173,8 +157,6 @@ function ModuleSettingsContent() {
 
   useEffect(() => {
     if (tabParam === 'wms') setActiveTab(1);
-    else if (tabParam === 'srm') setActiveTab(2);
-    else if (tabParam === 'mro') setActiveTab(3);
     else if (tabParam === 'eps') setActiveTab(0);
   }, [tabParam]);
 
@@ -513,25 +495,12 @@ function ModuleSettingsContent() {
       subtitle: 'Управление складскими комплексами, топологией ячеек адресного хранения и категориями ТМЦ',
       breadcrumb: 'Складской учёт ТМЦ (WMS)',
     },
-    {
-      title: 'Конфигурация модуля: Управление инцидентами и сервисом (SRM)',
-      subtitle: 'Интеграция с корпоративными Service Desk (Jira, Redmine, 1С), схема сопоставления полей и регламенты SLA',
-      breadcrumb: 'Управление инцидентами (SRM)',
-    },
-    {
-      title: 'Конфигурация модуля: Техническое обслуживание и ремонт (MRO)',
-      subtitle: 'Справочник планов регламентного обслуживания, стандарты технологических карт и нормативы периодичности ТО',
-      breadcrumb: 'Техническое обслуживание (MRO)',
-    },
   ];
 
   // Module Status State
-  const MODULE_KEYS = ['eps', 'wms', 'srm', 'mro'] as const;
   const [moduleStatus, setModuleStatus] = useState<Record<string, boolean>>({
     eps: true,
     wms: true,
-    srm: true,
-    mro: true,
   });
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
@@ -936,47 +905,6 @@ function ModuleSettingsContent() {
         </Card>
       )}
 
-      {/* TAB 2: SRM — Система подачи заявок */}
-      {activeTab === 2 && (
-        <Card sx={{ p: 4 }}>
-          <Typography variant="h6" fontWeight={700} gutterBottom>
-            Конфигурация системы подачи заявок и интеграций (SRM)
-          </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            Маппинг полей инцидентов, статусов завершения и правил расчета метрик MTTR / MTBF
-          </Typography>
-          <Divider sx={{ mb: 3 }} />
-
-          <Grid container spacing={2.5} sx={{ maxWidth: 720 }}>
-            <Grid item xs={12} sm={6}>
-              <TextField label="Ключ проекта Jira" defaultValue="EMS" fullWidth size="small" />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField label="Поле инвентарного номера" defaultValue="customfield_10100" fullWidth size="small" />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField label="JQL фильтр инцидентов ТОиР" defaultValue="project = EMS AND issuetype in (Bug, Incident)" fullWidth size="small" />
-            </Grid>
-          </Grid>
-        </Card>
-      )}
-
-      {/* TAB 3: MRO — ТО и Ремонт */}
-      {activeTab === 3 && (
-        <Card sx={{ p: 4 }}>
-          <Typography variant="h6" fontWeight={700} gutterBottom>
-            Шаблоны регламентов и чек-листов (MRO)
-          </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            Электронные типовые бланки проверки узлов (замеры вибрации, уровня масла, давления, температуры)
-          </Typography>
-          <Divider sx={{ mb: 3 }} />
-
-          <Button variant="contained" startIcon={<AddIcon />}>
-            Создать шаблон чек-листа
-          </Button>
-        </Card>
-      )}
 
       {/* Create / Edit Section Modal */}
       <FormDialog
