@@ -15,7 +15,9 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json ./apps/web/
 COPY packages/auth/package.json ./packages/auth/
 COPY packages/database/package.json ./packages/database/
+COPY packages/eps/package.json ./packages/eps/
 COPY packages/shared/package.json ./packages/shared/
+COPY packages/wms/package.json ./packages/wms/
 
 RUN pnpm install --frozen-lockfile
 
@@ -53,5 +55,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=20s --timeout=5s --start-period=15s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/system/health || exit 1
 
-# Synchronize database schema gracefully and start Next.js production server
-CMD ["sh", "-c", "pnpm --filter @ems/database push || true; pnpm --filter @ems/web start"]
+# Safe startup: Start Next.js production server (schema migrations handled via explicit migrations runbook)
+CMD ["pnpm", "--filter", "@ems/web", "start"]
