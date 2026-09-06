@@ -3,6 +3,7 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma, OperationType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { WarehouseService } from '@ems/wms';
 
 export const dynamic = 'force-dynamic';
 
@@ -163,202 +164,21 @@ export async function POST(req: NextRequest) {
       return forbiddenResponse(`Вы не являетесь ответственным лицом за склад "${warehouse.name}". Выполнение операций разрешено только назначенному материально ответственному лицу.`);
     }
 
-    // Выполняем транзакцию изменения остатков с жестким контролем
-    const lowStockAlerts: { nomenclatureName: string; currentQty: number; minStock: number }[] = [];
-
-    const finalCounterparty =
-      counterparty?.trim() ||
-      (type === 'ISSUE_EMPLOYEE' && recipientName?.trim() ? `Сотрудник: ${recipientName.trim()}` : null);
-
-    const operation = await prisma.$transaction(async (tx) => {
-      // 1. Проверяем остатки при списании и перемещении
-      if (isIssue || type === 'TRANSFER') {
-        for (const item of items) {
-          if (item.quantity <= 0) {
-            throw new Error('Количество позиции должно быть больше нуля');
-          }
-
-          const stock = await tx.stockItem.findUnique({
-            where: {
-              warehouseId_nomenclatureId: {
-                warehouseId,
-                nomenclatureId: item.nomenclatureId,
-              },
-            },
-            include: { nomenclature: true },
-          });
-
-          const currentQty = stock ? Number(stock.quantity) : 0;
-          if (currentQty < item.quantity) {
-            const nomName = stock?.nomenclature.name || 'ТМЦ';
-            throw new Error(`Недостаточно остатка для "${nomName}". Доступно на складе: ${currentQty}, требуется: ${item.quantity}`);
-          }
-        }
-      }
-
-      // 2. Создаем запись операции (документ опционален)
-      const op = await tx.stockOperation.create({
-        data: {
-          warehouseId,
-          type,
-          counterparty: finalCounterparty,
-          document: document?.trim() || null,
-          comment: comment?.trim() || (type === 'TRANSFER' ? (targetWarehouseName ? `Перемещение на склад "${targetWarehouseName}"` : `Перемещение на склад ID ${targetWarehouseId}`) : null),
-          createdById: user.userId,
-          items: {
-            create: items.map((i) => ({
-              nomenclatureId: i.nomenclatureId,
-              quantity: i.quantity,
-              equipmentId: i.equipmentId || (type === 'ISSUE_WRITE_OFF' && equipmentId ? equipmentId : null),
-            })),
-          },
-        },
-        include: {
-          items: {
-            include: { nomenclature: true },
-          },
-        },
-      });
-
-      // 3. Обновляем остатки
-      for (const item of items) {
-        const qtyNum = Number(item.quantity);
-
-        if (type === 'RECEIPT') {
-          await tx.stockItem.upsert({
-            where: {
-              warehouseId_nomenclatureId: {
-                warehouseId,
-                nomenclatureId: item.nomenclatureId,
-              },
-            },
-            update: {
-              quantity: { increment: qtyNum },
-              ...(item.cellId ? { cellId: item.cellId } : {}),
-            },
-            create: {
-              warehouseId,
-              nomenclatureId: item.nomenclatureId,
-              quantity: qtyNum,
-              cellId: item.cellId || null,
-            },
-          });
-
-          // Связь запчасти с оборудованием (EPS) при указании
-          if (item.equipmentId) {
-            await tx.equipmentSparePart.upsert({
-              where: {
-                equipmentId_nomenclatureId: {
-                  equipmentId: item.equipmentId,
-                  nomenclatureId: item.nomenclatureId,
-                },
-              },
-              update: {},
-              create: {
-                equipmentId: item.equipmentId,
-                nomenclatureId: item.nomenclatureId,
-              },
-            });
-          }
-        } else if (isIssue) {
-          const updatedStock = await tx.stockItem.update({
-            where: {
-              warehouseId_nomenclatureId: {
-                warehouseId,
-                nomenclatureId: item.nomenclatureId,
-              },
-            },
-            data: {
-              quantity: { decrement: qtyNum },
-            },
-            include: { nomenclature: true },
-          });
-
-          const remainingQty = Number(updatedStock.quantity);
-          if (remainingQty < 0) {
-            throw new Error(`Недостаточно остатка для "${updatedStock.nomenclature.name}". Доступный остаток исчерпан.`);
-          }
-
-          // Проверка на минимальный остаток
-          const minStock = updatedStock.nomenclature.minStock !== null ? Number(updatedStock.nomenclature.minStock) : null;
-          if (minStock !== null && remainingQty <= minStock) {
-            lowStockAlerts.push({
-              nomenclatureName: updatedStock.nomenclature.name,
-              currentQty: remainingQty,
-              minStock,
-            });
-          }
-        } else if (type === 'TRANSFER' && targetWarehouseId) {
-          // Списание с исходного склада
-          const updatedStock = await tx.stockItem.update({
-            where: {
-              warehouseId_nomenclatureId: {
-                warehouseId,
-                nomenclatureId: item.nomenclatureId,
-              },
-            },
-            data: {
-              quantity: { decrement: qtyNum },
-            },
-            include: { nomenclature: true },
-          });
-
-          const remainingQty = Number(updatedStock.quantity);
-          if (remainingQty < 0) {
-            throw new Error(`Недостаточно остатка для перемещения "${updatedStock.nomenclature.name}". Доступный остаток исчерпан.`);
-          }
-
-          // Зачисление на целевой склад
-          await tx.stockItem.upsert({
-            where: {
-              warehouseId_nomenclatureId: {
-                warehouseId: targetWarehouseId,
-                nomenclatureId: item.nomenclatureId,
-              },
-            },
-            update: {
-              quantity: { increment: qtyNum },
-            },
-            create: {
-              warehouseId: targetWarehouseId,
-              nomenclatureId: item.nomenclatureId,
-              quantity: qtyNum,
-            },
-          });
-
-          const minStock = updatedStock.nomenclature.minStock !== null ? Number(updatedStock.nomenclature.minStock) : null;
-          if (minStock !== null && remainingQty <= minStock) {
-            lowStockAlerts.push({
-              nomenclatureName: updatedStock.nomenclature.name,
-              currentQty: remainingQty,
-              minStock,
-            });
-          }
-        }
-      }
-
-      return op;
+    // Выполняем транзакцию изменения остатков через изолированный сервис WMS
+    const operation = await WarehouseService.executeOperation({
+      warehouseId,
+      targetWarehouseId,
+      type,
+      counterparty,
+      recipientName,
+      equipmentId,
+      document,
+      comment,
+      items,
+      userId: user.userId,
     });
 
-    // 4. Генерация системных уведомлений о дефиците (LOW_STOCK)
-    if (lowStockAlerts.length > 0) {
-      // Отправляем уведомление текущему пользователю и администраторам
-      const alertMessages = lowStockAlerts
-        .map((a) => `"${a.nomenclatureName}": осталось ${a.currentQty} (мин. ${a.minStock})`)
-        .join('; ');
-
-      await prisma.notification.create({
-        data: {
-          userId: user.userId,
-          title: 'Внимание: Достигнут минимальный остаток ТМЦ',
-          message: `На складе снизился остаток: ${alertMessages}`,
-          type: 'LOW_STOCK',
-          link: '/wms/stock?lowStockOnly=true',
-        },
-      });
-    }
-
-    // 5. Логирование аудита
+    // 4. Логирование аудита
     await logAuditEvent({
       userId: user.userId,
       action: 'CREATE',
