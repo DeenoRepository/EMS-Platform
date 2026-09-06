@@ -3,6 +3,7 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma, EquipmentStatus } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { EquipmentService } from '@ems/eps';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -18,65 +19,15 @@ export async function GET(
 
     const { id } = params;
 
-    const equipment = await prisma.equipment.findUnique({
-      where: { id },
-      include: {
-        tags: { include: { tag: true } },
-        photos: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
-        documents: {
-          include: { uploadedBy: { select: { displayName: true } } },
-          orderBy: { createdAt: 'desc' },
-        },
-        spareParts: {
-          include: {
-            nomenclature: {
-              include: {
-                stockItems: {
-                  include: { warehouse: true },
-                },
-              },
-            },
-          },
-        },
-        maintenancePlans: {
-          include: {
-            checklist: true,
-            schedules: {
-              orderBy: { scheduledDate: 'desc' },
-              take: 5,
-            },
-          },
-        },
-        createdBy: {
-          select: { displayName: true, ldapLogin: true },
-        },
-        approvals: {
-          include: {
-            requester: { select: { displayName: true, ldapLogin: true } },
-            reviewer: { select: { displayName: true, ldapLogin: true } },
-          },
-          orderBy: { createdAt: 'desc' },
-        },
-      },
-    });
+    const equipment = await EquipmentService.getEquipmentPassport(id);
 
     if (!equipment) {
       return NextResponse.json({ success: false, error: 'Оборудование не найдено' }, { status: 404 });
     }
 
-    // Загрузка Jira-тикетов из кэша (если есть)
-    const jiraIssues = await prisma.jiraIssueCache.findMany({
-      where: { equipmentId: id },
-      orderBy: { createdDate: 'desc' },
-      take: 10,
-    });
-
     return NextResponse.json({
       success: true,
-      data: {
-        ...equipment,
-        jiraIssues,
-      },
+      data: equipment,
     });
   } catch (error: unknown) {
     console.error('Ошибка /api/eps/equipment/[id]:', error);
