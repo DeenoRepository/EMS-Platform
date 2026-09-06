@@ -119,4 +119,42 @@ describe('Architecture Boundary & Dependency Enforcement Suite', () => {
 
     assert.deepStrictEqual(deepImports, [], 'WMS package has forbidden deep imports into @ems/eps internals');
   });
+
+  test('Client UI components and client pages must never import @ems/database directly', () => {
+    const webSrc = join(process.cwd(), 'apps', 'web', 'src');
+    const violations: { file: string; line: string }[] = [];
+
+    function checkClientDir(dir: string) {
+      const entries = readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.name === 'node_modules' || entry.name === '.next' || entry.name === 'dist') continue;
+        const full = join(dir, entry.name);
+        if (entry.isDirectory()) {
+          checkClientDir(full);
+        } else if (entry.isFile() && (entry.name.endsWith('.tsx') || entry.name.endsWith('.ts'))) {
+          const content = readFileSync(full, 'utf-8');
+          const isClientFile = full.includes('components') || content.includes("'use client'") || content.includes('"use client"');
+          if (isClientFile) {
+            const lines = content.split('\n');
+            lines.forEach((line: string, idx: number) => {
+              if (
+                (line.includes('from ') || line.includes('import(')) &&
+                line.includes('@ems/database')
+              ) {
+                violations.push({ file: full, line: `Line ${idx + 1}: ${line.trim()}` });
+              }
+            });
+          }
+        }
+      }
+    }
+
+    checkClientDir(webSrc);
+
+    assert.deepStrictEqual(
+      violations,
+      [],
+      `Found forbidden imports of @ems/database in client-side files:\n${violations.map((v) => `${v.file}: ${v.line}`).join('\n')}`
+    );
+  });
 });
