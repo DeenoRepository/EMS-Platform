@@ -3,6 +3,7 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma, InventoryStatus } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { WarehouseService } from '@ems/wms';
 
 export const dynamic = 'force-dynamic';
 
@@ -104,89 +105,11 @@ export async function PATCH(
     };
 
     if (status === 'COMPLETED') {
-      let discrepanciesCount = 0;
-
-      await prisma.$transaction(async (tx) => {
-        // 1. Обновляем строки факта если переданы
-        if (Array.isArray(items)) {
-          for (const item of items) {
-            const existingItem = currentInventory.items.find((i) => i.id === item.id);
-            if (existingItem) {
-              const actual = Number(item.actualQty);
-              const expected = Number(existingItem.expectedQty);
-              const diff = actual - expected;
-
-              await tx.inventoryItem.update({
-                where: { id: item.id },
-                data: {
-                  actualQty: actual,
-                  diffQty: diff,
-                  comment: item.comment !== undefined ? item.comment : undefined,
-                },
-              });
-            }
-          }
-        }
-
-        // 2. Перечитываем актуальные позиции инвентаризации в рамках транзакции
-        const refreshedItems = await tx.inventoryItem.findMany({
-          where: { inventoryId: id },
-          include: { nomenclature: true },
-        });
-
-        const discrepancyItems = refreshedItems.filter((i) => i.diffQty !== null && Number(i.diffQty) !== 0);
-        discrepanciesCount = discrepancyItems.length;
-
-        // Если есть расхождения — создаем операцию корректировки
-        if (discrepancyItems.length > 0) {
-          await tx.stockOperation.create({
-            data: {
-              warehouseId: currentInventory.warehouseId,
-              type: 'ADJUSTMENT',
-              document: `Акт инвентаризации № ${id.slice(-6).toUpperCase()}`,
-              comment: `Автоматическая корректировка по результатам инвентаризации`,
-              createdById: user.userId,
-              items: {
-                create: discrepancyItems.map((item) => ({
-                  nomenclatureId: item.nomenclatureId,
-                  quantity: Math.abs(Number(item.diffQty)),
-                })),
-              },
-            },
-          });
-
-          // Обновляем остатки до фактических значений
-          for (const item of refreshedItems) {
-            if (item.actualQty !== null) {
-              await tx.stockItem.upsert({
-                where: {
-                  warehouseId_nomenclatureId: {
-                    warehouseId: currentInventory.warehouseId,
-                    nomenclatureId: item.nomenclatureId,
-                  },
-                },
-                update: {
-                  quantity: item.actualQty,
-                },
-                create: {
-                  warehouseId: currentInventory.warehouseId,
-                  nomenclatureId: item.nomenclatureId,
-                  quantity: item.actualQty,
-                },
-              });
-            }
-          }
-        }
-
-        // Закрываем акт инвентаризации
-        await tx.inventory.update({
-          where: { id },
-          data: {
-            status: InventoryStatus.COMPLETED,
-            closedAt: new Date(),
-            comment: comment !== undefined ? comment : undefined,
-          },
-        });
+      const { discrepanciesCount } = await WarehouseService.completeInventory({
+        inventoryId: id,
+        userId: user.userId,
+        comment,
+        items,
       });
 
       await logAuditEvent({

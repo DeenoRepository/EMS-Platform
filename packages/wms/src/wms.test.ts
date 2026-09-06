@@ -36,6 +36,24 @@ describe('Modular WMS Domain Package (@ems/wms)', () => {
       assert.strictEqual(isDeductingOperation(OperationType.ISSUE_WRITE_OFF), true);
       assert.strictEqual(isDeductingOperation(OperationType.TRANSFER), true);
     });
+
+    test('low stock notification threshold triggers when balance falls to or below minStock', () => {
+      const atThreshold = calculateStockIssue(10, 5, 5);
+      assert.strictEqual(atThreshold.newQuantity, 5);
+      assert.strictEqual(atThreshold.isLowStock, true);
+
+      const belowThreshold = calculateStockIssue(10, 8, 5);
+      assert.strictEqual(belowThreshold.newQuantity, 2);
+      assert.strictEqual(belowThreshold.isLowStock, true);
+
+      const aboveThreshold = calculateStockIssue(10, 2, 5);
+      assert.strictEqual(aboveThreshold.newQuantity, 8);
+      assert.strictEqual(aboveThreshold.isLowStock, false);
+
+      const noMinStock = calculateStockIssue(10, 8, null);
+      assert.strictEqual(noMinStock.newQuantity, 2);
+      assert.strictEqual(noMinStock.isLowStock, false);
+    });
   });
 
   // ─── 2. Stock Transfer State Machine ───

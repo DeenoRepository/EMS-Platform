@@ -3,6 +3,7 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma, StockTransferStatus } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { WarehouseService } from '@ems/wms';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,56 +49,10 @@ export async function POST(
       );
     }
 
-    // Транзакционно проверяем и списываем ТМЦ со склада-отправителя
-    const updatedTransfer = await prisma.$transaction(async (tx) => {
-      for (const item of transfer.items) {
-        const qtyToTransfer = Number(item.quantity);
-        const stock = await tx.stockItem.findUnique({
-          where: {
-            warehouseId_nomenclatureId: {
-              warehouseId: transfer.sourceWarehouseId,
-              nomenclatureId: item.nomenclatureId,
-            },
-          },
-          include: { nomenclature: { select: { name: true, unit: true } } },
-        });
-
-        const availableQty = stock ? Number(stock.quantity) : 0;
-        if (availableQty < qtyToTransfer) {
-          const nomName = item.nomenclature?.name || stock?.nomenclature?.name || 'ТМЦ';
-          const nomUnit = item.nomenclature?.unit || stock?.nomenclature?.unit || 'шт';
-          throw new Error(
-            `Недостаточно остатка на складе "${transfer.sourceWarehouse.name}" для позиции "${nomName}". Доступно: ${availableQty} ${nomUnit}, требуется: ${qtyToTransfer} ${nomUnit}`
-          );
-        }
-
-        // Списываем со склада-отправителя
-        const updated = await tx.stockItem.update({
-          where: { id: stock!.id },
-          data: { quantity: availableQty - qtyToTransfer },
-        });
-
-        if (Number(updated.quantity) < 0) {
-          throw new Error(
-            `Остаток для "${item.nomenclature?.name || 'ТМЦ'}" на складе "${transfer.sourceWarehouse.name}" не может быть отрицательным.`
-          );
-        }
-      }
-
-      // Переводим статус в IN_TRANSIT
-      return tx.stockTransfer.update({
-        where: { id: transferId },
-        data: {
-          status: StockTransferStatus.IN_TRANSIT,
-          dispatchedAt: new Date(),
-          dispatchedById: user.userId,
-        },
-        include: {
-          sourceWarehouse: true,
-          targetWarehouse: true,
-          items: { include: { nomenclature: true } },
-        },
-      });
+    // Транзакционно проверяем и списываем ТМЦ со склада-отправителя через сервис WMS
+    const updatedTransfer = await WarehouseService.dispatchStockTransfer({
+      transferId,
+      userId: user.userId,
     });
 
     await logAuditEvent({

@@ -1,16 +1,33 @@
-import { prisma, OperationType, StockTransferStatus, InventoryStatus } from '@ems/database';
+import { prisma, Prisma, OperationType, StockTransferStatus, InventoryStatus } from '@ems/database';
 import { calculateStockIssue, validatePositiveQuantity, isDeductingOperation } from '../domain/stock-engine';
 import { dispatchTransfer, receiveTransfer, rejectTransfer } from '../domain/transfer-engine';
 import { reconcileInventoryCounts } from '../domain/inventory-engine';
-import { CreateStockOperationDto, StockTransferDispatchDto, StockTransferReceiveDto, StockTransferRejectDto, InventoryCompleteDto } from '../types';
+import {
+  CreateStockOperationDto,
+  StockTransferDispatchDto,
+  StockTransferReceiveDto,
+  StockTransferRejectDto,
+  InventoryCompleteDto,
+} from '../types';
 
 export class WarehouseService {
   /**
    * Executes a stock operation (receipt, issue, transfer issue, write-off)
-   * within an atomic database transaction.
+   * within an atomic database transaction and generates non-blocking low stock notifications.
    */
   static async executeOperation(dto: CreateStockOperationDto) {
-    const { warehouseId, targetWarehouseId, type, counterparty, recipientName, equipmentId, document, comment, items, userId } = dto;
+    const {
+      warehouseId,
+      targetWarehouseId,
+      type,
+      counterparty,
+      recipientName,
+      equipmentId,
+      document,
+      comment,
+      items,
+      userId,
+    } = dto;
 
     if (!warehouseId) throw new Error('Укажите склад операции');
     if (!type || !(type in OperationType)) throw new Error('Укажите корректный тип операции');
@@ -37,9 +54,11 @@ export class WarehouseService {
       counterparty?.trim() ||
       (type === OperationType.ISSUE_EMPLOYEE && recipientName?.trim() ? `Сотрудник: ${recipientName.trim()}` : null);
 
-    return await prisma.$transaction(async (tx: any) => {
+    const lowStockAlerts: { nomenclatureName: string; currentQty: number; minStock: number }[] = [];
+
+    const op = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Validate stocks and deduct preconditions
-      if (isIssue) {
+      if (isIssue || type === OperationType.TRANSFER) {
         for (const item of items) {
           const validQty = validatePositiveQuantity(item.quantity);
           const stock = await tx.stockItem.findUnique({
@@ -58,13 +77,15 @@ export class WarehouseService {
       }
 
       // 2. Create StockOperation record
-      const op = await tx.stockOperation.create({
+      const operation = await tx.stockOperation.create({
         data: {
           warehouseId,
           type,
           counterparty: finalCounterparty,
           document: document?.trim() || null,
-          comment: comment?.trim() || (type === OperationType.TRANSFER ? `Перемещение на склад "${targetWarehouseName}"` : null),
+          comment:
+            comment?.trim() ||
+            (type === OperationType.TRANSFER ? (targetWarehouseName ? `Перемещение на склад "${targetWarehouseName}"` : `Перемещение на склад ID ${targetWarehouseId}`) : null),
           createdById: userId,
           items: {
             create: items.map((i) => ({
@@ -135,7 +156,8 @@ export class WarehouseService {
             include: { nomenclature: true },
           });
 
-          if (Number(updatedStock.quantity) < 0) {
+          const remainingQty = Number(updatedStock.quantity);
+          if (remainingQty < 0) {
             throw new Error(`Недостаточно остатка для "${updatedStock.nomenclature.name}". Исчерпан.`);
           }
 
@@ -155,6 +177,15 @@ export class WarehouseService {
               quantity: qtyNum,
             },
           });
+
+          const minStock = updatedStock.nomenclature.minStock !== null ? Number(updatedStock.nomenclature.minStock) : null;
+          if (minStock !== null && remainingQty <= minStock) {
+            lowStockAlerts.push({
+              nomenclatureName: updatedStock.nomenclature.name,
+              currentQty: remainingQty,
+              minStock,
+            });
+          }
         } else if (isIssue) {
           const updatedStock = await tx.stockItem.update({
             where: {
@@ -169,14 +200,47 @@ export class WarehouseService {
             include: { nomenclature: true },
           });
 
-          if (Number(updatedStock.quantity) < 0) {
+          const remainingQty = Number(updatedStock.quantity);
+          if (remainingQty < 0) {
             throw new Error(`Недостаточно остатка для "${updatedStock.nomenclature.name}". Исчерпан.`);
+          }
+
+          const minStock = updatedStock.nomenclature.minStock !== null ? Number(updatedStock.nomenclature.minStock) : null;
+          if (minStock !== null && remainingQty <= minStock) {
+            lowStockAlerts.push({
+              nomenclatureName: updatedStock.nomenclature.name,
+              currentQty: remainingQty,
+              minStock,
+            });
           }
         }
       }
 
-      return op;
+      return operation;
     });
+
+    // 4. Non-blocking generation of LOW_STOCK notifications
+    if (lowStockAlerts.length > 0) {
+      try {
+        const alertMessages = lowStockAlerts
+          .map((a) => `"${a.nomenclatureName}": осталось ${a.currentQty} (мин. ${a.minStock})`)
+          .join('; ');
+
+        await prisma.notification.create({
+          data: {
+            userId,
+            title: 'Внимание: Достигнут минимальный остаток ТМЦ',
+            message: `На складе снизился остаток: ${alertMessages}`,
+            type: 'LOW_STOCK',
+            link: '/wms/stock?lowStockOnly=true',
+          },
+        });
+      } catch (notifErr) {
+        console.warn('Non-blocking low stock notification error:', notifErr);
+      }
+    }
+
+    return op;
   }
 
   /**
@@ -186,17 +250,29 @@ export class WarehouseService {
     const { transferId, userId } = dto;
     const transfer = await prisma.stockTransfer.findUnique({
       where: { id: transferId },
-      include: { items: true },
+      include: {
+        sourceWarehouse: true,
+        targetWarehouse: true,
+        items: { include: { nomenclature: true } },
+      },
     });
 
     if (!transfer) throw new Error('Перемещение не найдено');
     if (transfer.status !== StockTransferStatus.REQUESTED) {
-      throw new Error(`Перемещение уже находится в статусе ${transfer.status}`);
+      throw new Error(`Перемещение находится в статусе "${transfer.status}" и не может быть отгружено`);
     }
 
-    return await prisma.$transaction(async (tx: any) => {
-      // Deduct stock from source warehouse
+    return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const current = await tx.stockTransfer.findUnique({
+        where: { id: transferId },
+        select: { status: true },
+      });
+      if (!current || current.status !== StockTransferStatus.REQUESTED) {
+        throw new Error('Перемещение уже находится в другом статусе или было отгружено');
+      }
+
       for (const item of transfer.items) {
+        const itemQty = Number(item.quantity);
         const stock = await tx.stockItem.findUnique({
           where: {
             warehouseId_nomenclatureId: {
@@ -204,24 +280,28 @@ export class WarehouseService {
               nomenclatureId: item.nomenclatureId,
             },
           },
-          include: { nomenclature: true },
+          include: { nomenclature: { select: { name: true, unit: true } } },
         });
 
         const currentQty = stock ? Number(stock.quantity) : 0;
-        const itemQty = Number(item.quantity);
         if (currentQty < itemQty) {
-          throw new Error(`Недостаточно остатка для "${stock?.nomenclature.name || 'ТМЦ'}". Доступно: ${currentQty}, требуется: ${itemQty}`);
+          const nomName = item.nomenclature?.name || stock?.nomenclature?.name || 'ТМЦ';
+          const nomUnit = item.nomenclature?.unit || stock?.nomenclature?.unit || 'шт';
+          throw new Error(
+            `Недостаточно остатка на складе "${transfer.sourceWarehouse.name}" для позиции "${nomName}". Доступно: ${currentQty} ${nomUnit}, требуется: ${itemQty} ${nomUnit}`
+          );
         }
 
-        await tx.stockItem.update({
-          where: {
-            warehouseId_nomenclatureId: {
-              warehouseId: transfer.sourceWarehouseId,
-              nomenclatureId: item.nomenclatureId,
-            },
-          },
-          data: { quantity: { decrement: itemQty } },
+        const updated = await tx.stockItem.update({
+          where: { id: stock!.id },
+          data: { quantity: currentQty - itemQty },
         });
+
+        if (Number(updated.quantity) < 0) {
+          throw new Error(
+            `Остаток для "${item.nomenclature?.name || 'ТМЦ'}" на складе "${transfer.sourceWarehouse.name}" не может быть отрицательным.`
+          );
+        }
       }
 
       return await tx.stockTransfer.update({
@@ -229,6 +309,12 @@ export class WarehouseService {
         data: {
           status: StockTransferStatus.IN_TRANSIT,
           dispatchedAt: new Date(),
+          dispatchedById: userId,
+        },
+        include: {
+          sourceWarehouse: true,
+          targetWarehouse: true,
+          items: { include: { nomenclature: true } },
         },
       });
     });
@@ -238,10 +324,15 @@ export class WarehouseService {
    * Receives a transfer at destination (changes status to COMPLETED, increments target warehouse stock)
    */
   static async receiveStockTransfer(dto: StockTransferReceiveDto) {
-    const { transferId, userId } = dto;
+    const { transferId, userId, cellAllocations = [] } = dto;
     const transfer = await prisma.stockTransfer.findUnique({
       where: { id: transferId },
-      include: { items: true },
+      include: {
+        sourceWarehouse: true,
+        targetWarehouse: true,
+        createdBy: { select: { id: true, displayName: true } },
+        items: { include: { nomenclature: true } },
+      },
     });
 
     if (!transfer) throw new Error('Перемещение не найдено');
@@ -249,25 +340,74 @@ export class WarehouseService {
       throw new Error(`Принять можно только перемещение в пути (IN_TRANSIT). Текущий статус: ${transfer.status}`);
     }
 
-    return await prisma.$transaction(async (tx: any) => {
-      // Add stock to target warehouse
+    return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const current = await tx.stockTransfer.findUnique({
+        where: { id: transferId },
+        select: { status: true },
+      });
+      if (!current || current.status !== StockTransferStatus.IN_TRANSIT) {
+        throw new Error('Перемещение уже принято или статус был изменен');
+      }
+
       for (const item of transfer.items) {
-        const itemQty = Number(item.quantity);
-        await tx.stockItem.upsert({
+        const qtyToReceive = Number(item.quantity);
+        const cellAlloc = cellAllocations.find((c) => c.itemId === item.id);
+        const targetCellId = cellAlloc?.targetCellId || item.targetCellId || null;
+
+        if (targetCellId) {
+          await tx.stockTransferItem.update({
+            where: { id: item.id },
+            data: { targetCellId },
+          });
+        }
+
+        const existingStock = await tx.stockItem.findUnique({
           where: {
             warehouseId_nomenclatureId: {
               warehouseId: transfer.targetWarehouseId,
               nomenclatureId: item.nomenclatureId,
             },
           },
-          update: { quantity: { increment: itemQty } },
-          create: {
-            warehouseId: transfer.targetWarehouseId,
-            nomenclatureId: item.nomenclatureId,
-            quantity: itemQty,
-          },
         });
+
+        if (existingStock) {
+          await tx.stockItem.update({
+            where: { id: existingStock.id },
+            data: {
+              quantity: Number(existingStock.quantity) + qtyToReceive,
+              cellId: targetCellId || existingStock.cellId,
+            },
+          });
+        } else {
+          await tx.stockItem.create({
+            data: {
+              warehouseId: transfer.targetWarehouseId,
+              nomenclatureId: item.nomenclatureId,
+              quantity: qtyToReceive,
+              cellId: targetCellId || null,
+            },
+          });
+        }
       }
+
+      // Создаем запись в журнале складских операций StockOperation
+      await tx.stockOperation.create({
+        data: {
+          warehouseId: transfer.targetWarehouseId,
+          type: OperationType.TRANSFER,
+          date: new Date(),
+          counterparty: `Склад-отправитель: ${transfer.sourceWarehouse.name} (${transfer.sourceWarehouse.code})`,
+          document: `Перемещение № ${transfer.transferNumber}`,
+          comment: `Принято по межскладскому перемещению. Инициатор: ${(transfer as any).createdBy?.displayName || 'Инициатор перемещения'}${transfer.requestReason ? `. Основание: ${transfer.requestReason}` : ''}`,
+          createdById: userId,
+          items: {
+            create: transfer.items.map((it) => ({
+              nomenclatureId: it.nomenclatureId,
+              quantity: it.quantity,
+            })),
+          },
+        },
+      });
 
       return await tx.stockTransfer.update({
         where: { id: transferId },
@@ -275,6 +415,11 @@ export class WarehouseService {
           status: StockTransferStatus.COMPLETED,
           receivedAt: new Date(),
           receivedById: userId,
+        },
+        include: {
+          sourceWarehouse: true,
+          targetWarehouse: true,
+          items: { include: { nomenclature: true } },
         },
       });
     });
@@ -285,38 +430,60 @@ export class WarehouseService {
    */
   static async rejectStockTransfer(dto: StockTransferRejectDto) {
     const { transferId, userId, reason } = dto;
+    if (!reason || reason.trim().length < 3) {
+      throw new Error('Укажите причину / основание отклонения (не менее 3 символов)');
+    }
+
     const transfer = await prisma.stockTransfer.findUnique({
       where: { id: transferId },
-      include: { items: true },
+      include: {
+        sourceWarehouse: true,
+        targetWarehouse: true,
+        items: { include: { nomenclature: true } },
+      },
     });
 
     if (!transfer) throw new Error('Перемещение не найдено');
-    if (transfer.status === StockTransferStatus.COMPLETED) {
-      throw new Error('Нельзя отклонить уже завершенное перемещение');
-    }
-    if (transfer.status === StockTransferStatus.REJECTED) {
-      throw new Error('Перемещение уже отклонено');
+    if (transfer.status !== StockTransferStatus.IN_TRANSIT && transfer.status !== StockTransferStatus.REQUESTED) {
+      throw new Error(`Перемещение в статусе "${transfer.status}" не может быть отклонено`);
     }
 
-    return await prisma.$transaction(async (tx: any) => {
+    return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const current = await tx.stockTransfer.findUnique({
+        where: { id: transferId },
+        select: { status: true },
+      });
+      if (!current || (current.status !== StockTransferStatus.IN_TRANSIT && current.status !== StockTransferStatus.REQUESTED)) {
+        throw new Error('Перемещение уже изменило статус или было обработано');
+      }
+
       // If already in transit, goods left source warehouse; return them back
       if (transfer.status === StockTransferStatus.IN_TRANSIT) {
         for (const item of transfer.items) {
-          const itemQty = Number(item.quantity);
-          await tx.stockItem.upsert({
+          const qtyToRestore = Number(item.quantity);
+          const stock = await tx.stockItem.findUnique({
             where: {
               warehouseId_nomenclatureId: {
                 warehouseId: transfer.sourceWarehouseId,
                 nomenclatureId: item.nomenclatureId,
               },
             },
-            update: { quantity: { increment: itemQty } },
-            create: {
-              warehouseId: transfer.sourceWarehouseId,
-              nomenclatureId: item.nomenclatureId,
-              quantity: itemQty,
-            },
           });
+
+          if (stock) {
+            await tx.stockItem.update({
+              where: { id: stock.id },
+              data: { quantity: Number(stock.quantity) + qtyToRestore },
+            });
+          } else {
+            await tx.stockItem.create({
+              data: {
+                warehouseId: transfer.sourceWarehouseId,
+                nomenclatureId: item.nomenclatureId,
+                quantity: qtyToRestore,
+              },
+            });
+          }
         }
       }
 
@@ -324,7 +491,14 @@ export class WarehouseService {
         where: { id: transferId },
         data: {
           status: StockTransferStatus.REJECTED,
-          rejectionReason: reason?.trim() || null,
+          rejectedAt: new Date(),
+          rejectedById: userId,
+          rejectionReason: reason.trim(),
+        },
+        include: {
+          sourceWarehouse: true,
+          targetWarehouse: true,
+          items: { include: { nomenclature: true } },
         },
       });
     });
@@ -334,54 +508,105 @@ export class WarehouseService {
    * Completes an inventory count sheet, calculates discrepancies, and adjusts balances.
    */
   static async completeInventory(dto: InventoryCompleteDto) {
-    const { inventoryId, userId } = dto;
+    const { inventoryId, userId, comment, items } = dto;
     const inventory = await prisma.inventory.findUnique({
       where: { id: inventoryId },
-      include: { items: true, warehouse: true },
+      include: {
+        warehouse: true,
+        items: { include: { nomenclature: true } },
+      },
     });
 
-    if (!inventory) throw new Error('Инвентаризация не найдена');
+    if (!inventory) throw new Error('Акт инвентаризации не найден');
     if (inventory.status === InventoryStatus.COMPLETED) {
-      throw new Error('Инвентаризация уже завершена');
+      throw new Error('Данная инвентаризация уже завершена и закрыта для изменений');
     }
 
-    const { discrepancies } = reconcileInventoryCounts(
-      inventory.items.map((i: any) => ({
-        id: i.id,
-        nomenclatureId: i.nomenclatureId,
-        expectedQty: Number(i.expectedQuantity),
-        actualQty: Number(i.actualQuantity ?? i.expectedQuantity),
-      }))
-    );
+    return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      // 1. Update items if provided
+      if (Array.isArray(items)) {
+        for (const item of items) {
+          const existingItem = inventory.items.find((i: { id: string }) => i.id === item.id);
+          if (existingItem) {
+            const actual = Number(item.actualQty);
+            const expected = Number((existingItem as any).expectedQty);
+            const diff = actual - expected;
 
-    return await prisma.$transaction(async (tx: any) => {
-      // Apply discrepancies to stockItem table
-      for (const disc of discrepancies) {
-        if (disc.diffQty !== 0) {
-          await tx.stockItem.upsert({
-            where: {
-              warehouseId_nomenclatureId: {
-                warehouseId: inventory.warehouseId,
-                nomenclatureId: disc.nomenclatureId,
+            await tx.inventoryItem.update({
+              where: { id: item.id },
+              data: {
+                actualQty: actual,
+                diffQty: diff,
+                comment: item.comment !== undefined ? item.comment : undefined,
               },
-            },
-            update: { quantity: disc.actualQty },
-            create: {
-              warehouseId: inventory.warehouseId,
-              nomenclatureId: disc.nomenclatureId,
-              quantity: disc.actualQty,
-            },
-          });
+            });
+          }
         }
       }
 
-      return await tx.inventory.update({
+      // 2. Read refreshed items
+      const refreshedItems = await tx.inventoryItem.findMany({
+        where: { inventoryId },
+        include: { nomenclature: true },
+      });
+
+      const discrepancyItems = refreshedItems.filter((i: { diffQty: any }) => i.diffQty !== null && Number(i.diffQty) !== 0);
+
+      // 3. Create ADJUSTMENT StockOperation if discrepancies exist
+      if (discrepancyItems.length > 0) {
+        await tx.stockOperation.create({
+          data: {
+            warehouseId: inventory.warehouseId,
+            type: OperationType.ADJUSTMENT,
+            document: `Акт инвентаризации № ${inventoryId.slice(-6).toUpperCase()}`,
+            comment: 'Автоматическая корректировка по результатам инвентаризации',
+            createdById: userId,
+            items: {
+              create: discrepancyItems.map((item: { nomenclatureId: string; diffQty: any }) => ({
+                nomenclatureId: item.nomenclatureId,
+                quantity: Math.abs(Number(item.diffQty)),
+              })),
+            },
+          },
+        });
+
+        // Update balances to actual quantities
+        for (const item of refreshedItems) {
+          if (item.actualQty !== null) {
+            await tx.stockItem.upsert({
+              where: {
+                warehouseId_nomenclatureId: {
+                  warehouseId: inventory.warehouseId,
+                  nomenclatureId: item.nomenclatureId,
+                },
+              },
+              update: {
+                quantity: item.actualQty,
+              },
+              create: {
+                warehouseId: inventory.warehouseId,
+                nomenclatureId: item.nomenclatureId,
+                quantity: item.actualQty,
+              },
+            });
+          }
+        }
+      }
+
+      // 4. Close inventory
+      const updated = await tx.inventory.update({
         where: { id: inventoryId },
         data: {
           status: InventoryStatus.COMPLETED,
-          completedAt: new Date(),
+          closedAt: new Date(),
+          comment: comment !== undefined ? comment : undefined,
         },
       });
+
+      return {
+        inventory: updated,
+        discrepanciesCount: discrepancyItems.length,
+      };
     });
   }
 }

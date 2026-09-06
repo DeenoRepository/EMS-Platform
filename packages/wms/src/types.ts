@@ -30,15 +30,24 @@ export interface StockTransferDispatchDto {
 export interface StockTransferReceiveDto {
   transferId: string;
   userId: string;
+  cellAllocations?: { itemId: string; targetCellId?: string | null }[];
 }
 
 export interface StockTransferRejectDto {
   transferId: string;
   userId: string;
-  reason?: string;
+  reason: string;
+}
+
+export interface InventoryItemUpdateDto {
+  id: string;
+  actualQty: number;
+  comment?: string | null;
 }
 
 export interface InventoryCompleteDto {
   inventoryId: string;
   userId: string;
+  comment?: string;
+  items?: InventoryItemUpdateDto[];
 }

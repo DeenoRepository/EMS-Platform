@@ -3,6 +3,7 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma, StockTransferStatus, OperationType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { WarehouseService } from '@ems/wms';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,84 +66,11 @@ export async function POST(
       // тело может быть пустым
     }
 
-    // Транзакционно зачисляем ТМЦ на склад-получатель и обновляем статус
-    const updatedTransfer = await prisma.$transaction(async (tx) => {
-      for (const item of transfer.items) {
-        const qtyToReceive = Number(item.quantity);
-        const cellAlloc = cellAllocations.find((c) => c.itemId === item.id);
-        const targetCellId = cellAlloc?.targetCellId || item.targetCellId || null;
-
-        // Если указана ячейка, обновляем ее в строке перемещения
-        if (targetCellId) {
-          await tx.stockTransferItem.update({
-            where: { id: item.id },
-            data: { targetCellId },
-          });
-        }
-
-        // Зачисляем остаток на склад-получатель
-        const existingStock = await tx.stockItem.findUnique({
-          where: {
-            warehouseId_nomenclatureId: {
-              warehouseId: transfer.targetWarehouseId,
-              nomenclatureId: item.nomenclatureId,
-            },
-          },
-        });
-
-        if (existingStock) {
-          await tx.stockItem.update({
-            where: { id: existingStock.id },
-            data: {
-              quantity: Number(existingStock.quantity) + qtyToReceive,
-              cellId: targetCellId || existingStock.cellId,
-            },
-          });
-        } else {
-          await tx.stockItem.create({
-            data: {
-              warehouseId: transfer.targetWarehouseId,
-              nomenclatureId: item.nomenclatureId,
-              quantity: qtyToReceive,
-              cellId: targetCellId,
-            },
-          });
-        }
-      }
-
-      // Создаем запись в журнале складских операций StockOperation (для аудита и отчетов)
-      await tx.stockOperation.create({
-        data: {
-          warehouseId: transfer.targetWarehouseId,
-          type: OperationType.TRANSFER,
-          date: new Date(),
-          counterparty: `Склад-отправитель: ${transfer.sourceWarehouse.name} (${transfer.sourceWarehouse.code})`,
-          document: `Перемещение № ${transfer.transferNumber}`,
-          comment: `Принято по межскладскому перемещению. Инициатор: ${transfer.createdBy?.displayName || 'Инициатор перемещения'}${transfer.requestReason ? `. Основание: ${transfer.requestReason}` : ''}`,
-          createdById: user.userId,
-          items: {
-            create: transfer.items.map((it) => ({
-              nomenclatureId: it.nomenclatureId,
-              quantity: it.quantity,
-            })),
-          },
-        },
-      });
-
-      // Переводим перемещение в статус COMPLETED
-      return tx.stockTransfer.update({
-        where: { id: transferId },
-        data: {
-          status: StockTransferStatus.COMPLETED,
-          receivedAt: new Date(),
-          receivedById: user.userId,
-        },
-        include: {
-          sourceWarehouse: true,
-          targetWarehouse: true,
-          items: { include: { nomenclature: true, targetCell: true } },
-        },
-      });
+    // Транзакционно зачисляем ТМЦ на склад-получатель и обновляем статус через сервис WMS
+    const updatedTransfer = await WarehouseService.receiveStockTransfer({
+      transferId,
+      userId: user.userId,
+      cellAllocations,
     });
 
     await logAuditEvent({
