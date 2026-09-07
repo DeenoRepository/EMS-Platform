@@ -263,20 +263,24 @@ export class WarehouseService {
     }
 
     return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const current = await tx.stockTransfer.findUnique({
+      const currentTransfer = await tx.stockTransfer.findUnique({
         where: { id: transferId },
-        select: { status: true },
+        include: {
+          sourceWarehouse: true,
+          targetWarehouse: true,
+          items: { include: { nomenclature: true } },
+        },
       });
-      if (!current || current.status !== StockTransferStatus.REQUESTED) {
+      if (!currentTransfer || currentTransfer.status !== StockTransferStatus.REQUESTED) {
         throw new Error('Перемещение уже находится в другом статусе или было отгружено');
       }
 
-      for (const item of transfer.items) {
+      for (const item of currentTransfer.items) {
         const itemQty = Number(item.quantity);
         const stock = await tx.stockItem.findUnique({
           where: {
             warehouseId_nomenclatureId: {
-              warehouseId: transfer.sourceWarehouseId,
+              warehouseId: currentTransfer.sourceWarehouseId,
               nomenclatureId: item.nomenclatureId,
             },
           },
@@ -288,7 +292,7 @@ export class WarehouseService {
           const nomName = item.nomenclature?.name || stock?.nomenclature?.name || 'ТМЦ';
           const nomUnit = item.nomenclature?.unit || stock?.nomenclature?.unit || 'шт';
           throw new Error(
-            `Недостаточно остатка на складе "${transfer.sourceWarehouse.name}" для позиции "${nomName}". Доступно: ${currentQty} ${nomUnit}, требуется: ${itemQty} ${nomUnit}`
+            `Недостаточно остатка на складе "${currentTransfer.sourceWarehouse.name}" для позиции "${nomName}". Доступно: ${currentQty} ${nomUnit}, требуется: ${itemQty} ${nomUnit}`
           );
         }
 
@@ -299,13 +303,13 @@ export class WarehouseService {
 
         if (Number(updated.quantity) < 0) {
           throw new Error(
-            `Остаток для "${item.nomenclature?.name || 'ТМЦ'}" на складе "${transfer.sourceWarehouse.name}" не может быть отрицательным.`
+            `Остаток для "${item.nomenclature?.name || 'ТМЦ'}" на складе "${currentTransfer.sourceWarehouse.name}" не может быть отрицательным.`
           );
         }
       }
 
       return await tx.stockTransfer.update({
-        where: { id: transferId },
+        where: { id: currentTransfer.id },
         data: {
           status: StockTransferStatus.IN_TRANSIT,
           dispatchedAt: new Date(),
@@ -341,15 +345,20 @@ export class WarehouseService {
     }
 
     return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const current = await tx.stockTransfer.findUnique({
+      const currentTransfer = await tx.stockTransfer.findUnique({
         where: { id: transferId },
-        select: { status: true },
+        include: {
+          sourceWarehouse: true,
+          targetWarehouse: true,
+          createdBy: { select: { id: true, displayName: true } },
+          items: { include: { nomenclature: true, targetCell: true } },
+        },
       });
-      if (!current || current.status !== StockTransferStatus.IN_TRANSIT) {
+      if (!currentTransfer || currentTransfer.status !== StockTransferStatus.IN_TRANSIT) {
         throw new Error('Перемещение уже принято или статус был изменен');
       }
 
-      for (const item of transfer.items) {
+      for (const item of currentTransfer.items) {
         const qtyToReceive = Number(item.quantity);
         const cellAlloc = cellAllocations.find((c) => c.itemId === item.id);
         const targetCellId = cellAlloc?.targetCellId || item.targetCellId || null;
@@ -364,7 +373,7 @@ export class WarehouseService {
         const existingStock = await tx.stockItem.findUnique({
           where: {
             warehouseId_nomenclatureId: {
-              warehouseId: transfer.targetWarehouseId,
+              warehouseId: currentTransfer.targetWarehouseId,
               nomenclatureId: item.nomenclatureId,
             },
           },
@@ -381,7 +390,7 @@ export class WarehouseService {
         } else {
           await tx.stockItem.create({
             data: {
-              warehouseId: transfer.targetWarehouseId,
+              warehouseId: currentTransfer.targetWarehouseId,
               nomenclatureId: item.nomenclatureId,
               quantity: qtyToReceive,
               cellId: targetCellId || null,
@@ -393,15 +402,15 @@ export class WarehouseService {
       // Создаем запись в журнале складских операций StockOperation
       await tx.stockOperation.create({
         data: {
-          warehouseId: transfer.targetWarehouseId,
+          warehouseId: currentTransfer.targetWarehouseId,
           type: OperationType.TRANSFER,
           date: new Date(),
-          counterparty: `Склад-отправитель: ${transfer.sourceWarehouse.name} (${transfer.sourceWarehouse.code})`,
-          document: `Перемещение № ${transfer.transferNumber}`,
-          comment: `Принято по межскладскому перемещению. Инициатор: ${transfer.createdBy?.displayName || 'Инициатор перемещения'}${transfer.requestReason ? `. Основание: ${transfer.requestReason}` : ''}`,
+          counterparty: `Склад-отправитель: ${currentTransfer.sourceWarehouse.name} (${currentTransfer.sourceWarehouse.code})`,
+          document: `Перемещение № ${currentTransfer.transferNumber}`,
+          comment: `Принято по межскладскому перемещению. Инициатор: ${currentTransfer.createdBy?.displayName || 'Инициатор перемещения'}${currentTransfer.requestReason ? `. Основание: ${currentTransfer.requestReason}` : ''}`,
           createdById: userId,
           items: {
-            create: transfer.items.map((it) => ({
+            create: currentTransfer.items.map((it) => ({
               nomenclatureId: it.nomenclatureId,
               quantity: it.quantity,
             })),
@@ -410,7 +419,7 @@ export class WarehouseService {
       });
 
       return await tx.stockTransfer.update({
-        where: { id: transferId },
+        where: { id: currentTransfer.id },
         data: {
           status: StockTransferStatus.COMPLETED,
           receivedAt: new Date(),
