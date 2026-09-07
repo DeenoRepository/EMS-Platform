@@ -117,6 +117,8 @@ export async function PATCH(
         }
       : null;
 
+    const previousEquipmentStatus = approval.equipment?.status;
+
     // Применяем решение по согласованию через изолированный сервис EPS
     const updatedApproval = await EquipmentService.resolveApproval({
       approvalId: id,
@@ -135,6 +137,23 @@ export async function PATCH(
           status: {
             old: previousEquipment.status,
             new: updatedApproval.equipment?.status ?? previousEquipment.status,
+          },
+          approvalId: approval.id,
+          reason: `Утверждены изменения оборудования: ${approval.title}`,
+        },
+      });
+    }
+
+    if (status === 'APPROVED' && approval.equipment) {
+      await logAuditEvent({
+        userId: user.userId,
+        action: 'UPDATE',
+        entityType: 'Equipment',
+        entityId: approval.equipment.id,
+        changes: {
+          status: {
+            old: previousEquipmentStatus,
+            new: updatedApproval.equipment?.status ?? previousEquipmentStatus,
           },
           approvalId: approval.id,
           reason: `Утверждены изменения оборудования: ${approval.title}`,
