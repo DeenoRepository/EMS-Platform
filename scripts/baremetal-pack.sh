@@ -103,10 +103,18 @@ tar -czf "$ARCHIVE_NAME" "$PACKAGE_DIR"
 
 BUNDLE_SIZE=$(du -h "$ARCHIVE_NAME" | cut -f1)
 
+if [ -d "/mnt/hgfs/Shared" ]; then
+    echo "📋 Копирование архива в /mnt/hgfs/Shared/..."
+    cp "$ARCHIVE_NAME" "/mnt/hgfs/Shared/"
+fi
+
 echo "======================================================================"
 echo "✅ Чистый Production билд готов для переноса!"
 echo "📦 Архив: ${ARCHIVE_NAME} (${BUNDLE_SIZE})"
-echo "📁 Папка релиза: ${PACKAGE_DIR}/"
+if [ -d "/mnt/hgfs/Shared" ]; then
+    echo "📂 Скопирован в: /mnt/hgfs/Shared/${ARCHIVE_NAME}"
+fi
+echo "� Папка релиза: ${PACKAGE_DIR}/"
 echo ""
 echo "🚫 Исключено из архива: .agents (скиллы), .git, .turbo, dev-кэш."
 echo "======================================================================"

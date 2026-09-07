@@ -44,6 +44,7 @@ import { EQUIPMENT_STATUS_MAP, formatDate, PERMISSIONS } from '@ems/shared';
 import * as XLSX from 'xlsx';
 import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
+import { getEquipmentKind, getEquipmentDepartment } from '@/lib/eps-helpers';
 import {
   StatCard,
   StatusBadge,
@@ -85,10 +86,6 @@ interface TagItem {
   name: string;
   color: string | null;
 }
-
-import { getEquipmentKind, getEquipmentDepartment } from '@/lib/eps-helpers';
-
-export { getEquipmentKind, getEquipmentDepartment };
 
 const EPS_COLUMNS: TableColumnOption[] = [
   { id: 'inventoryNumber', label: 'Инвентарный номер', defaultVisible: true },
