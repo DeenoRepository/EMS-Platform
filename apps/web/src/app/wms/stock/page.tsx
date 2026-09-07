@@ -33,6 +33,7 @@ import PageHeader from '@/components/layout/PageHeader';
 import AddIcon from '@mui/icons-material/Add';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined';
+import SyncIcon from '@mui/icons-material/Sync';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import CreateNomenclatureDialog from '@/components/wms/CreateNomenclatureDialog';
@@ -190,6 +191,7 @@ function WmsStockContent() {
   // Modal: Edit Nomenclature (ТМЦ)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
+  const [isRecalculating, setIsRecalculating] = useState(false);
 
   // Load dictionaries once on mount
   useEffect(() => {
@@ -349,6 +351,24 @@ function WmsStockContent() {
       enqueueSnackbar('Ошибка сети при обновлении места хранения', { variant: 'error' });
     } finally {
       setIsSavingLoc(false);
+    }
+  };
+
+  const handleRecalculateStock = async () => {
+    setIsRecalculating(true);
+    try {
+      const res = await fetch('/api/wms/stock/recalculate', { method: 'POST' });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        enqueueSnackbar(json.message || 'Остатки успешно пересчитаны', { variant: 'success' });
+        fetchStock();
+      } else {
+        enqueueSnackbar(json.error || 'Ошибка пересчета остатков', { variant: 'error' });
+      }
+    } catch {
+      enqueueSnackbar('Ошибка сети при пересчете остатков', { variant: 'error' });
+    } finally {
+      setIsRecalculating(false);
     }
   };
 
@@ -563,6 +583,27 @@ function WmsStockContent() {
               >
                 Мастер операций
               </Button>
+            )}
+
+            {hasPermission(PERMISSIONS.WMS_OPERATIONS_CREATE) && (
+              <Tooltip title="Синхронизировать и пересчитать фактические остатки из журнала операций">
+                <Button
+                  variant="outlined"
+                  startIcon={<SyncIcon className={isRecalculating ? 'spin-animation' : undefined} />}
+                  onClick={handleRecalculateStock}
+                  disabled={isRecalculating}
+                  sx={{
+                    height: 36,
+                    px: 1.5,
+                    fontSize: '0.8125rem',
+                    fontWeight: 600,
+                    borderRadius: '8px',
+                    textTransform: 'none',
+                  }}
+                >
+                  {isRecalculating ? 'Пересчет...' : 'Синхронизация'}
+                </Button>
+              </Tooltip>
             )}
           </Stack>
         }
