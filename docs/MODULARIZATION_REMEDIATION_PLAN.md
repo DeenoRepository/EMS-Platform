@@ -59,4 +59,6 @@ KNOWN: [Linux-установщик](../scripts/baremetal-install.sh:107) коп�
 - `pnpm test`: 18 обнаруженных файлов, 132 теста, 0 падений. Ограничения: без `DATABASE_URL` тесты guard выводят ошибки Prisma через ожидаемый fallback; `login.test.ts` пока явно исключен runner-ом.
 - `pnpm lint`: успешно, остается предупреждение `react-hooks/exhaustive-deps` в `apps/web/src/components/ui/DataTableWrapper.tsx:197`.
 - `pnpm build`: успешно для 6 workspace-пакетов; production build Next.js завершен, с тем же lint warning.
-- Production readiness заблокирована до этапа 18: нужны реальные интеграционные проверки с PostgreSQL, исправление/решение lint warning, доступ к стенду и rehearsal на изолированной копии production БД.
+- После коммитов `3ab5948` и `06922fb` выполнены повторные typecheck EPS/WMS и полный `pnpm test`: 18 файлов, 132 теста, 0 падений. `pnpm lint` и `pnpm build` также завершились успешно; остается предупреждение `react-hooks/exhaustive-deps` в [DataTableWrapper](../apps/web/src/components/ui/DataTableWrapper.tsx:197). В тестах guard без `DATABASE_URL` выводятся ошибки Prisma, но сценарии проходят через предусмотренный fallback; `login.test.ts` остается явно исключен.
+- Ветка `feat/modularize-eps-wms-retire-srm-mro` опубликована в `origin` на `055ffba` (проверено через `git ls-remote`). Production deploy не выполнялся.
+- Production readiness заблокирована: не выполнены тесты реальных сервисов с PostgreSQL, browser smoke, проверка фактической production-схемы, upgrade rehearsal и rollback rehearsal.
