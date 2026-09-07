@@ -70,6 +70,7 @@ import {
 } from '@ems/shared';
 import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
+import { isTruthyBoolean } from '@/lib/eps-helpers';
 import {
   StatCard,
   StatusBadge,
@@ -607,11 +608,11 @@ function EquipmentPassportContent() {
   const maintCount = custom.maintenance_count || '';
   const respPerson = custom.responsible_person_name || '';
   const extSysId = custom.external_system_id || '';
-  const isCriticalPath = Boolean(custom.is_critical_path);
+  const isCriticalPath = isTruthyBoolean(custom.is_critical_path);
   const calibrationInt = custom.calibration_interval;
   const cleanRoom = custom.clean_room_class;
-  const isUnique = custom.is_unique;
-  const isImported = custom.is_imported;
+  const isUnique = isTruthyBoolean(custom.is_unique);
+  const isImported = isTruthyBoolean(custom.is_imported);
 
   // Copy helper with feedback
   const handleCopy = (text: string, label: string) => {
@@ -629,7 +630,7 @@ function EquipmentPassportContent() {
     }
 
     if (f.fieldType === 'BOOLEAN' || typeof val === 'boolean') {
-      const boolVal = Boolean(val);
+      const boolVal = isTruthyBoolean(val);
       let label = boolVal ? 'Да' : 'Нет';
       if (f.key.includes('import')) label = boolVal ? 'Да (Импорт)' : 'Нет (Отечественное)';
       else if (f.key.includes('unique')) label = boolVal ? 'Да (Уникальное)' : 'Нет (Серийное)';

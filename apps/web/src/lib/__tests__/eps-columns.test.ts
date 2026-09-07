@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { getEquipmentKind, getEquipmentDepartment } from '../eps-helpers';
+import { getEquipmentKind, getEquipmentDepartment, isTruthyBoolean } from '../eps-helpers';
 
 describe('EPS Equipment Registry Columns (Kind vs Department)', () => {
   it('correctly extracts equipment kind when equipment_type contains a maintenance group/department', () => {
@@ -46,5 +46,30 @@ describe('EPS Equipment Registry Columns (Kind vs Department)', () => {
   it('falls back gracefully to dash when empty', () => {
     assert.strictEqual(getEquipmentKind({}), '—');
     assert.strictEqual(getEquipmentDepartment({}), '—');
+  });
+
+  describe('isTruthyBoolean normalization', () => {
+    it('correctly treats "Нет" and negative strings as false', () => {
+      assert.strictEqual(isTruthyBoolean('Нет'), false);
+      assert.strictEqual(isTruthyBoolean('нет'), false);
+      assert.strictEqual(isTruthyBoolean('false'), false);
+      assert.strictEqual(isTruthyBoolean('0'), false);
+      assert.strictEqual(isTruthyBoolean(0), false);
+      assert.strictEqual(isTruthyBoolean(false), false);
+      assert.strictEqual(isTruthyBoolean(''), false);
+      assert.strictEqual(isTruthyBoolean(null), false);
+      assert.strictEqual(isTruthyBoolean(undefined), false);
+      assert.strictEqual(isTruthyBoolean('—'), false);
+    });
+
+    it('correctly treats "Да" and positive strings as true', () => {
+      assert.strictEqual(isTruthyBoolean('Да'), true);
+      assert.strictEqual(isTruthyBoolean('да'), true);
+      assert.strictEqual(isTruthyBoolean('true'), true);
+      assert.strictEqual(isTruthyBoolean('1'), true);
+      assert.strictEqual(isTruthyBoolean(1), true);
+      assert.strictEqual(isTruthyBoolean(true), true);
+      assert.strictEqual(isTruthyBoolean('yes'), true);
+    });
   });
 });

@@ -44,7 +44,7 @@ import { EQUIPMENT_STATUS_MAP, formatDate, PERMISSIONS } from '@ems/shared';
 import * as XLSX from 'xlsx';
 import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
-import { getEquipmentKind, getEquipmentDepartment } from '@/lib/eps-helpers';
+import { getEquipmentKind, getEquipmentDepartment, isTruthyBoolean } from '@/lib/eps-helpers';
 import {
   StatCard,
   StatusBadge,
@@ -345,16 +345,16 @@ function EquipmentListContent() {
           bVal = b.customFields?.clean_room_class || '';
           break;
         case 'isCriticalPath':
-          aVal = a.customFields?.is_critical_path ? 1 : 0;
-          bVal = b.customFields?.is_critical_path ? 1 : 0;
+          aVal = isTruthyBoolean(a.customFields?.is_critical_path) ? 1 : 0;
+          bVal = isTruthyBoolean(b.customFields?.is_critical_path) ? 1 : 0;
           break;
         case 'isUnique':
-          aVal = a.customFields?.is_unique ? 1 : 0;
-          bVal = b.customFields?.is_unique ? 1 : 0;
+          aVal = isTruthyBoolean(a.customFields?.is_unique) ? 1 : 0;
+          bVal = isTruthyBoolean(b.customFields?.is_unique) ? 1 : 0;
           break;
         case 'isImported':
-          aVal = a.customFields?.is_imported ? 1 : 0;
-          bVal = b.customFields?.is_imported ? 1 : 0;
+          aVal = isTruthyBoolean(a.customFields?.is_imported) ? 1 : 0;
+          bVal = isTruthyBoolean(b.customFields?.is_imported) ? 1 : 0;
           break;
         case 'documentsCount':
           aVal = a._count?.documents || a.counts?.documents || 0;
@@ -430,9 +430,9 @@ function EquipmentListContent() {
       'Периодичность ТО': eq.customFields?.maintenance_periodicity || '—',
       'Класс чистоты': eq.customFields?.clean_room_class || '—',
       'Интервал поверки (мес.)': eq.customFields?.calibration_interval || '—',
-      'Критический путь': eq.customFields?.is_critical_path ? 'Да' : 'Нет',
-      'Уникальное': eq.customFields?.is_unique ? 'Да' : 'Нет',
-      'Импортное': eq.customFields?.is_imported ? 'Да' : 'Нет',
+      'Критический путь': isTruthyBoolean(eq.customFields?.is_critical_path) ? 'Да' : 'Нет',
+      'Уникальное': isTruthyBoolean(eq.customFields?.is_unique) ? 'Да' : 'Нет',
+      'Импортное': isTruthyBoolean(eq.customFields?.is_imported) ? 'Да' : 'Нет',
       'Теги': eq.tags.map((t) => t.name).join(', ') || '—',
       'Ввод в эксплуатацию': formatDate(eq.commissionDate),
       'Дата изменения': formatDate(eq.updatedAt),
@@ -1465,16 +1465,16 @@ function EquipmentListContent() {
                   {visibleColumns.includes('isCriticalPath') && (
                     <TableCell>
                       <Chip
-                        label={custom.is_critical_path ? 'Да' : 'Нет'}
+                        label={isTruthyBoolean(custom.is_critical_path) ? 'Да' : 'Нет'}
                         size="small"
                         sx={{
                           height: 20,
                           fontSize: '0.6875rem',
                           fontWeight: 600,
-                          backgroundColor: custom.is_critical_path ? 'error.light' : 'background.default',
-                          color: custom.is_critical_path ? 'error.main' : 'text.disabled',
+                          backgroundColor: isTruthyBoolean(custom.is_critical_path) ? 'error.light' : 'background.default',
+                          color: isTruthyBoolean(custom.is_critical_path) ? 'error.main' : 'text.disabled',
                           border: '1px solid',
-                          borderColor: custom.is_critical_path ? '#fecaca' : 'divider',
+                          borderColor: isTruthyBoolean(custom.is_critical_path) ? '#fecaca' : 'divider',
                         }}
                       />
                     </TableCell>
@@ -1483,16 +1483,16 @@ function EquipmentListContent() {
                   {visibleColumns.includes('isUnique') && (
                     <TableCell>
                       <Chip
-                        label={custom.is_unique ? 'Да' : 'Нет'}
+                        label={isTruthyBoolean(custom.is_unique) ? 'Да' : 'Нет'}
                         size="small"
                         sx={{
                           height: 20,
                           fontSize: '0.6875rem',
                           fontWeight: 600,
-                          backgroundColor: custom.is_unique ? '#f0f9ff' : 'background.default',
-                          color: custom.is_unique ? 'primary.main' : 'text.disabled',
+                          backgroundColor: isTruthyBoolean(custom.is_unique) ? '#f0f9ff' : 'background.default',
+                          color: isTruthyBoolean(custom.is_unique) ? 'primary.main' : 'text.disabled',
                           border: '1px solid',
-                          borderColor: custom.is_unique ? '#bae6fd' : 'divider',
+                          borderColor: isTruthyBoolean(custom.is_unique) ? '#bae6fd' : 'divider',
                         }}
                       />
                     </TableCell>
@@ -1501,16 +1501,16 @@ function EquipmentListContent() {
                   {visibleColumns.includes('isImported') && (
                     <TableCell>
                       <Chip
-                        label={custom.is_imported ? 'Да' : 'Нет'}
+                        label={isTruthyBoolean(custom.is_imported) ? 'Да' : 'Нет'}
                         size="small"
                         sx={{
                           height: 20,
                           fontSize: '0.6875rem',
                           fontWeight: 600,
-                          backgroundColor: custom.is_imported ? '#faf5ff' : 'background.default',
-                          color: custom.is_imported ? '#9333ea' : 'text.disabled',
+                          backgroundColor: isTruthyBoolean(custom.is_imported) ? '#faf5ff' : 'background.default',
+                          color: isTruthyBoolean(custom.is_imported) ? '#9333ea' : 'text.disabled',
                           border: '1px solid',
-                          borderColor: custom.is_imported ? '#e9d5ff' : 'divider',
+                          borderColor: isTruthyBoolean(custom.is_imported) ? '#e9d5ff' : 'divider',
                         }}
                       />
                     </TableCell>

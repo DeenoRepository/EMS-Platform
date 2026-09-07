@@ -4,7 +4,7 @@ import { prisma, EquipmentStatus } from '@ems/database';
 import { PERMISSIONS, EQUIPMENT_STATUS_MAP, formatDate, formatDateTime } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
 import { enforceRateLimit } from '@/lib/rate-limit';
-import { getEquipmentKind, getEquipmentDepartment } from '@/lib/eps-helpers';
+import { getEquipmentKind, getEquipmentDepartment, isTruthyBoolean } from '@/lib/eps-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -199,9 +199,9 @@ export async function POST(req: NextRequest) {
         maintenance_periodicity: customFields.maintenance_periodicity || '—',
         calibration_interval: customFields.calibration_interval ? `${customFields.calibration_interval} мес.` : '—',
         clean_room_class: customFields.clean_room_class || '—',
-        is_critical_path: customFields.is_critical_path ? 'Да' : 'Нет',
-        is_unique: customFields.is_unique ? 'Да' : 'Нет',
-        is_imported: customFields.is_imported ? 'Да' : 'Нет',
+        is_critical_path: isTruthyBoolean(customFields.is_critical_path) ? 'Да' : 'Нет',
+        is_unique: isTruthyBoolean(customFields.is_unique) ? 'Да' : 'Нет',
+        is_imported: isTruthyBoolean(customFields.is_imported) ? 'Да' : 'Нет',
         commissionDate: formatDate(item.commissionDate),
         commissionDateRaw: item.commissionDate ? item.commissionDate.toISOString() : null,
         tags: item.tags.map((t) => t.tag.name).join(', ') || '—',

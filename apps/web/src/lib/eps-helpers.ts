@@ -60,3 +60,18 @@ export function getEquipmentDepartment(custom?: Record<string, any> | null): str
   if (isDept(custom.equipment_group)) return String(custom.equipment_group).trim();
   return custom.equipment_group ? String(custom.equipment_group).trim() : '—';
 }
+
+/**
+ * Корректное преобразование булевых значений из БД, JSON или строк ("Да", "Нет", "true", "false", 1, 0).
+ * Предотвращает ошибку JavaScript, когда непустая строка "Нет" считается truthy.
+ */
+export function isTruthyBoolean(val: any): boolean {
+  if (val === true || val === 1) return true;
+  if (val === false || val === 0 || val === null || val === undefined) return false;
+  if (typeof val === 'string') {
+    const s = val.trim().toLowerCase();
+    if (s === 'true' || s === '1' || s === 'да' || s === 'yes' || s === 'y' || s === '+') return true;
+    if (s === 'false' || s === '0' || s === 'нет' || s === 'no' || s === 'n' || s === '-' || s === '' || s === '—') return false;
+  }
+  return Boolean(val);
+}

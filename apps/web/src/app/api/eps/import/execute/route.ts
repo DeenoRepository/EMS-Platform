@@ -4,6 +4,7 @@ import { prisma, EquipmentStatus, FieldType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { enforceRateLimit } from '@/lib/rate-limit';
+import { isTruthyBoolean } from '@/lib/eps-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -183,7 +184,11 @@ export async function POST(req: NextRequest) {
           else if (fieldStr === 'tags') tagsRaw = String(val).trim();
           else if (fieldStr.startsWith('custom_')) {
             const customKey = fieldStr.replace('custom_', '');
-            customFieldsObj[customKey] = val;
+            if (['is_unique', 'is_imported', 'is_critical_path', 'ups_required'].includes(customKey)) {
+              customFieldsObj[customKey] = isTruthyBoolean(val);
+            } else {
+              customFieldsObj[customKey] = val;
+            }
           }
         });
 
