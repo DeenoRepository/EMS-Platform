@@ -301,4 +301,55 @@ describe('WMS Domain Logic & Business Rules', () => {
       assert.strictEqual(result.adjustmentsToCreate.length, 0);
     });
   });
+
+  // ─── 5. Goods Receipt & Stock Balance Updates ───
+  describe('Goods Receipt & Stock Balance Updates', () => {
+    interface StockRecord {
+      warehouseId: string;
+      nomenclatureId: string;
+      quantity: number;
+    }
+
+    function processStockReceipt(
+      existingStock: StockRecord | null,
+      receiptWarehouseId: string,
+      receiptNomenclatureId: string,
+      receiptQty: number
+    ): StockRecord {
+      if (receiptQty <= 0 || isNaN(receiptQty)) {
+        throw new Error('Количество позиции должно быть больше нуля');
+      }
+
+      if (existingStock) {
+        return {
+          ...existingStock,
+          quantity: existingStock.quantity + receiptQty,
+        };
+      }
+
+      return {
+        warehouseId: receiptWarehouseId,
+        nomenclatureId: receiptNomenclatureId,
+        quantity: receiptQty,
+      };
+    }
+
+    test('Receipt creates new stock record with received quantity when none existed', () => {
+      const result = processStockReceipt(null, 'wh-1', 'nom-100', 15);
+      assert.strictEqual(result.warehouseId, 'wh-1');
+      assert.strictEqual(result.nomenclatureId, 'nom-100');
+      assert.strictEqual(result.quantity, 15);
+    });
+
+    test('Receipt increments existing stock quantity accurately', () => {
+      const initialStock: StockRecord = { warehouseId: 'wh-1', nomenclatureId: 'nom-100', quantity: 10 };
+      const result = processStockReceipt(initialStock, 'wh-1', 'nom-100', 25);
+      assert.strictEqual(result.quantity, 35);
+    });
+
+    test('Receipt rejects zero or negative quantity', () => {
+      assert.throws(() => processStockReceipt(null, 'wh-1', 'nom-1', 0), /больше нуля/);
+      assert.throws(() => processStockReceipt(null, 'wh-1', 'nom-1', -5), /больше нуля/);
+    });
+  });
 });

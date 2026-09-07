@@ -109,7 +109,7 @@ export default function StockDetailDrawer({
       setTabIndex(0);
       // Fetch operations history for this nomenclature on this warehouse
       setIsLoadingOps(true);
-      fetch(`/api/wms/operations?nomenclatureId=${stockItem.nomenclatureId}&warehouseId=${stockItem.warehouseId}&limit=10`)
+      fetch(`/api/wms/operations?nomenclatureId=${stockItem.nomenclatureId}&warehouseId=${stockItem.warehouseId}&pageSize=10`)
         .then((res) => res.json())
         .then((json) => {
           if (json.success && json.data) {
@@ -526,7 +526,7 @@ export default function StockDetailDrawer({
                         {formatDateTime(op.date || op.createdAt)}
                       </TableCell>
                       <TableCell align="right" sx={{ py: 1, fontWeight: 600, fontSize: '0.8125rem' }}>
-                        {op.items?.[0]?.quantity || '—'} {stockItem.unit}
+                        {op.items?.find((i: any) => i.nomenclatureId === stockItem.nomenclatureId)?.quantity ?? op.items?.[0]?.quantity ?? '—'} {stockItem.unit}
                       </TableCell>
                     </TableRow>
                   ))}

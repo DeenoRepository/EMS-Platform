@@ -441,14 +441,32 @@ export function WmsOperationWizardDialog({
       }
       setActiveStep(1);
     } else if (activeStep === 1) {
-      if (lineItems.length === 0) {
+      let currentItems = [...lineItems];
+      if (currentItems.length === 0 && selectedNomenclature) {
+        const qty = parseFloat(itemQty);
+        if (!isNaN(qty) && qty > 0) {
+          const autoItem: OperationLineItem = {
+            nomenclatureId: selectedNomenclature.id,
+            nomenclatureName: selectedNomenclature.name,
+            nomenclatureArticle: selectedNomenclature.article || undefined,
+            unit: selectedNomenclature.unit,
+            quantity: qty,
+          };
+          currentItems = [autoItem];
+          setLineItems(currentItems);
+          setSelectedNomenclature(null);
+          setItemQty('1');
+        }
+      }
+
+      if (currentItems.length === 0) {
         enqueueSnackbar('Добавьте хотя бы одну позицию ТМЦ', { variant: 'warning' });
         return;
       }
       if (isOutflow) {
-        for (const item of lineItems) {
+        for (const item of currentItems) {
           const rawStock = getWarehouseStock(item.nomenclatureId);
-          const totalRequested = lineItems
+          const totalRequested = currentItems
             .filter((it) => it.nomenclatureId === item.nomenclatureId)
             .reduce((sum, it) => sum + it.quantity, 0);
           if (totalRequested > rawStock) {
