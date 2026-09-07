@@ -80,7 +80,7 @@ export class EquipmentService {
       throw new Error('Решение по этой заявке уже было принято');
     }
 
-    return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    const updatedApproval = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Execute automatic equipment update if APPROVED
       if (status === ApprovalStatus.APPROVED && approval.equipment) {
         const proposed = (approval.proposedData as any) || {};
@@ -173,29 +173,31 @@ export class EquipmentService {
         },
       });
 
-      // 3. Send notification to requester
-      try {
-        if (approval.requesterId && (status === ApprovalStatus.APPROVED || status === ApprovalStatus.REJECTED)) {
-          const eqName = approval.equipment?.name || approval.title;
-          const isApproved = status === ApprovalStatus.APPROVED;
-
-          await tx.notification.create({
-            data: {
-              userId: approval.requesterId,
-              title: isApproved ? 'Паспорт оборудования согласован' : 'Заявка на согласование отклонена',
-              message: isApproved
-                ? `Заявка по оборудованию «${eqName}» успешно утверждена и опубликована в реестре.`
-                : `Заявка по оборудованию «${eqName}» отклонена. Причина: "${resolutionComment || 'Замечания проверяющего'}".`,
-              type: 'EQUIPMENT_CHANGED',
-              link: approval.equipmentId ? `/eps/${approval.equipmentId}` : '/eps/approvals',
-            },
-          });
-        }
-      } catch (notifErr) {
-        console.warn('Non-blocking secondary notification failure in approval resolution:', notifErr);
-      }
-
       return updatedApproval;
     });
+
+    // Notification is a secondary effect and must not participate in the business transaction.
+    try {
+      if (approval.requesterId && (status === ApprovalStatus.APPROVED || status === ApprovalStatus.REJECTED)) {
+        const eqName = approval.equipment?.name || approval.title;
+        const isApproved = status === ApprovalStatus.APPROVED;
+
+        await prisma.notification.create({
+          data: {
+            userId: approval.requesterId,
+            title: isApproved ? 'Паспорт оборудования согласован' : 'Заявка на согласование отклонена',
+            message: isApproved
+              ? `Заявка по оборудованию «${eqName}» успешно утверждена и опубликована в реестре.`
+              : `Заявка по оборудованию «${eqName}» отклонена. Причина: "${resolutionComment || 'Замечания проверяющего'}".`,
+            type: 'EQUIPMENT_CHANGED',
+            link: approval.equipmentId ? `/eps/${approval.equipmentId}` : '/eps/approvals',
+          },
+        });
+      }
+    } catch (notifErr) {
+      console.warn('Non-blocking secondary notification failure in approval resolution:', notifErr);
+    }
+
+    return updatedApproval;
   }
 }

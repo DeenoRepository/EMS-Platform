@@ -317,7 +317,7 @@ export class WarehouseService {
           items: { include: { nomenclature: true } },
         },
       });
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
   /**
@@ -331,7 +331,7 @@ export class WarehouseService {
         sourceWarehouse: true,
         targetWarehouse: true,
         createdBy: { select: { id: true, displayName: true } },
-        items: { include: { nomenclature: true } },
+        items: { include: { nomenclature: true, targetCell: true } },
       },
     });
 
@@ -398,7 +398,7 @@ export class WarehouseService {
           date: new Date(),
           counterparty: `Склад-отправитель: ${transfer.sourceWarehouse.name} (${transfer.sourceWarehouse.code})`,
           document: `Перемещение № ${transfer.transferNumber}`,
-          comment: `Принято по межскладскому перемещению. Инициатор: ${(transfer as any).createdBy?.displayName || 'Инициатор перемещения'}${transfer.requestReason ? `. Основание: ${transfer.requestReason}` : ''}`,
+          comment: `Принято по межскладскому перемещению. Инициатор: ${transfer.createdBy?.displayName || 'Инициатор перемещения'}${transfer.requestReason ? `. Основание: ${transfer.requestReason}` : ''}`,
           createdById: userId,
           items: {
             create: transfer.items.map((it) => ({
@@ -419,10 +419,10 @@ export class WarehouseService {
         include: {
           sourceWarehouse: true,
           targetWarehouse: true,
-          items: { include: { nomenclature: true } },
+          items: { include: { nomenclature: true, targetCell: true } },
         },
       });
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
   /**
@@ -457,8 +457,8 @@ export class WarehouseService {
         throw new Error('Перемещение уже изменило статус или было обработано');
       }
 
-      // If already in transit, goods left source warehouse; return them back
-      if (transfer.status === StockTransferStatus.IN_TRANSIT) {
+      // If the transaction observes IN_TRANSIT, goods left source warehouse; return them back.
+      if (current.status === StockTransferStatus.IN_TRANSIT) {
         for (const item of transfer.items) {
           const qtyToRestore = Number(item.quantity);
           const stock = await tx.stockItem.findUnique({
@@ -501,7 +501,7 @@ export class WarehouseService {
           items: { include: { nomenclature: true } },
         },
       });
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
   /**
@@ -529,7 +529,7 @@ export class WarehouseService {
           const existingItem = inventory.items.find((i: { id: string }) => i.id === item.id);
           if (existingItem) {
             const actual = Number(item.actualQty);
-            const expected = Number((existingItem as any).expectedQty);
+            const expected = Number(existingItem.expectedQty);
             const diff = actual - expected;
 
             await tx.inventoryItem.update({
@@ -550,7 +550,7 @@ export class WarehouseService {
         include: { nomenclature: true },
       });
 
-      const discrepancyItems = refreshedItems.filter((i: { diffQty: any }) => i.diffQty !== null && Number(i.diffQty) !== 0);
+      const discrepancyItems = refreshedItems.filter((i) => i.diffQty !== null && Number(i.diffQty) !== 0);
 
       // 3. Create ADJUSTMENT StockOperation if discrepancies exist
       if (discrepancyItems.length > 0) {
