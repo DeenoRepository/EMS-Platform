@@ -4,6 +4,7 @@ import { prisma, EquipmentStatus } from '@ems/database';
 import { PERMISSIONS, EQUIPMENT_STATUS_MAP, formatDate, formatDateTime } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
 import { enforceRateLimit } from '@/lib/rate-limit';
+import { getEquipmentKind, getEquipmentDepartment } from '@/lib/eps-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
       { key: 'status', name: 'Текущий статус', category: 'Основные реквизиты' },
       { key: 'criticality', name: 'Категория критичности (A/B/C)', category: 'Классификаторы' },
       { key: 'actual_wear_percentage', name: 'Физический износ (%)', category: 'Классификаторы' },
-      { key: 'equipment_group', name: 'Группа оборудования', category: 'Классификаторы' },
+      { key: 'equipment_group', name: 'Подразделение / группа', category: 'Классификаторы' },
       { key: 'equipment_type', name: 'Вид оборудования', category: 'Классификаторы' },
       { key: 'responsible_person_name', name: 'Ответственное лицо (МОЛ)', category: 'Классификаторы' },
       { key: 'okof_code', name: 'Код ОКОФ', category: 'Классификаторы' },
@@ -189,8 +190,8 @@ export async function POST(req: NextRequest) {
         status: statusInfo.label,
         criticality: customFields.criticality ? `Класс ${customFields.criticality}` : '—',
         actual_wear_percentage: customFields.actual_wear_percentage !== undefined && customFields.actual_wear_percentage !== '' ? `${customFields.actual_wear_percentage}%` : '—',
-        equipment_group: customFields.equipment_group || '—',
-        equipment_type: customFields.equipment_type || '—',
+        equipment_group: getEquipmentDepartment(customFields),
+        equipment_type: getEquipmentKind(customFields),
         responsible_person_name: customFields.responsible_person_name || '—',
         okof_code: customFields.okof_code || '—',
         okpd2_code: customFields.okpd2_code || '—',

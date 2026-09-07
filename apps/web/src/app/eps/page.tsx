@@ -86,6 +86,10 @@ interface TagItem {
   color: string | null;
 }
 
+import { getEquipmentKind, getEquipmentDepartment } from '@/lib/eps-helpers';
+
+export { getEquipmentKind, getEquipmentDepartment };
+
 const EPS_COLUMNS: TableColumnOption[] = [
   { id: 'inventoryNumber', label: 'Инвентарный номер', defaultVisible: true },
   { id: 'name', label: 'Наименование оборудования', defaultVisible: true },
@@ -96,7 +100,7 @@ const EPS_COLUMNS: TableColumnOption[] = [
   { id: 'status', label: 'Эксплуатационный статус', defaultVisible: true },
   { id: 'criticality', label: 'Категория критичности (A / B / C)', defaultVisible: false },
   { id: 'actualWear', label: 'Степень физического износа (%)', defaultVisible: false },
-  { id: 'eqGroup', label: 'Группа оборудования', defaultVisible: false },
+  { id: 'eqGroup', label: 'Подразделение / группа', defaultVisible: false },
   { id: 'eqType', label: 'Вид оборудования', defaultVisible: false },
   { id: 'respPerson', label: 'Ответственное лицо (МОЛ)', defaultVisible: false },
   { id: 'okofCode', label: 'Код ОКОФ (ОК 013-2014)', defaultVisible: false },
@@ -308,12 +312,12 @@ function EquipmentListContent() {
           bVal = b.customFields?.actual_wear_percentage !== undefined && b.customFields?.actual_wear_percentage !== '' ? Number(b.customFields.actual_wear_percentage) : -1;
           break;
         case 'eqGroup':
-          aVal = a.customFields?.equipment_group || '';
-          bVal = b.customFields?.equipment_group || '';
+          aVal = getEquipmentDepartment(a.customFields);
+          bVal = getEquipmentDepartment(b.customFields);
           break;
         case 'eqType':
-          aVal = a.customFields?.equipment_type || '';
-          bVal = b.customFields?.equipment_type || '';
+          aVal = getEquipmentKind(a.customFields);
+          bVal = getEquipmentKind(b.customFields);
           break;
         case 'respPerson':
           aVal = a.customFields?.responsible_person_name || '';
@@ -420,8 +424,8 @@ function EquipmentListContent() {
       'Статус': EQUIPMENT_STATUS_MAP[eq.status]?.label || eq.status,
       'Критичность': eq.customFields?.criticality || '—',
       'Износ (%)': eq.customFields?.actual_wear_percentage ? `${eq.customFields.actual_wear_percentage}%` : '—',
-      'Группа оборудования': eq.customFields?.equipment_group || '—',
-      'Вид оборудования': eq.customFields?.equipment_type || '—',
+      'Подразделение / группа': getEquipmentDepartment(eq.customFields),
+      'Вид оборудования': getEquipmentKind(eq.customFields),
       'МОЛ / Ответственный': eq.customFields?.responsible_person_name || '—',
       'Код ОКОФ': eq.customFields?.okof_code || '—',
       'Код ОКПД2': eq.customFields?.okpd2_code || '—',
@@ -1035,19 +1039,19 @@ function EquipmentListContent() {
               )}
 
               {visibleColumns.includes('eqGroup') && (
-                <TableCell sx={{ minWidth: 130 }}>
+                <TableCell sx={{ minWidth: 140 }}>
                   <TableSortLabel
                     active={sortField === 'eqGroup'}
                     direction={sortField === 'eqGroup' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('eqGroup')}
                   >
-                    Группа
+                    Подразделение
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('eqType') && (
-                <TableCell sx={{ minWidth: 130 }}>
+                <TableCell sx={{ minWidth: 140 }}>
                   <TableSortLabel
                     active={sortField === 'eqType'}
                     direction={sortField === 'eqType' ? sortDirection : 'asc'}
@@ -1409,13 +1413,13 @@ function EquipmentListContent() {
 
                   {visibleColumns.includes('eqGroup') && (
                     <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
-                      {custom.equipment_group || '—'}
+                      {getEquipmentDepartment(custom)}
                     </TableCell>
                   )}
 
                   {visibleColumns.includes('eqType') && (
                     <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
-                      {custom.equipment_type || '—'}
+                      {getEquipmentKind(custom)}
                     </TableCell>
                   )}
 
