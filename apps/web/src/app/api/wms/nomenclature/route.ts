@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search')?.trim() || '';
     const categoryId = searchParams.get('categoryId')?.trim() || '';
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '50', 10)));
+    const limit = Math.min(5000, Math.max(1, parseInt(searchParams.get('limit') || '1000', 10)));
 
     const where: any = {};
     if (categoryId) {
