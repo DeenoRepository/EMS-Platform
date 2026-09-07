@@ -106,6 +106,7 @@ export async function GET(req: NextRequest) {
       location: item.location,
       status: item.status,
       commissionDate: item.commissionDate,
+      customFields: item.customFields || {},
       primaryPhoto: item.photos[0]?.filePath || null,
       tags: item.tags.map((t) => t.tag),
       counts: item._count,

@@ -545,4 +545,62 @@ describe('EPS Domain Logic, RBAC & State Machine', () => {
       assert.throws(() => validateFileUpload('huge_doc.pdf', 'documents', 60 * 1024 * 1024), /Превышен допустимый размер/);
     });
   });
+
+  // ─── 8. Equipment Registry Custom Fields Serialization ───
+  describe('Equipment Registry Custom Fields Serialization', () => {
+    test('Correctly preserves customFields in formatted equipment registry item', () => {
+      const dbItem = {
+        id: 'eq-1',
+        name: 'Автоматический разбраковщик микросхем АРМ-1',
+        inventoryNumber: 'TEMP-PAA-0038',
+        serialNumber: null,
+        manufacturer: 'АО НЗПП "Восток"',
+        model: 'СММ2.758.602',
+        location: 'Дачная 60',
+        status: EquipmentStatus.ACTIVE,
+        commissionDate: new Date('2015-01-01'),
+        customFields: {
+          okof_code: '330.26.51.43',
+          okpd2_code: '26.51.66.190',
+          process_classifier_code: '16.13',
+          equipment_group: 'Измерительное оборудование',
+          equipment_type: 'Группа обслуживания и ремонта измерений КП ИМС',
+          actual_wear_percentage: 50,
+          responsible_person_name: 'Петров А.А.',
+        },
+        photos: [],
+        tags: [],
+        _count: { documents: 0, photos: 0, maintenancePlans: 0, spareParts: 0 },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        createdById: 'user-1',
+      };
+
+      const formatted = {
+        id: dbItem.id,
+        name: dbItem.name,
+        inventoryNumber: dbItem.inventoryNumber,
+        serialNumber: dbItem.serialNumber,
+        manufacturer: dbItem.manufacturer,
+        model: dbItem.model,
+        location: dbItem.location,
+        status: dbItem.status,
+        commissionDate: dbItem.commissionDate,
+        customFields: dbItem.customFields || {},
+        primaryPhoto: (dbItem.photos as any)[0]?.filePath || null,
+        tags: dbItem.tags.map((t: any) => t.tag),
+        counts: dbItem._count,
+        createdAt: dbItem.createdAt,
+        updatedAt: dbItem.updatedAt,
+        isOwner: true,
+      };
+
+      assert.strictEqual(formatted.customFields.okof_code, '330.26.51.43');
+      assert.strictEqual(formatted.customFields.okpd2_code, '26.51.66.190');
+      assert.strictEqual(formatted.customFields.process_classifier_code, '16.13');
+      assert.strictEqual(formatted.customFields.equipment_group, 'Измерительное оборудование');
+      assert.strictEqual(formatted.customFields.actual_wear_percentage, 50);
+      assert.strictEqual(formatted.customFields.responsible_person_name, 'Петров А.А.');
+    });
+  });
 });
