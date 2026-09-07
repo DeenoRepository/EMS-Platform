@@ -80,6 +80,7 @@ interface StockRow {
   unit: string;
   category: string;
   quantity: number;
+  totalStock?: number;
   minStock: number | string;
   isLowStock: boolean;
   cellId?: string | null;

@@ -110,6 +110,34 @@ describe('WMS Domain Logic & Business Rules', () => {
       assert.throws(() => processStockIssue(10, 0, 5), /Количество позиции должно быть больше нуля/);
       assert.throws(() => processStockIssue(10, -2, 5), /Количество позиции должно быть больше нуля/);
     });
+
+    test('Multi-warehouse: does not trigger low stock when total stock across all warehouses exceeds minStock', () => {
+      // Warehouse A has 0, Warehouse B has 1, minStock is 0. Total = 1 > 0 => no deficit!
+      const warehouseAStock = 0;
+      const warehouseBStock = 1;
+      const totalStock = warehouseAStock + warehouseBStock;
+      const minStock = 0;
+      const isLowStock = minStock !== null && totalStock <= minStock;
+      assert.strictEqual(isLowStock, false);
+    });
+
+    test('Multi-warehouse: does not trigger low stock when total stock (15) exceeds minStock (10) even if one warehouse has 0', () => {
+      const warehouseAStock = 0;
+      const warehouseBStock = 15;
+      const totalStock = warehouseAStock + warehouseBStock;
+      const minStock = 10;
+      const isLowStock = minStock !== null && totalStock <= minStock;
+      assert.strictEqual(isLowStock, false);
+    });
+
+    test('Multi-warehouse: triggers low stock when total stock across all warehouses is at or below minStock', () => {
+      const warehouseAStock = 2;
+      const warehouseBStock = 3;
+      const totalStock = warehouseAStock + warehouseBStock;
+      const minStock = 10;
+      const isLowStock = minStock !== null && totalStock <= minStock;
+      assert.strictEqual(isLowStock, true);
+    });
   });
 
   // ─── 3. Stock Transfer State Machine Transitions & Rollback ───

@@ -301,14 +301,21 @@ export async function POST(req: NextRequest) {
             include: { nomenclature: true },
           });
 
-          // Проверка на минимальный остаток
+          // Проверка на минимальный остаток суммарно по всей номенклатуре
           const minStock = updatedStock.nomenclature.minStock !== null ? Number(updatedStock.nomenclature.minStock) : null;
-          if (minStock !== null && remainingQty <= minStock) {
-            lowStockAlerts.push({
-              nomenclatureName: updatedStock.nomenclature.name,
-              currentQty: remainingQty,
-              minStock,
+          if (minStock !== null) {
+            const allItems = await tx.stockItem.findMany({
+              where: { nomenclatureId: item.nomenclatureId },
+              select: { quantity: true },
             });
+            const totalRemaining = allItems.reduce((sum, s) => sum + Number(s.quantity), 0);
+            if (totalRemaining <= minStock) {
+              lowStockAlerts.push({
+                nomenclatureName: updatedStock.nomenclature.name,
+                currentQty: totalRemaining,
+                minStock,
+              });
+            }
           }
         } else if (type === 'TRANSFER' && targetWarehouseId) {
           if (!existingStock) {
@@ -357,13 +364,21 @@ export async function POST(req: NextRequest) {
             });
           }
 
+          // При перемещении между складами общий остаток ТМЦ на предприятии не уменьшается
           const minStock = updatedStock.nomenclature.minStock !== null ? Number(updatedStock.nomenclature.minStock) : null;
-          if (minStock !== null && remainingQty <= minStock) {
-            lowStockAlerts.push({
-              nomenclatureName: updatedStock.nomenclature.name,
-              currentQty: remainingQty,
-              minStock,
+          if (minStock !== null) {
+            const allItems = await tx.stockItem.findMany({
+              where: { nomenclatureId: item.nomenclatureId },
+              select: { quantity: true },
             });
+            const totalRemaining = allItems.reduce((sum, s) => sum + Number(s.quantity), 0);
+            if (totalRemaining <= minStock) {
+              lowStockAlerts.push({
+                nomenclatureName: updatedStock.nomenclature.name,
+                currentQty: totalRemaining,
+                minStock,
+              });
+            }
           }
         }
       }

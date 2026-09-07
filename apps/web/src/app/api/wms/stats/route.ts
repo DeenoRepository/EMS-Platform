@@ -57,29 +57,53 @@ export async function GET(req: NextRequest) {
           ...(isAdmin || userWarehouseIds.length === 0 ? {} : { warehouseId: { in: userWarehouseIds } }),
         },
       }),
-      // Оптимизированный запрос дефицитных позиций
-      prisma.stockItem.findMany({
+      // Оптимизированный запрос дефицитных позиций (расчет по всей номенклатуре)
+      prisma.nomenclature.findMany({
         where: {
-          nomenclature: { minStock: { not: null } },
-          ...(isAdmin || userWarehouseIds.length === 0 ? {} : { warehouseId: { in: userWarehouseIds } }),
+          minStock: { not: null },
+          deletedAt: null,
         },
         include: {
-          nomenclature: { select: { minStock: true, name: true, unit: true } },
-          warehouse: { select: { name: true, code: true } },
+          stockItems: {
+            select: {
+              id: true,
+              quantity: true,
+              warehouseId: true,
+              warehouse: { select: { name: true, code: true } },
+            },
+          },
         },
-      }).then((items) =>
-        items
-          .filter((si) => si.nomenclature.minStock !== null && Number(si.quantity) <= Number(si.nomenclature.minStock))
-          .map((si) => ({
-            id: si.id,
-            name: si.nomenclature.name,
-            warehouseName: si.warehouse.name,
-            warehouseCode: si.warehouse.code,
-            quantity: Number(si.quantity),
-            minStock: Number(si.nomenclature.minStock),
-            unit: si.nomenclature.unit,
-          }))
-      ),
+      }).then((noms) => {
+        const deficitList: any[] = [];
+        for (const nom of noms) {
+          const minStock = Number(nom.minStock);
+          const relevantItems = (!isAdmin && userWarehouseIds.length > 0)
+            ? nom.stockItems.filter((si) => userWarehouseIds.includes(si.warehouseId))
+            : nom.stockItems;
+
+          if (!isAdmin && userWarehouseIds.length > 0 && relevantItems.length === 0) {
+            continue;
+          }
+
+          // Общий остаток номенклатуры по всем складам
+          const totalStock = nom.stockItems.reduce((sum, si) => sum + Number(si.quantity), 0);
+
+          // Если общий остаток по всем складам превышает минимальный, то дефицита нет
+          if (totalStock <= minStock) {
+            const primaryItem = relevantItems[0] || nom.stockItems[0];
+            deficitList.push({
+              id: primaryItem?.id || nom.id,
+              name: nom.name,
+              warehouseName: nom.stockItems.length > 1 ? 'Все склады' : (primaryItem?.warehouse?.name || '—'),
+              warehouseCode: nom.stockItems.length > 1 ? 'ВСЕ' : (primaryItem?.warehouse?.code || '—'),
+              quantity: totalStock,
+              minStock,
+              unit: nom.unit,
+            });
+          }
+        }
+        return deficitList;
+      }),
     ]);
 
     const lowStockItems = deficitStats || [];

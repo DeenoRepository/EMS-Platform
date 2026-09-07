@@ -52,6 +52,7 @@ export interface StockDetailData {
   category: string;
   categoryId?: string | null;
   quantity: number;
+  totalStock?: number;
   minStock: number | string;
   isLowStock: boolean;
   cellId?: string | null;
@@ -124,8 +125,9 @@ export default function StockDetailDrawer({
   if (!stockItem) return null;
 
   const minStockNum = Number(stockItem.minStock) || 0;
-  const fillPercent = minStockNum > 0 ? Math.min((stockItem.quantity / minStockNum) * 100, 100) : 100;
-  const isCritical = minStockNum > 0 && stockItem.quantity < minStockNum;
+  const currentTotalStock = stockItem.totalStock !== undefined ? stockItem.totalStock : stockItem.quantity;
+  const fillPercent = minStockNum > 0 ? Math.min((currentTotalStock / minStockNum) * 100, 100) : 100;
+  const isCritical = stockItem.isLowStock;
 
   return (
     <Drawer

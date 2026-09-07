@@ -76,6 +76,9 @@ export async function GET(req: NextRequest) {
           nomenclature: {
             include: {
               category: true,
+              stockItems: {
+                select: { quantity: true },
+              },
               equipmentLinks: {
                 include: {
                   equipment: {
@@ -96,7 +99,11 @@ export async function GET(req: NextRequest) {
         .map((item) => {
           const qty = Number(item.quantity);
           const minStock = item.nomenclature.minStock !== null ? Number(item.nomenclature.minStock) : null;
-          const isLowStock = minStock !== null && qty <= minStock;
+          // Дефицит считается суммарно по номенклатуре со всех складов
+          const totalStock = item.nomenclature.stockItems
+            ? item.nomenclature.stockItems.reduce((sum: number, s: any) => sum + Number(s.quantity), 0)
+            : qty;
+          const isLowStock = minStock !== null && totalStock <= minStock;
 
           return {
             id: item.id,
@@ -111,6 +118,7 @@ export async function GET(req: NextRequest) {
             unit: item.nomenclature.unit,
             category: item.nomenclature.category?.name || 'Без категории',
             quantity: qty,
+            totalStock,
             minStock: minStock !== null ? minStock : '—',
             isLowStock,
             cellId: item.cellId,
@@ -144,6 +152,9 @@ export async function GET(req: NextRequest) {
             nomenclature: {
               include: {
                 category: true,
+                stockItems: {
+                  select: { quantity: true },
+                },
                 equipmentLinks: {
                   include: {
                     equipment: {
@@ -167,7 +178,11 @@ export async function GET(req: NextRequest) {
       finalItems = stockItems.map((item) => {
         const qty = Number(item.quantity);
         const minStock = item.nomenclature.minStock !== null ? Number(item.nomenclature.minStock) : null;
-        const isLowStock = minStock !== null && qty <= minStock;
+        // Дефицит считается суммарно по номенклатуре со всех складов
+        const totalStock = item.nomenclature.stockItems
+          ? item.nomenclature.stockItems.reduce((sum: number, s: any) => sum + Number(s.quantity), 0)
+          : qty;
+        const isLowStock = minStock !== null && totalStock <= minStock;
 
         return {
           id: item.id,
@@ -182,6 +197,7 @@ export async function GET(req: NextRequest) {
           unit: item.nomenclature.unit,
           category: item.nomenclature.category?.name || 'Без категории',
           quantity: qty,
+          totalStock,
           minStock: minStock !== null ? minStock : '—',
           isLowStock,
           cellId: item.cellId,
