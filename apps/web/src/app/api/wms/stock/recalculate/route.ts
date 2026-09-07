@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
         };
 
         const qty = Number(item.quantity);
-        if (op.type === 'RECEIPT') {
+        if (op.type === 'RECEIPT' || op.type === 'TRANSFER') {
           current.quantity += qty;
         } else if (op.type === 'ISSUE' || op.type === 'ISSUE_EMPLOYEE' || op.type === 'ISSUE_WRITE_OFF') {
           current.quantity = Math.max(0, current.quantity - qty);
