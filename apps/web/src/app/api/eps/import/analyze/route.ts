@@ -15,6 +15,11 @@ interface ColumnMatchRule {
 
 const KNOWN_BASE_FIELDS: ColumnMatchRule[] = [
   {
+    targetKey: 'externalId',
+    targetName: 'Внутренний ID оборудования',
+    aliases: ['id оборудования', 'ид оборудования', 'внутренний id оборудования', 'equipment id', 'equipment_id', 'external id', 'external_id'],
+  },
+  {
     targetKey: 'name',
     targetName: 'Наименование оборудования',
     aliases: [
@@ -345,7 +350,15 @@ export async function POST(req: NextRequest) {
     }
 
     const sheet = workbook.Sheets[firstSheetName];
-    const rawJsonRows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: null });
+    const matrix: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null });
+    const headerRowIndex = matrix.findIndex((row) => {
+      const normalized = row.map((cell) => normalizeHeader(String(cell ?? '')));
+      return normalized.some((cell) => cell === 'наименование оборудования' || cell === 'id оборудования');
+    });
+    const rawJsonRows: any[] = XLSX.utils.sheet_to_json(sheet, {
+      defval: null,
+      range: headerRowIndex >= 0 ? headerRowIndex : 0,
+    });
 
     if (rawJsonRows.length === 0) {
       return NextResponse.json({ success: false, error: 'Файл пуст или не содержит строк' }, { status: 400 });
@@ -473,7 +486,17 @@ export async function POST(req: NextRequest) {
       })
       .filter(Boolean) as string[];
 
-    const [existingByInv, existingBySn] = await Promise.all([
+    const externalIdHeader = Object.keys(mappedColumns).find((h) => mappedColumns[h] === 'externalId');
+    const externalIdsInFile = externalIdHeader
+      ? rawJsonRows.map((row) => String(row[externalIdHeader] || '').trim()).filter(Boolean)
+      : [];
+    const externalIdCounts = new Map<string, number>();
+    externalIdsInFile.forEach((id) => externalIdCounts.set(id, (externalIdCounts.get(id) || 0) + 1));
+    const duplicateExternalIds = [...externalIdCounts.entries()]
+      .filter(([, count]) => count > 1)
+      .map(([id, count]) => ({ id, count }));
+
+    const [existingByInv, existingBySn, existingEquipment] = await Promise.all([
       prisma.equipment.findMany({
         where: { inventoryNumber: { in: inventoryNumbersInFile } },
         select: { id: true, name: true, inventoryNumber: true, status: true },
@@ -481,6 +504,9 @@ export async function POST(req: NextRequest) {
       prisma.equipment.findMany({
         where: { serialNumber: { in: serialNumbersInFile } },
         select: { id: true, name: true, serialNumber: true, status: true },
+      }),
+      prisma.equipment.findMany({
+        select: { id: true, name: true, inventoryNumber: true, status: true, customFields: true },
       }),
     ]);
 
@@ -492,6 +518,14 @@ export async function POST(req: NextRequest) {
     const existingSnMap = new Map<string, any>();
     existingBySn.forEach((eq) => {
       if (eq.serialNumber) existingSnMap.set(eq.serialNumber, eq);
+    });
+
+    const existingExternalMap = new Map<string, any>();
+    existingEquipment.forEach((eq) => {
+      const externalId = eq.customFields && typeof eq.customFields === 'object'
+        ? (eq.customFields as Record<string, unknown>).external_system_id
+        : null;
+      if (externalId) existingExternalMap.set(String(externalId).trim(), eq);
     });
 
     // Validate rows and flag collision statuses
@@ -507,6 +541,7 @@ export async function POST(req: NextRequest) {
       const nameVal = nameHeader ? String(row[nameHeader] || '').trim() : '';
       const invVal = invHeader ? String(row[invHeader] || '').trim() : '';
       const snVal = snHeader ? String(row[snHeader] || '').trim() : '';
+      const externalIdVal = externalIdHeader ? String(row[externalIdHeader] || '').trim() : '';
 
       let rowStatus: 'NEW' | 'COLLISION' | 'ERROR' = 'NEW';
       let statusMessage = 'Готово к созданию';
@@ -516,6 +551,11 @@ export async function POST(req: NextRequest) {
         rowStatus = 'ERROR';
         statusMessage = 'Отсутствует обязательное наименование оборудования';
         errorCount++;
+      } else if (externalIdVal && existingExternalMap.has(externalIdVal)) {
+        rowStatus = 'COLLISION';
+        existingMatch = existingExternalMap.get(externalIdVal);
+        statusMessage = `Совпадение по ID оборудования ${externalIdVal} (${existingMatch.name})`;
+        collisionCount++;
       } else if (invVal && existingInvMap.has(invVal)) {
         rowStatus = 'COLLISION';
         existingMatch = existingInvMap.get(invVal);
@@ -547,6 +587,7 @@ export async function POST(req: NextRequest) {
         newCount,
         collisionCount,
         errorCount,
+        duplicateExternalIds,
         fileHeaders,
         mappedColumns,
         missingFields,

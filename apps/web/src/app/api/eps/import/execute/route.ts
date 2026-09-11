@@ -53,11 +53,25 @@ export async function POST(req: NextRequest) {
       columnMapping = {},
       newFieldDefinitions = [],
       ignoredHeaders = [],
-      conflictStrategy = 'UPSERT', // 'UPSERT' | 'SKIP'
+      conflictStrategy = 'UPSERT', // 'UPSERT' | 'SKIP' | 'FULL_REPLACE'
+      fullReplaceConfirmed = false,
     } = body;
 
     if (!Array.isArray(rows) || rows.length === 0) {
       return NextResponse.json({ success: false, error: 'Нет данных для импорта' }, { status: 400 });
+    }
+    if (conflictStrategy === 'FULL_REPLACE' && fullReplaceConfirmed !== true) {
+      return NextResponse.json({ success: false, error: 'Для полной замены реестра требуется подтверждение' }, { status: 400 });
+    }
+    if (conflictStrategy === 'FULL_REPLACE') {
+      const externalIdHeader = Object.keys(columnMapping).find((header) => columnMapping[header] === 'externalId');
+      const externalIds = externalIdHeader
+        ? rows.map((row: any) => String((row.data || row)[externalIdHeader] || '').trim())
+        : [];
+      const duplicateIds = [...new Set(externalIds.filter((id) => id && externalIds.indexOf(id) !== externalIds.lastIndexOf(id)))];
+      if (!externalIdHeader || externalIds.some((id) => !id) || duplicateIds.length > 0) {
+        return NextResponse.json({ success: false, error: 'Для полной замены требуется уникальный ID оборудования в каждой строке' }, { status: 400 });
+      }
     }
 
     // Step 1: Create or find Custom Sections & Fields in Dictionary
@@ -148,8 +162,22 @@ export async function POST(req: NextRequest) {
     let errorCount = 0;
     const errors: { row: number; error: string }[] = [];
 
-    // Step 2: Process each row
-    for (let i = 0; i < rows.length; i++) {
+    const existingEquipment = await prisma.equipment.findMany({
+      select: { id: true, name: true, inventoryNumber: true, serialNumber: true, customFields: true },
+    });
+    const existingExternalMap = new Map<string, any>();
+    existingEquipment.forEach((equipment) => {
+      const externalId = equipment.customFields && typeof equipment.customFields === 'object'
+        ? (equipment.customFields as Record<string, unknown>).external_system_id
+        : null;
+      if (externalId) existingExternalMap.set(String(externalId).trim(), equipment);
+    });
+
+    const processRows = async (db: any) => {
+      if (conflictStrategy === 'FULL_REPLACE') await db.equipment.deleteMany();
+
+      // Step 2: Process each row
+      for (let i = 0; i < rows.length; i++) {
       const rowItem = rows[i];
       const rawData = rowItem.data || rowItem;
 
@@ -174,6 +202,7 @@ export async function POST(req: NextRequest) {
 
           const fieldStr = String(targetField);
           if (fieldStr === 'name') nameVal = String(val).trim();
+          else if (fieldStr === 'externalId') customFieldsObj.external_system_id = String(val).trim();
           else if (fieldStr === 'inventoryNumber') invVal = String(val).trim();
           else if (fieldStr === 'serialNumber') snVal = String(val).trim();
           else if (fieldStr === 'manufacturer') mfgVal = String(val).trim();
@@ -200,13 +229,17 @@ export async function POST(req: NextRequest) {
 
         // Check if equipment already exists in DB
         let existingEquipment: any = null;
-        if (invVal) {
-          existingEquipment = await prisma.equipment.findUnique({
+        const externalId = customFieldsObj.external_system_id ? String(customFieldsObj.external_system_id).trim() : '';
+        if (externalId && conflictStrategy !== 'FULL_REPLACE') {
+          existingEquipment = existingExternalMap.get(externalId) || null;
+        }
+        if (invVal && conflictStrategy !== 'FULL_REPLACE') {
+          existingEquipment = existingEquipment || await db.equipment.findUnique({
             where: { inventoryNumber: invVal },
           });
         }
-        if (!existingEquipment && snVal) {
-          existingEquipment = await prisma.equipment.findFirst({
+        if (!existingEquipment && snVal && conflictStrategy !== 'FULL_REPLACE') {
+          existingEquipment = await db.equipment.findFirst({
             where: { serialNumber: snVal },
           });
         }
@@ -219,11 +252,12 @@ export async function POST(req: NextRequest) {
             const lower = tagName.toLowerCase();
             let tagId = tagMap.get(lower);
             if (!tagId) {
-              const newTag = await prisma.tag.create({ data: { name: tagName } });
-              tagId = newTag.id;
-              tagMap.set(lower, tagId);
+              const newTag = await db.tag.create({ data: { name: tagName } });
+              const createdTagId = newTag.id;
+              tagId = createdTagId;
+              tagMap.set(lower, createdTagId);
             }
-            tagIdsToLink.push(tagId);
+            if (tagId) tagIdsToLink.push(tagId);
           }
         }
 
@@ -239,7 +273,7 @@ export async function POST(req: NextRequest) {
             ...customFieldsObj,
           };
 
-          await prisma.equipment.update({
+            await db.equipment.update({
             where: { id: existingEquipment.id },
             data: {
               name: nameVal || existingEquipment.name,
@@ -256,7 +290,7 @@ export async function POST(req: NextRequest) {
           // Link tags
           if (tagIdsToLink.length > 0) {
             for (const tagId of tagIdsToLink) {
-              await prisma.equipmentTag.upsert({
+              await db.equipmentTag.upsert({
                 where: { equipmentId_tagId: { equipmentId: existingEquipment.id, tagId } },
                 create: { equipmentId: existingEquipment.id, tagId },
                 update: {},
@@ -267,7 +301,7 @@ export async function POST(req: NextRequest) {
           updatedCount++;
         } else {
           // Create new Equipment
-          const newEq = await prisma.equipment.create({
+            const newEq = await db.equipment.create({
             data: {
               name: nameVal,
               inventoryNumber: invVal,
@@ -284,7 +318,7 @@ export async function POST(req: NextRequest) {
 
           // Link tags
           if (tagIdsToLink.length > 0) {
-            await prisma.equipmentTag.createMany({
+            await db.equipmentTag.createMany({
               data: tagIdsToLink.map((tagId) => ({ equipmentId: newEq.id, tagId })),
               skipDuplicates: true,
             });
@@ -295,7 +329,17 @@ export async function POST(req: NextRequest) {
       } catch (err: any) {
         errorCount++;
         errors.push({ row: i + 1, error: err.message || 'Ошибка обработки строки' });
+        if (conflictStrategy === 'FULL_REPLACE') {
+          throw new Error(`Ошибка полной замены в строке ${i + 1}: ${err.message || 'Ошибка обработки строки'}`);
+        }
       }
+      }
+    };
+
+    if (conflictStrategy === 'FULL_REPLACE') {
+      await prisma.$transaction((tx) => processRows(tx));
+    } else {
+      await processRows(prisma);
     }
 
     // Step 3: Log audit event
