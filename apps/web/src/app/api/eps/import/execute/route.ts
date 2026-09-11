@@ -74,6 +74,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const inventoryHeader = Object.keys(columnMapping).find((header) => columnMapping[header] === 'inventoryNumber');
+    const usedInventoryNumbers = new Set<string>();
+
     // Step 1: Create or find Custom Sections & Fields in Dictionary
     const newlyCreatedFields: any[] = [];
     const sectionCache = new Map<string, string>(); // code/name -> id
@@ -225,6 +228,17 @@ export async function POST(req: NextRequest) {
           errorCount++;
           errors.push({ row: i + 1, error: 'Отсутствует наименование оборудования' });
           continue;
+        }
+
+        if (conflictStrategy === 'FULL_REPLACE' && invVal) {
+          const inventoryValue = String(invVal);
+          const isDuplicateInventory = usedInventoryNumbers.has(inventoryValue);
+          if (inventoryValue.toLowerCase() === 'б/н' || isDuplicateInventory) {
+            customFieldsObj.registry_inventory_number = inventoryValue;
+            invVal = null;
+          } else {
+            usedInventoryNumbers.add(inventoryValue);
+          }
         }
 
         // Check if equipment already exists in DB
