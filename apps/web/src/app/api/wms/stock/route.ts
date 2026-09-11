@@ -55,12 +55,12 @@ export async function GET(req: NextRequest) {
     let finalItems: any[] = [];
 
     if (lowStockOnly) {
-      // При фильтрации по дефициту выбираем номенклатуры с установленным minStock
+      // При фильтрации по дефициту выбираем номенклатуры с положительным неснижаемым остатком (minStock > 0)
       const queryWhere = {
         ...where,
         nomenclature: {
           ...where.nomenclature,
-          minStock: { not: null },
+          minStock: { gt: 0 },
         },
       };
 
@@ -99,11 +99,11 @@ export async function GET(req: NextRequest) {
         .map((item) => {
           const qty = Number(item.quantity);
           const minStock = item.nomenclature.minStock !== null ? Number(item.nomenclature.minStock) : null;
-          // Дефицит считается суммарно по номенклатуре со всех складов
+          // Дефицит считается суммарно по номенклатуре со всех складов только при minStock > 0
           const totalStock = item.nomenclature.stockItems
             ? item.nomenclature.stockItems.reduce((sum: number, s: any) => sum + Number(s.quantity), 0)
             : qty;
-          const isLowStock = minStock !== null && totalStock <= minStock;
+          const isLowStock = minStock !== null && minStock > 0 && totalStock <= minStock;
 
           return {
             id: item.id,
@@ -178,11 +178,11 @@ export async function GET(req: NextRequest) {
       finalItems = stockItems.map((item) => {
         const qty = Number(item.quantity);
         const minStock = item.nomenclature.minStock !== null ? Number(item.nomenclature.minStock) : null;
-        // Дефицит считается суммарно по номенклатуре со всех складов
+        // Дефицит считается суммарно по номенклатуре со всех складов только при minStock > 0
         const totalStock = item.nomenclature.stockItems
           ? item.nomenclature.stockItems.reduce((sum: number, s: any) => sum + Number(s.quantity), 0)
           : qty;
-        const isLowStock = minStock !== null && totalStock <= minStock;
+        const isLowStock = minStock !== null && minStock > 0 && totalStock <= minStock;
 
         return {
           id: item.id,

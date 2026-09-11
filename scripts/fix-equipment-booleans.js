@@ -6,7 +6,29 @@
  * Запуск: node scripts/fix-equipment-booleans.js
  */
 
-const { PrismaClient } = require('@prisma/client');
+const path = require('path');
+
+function resolveModule(moduleName, fallbacks = []) {
+  try {
+    return require(moduleName);
+  } catch (e) {
+    for (const fb of fallbacks) {
+      try {
+        return require(path.resolve(process.cwd(), fb));
+      } catch {}
+      try {
+        return require(path.resolve(__dirname, '..', fb));
+      } catch {}
+    }
+    throw e;
+  }
+}
+
+const { PrismaClient } = resolveModule('@prisma/client', [
+  'node_modules/@prisma/client',
+  'packages/database/node_modules/@prisma/client',
+  'apps/web/node_modules/@prisma/client',
+]);
 const prisma = new PrismaClient();
 
 function isTruthyBoolean(val) {

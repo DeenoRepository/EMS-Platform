@@ -87,6 +87,11 @@ if [ $PRISMA_STATUS -ne 0 ]; then
     echo "  sudo systemctl status postgresql"
     echo "  sudo -u postgres psql -c \"CREATE USER ems_user WITH PASSWORD 'ems_secure_password';\""
     echo "  sudo -u postgres psql -c \"CREATE DATABASE ems_db OWNER ems_user;\""
+else
+    if [ -f "$INSTALL_DIR/scripts/fix-equipment-booleans.js" ]; then
+        echo "✨ Нормализация булевых характеристик оборудования..."
+        su -s /bin/sh ems -c "cd '$INSTALL_DIR' && export \$(grep -v '^#' .env.production | xargs) && export NODE_PATH='$INSTALL_DIR/node_modules:$INSTALL_DIR/packages/database/node_modules:$INSTALL_DIR/apps/web/node_modules' && node scripts/fix-equipment-booleans.js" || true
+    fi
 fi
 
 # 8. Setup & Enable Systemd Service

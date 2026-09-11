@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
       // Оптимизированный запрос дефицитных позиций (расчет по всей номенклатуре)
       prisma.nomenclature.findMany({
         where: {
-          minStock: { not: null },
+          minStock: { gt: 0 },
           deletedAt: null,
         },
         include: {
@@ -88,8 +88,8 @@ export async function GET(req: NextRequest) {
           // Общий остаток номенклатуры по всем складам
           const totalStock = nom.stockItems.reduce((sum, si) => sum + Number(si.quantity), 0);
 
-          // Если общий остаток по всем складам превышает минимальный, то дефицита нет
-          if (totalStock <= minStock) {
+          // Дефицит возникает только если установлен положительный неснижаемый остаток и текущий остаток <= minStock
+          if (minStock > 0 && totalStock <= minStock) {
             const primaryItem = relevantItems[0] || nom.stockItems[0];
             deficitList.push({
               id: primaryItem?.id || nom.id,
