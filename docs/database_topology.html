@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EMS-Platform: Топология базы данных</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-hover: #0ea5e9;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 24px;
+    }
+
+    header {
+      max-width: 1400px;
+      margin: 0 auto 24px auto;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .nav-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    button:hover, button.active {
+      background: var(--accent);
+      color: #0f172a;
+      border-color: var(--accent);
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      overflow: hidden;
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .mermaid-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      background: #090d16;
+      border-radius: 8px;
+      padding: 16px;
+      min-height: 400px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>
+      <h1>🏭 EMS-Platform: Топология БД <span class="badge">41 таблица • 7 доменов</span></h1>
+      <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">
+        PostgreSQL / Prisma ORM архитектура: EPS, WMS, SRM, MRO, RBAC, System, Feedback Hub
+      </p>
+    </div>
+    <div class="nav-buttons">
+      <button id="btn-flow" class="active" onclick="switchTab('tab-flow')">1. Потоки данных & Домены</button>
+      <button id="btn-erd" onclick="switchTab('tab-erd')">2. Полная ERD Схема</button>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- Вкладка 1: Потоки данных -->
+    <div id="tab-flow" class="tab-content active card">
+      <div class="card-title">
+        <span>Архитектурная схема взаимодействия доменов</span>
+      </div>
+      <div class="mermaid-wrapper">
+        <div class="mermaid">
+flowchart TB
+    subgraph AUTH["🔐 RBAC & AUTH"]
+        User["User (Пользователи)"]
+        Role["Role (Роли)"]
+        Permission["Permission (Права)"]
+        UserRole["UserRole"]
+        RolePermission["RolePermission"]
+    end
+
+    subgraph SYSTEM["⚙️ СИСТЕМА, АУДИТ & BI"]
+        AuditLog["AuditLog (Журнал аудита)"]
+        Notification["Notification (Уведомления)"]
+        SystemSetting["SystemSetting (Настройки)"]
+        ReportTemplate["ReportTemplate (Шаблоны отчетов)"]
+    end
+
+    subgraph EPS["🏭 EPS (Паспортизация оборудования)"]
+        Equipment["Equipment (Оборудование)"]
+        Document["Document (Техдокументация)"]
+        Photo["Photo (Фотоархив)"]
+        Tag["Tag / EquipmentTag"]
+        CustomSection["CustomSection & CustomField (Динамические параметры)"]
+        EquipmentApproval["EquipmentApproval (Контроль изменений)"]
+    end
+
+    subgraph WMS["📦 WMS (Складской учет & Логистика)"]
+        Warehouse["Warehouse (Склады)"]
+        StorageZone["StorageZone & Cell (Адресное хранение)"]
+        Nomenclature["Nomenclature & Category (ТМЦ / Каталог)"]
+        StockItem["StockItem (Остатки)"]
+        StockOperation["StockOperation & Items (Движения ТМЦ)"]
+        StockTransfer["StockTransfer & Items (Перемещения)"]
+        Inventory["Inventory & Items (Инвентаризация)"]
+    end
+
+    subgraph SRM["🎫 SRM (Сервис-деск & Интеграции)"]
+        SrmIntegration["SrmIntegration (Jira, Redmine, 1C)"]
+        JiraIssueCache["JiraIssueCache (Заявки & Инциденты)"]
+    end
+
+    subgraph MRO["🛠️ MRO (ТОиР & Регламентные работы)"]
+        MaintenancePlan["MaintenancePlan (Планы ТО)"]
+        MaintenanceSchedule["MaintenanceSchedule (Заказ-наряды)"]
+        ChecklistTemplate["ChecklistTemplate & Items (Чек-листы)"]
+        ChecklistResult["ChecklistResult (Результаты проверок)"]
+        MaintenanceUsedPart["MaintenanceUsedPart (Списанные запчасти)"]
+    end
+
+    subgraph FEEDBACK["💬 FEEDBACK HUB (Обратная связь)"]
+        FeedbackTicket["FeedbackTicket (Тикеты / Баги)"]
+        FeedbackComment["FeedbackComment (Комментарии)"]
+        FeedbackAttachment["FeedbackAttachment (Вложения)"]
+    end
+
+    %% Междоменные связи
+    User -->|аудит действий| AuditLog
+    User -->|получатель| Notification
+    User -->|ответственный/создатель| Equipment
+    User -->|складской персонал| Warehouse
+    User -->|исполнитель ТО| MaintenanceSchedule
+    User -->|автор тикетов| FeedbackTicket
+
+    Equipment -->|привязка ЗИП| Nomenclature
+    Equipment -->|основание инцидентов| JiraIssueCache
+    Equipment -->|объект обслуживания| MaintenancePlan
+    Equipment -->|объект обслуживания| MaintenanceSchedule
+    Equipment -->|списание ТМЦ| StockOperationItem
+
+    MaintenanceSchedule -->|списание запчастей со склада| MaintenanceUsedPart
+    MaintenanceUsedPart -->|резерв / расход| Nomenclature
+    MaintenanceUsedPart -->|склад списания| Warehouse
+
+    Nomenclature -->|хранение в ячейках| StorageCell
+    Warehouse -->|зоны| StorageZone
+    StorageZone -->|ячейки| StorageCell
+
+    SrmIntegration -->|синхронизация заявок| JiraIssueCache
+    JiraIssueCache -.->|связанный наряд| MaintenanceSchedule
+        </div>
+      </div>
+    </div>
+
+    <!-- Вкладка 2: ERD диаграмма -->
+    <div id="tab-erd" class="tab-content card">
+      <div class="card-title">
+        <span>ERD диаграмма отношений сущностей</span>
+      </div>
+      <div class="mermaid-wrapper">
+        <div class="mermaid">
+erDiagram
+    User ||--o{ UserRole : has
+    Role ||--o{ UserRole : assigned
+    Role ||--o{ RolePermission : has
+    Permission ||--o{ RolePermission : granted
+
+    User ||--o{ AuditLog : generates
+    User ||--o{ Notification : receives
+    User ||--o{ ReportTemplate : creates
+    User ||--o{ Equipment : creates
+    User ||--o{ Document : uploads
+    User ||--o{ Photo : uploads
+    User ||--o{ StockOperation : performs
+    User ||--o{ Inventory : conducts
+    User ||--o{ Warehouse : manages
+    User ||--o{ MaintenanceSchedule : completes
+    User ||--o{ ChecklistResult : fills
+    User ||--o{ EquipmentApproval : requests
+    User ||--o{ EquipmentApproval : reviews
+    User ||--o{ StockTransfer : creates_transfer
+    User ||--o{ StockTransfer : dispatches_transfer
+    User ||--o{ StockTransfer : receives_transfer
+    User ||--o{ StockTransfer : rejects_transfer
+    User ||--o{ FeedbackTicket : reports_ticket
+    User ||--o{ FeedbackTicket : assigned_ticket
+    User ||--o{ FeedbackComment : writes_comment
+    User ||--o{ FeedbackAttachment : uploads_feedback_file
+
+    Equipment ||--o{ EquipmentTag : tagged
+    Tag ||--o{ EquipmentTag : applied_to
+    Equipment ||--o{ Document : has_docs
+    Equipment ||--o{ Photo : has_photos
+    Equipment ||--o{ EquipmentSparePart : requires_spares
+    Equipment ||--o{ EquipmentApproval : subject_of_approval
+    Equipment ||--o{ MaintenancePlan : has_maintenance_plans
+    Equipment ||--o{ MaintenanceSchedule : maintenance_history
+    Equipment ||--o{ StockOperationItem : target_of_stock_issue
+
+    CustomSection ||--o{ CustomFieldDefinition : contains
+
+    Warehouse ||--o{ StorageZone : divided_into
+    StorageZone ||--o{ StorageCell : contains_cells
+    StorageCell ||--o{ StockItem : stores_in_cell
+    StorageCell ||--o{ StockTransferItem : target_cell
+
+    NomenclatureCategory ||--o{ NomenclatureCategory : subcategories
+    NomenclatureCategory ||--o{ Nomenclature : categorizes
+
+    Warehouse ||--o{ StockItem : holds_stock
+    Nomenclature ||--o{ StockItem : stocked_as
+
+    Warehouse ||--o{ StockOperation : origin_warehouse
+    StockOperation ||--o{ StockOperationItem : contains_items
+    Nomenclature ||--o{ StockOperationItem : item_nomenclature
+
+    Nomenclature ||--o{ EquipmentSparePart : linked_to_equipment
+
+    Warehouse ||--o{ Inventory : inventory_at_warehouse
+    Inventory ||--o{ InventoryItem : counts_items
+    Nomenclature ||--o{ InventoryItem : counted_nomenclature
+
+    Warehouse ||--o{ StockTransfer : source_transfers
+    Warehouse ||--o{ StockTransfer : target_transfers
+    StockTransfer ||--o{ StockTransferItem : includes_transfers
+    Nomenclature ||--o{ StockTransferItem : transferred_nomenclature
+
+    SrmIntegration ||--o{ JiraIssueCache : syncs_issues
+
+    ChecklistTemplate ||--o{ ChecklistTemplateItem : defined_items
+    ChecklistTemplate ||--o{ MaintenancePlan : template_for_plan
+    MaintenancePlan ||--o{ MaintenanceSchedule : generates_schedules
+    MaintenanceSchedule ||--o| ChecklistResult : evaluates_result
+    MaintenanceSchedule ||--o{ MaintenanceUsedPart : consumes_parts
+    Nomenclature ||--o{ MaintenanceUsedPart : consumed_part
+    Warehouse ||--o{ MaintenanceUsedPart : sourced_from_warehouse
+
+    FeedbackTicket ||--o{ FeedbackComment : thread
+    FeedbackTicket ||--o{ FeedbackAttachment : files
+
+    User {
+        string id PK
+        string ldapLogin UK
+        string displayName
+        string email
+    }
+    Equipment {
+        string id PK
+        string name
+        string inventoryNumber UK
+        string status
+    }
+    Warehouse {
+        string id PK
+        string name
+        string code UK
+    }
+    Nomenclature {
+        string id PK
+        string name
+        string article UK
+        decimal minStock
+    }
+    StockItem {
+        string id PK
+        string warehouseId FK
+        string nomenclatureId FK
+        decimal quantity
+    }
+    StockTransfer {
+        string id PK
+        string transferNumber UK
+        string status
+    }
+    JiraIssueCache {
+        string id PK
+        string issueKey UK
+        string status
+        string priority
+    }
+    MaintenanceSchedule {
+        string id PK
+        string equipmentId FK
+        string status
+        timestamp scheduledDate
+    }
+    FeedbackTicket {
+        string id PK
+        string ticketNumber UK
+        string type
+        string status
+    }
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'dark',
+      securityLevel: 'loose',
+      themeVariables: {
+        darkMode: true,
+        background: '#090d16',
+        primaryColor: '#0284c7',
+        primaryTextColor: '#f8fafc',
+        primaryBorderColor: '#38bdf8',
+        lineColor: '#64748b',
+        secondaryColor: '#334155',
+        tertiaryColor: '#1e293b'
+      }
+    });
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-buttons button').forEach(el => el.classList.remove('active'));
+      
+      document.getElementById(tabId).classList.add('active');
+      if (tabId === 'tab-flow') {
+        document.getElementById('btn-flow').classList.add('active');
+      } else {
+        document.getElementById('btn-erd').classList.add('active');
+      }
+    }
+  </script>
+</body>
+</html>

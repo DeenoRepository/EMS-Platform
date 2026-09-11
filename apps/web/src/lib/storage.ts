@@ -10,6 +10,7 @@ export function ensureUploadDirs() {
     UPLOAD_ROOT,
     path.join(UPLOAD_ROOT, 'documents'),
     path.join(UPLOAD_ROOT, 'photos'),
+    path.join(UPLOAD_ROOT, 'feedback'),
   ];
   for (const dir of dirs) {
     if (!fs.existsSync(dir)) {
@@ -20,6 +21,7 @@ export function ensureUploadDirs() {
 
 export const ALLOWED_EXTENSIONS = {
   photos: new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif']),
+  feedback: new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.pdf', '.log', '.txt', '.zip']),
   documents: new Set([
     '.pdf',
     '.doc',
@@ -42,12 +44,13 @@ export const ALLOWED_EXTENSIONS = {
 
 const MAX_FILE_SIZES = {
   photos: 20 * 1024 * 1024, // 20 MB
+  feedback: 25 * 1024 * 1024, // 25 MB
   documents: 50 * 1024 * 1024, // 50 MB
 };
 
 export async function saveFile(
   file: File,
-  subFolder: 'documents' | 'photos'
+  subFolder: 'documents' | 'photos' | 'feedback'
 ): Promise<{ fileName: string; originalName: string; filePath: string; fileSize: number; fileType: string }> {
   ensureUploadDirs();
 

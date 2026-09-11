@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     if (!hasPermission(user, PERMISSIONS.WMS_STOCK_VIEW)) return forbiddenResponse();
 
     const { searchParams } = new URL(req.url);
-    const forTransfer = searchParams.get('forTransfer') === 'true';
+    const forManage = searchParams.get('forManage') === 'true';
 
     const isAdmin =
       user.roles.includes('admin') ||
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
       user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
 
     const where: any = {};
-    if (!isAdmin && !forTransfer) {
+    if (forManage && !isAdmin) {
       where.responsibleUserId = user.userId;
     }
 

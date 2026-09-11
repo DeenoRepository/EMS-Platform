@@ -70,6 +70,7 @@ import {
 } from '@ems/shared';
 import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
+import { isTruthyBoolean } from '@/lib/eps-helpers';
 import {
   StatCard,
   StatusBadge,
@@ -607,11 +608,11 @@ function EquipmentPassportContent() {
   const maintCount = custom.maintenance_count || '';
   const respPerson = custom.responsible_person_name || '';
   const extSysId = custom.external_system_id || '';
-  const isCriticalPath = Boolean(custom.is_critical_path);
+  const isCriticalPath = isTruthyBoolean(custom.is_critical_path);
   const calibrationInt = custom.calibration_interval;
   const cleanRoom = custom.clean_room_class;
-  const isUnique = custom.is_unique;
-  const isImported = custom.is_imported;
+  const isUnique = isTruthyBoolean(custom.is_unique);
+  const isImported = isTruthyBoolean(custom.is_imported);
 
   // Copy helper with feedback
   const handleCopy = (text: string, label: string) => {
@@ -623,9 +624,108 @@ function EquipmentPassportContent() {
     });
   };
 
-  // Sections that are rendered in dedicated engineering/custom blocks
-  const specialSectionCodes = new Set(['classifiers', 'condition_wear', 'maintenance_regulations', 'operational']);
-  const engineeringSections = sections.filter((s) => !specialSectionCodes.has(s.code));
+  const renderCustomFieldValue = (f: CustomFieldDef, val: any) => {
+    if (val === undefined || val === null || val === '') {
+      return <Typography variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>;
+    }
+
+    if (f.fieldType === 'BOOLEAN' || typeof val === 'boolean') {
+      const boolVal = isTruthyBoolean(val);
+      let label = boolVal ? 'Да' : 'Нет';
+      if (f.key.includes('import')) label = boolVal ? 'Да (Импорт)' : 'Нет (Отечественное)';
+      else if (f.key.includes('unique')) label = boolVal ? 'Да (Уникальное)' : 'Нет (Серийное)';
+      else if (f.key.includes('critical_path')) label = boolVal ? 'Да (Критический путь)' : 'Нет';
+
+      return (
+        <StatusBadge
+          status={boolVal ? (f.key.includes('critical_path') ? 'ERROR' : 'SUCCESS') : 'DEFAULT'}
+          label={label}
+          size="small"
+        />
+      );
+    }
+
+    if (f.key === 'criticality' || f.key === 'kategoriya_kritichnosti') {
+      const sVal = String(val);
+      const isA = sVal === 'A' || sVal.includes('Высокая') || sVal.includes('А');
+      const isB = sVal === 'B' || sVal.includes('Средняя') || sVal.includes('В');
+      return (
+        <StatusBadge
+          status={isA ? 'ERROR' : isB ? 'WARNING' : 'INFO'}
+          label={sVal.startsWith('Категория') ? sVal : `Категория ${sVal}`}
+          size="small"
+        />
+      );
+    }
+
+    if (f.key === 'actual_wear_percentage' || f.key === 'fakticheskiy_protsent_iznosa' || (f.unit === '%' && !isNaN(Number(val)))) {
+      const num = Number(val);
+      return (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, maxWidth: 260 }}>
+          <Typography variant="body2" fontWeight={700} sx={{ minWidth: 38 }}>
+            {num}%
+          </Typography>
+          <Box sx={{ flexGrow: 1 }}>
+            <LinearProgress
+              variant="determinate"
+              value={Math.min(100, Math.max(0, num))}
+              color={num > 70 ? 'error' : num > 30 ? 'warning' : 'success'}
+              sx={{ height: 7, borderRadius: 4 }}
+            />
+          </Box>
+        </Box>
+      );
+    }
+
+    if (f.key.includes('code') || f.key.includes('number') || f.key.includes('kod') || f.key.includes('nomer')) {
+      return (
+        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
+          <Paper
+            variant="outlined"
+            sx={{
+              px: 1,
+              py: 0.2,
+              fontFamily: 'monospace',
+              fontWeight: 700,
+              bgcolor: 'background.default',
+              fontSize: '0.8125rem',
+              borderRadius: '5px',
+              color: 'text.primary',
+              borderColor: 'grey.400',
+              lineHeight: 1.4,
+            }}
+          >
+            {String(val)}
+          </Paper>
+          <Tooltip title={`Скопировать ${f.name}`}>
+            <IconButton
+              size="small"
+              sx={{ p: 0.5, color: 'text.disabled', '&:hover': { color: 'primary.main' } }}
+              onClick={() => handleCopy(String(val), f.name)}
+            >
+              <ContentCopyIcon sx={{ fontSize: 15 }} />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      );
+    }
+
+    return (
+      <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
+        <Typography variant="body2" fontWeight={600}>
+          {String(val)}
+        </Typography>
+        {f.unit && (
+          <Chip
+            label={f.unit}
+            size="small"
+            variant="outlined"
+            sx={{ height: 19, fontSize: '0.65rem', fontWeight: 700 }}
+          />
+        )}
+      </Box>
+    );
+  };
 
   return (
     <Box sx={{ width: '100%', pb: 2 }}>
@@ -963,7 +1063,7 @@ function EquipmentPassportContent() {
                             Ответственное лицо (МОЛ)
                           </TableCell>
                           <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            {respPerson || equipment.createdBy?.displayName || <Typography component="span" variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>}
+                            {respPerson || <Typography component="span" variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>}
                           </TableCell>
                         </TableRow>
                         <TableRow>
@@ -1014,86 +1114,7 @@ function EquipmentPassportContent() {
                 </CardContent>
               </Card>
 
-              {/* Card 2: Эксплуатационные требования и метрология */}
-              <Card sx={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-                <CardContent sx={{ p: 2.5 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                    <StraightenIcon color="secondary" />
-                    <Typography variant="h6" fontWeight={700}>
-                      Эксплуатация и метрология
-                    </Typography>
-                  </Box>
-                  <Divider sx={{ mb: 1.5 }} />
-
-                  <TableContainer>
-                    <Table size="small">
-                      <TableBody>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', width: '42%', py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            Влияет на непрерывность
-                          </TableCell>
-                          <TableCell sx={{ fontWeight: 700, py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            <StatusBadge
-                              status={isCriticalPath ? 'ERROR' : 'DEFAULT'}
-                              label={isCriticalPath ? 'Да (Критический путь)' : 'Нет'}
-                              size="small"
-                            />
-                          </TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            Поверка датчиков
-                          </TableCell>
-                          <TableCell sx={{ fontWeight: 700, py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            {calibrationInt ? (
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                <Typography variant="body2" fontWeight={700}>{calibrationInt}</Typography>
-                                <Chip label="мес" size="small" variant="outlined" sx={{ height: 18, fontSize: '0.65rem', fontWeight: 700 }} />
-                              </Box>
-                            ) : (
-                              <Typography variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            Класс чистоты (ISO)
-                          </TableCell>
-                          <TableCell sx={{ fontWeight: 700, py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            {cleanRoom ? `Класс ${cleanRoom}` : <Typography variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            Уникальное оборудование
-                          </TableCell>
-                          <TableCell sx={{ fontWeight: 700, py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            {isUnique !== undefined && isUnique !== null
-                              ? isUnique
-                                ? 'Да (Уникальное)'
-                                : 'Нет (Серийное)'
-                              : <Typography variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: 0 }}>
-                            Импортное оборудование
-                          </TableCell>
-                          <TableCell sx={{ fontWeight: 700, py: 1, borderBottom: 0 }}>
-                            {isImported !== undefined && isImported !== null
-                              ? isImported
-                                ? 'Да (Импорт)'
-                                : 'Нет (Отечественное)'
-                              : <Typography variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>}
-                          </TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </CardContent>
-              </Card>
-
-              {/* Card 3: Индекс технического состояния */}
+              {/* Card 2: Индекс технического состояния */}
               <HealthScoreGauge
                 score={healthScore}
                 size="sm"
@@ -1108,253 +1129,15 @@ function EquipmentPassportContent() {
             </Box>
           </Grid>
 
-          {/* RIGHT COLUMN (7/12): Классификаторы, ТОиР, Инженерия */}
+          {/* RIGHT COLUMN (7/12): Все технические разделы и характеристики */}
           <Grid item xs={12} lg={7}>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {/* Card 1: Общероссийские и отраслевые классификаторы */}
-              <Card sx={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-                <CardContent sx={{ p: 2.5 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                    <CategoryIcon color="primary" />
-                    <Box>
-                      <Typography variant="h6" fontWeight={700}>
-                        Общероссийские и отраслевые классификаторы
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Нормативные коды классификации основных фондов и технологических процессов
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Divider sx={{ mb: 1.5 }} />
-
-                  <TableContainer>
-                    <Table size="small">
-                      <TableBody>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', width: '42%', py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            Код по ОКОФ (ОК 013-2014)
-                          </TableCell>
-                          <TableCell sx={{ py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            {okofCode ? (
-                              <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
-                                <Paper
-                                  variant="outlined"
-                                  sx={{
-                                    px: 1,
-                                    py: 0.2,
-                                    fontFamily: 'monospace',
-                                    fontWeight: 700,
-                                    bgcolor: 'background.default',
-                                    fontSize: '0.8125rem',
-                                    borderRadius: '5px',
-                                    color: 'text.primary',
-                                    borderColor: 'grey.400',
-                                    lineHeight: 1.4,
-                                  }}
-                                >
-                                  {okofCode}
-                                </Paper>
-                                <Tooltip title="Скопировать код ОКОФ">
-                                  <IconButton size="small" sx={{ p: 0.5, color: 'text.disabled', '&:hover': { color: 'primary.main' } }} onClick={() => handleCopy(okofCode, 'Код ОКОФ')}>
-                                    <ContentCopyIcon sx={{ fontSize: 15 }} />
-                                  </IconButton>
-                                </Tooltip>
-                              </Box>
-                            ) : (
-                              <Typography variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            Код по ОКПД2 (ОК 034-2014)
-                          </TableCell>
-                          <TableCell sx={{ py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            {okpd2Code ? (
-                              <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
-                                <Paper
-                                  variant="outlined"
-                                  sx={{
-                                    px: 1,
-                                    py: 0.2,
-                                    fontFamily: 'monospace',
-                                    fontWeight: 700,
-                                    bgcolor: 'background.default',
-                                    fontSize: '0.8125rem',
-                                    borderRadius: '5px',
-                                    color: 'text.primary',
-                                    borderColor: 'grey.400',
-                                    lineHeight: 1.4,
-                                  }}
-                                >
-                                  {okpd2Code}
-                                </Paper>
-                                <Tooltip title="Скопировать код ОКПД2">
-                                  <IconButton size="small" sx={{ p: 0.5, color: 'text.disabled', '&:hover': { color: 'primary.main' } }} onClick={() => handleCopy(okpd2Code, 'Код ОКПД2')}>
-                                    <ContentCopyIcon sx={{ fontSize: 15 }} />
-                                  </IconButton>
-                                </Tooltip>
-                              </Box>
-                            ) : (
-                              <Typography variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            Код тех. классификатора
-                          </TableCell>
-                          <TableCell sx={{ py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            {procCode ? (
-                              <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
-                                <Paper
-                                  variant="outlined"
-                                  sx={{
-                                    px: 1,
-                                    py: 0.2,
-                                    fontFamily: 'monospace',
-                                    fontWeight: 700,
-                                    bgcolor: 'background.default',
-                                    fontSize: '0.8125rem',
-                                    borderRadius: '5px',
-                                    color: 'text.primary',
-                                    borderColor: 'grey.400',
-                                    lineHeight: 1.4,
-                                  }}
-                                >
-                                  {procCode}
-                                </Paper>
-                                <Tooltip title="Скопировать код классификатора">
-                                  <IconButton size="small" sx={{ p: 0.5, color: 'text.disabled', '&:hover': { color: 'primary.main' } }} onClick={() => handleCopy(procCode, 'Технологический классификатор')}>
-                                    <ContentCopyIcon sx={{ fontSize: 15 }} />
-                                  </IconButton>
-                                </Tooltip>
-                              </Box>
-                            ) : (
-                              <Typography variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            Группа оборудования
-                          </TableCell>
-                          <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            {eqGroup || <Typography component="span" variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: 0 }}>
-                            Тип оборудования (Установка)
-                          </TableCell>
-                          <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: 0 }}>
-                            {eqType || <Typography component="span" variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>}
-                          </TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </CardContent>
-              </Card>
-
-              {/* Card 2: Техническое состояние и график ТОиР */}
-              <Card sx={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-                <CardContent sx={{ p: 2.5 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                    <SpeedIcon color="error" />
-                    <Box>
-                      <Typography variant="h6" fontWeight={700}>
-                        Техническое состояние и регламент ТОиР
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Степень износа, критичность и утвержденный график обслуживания
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Divider sx={{ mb: 1.5 }} />
-
-                  <TableContainer>
-                    <Table size="small">
-                      <TableBody>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', width: '42%', py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            Фактический процент износа
-                          </TableCell>
-                          <TableCell sx={{ py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            {actualWear !== null ? (
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, maxWidth: 260 }}>
-                                <Typography variant="body2" fontWeight={700} sx={{ minWidth: 38 }}>
-                                  {actualWear}%
-                                </Typography>
-                                <Box sx={{ flexGrow: 1 }}>
-                                  <LinearProgress
-                                    variant="determinate"
-                                    value={Math.min(100, Math.max(0, actualWear))}
-                                    color={actualWear > 70 ? 'error' : actualWear > 30 ? 'warning' : 'success'}
-                                    sx={{ height: 7, borderRadius: 4 }}
-                                  />
-                                </Box>
-                              </Box>
-                            ) : (
-                              <Typography variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            Категория критичности
-                          </TableCell>
-                          <TableCell sx={{ py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            <StatusBadge
-                              status={criticality === 'A' ? 'ERROR' : criticality === 'B' ? 'WARNING' : 'INFO'}
-                              label={`Категория ${criticality}`}
-                              size="small"
-                            />
-                          </TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            Периодичность ТО
-                          </TableCell>
-                          <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            {maintPeriodicity || <Typography component="span" variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            График ТО на 2026 год
-                          </TableCell>
-                          <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            {maintScheduleYear || <Typography component="span" variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: 0 }}>
-                            Количество проведенных ТО
-                          </TableCell>
-                          <TableCell sx={{ fontWeight: 700, py: 1, borderBottom: 0 }}>
-                            {maintCount ? (
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                <Typography variant="body2" fontWeight={700}>{maintCount}</Typography>
-                                <Chip label="шт" size="small" variant="outlined" sx={{ height: 18, fontSize: '0.65rem', fontWeight: 700 }} />
-                              </Box>
-                            ) : (
-                              <Typography variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </CardContent>
-              </Card>
-
-              {/* Card 3+: Инженерные характеристики (Электрика, Механика и др.) */}
-              {engineeringSections.map((sec) => (
+              {/* Dynamic Custom Sections from Database */}
+              {sections.map((sec) => (
                 <Card key={sec.id} sx={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
                   <CardContent sx={{ p: 2.5 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                      {SECTION_ICONS[sec.icon || 'Bolt'] || <BoltIcon color="warning" />}
+                      {SECTION_ICONS[sec.icon || 'Category'] || <CategoryIcon color="primary" />}
                       <Box>
                         <Typography variant="h6" fontWeight={700}>
                           {sec.name}
@@ -1371,43 +1154,28 @@ function EquipmentPassportContent() {
                     <TableContainer>
                       <Table size="small">
                         <TableBody>
-                          {sec.fields.map((f, fIdx) => {
-                            const val = equipment.customFields?.[f.key];
-                            const isLast = fIdx === sec.fields.length - 1;
-                            const displayVal =
-                              val === undefined || val === null || val === ''
-                                ? null
-                                : typeof val === 'boolean'
-                                ? val
-                                  ? 'Да'
-                                  : 'Нет'
-                                : String(val);
-
-                            return (
-                              <TableRow key={f.key}>
-                                <TableCell sx={{ fontWeight: 500, color: 'text.secondary', width: '42%', py: 1, borderBottom: isLast ? 0 : '1px solid #f1f5f9' }}>
-                                  {f.name}
-                                </TableCell>
-                                <TableCell sx={{ fontWeight: 700, py: 1, borderBottom: isLast ? 0 : '1px solid #f1f5f9' }}>
-                                  {displayVal !== null ? (
-                                    <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
-                                      <Typography variant="body2" fontWeight={700}>{displayVal}</Typography>
-                                      {f.unit && (
-                                        <Chip
-                                          label={f.unit}
-                                          size="small"
-                                          variant="outlined"
-                                          sx={{ height: 19, fontSize: '0.65rem', fontWeight: 700 }}
-                                        />
-                                      )}
-                                    </Box>
-                                  ) : (
-                                    <Typography variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>
-                                  )}
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
+                          {sec.fields.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={2} sx={{ py: 1.5, color: 'text.secondary', textAlign: 'center' }}>
+                                В данном разделе пока нет настроенных характеристик
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            sec.fields.map((f, fIdx) => {
+                              const val = equipment.customFields?.[f.key];
+                              const isLast = fIdx === sec.fields.length - 1;
+                              return (
+                                <TableRow key={f.key}>
+                                  <TableCell sx={{ fontWeight: 500, color: 'text.secondary', width: '42%', py: 1, borderBottom: isLast ? 0 : '1px solid #f1f5f9' }}>
+                                    {f.name}
+                                  </TableCell>
+                                  <TableCell sx={{ py: 1, borderBottom: isLast ? 0 : '1px solid #f1f5f9' }}>
+                                    {renderCustomFieldValue(f, val)}
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })
+                          )}
                         </TableBody>
                       </Table>
                     </TableContainer>
@@ -1433,36 +1201,13 @@ function EquipmentPassportContent() {
                           {unassignedFields.map((f, uIdx) => {
                             const val = equipment.customFields?.[f.key];
                             const isLast = uIdx === unassignedFields.length - 1;
-                            const displayVal =
-                              val === undefined || val === null || val === ''
-                                ? null
-                                : typeof val === 'boolean'
-                                ? val
-                                  ? 'Да'
-                                  : 'Нет'
-                                : String(val);
-
                             return (
                               <TableRow key={f.key}>
                                 <TableCell sx={{ fontWeight: 500, color: 'text.secondary', width: '42%', py: 1, borderBottom: isLast ? 0 : '1px solid #f1f5f9' }}>
                                   {f.name}
                                 </TableCell>
-                                <TableCell sx={{ fontWeight: 700, py: 1, borderBottom: isLast ? 0 : '1px solid #f1f5f9' }}>
-                                  {displayVal !== null ? (
-                                    <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
-                                      <Typography variant="body2" fontWeight={700}>{displayVal}</Typography>
-                                      {f.unit && (
-                                        <Chip
-                                          label={f.unit}
-                                          size="small"
-                                          variant="outlined"
-                                          sx={{ height: 19, fontSize: '0.65rem', fontWeight: 700 }}
-                                        />
-                                      )}
-                                    </Box>
-                                  ) : (
-                                    <Typography variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>
-                                  )}
+                                <TableCell sx={{ py: 1, borderBottom: isLast ? 0 : '1px solid #f1f5f9' }}>
+                                  {renderCustomFieldValue(f, val)}
                                 </TableCell>
                               </TableRow>
                             );
@@ -2082,20 +1827,6 @@ function EquipmentPassportContent() {
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Критичность (A/B/C)"
-                  select
-                  fullWidth
-                  size="small"
-                  value={editForm.criticality || 'B'}
-                  onChange={(e) => setEditForm({ ...editForm, criticality: e.target.value })}
-                >
-                  <MenuItem value="A">Класс A (Критическое)</MenuItem>
-                  <MenuItem value="B">Класс B (Основное)</MenuItem>
-                  <MenuItem value="C">Класс C (Вспомогательное)</MenuItem>
-                </TextField>
-              </Grid>
-              <Grid item xs={12} sm={6}>
                 <FormControl fullWidth size="small">
                   <InputLabel id="edit-status-label">Статус оборудования</InputLabel>
                   <Select
@@ -2175,12 +1906,12 @@ function EquipmentPassportContent() {
                   return (
                     <Grid item xs={12} sm={6} key={f.key}>
                       <TextField
-                        label={f.name}
+                        label={f.unit ? `${f.name} (${f.unit})` : f.name}
                         type={f.fieldType === 'NUMBER' ? 'number' : f.fieldType === 'DATE' ? 'date' : 'text'}
                         InputLabelProps={f.fieldType === 'DATE' ? { shrink: true } : undefined}
                         fullWidth
                         size="small"
-                        value={editCustomFields[f.key] || ''}
+                        value={editCustomFields[f.key] ?? ''}
                         onChange={(e) =>
                           setEditCustomFields({ ...editCustomFields, [f.key]: e.target.value })
                         }
@@ -2191,6 +1922,32 @@ function EquipmentPassportContent() {
               </Grid>
             </Box>
           ))}
+
+          {/* Section 3: Unassigned Custom Fields (if any) */}
+          {unassignedFields.length > 0 && (
+            <Box>
+              <Typography variant="subtitle1" fontWeight={700} color="text.secondary" sx={{ mb: 2 }}>
+                Дополнительные характеристики
+              </Typography>
+              <Grid container spacing={2}>
+                {unassignedFields.map((f) => (
+                  <Grid item xs={12} sm={6} key={f.key}>
+                    <TextField
+                      label={f.unit ? `${f.name} (${f.unit})` : f.name}
+                      type={f.fieldType === 'NUMBER' ? 'number' : f.fieldType === 'DATE' ? 'date' : 'text'}
+                      InputLabelProps={f.fieldType === 'DATE' ? { shrink: true } : undefined}
+                      fullWidth
+                      size="small"
+                      value={editCustomFields[f.key] ?? ''}
+                      onChange={(e) =>
+                        setEditCustomFields({ ...editCustomFields, [f.key]: e.target.value })
+                      }
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
+          )}
         </Box>
       </FormDialog>
 

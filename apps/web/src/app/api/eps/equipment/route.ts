@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     const tagId = searchParams.get('tagId');
     const manufacturer = searchParams.get('manufacturer');
     const page = parseInt(searchParams.get('page') || '1', 10);
-    const pageSize = Math.min(200, Math.max(1, parseInt(searchParams.get('pageSize') || '20', 10)));
+    const pageSize = Math.min(1000, Math.max(1, parseInt(searchParams.get('pageSize') || searchParams.get('limit') || '20', 10)));
 
     const where: Prisma.EquipmentWhereInput = {};
 
@@ -44,25 +44,6 @@ export async function GET(req: NextRequest) {
         { model: { contains: search, mode: 'insensitive' } },
         { location: { contains: search, mode: 'insensitive' } },
       ];
-    }
-
-    const canManageApprovals = hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) || user.roles.includes('admin');
-
-    if (!canManageApprovals) {
-      if (!status) {
-        const existingAnd = Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : [];
-        where.AND = [
-          ...existingAnd,
-          {
-            OR: [
-              { status: { not: 'DRAFT' } },
-              { status: 'DRAFT', createdById: user.userId },
-            ],
-          },
-        ];
-      } else if (status === 'DRAFT') {
-        where.createdById = user.userId;
-      }
     }
 
     const [total, items, statusGroup] = await Promise.all([
@@ -93,14 +74,6 @@ export async function GET(req: NextRequest) {
       prisma.equipment.groupBy({
         by: ['status'],
         _count: { status: true },
-        where: !canManageApprovals
-          ? {
-              OR: [
-                { status: { not: 'DRAFT' } },
-                { status: 'DRAFT', createdById: user.userId },
-              ],
-            }
-          : undefined,
       }),
     ]);
 
@@ -133,6 +106,7 @@ export async function GET(req: NextRequest) {
       location: item.location,
       status: item.status,
       commissionDate: item.commissionDate,
+      customFields: item.customFields || {},
       primaryPhoto: item.photos[0]?.filePath || null,
       tags: item.tags.map((t) => t.tag),
       counts: item._count,

@@ -19,8 +19,8 @@ export async function GET(req: NextRequest) {
       user.roles?.includes('administrator') ||
       hasPermission(user, PERMISSIONS.ADMIN_USERS_MANAGE);
 
-    // Effective scope determination
-    const isEnterprise = scopeParam === 'enterprise' ? isAdmin : scopeParam === 'personal' ? false : isAdmin;
+    // Effective scope determination (default to enterprise-wide visibility)
+    const isEnterprise = scopeParam === 'personal' ? false : true;
     const scope = isEnterprise ? 'ENTERPRISE' : 'PERSONAL';
 
     // 1. EPS: EQUIPMENT IN SCOPE
@@ -133,27 +133,51 @@ export async function GET(req: NextRequest) {
             ...(userWarehouseIds.length > 0 ? { warehouseId: { in: userWarehouseIds } } : {}),
           },
         }),
-        prisma.stockItem.findMany({
+        prisma.nomenclature.findMany({
           where: {
-            nomenclature: { minStock: { not: null }, deletedAt: null },
-            ...(userWarehouseIds.length > 0 ? { warehouseId: { in: userWarehouseIds } } : {}),
+            minStock: { gt: 0 },
+            deletedAt: null,
           },
           include: {
-            nomenclature: { select: { minStock: true, name: true, unit: true } },
-            warehouse: { select: { name: true, code: true } },
+            stockItems: {
+              select: {
+                id: true,
+                quantity: true,
+                warehouseId: true,
+                warehouse: { select: { code: true } },
+              },
+            },
           },
-        }).then((items) =>
-          items
-            .filter((si) => si.nomenclature.minStock !== null && Number(si.quantity) <= Number(si.nomenclature.minStock))
-            .map((si) => ({
-              id: si.id,
-              name: si.nomenclature.name,
-              warehouseCode: si.warehouse.code,
-              quantity: Number(si.quantity),
-              minStock: Number(si.nomenclature.minStock),
-              unit: si.nomenclature.unit,
-            }))
-        ),
+        }).then((noms) => {
+          const deficitList: any[] = [];
+          for (const nom of noms) {
+            const minStock = Number(nom.minStock);
+            const relevantItems = userWarehouseIds.length > 0
+              ? nom.stockItems.filter((si) => userWarehouseIds.includes(si.warehouseId))
+              : nom.stockItems;
+
+            if (userWarehouseIds.length > 0 && relevantItems.length === 0) {
+              continue;
+            }
+
+            // Общий остаток номенклатуры по всем складам
+            const totalStock = nom.stockItems.reduce((sum, si) => sum + Number(si.quantity), 0);
+
+            // Дефицит возникает только если установлен положительный неснижаемый остаток и текущий остаток <= minStock
+            if (minStock > 0 && totalStock <= minStock) {
+              const primaryItem = relevantItems[0] || nom.stockItems[0];
+              deficitList.push({
+                id: primaryItem?.id || nom.id,
+                name: nom.name,
+                warehouseCode: nom.stockItems.length > 1 ? 'ВСЕ' : (primaryItem?.warehouse?.code || '—'),
+                quantity: totalStock,
+                minStock,
+                unit: nom.unit,
+              });
+            }
+          }
+          return deficitList;
+        }),
       ]);
 
       wmsStats = {

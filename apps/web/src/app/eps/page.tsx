@@ -44,6 +44,7 @@ import { EQUIPMENT_STATUS_MAP, formatDate, PERMISSIONS } from '@ems/shared';
 import * as XLSX from 'xlsx';
 import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
+import { getEquipmentKind, getEquipmentDepartment, isTruthyBoolean } from '@/lib/eps-helpers';
 import {
   StatCard,
   StatusBadge,
@@ -96,7 +97,7 @@ const EPS_COLUMNS: TableColumnOption[] = [
   { id: 'status', label: 'Эксплуатационный статус', defaultVisible: true },
   { id: 'criticality', label: 'Категория критичности (A / B / C)', defaultVisible: false },
   { id: 'actualWear', label: 'Степень физического износа (%)', defaultVisible: false },
-  { id: 'eqGroup', label: 'Группа оборудования', defaultVisible: false },
+  { id: 'eqGroup', label: 'Подразделение / группа', defaultVisible: false },
   { id: 'eqType', label: 'Вид оборудования', defaultVisible: false },
   { id: 'respPerson', label: 'Ответственное лицо (МОЛ)', defaultVisible: false },
   { id: 'okofCode', label: 'Код ОКОФ (ОК 013-2014)', defaultVisible: false },
@@ -210,13 +211,17 @@ function EquipmentListContent() {
     }
   }, [page, pageSize, search, statusFilter, tagFilter, viewMode, enqueueSnackbar]);
 
-  useEffect(() => {
-    fetchTags();
-  }, []);
+  const canAccessEquipment =
+    user?.roles?.includes('admin') ||
+    hasPermission(PERMISSIONS.EPS_EQUIPMENT_VIEW) ||
+    hasPermission(PERMISSIONS.EPS_EQUIPMENT_CREATE);
 
   useEffect(() => {
-    fetchEquipment();
-  }, [fetchEquipment]);
+    if (canAccessEquipment) {
+      fetchTags();
+      fetchEquipment();
+    }
+  }, [canAccessEquipment, fetchEquipment]);
 
   // Reset Filters
   const handleResetFilters = () => {
@@ -304,12 +309,12 @@ function EquipmentListContent() {
           bVal = b.customFields?.actual_wear_percentage !== undefined && b.customFields?.actual_wear_percentage !== '' ? Number(b.customFields.actual_wear_percentage) : -1;
           break;
         case 'eqGroup':
-          aVal = a.customFields?.equipment_group || '';
-          bVal = b.customFields?.equipment_group || '';
+          aVal = getEquipmentDepartment(a.customFields);
+          bVal = getEquipmentDepartment(b.customFields);
           break;
         case 'eqType':
-          aVal = a.customFields?.equipment_type || '';
-          bVal = b.customFields?.equipment_type || '';
+          aVal = getEquipmentKind(a.customFields);
+          bVal = getEquipmentKind(b.customFields);
           break;
         case 'respPerson':
           aVal = a.customFields?.responsible_person_name || '';
@@ -340,16 +345,16 @@ function EquipmentListContent() {
           bVal = b.customFields?.clean_room_class || '';
           break;
         case 'isCriticalPath':
-          aVal = a.customFields?.is_critical_path ? 1 : 0;
-          bVal = b.customFields?.is_critical_path ? 1 : 0;
+          aVal = isTruthyBoolean(a.customFields?.is_critical_path) ? 1 : 0;
+          bVal = isTruthyBoolean(b.customFields?.is_critical_path) ? 1 : 0;
           break;
         case 'isUnique':
-          aVal = a.customFields?.is_unique ? 1 : 0;
-          bVal = b.customFields?.is_unique ? 1 : 0;
+          aVal = isTruthyBoolean(a.customFields?.is_unique) ? 1 : 0;
+          bVal = isTruthyBoolean(b.customFields?.is_unique) ? 1 : 0;
           break;
         case 'isImported':
-          aVal = a.customFields?.is_imported ? 1 : 0;
-          bVal = b.customFields?.is_imported ? 1 : 0;
+          aVal = isTruthyBoolean(a.customFields?.is_imported) ? 1 : 0;
+          bVal = isTruthyBoolean(b.customFields?.is_imported) ? 1 : 0;
           break;
         case 'documentsCount':
           aVal = a._count?.documents || a.counts?.documents || 0;
@@ -416,8 +421,8 @@ function EquipmentListContent() {
       'Статус': EQUIPMENT_STATUS_MAP[eq.status]?.label || eq.status,
       'Критичность': eq.customFields?.criticality || '—',
       'Износ (%)': eq.customFields?.actual_wear_percentage ? `${eq.customFields.actual_wear_percentage}%` : '—',
-      'Группа оборудования': eq.customFields?.equipment_group || '—',
-      'Вид оборудования': eq.customFields?.equipment_type || '—',
+      'Подразделение / группа': getEquipmentDepartment(eq.customFields),
+      'Вид оборудования': getEquipmentKind(eq.customFields),
       'МОЛ / Ответственный': eq.customFields?.responsible_person_name || '—',
       'Код ОКОФ': eq.customFields?.okof_code || '—',
       'Код ОКПД2': eq.customFields?.okpd2_code || '—',
@@ -425,9 +430,9 @@ function EquipmentListContent() {
       'Периодичность ТО': eq.customFields?.maintenance_periodicity || '—',
       'Класс чистоты': eq.customFields?.clean_room_class || '—',
       'Интервал поверки (мес.)': eq.customFields?.calibration_interval || '—',
-      'Критический путь': eq.customFields?.is_critical_path ? 'Да' : 'Нет',
-      'Уникальное': eq.customFields?.is_unique ? 'Да' : 'Нет',
-      'Импортное': eq.customFields?.is_imported ? 'Да' : 'Нет',
+      'Критический путь': isTruthyBoolean(eq.customFields?.is_critical_path) ? 'Да' : 'Нет',
+      'Уникальное': isTruthyBoolean(eq.customFields?.is_unique) ? 'Да' : 'Нет',
+      'Импортное': isTruthyBoolean(eq.customFields?.is_imported) ? 'Да' : 'Нет',
       'Теги': eq.tags.map((t) => t.name).join(', ') || '—',
       'Ввод в эксплуатацию': formatDate(eq.commissionDate),
       'Дата изменения': formatDate(eq.updatedAt),
@@ -458,6 +463,26 @@ function EquipmentListContent() {
         estimatedUntil={maintStatus?.modules.eps.estimatedUntil}
         onRefresh={fetchEquipment}
       />
+    );
+  }
+
+  if (!canAccessEquipment) {
+    return (
+      <Box sx={{ pb: 4 }}>
+        <PageHeader
+          title="Реестр технологического оборудования"
+          subtitle="Паспортизация, технические характеристики, эксплуатационный статус и жизненный цикл оборудования"
+          breadcrumbs={[
+            { label: 'Главная', href: '/' },
+            { label: 'Реестр оборудования' },
+          ]}
+        />
+        <EmptyState
+          title="Доступ ограничен"
+          description="У вашей учетной записи нет полномочий для просмотра реестра и паспортов оборудования (требуется право eps.equipment.view)."
+          icon={<PrecisionManufacturingIcon sx={{ fontSize: 48, color: 'text.secondary' }} />}
+        />
+      </Box>
     );
   }
 
@@ -635,6 +660,7 @@ function EquipmentListContent() {
           setPage(1);
         }}
         stickyHeader
+        storageKey="eps_equipment_table"
         columns={EPS_COLUMNS}
         visibleColumns={visibleColumns}
         onVisibleColumnsChange={setVisibleColumns}
@@ -1010,19 +1036,19 @@ function EquipmentListContent() {
               )}
 
               {visibleColumns.includes('eqGroup') && (
-                <TableCell sx={{ minWidth: 130 }}>
+                <TableCell sx={{ minWidth: 140 }}>
                   <TableSortLabel
                     active={sortField === 'eqGroup'}
                     direction={sortField === 'eqGroup' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('eqGroup')}
                   >
-                    Группа
+                    Подразделение
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('eqType') && (
-                <TableCell sx={{ minWidth: 130 }}>
+                <TableCell sx={{ minWidth: 140 }}>
                   <TableSortLabel
                     active={sortField === 'eqType'}
                     direction={sortField === 'eqType' ? sortDirection : 'asc'}
@@ -1384,13 +1410,13 @@ function EquipmentListContent() {
 
                   {visibleColumns.includes('eqGroup') && (
                     <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
-                      {custom.equipment_group || '—'}
+                      {getEquipmentDepartment(custom)}
                     </TableCell>
                   )}
 
                   {visibleColumns.includes('eqType') && (
                     <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
-                      {custom.equipment_type || '—'}
+                      {getEquipmentKind(custom)}
                     </TableCell>
                   )}
 
@@ -1439,16 +1465,16 @@ function EquipmentListContent() {
                   {visibleColumns.includes('isCriticalPath') && (
                     <TableCell>
                       <Chip
-                        label={custom.is_critical_path ? 'Да' : 'Нет'}
+                        label={isTruthyBoolean(custom.is_critical_path) ? 'Да' : 'Нет'}
                         size="small"
                         sx={{
                           height: 20,
                           fontSize: '0.6875rem',
                           fontWeight: 600,
-                          backgroundColor: custom.is_critical_path ? 'error.light' : 'background.default',
-                          color: custom.is_critical_path ? 'error.main' : 'text.disabled',
+                          backgroundColor: isTruthyBoolean(custom.is_critical_path) ? 'error.light' : 'background.default',
+                          color: isTruthyBoolean(custom.is_critical_path) ? 'error.main' : 'text.disabled',
                           border: '1px solid',
-                          borderColor: custom.is_critical_path ? '#fecaca' : 'divider',
+                          borderColor: isTruthyBoolean(custom.is_critical_path) ? '#fecaca' : 'divider',
                         }}
                       />
                     </TableCell>
@@ -1457,16 +1483,16 @@ function EquipmentListContent() {
                   {visibleColumns.includes('isUnique') && (
                     <TableCell>
                       <Chip
-                        label={custom.is_unique ? 'Да' : 'Нет'}
+                        label={isTruthyBoolean(custom.is_unique) ? 'Да' : 'Нет'}
                         size="small"
                         sx={{
                           height: 20,
                           fontSize: '0.6875rem',
                           fontWeight: 600,
-                          backgroundColor: custom.is_unique ? '#f0f9ff' : 'background.default',
-                          color: custom.is_unique ? 'primary.main' : 'text.disabled',
+                          backgroundColor: isTruthyBoolean(custom.is_unique) ? '#f0f9ff' : 'background.default',
+                          color: isTruthyBoolean(custom.is_unique) ? 'primary.main' : 'text.disabled',
                           border: '1px solid',
-                          borderColor: custom.is_unique ? '#bae6fd' : 'divider',
+                          borderColor: isTruthyBoolean(custom.is_unique) ? '#bae6fd' : 'divider',
                         }}
                       />
                     </TableCell>
@@ -1475,16 +1501,16 @@ function EquipmentListContent() {
                   {visibleColumns.includes('isImported') && (
                     <TableCell>
                       <Chip
-                        label={custom.is_imported ? 'Да' : 'Нет'}
+                        label={isTruthyBoolean(custom.is_imported) ? 'Да' : 'Нет'}
                         size="small"
                         sx={{
                           height: 20,
                           fontSize: '0.6875rem',
                           fontWeight: 600,
-                          backgroundColor: custom.is_imported ? '#faf5ff' : 'background.default',
-                          color: custom.is_imported ? '#9333ea' : 'text.disabled',
+                          backgroundColor: isTruthyBoolean(custom.is_imported) ? '#faf5ff' : 'background.default',
+                          color: isTruthyBoolean(custom.is_imported) ? '#9333ea' : 'text.disabled',
                           border: '1px solid',
-                          borderColor: custom.is_imported ? '#e9d5ff' : 'divider',
+                          borderColor: isTruthyBoolean(custom.is_imported) ? '#e9d5ff' : 'divider',
                         }}
                       />
                     </TableCell>

@@ -271,6 +271,10 @@ function SrmPageContent() {
     return list;
   }, [issues, sortField, sortDirection]);
 
+  const paginatedIssues = useMemo(() => {
+    return sortedIssues.slice((page - 1) * pageSize, page * pageSize);
+  }, [sortedIssues, page, pageSize]);
+
   const activeFilterCount = (search ? 1 : 0) + (statusFilter ? 1 : 0) + (priorityFilter ? 1 : 0);
 
   const handleResetFilters = () => {
@@ -445,6 +449,7 @@ function SrmPageContent() {
             onAction={activeFilterCount > 0 ? handleResetFilters : () => setIsCreateDialogOpen(true)}
           />
         }
+        storageKey="srm_issues_table"
         columns={SRM_COLUMNS}
         visibleColumns={visibleColumns}
         onVisibleColumnsChange={setVisibleColumns}
@@ -575,7 +580,7 @@ function SrmPageContent() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedIssues.map((issue) => (
+            {paginatedIssues.map((issue) => (
               <TableRow
                 key={issue.id}
                 hover

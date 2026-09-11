@@ -41,6 +41,7 @@ import {
   StatusBadge,
   FileUploadDropzone,
   CriticalAlertBanner,
+  ConfirmDialog,
 } from '@/components/ui';
 
 export interface MissingFieldItem {
@@ -95,13 +96,15 @@ export function SmartImportWizard() {
   const [availableSections, setAvailableSections] = useState<{ id: string; name: string }[]>([]);
 
   // Step 3: Conflict strategy & rows state
-  const [conflictStrategy, setConflictStrategy] = useState<'UPSERT' | 'SKIP'>('UPSERT');
+  const [conflictStrategy, setConflictStrategy] = useState<'UPSERT' | 'SKIP' | 'FULL_REPLACE'>('UPSERT');
+  const [fullReplaceDialogOpen, setFullReplaceDialogOpen] = useState(false);
   const [validatedRows, setValidatedRows] = useState<ValidatedRow[]>([]);
   const [previewFilter, setPreviewFilter] = useState<'ALL' | 'NEW' | 'COLLISION' | 'ERROR'>('ALL');
   const [totalRowsCount, setTotalRowsCount] = useState(0);
   const [newCount, setNewCount] = useState(0);
   const [collisionCount, setCollisionCount] = useState(0);
   const [errorCount, setErrorCount] = useState(0);
+  const [duplicateExternalIds, setDuplicateExternalIds] = useState<{ id: string; count: number }[]>([]);
   const [executingImport, setExecutingImport] = useState(false);
 
   // Step 4: Results state
@@ -148,9 +151,10 @@ export function SmartImportWizard() {
         setNewCount(json.data.newCount);
         setCollisionCount(json.data.collisionCount);
         setErrorCount(json.data.errorCount);
+        setDuplicateExternalIds(json.data.duplicateExternalIds || []);
 
         const initialResolutions: Record<string, MissingFieldResolution> = {};
-        (json.data.missingFields || []).forEach((mf: MissingFieldItem) => {
+        (json.data.missingFields || []).forEach((mf: any) => {
           initialResolutions[mf.header] = {
             header: mf.header,
             action: 'CREATE',
@@ -158,8 +162,10 @@ export function SmartImportWizard() {
             key: mf.suggestedKey,
             fieldType: mf.suggestedType,
             unit: mf.suggestedUnit || '',
-            sectionId: '',
-          };
+            sectionId: mf.sectionId || '',
+            ...(mf.suggestedSectionName ? { sectionName: mf.suggestedSectionName } : {}),
+            ...(mf.suggestedSectionCode ? { sectionCode: mf.suggestedSectionCode } : {}),
+          } as any;
         });
         setResolutions(initialResolutions);
 
@@ -201,18 +207,28 @@ export function SmartImportWizard() {
   };
 
   // Step 3: Execute Import
-  const handleExecuteImport = async () => {
+  const handleExecuteImport = async (confirmedFullReplace = false) => {
+    if (conflictStrategy === 'FULL_REPLACE' && duplicateExternalIds.length > 0) {
+      enqueueSnackbar('В файле есть повторяющиеся ID оборудования', { variant: 'error' });
+      return;
+    }
+    if (conflictStrategy === 'FULL_REPLACE' && !confirmedFullReplace) {
+      setFullReplaceDialogOpen(true);
+      return;
+    }
     setExecutingImport(true);
 
     const newFieldDefs = Object.values(resolutions)
       .filter((r) => r.action === 'CREATE')
-      .map((r) => ({
+      .map((r: any) => ({
         header: r.header,
         key: r.key,
         name: r.name,
         fieldType: r.fieldType,
         unit: r.unit || undefined,
         sectionId: r.sectionId || undefined,
+        sectionName: r.sectionName || undefined,
+        sectionCode: r.sectionCode || undefined,
       }));
 
     const ignoredHeaders = Object.values(resolutions)
@@ -229,6 +245,7 @@ export function SmartImportWizard() {
           newFieldDefinitions: newFieldDefs,
           ignoredHeaders,
           conflictStrategy,
+          fullReplaceConfirmed: confirmedFullReplace,
         }),
       });
 
@@ -550,11 +567,22 @@ export function SmartImportWizard() {
               <Typography variant="h6" fontWeight={700} gutterBottom>
                 Стратегия разрешения коллизий и дубликатов
               </Typography>
+              {duplicateExternalIds.length > 0 && (
+                <CriticalAlertBanner
+                  alerts={[{
+                    id: 'duplicate-external-ids',
+                    severity: 'CRITICAL',
+                    title: `Повторяющиеся ID оборудования: ${duplicateExternalIds.length}`,
+                    description: duplicateExternalIds.slice(0, 5).map((item) => `${item.id} (${item.count} раза)`).join(', '),
+                    count: duplicateExternalIds.length,
+                  }]}
+                />
+              )}
               <Typography variant="caption" color="text.secondary" paragraph>
                 Выберите действие при совпадении инвентарного или заводского номера с уже существующим оборудованием в базе
               </Typography>
 
-              <Grid container spacing={2}>
+                <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
                   <Paper
                     variant="outlined"
@@ -599,6 +627,31 @@ export function SmartImportWizard() {
                     </Box>
                     <Typography variant="body2" color="text.secondary" sx={{ pl: 4 }}>
                       Существующие карточки оборудования останутся без изменений, будут добавлены только новые единицы.
+                    </Typography>
+                  </Paper>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Paper
+                    variant="outlined"
+                    onClick={() => setConflictStrategy('FULL_REPLACE')}
+                    sx={{
+                      p: 2.5,
+                      cursor: 'pointer',
+                      borderRadius: '8px',
+                      border: '2px solid',
+                      borderColor: conflictStrategy === 'FULL_REPLACE' ? 'error.main' : 'divider',
+                      backgroundColor: conflictStrategy === 'FULL_REPLACE' ? 'error.50' : 'background.paper',
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                      <Radio checked={conflictStrategy === 'FULL_REPLACE'} size="small" color="error" />
+                      <Typography variant="subtitle1" fontWeight={700} color={conflictStrategy === 'FULL_REPLACE' ? 'error.main' : 'inherit'}>
+                        Полностью заменить реестр
+                      </Typography>
+                    </Box>
+                    <Typography variant="body2" color="text.secondary" sx={{ pl: 4 }}>
+                      Удалить существующее оборудование и связанные EPS-данные, затем загрузить записи из файла. Пользователи, склады и номенклатура сохранятся.
                     </Typography>
                   </Paper>
                 </Grid>
@@ -699,7 +752,7 @@ export function SmartImportWizard() {
               variant="contained"
               size="large"
               disabled={executingImport || totalRowsCount === 0}
-              onClick={handleExecuteImport}
+              onClick={() => handleExecuteImport()}
               endIcon={executingImport ? <CircularProgress size={20} /> : <CheckCircleIcon />}
               sx={{ fontWeight: 700, px: 4 }}
             >
@@ -810,6 +863,23 @@ export function SmartImportWizard() {
           </CardContent>
         </Card>
       )}
+      <ConfirmDialog
+        open={fullReplaceDialogOpen}
+        title="Полная замена реестра оборудования"
+        subtitle="Текущие EPS-записи будут удалены"
+        message="Будут удалены карточки оборудования и каскадно связанные документы, фотографии, теги, планы ТО и согласования. Пользователи, склады, номенклатура и складские операции сохранятся."
+        variant="danger"
+        confirmText="Заменить реестр"
+        confirmWord="ЗАМЕНИТЬ"
+        confirmWordPlaceholder="Введите ЗАМЕНИТЬ"
+        countdownSeconds={3}
+        onClose={() => setFullReplaceDialogOpen(false)}
+        onConfirm={() => {
+          setFullReplaceDialogOpen(false);
+          void handleExecuteImport(true);
+        }}
+        loading={executingImport}
+      />
     </Box>
   );
 }

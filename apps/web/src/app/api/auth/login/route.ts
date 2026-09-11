@@ -28,16 +28,41 @@ export async function POST(req: NextRequest) {
 
     // 1. Попытка аутентификации через LDAP с учетом динамических настроек из БД
     const sysSettings = await getSystemSettings();
-    const ldapResult = await authenticateLdap(trimmedUsername, password || '', {
-      ldapUrl: sysSettings.LDAP_URL,
-      searchBase: sysSettings.LDAP_SEARCH_BASE,
-    });
+    const isLdapEnabled = sysSettings.LDAP_ENABLED === true || process.env.LDAP_ENABLED === 'true';
+    const ldapUrl = sysSettings.LDAP_URL || process.env.LDAP_URL;
+    const searchBase = sysSettings.LDAP_SEARCH_BASE || process.env.LDAP_SEARCH_BASE;
+
+    logger.debug('[LOGIN ROUTE] Попытка входа', { username: trimmedUsername, isLdapEnabled, hasLdapUrl: !!ldapUrl, hasSearchBase: !!searchBase });
+
+    let ldapResult = null;
+    if (isLdapEnabled && ldapUrl) {
+      try {
+        ldapResult = await authenticateLdap(trimmedUsername, password || '', {
+          ldapEnabled: true,
+          ldapUrl,
+          searchBase,
+        });
+        logger.debug('[LOGIN ROUTE] Результат authenticateLdap', { success: !!ldapResult });
+      } catch (err: any) {
+        console.error('[LOGIN ROUTE] Ошибка вызова authenticateLdap:', err?.message || err);
+      }
+    }
 
     if (ldapResult) {
       // Пользователь аутентифицирован через LDAP. Находим или создаем запись в БД
-      let user = await prisma.user.findUnique({
-        where: { ldapLogin: ldapResult.ldapLogin },
+      const cleanLogin = ldapResult.ldapLogin.trim().toLowerCase();
+      const rawCleanLogin = trimmedUsername.trim().toLowerCase();
+      let user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { ldapLogin: cleanLogin },
+            { ldapLogin: rawCleanLogin },
+            { ldapLogin: { equals: cleanLogin, mode: 'insensitive' } },
+            { ldapLogin: { equals: rawCleanLogin, mode: 'insensitive' } },
+          ],
+        },
       });
+      logger.debug('[LOGIN ROUTE] Поиск пользователя в базе данных', { found: !!user });
 
       if (!user) {
         // Создаем пользователя и присваиваем базовую роль guest
@@ -173,12 +198,25 @@ export async function POST(req: NextRequest) {
       data: { user: payload, token },
     });
 
-    // Устанавливаем cookie со сроком 8 часов
+    // Проверяем HTTPS: cookie secure устанавливается только если соединение реально идет по HTTPS
+    const isHttps = req.headers.get('x-forwarded-proto') === 'https' || req.nextUrl.protocol === 'https:';
+
+    // Устанавливаем cookie со сроком 8 часов (ems_session и ems_token)
     response.cookies.set({
       name: 'ems_session',
       value: token,
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isHttps,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 8 * 60 * 60,
+    });
+
+    response.cookies.set({
+      name: 'ems_token',
+      value: token,
+      httpOnly: true,
+      secure: isHttps,
       sameSite: 'lax',
       path: '/',
       maxAge: 8 * 60 * 60,

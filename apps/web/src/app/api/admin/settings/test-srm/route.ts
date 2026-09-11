@@ -75,9 +75,9 @@ export async function POST(req: NextRequest) {
       default:
         internalProviderType = 'JIRA';
         authType = 'BASIC';
-        const jiraEmail = process.env.JIRA_EMAIL || process.env.JIRA_USER_EMAIL || '';
-        const jiraToken = apiKey || process.env.JIRA_API_TOKEN || '';
-        authConfig = { username: jiraEmail, apiToken: jiraToken };
+        const jiraEmail = body.authUser || body.email || process.env.JIRA_EMAIL || process.env.JIRA_USER_EMAIL || '';
+        const jiraToken = apiKey || body.apiKey || process.env.JIRA_API_TOKEN || '';
+        authConfig = { username: jiraEmail, apiToken: jiraToken, token: jiraToken, password: jiraToken };
         queryConfig = { projectKey: projectKey || 'EMS' };
         break;
     }

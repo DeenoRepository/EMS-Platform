@@ -57,3 +57,6 @@ backups/
 coverage/
 playwright-report/
 test-results/
+ems-baremetal-release/
+ems-airgap-bundle/
+*.zip

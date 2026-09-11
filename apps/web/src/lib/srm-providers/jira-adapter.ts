@@ -39,17 +39,36 @@ export class JiraProviderAdapter implements ISrmProviderAdapter {
   private buildHeaders(integration: SrmIntegration): Record<string, string> {
     const headers: Record<string, string> = {
       Accept: 'application/json',
+      'X-Atlassian-Token': 'no-check',
     };
 
-    const auth = integration.authConfig as any || {};
+    const auth = (integration.authConfig as any) || {};
     if (integration.authType === 'BASIC') {
       const username = auth.username || auth.email || '';
-      const password = auth.apiToken || auth.password || '';
+      const password = auth.apiToken || auth.password || auth.token || '';
       if (username && password) {
         headers['Authorization'] = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
+      } else if (password) {
+        if (password.startsWith('Basic ') || password.startsWith('Bearer ')) {
+          headers['Authorization'] = password;
+        } else if (password.includes(':')) {
+          headers['Authorization'] = `Basic ${Buffer.from(password).toString('base64')}`;
+        } else {
+          try {
+            const decoded = Buffer.from(password, 'base64').toString('utf-8');
+            if (decoded.includes(':') && /^[\x20-\x7E]+$/.test(decoded)) {
+              headers['Authorization'] = `Basic ${password}`;
+            } else {
+              headers['Authorization'] = `Bearer ${password}`;
+            }
+          } catch {
+            headers['Authorization'] = `Bearer ${password}`;
+          }
+        }
       }
-    } else if (integration.authType === 'BEARER' && auth.token) {
-      headers['Authorization'] = `Bearer ${auth.token}`;
+    } else if (integration.authType === 'BEARER' && (auth.token || auth.apiKey || auth.apiToken)) {
+      const tok = auth.token || auth.apiKey || auth.apiToken;
+      headers['Authorization'] = tok.startsWith('Bearer ') ? tok : `Bearer ${tok}`;
     } else if (integration.authType === 'API_KEY' && auth.apiKey) {
       const headerName = auth.headerName || 'X-Atlassian-Token';
       headers[headerName] = auth.apiKey;

@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get('search')?.trim() || '';
     const lowStockOnly = searchParams.get('lowStockOnly') === 'true';
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
-    const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '25', 10)));
+    const pageSize = Math.min(200, Math.max(1, parseInt(searchParams.get('pageSize') || searchParams.get('limit') || '25', 10)));
 
     const where: any = {};
 
@@ -46,6 +46,7 @@ export async function GET(req: NextRequest) {
         OR: [
           { name: { contains: search, mode: 'insensitive' } },
           { article: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } },
         ],
       };
     }
@@ -54,12 +55,12 @@ export async function GET(req: NextRequest) {
     let finalItems: any[] = [];
 
     if (lowStockOnly) {
-      // При фильтрации по дефициту выбираем номенклатуры с установленным minStock
+      // При фильтрации по дефициту выбираем номенклатуры с положительным неснижаемым остатком (minStock > 0)
       const queryWhere = {
         ...where,
         nomenclature: {
           ...where.nomenclature,
-          minStock: { not: null },
+          minStock: { gt: 0 },
         },
       };
 
@@ -75,6 +76,9 @@ export async function GET(req: NextRequest) {
           nomenclature: {
             include: {
               category: true,
+              stockItems: {
+                select: { quantity: true },
+              },
               equipmentLinks: {
                 include: {
                   equipment: {
@@ -95,7 +99,11 @@ export async function GET(req: NextRequest) {
         .map((item) => {
           const qty = Number(item.quantity);
           const minStock = item.nomenclature.minStock !== null ? Number(item.nomenclature.minStock) : null;
-          const isLowStock = minStock !== null && qty <= minStock;
+          // Дефицит считается суммарно по номенклатуре со всех складов только при minStock > 0
+          const totalStock = item.nomenclature.stockItems
+            ? item.nomenclature.stockItems.reduce((sum: number, s: any) => sum + Number(s.quantity), 0)
+            : qty;
+          const isLowStock = minStock !== null && minStock > 0 && totalStock <= minStock;
 
           return {
             id: item.id,
@@ -106,9 +114,11 @@ export async function GET(req: NextRequest) {
             nomenclatureId: item.nomenclatureId,
             name: item.nomenclature.name,
             article: item.nomenclature.article || '—',
+            description: item.nomenclature.description || null,
             unit: item.nomenclature.unit,
             category: item.nomenclature.category?.name || 'Без категории',
             quantity: qty,
+            totalStock,
             minStock: minStock !== null ? minStock : '—',
             isLowStock,
             cellId: item.cellId,
@@ -142,6 +152,9 @@ export async function GET(req: NextRequest) {
             nomenclature: {
               include: {
                 category: true,
+                stockItems: {
+                  select: { quantity: true },
+                },
                 equipmentLinks: {
                   include: {
                     equipment: {
@@ -165,7 +178,11 @@ export async function GET(req: NextRequest) {
       finalItems = stockItems.map((item) => {
         const qty = Number(item.quantity);
         const minStock = item.nomenclature.minStock !== null ? Number(item.nomenclature.minStock) : null;
-        const isLowStock = minStock !== null && qty <= minStock;
+        // Дефицит считается суммарно по номенклатуре со всех складов только при minStock > 0
+        const totalStock = item.nomenclature.stockItems
+          ? item.nomenclature.stockItems.reduce((sum: number, s: any) => sum + Number(s.quantity), 0)
+          : qty;
+        const isLowStock = minStock !== null && minStock > 0 && totalStock <= minStock;
 
         return {
           id: item.id,
@@ -176,9 +193,11 @@ export async function GET(req: NextRequest) {
           nomenclatureId: item.nomenclatureId,
           name: item.nomenclature.name,
           article: item.nomenclature.article || '—',
+          description: item.nomenclature.description || null,
           unit: item.nomenclature.unit,
           category: item.nomenclature.category?.name || 'Без категории',
           quantity: qty,
+          totalStock,
           minStock: minStock !== null ? minStock : '—',
           isLowStock,
           cellId: item.cellId,

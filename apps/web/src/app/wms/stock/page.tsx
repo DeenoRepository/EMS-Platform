@@ -33,10 +33,19 @@ import PageHeader from '@/components/layout/PageHeader';
 import AddIcon from '@mui/icons-material/Add';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined';
+import SyncIcon from '@mui/icons-material/Sync';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import CreateNomenclatureDialog from '@/components/wms/CreateNomenclatureDialog';
-import { StockDetailDrawer, PrintBarcodeModal, WarehouseSelect, WmsOperationWizardDialog, type PrintableLabelItem, type OperationType } from '@/components/wms';
+import {
+  StockDetailDrawer,
+  PrintBarcodeModal,
+  WarehouseSelect,
+  WmsOperationWizardDialog,
+  EditNomenclatureDialog,
+  type PrintableLabelItem,
+  type OperationType,
+} from '@/components/wms';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import PrintIcon from '@mui/icons-material/Print';
 import { useSnackbar } from 'notistack';
@@ -67,9 +76,11 @@ interface StockRow {
   nomenclatureId: string;
   name: string;
   article: string;
+  description?: string | null;
   unit: string;
   category: string;
   quantity: number;
+  totalStock?: number;
   minStock: number | string;
   isLowStock: boolean;
   cellId?: string | null;
@@ -104,7 +115,7 @@ interface ZoneOption {
 const STOCK_COLUMNS: TableColumnOption[] = [
   { id: 'warehouse', label: 'Склад хранения', defaultVisible: true },
   { id: 'zone', label: 'Адресная ячейка хранения', defaultVisible: true },
-  { id: 'sku', label: 'Номенклатурный артикул', defaultVisible: true },
+  { id: 'sku', label: 'Артикул / Модель', defaultVisible: true },
   { id: 'name', label: 'Наименование ТМЦ', defaultVisible: true, required: true },
   { id: 'category', label: 'Товарная группа / Категория', defaultVisible: true },
   { id: 'quantity', label: 'Фактический остаток', defaultVisible: true },
@@ -178,6 +189,11 @@ function WmsStockContent() {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [wizardType, setWizardType] = useState<OperationType>('RECEIPT');
 
+  // Modal: Edit Nomenclature (ТМЦ)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editItem, setEditItem] = useState<any>(null);
+  const [isRecalculating, setIsRecalculating] = useState(false);
+
   // Load dictionaries once on mount
   useEffect(() => {
     async function loadDictionaries() {
@@ -228,7 +244,7 @@ function WmsStockContent() {
     try {
       const params = new URLSearchParams({
         page: (page + 1).toString(),
-        limit: rowsPerPage.toString(),
+        pageSize: rowsPerPage.toString(),
       });
 
       if (selectedWarehouse) params.append('warehouseId', selectedWarehouse);
@@ -260,15 +276,19 @@ function WmsStockContent() {
   const canEditStockLocation = useCallback(
     (row?: StockRow | null) => {
       if (!row) return false;
-      if (!hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE)) return false;
-      if (
+      const isAdmin =
         user?.roles?.includes('admin') ||
         hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-        hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE)
-      ) {
-        return true;
-      }
-      return Boolean(user?.userId && row.warehouseResponsibleUserId === user.userId);
+        hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+
+      if (isAdmin) return true;
+
+      const isResponsible = Boolean(user?.userId && row.warehouseResponsibleUserId === user.userId);
+      const hasZonePermission =
+        hasPermission(PERMISSIONS.WMS_ZONES_MANAGE) ||
+        hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE);
+
+      return isResponsible && hasZonePermission;
     },
     [user, hasPermission]
   );
@@ -277,7 +297,7 @@ function WmsStockContent() {
   const handleOpenLocationModal = async (row: StockRow) => {
     if (!canEditStockLocation(row)) {
       enqueueSnackbar(
-        `Вы не являетесь ответственным лицом за склад "${row.warehouseName}". Установка и изменение ячеек чужих складов запрещены.`,
+        `Вы не являетесь ответственным лицом за склад "${row.warehouseName}". Назначение ячеек чужого склада запрещено.`,
         { variant: 'warning' }
       );
       return;
@@ -304,7 +324,7 @@ function WmsStockContent() {
     if (!locStockItem) return;
     if (!canEditStockLocation(locStockItem)) {
       enqueueSnackbar(
-        `Вы не являетесь ответственным лицом за склад "${locStockItem.warehouseName}". Изменение ячеек чужих складов запрещено.`,
+        `Вы не являетесь ответственным лицом за склад "${locStockItem.warehouseName}". Назначение ячеек чужого склада запрещено.`,
         { variant: 'error' }
       );
       return;
@@ -332,6 +352,24 @@ function WmsStockContent() {
       enqueueSnackbar('Ошибка сети при обновлении места хранения', { variant: 'error' });
     } finally {
       setIsSavingLoc(false);
+    }
+  };
+
+  const handleRecalculateStock = async () => {
+    setIsRecalculating(true);
+    try {
+      const res = await fetch('/api/wms/stock/recalculate', { method: 'POST' });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        enqueueSnackbar(json.message || 'Остатки успешно пересчитаны', { variant: 'success' });
+        fetchStock();
+      } else {
+        enqueueSnackbar(json.error || 'Ошибка пересчета остатков', { variant: 'error' });
+      }
+    } catch {
+      enqueueSnackbar('Ошибка сети при пересчете остатков', { variant: 'error' });
+    } finally {
+      setIsRecalculating(false);
     }
   };
 
@@ -547,6 +585,27 @@ function WmsStockContent() {
                 Мастер операций
               </Button>
             )}
+
+            {hasPermission(PERMISSIONS.WMS_OPERATIONS_CREATE) && (
+              <Tooltip title="Синхронизировать и пересчитать фактические остатки из журнала операций">
+                <Button
+                  variant="outlined"
+                  startIcon={<SyncIcon className={isRecalculating ? 'spin-animation' : undefined} />}
+                  onClick={handleRecalculateStock}
+                  disabled={isRecalculating}
+                  sx={{
+                    height: 36,
+                    px: 1.5,
+                    fontSize: '0.8125rem',
+                    fontWeight: 600,
+                    borderRadius: '8px',
+                    textTransform: 'none',
+                  }}
+                >
+                  {isRecalculating ? 'Пересчет...' : 'Синхронизация'}
+                </Button>
+              </Tooltip>
+            )}
           </Stack>
         }
       />
@@ -565,6 +624,7 @@ function WmsStockContent() {
           setPage(0);
         }}
         stickyHeader
+        storageKey="wms_stock_table"
         columns={STOCK_COLUMNS}
         visibleColumns={visibleColumns}
         onVisibleColumnsChange={setVisibleColumns}
@@ -726,104 +786,104 @@ function WmsStockContent() {
               </TableCell>
 
               {visibleColumns.includes('warehouse') && (
-                <TableCell sx={{ width: 140, fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 140 }}>
                   <TableSortLabel
                     active={sortField === 'warehouse'}
                     direction={sortField === 'warehouse' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('warehouse')}
                   >
-                    СКЛАД
+                    Склад хранения
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('zone') && (
-                <TableCell sx={{ width: 160, fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 160 }}>
                   <TableSortLabel
                     active={sortField === 'zone'}
                     direction={sortField === 'zone' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('zone')}
                   >
-                    МЕСТО (ЯЧЕЙКА)
+                    Место (ячейка)
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('sku') && (
-                <TableCell sx={{ width: 120, fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 140 }}>
                   <TableSortLabel
                     active={sortField === 'sku'}
                     direction={sortField === 'sku' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('sku')}
                   >
-                    АРТИКУЛ
+                    Артикул / Модель
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('name') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 220 }}>
                   <TableSortLabel
                     active={sortField === 'name'}
                     direction={sortField === 'name' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('name')}
                   >
-                    НОМЕНКЛАТУРА (ТМЦ)
+                    Номенклатура (ТМЦ)
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('category') && (
-                <TableCell sx={{ width: 140, fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 150 }}>
                   <TableSortLabel
                     active={sortField === 'category'}
                     direction={sortField === 'category' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('category')}
                   >
-                    КАТЕГОРИЯ
+                    Категория
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('quantity') && (
-                <TableCell align="right" sx={{ width: 140, fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell align="right" sx={{ minWidth: 140 }}>
                   <TableSortLabel
                     active={sortField === 'quantity'}
                     direction={sortField === 'quantity' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('quantity')}
                   >
-                    ОСТАТОК НА СКЛАДЕ
+                    Остаток на складе
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('minQuantity') && (
-                <TableCell align="center" sx={{ width: 110, fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell align="center" sx={{ minWidth: 120 }}>
                   <TableSortLabel
                     active={sortField === 'minQuantity'}
                     direction={sortField === 'minQuantity' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('minQuantity')}
                   >
-                    МИН. ОСТАТОК
+                    Мин. остаток
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('status') && (
-                <TableCell align="center" sx={{ width: 120, fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell align="center" sx={{ minWidth: 130 }}>
                   <TableSortLabel
                     active={sortField === 'status'}
                     direction={sortField === 'status' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('status')}
                   >
-                    СТАТУС
+                    Статус
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('equipment') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
-                  СОВМЕСТИМОЕ ОБОРУДОВАНИЕ
+                <TableCell sx={{ minWidth: 180 }}>
+                  Совместимое оборудование
                 </TableCell>
               )}
             </TableRow>
@@ -884,7 +944,7 @@ function WmsStockContent() {
                               title={
                                 canEdit
                                   ? 'Нажмите, чтобы изменить ячейку хранения'
-                                  : 'Чужой склад: смена ячейки разрешена только назначенному МОЛ склада или администратору'
+                                  : 'Чужой склад: назначение ячейки разрешено только назначенному МОЛ склада или администратору'
                               }
                             >
                               <span>
@@ -944,8 +1004,25 @@ function WmsStockContent() {
                   )}
 
                   {visibleColumns.includes('sku') && (
-                    <TableCell sx={{ fontFamily: 'monospace', fontWeight: 500, fontSize: '0.8125rem', color: 'text.secondary' }}>
-                      {row.article || '—'}
+                    <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600, fontSize: '0.8125rem', color: 'text.secondary' }}>
+                      {row.article && row.article !== '—' ? (
+                        <Chip
+                          label={row.article}
+                          size="small"
+                          sx={{
+                            borderRadius: '4px',
+                            fontWeight: 600,
+                            fontSize: '0.75rem',
+                            fontFamily: 'monospace',
+                            backgroundColor: '#f1f5f9',
+                            color: '#334155',
+                            border: '1px solid #cbd5e1',
+                            height: 22,
+                          }}
+                        />
+                      ) : (
+                        '—'
+                      )}
                     </TableCell>
                   )}
 
@@ -960,7 +1037,14 @@ function WmsStockContent() {
                         '&:hover': { textDecoration: 'underline' },
                       }}
                     >
-                      {row.name}
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main', fontSize: '0.8125rem' }}>
+                        {row.name}
+                      </Typography>
+                      {row.description && !row.name.includes(row.description.replace('Модель: ', '')) && (
+                        <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', fontSize: '0.75rem', fontWeight: 500, mt: 0.25 }}>
+                          {row.description}
+                        </Typography>
+                      )}
                     </TableCell>
                   )}
 
@@ -1086,7 +1170,7 @@ function WmsStockContent() {
           {!canEditStockLocation(locStockItem) && (
             <Box sx={{ p: 1.5, bgcolor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 1.5 }}>
               <Typography variant="body2" color="error.main" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
-                Изменение ячеек запрещено: вы не являетесь ответственным лицом за склад «{locStockItem?.warehouseName}».
+                Изменение ячеек недоступно: требуется право «Конфигурация зон и ячеек» или назначение МОЛ склада.
               </Typography>
             </Box>
           )}
@@ -1180,6 +1264,21 @@ function WmsStockContent() {
         stockItem={selectedDrawerItem}
         onChangeLocation={(item) => handleOpenLocationModal(item)}
         onPrintLabel={(item) => handleOpenPrintSingle(item)}
+        onEdit={(item) => {
+          setEditItem(item);
+          setIsEditDialogOpen(true);
+        }}
+      />
+
+      {/* Модальное окно редактирования ТМЦ */}
+      <EditNomenclatureDialog
+        open={isEditDialogOpen}
+        onClose={() => setIsEditDialogOpen(false)}
+        onSaved={() => {
+          fetchStock();
+          setIsDrawerOpen(false);
+        }}
+        item={editItem}
       />
 
       {/* Модальное окно печати термоэтикеток и штрихкодов */}

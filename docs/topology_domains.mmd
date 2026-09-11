@@ -1,0 +1,78 @@
+flowchart TB
+    subgraph AUTH["🔐 RBAC & AUTH"]
+        User["User (Пользователи)"]
+        Role["Role (Роли)"]
+        Permission["Permission (Права)"]
+        UserRole["UserRole"]
+        RolePermission["RolePermission"]
+    end
+
+    subgraph SYSTEM["⚙️ СИСТЕМА, АУДИТ & BI"]
+        AuditLog["AuditLog (Журнал аудита)"]
+        Notification["Notification (Уведомления)"]
+        SystemSetting["SystemSetting (Настройки)"]
+        ReportTemplate["ReportTemplate (Шаблоны отчетов)"]
+    end
+
+    subgraph EPS["🏭 EPS (Паспортизация оборудования)"]
+        Equipment["Equipment (Оборудование)"]
+        Document["Document (Техдокументация)"]
+        Photo["Photo (Фотоархив)"]
+        Tag["Tag / EquipmentTag"]
+        CustomSection["CustomSection & CustomField (Динамические параметры)"]
+        EquipmentApproval["EquipmentApproval (Контроль изменений)"]
+    end
+
+    subgraph WMS["📦 WMS (Складской учет & Логистика)"]
+        Warehouse["Warehouse (Склады)"]
+        StorageZone["StorageZone & Cell (Адресное хранение)"]
+        Nomenclature["Nomenclature & Category (ТМЦ / Каталог)"]
+        StockItem["StockItem (Остатки)"]
+        StockOperation["StockOperation & Items (Движения ТМЦ)"]
+        StockTransfer["StockTransfer & Items (Перемещения)"]
+        Inventory["Inventory & Items (Инвентаризация)"]
+    end
+
+    subgraph SRM["🎫 SRM (Сервис-деск & Интеграции)"]
+        SrmIntegration["SrmIntegration (Jira, Redmine, 1C)"]
+        JiraIssueCache["JiraIssueCache (Заявки & Инциденты)"]
+    end
+
+    subgraph MRO["🛠️ MRO (ТОиР & Регламентные работы)"]
+        MaintenancePlan["MaintenancePlan (Планы ТО)"]
+        MaintenanceSchedule["MaintenanceSchedule (Заказ-наряды)"]
+        ChecklistTemplate["ChecklistTemplate & Items (Чек-листы)"]
+        ChecklistResult["ChecklistResult (Результаты проверок)"]
+        MaintenanceUsedPart["MaintenanceUsedPart (Списанные запчасти)"]
+    end
+
+    subgraph FEEDBACK["💬 FEEDBACK HUB (Обратная связь)"]
+        FeedbackTicket["FeedbackTicket (Тикеты / Баги)"]
+        FeedbackComment["FeedbackComment (Комментарии)"]
+        FeedbackAttachment["FeedbackAttachment (Вложения)"]
+    end
+
+    %% Междоменные связи
+    User -->|аудит действий| AuditLog
+    User -->|получатель| Notification
+    User -->|ответственный/создатель| Equipment
+    User -->|складской персонал| Warehouse
+    User -->|исполнитель ТО| MaintenanceSchedule
+    User -->|автор тикетов| FeedbackTicket
+
+    Equipment -->|привязка ЗИП| Nomenclature
+    Equipment -->|основание инцидентов| JiraIssueCache
+    Equipment -->|объект обслуживания| MaintenancePlan
+    Equipment -->|объект обслуживания| MaintenanceSchedule
+    Equipment -->|списание ТМЦ| StockOperationItem
+
+    MaintenanceSchedule -->|списание запчастей со склада| MaintenanceUsedPart
+    MaintenanceUsedPart -->|резерв / расход| Nomenclature
+    MaintenanceUsedPart -->|склад списания| Warehouse
+
+    Nomenclature -->|хранение в ячейках| StorageCell
+    Warehouse -->|зоны| StorageZone
+    StorageZone -->|ячейки| StorageCell
+
+    SrmIntegration -->|синхронизация заявок| JiraIssueCache
+    JiraIssueCache -.->|связанный наряд| MaintenanceSchedule

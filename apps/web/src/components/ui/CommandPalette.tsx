@@ -190,6 +190,28 @@ const COMMAND_ITEMS: CommandItem[] = [
     href: '/admin/settings',
     keywords: ['настройки', 'конфигурация', 'параметры'],
   },
+  {
+    id: 'admin-feedback',
+    title: 'Центр обратной связи и техподдержки',
+    subtitle: 'Управление обращениями пользователей, ошибками и идеями',
+    category: 'ADMIN',
+    icon: <AdminPanelSettingsOutlinedIcon sx={{ fontSize: 20 }} />,
+    href: '/admin/feedback',
+    keywords: ['обратная связь', 'тикеты', 'баги', 'ошибки', 'предложения', 'поддержка', 'feedback'],
+  },
+
+  // Actions
+  {
+    id: 'action-feedback-create',
+    title: 'Сообщить об ошибке / Предложить улучшение',
+    subtitle: 'Открыть форму обратной связи и отправки скриншота',
+    category: 'ACTIONS',
+    icon: <BuildOutlinedIcon sx={{ fontSize: 20 }} />,
+    action: () => {
+      window.dispatchEvent(new CustomEvent('open-feedback-dialog'));
+    },
+    keywords: ['баг', 'ошибка', 'сообщить', 'идея', 'улучшение', 'скриншот', 'помощь', 'feedback'],
+  },
 ];
 
 const CATEGORY_MAP: Record<string, { label: string; color: string; bg: string }> = {

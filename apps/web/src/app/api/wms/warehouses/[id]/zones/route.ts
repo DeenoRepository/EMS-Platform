@@ -49,13 +49,6 @@ export async function POST(
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
-    if (
-      !hasPermission(user, PERMISSIONS.WMS_ZONES_MANAGE) &&
-      !hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE) &&
-      !user.roles.includes('admin')
-    ) {
-      return forbiddenResponse();
-    }
 
     const warehouse = await prisma.warehouse.findUnique({ where: { id: params.id } });
     if (!warehouse) {
@@ -64,10 +57,20 @@ export async function POST(
 
     const isAdmin =
       user.roles.includes('admin') ||
-      user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-      user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+      hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
+      hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE);
 
-    if (!isAdmin && warehouse.responsibleUserId && warehouse.responsibleUserId !== user.userId) {
+    const isResponsible = Boolean(
+      warehouse.responsibleUserId && warehouse.responsibleUserId === user.userId
+    );
+
+    const hasZonePermission =
+      hasPermission(user, PERMISSIONS.WMS_ZONES_MANAGE) ||
+      hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE);
+
+    const canManage = isAdmin || (isResponsible && hasZonePermission);
+
+    if (!canManage) {
       return forbiddenResponse(`Вы не являетесь ответственным лицом за склад "${warehouse.name}". Создание зон разрешено только назначенному МОЛ.`);
     }
 

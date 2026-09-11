@@ -26,7 +26,20 @@ export async function getCurrentUser(req?: NextRequest): Promise<JwtUserPayload 
     return null;
   }
 
-  return await verifySessionToken(token);
+  const session = await verifySessionToken(token);
+  if (!session) return null;
+
+  try {
+    const { getUserRolesAndPermissions } = await import('@ems/auth');
+    const { roles, permissions } = await getUserRolesAndPermissions(session.userId);
+    return {
+      ...session,
+      roles: roles && roles.length > 0 ? roles : session.roles || [],
+      permissions: permissions && permissions.length > 0 ? permissions : session.permissions || [],
+    };
+  } catch {
+    return session;
+  }
 }
 
 export function unauthorizedResponse(message = 'Требуется авторизация') {

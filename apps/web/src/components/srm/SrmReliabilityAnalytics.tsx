@@ -41,12 +41,12 @@ import {
   EmptyState,
 } from '@/components/ui';
 import { useRouter } from 'next/navigation';
-import { SRM_FAILURE_CATEGORY_MAP } from '@ems/shared';
+import { SRM_FAILURE_CATEGORY_MAP, SrmReliabilityAnalyticsDto } from '@ems/shared';
 
 const PALETTE = ['#dc2626', '#d97706', '#0284c7', '#0d9488', '#16a34a', '#7c3aed', '#64748b'];
 
 export interface SrmReliabilityAnalyticsProps {
-  analytics: any;
+  analytics: SrmReliabilityAnalyticsDto | null | undefined;
   loading?: boolean;
 }
 
@@ -62,20 +62,20 @@ export default function SrmReliabilityAnalytics({ analytics, loading }: SrmRelia
     );
   }
 
-  const paretoData = analytics?.paretoAnalysis
-    ? analytics.paretoAnalysis.map((item: any) => ({
+  const paretoData = Array.isArray(analytics?.paretoAnalysis)
+    ? (analytics?.paretoAnalysis as Array<{ category: string; count: number; cumulativePercent: number }>).map((item) => ({
         name: SRM_FAILURE_CATEGORY_MAP[item.category]?.label || item.category,
         count: item.count,
         cumulativePercent: item.cumulativePercent,
       }))
     : [];
 
-  const categoryPieData = analytics?.failureCategoryCounts
-    ? Object.entries(analytics.failureCategoryCounts)
-        .filter(([_, count]: [string, any]) => count > 0)
-        .map(([cat, count]: [string, any]) => ({
+  const categoryPieData = (analytics as any)?.failureCategoryCounts
+    ? Object.entries((analytics as any).failureCategoryCounts)
+        .filter(([_, count]) => (count as number) > 0)
+        .map(([cat, count]) => ({
           name: SRM_FAILURE_CATEGORY_MAP[cat]?.label || cat,
-          value: count,
+          value: count as number,
         }))
     : [];
 
@@ -230,7 +230,7 @@ export default function SrmReliabilityAnalytics({ analytics, loading }: SrmRelia
                 </TableRow>
               </TableHead>
               <TableBody>
-                {analytics.topEquipment.map((eq: any, index: number) => (
+                {(analytics?.topEquipment || []).map((eq: { name: string; count: number; downtimeHours: number }, index: number) => (
                   <TableRow key={index} hover>
                     <TableCell sx={{ fontWeight: 700, color: index < 3 ? 'error.main' : 'text.secondary' }}>
                       #{index + 1}

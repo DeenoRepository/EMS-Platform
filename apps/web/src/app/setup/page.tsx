@@ -257,8 +257,8 @@ export default function SetupWizardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           url: ldapUrl,
-          bindDn: ldapBindDn || undefined,
-          bindPassword: ldapBindPassword || undefined,
+          bindDn: undefined,
+          bindPassword: undefined,
           searchBase: ldapSearchBase,
           searchFilter: ldapSearchFilter,
           testLogin: adminLogin,

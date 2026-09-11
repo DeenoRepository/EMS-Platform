@@ -31,6 +31,7 @@ import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined';
 import PrintIcon from '@mui/icons-material/Print';
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import EditLocationAltIcon from '@mui/icons-material/EditLocationAlt';
 import { StatusBadge, EmptyState } from '@/components/ui';
 import { formatDateTime, PERMISSIONS } from '@ems/shared';
@@ -46,9 +47,12 @@ export interface StockDetailData {
   nomenclatureId: string;
   name: string;
   article: string;
+  description?: string | null;
   unit: string;
   category: string;
+  categoryId?: string | null;
   quantity: number;
+  totalStock?: number;
   minStock: number | string;
   isLowStock: boolean;
   cellId?: string | null;
@@ -68,6 +72,7 @@ interface StockDetailDrawerProps {
   stockItem: StockDetailData | null;
   onChangeLocation?: (item: StockDetailData) => void;
   onPrintLabel?: (item: StockDetailData) => void;
+  onEdit?: (item: StockDetailData) => void;
 }
 
 export default function StockDetailDrawer({
@@ -76,6 +81,7 @@ export default function StockDetailDrawer({
   stockItem,
   onChangeLocation,
   onPrintLabel,
+  onEdit,
 }: StockDetailDrawerProps) {
   const router = useRouter();
   const { user, hasPermission } = useAuth();
@@ -93,12 +99,18 @@ export default function StockDetailDrawer({
     )
   );
 
+  const canEditNomenclature = Boolean(
+    user?.roles?.includes('admin') ||
+    hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE) ||
+    hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE)
+  );
+
   useEffect(() => {
     if (open && stockItem) {
       setTabIndex(0);
       // Fetch operations history for this nomenclature on this warehouse
       setIsLoadingOps(true);
-      fetch(`/api/wms/operations?nomenclatureId=${stockItem.nomenclatureId}&warehouseId=${stockItem.warehouseId}&limit=10`)
+      fetch(`/api/wms/operations?nomenclatureId=${stockItem.nomenclatureId}&warehouseId=${stockItem.warehouseId}&pageSize=10`)
         .then((res) => res.json())
         .then((json) => {
           if (json.success && json.data) {
@@ -113,8 +125,9 @@ export default function StockDetailDrawer({
   if (!stockItem) return null;
 
   const minStockNum = Number(stockItem.minStock) || 0;
-  const fillPercent = minStockNum > 0 ? Math.min((stockItem.quantity / minStockNum) * 100, 100) : 100;
-  const isCritical = minStockNum > 0 && stockItem.quantity < minStockNum;
+  const currentTotalStock = stockItem.totalStock !== undefined ? stockItem.totalStock : stockItem.quantity;
+  const fillPercent = minStockNum > 0 ? Math.min((currentTotalStock / minStockNum) * 100, 100) : 100;
+  const isCritical = stockItem.isLowStock;
 
   return (
     <Drawer
@@ -178,9 +191,22 @@ export default function StockDetailDrawer({
           </Box>
         </Box>
 
-        <IconButton onClick={onClose} size="small" sx={{ color: 'text.disabled' }}>
-          <CloseIcon fontSize="small" />
-        </IconButton>
+        <Stack direction="row" spacing={0.5} alignItems="center">
+          {canEditNomenclature && onEdit && (
+            <Tooltip title="Редактировать параметры ТМЦ">
+              <IconButton
+                size="small"
+                onClick={() => onEdit(stockItem)}
+                sx={{ color: 'primary.main', bgcolor: 'rgba(2, 132, 199, 0.08)' }}
+              >
+                <EditOutlinedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          <IconButton onClick={onClose} size="small" sx={{ color: 'text.disabled' }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Stack>
       </Box>
 
       {/* Tabs Bar */}
@@ -502,7 +528,7 @@ export default function StockDetailDrawer({
                         {formatDateTime(op.date || op.createdAt)}
                       </TableCell>
                       <TableCell align="right" sx={{ py: 1, fontWeight: 600, fontSize: '0.8125rem' }}>
-                        {op.items?.[0]?.quantity || '—'} {stockItem.unit}
+                        {op.items?.find((i: any) => i.nomenclatureId === stockItem.nomenclatureId)?.quantity ?? op.items?.[0]?.quantity ?? '—'} {stockItem.unit}
                       </TableCell>
                     </TableRow>
                   ))}

@@ -11,7 +11,11 @@ export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_VIEW) && !hasPermission(user, PERMISSIONS.EPS_DOCUMENTS_VIEW)) {
+    if (
+      !hasPermission(user, PERMISSIONS.EPS_DOCUMENTS_VIEW) &&
+      !hasPermission(user, PERMISSIONS.EPS_DOCUMENTS_UPLOAD) &&
+      !user.roles.includes('admin')
+    ) {
       return forbiddenResponse();
     }
 
