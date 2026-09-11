@@ -337,7 +337,10 @@ export async function POST(req: NextRequest) {
     };
 
     if (conflictStrategy === 'FULL_REPLACE') {
-      await prisma.$transaction((tx) => processRows(tx));
+      await prisma.$transaction((tx) => processRows(tx), {
+        maxWait: 10_000,
+        timeout: 120_000,
+      });
     } else {
       await processRows(prisma);
     }
@@ -373,6 +376,9 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('Ошибка выполнения импорта оборудования:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка выполнения импорта' }, { status: 500 });
+    return NextResponse.json({
+      success: false,
+      error: error?.message || 'Ошибка выполнения импорта',
+    }, { status: 500 });
   }
 }
