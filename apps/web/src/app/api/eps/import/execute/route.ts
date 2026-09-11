@@ -219,7 +219,7 @@ export async function POST(req: NextRequest) {
             if (['is_unique', 'is_imported', 'is_critical_path', 'ups_required'].includes(customKey)) {
               customFieldsObj[customKey] = isTruthyBoolean(val);
             } else {
-              customFieldsObj[customKey] = val;
+              customFieldsObj[customKey] = typeof val === 'string' ? val.trim() : val;
             }
           }
         });

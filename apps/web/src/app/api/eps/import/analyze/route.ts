@@ -78,6 +78,35 @@ const KNOWN_BASE_FIELDS: ColumnMatchRule[] = [
   },
 ];
 
+const REGISTRY_FIELD_MAP: Record<string, string> = {
+  'id оборудования': 'externalId',
+  'инв номер': 'inventoryNumber',
+  'наименование оборудования': 'name',
+  'децимальный номер': 'custom_decimal_number',
+  'заводской №': 'serialNumber',
+  'комплекс группа': 'custom_equipment_group',
+  'расположение улица корпус этаж участок': 'location',
+  'ответственный': 'custom_responsible_person_name',
+  'страна производитель': 'custom_country_origin',
+  'наименование производителя': 'manufacturer',
+  'год выпуска': 'custom_prod_year',
+  'год ввода': 'custom_comm_year',
+  'возраст оборудования': 'custom_equipment_age',
+  'статус': 'status',
+  'критичность': 'custom_criticality',
+  'периодичность технического обслуживания': 'custom_maintenance_periodicity',
+  'техническое обслуживание 2026': 'custom_maintenance_schedule_year',
+  'кол во то по графику': 'custom_to_count_scheduled',
+  'код окоф 2': 'custom_okof_code',
+  'группа оборудования': 'custom_equipment_type',
+  'ключ связи': 'custom_linkage_key',
+  'классификатор техпроцесса код': 'custom_process_classifier_code',
+  'уникальное оборудование': 'custom_is_unique',
+  'импортное оборудование': 'custom_is_imported',
+  'фактический износ %': 'custom_actual_wear_percentage',
+  'код окпд 2': 'custom_okpd2_code',
+};
+
 function normalizeHeader(str: string): string {
   return str
     .toLowerCase()
@@ -378,6 +407,12 @@ export async function POST(req: NextRequest) {
 
     fileHeaders.forEach((header) => {
       const norm = normalizeHeader(header);
+
+      const registryMatch = REGISTRY_FIELD_MAP[norm];
+      if (registryMatch) {
+        mappedColumns[header] = registryMatch;
+        return;
+      }
 
       // 1. Exact match against known base fields
       const matchedBaseExact = KNOWN_BASE_FIELDS.find((rule) =>

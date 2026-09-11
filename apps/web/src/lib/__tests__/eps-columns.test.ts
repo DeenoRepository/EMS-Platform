@@ -9,7 +9,7 @@ describe('EPS Equipment Registry Columns (Kind vs Department)', () => {
       equipment_type: 'Группа обслуживания и ремонта измерений КП ИМС',
     };
 
-    assert.strictEqual(getEquipmentKind(custom), 'Испытательное оборудование');
+    assert.strictEqual(getEquipmentKind(custom), '—');
     assert.strictEqual(getEquipmentDepartment(custom), 'Группа обслуживания и ремонта измерений КП ИМС');
   });
 
@@ -19,7 +19,7 @@ describe('EPS Equipment Registry Columns (Kind vs Department)', () => {
       equipment_type: 'Группа обслуживания и ремонта вакуумных постов, НПК СП, цеха 10',
     };
 
-    assert.strictEqual(getEquipmentKind(custom), 'Оборудование специального назначения прочее');
+    assert.strictEqual(getEquipmentKind(custom), '—');
     assert.strictEqual(getEquipmentDepartment(custom), 'Группа обслуживания и ремонта вакуумных постов, НПК СП, цеха 10');
   });
 
@@ -46,6 +46,10 @@ describe('EPS Equipment Registry Columns (Kind vs Department)', () => {
   it('falls back gracefully to dash when empty', () => {
     assert.strictEqual(getEquipmentKind({}), '—');
     assert.strictEqual(getEquipmentDepartment({}), '—');
+  });
+
+  it('does not show equipment group as equipment kind when kind is absent', () => {
+    assert.strictEqual(getEquipmentKind({ equipment_group: 'РПД' }), '—');
   });
 
   describe('isTruthyBoolean normalization', () => {

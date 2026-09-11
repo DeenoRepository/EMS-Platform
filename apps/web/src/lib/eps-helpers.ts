@@ -18,19 +18,11 @@ export function getEquipmentKind(custom?: Record<string, any> | null): string {
     );
   };
 
-  // Если в equipment_type по ошибке записано подразделение/группа обслуживания,
-  // берем настоящий вид оборудования из equipment_group
-  if (isDept(custom.equipment_type) && custom.equipment_group && !isDept(custom.equipment_group)) {
-    return String(custom.equipment_group).trim();
-  }
   if (custom.equipment_kind && !isDept(custom.equipment_kind)) {
     return String(custom.equipment_kind).trim();
   }
   if (custom.equipment_type && !isDept(custom.equipment_type)) {
     return String(custom.equipment_type).trim();
-  }
-  if (custom.equipment_group && !isDept(custom.equipment_group)) {
-    return String(custom.equipment_group).trim();
   }
   return '—';
 }
