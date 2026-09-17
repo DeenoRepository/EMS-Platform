@@ -16,35 +16,36 @@ model User {
   ldapLogin    String    @unique
   displayName  String
   email        String?
-  passwordHash String?   // Для локальных/резервных аккаунтов (admin)
+  passwordHash String? // Для локальных/резервных аккаунтов (admin)
   isActive     Boolean   @default(true)
   lastLoginAt  DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
 
-  roles             UserRole[]
-  auditLogs         AuditLog[]
-  notifications     Notification[]
-  createdEquipment  Equipment[]           @relation("CreatedBy")
-  uploadedDocs      Document[]            @relation("UploadedDocs")
-  uploadedPhotos    Photo[]               @relation("UploadedPhotos")
-  stockOperations   StockOperation[]
-  inventories       Inventory[]
-  completedSchedules MaintenanceSchedule[] @relation("CompletedBy")
-  requestedApprovals EquipmentApproval[]   @relation("ApprovalRequester")
-  reviewedApprovals  EquipmentApproval[]   @relation("ApprovalReviewer")
-  createdReportTemplates ReportTemplate[]  @relation("CreatedReportTemplates")
-  managedWarehouses      Warehouse[]           @relation("WarehouseResponsible")
-  createdTransfers       StockTransfer[]       @relation("TransferCreatedBy")
-  dispatchedTransfers    StockTransfer[]       @relation("TransferDispatchedBy")
-  receivedTransfers      StockTransfer[]       @relation("TransferReceivedBy")
-  rejectedTransfers      StockTransfer[]       @relation("TransferRejectedBy")
-  checklistResults       ChecklistResult[]
-  createdFeedbackTickets FeedbackTicket[]      @relation("FeedbackCreator")
-  assignedFeedbackTickets FeedbackTicket[]     @relation("FeedbackAssignee")
-  feedbackComments       FeedbackComment[]     @relation("FeedbackAuthor")
-  uploadedFeedbackAttachments FeedbackAttachment[] @relation("FeedbackAttachmentUploader")
+  roles                       UserRole[]
+  auditLogs                   AuditLog[]
+  notifications               Notification[]
+  createdEquipment            Equipment[]           @relation("CreatedBy")
+  uploadedDocs                Document[]            @relation("UploadedDocs")
+  uploadedPhotos              Photo[]               @relation("UploadedPhotos")
+  stockOperations             StockOperation[]
+  inventories                 Inventory[]
+  completedSchedules          MaintenanceSchedule[] @relation("CompletedBy")
+  requestedApprovals          EquipmentApproval[]   @relation("ApprovalRequester")
+  reviewedApprovals           EquipmentApproval[]   @relation("ApprovalReviewer")
+  createdReportTemplates      ReportTemplate[]      @relation("CreatedReportTemplates")
+  managedWarehouses           Warehouse[]           @relation("WarehouseResponsible")
+  createdTransfers            StockTransfer[]       @relation("TransferCreatedBy")
+  dispatchedTransfers         StockTransfer[]       @relation("TransferDispatchedBy")
+  receivedTransfers           StockTransfer[]       @relation("TransferReceivedBy")
+  rejectedTransfers           StockTransfer[]       @relation("TransferRejectedBy")
+  confirmedReservations       StockReservation[]    @relation("ReservationConfirmedBy")
+  checklistResults            ChecklistResult[]
+  createdFeedbackTickets      FeedbackTicket[]      @relation("FeedbackCreator")
+  assignedFeedbackTickets     FeedbackTicket[]      @relation("FeedbackAssignee")
+  feedbackComments            FeedbackComment[]     @relation("FeedbackAuthor")
+  uploadedFeedbackAttachments FeedbackAttachment[]  @relation("FeedbackAttachmentUploader")
 
   @@index([deletedAt])
 }
@@ -63,10 +64,10 @@ model Role {
 }
 
 model Permission {
-  id          String   @id @default(uuid())
-  code        String   @unique // eps.equipment.view, wms.stock.manage, etc.
+  id          String  @id @default(uuid())
+  code        String  @unique // eps.equipment.view, wms.stock.manage, etc.
   displayName String
-  module      String   // eps, wms, srm, mro, admin, system
+  module      String // eps, wms, srm, mro, admin, system
   description String?
 
   roles RolePermission[]
@@ -102,9 +103,9 @@ model AuditLog {
   id         String      @id @default(uuid())
   userId     String?
   action     AuditAction
-  entityType String      // Equipment, Document, StockOperation, Role, etc.
+  entityType String // Equipment, Document, StockOperation, Role, etc.
   entityId   String
-  changes    Json?       // { field: { old: "...", new: "..." } }
+  changes    Json? // { field: { old: "...", new: "..." } }
   ipAddress  String?
   userAgent  String?
   createdAt  DateTime    @default(now())
@@ -165,7 +166,7 @@ model ReportTemplate {
   module      String   @default("eps") // eps, wms, srm, mro
   name        String
   description String?
-  config      Json     // { selectedColumns: string[], filters: any, sort: any, title: string }
+  config      Json // { selectedColumns: string[], filters: any, sort: any, title: string }
   isPublic    Boolean  @default(true)
   createdById String
   createdAt   DateTime @default(now())
@@ -192,7 +193,7 @@ model Equipment {
   location        String?
   status          EquipmentStatus @default(ACTIVE)
   commissionDate  DateTime?
-  customFields    Json?           // { [fieldKey: string]: any }
+  customFields    Json? // { [fieldKey: string]: any }
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   deletedAt       DateTime?
@@ -228,7 +229,7 @@ enum EquipmentStatus {
 model Tag {
   id        String         @id @default(uuid())
   name      String         @unique
-  color     String?        // HEX color or MUI color code
+  color     String? // HEX color or MUI color code
   createdAt DateTime       @default(now())
   equipment EquipmentTag[]
 }
@@ -247,9 +248,9 @@ model EquipmentTag {
 model CustomSection {
   id          String                  @id @default(uuid())
   code        String                  @unique // slug, e.g. "electrical", "hydraulic"
-  name        String                  // UI display name, e.g. "Электротехнические параметры"
+  name        String // UI display name, e.g. "Электротехнические параметры"
   description String?
-  icon        String?                 // Icon identifier
+  icon        String? // Icon identifier
   sortOrder   Int                     @default(0)
   createdAt   DateTime                @default(now())
   updatedAt   DateTime                @updatedAt
@@ -263,12 +264,12 @@ model CustomFieldDefinition {
   sectionId    String?
   section      CustomSection? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
   key          String         @unique // slug for JSON key, e.g. "operating_temperature"
-  name         String         // UI Display label
+  name         String // UI Display label
   fieldType    FieldType
-  unit         String?        // Unit of measurement, e.g. "кВт", "бар", "В", "кг", "мм"
+  unit         String? // Unit of measurement, e.g. "кВт", "бар", "В", "кг", "мм"
   isRequired   Boolean        @default(false)
   defaultValue String?
-  options      Json?          // string[] for SELECT type
+  options      Json? // string[] for SELECT type
   sortOrder    Int            @default(0)
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
@@ -289,11 +290,11 @@ enum FieldType {
 model Document {
   id           String       @id @default(uuid())
   equipmentId  String
-  fileName     String       // stored filename on disk
-  originalName String       // original upload filename
-  filePath     String       // relative path from upload root
-  fileType     String       // mime-type
-  fileSize     Int          // in bytes
+  fileName     String // stored filename on disk
+  originalName String // original upload filename
+  filePath     String // relative path from upload root
+  fileType     String // mime-type
+  fileSize     Int // in bytes
   docType      DocumentType @default(OTHER)
   version      Int          @default(1)
   description  String?
@@ -321,16 +322,16 @@ enum DocumentType {
 }
 
 model Photo {
-  id            String   @id @default(uuid())
+  id            String    @id @default(uuid())
   equipmentId   String
   fileName      String
   originalName  String
   filePath      String
   thumbnailPath String?
-  sortOrder     Int      @default(0)
-  isPrimary     Boolean  @default(false)
+  sortOrder     Int       @default(0)
+  isPrimary     Boolean   @default(false)
   uploadedById  String
-  createdAt     DateTime @default(now())
+  createdAt     DateTime  @default(now())
   deletedAt     DateTime?
 
   equipment  Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
@@ -341,23 +342,23 @@ model Photo {
 }
 
 model EquipmentApproval {
-  id                 String             @id @default(uuid())
-  equipmentId        String?
-  type               ApprovalType
-  status             ApprovalStatus     @default(PENDING)
-  title              String
-  description        String?
-  proposedData       Json?
-  requesterId        String
-  reviewerId         String?
-  reviewedAt         DateTime?
+  id                String         @id @default(uuid())
+  equipmentId       String?
+  type              ApprovalType
+  status            ApprovalStatus @default(PENDING)
+  title             String
+  description       String?
+  proposedData      Json?
+  requesterId       String
+  reviewerId        String?
+  reviewedAt        DateTime?
   resolutionComment String?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
   equipment Equipment? @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
-  requester User      @relation("ApprovalRequester", fields: [requesterId], references: [id])
-  reviewer  User?     @relation("ApprovalReviewer", fields: [reviewerId], references: [id])
+  requester User       @relation("ApprovalRequester", fields: [requesterId], references: [id])
+  reviewer  User?      @relation("ApprovalReviewer", fields: [reviewerId], references: [id])
 
   @@index([equipmentId])
   @@index([status])
@@ -401,13 +402,16 @@ model Warehouse {
   updatedAt         DateTime  @updatedAt
   deletedAt         DateTime?
 
-  responsibleUser     User?               @relation("WarehouseResponsible", fields: [responsibleUserId], references: [id], onDelete: SetNull)
+  responsibleUser     User?                 @relation("WarehouseResponsible", fields: [responsibleUserId], references: [id], onDelete: SetNull)
   stockItems          StockItem[]
   operations          StockOperation[]
   inventories         Inventory[]
   zones               StorageZone[]
-  dispatchedTransfers StockTransfer[]     @relation("TransfersDispatched")
-  receivedTransfers   StockTransfer[]     @relation("TransfersReceived")
+  stockCellBalances   StockCellBalance[]
+  reservationSources  StockReservation[]    @relation("ReservationSource")
+  reservationTargets  StockReservation[]    @relation("ReservationTarget")
+  dispatchedTransfers StockTransfer[]       @relation("TransfersDispatched")
+  receivedTransfers   StockTransfer[]       @relation("TransfersReceived")
   usedInMaintenance   MaintenanceUsedPart[]
 
   @@index([responsibleUserId])
@@ -415,13 +419,13 @@ model Warehouse {
 }
 
 model StorageZone {
-  id          String        @id @default(uuid())
+  id          String   @id @default(uuid())
   warehouseId String
   name        String
   code        String
   description String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   warehouse Warehouse     @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
   cells     StorageCell[]
@@ -431,26 +435,27 @@ model StorageZone {
 }
 
 model StorageCell {
-  id            String              @id @default(uuid())
-  zoneId        String
-  code          String              // e.g. "A-01", "Стеллаж 1 / Полка 2"
-  name          String?             // Описание / наименование ячейки
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
+  id        String   @id @default(uuid())
+  zoneId    String
+  code      String // e.g. "A-01", "Стеллаж 1 / Полка 2"
+  name      String? // Описание / наименование ячейки
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   zone          StorageZone         @relation(fields: [zoneId], references: [id], onDelete: Cascade)
   stockItems    StockItem[]
   transferItems StockTransferItem[]
+  cellBalances  StockCellBalance[]
 
   @@unique([zoneId, code])
   @@index([zoneId])
 }
 
 model NomenclatureCategory {
-  id        String                 @id @default(uuid())
+  id        String   @id @default(uuid())
   name      String
   parentId  String?
-  createdAt DateTime               @default(now())
+  createdAt DateTime @default(now())
 
   parent   NomenclatureCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
   children NomenclatureCategory[] @relation("CategoryHierarchy")
@@ -458,15 +463,15 @@ model NomenclatureCategory {
 }
 
 model Nomenclature {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   name        String
-  article     String?  @unique
-  unit        String   @default("шт") // шт, кг, м, л
+  article     String?   @unique
+  unit        String    @default("шт") // шт, кг, м, л
   categoryId  String?
   description String?
-  minStock    Decimal? @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  minStock    Decimal?  @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
   category          NomenclatureCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
@@ -475,6 +480,8 @@ model Nomenclature {
   equipmentLinks    EquipmentSparePart[]
   inventoryItems    InventoryItem[]
   transferItems     StockTransferItem[]
+  cellBalances      StockCellBalance[]
+  reservations      StockReservation[]
   usedInMaintenance MaintenanceUsedPart[]
 
   @@index([name])
@@ -483,12 +490,13 @@ model Nomenclature {
 }
 
 model StockItem {
-  id             String   @id @default(uuid())
-  warehouseId    String
-  nomenclatureId String
-  quantity       Decimal  @default(0)
-  cellId         String?  // Привязанная ячейка адресного хранения
-  updatedAt      DateTime @updatedAt
+  id               String   @id @default(uuid())
+  warehouseId      String
+  nomenclatureId   String
+  quantity         Decimal  @default(0)
+  reservedQuantity Decimal  @default(0)
+  cellId           String? // Привязанная ячейка адресного хранения
+  updatedAt        DateTime @updatedAt
 
   warehouse    Warehouse    @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
   nomenclature Nomenclature @relation(fields: [nomenclatureId], references: [id], onDelete: Cascade)
@@ -498,13 +506,29 @@ model StockItem {
   @@index([cellId])
 }
 
+model StockCellBalance {
+  id             String   @id @default(uuid())
+  warehouseId    String
+  cellId         String
+  nomenclatureId String
+  quantity       Decimal  @default(0)
+  updatedAt      DateTime @updatedAt
+
+  warehouse    Warehouse    @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+  cell         StorageCell  @relation(fields: [cellId], references: [id], onDelete: Restrict)
+  nomenclature Nomenclature @relation(fields: [nomenclatureId], references: [id], onDelete: Restrict)
+
+  @@unique([warehouseId, cellId, nomenclatureId])
+  @@index([warehouseId, nomenclatureId])
+}
+
 model StockOperation {
   id           String        @id @default(uuid())
   warehouseId  String
   type         OperationType
   date         DateTime      @default(now())
-  counterparty String?       // Поставщик или получатель
-  document     String?       // Документ-основание (накладная, акт)
+  counterparty String? // Поставщик или получатель
+  document     String? // Документ-основание (накладная, акт)
   comment      String?
   createdById  String
   createdAt    DateTime      @default(now())
@@ -527,11 +551,11 @@ enum OperationType {
 }
 
 model StockOperationItem {
-  id             String   @id @default(uuid())
+  id             String  @id @default(uuid())
   operationId    String
   nomenclatureId String
   quantity       Decimal
-  equipmentId    String?  // Списание на конкретное оборудование
+  equipmentId    String? // Списание на конкретное оборудование
 
   operation    StockOperation @relation(fields: [operationId], references: [id], onDelete: Cascade)
   nomenclature Nomenclature   @relation(fields: [nomenclatureId], references: [id], onDelete: Cascade)
@@ -605,36 +629,37 @@ model StockTransfer {
   transferNumber    String              @unique // TR-2026-0001
   sourceWarehouseId String
   targetWarehouseId String
-  status            StockTransferStatus @default(IN_TRANSIT)
+  status            StockTransferStatus @default(REQUESTED)
 
   // Инициатор создания (отправитель при отгрузке или получатель при заявке)
-  createdById       String
-  requestReason     String?             @db.Text
+  createdById   String
+  requestReason String? @db.Text
 
   // Отправка (согласование / отгрузка со склада-отправителя)
-  dispatchedAt      DateTime?
-  dispatchedById    String?
+  dispatchedAt   DateTime?
+  dispatchedById String?
 
   // Приемка (подтверждение приемки на складе-получателе)
-  receivedAt        DateTime?
-  receivedById      String?
+  receivedAt   DateTime?
+  receivedById String?
 
   // Отклонение (с фиксацией обязательной причины отказа)
-  rejectedAt        DateTime?
-  rejectedById      String?
-  rejectionReason   String?             @db.Text
+  rejectedAt      DateTime?
+  rejectedById    String?
+  rejectionReason String?   @db.Text
 
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  sourceWarehouse   Warehouse           @relation("TransfersDispatched", fields: [sourceWarehouseId], references: [id], onDelete: Cascade)
-  targetWarehouse   Warehouse           @relation("TransfersReceived", fields: [targetWarehouseId], references: [id], onDelete: Cascade)
-  createdBy         User                @relation("TransferCreatedBy", fields: [createdById], references: [id])
-  dispatchedBy      User?               @relation("TransferDispatchedBy", fields: [dispatchedById], references: [id], onDelete: SetNull)
-  receivedBy        User?               @relation("TransferReceivedBy", fields: [receivedById], references: [id], onDelete: SetNull)
-  rejectedBy        User?               @relation("TransferRejectedBy", fields: [rejectedById], references: [id], onDelete: SetNull)
+  sourceWarehouse Warehouse @relation("TransfersDispatched", fields: [sourceWarehouseId], references: [id], onDelete: Cascade)
+  targetWarehouse Warehouse @relation("TransfersReceived", fields: [targetWarehouseId], references: [id], onDelete: Cascade)
+  createdBy       User      @relation("TransferCreatedBy", fields: [createdById], references: [id])
+  dispatchedBy    User?     @relation("TransferDispatchedBy", fields: [dispatchedById], references: [id], onDelete: SetNull)
+  receivedBy      User?     @relation("TransferReceivedBy", fields: [receivedById], references: [id], onDelete: SetNull)
+  rejectedBy      User?     @relation("TransferRejectedBy", fields: [rejectedById], references: [id], onDelete: SetNull)
 
-  items             StockTransferItem[]
+  items        StockTransferItem[]
+  reservations StockReservation[]
 
   @@index([sourceWarehouseId])
   @@index([targetWarehouseId])
@@ -643,23 +668,56 @@ model StockTransfer {
 }
 
 enum StockTransferStatus {
-  REQUESTED    // Запрос от получателя, ожидает согласования и отгрузки
-  IN_TRANSIT   // Отправлено, ожидает подтверждения приемки получателем
-  COMPLETED    // Принято получателем (проведено на склад)
-  REJECTED     // Отклонено с указанием причины
-  CANCELLED    // Отозвано инициатором
+  REQUESTED // Запрос от получателя, ожидает согласования и отгрузки
+  IN_TRANSIT // Отправлено, ожидает подтверждения приемки получателем
+  COMPLETED // Принято получателем (проведено на склад)
+  REJECTED // Отклонено с указанием причины
+  CANCELLED // Отозвано инициатором
+  PENDING_RESPONSIBLE_CONFIRMATION // Target warehouse has no MOL yet
+}
+
+enum StockReservationStatus {
+  ACTIVE
+  RECEIVED
+  RELEASED
+  CANCELLED
+}
+
+model StockReservation {
+  id                              String                 @id @default(uuid())
+  transferId                      String
+  sourceWarehouseId               String
+  targetWarehouseId               String
+  nomenclatureId                  String
+  quantity                        Decimal
+  status                          StockReservationStatus @default(ACTIVE)
+  requiresResponsibleConfirmation Boolean                @default(false)
+  confirmedById                   String?
+  confirmedAt                     DateTime?
+  releasedAt                      DateTime?
+  createdAt                       DateTime               @default(now())
+
+  transfer        StockTransfer @relation(fields: [transferId], references: [id], onDelete: Restrict)
+  sourceWarehouse Warehouse     @relation("ReservationSource", fields: [sourceWarehouseId], references: [id], onDelete: Restrict)
+  targetWarehouse Warehouse     @relation("ReservationTarget", fields: [targetWarehouseId], references: [id], onDelete: Restrict)
+  nomenclature    Nomenclature  @relation(fields: [nomenclatureId], references: [id], onDelete: Restrict)
+  confirmedBy     User?         @relation("ReservationConfirmedBy", fields: [confirmedById], references: [id], onDelete: SetNull)
+
+  @@unique([transferId, nomenclatureId])
+  @@index([sourceWarehouseId, nomenclatureId, status])
+  @@index([targetWarehouseId, status])
 }
 
 model StockTransferItem {
-  id             String        @id @default(uuid())
+  id             String  @id @default(uuid())
   transferId     String
   nomenclatureId String
   quantity       Decimal
-  targetCellId   String?       // Ячейка зачисления на складе-получателе
+  targetCellId   String? // Ячейка зачисления на складе-получателе
 
-  transfer       StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
-  nomenclature   Nomenclature  @relation(fields: [nomenclatureId], references: [id], onDelete: Cascade)
-  targetCell     StorageCell?  @relation(fields: [targetCellId], references: [id], onDelete: SetNull)
+  transfer     StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  nomenclature Nomenclature  @relation(fields: [nomenclatureId], references: [id], onDelete: Cascade)
+  targetCell   StorageCell?  @relation(fields: [targetCellId], references: [id], onDelete: SetNull)
 
   @@index([transferId])
   @@index([nomenclatureId])
@@ -671,23 +729,23 @@ model StockTransferItem {
 
 model SrmIntegration {
   id             String          @id @default(uuid())
-  name           String          // e.g. "Корпоративная Jira SRM", "Redmine IT-отдел", "1С:ТОиР ServiceDesk"
+  name           String // e.g. "Корпоративная Jira SRM", "Redmine IT-отдел", "1С:ТОиР ServiceDesk"
   providerType   SrmProviderType @default(JIRA)
   isActive       Boolean         @default(true)
   isDefault      Boolean         @default(false)
-  baseUrl        String          // e.g. "https://jira.company.ru" or "https://redmine.corp.local"
+  baseUrl        String // e.g. "https://jira.company.ru" or "https://redmine.corp.local"
   authType       SrmAuthType     @default(BASIC)
-  authConfig     Json            // { username, apiToken, headerName, apiKey, etc. }
-  queryConfig    Json            // { endpoint, method, queryParams, defaultJqlOrFilter, headers }
-  mappingConfig  Json?           // Схема сопоставления полей (JiraFieldMappingConfig)
+  authConfig     Json // { username, apiToken, headerName, apiKey, etc. }
+  queryConfig    Json // { endpoint, method, queryParams, defaultJqlOrFilter, headers }
+  mappingConfig  Json? // Схема сопоставления полей (JiraFieldMappingConfig)
   syncInterval   Int             @default(60) // интервал в минутах
   lastSyncAt     DateTime?
-  lastSyncStatus String?         // SUCCESS, ERROR
+  lastSyncStatus String? // SUCCESS, ERROR
   lastSyncError  String?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
-  issues         JiraIssueCache[]
+  issues JiraIssueCache[]
 }
 
 enum SrmProviderType {
@@ -708,33 +766,33 @@ enum SrmAuthType {
 }
 
 model JiraIssueCache {
-  id              String          @id @default(uuid())
-  issueKey        String          @unique // e.g. EMS-104, INC-2026-0001, REDMINE-12
+  id              String    @id @default(uuid())
+  issueKey        String    @unique // e.g. EMS-104, INC-2026-0001, REDMINE-12
   summary         String
-  description     String?         @db.Text
-  status          String          // OPEN, IN_PROGRESS, RESOLVED, CLOSED, WAITING
-  priority        String          // LOW, MEDIUM, HIGH, CRITICAL
-  issueType       String          // INCIDENT, SERVICE_REQUEST, REPAIR, MAINTENANCE, DEFECT
-  source          String          @default("JIRA") // INTERNAL, JIRA, REDMINE, 1C, GITLAB, WEBHOOK
-  failureCategory String?         // MECHANICAL, ELECTRICAL, HYDRAULIC, SOFTWARE, OPERATOR_ERROR, WEAR, OTHER
-  downtimeMinutes Int?            // Время простоя оборудования в минутах
-  slaDeadline     DateTime?       // Плановое время решения по регламенту SLA
-  slaBreached     Boolean?        @default(false)
-  resolutionNotes String?         @db.Text
-  warrantyClaim   Boolean?        @default(false)
-  contractorName  String?         // Сервисный подрядчик / СЦ
-  mroScheduleId   String?         // Связанный заказ-наряд ТОиР
+  description     String?   @db.Text
+  status          String // OPEN, IN_PROGRESS, RESOLVED, CLOSED, WAITING
+  priority        String // LOW, MEDIUM, HIGH, CRITICAL
+  issueType       String // INCIDENT, SERVICE_REQUEST, REPAIR, MAINTENANCE, DEFECT
+  source          String    @default("JIRA") // INTERNAL, JIRA, REDMINE, 1C, GITLAB, WEBHOOK
+  failureCategory String? // MECHANICAL, ELECTRICAL, HYDRAULIC, SOFTWARE, OPERATOR_ERROR, WEAR, OTHER
+  downtimeMinutes Int? // Время простоя оборудования в минутах
+  slaDeadline     DateTime? // Плановое время решения по регламенту SLA
+  slaBreached     Boolean?  @default(false)
+  resolutionNotes String?   @db.Text
+  warrantyClaim   Boolean?  @default(false)
+  contractorName  String? // Сервисный подрядчик / СЦ
+  mroScheduleId   String? // Связанный заказ-наряд ТОиР
   assignee        String?
   reporter        String?
-  createdById     String?         // Внутренний пользователь-инициатор
+  createdById     String? // Внутренний пользователь-инициатор
   createdDate     DateTime
   resolvedDate    DateTime?
-  equipmentId     String?         // Сопоставленное оборудование
-  integrationId   String?         // Ссылка на источник интеграции
-  rawData         Json?           // Полный исходный JSON (или кастомные параметры)
-  syncedAt        DateTime        @default(now())
+  equipmentId     String? // Сопоставленное оборудование
+  integrationId   String? // Ссылка на источник интеграции
+  rawData         Json? // Полный исходный JSON (или кастомные параметры)
+  syncedAt        DateTime  @default(now())
 
-  integration     SrmIntegration? @relation(fields: [integrationId], references: [id], onDelete: SetNull)
+  integration SrmIntegration? @relation(fields: [integrationId], references: [id], onDelete: SetNull)
 
   @@index([status])
   @@index([priority])
@@ -762,8 +820,8 @@ model MaintenancePlan {
   createdAt    DateTime             @default(now())
   updatedAt    DateTime             @updatedAt
 
-  equipment Equipment           @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
-  checklist ChecklistTemplate?  @relation(fields: [checklistId], references: [id], onDelete: SetNull)
+  equipment Equipment             @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  checklist ChecklistTemplate?    @relation(fields: [checklistId], references: [id], onDelete: SetNull)
   schedules MaintenanceSchedule[]
 
   @@index([equipmentId])
@@ -844,7 +902,7 @@ enum ChecklistItemType {
 model ChecklistResult {
   id            String   @id @default(uuid())
   scheduleId    String   @unique
-  items         Json     // [{itemId, description, itemType, value, note}]
+  items         Json // [{itemId, description, itemType, value, note}]
   completedById String
   completedAt   DateTime @default(now())
 
@@ -855,7 +913,7 @@ model ChecklistResult {
 }
 
 model MaintenanceUsedPart {
-  id             String   @id @default(uuid())
+  id             String  @id @default(uuid())
   scheduleId     String
   nomenclatureId String
   warehouseId    String
@@ -884,21 +942,21 @@ model FeedbackTicket {
   title        String
   description  String           @db.Text
   pageUrl      String?
-  browserInfo  Json?            // { userAgent, screenResolution, os, browser, language }
+  browserInfo  Json? // { userAgent, screenResolution, os, browser, language }
   resolution   String?          @db.Text
   resolvedAt   DateTime?
-  
+
   createdById  String
   assignedToId String?
 
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  deletedAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
-  createdBy    User             @relation("FeedbackCreator", fields: [createdById], references: [id], onDelete: Cascade)
-  assignedTo   User?            @relation("FeedbackAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
-  comments     FeedbackComment[]
-  attachments  FeedbackAttachment[]
+  createdBy   User                 @relation("FeedbackCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  assignedTo  User?                @relation("FeedbackAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  comments    FeedbackComment[]
+  attachments FeedbackAttachment[]
 
   @@index([type])
   @@index([module])
@@ -943,15 +1001,15 @@ enum FeedbackStatus {
 }
 
 model FeedbackComment {
-  id         String         @id @default(uuid())
+  id         String   @id @default(uuid())
   ticketId   String
   userId     String
-  message    String         @db.Text
-  isInternal Boolean        @default(false)
-  createdAt  DateTime       @default(now())
+  message    String   @db.Text
+  isInternal Boolean  @default(false)
+  createdAt  DateTime @default(now())
 
-  ticket     FeedbackTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  user       User           @relation("FeedbackAuthor", fields: [userId], references: [id], onDelete: Cascade)
+  ticket FeedbackTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user   User           @relation("FeedbackAuthor", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([ticketId])
   @@index([userId])
@@ -959,7 +1017,7 @@ model FeedbackComment {
 }
 
 model FeedbackAttachment {
-  id           String         @id @default(uuid())
+  id           String   @id @default(uuid())
   ticketId     String
   fileName     String
   originalName String
@@ -967,10 +1025,10 @@ model FeedbackAttachment {
   fileType     String
   fileSize     Int
   uploadedById String
-  createdAt    DateTime       @default(now())
+  createdAt    DateTime @default(now())
 
-  ticket       FeedbackTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  uploadedBy   User           @relation("FeedbackAttachmentUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
+  ticket     FeedbackTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  uploadedBy User           @relation("FeedbackAttachmentUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
 
   @@index([ticketId])
   @@index([uploadedById])

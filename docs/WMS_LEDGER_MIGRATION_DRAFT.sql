@@ -27,6 +27,48 @@ CREATE UNIQUE INDEX "WmsStockMovement_idempotencyKey_key"
 CREATE INDEX "WmsStockMovement_balance_idx"
   ON "WmsStockMovement"("warehouseId", "nomenclatureId", "createdAt");
 
+CREATE TABLE "WmsStockReservation" (
+  "id" TEXT NOT NULL,
+  "transferId" TEXT NOT NULL,
+  "sourceWarehouseId" TEXT NOT NULL,
+  "targetWarehouseId" TEXT NOT NULL,
+  "nomenclatureId" TEXT NOT NULL,
+  "quantity" DECIMAL(20,6) NOT NULL,
+  "status" TEXT NOT NULL,
+  "requiresResponsibleConfirmation" BOOLEAN NOT NULL DEFAULT false,
+  "confirmedById" TEXT,
+  "confirmedAt" TIMESTAMP(3),
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "releasedAt" TIMESTAMP(3),
+  CONSTRAINT "WmsStockReservation_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "WmsStockReservation_quantity_positive" CHECK ("quantity" > 0),
+  CONSTRAINT "WmsStockReservation_distinct_warehouses" CHECK ("sourceWarehouseId" <> "targetWarehouseId")
+);
+
+CREATE UNIQUE INDEX "WmsStockReservation_transfer_item_active_key"
+  ON "WmsStockReservation"("transferId", "nomenclatureId")
+  WHERE "status" = 'ACTIVE';
+
+CREATE INDEX "WmsStockReservation_source_available_idx"
+  ON "WmsStockReservation"("sourceWarehouseId", "nomenclatureId", "status");
+
+CREATE TABLE "WmsCellStock" (
+  "id" TEXT NOT NULL,
+  "warehouseId" TEXT NOT NULL,
+  "cellId" TEXT NOT NULL,
+  "nomenclatureId" TEXT NOT NULL,
+  "quantity" DECIMAL(20,6) NOT NULL DEFAULT 0,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "WmsCellStock_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "WmsCellStock_quantity_nonnegative" CHECK ("quantity" >= 0)
+);
+
+CREATE UNIQUE INDEX "WmsCellStock_warehouse_cell_nomenclature_key"
+  ON "WmsCellStock"("warehouseId", "cellId", "nomenclatureId");
+
+CREATE INDEX "WmsCellStock_balance_idx"
+  ON "WmsCellStock"("warehouseId", "nomenclatureId");
+
 -- Add foreign keys only after validating the actual table and column names:
 -- ALTER TABLE "WmsStockMovement" ADD CONSTRAINT ... REFERENCES "Warehouse"("id");
 -- ALTER TABLE "WmsStockMovement" ADD CONSTRAINT ... REFERENCES "Nomenclature"("id");
@@ -37,3 +79,6 @@ CREATE INDEX "WmsStockMovement_balance_idx"
 -- ALTER TABLE "StockTransferItem" ADD CONSTRAINT "StockTransferItem_quantity_positive" CHECK ("quantity" > 0);
 -- ALTER TABLE "StockTransfer" ADD CONSTRAINT "StockTransfer_distinct_warehouses" CHECK ("sourceWarehouseId" <> "targetWarehouseId");
 -- ALTER TABLE "StockTransfer" ALTER COLUMN "status" DROP DEFAULT;
+-- CREATE UNIQUE INDEX "Inventory_one_active_per_warehouse_key"
+--   ON "Inventory"("warehouseId")
+--   WHERE "status" IN ('DRAFT', 'IN_PROGRESS');
