@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { getCurrentUser, requireAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
@@ -47,8 +47,9 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await getCurrentUser(req);
-    if (!user) return unauthorizedResponse();
+    const auth = await requireAuth(req, PERMISSIONS.WMS_ZONES_MANAGE);
+    if (auth.errorResponse) return auth.errorResponse;
+    const { user } = auth;
 
     const warehouse = await prisma.warehouse.findUnique({ where: { id: params.id } });
     if (!warehouse) {
