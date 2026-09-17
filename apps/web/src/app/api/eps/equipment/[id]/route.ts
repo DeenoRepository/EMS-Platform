@@ -207,7 +207,7 @@ export async function PATCH(
 
     // Случай 2: Редактирование черновика оборудования с отправкой на согласование (COMMISSIONING)
     if (submitForApproval && isDraft) {
-      const updated = await prisma.$transaction(async (tx) => {
+      const { updated, approval } = await prisma.$transaction(async (tx) => {
         if (Array.isArray(tagIds)) {
           await tx.equipmentTag.deleteMany({ where: { equipmentId: id } });
           if (tagIds.length > 0) {
@@ -217,7 +217,7 @@ export async function PATCH(
           }
         }
 
-        return tx.equipment.update({
+        const updatedEquipment = await tx.equipment.update({
           where: { id },
           data: {
             name: name !== undefined ? name.trim() : undefined,
@@ -231,28 +231,28 @@ export async function PATCH(
           },
           include: { tags: { include: { tag: true } } },
         });
-      });
-
-      const approval = await prisma.equipmentApproval.create({
-        data: {
-          equipmentId: id,
-          type: 'COMMISSIONING',
-          status: 'PENDING',
-          title: `Регистрация оборудования: ${updated.name}`,
-          description: approvalComment?.trim() || 'Черновик направлен на согласование',
-          proposedData: {
-            targetStatus: status || 'ACTIVE',
-            name: updated.name,
-            inventoryNumber: updated.inventoryNumber,
-            serialNumber: updated.serialNumber,
-            manufacturer: updated.manufacturer,
-            model: updated.model,
-            location: updated.location,
-            commissionDate: updated.commissionDate ? updated.commissionDate.toISOString() : null,
-            customFields: updated.customFields,
+        const createdApproval = await tx.equipmentApproval.create({
+          data: {
+            equipmentId: id,
+            type: 'COMMISSIONING',
+            status: 'PENDING',
+            title: `Регистрация оборудования: ${updatedEquipment.name}`,
+            description: approvalComment?.trim() || 'Черновик направлен на согласование',
+            proposedData: {
+              targetStatus: status || 'ACTIVE',
+              name: updatedEquipment.name,
+              inventoryNumber: updatedEquipment.inventoryNumber,
+              serialNumber: updatedEquipment.serialNumber,
+              manufacturer: updatedEquipment.manufacturer,
+              model: updatedEquipment.model,
+              location: updatedEquipment.location,
+              commissionDate: updatedEquipment.commissionDate ? updatedEquipment.commissionDate.toISOString() : null,
+              customFields: updatedEquipment.customFields,
+            },
+            requesterId: user.userId,
           },
-          requesterId: user.userId,
-        },
+        });
+        return { updated: updatedEquipment, approval: createdApproval };
       });
 
       return NextResponse.json({

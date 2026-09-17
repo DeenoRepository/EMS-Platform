@@ -7,7 +7,7 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
-    "test": "TSX_TSCONFIG_PATH=apps/web/tsconfig.json node --experimental-test-module-mocks --import tsx --test packages/auth/src/*.test.ts apps/web/src/lib/__tests__/rate-limit.test.ts apps/web/src/lib/__tests__/auth-guard.test.ts apps/web/src/lib/__tests__/wms-transfers.test.ts apps/web/src/lib/__tests__/database-backup.test.ts apps/web/src/lib/__tests__/eps-columns.test.ts apps/web/src/lib/__tests__/eps-protective-routes.test.ts apps/web/src/lib/__tests__/eps-state-machine.test.ts apps/web/src/lib/__tests__/eps-equipment-routes.test.ts apps/web/src/lib/__tests__/eps-import-routes.test.ts",
+    "test": "TSX_TSCONFIG_PATH=apps/web/tsconfig.json node --experimental-test-module-mocks --import tsx --test packages/auth/src/*.test.ts apps/web/src/lib/__tests__/rate-limit.test.ts apps/web/src/lib/__tests__/auth-guard.test.ts apps/web/src/lib/__tests__/wms-transfers.test.ts apps/web/src/lib/__tests__/database-backup.test.ts apps/web/src/lib/__tests__/eps-columns.test.ts apps/web/src/lib/__tests__/eps-protective-routes.test.ts apps/web/src/lib/__tests__/eps-state-machine.test.ts apps/web/src/lib/__tests__/eps-equipment-routes.test.ts apps/web/src/lib/__tests__/eps-import-routes.test.ts apps/web/src/lib/__tests__/eps-approval-route.test.ts apps/web/src/lib/__tests__/eps-stage7-routes.test.ts apps/web/src/lib/__tests__/storage-stage7.test.ts",
     "start:prod": "pnpm --filter @ems/web start",
     "prod:up": "docker compose -f docker-compose.prod.yml up -d --build",
     "prod:down": "docker compose -f docker-compose.prod.yml down",
