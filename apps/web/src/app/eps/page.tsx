@@ -61,6 +61,11 @@ import {
 } from '@/components/ui';
 import { EquipmentWizardDialog } from '@/components/eps';
 import { PlatformMaintenanceStatus } from '@ems/shared';
+import {
+  parseEquipmentFilters,
+  serializeEquipmentFilters,
+  type EquipmentSortField,
+} from '@/lib/eps-equipment-filters';
 
 interface EquipmentItem {
   id: string;
@@ -122,13 +127,17 @@ function EquipmentListContent() {
   const searchParams = useSearchParams();
   const { user, hasPermission } = useAuth();
   const { enqueueSnackbar } = useSnackbar();
+  const initialFilters = useMemo(
+    () => parseEquipmentFilters(new URLSearchParams(searchParams?.toString() || '')),
+    [searchParams],
+  );
 
   const [items, setItems] = useState<EquipmentItem[]>([]);
   const [tags, setTags] = useState<TagItem[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [page, setPage] = useState(initialFilters.page);
+  const [pageSize, setPageSize] = useState(initialFilters.pageSize);
   const [loading, setLoading] = useState(true);
   const [density, setDensity] = useState<TableDensity>('standard');
 
@@ -137,9 +146,12 @@ function EquipmentListContent() {
   const [openCreateWizard, setOpenCreateWizard] = useState(false);
 
   // Filters
-  const [search, setSearch] = useState(searchParams?.get('search') || '');
-  const [statusFilter, setStatusFilter] = useState(searchParams?.get('status') || '');
-  const [tagFilter, setTagFilter] = useState(searchParams?.get('tagId') || '');
+  const [search, setSearch] = useState(initialFilters.search);
+  const [statusFilter, setStatusFilter] = useState(initialFilters.statuses.join(','));
+  const [tagFilter, setTagFilter] = useState(initialFilters.tagIds.join(','));
+  const [sortField, setSortField] = useState<string>(initialFilters.sortBy);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(initialFilters.sortDirection);
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(() => EPS_COLUMNS.map((c) => c.id));
 
   // Status Counts for KPI
   const [statusCounts, setStatusCounts] = useState({
@@ -185,6 +197,8 @@ function EquipmentListContent() {
       if (search) params.append('search', search);
       if (statusFilter) params.append('status', statusFilter);
       if (tagFilter) params.append('tagId', tagFilter);
+      params.append('sortBy', sortField);
+      params.append('sortDirection', sortDirection);
 
       const res = await fetch(`/api/eps/equipment?${params.toString()}`);
       if (res.ok) {
@@ -209,7 +223,33 @@ function EquipmentListContent() {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, search, statusFilter, tagFilter, viewMode, enqueueSnackbar]);
+  }, [page, pageSize, search, statusFilter, tagFilter, sortField, sortDirection, viewMode, enqueueSnackbar]);
+
+  useEffect(() => {
+    setSearch(initialFilters.search);
+    setStatusFilter(initialFilters.statuses.join(','));
+    setTagFilter(initialFilters.tagIds.join(','));
+    setPage(initialFilters.page);
+    setPageSize(initialFilters.pageSize);
+    setSortField(initialFilters.sortBy);
+    setSortDirection(initialFilters.sortDirection);
+  }, [initialFilters]);
+
+  useEffect(() => {
+    const filters = parseEquipmentFilters(new URLSearchParams(searchParams?.toString() || ''));
+    const next = {
+      ...filters,
+      search,
+      statuses: statusFilter.split(',').filter(Boolean),
+      tagIds: tagFilter.split(',').filter(Boolean),
+      page,
+      pageSize,
+      sortBy: sortField as EquipmentSortField,
+      sortDirection,
+    };
+    const nextQuery = serializeEquipmentFilters(next).toString();
+    if (nextQuery !== searchParams?.toString()) router.replace(`/eps?${nextQuery}`);
+  }, [search, statusFilter, tagFilter, page, pageSize, sortField, sortDirection, router, searchParams]);
 
   const canAccessEquipment =
     user?.roles?.includes('admin') ||
@@ -252,147 +292,19 @@ function EquipmentListContent() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   // Columns visibility & Sorting
-  const [visibleColumns, setVisibleColumns] = useState<string[]>(() =>
-    EPS_COLUMNS.map((c) => c.id)
-  );
-  const [sortField, setSortField] = useState<string>('name');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-
   const equipmentList = useMemo(() => (Array.isArray(items) ? items : []), [items]);
 
   const handleRequestSort = (property: string) => {
+    if (!['name', 'inventoryNumber', 'serialNumber', 'manufacturer', 'model', 'location', 'status', 'commissionDate', 'createdAt', 'updatedAt'].includes(property)) {
+      return;
+    }
     const isAsc = sortField === property && sortDirection === 'asc';
     setSortDirection(isAsc ? 'desc' : 'asc');
     setSortField(property);
+    setPage(1);
   };
 
-  const sortedEquipmentList = useMemo(() => {
-    if (!sortField) return equipmentList;
-    return [...equipmentList].sort((a, b) => {
-      let aVal: any = '';
-      let bVal: any = '';
-      switch (sortField) {
-        case 'inventoryNumber':
-          aVal = a.inventoryNumber || '';
-          bVal = b.inventoryNumber || '';
-          break;
-        case 'name':
-          aVal = a.name || '';
-          bVal = b.name || '';
-          break;
-        case 'serialNumber':
-          aVal = a.serialNumber || '';
-          bVal = b.serialNumber || '';
-          break;
-        case 'manufacturer':
-          aVal = a.manufacturer || '';
-          bVal = b.manufacturer || '';
-          break;
-        case 'model':
-          aVal = a.model || '';
-          bVal = b.model || '';
-          break;
-        case 'location':
-          aVal = a.location || '';
-          bVal = b.location || '';
-          break;
-        case 'status':
-          aVal = a.status || '';
-          bVal = b.status || '';
-          break;
-        case 'criticality':
-          aVal = a.customFields?.criticality || '';
-          bVal = b.customFields?.criticality || '';
-          break;
-        case 'actualWear':
-          aVal = a.customFields?.actual_wear_percentage !== undefined && a.customFields?.actual_wear_percentage !== '' ? Number(a.customFields.actual_wear_percentage) : -1;
-          bVal = b.customFields?.actual_wear_percentage !== undefined && b.customFields?.actual_wear_percentage !== '' ? Number(b.customFields.actual_wear_percentage) : -1;
-          break;
-        case 'eqGroup':
-          aVal = getEquipmentDepartment(a.customFields);
-          bVal = getEquipmentDepartment(b.customFields);
-          break;
-        case 'eqType':
-          aVal = getEquipmentKind(a.customFields);
-          bVal = getEquipmentKind(b.customFields);
-          break;
-        case 'respPerson':
-          aVal = a.customFields?.responsible_person_name || '';
-          bVal = b.customFields?.responsible_person_name || '';
-          break;
-        case 'okofCode':
-          aVal = a.customFields?.okof_code || '';
-          bVal = b.customFields?.okof_code || '';
-          break;
-        case 'okpd2Code':
-          aVal = a.customFields?.okpd2_code || '';
-          bVal = b.customFields?.okpd2_code || '';
-          break;
-        case 'procCode':
-          aVal = a.customFields?.process_classifier_code || '';
-          bVal = b.customFields?.process_classifier_code || '';
-          break;
-        case 'maintPeriodicity':
-          aVal = a.customFields?.maintenance_periodicity || '';
-          bVal = b.customFields?.maintenance_periodicity || '';
-          break;
-        case 'calibrationInterval':
-          aVal = a.customFields?.calibration_interval ? Number(a.customFields.calibration_interval) : -1;
-          bVal = b.customFields?.calibration_interval ? Number(b.customFields.calibration_interval) : -1;
-          break;
-        case 'cleanRoom':
-          aVal = a.customFields?.clean_room_class || '';
-          bVal = b.customFields?.clean_room_class || '';
-          break;
-        case 'isCriticalPath':
-          aVal = isTruthyBoolean(a.customFields?.is_critical_path) ? 1 : 0;
-          bVal = isTruthyBoolean(b.customFields?.is_critical_path) ? 1 : 0;
-          break;
-        case 'isUnique':
-          aVal = isTruthyBoolean(a.customFields?.is_unique) ? 1 : 0;
-          bVal = isTruthyBoolean(b.customFields?.is_unique) ? 1 : 0;
-          break;
-        case 'isImported':
-          aVal = isTruthyBoolean(a.customFields?.is_imported) ? 1 : 0;
-          bVal = isTruthyBoolean(b.customFields?.is_imported) ? 1 : 0;
-          break;
-        case 'documentsCount':
-          aVal = a._count?.documents || a.counts?.documents || 0;
-          bVal = b._count?.documents || b.counts?.documents || 0;
-          break;
-        case 'sparePartsCount':
-          aVal = a._count?.spareParts || a.counts?.spareParts || 0;
-          bVal = b._count?.spareParts || b.counts?.spareParts || 0;
-          break;
-        case 'tags':
-          aVal = Array.isArray(a.tags) ? a.tags.map((t: any) => t.name || t).join(', ') : '';
-          bVal = Array.isArray(b.tags) ? b.tags.map((t: any) => t.name || t).join(', ') : '';
-          break;
-        case 'commissionDate':
-          aVal = a.commissionDate ? new Date(a.commissionDate).getTime() : 0;
-          bVal = b.commissionDate ? new Date(b.commissionDate).getTime() : 0;
-          break;
-        case 'updatedAt':
-          aVal = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
-          bVal = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
-          break;
-        case 'createdAt':
-          aVal = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-          break;
-        default:
-          aVal = (a as unknown as Record<string, unknown>)[sortField] ?? '';
-          bVal = (b as unknown as Record<string, unknown>)[sortField] ?? '';
-      }
-
-      if (typeof aVal === 'number' && typeof bVal === 'number') {
-        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
-      }
-      return sortDirection === 'asc'
-        ? String(aVal).localeCompare(String(bVal), 'ru')
-        : String(bVal).localeCompare(String(aVal), 'ru');
-    });
-  }, [equipmentList, sortField, sortDirection]);
+  const sortedEquipmentList = equipmentList;
 
   const handleRowClick = (eq: EquipmentItem) => {
     router.push(`/eps/${eq.id}`);

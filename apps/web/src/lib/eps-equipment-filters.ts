@@ -16,7 +16,7 @@ export type EquipmentSortField =
 
 export interface EquipmentFilters {
   search: string;
-  statuses: EquipmentStatus[];
+  statuses: string[];
   tagIds: string[];
   manufacturer: string;
   location: string;
@@ -57,9 +57,10 @@ function splitParam(value: string): string[] {
 
 export function parseEquipmentFilters(params: URLSearchParams): EquipmentFilters {
   const parsed = querySchema.parse(Object.fromEntries(params.entries()));
-  const statuses = splitParam(parsed.status).filter(
-    (status): status is EquipmentStatus => status in EQUIPMENT_STATUS_MAP,
-  );
+  const statuses = splitParam(parsed.status);
+  if (statuses.some((status) => !(status in EQUIPMENT_STATUS_MAP))) {
+    throw new Error('INVALID_EQUIPMENT_STATUS');
+  }
 
   return {
     search: parsed.search,

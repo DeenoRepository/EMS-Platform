@@ -5,6 +5,7 @@ import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { z } from 'zod';
 import { equipmentVisibilityWhere } from '@/lib/eps-state-machine';
+import { buildEquipmentOrderBy, parseEquipmentFilters } from '@/lib/eps-equipment-filters';
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,43 +14,44 @@ export async function GET(req: NextRequest) {
     if (!hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_VIEW)) return forbiddenResponse();
 
     const { searchParams } = new URL(req.url);
-    const search = searchParams.get('search');
-    const status = searchParams.get('status') as EquipmentStatus | null;
-    const tagId = searchParams.get('tagId');
-    const manufacturer = searchParams.get('manufacturer');
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const pageSize = Math.min(1000, Math.max(1, parseInt(searchParams.get('pageSize') || searchParams.get('limit') || '20', 10)));
+    const filters = parseEquipmentFilters(searchParams);
 
     const canManageDrafts = hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) || user.roles.includes('admin');
     const where: Prisma.EquipmentWhereInput = equipmentVisibilityWhere(user.userId, canManageDrafts);
 
-    if (status) {
-      where.status = status;
+    if (filters.statuses.length === 1) {
+      where.status = filters.statuses[0] as EquipmentStatus;
+    } else if (filters.statuses.length > 1) {
+      where.status = { in: filters.statuses as EquipmentStatus[] };
     }
 
-    if (manufacturer) {
-      where.manufacturer = { contains: manufacturer, mode: 'insensitive' };
+    if (filters.manufacturer) {
+      where.manufacturer = { contains: filters.manufacturer, mode: 'insensitive' };
     }
 
-    if (tagId) {
+    if (filters.tagIds.length) {
       where.tags = {
-        some: { tagId },
+        some: { tagId: { in: filters.tagIds } },
       };
     }
 
-    if (search) {
+    if (filters.location) {
+      where.location = { contains: filters.location, mode: 'insensitive' };
+    }
+
+    if (filters.search) {
       const visibilityWhere = { ...where };
       delete visibilityWhere.OR;
       where.AND = [
         visibilityWhere,
         {
           OR: [
-            { name: { contains: search, mode: 'insensitive' } },
-            { inventoryNumber: { contains: search, mode: 'insensitive' } },
-            { serialNumber: { contains: search, mode: 'insensitive' } },
-            { manufacturer: { contains: search, mode: 'insensitive' } },
-            { model: { contains: search, mode: 'insensitive' } },
-            { location: { contains: search, mode: 'insensitive' } },
+            { name: { contains: filters.search, mode: 'insensitive' } },
+            { inventoryNumber: { contains: filters.search, mode: 'insensitive' } },
+            { serialNumber: { contains: filters.search, mode: 'insensitive' } },
+            { manufacturer: { contains: filters.search, mode: 'insensitive' } },
+            { model: { contains: filters.search, mode: 'insensitive' } },
+            { location: { contains: filters.search, mode: 'insensitive' } },
           ],
         },
       ];
@@ -77,9 +79,9 @@ export async function GET(req: NextRequest) {
             },
           },
         },
-        orderBy: { updatedAt: 'desc' },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        orderBy: buildEquipmentOrderBy(filters),
+        skip: (filters.page - 1) * filters.pageSize,
+        take: filters.pageSize,
       }),
       prisma.equipment.groupBy({
         by: ['status'],
@@ -131,14 +133,20 @@ export async function GET(req: NextRequest) {
       data: {
         items: formatted,
         total,
-        page,
-        pageSize,
-        totalPages: Math.ceil(total / pageSize) || 1,
+         page: filters.page,
+         pageSize: filters.pageSize,
+         totalPages: Math.ceil(total / filters.pageSize) || 1,
         statusCounts,
       },
     });
   } catch (error: unknown) {
     console.error('Ошибка /api/eps/equipment:', error);
+    if (error instanceof Error && error.message === 'INVALID_EQUIPMENT_STATUS') {
+      return NextResponse.json({ success: false, error: 'Некорректный статус оборудования' }, { status: 400 });
+    }
+    if (error instanceof z.ZodError || (error && typeof error === 'object' && 'issues' in error)) {
+      return NextResponse.json({ success: false, error: 'Некорректные параметры фильтрации' }, { status: 400 });
+    }
     return NextResponse.json({ success: false, error: 'Ошибка получения реестра оборудования' }, { status: 500 });
   }
 }
@@ -277,9 +285,13 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: unknown) {
     console.error('Ошибка создания оборудования:', error);
-    if (error instanceof z.ZodError) {
+    if (
+      error instanceof z.ZodError ||
+      (error && typeof error === 'object' && 'issues' in error) ||
+      (error instanceof Error && error.message === 'INVALID_EQUIPMENT_STATUS')
+    ) {
       return NextResponse.json(
-        { success: false, error: 'Validation error', details: error.issues },
+        { success: false, error: 'Validation error', details: error instanceof z.ZodError ? error.issues : undefined },
         { status: 400 }
       );
     }
