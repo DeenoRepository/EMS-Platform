@@ -172,6 +172,7 @@ export default function ReportBuilderPage() {
   const [columnBuilderOpen, setColumnBuilderOpen] = useState(false);
   const [searchQueryColumn, setSearchQueryColumn] = useState('');
   const [rows, setRows] = useState<Record<string, any>[]>([]);
+  const [reportTotal, setReportTotal] = useState(0);
   const [loadingData, setLoadingData] = useState(false);
 
   // Sorting state
@@ -238,6 +239,8 @@ export default function ReportBuilderPage() {
             field: sortField,
             order: sortOrder,
           },
+          page,
+          limit: pageSize,
         }),
       });
 
@@ -245,7 +248,7 @@ export default function ReportBuilderPage() {
       if (json.success && json.data) {
         setAvailableColumns(json.data.availableColumns);
         setRows(json.data.rows);
-        setPage(1);
+        setReportTotal(json.data.total);
       } else {
         enqueueSnackbar(json.error || 'Ошибка загрузки данных отчета', { variant: 'error' });
       }
@@ -264,6 +267,8 @@ export default function ReportBuilderPage() {
     dateTo,
     sortField,
     sortOrder,
+    page,
+    pageSize,
     enqueueSnackbar,
   ]);
 
@@ -340,26 +345,6 @@ export default function ReportBuilderPage() {
     if (dateFrom || dateTo) count++;
     return count;
   }, [searchQuery, statusFilter, manufacturerFilter, locationFilter, dateFrom, dateTo]);
-
-  // Client-side sorting for instant feedback
-  const sortedRows = useMemo(() => {
-    if (!sortField) return rows;
-    return [...rows].sort((a, b) => {
-      const aVal = a[sortField] ?? '';
-      const bVal = b[sortField] ?? '';
-      if (aVal === bVal) return 0;
-      if (aVal === '—') return 1;
-      if (bVal === '—') return -1;
-      const comp = String(aVal).localeCompare(String(bVal), 'ru', { numeric: true });
-      return sortOrder === 'asc' ? comp : -comp;
-    });
-  }, [rows, sortField, sortOrder]);
-
-  // Paginated rows for preview
-  const paginatedRows = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return sortedRows.slice(start, start + pageSize);
-  }, [sortedRows, page, pageSize]);
 
   // Column reordering
   const handleMoveColumn = (index: number, direction: 'up' | 'down') => {
@@ -522,7 +507,7 @@ export default function ReportBuilderPage() {
     }
 
     const headers = activeColumnsDef.map((c) => c.name);
-    const exportData = sortedRows.map((r) => {
+    const exportData = rows.map((r) => {
       const rowArr: any[] = [];
       activeColumnsDef.forEach((c) => {
         rowArr.push(r[c.key] ?? '—');
@@ -557,7 +542,7 @@ export default function ReportBuilderPage() {
     }
 
     const headers = activeColumnsDef.map((c) => `"${c.name.replace(/"/g, '""')}"`).join(';');
-    const lines = sortedRows.map((r) => {
+    const lines = rows.map((r) => {
       return activeColumnsDef
         .map((c) => {
           const val = r[c.key] ?? '';
@@ -584,7 +569,7 @@ export default function ReportBuilderPage() {
       return;
     }
 
-    const exportRows = sortedRows.map((r) => {
+    const exportRows = rows.map((r) => {
       const obj: Record<string, any> = {};
       activeColumnsDef.forEach((c) => {
         obj[c.name] = r[c.key] ?? null;
@@ -741,7 +726,7 @@ export default function ReportBuilderPage() {
         loading={loadingData}
         page={page - 1}
         pageSize={pageSize}
-        total={sortedRows.length}
+        total={reportTotal}
         onPageChange={(_, p) => setPage(p + 1)}
         onPageSizeChange={(e) => {
           setPageSize(parseInt(e.target.value, 10));
@@ -864,7 +849,7 @@ export default function ReportBuilderPage() {
             </Box>
           </FilterToolbar>
         }
-        empty={sortedRows.length === 0 && !loadingData}
+        empty={rows.length === 0 && !loadingData}
         emptyState={
           <EmptyState
             paper
@@ -903,6 +888,7 @@ export default function ReportBuilderPage() {
                         setSortField(col.key);
                         setSortOrder('asc');
                       }
+                      setPage(1);
                     }}
                   >
                     {col.name}
@@ -912,7 +898,7 @@ export default function ReportBuilderPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {paginatedRows.map((row, idx) => (
+            {rows.map((row, idx) => (
               <TableRow key={row.id || idx} hover sx={{ '&:last-child td': { borderBottom: 0 } }}>
                 <TableCell sx={{ color: 'text.disabled', fontSize: '0.75rem', fontWeight: 600 }}>
                   {(page - 1) * pageSize + idx + 1}

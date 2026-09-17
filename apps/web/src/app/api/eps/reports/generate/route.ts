@@ -29,8 +29,11 @@ export async function POST(req: NextRequest) {
       selectedColumns = [],
       filters = {},
       sort = { field: 'createdAt', order: 'desc' },
+      page = 1,
       limit,
     } = body;
+    const currentPage = Number.isInteger(page) && page > 0 ? page : 1;
+    const pageSize = Number.isInteger(limit) && limit > 0 ? limit : undefined;
 
     // Fetch custom sections and fields definition for dictionary
     const [sections, unassignedFields] = await Promise.all([
@@ -152,19 +155,23 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const items = await prisma.equipment.findMany({
-      where,
-      include: {
-        tags: { include: { tag: true } },
-        documents: { where: { deletedAt: null }, select: { id: true } },
-        photos: { where: { deletedAt: null }, select: { id: true } },
-        maintenancePlans: { select: { id: true } },
-        spareParts: { select: { nomenclatureId: true } },
-        createdBy: { select: { displayName: true } },
-      },
-      orderBy,
-      take: limit && limit > 0 ? limit : undefined,
-    });
+    const [total, items] = await Promise.all([
+      prisma.equipment.count({ where }),
+      prisma.equipment.findMany({
+        where,
+        include: {
+          tags: { include: { tag: true } },
+          documents: { where: { deletedAt: null }, select: { id: true } },
+          photos: { where: { deletedAt: null }, select: { id: true } },
+          maintenancePlans: { select: { id: true } },
+          spareParts: { select: { nomenclatureId: true } },
+          createdBy: { select: { displayName: true } },
+        },
+        orderBy,
+        skip: pageSize ? (currentPage - 1) * pageSize : undefined,
+        take: pageSize,
+      }),
+    ]);
 
     // Also get Jira issues count if needed
     const equipmentIds = items.map((i) => i.id);
@@ -237,7 +244,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        total: rows.length,
+        total,
+        page: currentPage,
+        pageSize,
+        totalPages: pageSize ? Math.ceil(total / pageSize) || 1 : 1,
         availableColumns: allAvailableColumns,
         selectedColumns: selectedColumns.length > 0 ? selectedColumns : baseColumns.map((c) => c.key),
         rows,
