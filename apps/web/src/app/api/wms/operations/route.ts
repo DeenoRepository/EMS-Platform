@@ -290,7 +290,6 @@ export async function POST(req: NextRequest) {
               where: { id: existingStock.id },
               data: {
                 quantity: { increment: qtyNum },
-                ...(item.cellId ? { cellId: item.cellId } : {}),
               },
             });
           } else {
@@ -301,6 +300,20 @@ export async function POST(req: NextRequest) {
                 quantity: qtyNum,
                 cellId: item.cellId || null,
               },
+            });
+          }
+
+          if (item.cellId) {
+            await tx.stockCellBalance.upsert({
+              where: {
+                warehouseId_cellId_nomenclatureId: {
+                  warehouseId,
+                  cellId: item.cellId,
+                  nomenclatureId: item.nomenclatureId,
+                },
+              },
+              update: { quantity: { increment: qtyNum } },
+              create: { warehouseId, cellId: item.cellId, nomenclatureId: item.nomenclatureId, quantity: qtyNum },
             });
           }
 
@@ -337,6 +350,21 @@ export async function POST(req: NextRequest) {
           });
           if (changed.count !== 1) {
             throw new Error(`Недостаточно остатка для "${existingStock.nomenclature.name}". Остаток изменился параллельно.`);
+          }
+
+          if (item.cellId) {
+            const cellChanged = await tx.stockCellBalance.updateMany({
+              where: {
+                warehouseId,
+                cellId: item.cellId,
+                nomenclatureId: item.nomenclatureId,
+                quantity: { gte: qtyNum },
+              },
+              data: { quantity: { decrement: qtyNum } },
+            });
+            if (cellChanged.count !== 1) {
+              throw new Error(`Недостаточно остатка в ячейке для "${existingStock.nomenclature.name}".`);
+            }
           }
 
           const updatedStock = await tx.stockItem.findUniqueOrThrow({

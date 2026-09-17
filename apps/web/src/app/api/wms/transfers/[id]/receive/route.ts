@@ -136,6 +136,25 @@ export async function POST(
             },
           });
         }
+
+        if (targetCellId) {
+          await tx.stockCellBalance.upsert({
+            where: {
+              warehouseId_cellId_nomenclatureId: {
+                warehouseId: transfer.targetWarehouseId,
+                cellId: targetCellId,
+                nomenclatureId: item.nomenclatureId,
+              },
+            },
+            update: { quantity: { increment: qtyToReceive } },
+            create: {
+              warehouseId: transfer.targetWarehouseId,
+              cellId: targetCellId,
+              nomenclatureId: item.nomenclatureId,
+              quantity: qtyToReceive,
+            },
+          });
+        }
       }
 
       for (const item of transfer.items) {
