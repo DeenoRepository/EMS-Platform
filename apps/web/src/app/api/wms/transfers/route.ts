@@ -472,6 +472,24 @@ export async function POST(req: NextRequest) {
           })),
         });
 
+        await tx.stockOperation.create({
+          data: {
+            warehouseId: sourceWarehouseId,
+            type: OperationType.ISSUE,
+            date: new Date(),
+            counterparty: `Склад-получатель: ${targetWh.name}`,
+            document: `Перемещение № ${transferNumber}`,
+            comment: 'Списание при прямой отгрузке межскладского перемещения',
+            createdById: user.userId,
+            items: {
+              create: normalizedItems.map((item) => ({
+                nomenclatureId: item.nomenclatureId,
+                quantity: item.quantity as number,
+              })),
+            },
+          },
+        });
+
         return transfer;
       });
 

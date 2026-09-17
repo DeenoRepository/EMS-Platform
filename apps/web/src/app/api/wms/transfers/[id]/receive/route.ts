@@ -123,7 +123,6 @@ export async function POST(
             where: { id: existingStock.id },
             data: {
               quantity: { increment: qtyToReceive },
-              cellId: targetCellId,
             },
           });
         } else {
