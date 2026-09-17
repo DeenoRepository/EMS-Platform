@@ -17,7 +17,7 @@ export async function GET(
     if (!hasPermission(user, PERMISSIONS.WMS_STOCK_VIEW)) return forbiddenResponse();
 
     const cells = await prisma.storageCell.findMany({
-      where: { zoneId: params.id },
+      where: { zoneId: params.id, deletedAt: null },
       include: {
         _count: {
           select: { stockItems: true },
@@ -125,12 +125,11 @@ export async function POST(
 
     const cleanCode = String(code).trim().toUpperCase();
 
-    const existing = await prisma.storageCell.findUnique({
+    const existing = await prisma.storageCell.findFirst({
       where: {
-        zoneId_code: {
-          zoneId: params.id,
-          code: cleanCode,
-        },
+        zoneId: params.id,
+        code: cleanCode,
+        deletedAt: null,
       },
     });
 
@@ -206,11 +205,12 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'cellId is required' }, { status: 400 });
     }
 
-    await prisma.storageCell.delete({
+    await prisma.storageCell.update({
       where: { id: cellId, zoneId: params.id },
+      data: { deletedAt: new Date() },
     });
 
-    return NextResponse.json({ success: true, message: 'Ячейка успешно удалена' });
+    return NextResponse.json({ success: true, message: 'Ячейка перемещена в архив' });
   } catch (error) {
     console.error('Error deleting storage cell:', error);
     return NextResponse.json(

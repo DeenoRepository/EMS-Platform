@@ -110,3 +110,26 @@ export async function PATCH(
     return NextResponse.json({ success: false, error: 'Ошибка обновления склада' }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const auth = await requireAuth(req, PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+    if (auth.errorResponse) return auth.errorResponse;
+    const { user } = auth;
+    const current = await prisma.warehouse.findUnique({ where: { id: params.id } });
+    if (!current) return NextResponse.json({ success: false, error: 'Склад не найден' }, { status: 404 });
+
+    const archived = await prisma.warehouse.update({
+      where: { id: params.id },
+      data: { deletedAt: new Date(), isActive: false },
+    });
+    await logAuditEvent({ userId: user.userId, action: 'UPDATE', entityType: 'Warehouse', entityId: archived.id, changes: { archived: true, deletedAt: archived.deletedAt, isActive: false } });
+    return NextResponse.json({ success: true, data: archived, message: 'Склад перемещен в архив' });
+  } catch (error) {
+    console.error('Ошибка архивирования склада:', error);
+    return NextResponse.json({ success: false, error: 'Ошибка архивирования склада' }, { status: 500 });
+  }
+}

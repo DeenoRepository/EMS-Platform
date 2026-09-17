@@ -110,11 +110,12 @@ export async function DELETE(
       );
     }
 
-    await prisma.storageZone.delete({
+    await prisma.storageZone.update({
       where: { id: params.id },
+      data: { deletedAt: new Date() },
     });
 
-    return NextResponse.json({ success: true, message: 'Зона успешно удалена' });
+    return NextResponse.json({ success: true, message: 'Зона перемещена в архив' });
   } catch (error) {
     console.error('Error deleting storage zone:', error);
     return NextResponse.json(

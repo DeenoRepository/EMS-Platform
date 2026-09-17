@@ -52,7 +52,7 @@ export async function PATCH(
     // Verify cell if provided
     if (cellId) {
       const cell = await prisma.storageCell.findUnique({
-        where: { id: cellId },
+        where: { id: cellId, deletedAt: null },
         include: { zone: true },
       });
       if (!cell) {

@@ -122,3 +122,26 @@ export async function PUT(
     return NextResponse.json({ success: false, error: 'Ошибка при сохранении изменений' }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const auth = await requireAuth(req, PERMISSIONS.WMS_NOMENCLATURE_MANAGE);
+    if (auth.errorResponse) return auth.errorResponse;
+    const { user } = auth;
+    const existing = await prisma.nomenclature.findUnique({ where: { id: params.id } });
+    if (!existing) return NextResponse.json({ success: false, error: 'Номенклатура не найдена' }, { status: 404 });
+
+    const archived = await prisma.nomenclature.update({
+      where: { id: params.id },
+      data: { deletedAt: new Date() },
+    });
+    await logAuditEvent({ userId: user.userId, action: 'UPDATE', entityType: 'Nomenclature', entityId: archived.id, changes: { archived: true, deletedAt: archived.deletedAt } });
+    return NextResponse.json({ success: true, data: archived, message: 'Номенклатура перемещена в архив' });
+  } catch (error) {
+    console.error('Ошибка архивирования номенклатуры:', error);
+    return NextResponse.json({ success: false, error: 'Ошибка архивирования номенклатуры' }, { status: 500 });
+  }
+}

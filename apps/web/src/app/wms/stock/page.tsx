@@ -80,6 +80,9 @@ interface StockRow {
   category: string;
   quantity: number;
   totalStock?: number;
+  availableQuantity?: number;
+  reservedQuantity?: number;
+  totalOwnedQuantity?: number;
   minStock: number | string;
   isLowStock: boolean;
   cellId?: string | null;
@@ -117,7 +120,7 @@ const STOCK_COLUMNS: TableColumnOption[] = [
   { id: 'sku', label: 'Артикул / Модель', defaultVisible: true },
   { id: 'name', label: 'Наименование ТМЦ', defaultVisible: true, required: true },
   { id: 'category', label: 'Товарная группа / Категория', defaultVisible: true },
-  { id: 'quantity', label: 'Фактический остаток', defaultVisible: true },
+  { id: 'quantity', label: 'Доступно / резерв', defaultVisible: true },
   { id: 'minQuantity', label: 'Неснижаемый нормативный остаток', defaultVisible: true },
   { id: 'status', label: 'Статус обеспеченности', defaultVisible: true },
   { id: 'equipment', label: 'Совместимое оборудование', defaultVisible: true },
@@ -505,8 +508,8 @@ function WmsStockContent() {
           bVal = b.category || '';
           break;
         case 'quantity':
-          aVal = Number(a.quantity) || 0;
-          bVal = Number(b.quantity) || 0;
+          aVal = Number(a.availableQuantity ?? a.quantity) || 0;
+          bVal = Number(b.availableQuantity ?? b.quantity) || 0;
           break;
         case 'minQuantity':
           aVal = Number(a.minStock) || 0;
@@ -1026,7 +1029,10 @@ function WmsStockContent() {
                           color: row.isLowStock ? 'error.main' : 'text.primary',
                         }}
                       >
-                        {row.quantity} {row.unit}
+                        <>
+                          {row.availableQuantity ?? row.quantity} доступно, {row.reservedQuantity ?? 0} в резерве
+                          {' '}({row.totalOwnedQuantity ?? row.quantity} всего) {row.unit}
+                        </>
                       </Typography>
                     </TableCell>
                   )}

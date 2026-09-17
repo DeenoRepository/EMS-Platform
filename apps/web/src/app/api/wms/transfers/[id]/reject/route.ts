@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, requireAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
-import { prisma, StockTransferStatus } from '@ems/database';
+import { prisma, StockTransferStatus, StockReservationStatus, OperationType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { canManageWarehouse } from '@/lib/wms-access';
+import { assertNoActiveInventory } from '@/lib/wms-inventory-lock';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,7 +32,13 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Перемещение не найдено' }, { status: 404 });
     }
 
-    if (transfer.status !== StockTransferStatus.IN_TRANSIT && transfer.status !== StockTransferStatus.REQUESTED) {
+    const transferStatus = transfer.status as StockTransferStatus;
+
+    if (
+      transferStatus !== StockTransferStatus.IN_TRANSIT &&
+      transferStatus !== StockTransferStatus.PENDING_RESPONSIBLE_CONFIRMATION &&
+      transferStatus !== StockTransferStatus.REQUESTED
+    ) {
       return NextResponse.json(
         { success: false, error: `Перемещение в статусе "${transfer.status}" не может быть отклонено` },
         { status: 400 }
@@ -57,13 +64,13 @@ export async function POST(
     // Если статус IN_TRANSIT (в пути) -> отклонить может получатель (или админ)
     // Если статус REQUESTED (запрос) -> отклонить может отправитель (или админ)
     if (!isAdmin) {
-      if (transfer.status === StockTransferStatus.IN_TRANSIT) {
+      if (transferStatus === StockTransferStatus.IN_TRANSIT || transferStatus === StockTransferStatus.PENDING_RESPONSIBLE_CONFIRMATION) {
         if (!canManageWarehouse(user, transfer.targetWarehouse.responsibleUserId)) {
           return forbiddenResponse(
             `Отклонить приемку может только ответственное лицо склада-получателя "${transfer.targetWarehouse.name}".`
           );
         }
-      } else if (transfer.status === StockTransferStatus.REQUESTED) {
+      } else if (transferStatus === StockTransferStatus.REQUESTED) {
         if (!canManageWarehouse(user, transfer.sourceWarehouse.responsibleUserId)) {
           return forbiddenResponse(
             `Отклонить запрос на перевод может только ответственное лицо склада-отправителя "${transfer.sourceWarehouse.name}".`
@@ -72,10 +79,21 @@ export async function POST(
       }
     }
 
+    try {
+      await assertNoActiveInventory([transfer.sourceWarehouseId, transfer.targetWarehouseId]);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'WMS_INVENTORY_LOCKED') {
+        return NextResponse.json({ success: false, error: 'На одном из складов проводится инвентаризация. Операция временно заблокирована.' }, { status: 409 });
+      }
+      throw error;
+    }
+
     // Транзакционно выполняем возврат остатков (если было списано в IN_TRANSIT) и обновляем статус
     const updatedTransfer = await prisma.$transaction(async (tx) => {
+      await assertNoActiveInventory([transfer.sourceWarehouseId, transfer.targetWarehouseId], tx);
+
       const claimed = await tx.stockTransfer.updateMany({
-        where: { id: transferId, status: transfer.status },
+        where: { id: transferId, status: transferStatus },
         data: { status: StockTransferStatus.REJECTED, rejectedAt: new Date(), rejectedById: user.userId, rejectionReason: reason },
       });
       if (claimed.count !== 1) {
@@ -83,7 +101,7 @@ export async function POST(
       }
 
       // Если было IN_TRANSIT, возвращаем остатки на склад-отправитель
-      if (transfer.status === StockTransferStatus.IN_TRANSIT) {
+      if (transferStatus === StockTransferStatus.IN_TRANSIT || transferStatus === StockTransferStatus.PENDING_RESPONSIBLE_CONFIRMATION) {
         for (const item of transfer.items) {
           const qtyToRestore = Number(item.quantity);
           const stock = await tx.stockItem.findUnique({
@@ -98,7 +116,10 @@ export async function POST(
           if (stock) {
             await tx.stockItem.update({
               where: { id: stock.id },
-              data: { quantity: { increment: qtyToRestore } },
+              data: {
+                quantity: { increment: qtyToRestore },
+                reservedQuantity: { decrement: qtyToRestore },
+              },
             });
           } else {
             await tx.stockItem.create({
@@ -110,6 +131,25 @@ export async function POST(
             });
           }
         }
+
+        const released = await tx.stockReservation.updateMany({
+          where: { transferId, status: StockReservationStatus.ACTIVE },
+          data: { status: StockReservationStatus.RELEASED, releasedAt: new Date() },
+        });
+        if (released.count !== transfer.items.length) throw new Error('Резерв перемещения изменился параллельно');
+
+        await tx.stockOperation.create({
+          data: {
+            warehouseId: transfer.sourceWarehouseId,
+            type: OperationType.RECEIPT,
+            date: new Date(),
+            counterparty: `Возврат со склада: ${transfer.targetWarehouse.name} (${transfer.targetWarehouse.code})`,
+            document: `Возврат по перемещению № ${transfer.transferNumber}`,
+            comment: 'Возврат ТМЦ после отклонения приемки',
+            createdById: user.userId,
+            items: { create: transfer.items.map((item) => ({ nomenclatureId: item.nomenclatureId, quantity: item.quantity })) },
+          },
+        });
       }
 
       // Переводим перемещение в статус REJECTED
@@ -133,14 +173,14 @@ export async function POST(
       entityId: transfer.id,
       changes: {
         status: 'REJECTED',
-        previousStatus: transfer.status,
+        previousStatus: transferStatus,
         transferNumber: transfer.transferNumber,
         reason,
       },
     }).catch((error) => console.error('Не удалось записать аудит отклонения:', error));
 
     // Отправляем уведомление инициатору
-    const isStockRestored = transfer.status === StockTransferStatus.IN_TRANSIT;
+    const isStockRestored = transferStatus === StockTransferStatus.IN_TRANSIT || transferStatus === StockTransferStatus.PENDING_RESPONSIBLE_CONFIRMATION;
     const notifyUserId = isStockRestored
       ? (transfer.dispatchedById || transfer.sourceWarehouse.responsibleUserId)
       : (transfer.createdById || transfer.targetWarehouse.responsibleUserId);

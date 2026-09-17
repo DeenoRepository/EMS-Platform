@@ -36,8 +36,10 @@ export async function GET(req: NextRequest) {
           },
         },
         zones: {
+          where: { deletedAt: null },
           include: {
             cells: {
+              where: { deletedAt: null },
               orderBy: { code: 'asc' },
             },
           },

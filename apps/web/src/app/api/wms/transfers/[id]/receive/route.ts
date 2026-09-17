@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, requireAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
-import { prisma, StockTransferStatus, OperationType } from '@ems/database';
+import { prisma, StockTransferStatus, StockReservationStatus, OperationType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { canManageWarehouse } from '@/lib/wms-access';
+import { assertNoActiveInventory } from '@/lib/wms-inventory-lock';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +39,7 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Перемещение не найдено' }, { status: 404 });
     }
 
-    if (transfer.status !== StockTransferStatus.IN_TRANSIT) {
+    if (transfer.status !== StockTransferStatus.IN_TRANSIT && transfer.status !== StockTransferStatus.PENDING_RESPONSIBLE_CONFIRMATION) {
       return NextResponse.json(
         { success: false, error: `Перемещение находится в статусе "${transfer.status}" и не ожидает приемки` },
         { status: 400 }
@@ -55,6 +56,14 @@ export async function POST(
         `Вы не являетесь ответственным лицом за склад-получатель "${transfer.targetWarehouse.name}". Приемка запрещена.`
       );
     }
+    try {
+      await assertNoActiveInventory([transfer.sourceWarehouseId, transfer.targetWarehouseId]);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'WMS_INVENTORY_LOCKED') {
+        return NextResponse.json({ success: false, error: 'На одном из складов проводится инвентаризация. Приемка временно заблокирована.' }, { status: 409 });
+      }
+      throw error;
+    }
 
     let cellAllocations: CellAllocationInput[] = [];
     try {
@@ -68,8 +77,13 @@ export async function POST(
 
     // Транзакционно зачисляем ТМЦ на склад-получатель и обновляем статус
     const updatedTransfer = await prisma.$transaction(async (tx) => {
+      await assertNoActiveInventory([transfer.sourceWarehouseId, transfer.targetWarehouseId], tx);
+
       const claimed = await tx.stockTransfer.updateMany({
-        where: { id: transferId, status: StockTransferStatus.IN_TRANSIT },
+        where: {
+          id: transferId,
+          status: { in: [StockTransferStatus.IN_TRANSIT, StockTransferStatus.PENDING_RESPONSIBLE_CONFIRMATION] },
+        },
         data: { status: StockTransferStatus.COMPLETED, receivedAt: new Date(), receivedById: user.userId },
       });
       if (claimed.count !== 1) {
@@ -83,7 +97,7 @@ export async function POST(
 
         if (targetCellId) {
           const targetCell = await tx.storageCell.findUnique({
-            where: { id: targetCellId },
+            where: { id: targetCellId, deletedAt: null },
             include: { zone: { select: { warehouseId: true } } },
           });
           if (!targetCell || targetCell.zone.warehouseId !== transfer.targetWarehouseId) {
@@ -124,11 +138,34 @@ export async function POST(
         }
       }
 
+      for (const item of transfer.items) {
+        const released = await tx.stockReservation.updateMany({
+          where: { transferId, nomenclatureId: item.nomenclatureId, status: StockReservationStatus.ACTIVE },
+          data: {
+            status: StockReservationStatus.RECEIVED,
+            releasedAt: new Date(),
+            confirmedById: user.userId,
+            confirmedAt: new Date(),
+          },
+        });
+        if (released.count !== 1) throw new Error('Резерв перемещения не найден или уже обработан');
+
+        const releasedSource = await tx.stockItem.updateMany({
+          where: {
+            warehouseId: transfer.sourceWarehouseId,
+            nomenclatureId: item.nomenclatureId,
+            reservedQuantity: { gte: item.quantity },
+          },
+          data: { reservedQuantity: { decrement: item.quantity } },
+        });
+        if (releasedSource.count !== 1) throw new Error('Резерв исходного склада изменился параллельно');
+      }
+
       // Создаем запись в журнале складских операций StockOperation (для аудита и отчетов)
       await tx.stockOperation.create({
         data: {
           warehouseId: transfer.targetWarehouseId,
-          type: OperationType.TRANSFER,
+          type: OperationType.RECEIPT,
           date: new Date(),
           counterparty: `Склад-отправитель: ${transfer.sourceWarehouse.name} (${transfer.sourceWarehouse.code})`,
           document: `Перемещение № ${transfer.transferNumber}`,

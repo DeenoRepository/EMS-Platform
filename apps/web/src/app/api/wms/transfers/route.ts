@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, requireAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
-import { prisma, StockTransferStatus, OperationType, Prisma } from '@ems/database';
+import { prisma, StockTransferStatus, StockReservationStatus, OperationType, Prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { canManageWarehouse, isWmsAdmin } from '@/lib/wms-access';
 import { parseMovementQuantity } from '@/lib/wms-validation';
+import { assertNoActiveInventory } from '@/lib/wms-inventory-lock';
 
 export const dynamic = 'force-dynamic';
 
@@ -329,12 +330,21 @@ export async function POST(req: NextRequest) {
     const targetCellIds = normalizedItems.map((item) => item.targetCellId).filter((cellId): cellId is string => Boolean(cellId));
     if (targetCellIds.length > 0) {
       const cells = await prisma.storageCell.findMany({
-        where: { id: { in: targetCellIds } },
+        where: { id: { in: targetCellIds }, deletedAt: null },
         include: { zone: { select: { warehouseId: true } } },
       });
       if (cells.length !== new Set(targetCellIds).size || cells.some((cell) => cell.zone.warehouseId !== targetWarehouseId)) {
         return NextResponse.json({ success: false, error: 'Каждая ячейка назначения должна принадлежать целевому складу' }, { status: 400 });
       }
+    }
+
+    try {
+      await assertNoActiveInventory([sourceWarehouseId, targetWarehouseId]);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'WMS_INVENTORY_LOCKED') {
+        return NextResponse.json({ success: false, error: 'На одном из складов проводится инвентаризация. Перемещение временно заблокировано.' }, { status: 409 });
+      }
+      throw error;
     }
 
     const isAdmin = isWmsAdmin(user);
@@ -386,6 +396,8 @@ export async function POST(req: NextRequest) {
     // Если это прямое перемещение (отгрузка), проверяем остатки и сразу списываем
     if (!isRequest) {
       const result = await prisma.$transaction(async (tx) => {
+        await assertNoActiveInventory([sourceWarehouseId, targetWarehouseId], tx);
+
         // Проверяем наличие всех позиций на складе-отправителе
         for (const item of normalizedItems) {
           const qtyToTransfer = item.quantity as number;
@@ -410,7 +422,10 @@ export async function POST(req: NextRequest) {
 
           const changed = await tx.stockItem.updateMany({
             where: { id: stock!.id, quantity: { gte: qtyToTransfer } },
-            data: { quantity: { decrement: qtyToTransfer } },
+            data: {
+              quantity: { decrement: qtyToTransfer },
+              reservedQuantity: { increment: qtyToTransfer },
+            },
           });
           if (changed.count !== 1) {
             throw new Error(`Остаток для "${stock?.nomenclature?.name || 'ТМЦ'}" изменился параллельно`);
@@ -423,7 +438,9 @@ export async function POST(req: NextRequest) {
             transferNumber,
             sourceWarehouseId,
             targetWarehouseId,
-            status: StockTransferStatus.IN_TRANSIT,
+            status: targetWh.responsibleUserId
+              ? StockTransferStatus.IN_TRANSIT
+              : StockTransferStatus.PENDING_RESPONSIBLE_CONFIRMATION,
             createdById: user.userId,
             requestReason: requestReason?.trim() || null,
             dispatchedAt: new Date(),
@@ -441,6 +458,18 @@ export async function POST(req: NextRequest) {
             targetWarehouse: true,
             items: { include: { nomenclature: true } },
           },
+        });
+
+        await tx.stockReservation.createMany({
+          data: normalizedItems.map((item) => ({
+            transferId: transfer.id,
+            sourceWarehouseId,
+            targetWarehouseId,
+            nomenclatureId: item.nomenclatureId,
+            quantity: item.quantity as number,
+            status: StockReservationStatus.ACTIVE,
+            requiresResponsibleConfirmation: !targetWh.responsibleUserId,
+          })),
         });
 
         return transfer;

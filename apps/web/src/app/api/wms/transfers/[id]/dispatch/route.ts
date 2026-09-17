@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, requireAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
-import { prisma, StockTransferStatus } from '@ems/database';
+import { prisma, StockTransferStatus, StockReservationStatus, OperationType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { canManageWarehouse } from '@/lib/wms-access';
+import { assertNoActiveInventory } from '@/lib/wms-inventory-lock';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,12 +49,25 @@ export async function POST(
         `Вы не являетесь ответственным лицом за склад-отправитель "${transfer.sourceWarehouse.name}". Отгрузка запрещена.`
       );
     }
+    try {
+      await assertNoActiveInventory([transfer.sourceWarehouseId, transfer.targetWarehouseId]);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'WMS_INVENTORY_LOCKED') {
+        return NextResponse.json({ success: false, error: 'На одном из складов проводится инвентаризация. Отгрузка временно заблокирована.' }, { status: 409 });
+      }
+      throw error;
+    }
 
     // Транзакционно проверяем и списываем ТМЦ со склада-отправителя
     const updatedTransfer = await prisma.$transaction(async (tx) => {
+      await assertNoActiveInventory([transfer.sourceWarehouseId, transfer.targetWarehouseId], tx);
+
+      const nextStatus = transfer.targetWarehouse.responsibleUserId
+        ? StockTransferStatus.IN_TRANSIT
+        : StockTransferStatus.PENDING_RESPONSIBLE_CONFIRMATION;
       const claimed = await tx.stockTransfer.updateMany({
         where: { id: transferId, status: StockTransferStatus.REQUESTED },
-        data: { status: StockTransferStatus.IN_TRANSIT, dispatchedAt: new Date(), dispatchedById: user.userId },
+        data: { status: nextStatus, dispatchedAt: new Date(), dispatchedById: user.userId },
       });
       if (claimed.count !== 1) {
         throw new Error('Перемещение уже обрабатывается или имеет другой статус');
@@ -83,18 +97,47 @@ export async function POST(
         // Списываем со склада-отправителя
         const changed = await tx.stockItem.updateMany({
           where: { id: stock!.id, quantity: { gte: qtyToTransfer } },
-          data: { quantity: { decrement: qtyToTransfer } },
+          data: {
+            quantity: { decrement: qtyToTransfer },
+            reservedQuantity: { increment: qtyToTransfer },
+          },
         });
         if (changed.count !== 1) {
           throw new Error(`Остаток для "${item.nomenclature?.name || 'ТМЦ'}" изменился параллельно.`);
         }
       }
 
+      await tx.stockReservation.createMany({
+        data: transfer.items.map((item) => ({
+          transferId,
+          sourceWarehouseId: transfer.sourceWarehouseId,
+          targetWarehouseId: transfer.targetWarehouseId,
+          nomenclatureId: item.nomenclatureId,
+          quantity: item.quantity,
+          status: StockReservationStatus.ACTIVE,
+          requiresResponsibleConfirmation: !transfer.targetWarehouse.responsibleUserId,
+        })),
+        skipDuplicates: true,
+      });
+
+      await tx.stockOperation.create({
+        data: {
+          warehouseId: transfer.sourceWarehouseId,
+          type: OperationType.ISSUE,
+          date: new Date(),
+          counterparty: `Склад-получатель: ${transfer.targetWarehouse.name} (${transfer.targetWarehouse.code})`,
+          document: `Перемещение № ${transfer.transferNumber}`,
+          comment: 'Списание при отгрузке межскладского перемещения',
+          createdById: user.userId,
+          items: { create: transfer.items.map((item) => ({ nomenclatureId: item.nomenclatureId, quantity: item.quantity })) },
+        },
+      });
+
       // Переводим статус в IN_TRANSIT
       return tx.stockTransfer.update({
         where: { id: transferId },
         data: {
-          status: StockTransferStatus.IN_TRANSIT,
+          status: nextStatus,
         },
         include: {
           sourceWarehouse: true,

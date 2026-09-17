@@ -5,6 +5,7 @@ import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { canManageWarehouse, isWmsAdmin } from '@/lib/wms-access';
 import { parseMovementQuantity } from '@/lib/wms-validation';
+import { assertNoActiveInventory } from '@/lib/wms-inventory-lock';
 
 export const dynamic = 'force-dynamic';
 
@@ -187,10 +188,19 @@ export async function POST(req: NextRequest) {
       return forbiddenResponse(`Вы не являетесь ответственным лицом за склад "${warehouse.name}". Выполнение операций разрешено только назначенному материально ответственному лицу.`);
     }
 
+    try {
+      await assertNoActiveInventory([warehouseId]);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'WMS_INVENTORY_LOCKED') {
+        return NextResponse.json({ success: false, error: 'На складе проводится инвентаризация. Складские операции временно заблокированы.' }, { status: 409 });
+      }
+      throw error;
+    }
+
     const cellIds = items.map((item) => item.cellId).filter((cellId): cellId is string => Boolean(cellId));
     if (cellIds.length > 0) {
       const cells = await prisma.storageCell.findMany({
-        where: { id: { in: cellIds } },
+        where: { id: { in: cellIds }, deletedAt: null },
         include: { zone: { select: { warehouseId: true } } },
       });
       if (cells.length !== new Set(cellIds).size || cells.some((cell) => cell.zone.warehouseId !== warehouseId)) {
@@ -206,6 +216,8 @@ export async function POST(req: NextRequest) {
       (type === 'ISSUE_EMPLOYEE' && recipientName?.trim() ? `Сотрудник: ${recipientName.trim()}` : null);
 
     const operation = await prisma.$transaction(async (tx) => {
+      await assertNoActiveInventory([warehouseId], tx);
+
       // 1. Проверяем остатки при списании и перемещении
       if (isIssue) {
         for (const item of items) {

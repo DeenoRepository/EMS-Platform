@@ -17,9 +17,10 @@ export async function GET(
     if (!hasPermission(user, PERMISSIONS.WMS_STOCK_VIEW)) return forbiddenResponse();
 
     const zones = await prisma.storageZone.findMany({
-      where: { warehouseId: params.id },
+      where: { warehouseId: params.id, deletedAt: null },
       include: {
         cells: {
+          where: { deletedAt: null },
           include: {
             _count: {
               select: { stockItems: true },
