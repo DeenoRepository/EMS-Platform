@@ -1,5 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert';
+import { parseMovementQuantity, parseStockQuantity } from '../wms-validation';
 
 describe('WMS Transfers Business Logic & ID Generation', () => {
   test('generates collision-resistant transfer number with crypto random suffix', () => {
@@ -51,5 +52,20 @@ describe('WMS Transfers Business Logic & ID Generation', () => {
     const targetWh = 'wh-main';
     const isSame = sourceWh === targetWh;
     assert.strictEqual(isSame, true);
+  });
+
+  test('rejects non-finite and non-positive movement quantities', () => {
+    for (const value of [0, -1, Number.NaN, Number.POSITIVE_INFINITY, '', '0.1234567']) {
+      assert.strictEqual(parseMovementQuantity(value), null);
+    }
+    assert.strictEqual(parseMovementQuantity('0.125'), 0.125);
+  });
+
+  test('accepts only finite non-negative stock quantities', () => {
+    for (const value of [-1, Number.NaN, Number.NEGATIVE_INFINITY, 'Infinity', '']) {
+      assert.strictEqual(parseStockQuantity(value), null);
+    }
+    assert.strictEqual(parseStockQuantity('0'), 0);
+    assert.strictEqual(parseStockQuantity('12.500000'), 12.5);
   });
 });
