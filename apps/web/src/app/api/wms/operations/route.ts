@@ -179,10 +179,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Склад не найден' }, { status: 404 });
     }
 
-    const isAdmin =
-      user.roles.includes('admin') ||
-      user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-      user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+    const isAdmin = isWmsAdmin(user);
 
     if (!canManageWarehouse(user, warehouse.responsibleUserId)) {
       return forbiddenResponse(`Вы не являетесь ответственным лицом за склад "${warehouse.name}". Выполнение операций разрешено только назначенному материально ответственному лицу.`);

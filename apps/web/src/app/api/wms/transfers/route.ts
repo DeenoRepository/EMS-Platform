@@ -54,13 +54,13 @@ export async function GET(req: NextRequest) {
     if (warehouseId) {
       if (mode === 'inbound') {
         where.targetWarehouseId = warehouseId;
-        where.status = StockTransferStatus.IN_TRANSIT;
+        where.status = { in: [StockTransferStatus.IN_TRANSIT, StockTransferStatus.PENDING_RESPONSIBLE_CONFIRMATION] };
       } else if (mode === 'requests') {
         where.sourceWarehouseId = warehouseId;
         where.status = StockTransferStatus.REQUESTED;
       } else if (mode === 'outbound') {
         where.sourceWarehouseId = warehouseId;
-        where.status = StockTransferStatus.IN_TRANSIT;
+        where.status = { in: [StockTransferStatus.IN_TRANSIT, StockTransferStatus.PENDING_RESPONSIBLE_CONFIRMATION] };
       } else if (mode === 'my_requests') {
         where.createdById = user.userId;
         if (!status) where.status = StockTransferStatus.REQUESTED;
@@ -72,11 +72,11 @@ export async function GET(req: NextRequest) {
       }
     } else {
       if (mode === 'inbound') {
-        where.status = StockTransferStatus.IN_TRANSIT;
+          where.status = { in: [StockTransferStatus.IN_TRANSIT, StockTransferStatus.PENDING_RESPONSIBLE_CONFIRMATION] };
       } else if (mode === 'requests') {
         where.status = StockTransferStatus.REQUESTED;
       } else if (mode === 'outbound') {
-        where.status = StockTransferStatus.IN_TRANSIT;
+          where.status = { in: [StockTransferStatus.IN_TRANSIT, StockTransferStatus.PENDING_RESPONSIBLE_CONFIRMATION] };
       } else if (mode === 'my_requests') {
         where.createdById = user.userId;
         if (!status) where.status = StockTransferStatus.REQUESTED;
@@ -186,7 +186,7 @@ export async function GET(req: NextRequest) {
         prisma.stockTransfer.count({
           where: {
             ...(warehouseId ? { targetWarehouseId: warehouseId } : {}),
-            status: StockTransferStatus.IN_TRANSIT,
+            status: { in: [StockTransferStatus.IN_TRANSIT, StockTransferStatus.PENDING_RESPONSIBLE_CONFIRMATION] },
           },
         }),
         prisma.stockTransfer.count({
@@ -198,7 +198,7 @@ export async function GET(req: NextRequest) {
         prisma.stockTransfer.count({
           where: {
             ...(warehouseId ? { sourceWarehouseId: warehouseId } : {}),
-            status: StockTransferStatus.IN_TRANSIT,
+            status: { in: [StockTransferStatus.IN_TRANSIT, StockTransferStatus.PENDING_RESPONSIBLE_CONFIRMATION] },
           },
         }),
       ]);
@@ -217,7 +217,7 @@ export async function GET(req: NextRequest) {
         prisma.stockTransfer.count({
           where: {
             targetWarehouseId: { in: targetWhFilter },
-            status: StockTransferStatus.IN_TRANSIT,
+            status: { in: [StockTransferStatus.IN_TRANSIT, StockTransferStatus.PENDING_RESPONSIBLE_CONFIRMATION] },
           },
         }),
         prisma.stockTransfer.count({
