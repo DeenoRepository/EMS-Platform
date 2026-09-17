@@ -24,6 +24,9 @@ import {
   Paper,
   Checkbox,
   Alert,
+  Drawer,
+  ListItemText,
+  Stack,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ViewListIcon from '@mui/icons-material/ViewList';
@@ -33,6 +36,7 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import BuildCircleOutlinedIcon from '@mui/icons-material/BuildCircleOutlined';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
+import TuneIcon from '@mui/icons-material/Tune';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import ConstructionOutlinedIcon from '@mui/icons-material/ConstructionOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
@@ -149,6 +153,9 @@ function EquipmentListContent() {
   const [search, setSearch] = useState(initialFilters.search);
   const [statusFilter, setStatusFilter] = useState(initialFilters.statuses.join(','));
   const [tagFilter, setTagFilter] = useState(initialFilters.tagIds.join(','));
+  const [manufacturerFilter, setManufacturerFilter] = useState(initialFilters.manufacturer);
+  const [locationFilter, setLocationFilter] = useState(initialFilters.location);
+  const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
   const [sortField, setSortField] = useState<string>(initialFilters.sortBy);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(initialFilters.sortDirection);
   const [visibleColumns, setVisibleColumns] = useState<string[]>(() => EPS_COLUMNS.map((c) => c.id));
@@ -197,6 +204,8 @@ function EquipmentListContent() {
       if (search) params.append('search', search);
       if (statusFilter) params.append('status', statusFilter);
       if (tagFilter) params.append('tagId', tagFilter);
+      if (manufacturerFilter) params.append('manufacturer', manufacturerFilter);
+      if (locationFilter) params.append('location', locationFilter);
       params.append('sortBy', sortField);
       params.append('sortDirection', sortDirection);
 
@@ -223,12 +232,14 @@ function EquipmentListContent() {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, search, statusFilter, tagFilter, sortField, sortDirection, viewMode, enqueueSnackbar]);
+  }, [page, pageSize, search, statusFilter, tagFilter, manufacturerFilter, locationFilter, sortField, sortDirection, viewMode, enqueueSnackbar]);
 
   useEffect(() => {
     setSearch(initialFilters.search);
     setStatusFilter(initialFilters.statuses.join(','));
     setTagFilter(initialFilters.tagIds.join(','));
+    setManufacturerFilter(initialFilters.manufacturer);
+    setLocationFilter(initialFilters.location);
     setPage(initialFilters.page);
     setPageSize(initialFilters.pageSize);
     setSortField(initialFilters.sortBy);
@@ -242,6 +253,8 @@ function EquipmentListContent() {
       search,
       statuses: statusFilter.split(',').filter(Boolean),
       tagIds: tagFilter.split(',').filter(Boolean),
+      manufacturer: manufacturerFilter,
+      location: locationFilter,
       page,
       pageSize,
       sortBy: sortField as EquipmentSortField,
@@ -249,7 +262,7 @@ function EquipmentListContent() {
     };
     const nextQuery = serializeEquipmentFilters(next).toString();
     if (nextQuery !== searchParams?.toString()) router.replace(`/eps?${nextQuery}`);
-  }, [search, statusFilter, tagFilter, page, pageSize, sortField, sortDirection, router, searchParams]);
+  }, [search, statusFilter, tagFilter, manufacturerFilter, locationFilter, page, pageSize, sortField, sortDirection, router, searchParams]);
 
   const canAccessEquipment =
     user?.roles?.includes('admin') ||
@@ -268,6 +281,8 @@ function EquipmentListContent() {
     setSearch('');
     setStatusFilter('');
     setTagFilter('');
+    setManufacturerFilter('');
+    setLocationFilter('');
     setPage(1);
   };
 
@@ -276,8 +291,10 @@ function EquipmentListContent() {
     if (search) count++;
     if (statusFilter) count++;
     if (tagFilter) count++;
+    if (manufacturerFilter) count++;
+    if (locationFilter) count++;
     return count;
-  }, [search, statusFilter, tagFilter]);
+  }, [search, statusFilter, tagFilter, manufacturerFilter, locationFilter]);
 
   // Quick filter by clicking KPI card
   const handleKpiFilter = (status: string | null) => {
@@ -604,12 +621,12 @@ function EquipmentListContent() {
                 <TextField
                   select
                   size="small"
-                  value={statusFilter}
+                  value={statusFilter ? statusFilter.split(',') : []}
+                  SelectProps={{ multiple: true, displayEmpty: true, renderValue: (selected) => { const values = selected as string[]; return values.length ? `${values.length} стат.` : 'Все статусы'; } }}
                   onChange={(e) => {
-                    setStatusFilter(e.target.value);
+                    setStatusFilter((Array.isArray(e.target.value) ? e.target.value : [e.target.value]).join(','));
                     setPage(1);
                   }}
-                  SelectProps={{ displayEmpty: true }}
                   sx={{
                     minWidth: 140,
                     backgroundColor: 'background.paper',
@@ -625,7 +642,8 @@ function EquipmentListContent() {
                   <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все статусы</MenuItem>
                   {Object.entries(EQUIPMENT_STATUS_MAP).map(([key, info]) => (
                     <MenuItem key={key} value={key} sx={{ fontSize: '0.8125rem' }}>
-                      {info.label}
+                      <Checkbox size="small" checked={statusFilter.split(',').includes(key)} />
+                      <ListItemText primary={info.label} />
                     </MenuItem>
                   ))}
                 </TextField>
@@ -633,12 +651,12 @@ function EquipmentListContent() {
                 <TextField
                   select
                   size="small"
-                  value={tagFilter}
+                  value={tagFilter ? tagFilter.split(',') : []}
+                  SelectProps={{ multiple: true, displayEmpty: true, renderValue: (selected) => { const values = selected as string[]; return values.length ? `${values.length} тег.` : 'Все теги'; } }}
                   onChange={(e) => {
-                    setTagFilter(e.target.value);
+                    setTagFilter((Array.isArray(e.target.value) ? e.target.value : [e.target.value]).join(','));
                     setPage(1);
                   }}
-                  SelectProps={{ displayEmpty: true }}
                   sx={{
                     minWidth: 130,
                     backgroundColor: 'background.paper',
@@ -654,10 +672,21 @@ function EquipmentListContent() {
                   <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все теги</MenuItem>
                   {tags.map((t) => (
                     <MenuItem key={t.id} value={t.id} sx={{ fontSize: '0.8125rem' }}>
-                      {t.name}
+                      <Checkbox size="small" checked={tagFilter.split(',').includes(t.id)} />
+                      <ListItemText primary={t.name} />
                     </MenuItem>
                   ))}
                 </TextField>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<TuneIcon />}
+                  onClick={() => setAdvancedFiltersOpen(true)}
+                  aria-label="Открыть расширенные фильтры"
+                  sx={{ height: 36, textTransform: 'none', borderRadius: '8px' }}
+                >
+                  Фильтры
+                </Button>
                 <ToggleButtonGroup
                   value={viewMode}
                   exclusive
@@ -1490,6 +1519,38 @@ function EquipmentListContent() {
           </TableBody>
         </Table>
       </DataTableWrapper>
+
+      <Drawer
+        anchor="right"
+        open={advancedFiltersOpen}
+        onClose={() => setAdvancedFiltersOpen(false)}
+        PaperProps={{ sx: { width: { xs: '100%', sm: 380 }, p: 3 } }}
+      >
+        <Stack spacing={2}>
+          <Typography variant="h6">Расширенные фильтры</Typography>
+          <TextField
+            label="Производитель"
+            value={manufacturerFilter}
+            onChange={(event) => { setManufacturerFilter(event.target.value); setPage(1); }}
+            fullWidth
+            size="small"
+          />
+          <TextField
+            label="Локация / место"
+            value={locationFilter}
+            onChange={(event) => { setLocationFilter(event.target.value); setPage(1); }}
+            fullWidth
+            size="small"
+          />
+          <Button
+            variant="contained"
+            onClick={() => setAdvancedFiltersOpen(false)}
+            sx={{ textTransform: 'none' }}
+          >
+            Применить
+          </Button>
+        </Stack>
+      </Drawer>
 
 
       {/* Floating Bulk Action Bar */}
