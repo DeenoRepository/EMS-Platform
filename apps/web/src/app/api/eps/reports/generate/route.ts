@@ -5,6 +5,7 @@ import { PERMISSIONS, EQUIPMENT_STATUS_MAP, formatDate, formatDateTime } from '@
 import { hasPermission } from '@ems/auth';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { getEquipmentKind, getEquipmentDepartment, isTruthyBoolean } from '@/lib/eps-helpers';
+import { equipmentVisibilityWhere } from '@/lib/eps-state-machine';
 
 export const dynamic = 'force-dynamic';
 
@@ -104,7 +105,8 @@ export async function POST(req: NextRequest) {
     const allAvailableColumns = [...baseColumns, ...customColumns];
 
     // Build prisma query where filter
-    const where: any = { deletedAt: null };
+    const canManageDrafts = hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) || user.roles.includes('admin');
+    const where: any = equipmentVisibilityWhere(user.userId, canManageDrafts);
 
     if (filters.status && filters.status in EquipmentStatus) {
       where.status = filters.status as EquipmentStatus;
@@ -130,14 +132,16 @@ export async function POST(req: NextRequest) {
 
     if (filters.search) {
       const q = filters.search.trim();
-      where.OR = [
+      const visibilityOr = where.OR;
+      where.AND = [{ OR: visibilityOr }, { OR: [
         { name: { contains: q, mode: 'insensitive' } },
         { inventoryNumber: { contains: q, mode: 'insensitive' } },
         { serialNumber: { contains: q, mode: 'insensitive' } },
         { manufacturer: { contains: q, mode: 'insensitive' } },
         { model: { contains: q, mode: 'insensitive' } },
         { location: { contains: q, mode: 'insensitive' } },
-      ];
+      ] }];
+      delete where.OR;
     }
 
     // Determine sort order

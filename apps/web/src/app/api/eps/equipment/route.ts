@@ -44,10 +44,9 @@ export async function GET(req: NextRequest) {
     }
 
     if (filters.search) {
-      const visibilityWhere = { ...where };
-      delete visibilityWhere.OR;
+      const visibilityOr = where.OR;
       where.AND = [
-        visibilityWhere,
+        { OR: visibilityOr },
         {
           OR: [
             { name: { contains: filters.search, mode: 'insensitive' } },
