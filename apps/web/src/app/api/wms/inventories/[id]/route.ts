@@ -176,44 +176,65 @@ export async function PATCH(
         const discrepancyItems = refreshedItems.filter((i) => i.diffQty !== null && Number(i.diffQty) !== 0);
         discrepanciesCount = discrepancyItems.length;
 
-        // Если есть расхождения — создаем операцию корректировки
-        if (discrepancyItems.length > 0) {
+        // Применяем только signed delta относительно snapshot, не затирая более свежий баланс.
+        const shortageItems = discrepancyItems
+          .filter((item) => Number(item.diffQty) < 0)
+          .map((item) => ({ nomenclatureId: item.nomenclatureId, quantity: Math.abs(Number(item.diffQty)) }));
+        const surplusItems = discrepancyItems
+          .filter((item) => Number(item.diffQty) > 0)
+          .map((item) => ({ nomenclatureId: item.nomenclatureId, quantity: Number(item.diffQty) }));
+
+        if (shortageItems.length > 0) {
           await tx.stockOperation.create({
             data: {
               warehouseId: currentInventory.warehouseId,
-              type: 'ADJUSTMENT',
+              type: 'ISSUE_WRITE_OFF',
               document: `Акт инвентаризации № ${id.slice(-6).toUpperCase()}`,
-              comment: `Автоматическая корректировка по результатам инвентаризации`,
+              comment: 'Недостача по результатам инвентаризации',
               createdById: user.userId,
-              items: {
-                create: discrepancyItems.map((item) => ({
-                  nomenclatureId: item.nomenclatureId,
-                  quantity: Math.abs(Number(item.diffQty)),
-                })),
-              },
+              items: { create: shortageItems },
             },
           });
+        }
+        if (surplusItems.length > 0) {
+          await tx.stockOperation.create({
+            data: {
+              warehouseId: currentInventory.warehouseId,
+              type: 'RECEIPT',
+              document: `Акт инвентаризации № ${id.slice(-6).toUpperCase()}`,
+              comment: 'Излишек по результатам инвентаризации',
+              createdById: user.userId,
+              items: { create: surplusItems },
+            },
+          });
+        }
 
-          // Обновляем остатки до фактических значений
-          for (const item of refreshedItems) {
-            if (item.actualQty !== null) {
-              await tx.stockItem.upsert({
-                where: {
-                  warehouseId_nomenclatureId: {
-                    warehouseId: currentInventory.warehouseId,
-                    nomenclatureId: item.nomenclatureId,
-                  },
-                },
-                update: {
-                  quantity: item.actualQty,
-                },
-                create: {
-                  warehouseId: currentInventory.warehouseId,
-                  nomenclatureId: item.nomenclatureId,
-                  quantity: item.actualQty,
-                },
-              });
-            }
+        for (const item of refreshedItems) {
+          if (item.actualQty === null) continue;
+          const expectedQty = Number(item.expectedQty);
+          const actualQty = Number(item.actualQty);
+          const deltaQty = actualQty - expectedQty;
+          if (deltaQty === 0) continue;
+
+          const changed = await tx.stockItem.updateMany({
+            where: {
+              warehouseId: currentInventory.warehouseId,
+              nomenclatureId: item.nomenclatureId,
+              quantity: expectedQty,
+            },
+            data: { quantity: { increment: deltaQty } },
+          });
+
+          if (changed.count === 0 && expectedQty === 0) {
+            await tx.stockItem.create({
+              data: {
+                warehouseId: currentInventory.warehouseId,
+                nomenclatureId: item.nomenclatureId,
+                quantity: actualQty,
+              },
+            });
+          } else if (changed.count !== 1) {
+            throw new Error('INVENTORY_CONFLICT');
           }
         }
 
