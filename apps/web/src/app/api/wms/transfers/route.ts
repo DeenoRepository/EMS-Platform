@@ -429,7 +429,7 @@ export async function POST(req: NextRequest) {
             title: 'Отгружено перемещение ТМЦ',
             message: `Со склада «${sourceWh.name}» в ваш адрес отгружено ${items.length} поз. ТМЦ (Перемещение № ${transferNumber}). Ожидается приемка.`,
             type: 'SYSTEM',
-            link: '/wms/transfers?mode=inbound',
+            link: '/wms/operations?tab=transfers&mode=inbound',
           },
         }).catch(console.error);
       }
@@ -486,7 +486,7 @@ export async function POST(req: NextRequest) {
             title: 'Новый запрос на перемещение ТМЦ',
             message: `Склад «${targetWh.name}» запросил ${items.length} поз. ТМЦ (Заявка № ${transferNumber}). Требуется согласование отгрузки.`,
             type: 'SYSTEM',
-            link: '/wms/transfers?mode=requests',
+            link: '/wms/operations?tab=transfers&mode=requests',
           },
         }).catch(console.error);
       }

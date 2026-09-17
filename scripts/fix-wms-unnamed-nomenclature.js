@@ -38,7 +38,7 @@ function loadEnvFiles() {
   }
 
   if (!process.env.DATABASE_URL) {
-    process.env.DATABASE_URL = 'postgresql://ems_user:ems_secure_password_2026@localhost:5432/ems_db?schema=public';
+    throw new Error('DATABASE_URL is required; refusing to use an implicit database target');
   }
 }
 
@@ -131,6 +131,12 @@ function parseCopyTable(sqlContent, tableName) {
 }
 
 async function main() {
+  if (!process.argv.includes('--confirm-fix')) {
+    console.error('❌ Исправление отключено. Для записи требуется --confirm-fix.');
+    process.exitCode = 2;
+    return;
+  }
+
   console.log('================================================================');
   console.log('🔧 EMS Platform: Восстановление наименований номенклатуры (ТМЦ)');
   console.log('================================================================');
@@ -187,10 +193,7 @@ async function main() {
     });
 
     if (existing) {
-      const needsUpdate =
-        !existing.name ||
-        existing.name === 'Без названия' ||
-        existing.name.trim() !== fullName.trim();
+      const needsUpdate = !existing.name || existing.name === 'Без названия';
 
       if (needsUpdate) {
         let categoryId = existing.categoryId;

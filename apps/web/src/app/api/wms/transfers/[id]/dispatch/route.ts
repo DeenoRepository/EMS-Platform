@@ -121,7 +121,7 @@ export async function POST(
           title: 'Запрос на перемещение согласован и отгружен',
           message: `Склад «${transfer.sourceWarehouse.name}» согласовал и отгрузил ТМЦ по заявке № ${transfer.transferNumber}. Ожидается приемка.`,
           type: 'SYSTEM',
-          link: '/wms/transfers?mode=inbound',
+          link: '/wms/operations?tab=transfers&mode=inbound',
         },
       }).catch(console.error);
     }

@@ -166,7 +166,7 @@ export async function POST(
           title: 'Перемещение ТМЦ успешно принято',
           message: `Склад «${transfer.targetWarehouse.name}» подтвердил приемку ТМЦ по перемещению № ${transfer.transferNumber}.`,
           type: 'SYSTEM',
-          link: '/wms/transfers?mode=outbound',
+          link: '/wms/operations?tab=transfers&mode=outbound',
         },
       }).catch(console.error);
     }

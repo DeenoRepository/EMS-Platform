@@ -133,6 +133,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Добавьте хотя бы одну позицию ТМЦ' }, { status: 400 });
     }
 
+    if (type === 'TRANSFER' || type === 'ADJUSTMENT') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Тип операции временно недоступен: используйте специализированный workflow перемещения или инвентаризации',
+        },
+        { status: 400 }
+      );
+    }
+
     const isIssue = type === 'ISSUE' || type === 'ISSUE_EMPLOYEE' || type === 'ISSUE_WRITE_OFF';
 
     let targetWarehouseName = '';

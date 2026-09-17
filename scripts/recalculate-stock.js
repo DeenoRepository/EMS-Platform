@@ -1,14 +1,20 @@
 #!/usr/bin/env node
 /**
  * Скрипт пересчета остатков StockItem из журнала StockOperation.
- * Запуск на сервере:
- *   cd /opt/ems-platform && node scripts/recalculate-stock.js
+ * По умолчанию выполняет только read-only preview.
+ * Режим --apply намеренно не реализован до внедрения проверяемого ledger.
  */
 
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
+  if (!process.argv.includes('--dry-run')) {
+    console.error('❌ Пересчет отключен: используйте только явный --dry-run до внедрения нового ledger.');
+    process.exitCode = 2;
+    return;
+  }
+
   console.log('🔄 Запуск пересчета остатков ТМЦ на основе журнала операций...');
 
   const operations = await prisma.stockOperation.findMany({
@@ -60,32 +66,15 @@ async function main() {
       },
     });
 
-    if (existing) {
-      const currentDbQty = Number(existing.quantity);
-      if (currentDbQty !== entry.quantity) {
-        await prisma.stockItem.update({
-          where: { id: existing.id },
-          data: { quantity: entry.quantity },
-        });
-        console.log(`  ✅ [${entry.warehouseName}] «${entry.nomenclatureName}»: ${currentDbQty} -> ${entry.quantity} шт.`);
-        updatedCount++;
-      } else {
-        console.log(`  ✓ [${entry.warehouseName}] «${entry.nomenclatureName}»: остаток уже актуален (${entry.quantity} шт.)`);
-      }
-    } else {
-      await prisma.stockItem.create({
-        data: {
-          warehouseId: entry.warehouseId,
-          nomenclatureId: entry.nomenclatureId,
-          quantity: entry.quantity,
-        },
-      });
-      console.log(`  ➕ [${entry.warehouseName}] «${entry.nomenclatureName}»: создана запись остатка (${entry.quantity} шт.)`);
-      updatedCount++;
-    }
+    const currentDbQty = existing ? Number(existing.quantity) : null;
+    if (currentDbQty !== entry.quantity) updatedCount++;
+    console.log(
+      `  ${existing ? '↔' : '➕'} [${entry.warehouseName}] «${entry.nomenclatureName}»: ` +
+        `${currentDbQty === null ? 'отсутствует' : currentDbQty} -> ${entry.quantity} шт.`
+    );
   }
 
-  console.log(`\n🎉 Пересчет завершен! Всего позиций: ${balances.size}, обновлено: ${updatedCount}`);
+  console.log(`\nℹ️ Read-only preview завершен. Позиций с расхождениями: ${updatedCount}. База не изменялась.`);
 }
 
 main()

@@ -14,6 +14,14 @@ export async function POST(req: NextRequest) {
       return forbiddenResponse();
     }
 
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Пересчет остатков временно отключен до внедрения проверяемого журнала движений',
+      },
+      { status: 503 }
+    );
+
     // 1. Получаем все складские операции с элементами
     const operations = await prisma.stockOperation.findMany({
       include: {

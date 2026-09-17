@@ -462,7 +462,7 @@ export default function StockDetailDrawer({
                 <Paper
                   key={eq.id}
                   elevation={0}
-                  onClick={() => router.push(`/equipment/${eq.id}`)}
+                  onClick={() => router.push(`/eps/${eq.id}`)}
                   sx={{
                     p: 1.75,
                     borderRadius: '8px',
