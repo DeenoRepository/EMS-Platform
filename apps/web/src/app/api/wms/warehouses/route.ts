@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { getCurrentUser, requireAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { isWmsAdmin } from '@/lib/wms-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,13 +16,10 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const forManage = searchParams.get('forManage') === 'true';
 
-    const isAdmin =
-      user.roles.includes('admin') ||
-      user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-      user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+    const isAdmin = isWmsAdmin(user);
 
-    const where: any = {};
-    if (forManage && !isAdmin) {
+    const where: any = { deletedAt: null, isActive: true };
+    if (!isAdmin && !forManage) {
       where.responsibleUserId = user.userId;
     }
 
@@ -67,8 +65,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await getCurrentUser(req);
-    if (!user) return unauthorizedResponse();
+    const auth = await requireAuth(req, PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+    if (auth.errorResponse) return auth.errorResponse;
+    const { user } = auth;
     if (!hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE) && !user.roles.includes('admin')) {
       return forbiddenResponse();
     }

@@ -3,6 +3,7 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
+import { isWmsAdmin } from '@/lib/wms-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,10 +13,7 @@ export async function GET(req: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!hasPermission(user, PERMISSIONS.WMS_STOCK_VIEW)) return forbiddenResponse();
 
-    const isAdmin =
-      user.roles.includes('admin') ||
-      hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-      hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+    const isAdmin = isWmsAdmin(user);
 
     let userWarehouseIds: string[] = [];
     if (!isAdmin) {
@@ -34,12 +32,22 @@ export async function GET(req: NextRequest) {
       inventoriesCount,
       deficitStats,
     ] = await Promise.all([
-      prisma.warehouse.count({ where: { isActive: true } }),
-      prisma.nomenclature.count(),
-      prisma.stockItem.count(),
+      prisma.warehouse.count({
+        where: isAdmin ? { isActive: true, deletedAt: null } : { id: { in: userWarehouseIds } },
+      }),
+      prisma.nomenclature.count({
+        where: {
+          deletedAt: null,
+          ...(isAdmin ? {} : { stockItems: { some: { warehouseId: { in: userWarehouseIds } } } }),
+        },
+      }),
+      prisma.stockItem.count({
+        where: isAdmin ? {} : { warehouseId: { in: userWarehouseIds } },
+      }),
       prisma.stockOperation.findMany({
         take: 5,
         orderBy: { date: 'desc' },
+        where: isAdmin ? undefined : { warehouseId: { in: userWarehouseIds } },
         include: {
           warehouse: { select: { name: true, code: true } },
           createdBy: { select: { displayName: true } },
@@ -54,7 +62,7 @@ export async function GET(req: NextRequest) {
       prisma.inventory.count({
         where: {
           status: 'IN_PROGRESS',
-          ...(isAdmin || userWarehouseIds.length === 0 ? {} : { warehouseId: { in: userWarehouseIds } }),
+          ...(isAdmin ? {} : { warehouseId: { in: userWarehouseIds } }),
         },
       }),
       // Оптимизированный запрос дефицитных позиций (расчет по всей номенклатуре)
@@ -77,16 +85,15 @@ export async function GET(req: NextRequest) {
         const deficitList: any[] = [];
         for (const nom of noms) {
           const minStock = Number(nom.minStock);
-          const relevantItems = (!isAdmin && userWarehouseIds.length > 0)
+          const relevantItems = (!isAdmin)
             ? nom.stockItems.filter((si) => userWarehouseIds.includes(si.warehouseId))
             : nom.stockItems;
 
-          if (!isAdmin && userWarehouseIds.length > 0 && relevantItems.length === 0) {
+          if (!isAdmin && relevantItems.length === 0) {
             continue;
           }
 
-          // Общий остаток номенклатуры по всем складам
-          const totalStock = nom.stockItems.reduce((sum, si) => sum + Number(si.quantity), 0);
+          const totalStock = relevantItems.reduce((sum, si) => sum + Number(si.quantity), 0);
 
           // Дефицит возникает только если установлен положительный неснижаемый остаток и текущий остаток <= minStock
           if (minStock > 0 && totalStock <= minStock) {

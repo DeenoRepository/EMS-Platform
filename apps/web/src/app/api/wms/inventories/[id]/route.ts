@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { getCurrentUser, requireAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
 import { prisma, InventoryStatus } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { canManageWarehouse, isWmsAdmin } from '@/lib/wms-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,6 +56,10 @@ export async function GET(
       return NextResponse.json({ success: false, error: 'Акт инвентаризации не найден' }, { status: 404 });
     }
 
+    if (!isWmsAdmin(user) && inventory.warehouse.responsibleUserId !== user.userId) {
+      return forbiddenResponse('Нет доступа к инвентаризации выбранного склада');
+    }
+
     return NextResponse.json({ success: true, data: inventory });
   } catch (error: any) {
     console.error('Ошибка получения акта инвентаризации:', error);
@@ -73,9 +78,9 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await getCurrentUser(req);
-    if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.WMS_INVENTORY_MANAGE)) return forbiddenResponse();
+    const auth = await requireAuth(req, PERMISSIONS.WMS_INVENTORY_MANAGE);
+    if (auth.errorResponse) return auth.errorResponse;
+    const { user } = auth;
 
     const { id } = params;
     const currentInventory = await prisma.inventory.findUnique({
@@ -90,6 +95,10 @@ export async function PATCH(
 
     if (!currentInventory) {
       return NextResponse.json({ success: false, error: 'Акт инвентаризации не найден' }, { status: 404 });
+    }
+
+    if (!canManageWarehouse(user, currentInventory.warehouse.responsibleUserId)) {
+      return forbiddenResponse('Изменять инвентаризацию может только ответственное лицо склада');
     }
 
     if (currentInventory.status === 'COMPLETED') {

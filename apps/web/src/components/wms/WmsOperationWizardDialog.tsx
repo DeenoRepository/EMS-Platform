@@ -198,8 +198,8 @@ export function WmsOperationWizardDialog({
     if (!warehouses.length) return null;
     const userWh = warehouses.find((w) => w.responsibleUserId === user?.userId);
     if (userWh) return userWh;
-    return warehouses[0];
-  }, [warehouses, user?.userId]);
+    return isAdmin ? warehouses[0] : null;
+  }, [warehouses, user?.userId, isAdmin]);
 
   const currentWarehouse = useMemo(() => {
     return warehouses.find((w) => w.id === warehouseId) || assignedWarehouse;
@@ -297,14 +297,14 @@ export function WmsOperationWizardDialog({
         .then(([whData, transferWhData, eqData, nomData, catData]) => {
           if (whData.success && whData.data) {
             setWarehouses(whData.data);
-            const userWh = whData.data.find((w: WarehouseOption) => w.responsibleUserId === user?.userId) || whData.data[0];
+            const userWh = whData.data.find((w: WarehouseOption) => w.responsibleUserId === user?.userId) || (isAdmin ? whData.data[0] : null);
             if (userWh) {
               setWarehouseId(userWh.id);
             }
           }
           if (transferWhData.success && transferWhData.data) {
             setTransferWarehouses(transferWhData.data);
-            const userWh = whData.data?.find((w: WarehouseOption) => w.responsibleUserId === user?.userId) || whData.data?.[0];
+            const userWh = whData.data?.find((w: WarehouseOption) => w.responsibleUserId === user?.userId) || (isAdmin ? whData.data?.[0] : null);
             const targetWh = transferWhData.data.find((w: WarehouseOption) => w.id !== userWh?.id) || transferWhData.data[0];
             if (targetWh) {
               setTargetWarehouseId(targetWh.id);

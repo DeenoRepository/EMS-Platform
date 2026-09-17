@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { getCurrentUser, requireAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
 import { prisma, StockTransferStatus } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { canManageWarehouse } from '@/lib/wms-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,9 +13,9 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await getCurrentUser(req);
-    if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.WMS_OPERATIONS_CREATE)) return forbiddenResponse();
+    const auth = await requireAuth(req, PERMISSIONS.WMS_OPERATIONS_CREATE);
+    if (auth.errorResponse) return auth.errorResponse;
+    const { user } = auth;
 
     const transferId = params.id;
     const transfer = await prisma.stockTransfer.findUnique({
@@ -57,13 +58,13 @@ export async function POST(
     // Если статус REQUESTED (запрос) -> отклонить может отправитель (или админ)
     if (!isAdmin) {
       if (transfer.status === StockTransferStatus.IN_TRANSIT) {
-        if (transfer.targetWarehouse.responsibleUserId && transfer.targetWarehouse.responsibleUserId !== user.userId) {
+        if (!canManageWarehouse(user, transfer.targetWarehouse.responsibleUserId)) {
           return forbiddenResponse(
             `Отклонить приемку может только ответственное лицо склада-получателя "${transfer.targetWarehouse.name}".`
           );
         }
       } else if (transfer.status === StockTransferStatus.REQUESTED) {
-        if (transfer.sourceWarehouse.responsibleUserId && transfer.sourceWarehouse.responsibleUserId !== user.userId) {
+        if (!canManageWarehouse(user, transfer.sourceWarehouse.responsibleUserId)) {
           return forbiddenResponse(
             `Отклонить запрос на перевод может только ответственное лицо склада-отправителя "${transfer.sourceWarehouse.name}".`
           );

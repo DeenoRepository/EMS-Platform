@@ -3,6 +3,7 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
+import { isWmsAdmin } from '@/lib/wms-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,10 +22,24 @@ export async function GET(req: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
     const pageSize = Math.min(200, Math.max(1, parseInt(searchParams.get('pageSize') || searchParams.get('limit') || '25', 10)));
 
+    const admin = isWmsAdmin(user);
+    const accessibleWarehouseIds = admin
+      ? null
+      : (await prisma.warehouse.findMany({
+          where: { responsibleUserId: user.userId, isActive: true, deletedAt: null },
+          select: { id: true },
+        })).map((warehouse) => warehouse.id);
+
+    if (!admin && warehouseId && !accessibleWarehouseIds?.includes(warehouseId)) {
+      return forbiddenResponse('Нет доступа к выбранному складу');
+    }
+
     const where: any = {};
 
     if (warehouseId) {
       where.warehouseId = warehouseId;
+    } else if (!admin) {
+      where.warehouseId = { in: accessibleWarehouseIds };
     }
 
     if (zoneId) {

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { getCurrentUser, requireAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
 import { prisma, StockTransferStatus, OperationType, Prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { canManageWarehouse, isWmsAdmin } from '@/lib/wms-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,14 +22,18 @@ export async function GET(req: NextRequest) {
     const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '25', 10)));
     const search = searchParams.get('search')?.trim().toLowerCase() || '';
 
-    const isAdmin =
-      user.roles.includes('admin') ||
-      user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-      user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+    const isAdmin = isWmsAdmin(user);
 
     // Находим склады пользователя, если он не админ
     let userWarehouseIds: string[] = [];
     if (warehouseId) {
+      if (!isAdmin) {
+        const assignedWarehouse = await prisma.warehouse.findFirst({
+          where: { id: warehouseId, responsibleUserId: user.userId, isActive: true, deletedAt: null },
+          select: { id: true },
+        });
+        if (!assignedWarehouse) return forbiddenResponse('Нет доступа к выбранному складу');
+      }
       userWarehouseIds = [warehouseId];
     } else if (!isAdmin) {
       const userWhs = await prisma.warehouse.findMany({
@@ -77,7 +82,26 @@ export async function GET(req: NextRequest) {
       // mode === 'all' -> без ограничений
     }
 
-    const andConditions: Prisma.StockTransferWhereInput[] = [];
+    if (!isAdmin) {
+      const scope = userWarehouseIds.length > 0 ? userWarehouseIds : ['__no_access__'];
+      const existingAnd = where.AND
+        ? (Array.isArray(where.AND) ? where.AND : [where.AND])
+        : [];
+      where.AND = [
+        ...existingAnd,
+        {
+          OR: [
+            { sourceWarehouseId: { in: scope } },
+            { targetWarehouseId: { in: scope } },
+            { createdById: user.userId },
+          ],
+        },
+      ];
+    }
+
+    const andConditions: Prisma.StockTransferWhereInput[] = where.AND
+      ? (Array.isArray(where.AND) ? where.AND : [where.AND])
+      : [];
 
     if (search) {
       andConditions.push({
@@ -100,9 +124,7 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    if (andConditions.length > 0) {
-      where.AND = andConditions;
-    }
+    if (andConditions.length > 0) where.AND = andConditions;
 
     const [total, items] = await Promise.all([
       prisma.stockTransfer.count({ where }),
@@ -246,9 +268,9 @@ interface TransferItemInput {
 // POST /api/wms/transfers - Создание перемещения или запроса на перемещение
 export async function POST(req: NextRequest) {
   try {
-    const user = await getCurrentUser(req);
-    if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.WMS_OPERATIONS_CREATE)) return forbiddenResponse();
+    const auth = await requireAuth(req, PERMISSIONS.WMS_OPERATIONS_CREATE);
+    if (auth.errorResponse) return auth.errorResponse;
+    const { user } = auth;
 
     const body = await req.json();
     const {
@@ -296,10 +318,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const isAdmin =
-      user.roles.includes('admin') ||
-      user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-      user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+    const isAdmin = isWmsAdmin(user);
 
     // Проверка складов
     const [sourceWh, targetWh] = await Promise.all([
@@ -325,13 +344,13 @@ export async function POST(req: NextRequest) {
     // Если isRequest === false (прямая отправка): создатель должен быть МОЛ склада-отправителя (или админ)
     if (!isAdmin) {
       if (isRequest) {
-        if (targetWh.responsibleUserId && targetWh.responsibleUserId !== user.userId) {
+        if (!canManageWarehouse(user, targetWh.responsibleUserId)) {
           return forbiddenResponse(
             `Создать запрос на перевод может только ответственное лицо склада-получателя "${targetWh.name}".`
           );
         }
       } else {
-        if (sourceWh.responsibleUserId && sourceWh.responsibleUserId !== user.userId) {
+        if (!canManageWarehouse(user, sourceWh.responsibleUserId)) {
           return forbiddenResponse(
             `Выполнить отгрузку может только ответственное лицо склада-отправителя "${sourceWh.name}".`
           );

@@ -83,7 +83,7 @@ export default function TransferRequestDialog({
 
   // My warehouse (destination)
   const myWarehouse = useMemo(() => {
-    return warehouses.find((w) => w.responsibleUserId === user?.userId) || warehouses[0] || null;
+    return warehouses.find((w) => w.responsibleUserId === user?.userId) || null;
   }, [warehouses, user?.userId]);
 
   useEffect(() => {

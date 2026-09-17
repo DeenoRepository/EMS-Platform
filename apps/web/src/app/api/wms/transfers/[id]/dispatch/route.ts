@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { getCurrentUser, requireAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
 import { prisma, StockTransferStatus } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { canManageWarehouse } from '@/lib/wms-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,9 +13,9 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await getCurrentUser(req);
-    if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.WMS_OPERATIONS_CREATE)) return forbiddenResponse();
+    const auth = await requireAuth(req, PERMISSIONS.WMS_OPERATIONS_CREATE);
+    if (auth.errorResponse) return auth.errorResponse;
+    const { user } = auth;
 
     const transferId = params.id;
     const transfer = await prisma.stockTransfer.findUnique({
@@ -42,7 +43,7 @@ export async function POST(
       user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
       user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
 
-    if (!isAdmin && transfer.sourceWarehouse.responsibleUserId && transfer.sourceWarehouse.responsibleUserId !== user.userId) {
+    if (!canManageWarehouse(user, transfer.sourceWarehouse.responsibleUserId)) {
       return forbiddenResponse(
         `Вы не являетесь ответственным лицом за склад-отправитель "${transfer.sourceWarehouse.name}". Отгрузка запрещена.`
       );

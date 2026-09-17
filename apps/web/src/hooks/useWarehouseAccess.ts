@@ -64,7 +64,7 @@ export function useWarehouseAccess() {
   const availableWarehouses = useMemo(() => {
     if (isAdmin) return warehouses;
     const userWhs = warehouses.filter((w) => w.responsibleUserId === user?.userId);
-    return userWhs.length > 0 ? userWhs : warehouses;
+    return userWhs;
   }, [warehouses, isAdmin, user?.userId]);
 
   const myWarehouses = useMemo(() => {

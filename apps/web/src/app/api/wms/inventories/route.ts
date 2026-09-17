@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { getCurrentUser, requireAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
 import { prisma, InventoryStatus } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { canManageWarehouse, isWmsAdmin } from '@/lib/wms-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,8 +19,24 @@ export async function GET(req: NextRequest) {
     const warehouseId = searchParams.get('warehouseId')?.trim() || '';
     const status = searchParams.get('status')?.trim() as InventoryStatus | undefined;
 
+    const admin = isWmsAdmin(user);
     const where: any = {};
-    if (warehouseId) where.warehouseId = warehouseId;
+    if (warehouseId) {
+      if (!admin) {
+        const assignedWarehouse = await prisma.warehouse.findFirst({
+          where: { id: warehouseId, responsibleUserId: user.userId, isActive: true, deletedAt: null },
+          select: { id: true },
+        });
+        if (!assignedWarehouse) return forbiddenResponse('Нет доступа к выбранному складу');
+      }
+      where.warehouseId = warehouseId;
+    } else if (!admin) {
+      const assignedWarehouses = await prisma.warehouse.findMany({
+        where: { responsibleUserId: user.userId, isActive: true, deletedAt: null },
+        select: { id: true },
+      });
+      where.warehouseId = { in: assignedWarehouses.map((warehouse) => warehouse.id) };
+    }
     if (status && status in InventoryStatus) where.status = status;
 
     const inventories = await prisma.inventory.findMany({
@@ -45,9 +62,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await getCurrentUser(req);
-    if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.WMS_INVENTORY_MANAGE)) return forbiddenResponse();
+    const auth = await requireAuth(req, PERMISSIONS.WMS_INVENTORY_MANAGE);
+    if (auth.errorResponse) return auth.errorResponse;
+    const { user } = auth;
 
     const body = await req.json();
     const { warehouseId, comment } = body;
@@ -63,8 +80,12 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    if (!warehouse) {
+    if (!warehouse || !warehouse.isActive || warehouse.deletedAt) {
       return NextResponse.json({ success: false, error: 'Склад не найден' }, { status: 404 });
+    }
+
+    if (!canManageWarehouse(user, warehouse.responsibleUserId)) {
+      return forbiddenResponse('Инвентаризация разрешена только ответственному лицу склада');
     }
 
     // Пользователь с правом WMS_INVENTORY_MANAGE может проводить инвентаризацию на любом складе

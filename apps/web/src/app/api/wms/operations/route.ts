@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { getCurrentUser, requireAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
 import { prisma, OperationType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { canManageWarehouse, isWmsAdmin } from '@/lib/wms-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,14 +20,17 @@ export async function GET(req: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
     const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || searchParams.get('limit') || '25', 10)));
 
-    const isAdmin =
-      user.roles.includes('admin') ||
-      user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-      user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+    const isAdmin = isWmsAdmin(user);
 
     const where: any = {};
     if (warehouseId) {
       where.warehouseId = warehouseId;
+    } else if (!isAdmin) {
+      const assignedWarehouses = await prisma.warehouse.findMany({
+        where: { responsibleUserId: user.userId, isActive: true, deletedAt: null },
+        select: { id: true },
+      });
+      where.warehouseId = { in: assignedWarehouses.map((warehouse) => warehouse.id) };
     }
 
     if (nomenclatureId) {
@@ -94,9 +98,9 @@ interface OperationItemInput {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await getCurrentUser(req);
-    if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.WMS_OPERATIONS_CREATE)) return forbiddenResponse();
+    const auth = await requireAuth(req, PERMISSIONS.WMS_OPERATIONS_CREATE);
+    if (auth.errorResponse) return auth.errorResponse;
+    const { user } = auth;
 
     const body = await req.json();
     const {
@@ -145,31 +149,13 @@ export async function POST(req: NextRequest) {
 
     const isIssue = type === 'ISSUE' || type === 'ISSUE_EMPLOYEE' || type === 'ISSUE_WRITE_OFF';
 
-    let targetWarehouseName = '';
-    if (type === 'TRANSFER') {
-      if (!targetWarehouseId) {
-        return NextResponse.json({ success: false, error: 'Для перемещения необходимо указать склад-получатель' }, { status: 400 });
-      }
-      if (warehouseId === targetWarehouseId) {
-        return NextResponse.json({ success: false, error: 'Склад-отправитель и склад-получатель не могут совпадать' }, { status: 400 });
-      }
-      const targetWarehouse = await prisma.warehouse.findUnique({
-        where: { id: targetWarehouseId },
-        select: { id: true, name: true, isActive: true },
-      });
-      if (!targetWarehouse || !targetWarehouse.isActive) {
-        return NextResponse.json({ success: false, error: 'Склад-получатель не найден или неактивен' }, { status: 400 });
-      }
-      targetWarehouseName = targetWarehouse.name;
-    }
-
     // Проверка прав на склад (ответственное лицо или администратор)
     const warehouse = await prisma.warehouse.findUnique({
       where: { id: warehouseId },
-      select: { id: true, name: true, responsibleUserId: true },
+      select: { id: true, name: true, responsibleUserId: true, isActive: true, deletedAt: true },
     });
 
-    if (!warehouse) {
+    if (!warehouse || !warehouse.isActive || warehouse.deletedAt) {
       return NextResponse.json({ success: false, error: 'Склад не найден' }, { status: 404 });
     }
 
@@ -178,7 +164,7 @@ export async function POST(req: NextRequest) {
       user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
       user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
 
-    if (!isAdmin && warehouse.responsibleUserId !== user.userId) {
+    if (!canManageWarehouse(user, warehouse.responsibleUserId)) {
       return forbiddenResponse(`Вы не являетесь ответственным лицом за склад "${warehouse.name}". Выполнение операций разрешено только назначенному материально ответственному лицу.`);
     }
 
@@ -191,7 +177,7 @@ export async function POST(req: NextRequest) {
 
     const operation = await prisma.$transaction(async (tx) => {
       // 1. Проверяем остатки при списании и перемещении
-      if (isIssue || type === 'TRANSFER') {
+      if (isIssue) {
         for (const item of items) {
           if (item.quantity <= 0) {
             throw new Error('Количество позиции должно быть больше нуля');
@@ -222,7 +208,7 @@ export async function POST(req: NextRequest) {
           type,
           counterparty: finalCounterparty,
           document: document?.trim() || null,
-          comment: comment?.trim() || (type === 'TRANSFER' ? (targetWarehouseName ? `Перемещение на склад "${targetWarehouseName}"` : `Перемещение на склад ID ${targetWarehouseId}`) : null),
+          comment: comment?.trim() || null,
           createdById: user.userId,
           items: {
             create: items.map((i) => ({
@@ -312,69 +298,6 @@ export async function POST(req: NextRequest) {
           });
 
           // Проверка на минимальный остаток суммарно по всей номенклатуре
-          const minStock = updatedStock.nomenclature.minStock !== null ? Number(updatedStock.nomenclature.minStock) : null;
-          if (minStock !== null) {
-            const allItems = await tx.stockItem.findMany({
-              where: { nomenclatureId: item.nomenclatureId },
-              select: { quantity: true },
-            });
-            const totalRemaining = allItems.reduce((sum, s) => sum + Number(s.quantity), 0);
-            if (totalRemaining <= minStock) {
-              lowStockAlerts.push({
-                nomenclatureName: updatedStock.nomenclature.name,
-                currentQty: totalRemaining,
-                minStock,
-              });
-            }
-          }
-        } else if (type === 'TRANSFER' && targetWarehouseId) {
-          if (!existingStock) {
-            throw new Error('Позиция номенклатуры отсутствует на складе-отправителе');
-          }
-
-          const currentQty = Number(existingStock.quantity);
-          const remainingQty = currentQty - qtyNum;
-          if (remainingQty < 0) {
-            throw new Error(`Недостаточно остатка для перемещения "${existingStock.nomenclature.name}". Доступный остаток исчерпан.`);
-          }
-
-          // Списание с исходного склада
-          const updatedStock = await tx.stockItem.update({
-            where: { id: existingStock.id },
-            data: {
-              quantity: remainingQty,
-            },
-            include: { nomenclature: true },
-          });
-
-          // Зачисление на целевой склад
-          const targetStock = await tx.stockItem.findUnique({
-            where: {
-              warehouseId_nomenclatureId: {
-                warehouseId: targetWarehouseId,
-                nomenclatureId: item.nomenclatureId,
-              },
-            },
-          });
-
-          if (targetStock) {
-            await tx.stockItem.update({
-              where: { id: targetStock.id },
-              data: {
-                quantity: Number(targetStock.quantity) + qtyNum,
-              },
-            });
-          } else {
-            await tx.stockItem.create({
-              data: {
-                warehouseId: targetWarehouseId,
-                nomenclatureId: item.nomenclatureId,
-                quantity: qtyNum,
-              },
-            });
-          }
-
-          // При перемещении между складами общий остаток ТМЦ на предприятии не уменьшается
           const minStock = updatedStock.nomenclature.minStock !== null ? Number(updatedStock.nomenclature.minStock) : null;
           if (minStock !== null) {
             const allItems = await tx.stockItem.findMany({
