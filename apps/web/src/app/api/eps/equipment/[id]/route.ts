@@ -4,6 +4,7 @@ import { prisma, EquipmentStatus } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { z } from 'zod';
+import { canTransitionEquipmentStatus, equipmentVisibilityWhere } from '@/lib/eps-state-machine';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,8 +19,9 @@ export async function GET(
 
     const { id } = params;
 
-    const equipment = await prisma.equipment.findUnique({
-      where: { id },
+    const canManageDrafts = hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) || user.roles.includes('admin');
+    const equipment = await prisma.equipment.findFirst({
+      where: { AND: [{ id }, equipmentVisibilityWhere(user.userId, canManageDrafts)] },
       include: {
         tags: { include: { tag: true } },
         photos: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
@@ -130,8 +132,8 @@ export async function PATCH(
       directSave,
     } = parsedBody;
 
-    const currentEquipment = await prisma.equipment.findUnique({
-      where: { id },
+    const currentEquipment = await prisma.equipment.findFirst({
+      where: { id, deletedAt: null },
       include: { tags: true },
     });
 
@@ -151,6 +153,10 @@ export async function PATCH(
     const canManageDirectly = hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) || user.roles.includes('admin');
     const isOwner = currentEquipment.createdById === user.userId;
     const isDraft = currentEquipment.status === 'DRAFT';
+
+    if (isDraft && !isOwner && !canManageDirectly) {
+      return forbiddenResponse('Редактировать черновик может только его автор или уполномоченный руководитель');
+    }
 
     // Случай 1: Отправка на согласование или сохранение черновика изменений для утвержденного оборудования
     if (!isDraft && (!canManageDirectly || submitForApproval)) {
@@ -256,6 +262,13 @@ export async function PATCH(
     }
 
     // Случай 3: Прямое обновление черновика или прямое сохранение администратором
+    if (status !== undefined && !canTransitionEquipmentStatus(currentEquipment.status, status, false)) {
+      return NextResponse.json(
+        { success: false, error: 'Недопустимый переход статуса оборудования' },
+        { status: 400 },
+      );
+    }
+
     const updated = await prisma.$transaction(async (tx) => {
       if (Array.isArray(tagIds)) {
         await tx.equipmentTag.deleteMany({ where: { equipmentId: id } });
@@ -328,7 +341,7 @@ export async function DELETE(
     if (!hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_DELETE)) return forbiddenResponse();
 
     const { id } = params;
-    const equipment = await prisma.equipment.findUnique({ where: { id } });
+    const equipment = await prisma.equipment.findFirst({ where: { id, deletedAt: null } });
 
     if (!equipment) {
       return NextResponse.json({ success: false, error: 'Оборудование не найдено' }, { status: 404 });

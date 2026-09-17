@@ -4,6 +4,7 @@ import { prisma, EquipmentStatus, Prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { z } from 'zod';
+import { equipmentVisibilityWhere } from '@/lib/eps-state-machine';
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,7 +20,8 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const pageSize = Math.min(1000, Math.max(1, parseInt(searchParams.get('pageSize') || searchParams.get('limit') || '20', 10)));
 
-    const where: Prisma.EquipmentWhereInput = {};
+    const canManageDrafts = hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) || user.roles.includes('admin');
+    const where: Prisma.EquipmentWhereInput = equipmentVisibilityWhere(user.userId, canManageDrafts);
 
     if (status) {
       where.status = status;
@@ -73,6 +75,7 @@ export async function GET(req: NextRequest) {
       }),
       prisma.equipment.groupBy({
         by: ['status'],
+        where,
         _count: { status: true },
       }),
     ]);
