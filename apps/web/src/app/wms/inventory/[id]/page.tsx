@@ -474,7 +474,7 @@ export default function WmsInventoryDetailPage() {
           return {
             id: item.id,
             expectedQty: item.expectedQty,
-             actualQty: stateItem?.actualQty ?? Number(item.expectedQty),
+              actualQty: stateItem?.actualQty ?? Number(item.expectedQty),
             comment: stateItem?.comment,
             nomenclature: item.nomenclature,
           };

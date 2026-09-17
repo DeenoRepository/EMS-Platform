@@ -88,6 +88,20 @@ export async function POST(req: NextRequest) {
       return forbiddenResponse('Инвентаризация разрешена только ответственному лицу склада');
     }
 
+    const activeInventory = await prisma.inventory.findFirst({
+      where: {
+        warehouseId,
+        status: { in: [InventoryStatus.DRAFT, InventoryStatus.IN_PROGRESS] },
+      },
+      select: { id: true },
+    });
+    if (activeInventory) {
+      return NextResponse.json(
+        { success: false, error: 'Для этого склада уже существует незавершенная инвентаризация' },
+        { status: 409 }
+      );
+    }
+
     // Пользователь с правом WMS_INVENTORY_MANAGE может проводить инвентаризацию на любом складе
     const inventory = await prisma.inventory.create({
       data: {
@@ -99,8 +113,8 @@ export async function POST(req: NextRequest) {
           create: warehouse.stockItems.map((si) => ({
             nomenclatureId: si.nomenclatureId,
             expectedQty: si.quantity,
-            actualQty: si.quantity, // По умолчанию предзаполняем учетным для удобства сверки
-            diffQty: 0,
+            actualQty: null,
+            diffQty: null,
           })),
         },
       },

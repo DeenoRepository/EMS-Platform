@@ -117,9 +117,34 @@ export async function PATCH(
       if (!Array.isArray(items) || items.length !== currentInventory.items.length) {
         return NextResponse.json({ success: false, error: 'Для завершения необходимо указать фактическое количество всех позиций' }, { status: 400 });
       }
+      const itemIds = new Set(items.map((item) => item.id));
+      if (itemIds.size !== currentInventory.items.length || currentInventory.items.some((item) => !itemIds.has(item.id))) {
+        return NextResponse.json({ success: false, error: 'Набор позиций инвентаризации изменился, обновите акт' }, { status: 409 });
+      }
       let discrepanciesCount = 0;
 
       await prisma.$transaction(async (tx) => {
+        const latestStocks = await tx.stockItem.findMany({
+          where: {
+            warehouseId: currentInventory.warehouseId,
+            nomenclatureId: { in: currentInventory.items.map((item) => item.nomenclatureId) },
+          },
+          select: { quantity: true, updatedAt: true },
+        });
+        if (latestStocks.some((stock) => stock.updatedAt > currentInventory.createdAt)) {
+          throw new Error('INVENTORY_CONFLICT');
+        }
+
+        const claimed = await tx.inventory.updateMany({
+          where: { id, status: { in: [InventoryStatus.DRAFT, InventoryStatus.IN_PROGRESS] } },
+          data: {
+            status: InventoryStatus.COMPLETED,
+            closedAt: new Date(),
+            comment: comment !== undefined ? comment : undefined,
+          },
+        });
+        if (claimed.count !== 1) throw new Error('INVENTORY_CONFLICT');
+
         // 1. Обновляем строки факта если переданы
         if (Array.isArray(items)) {
           for (const item of items) {
@@ -192,15 +217,6 @@ export async function PATCH(
           }
         }
 
-        // Закрываем акт инвентаризации
-        await tx.inventory.update({
-          where: { id },
-          data: {
-            status: InventoryStatus.COMPLETED,
-            closedAt: new Date(),
-            comment: comment !== undefined ? comment : undefined,
-          },
-        });
       });
 
       await logAuditEvent({
@@ -225,11 +241,11 @@ export async function PATCH(
       if (Array.isArray(items)) {
         for (const item of items) {
           const existingItem = currentInventory.items.find((i) => i.id === item.id);
-          if (existingItem) {
-              const actual = parseStockQuantity(item.actualQty);
-              if (actual === null) throw new Error('Фактическое количество должно быть конечным неотрицательным числом');
-            const expected = Number(existingItem.expectedQty);
-            const diff = actual - expected;
+            if (existingItem) {
+              const actual = item.actualQty === null ? null : parseStockQuantity(item.actualQty);
+              if (item.actualQty !== null && actual === null) throw new Error('Фактическое количество должно быть конечным неотрицательным числом');
+              const expected = Number(existingItem.expectedQty);
+              const diff = actual === null ? null : actual - expected;
 
             await tx.inventoryItem.update({
               where: { id: item.id },
@@ -255,6 +271,12 @@ export async function PATCH(
     return NextResponse.json({ success: true, data: updated });
   } catch (error: any) {
     console.error('Ошибка обновления инвентаризации:', error);
+    if (error?.message === 'INVENTORY_CONFLICT') {
+      return NextResponse.json(
+        { success: false, error: 'Операция отклонена: остатки или статус акта изменились. Обновите данные и повторите проверку.' },
+        { status: 409 }
+      );
+    }
     return NextResponse.json({ success: false, error: 'Ошибка обновления инвентаризации' }, { status: 500 });
   }
 }
