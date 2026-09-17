@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
     const allAvailableColumns = [...baseColumns, ...customColumns];
 
     // Build prisma query where filter
-    const where: any = {};
+    const where: any = { deletedAt: null };
 
     if (filters.status && filters.status in EquipmentStatus) {
       where.status = filters.status as EquipmentStatus;
@@ -152,8 +152,8 @@ export async function POST(req: NextRequest) {
       where,
       include: {
         tags: { include: { tag: true } },
-        documents: { select: { id: true } },
-        photos: { select: { id: true } },
+        documents: { where: { deletedAt: null }, select: { id: true } },
+        photos: { where: { deletedAt: null }, select: { id: true } },
         maintenancePlans: { select: { id: true } },
         spareParts: { select: { nomenclatureId: true } },
         createdBy: { select: { displayName: true } },
