@@ -23,7 +23,7 @@ export async function DELETE(
       const assignment = await tx.userRole.findUnique({
         where: { userId_roleId: { userId, roleId } },
       });
-      if (!assignment) return;
+      if (!assignment) throw new Error('Назначение роли не найдено');
 
       if (userId === user.userId && targetRole.name === 'admin') {
         throw new Error('Запрещено удалять у себя роль администратора');
@@ -44,6 +44,9 @@ export async function DELETE(
   } catch (error: unknown) {
     if (error instanceof Error && error.message === 'Запрещено удалять у себя роль администратора') {
       return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+    }
+    if (error instanceof Error && error.message === 'Назначение роли не найдено') {
+      return NextResponse.json({ success: false, error: error.message }, { status: 404 });
     }
     return NextResponse.json({ success: false, error: 'Ошибка отзыва роли' }, { status: 500 });
   }

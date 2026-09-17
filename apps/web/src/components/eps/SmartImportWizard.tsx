@@ -41,7 +41,6 @@ import {
   StatusBadge,
   FileUploadDropzone,
   CriticalAlertBanner,
-  ConfirmDialog,
 } from '@/components/ui';
 
 export interface MissingFieldItem {
@@ -96,8 +95,7 @@ export function SmartImportWizard() {
   const [availableSections, setAvailableSections] = useState<{ id: string; name: string }[]>([]);
 
   // Step 3: Conflict strategy & rows state
-  const [conflictStrategy, setConflictStrategy] = useState<'UPSERT' | 'SKIP' | 'FULL_REPLACE'>('UPSERT');
-  const [fullReplaceDialogOpen, setFullReplaceDialogOpen] = useState(false);
+  const [conflictStrategy, setConflictStrategy] = useState<'UPSERT' | 'SKIP'>('UPSERT');
   const [validatedRows, setValidatedRows] = useState<ValidatedRow[]>([]);
   const [previewFilter, setPreviewFilter] = useState<'ALL' | 'NEW' | 'COLLISION' | 'ERROR'>('ALL');
   const [totalRowsCount, setTotalRowsCount] = useState(0);
@@ -207,15 +205,7 @@ export function SmartImportWizard() {
   };
 
   // Step 3: Execute Import
-  const handleExecuteImport = async (confirmedFullReplace = false) => {
-    if (conflictStrategy === 'FULL_REPLACE' && duplicateExternalIds.length > 0) {
-      enqueueSnackbar('В файле есть повторяющиеся ID оборудования', { variant: 'error' });
-      return;
-    }
-    if (conflictStrategy === 'FULL_REPLACE' && !confirmedFullReplace) {
-      setFullReplaceDialogOpen(true);
-      return;
-    }
+  const handleExecuteImport = async () => {
     setExecutingImport(true);
 
     const newFieldDefs = Object.values(resolutions)
@@ -245,7 +235,6 @@ export function SmartImportWizard() {
           newFieldDefinitions: newFieldDefs,
           ignoredHeaders,
           conflictStrategy,
-          fullReplaceConfirmed: confirmedFullReplace,
         }),
       });
 
@@ -631,30 +620,6 @@ export function SmartImportWizard() {
                   </Paper>
                 </Grid>
 
-                <Grid item xs={12}>
-                  <Paper
-                    variant="outlined"
-                    onClick={() => setConflictStrategy('FULL_REPLACE')}
-                    sx={{
-                      p: 2.5,
-                      cursor: 'pointer',
-                      borderRadius: '8px',
-                      border: '2px solid',
-                      borderColor: conflictStrategy === 'FULL_REPLACE' ? 'error.main' : 'divider',
-                      backgroundColor: conflictStrategy === 'FULL_REPLACE' ? 'error.50' : 'background.paper',
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                      <Radio checked={conflictStrategy === 'FULL_REPLACE'} size="small" color="error" />
-                      <Typography variant="subtitle1" fontWeight={700} color={conflictStrategy === 'FULL_REPLACE' ? 'error.main' : 'inherit'}>
-                        Полностью заменить реестр
-                      </Typography>
-                    </Box>
-                    <Typography variant="body2" color="text.secondary" sx={{ pl: 4 }}>
-                      Удалить существующее оборудование и связанные EPS-данные, затем загрузить записи из файла. Пользователи, склады и номенклатура сохранятся.
-                    </Typography>
-                  </Paper>
-                </Grid>
               </Grid>
             </CardContent>
           </Card>
@@ -863,23 +828,6 @@ export function SmartImportWizard() {
           </CardContent>
         </Card>
       )}
-      <ConfirmDialog
-        open={fullReplaceDialogOpen}
-        title="Полная замена реестра оборудования"
-        subtitle="Текущие EPS-записи будут удалены"
-        message="Будут удалены карточки оборудования и каскадно связанные документы, фотографии, теги, планы ТО и согласования. Пользователи, склады, номенклатура и складские операции сохранятся."
-        variant="danger"
-        confirmText="Заменить реестр"
-        confirmWord="ЗАМЕНИТЬ"
-        confirmWordPlaceholder="Введите ЗАМЕНИТЬ"
-        countdownSeconds={3}
-        onClose={() => setFullReplaceDialogOpen(false)}
-        onConfirm={() => {
-          setFullReplaceDialogOpen(false);
-          void handleExecuteImport(true);
-        }}
-        loading={executingImport}
-      />
     </Box>
   );
 }

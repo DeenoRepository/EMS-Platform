@@ -38,14 +38,22 @@ export async function GET(req: NextRequest) {
     }
 
     if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { inventoryNumber: { contains: search, mode: 'insensitive' } },
-        { serialNumber: { contains: search, mode: 'insensitive' } },
-        { manufacturer: { contains: search, mode: 'insensitive' } },
-        { model: { contains: search, mode: 'insensitive' } },
-        { location: { contains: search, mode: 'insensitive' } },
+      const visibilityWhere = { ...where };
+      delete visibilityWhere.OR;
+      where.AND = [
+        visibilityWhere,
+        {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { inventoryNumber: { contains: search, mode: 'insensitive' } },
+            { serialNumber: { contains: search, mode: 'insensitive' } },
+            { manufacturer: { contains: search, mode: 'insensitive' } },
+            { model: { contains: search, mode: 'insensitive' } },
+            { location: { contains: search, mode: 'insensitive' } },
+          ],
+        },
       ];
+      delete where.OR;
     }
 
     const [total, items, statusGroup] = await Promise.all([
@@ -57,13 +65,13 @@ export async function GET(req: NextRequest) {
             include: { tag: true },
           },
           photos: {
-            where: { isPrimary: true },
+            where: { isPrimary: true, deletedAt: null },
             take: 1,
           },
           _count: {
             select: {
-              documents: true,
-              photos: true,
+              documents: { where: { deletedAt: null } },
+              photos: { where: { deletedAt: null } },
               maintenancePlans: true,
               spareParts: true,
             },
@@ -194,55 +202,57 @@ export async function POST(req: NextRequest) {
       ? 'DRAFT'
       : (status || 'ACTIVE');
 
-    const newEquipment = await prisma.equipment.create({
-      data: {
-        name: name.trim(),
-        inventoryNumber: inventoryNumber?.trim() || null,
-        serialNumber: serialNumber?.trim() || null,
-        manufacturer: manufacturer?.trim() || null,
-        model: model?.trim() || null,
-        location: location?.trim() || null,
-        status: initialStatus,
-        commissionDate: commissionDate ? new Date(commissionDate) : null,
-        customFields: customFields ? JSON.parse(JSON.stringify(customFields)) : {},
-        createdById: user.userId,
-        tags: Array.isArray(tagIds) && tagIds.length > 0
-          ? {
-              create: tagIds.map((tagId: string) => ({ tagId })),
-            }
-          : undefined,
-      },
-      include: {
-        tags: { include: { tag: true } },
-      },
-    });
-
-    let approvalRecord: any = null;
-
-    // Если запрошена отправка на согласование
-    if (submitForApproval || (!canManageDirectly && !asDraft)) {
-      approvalRecord = await prisma.equipmentApproval.create({
+    const { newEquipment, approvalRecord } = await prisma.$transaction(async (tx) => {
+      const createdEquipment = await tx.equipment.create({
         data: {
-          equipmentId: newEquipment.id,
-          type: 'COMMISSIONING',
-          status: 'PENDING',
-          title: `Регистрация оборудования: ${newEquipment.name}`,
-          description: approvalComment?.trim() || 'Первичная регистрация нового паспорта оборудования',
-          proposedData: {
-            targetStatus: status || 'ACTIVE',
-            name: newEquipment.name,
-            inventoryNumber: newEquipment.inventoryNumber,
-            serialNumber: newEquipment.serialNumber,
-            manufacturer: newEquipment.manufacturer,
-            model: newEquipment.model,
-            location: newEquipment.location,
-            commissionDate: newEquipment.commissionDate ? newEquipment.commissionDate.toISOString() : null,
-            customFields: newEquipment.customFields,
-          },
-          requesterId: user.userId,
+          name: name.trim(),
+          inventoryNumber: inventoryNumber?.trim() || null,
+          serialNumber: serialNumber?.trim() || null,
+          manufacturer: manufacturer?.trim() || null,
+          model: model?.trim() || null,
+          location: location?.trim() || null,
+          status: initialStatus,
+          commissionDate: commissionDate ? new Date(commissionDate) : null,
+          customFields: customFields ? JSON.parse(JSON.stringify(customFields)) : {},
+          createdById: user.userId,
+          tags: Array.isArray(tagIds) && tagIds.length > 0
+            ? {
+                create: tagIds.map((tagId: string) => ({ tagId })),
+              }
+            : undefined,
+        },
+        include: {
+          tags: { include: { tag: true } },
         },
       });
-    }
+
+      let createdApproval: any = null;
+      if (submitForApproval || (!canManageDirectly && !asDraft)) {
+        createdApproval = await tx.equipmentApproval.create({
+          data: {
+            equipmentId: createdEquipment.id,
+            type: 'COMMISSIONING',
+            status: 'PENDING',
+            title: `Регистрация оборудования: ${createdEquipment.name}`,
+            description: approvalComment?.trim() || 'Первичная регистрация нового паспорта оборудования',
+            proposedData: {
+              targetStatus: status || 'ACTIVE',
+              name: createdEquipment.name,
+              inventoryNumber: createdEquipment.inventoryNumber,
+              serialNumber: createdEquipment.serialNumber,
+              manufacturer: createdEquipment.manufacturer,
+              model: createdEquipment.model,
+              location: createdEquipment.location,
+              commissionDate: createdEquipment.commissionDate ? createdEquipment.commissionDate.toISOString() : null,
+              customFields: createdEquipment.customFields,
+            },
+            requesterId: user.userId,
+          },
+        });
+      }
+
+      return { newEquipment: createdEquipment, approvalRecord: createdApproval };
+    });
 
     // Аудит события
     await logAuditEvent({

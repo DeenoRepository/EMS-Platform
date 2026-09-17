@@ -3,8 +3,15 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
+
+const updateSchema = z.object({
+  displayName: z.string().optional(),
+  description: z.string().nullable().optional(),
+  permissionCodes: z.array(z.string()).optional(),
+});
 
 export async function PATCH(
   req: NextRequest,
@@ -16,8 +23,7 @@ export async function PATCH(
     if (!hasPermission(user, PERMISSIONS.ADMIN_ROLES_MANAGE)) return forbiddenResponse();
 
     const { id } = params;
-    const body = await req.json();
-    const { displayName, description, permissionCodes } = body;
+    const { displayName, description, permissionCodes } = updateSchema.parse(await req.json());
 
     const role = await prisma.role.findUnique({ where: { id } });
     if (!role) {
@@ -26,7 +32,7 @@ export async function PATCH(
 
     const updatedRole = await prisma.$transaction(async (tx) => {
       if (Array.isArray(permissionCodes)) {
-        const uniqueCodes = [...new Set(permissionCodes.filter((code): code is string => typeof code === 'string'))];
+        const uniqueCodes = [...new Set(permissionCodes)];
         const perms = await tx.permission.findMany({ where: { code: { in: uniqueCodes } } });
         if (perms.length !== uniqueCodes.length) {
           throw new Error('Передан неизвестный код разрешения');
@@ -57,8 +63,8 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, data: updatedRole });
   } catch (error: any) {
-    const isValidationError = error?.message === 'Передан неизвестный код разрешения';
-    return NextResponse.json({ success: false, error: isValidationError ? error.message : 'Ошибка обновления роли' }, { status: isValidationError ? 400 : 500 });
+    const isValidationError = error?.message === 'Передан неизвестный код разрешения' || error instanceof z.ZodError;
+    return NextResponse.json({ success: false, error: isValidationError ? 'Validation error' : 'Ошибка обновления роли' }, { status: isValidationError ? 400 : 500 });
   }
 }
 
