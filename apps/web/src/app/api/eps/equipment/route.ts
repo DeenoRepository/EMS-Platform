@@ -5,7 +5,11 @@ import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { z } from 'zod';
 import { equipmentVisibilityWhere } from '@/lib/eps-state-machine';
-import { buildEquipmentOrderBy, parseEquipmentFilters } from '@/lib/eps-equipment-filters';
+import {
+  buildEquipmentOrderBy,
+  parseEquipmentFilters,
+  type EquipmentFacets,
+} from '@/lib/eps-equipment-filters';
 
 export async function GET(req: NextRequest) {
   try {
@@ -58,7 +62,7 @@ export async function GET(req: NextRequest) {
       delete where.OR;
     }
 
-    const [total, items, statusGroup] = await Promise.all([
+    const [total, items, statusGroup, manufacturerGroup, locationGroup] = await Promise.all([
       prisma.equipment.count({ where }),
       prisma.equipment.findMany({
         where,
@@ -88,6 +92,16 @@ export async function GET(req: NextRequest) {
         where,
         _count: { status: true },
       }),
+      prisma.equipment.groupBy({
+        by: ['manufacturer'],
+        where,
+        _count: { _all: true },
+      }),
+      prisma.equipment.groupBy({
+        by: ['location'],
+        where,
+        _count: { _all: true },
+      }),
     ]);
 
     const statusCounts = {
@@ -108,6 +122,15 @@ export async function GET(req: NextRequest) {
       else if (g.status === 'DECOMMISSIONED') statusCounts.decommissioned = count;
       else if (g.status === 'DRAFT') statusCounts.draft = count;
     });
+
+    const facets: EquipmentFacets = {
+      manufacturers: manufacturerGroup
+        .filter((g) => g.manufacturer)
+        .map((g) => ({ value: g.manufacturer as string, count: g._count._all })),
+      locations: locationGroup
+        .filter((g) => g.location)
+        .map((g) => ({ value: g.location as string, count: g._count._all })),
+    };
 
     const formatted = items.map((item) => ({
       id: item.id,
@@ -137,6 +160,7 @@ export async function GET(req: NextRequest) {
          pageSize: filters.pageSize,
          totalPages: Math.ceil(total / filters.pageSize) || 1,
         statusCounts,
+        facets,
       },
     });
   } catch (error: unknown) {

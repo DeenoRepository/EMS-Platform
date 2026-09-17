@@ -26,6 +26,19 @@ export interface EquipmentFilters {
   pageSize: number;
 }
 
+export interface EquipmentFacetOption {
+  value: string;
+  count: number;
+}
+
+export interface EquipmentFacets {
+  manufacturers: EquipmentFacetOption[];
+  locations: EquipmentFacetOption[];
+}
+
+// Prisma 6.19.3 does not provide a confirmed typed numeric range predicate for Json fields.
+// Numeric customFields range filtering is intentionally out of scope until the ORM contract is verified.
+
 const sortFields = Object.keys({
   name: true,
   inventoryNumber: true,
