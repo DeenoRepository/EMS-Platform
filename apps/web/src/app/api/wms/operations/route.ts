@@ -4,6 +4,7 @@ import { prisma, OperationType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { canManageWarehouse, isWmsAdmin } from '@/lib/wms-access';
+import { parseMovementQuantity } from '@/lib/wms-validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -137,6 +138,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Добавьте хотя бы одну позицию ТМЦ' }, { status: 400 });
     }
 
+    const normalizedItems = items.map((item) => ({
+      ...item,
+      quantity: parseMovementQuantity(item.quantity),
+    }));
+    if (normalizedItems.some((item) => item.quantity === null)) {
+      return NextResponse.json({ success: false, error: 'Все количества должны быть конечными числами больше нуля' }, { status: 400 });
+    }
+    if (new Set(normalizedItems.map((item) => item.nomenclatureId)).size !== normalizedItems.length) {
+      return NextResponse.json({ success: false, error: 'Одна номенклатура не может повторяться в одном документе' }, { status: 400 });
+    }
+
     if (type === 'TRANSFER' || type === 'ADJUSTMENT') {
       return NextResponse.json(
         {
@@ -179,7 +191,7 @@ export async function POST(req: NextRequest) {
       // 1. Проверяем остатки при списании и перемещении
       if (isIssue) {
         for (const item of items) {
-          if (item.quantity <= 0) {
+          if (item.quantity === null || item.quantity <= 0) {
             throw new Error('Количество позиции должно быть больше нуля');
           }
 
@@ -213,7 +225,7 @@ export async function POST(req: NextRequest) {
           items: {
             create: items.map((i) => ({
               nomenclatureId: i.nomenclatureId,
-              quantity: Number(i.quantity),
+               quantity: normalizedItems.find((normalized) => normalized.nomenclatureId === i.nomenclatureId)?.quantity as number,
               equipmentId: i.equipmentId || (type === 'ISSUE_WRITE_OFF' && equipmentId ? equipmentId : null),
             })),
           },
@@ -227,8 +239,8 @@ export async function POST(req: NextRequest) {
 
       // 3. Обновляем остатки
       for (const item of items) {
-        const qtyNum = Number(item.quantity);
-        if (isNaN(qtyNum) || qtyNum <= 0) {
+        const qtyNum = parseMovementQuantity(item.quantity);
+        if (qtyNum === null) {
           throw new Error('Количество позиции должно быть больше нуля');
         }
 

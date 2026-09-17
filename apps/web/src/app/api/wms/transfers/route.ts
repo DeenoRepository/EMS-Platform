@@ -4,6 +4,7 @@ import { prisma, StockTransferStatus, OperationType, Prisma } from '@ems/databas
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { canManageWarehouse, isWmsAdmin } from '@/lib/wms-access';
+import { parseMovementQuantity } from '@/lib/wms-validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -308,14 +309,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    for (const it of items) {
-      const q = Number(it.quantity);
-      if (isNaN(q) || q <= 0) {
+    const normalizedItems = items.map((item) => ({
+      ...item,
+      quantity: parseMovementQuantity(item.quantity),
+    }));
+    if (normalizedItems.some((item) => item.quantity === null)) {
         return NextResponse.json(
-          { success: false, error: 'Количество каждой позиции должно быть больше нуля' },
+          { success: false, error: 'Количество каждой позиции должно быть конечным числом больше нуля' },
           { status: 400 }
         );
-      }
+    }
+    if (new Set(normalizedItems.map((item) => item.nomenclatureId)).size !== normalizedItems.length) {
+      return NextResponse.json(
+        { success: false, error: 'Одна номенклатура не может повторяться в одном перемещении' },
+        { status: 400 }
+      );
     }
 
     const isAdmin = isWmsAdmin(user);
@@ -409,9 +417,9 @@ export async function POST(req: NextRequest) {
             dispatchedAt: new Date(),
             dispatchedById: user.userId,
             items: {
-              create: items.map((it) => ({
+              create: normalizedItems.map((it) => ({
                 nomenclatureId: it.nomenclatureId,
-                quantity: it.quantity,
+                quantity: it.quantity as number,
                 targetCellId: it.targetCellId || null,
               })),
             },
@@ -469,9 +477,9 @@ export async function POST(req: NextRequest) {
           createdById: user.userId,
           requestReason: requestReason?.trim() || null,
           items: {
-            create: items.map((it) => ({
-              nomenclatureId: it.nomenclatureId,
-              quantity: it.quantity,
+              create: normalizedItems.map((it) => ({
+                nomenclatureId: it.nomenclatureId,
+                quantity: it.quantity as number,
               targetCellId: it.targetCellId || null,
             })),
           },

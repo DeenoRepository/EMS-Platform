@@ -4,6 +4,7 @@ import { prisma, InventoryStatus } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { canManageWarehouse, isWmsAdmin } from '@/lib/wms-access';
+import { parseStockQuantity } from '@/lib/wms-validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,7 +70,7 @@ export async function GET(
 
 interface UpdateItemInput {
   id: string; // InventoryItem ID
-  actualQty: number;
+  actualQty: number | string | null;
   comment?: string | null;
 }
 
@@ -113,6 +114,9 @@ export async function PATCH(
     };
 
     if (status === 'COMPLETED') {
+      if (!Array.isArray(items) || items.length !== currentInventory.items.length) {
+        return NextResponse.json({ success: false, error: 'Для завершения необходимо указать фактическое количество всех позиций' }, { status: 400 });
+      }
       let discrepanciesCount = 0;
 
       await prisma.$transaction(async (tx) => {
@@ -121,7 +125,8 @@ export async function PATCH(
           for (const item of items) {
             const existingItem = currentInventory.items.find((i) => i.id === item.id);
             if (existingItem) {
-              const actual = Number(item.actualQty);
+              const actual = parseStockQuantity(item.actualQty);
+              if (actual === null) throw new Error('Фактическое количество должно быть конечным неотрицательным числом');
               const expected = Number(existingItem.expectedQty);
               const diff = actual - expected;
 
@@ -221,7 +226,8 @@ export async function PATCH(
         for (const item of items) {
           const existingItem = currentInventory.items.find((i) => i.id === item.id);
           if (existingItem) {
-            const actual = Number(item.actualQty);
+              const actual = parseStockQuantity(item.actualQty);
+              if (actual === null) throw new Error('Фактическое количество должно быть конечным неотрицательным числом');
             const expected = Number(existingItem.expectedQty);
             const diff = actual - expected;
 

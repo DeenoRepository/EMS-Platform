@@ -76,7 +76,7 @@ export default function WmsInventoryDetailPage() {
 
   const [inventory, setInventory] = useState<InventoryDetail | null>(null);
   const [itemsState, setItemsState] = useState<
-    Array<{ id: string; actualQty: number; comment: string; expectedQty: number }>
+    Array<{ id: string; actualQty: number | null; comment: string; expectedQty: number }>
   >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -94,7 +94,7 @@ export default function WmsInventoryDetailPage() {
           setItemsState(
             json.data.items.map((i: any) => ({
               id: i.id,
-              actualQty: i.actualQty !== null ? Number(i.actualQty) : Number(i.expectedQty),
+              actualQty: i.actualQty !== null ? Number(i.actualQty) : null,
               expectedQty: Number(i.expectedQty),
               comment: i.comment || '',
             }))
@@ -116,9 +116,8 @@ export default function WmsInventoryDetailPage() {
   }, [fetchInventory]);
 
   const handleActualQtyChange = (itemId: string, val: string) => {
-    const num = parseFloat(val);
     setItemsState((prev) =>
-      prev.map((i) => (i.id === itemId ? { ...i, actualQty: isNaN(num) ? 0 : num } : i))
+      prev.map((i) => (i.id === itemId ? { ...i, actualQty: val.trim() === '' ? null : Number(val) } : i))
     );
   };
 
@@ -156,6 +155,10 @@ export default function WmsInventoryDetailPage() {
   };
 
   const handleCompleteInventory = async (finalComment?: string) => {
+    if (itemsState.some((item) => item.actualQty === null || !Number.isFinite(item.actualQty) || item.actualQty < 0)) {
+      enqueueSnackbar('Заполните все фактические остатки корректными неотрицательными числами', { variant: 'warning' });
+      return;
+    }
     setIsSaving(true);
     try {
       const res = await fetch(`/api/wms/inventories/${id}`, {
@@ -206,8 +209,8 @@ export default function WmsInventoryDetailPage() {
   // Calculate live stats
   const totalItems = itemsState.length;
   const matchCount = itemsState.filter((i) => i.actualQty === i.expectedQty).length;
-  const surplusCount = itemsState.filter((i) => i.actualQty > i.expectedQty).length;
-  const deficitCount = itemsState.filter((i) => i.actualQty < i.expectedQty).length;
+  const surplusCount = itemsState.filter((i) => i.actualQty !== null && i.actualQty > i.expectedQty).length;
+  const deficitCount = itemsState.filter((i) => i.actualQty !== null && i.actualQty < i.expectedQty).length;
 
   return (
     <Box sx={{ pb: 6 }}>
@@ -366,17 +369,17 @@ export default function WmsInventoryDetailPage() {
                 comment: '',
               };
 
-              const diff = state.actualQty - state.expectedQty;
+              const diff = state.actualQty === null ? null : state.actualQty - state.expectedQty;
 
               return (
                 <TableRow
                   key={item.id}
                   hover
                   sx={{
-                    bgcolor:
-                      diff > 0
-                        ? 'rgba(46, 125, 50, 0.04)'
-                        : diff < 0
+                     bgcolor:
+                       diff !== null && diff > 0
+                         ? 'rgba(46, 125, 50, 0.04)'
+                         : diff !== null && diff < 0
                         ? 'rgba(211, 47, 47, 0.04)'
                         : undefined,
                   }}
@@ -401,6 +404,7 @@ export default function WmsInventoryDetailPage() {
                         type="number"
                         size="small"
                         value={state.actualQty}
+                        inputProps={{ min: 0, step: 'any' }}
                         onChange={(e) => handleActualQtyChange(item.id, e.target.value)}
                         InputProps={{
                           endAdornment: (
@@ -414,7 +418,11 @@ export default function WmsInventoryDetailPage() {
                     )}
                   </TableCell>
                   <TableCell align="center">
-                    {diff === 0 ? (
+                    {diff === null ? (
+                      <Typography variant="body2" color="text.disabled">
+                        Не указано
+                      </Typography>
+                    ) : diff === 0 ? (
                       <Typography variant="body2" color="text.secondary">
                         0
                       </Typography>
@@ -466,7 +474,7 @@ export default function WmsInventoryDetailPage() {
           return {
             id: item.id,
             expectedQty: item.expectedQty,
-            actualQty: stateItem ? stateItem.actualQty : Number(item.expectedQty),
+             actualQty: stateItem?.actualQty ?? Number(item.expectedQty),
             comment: stateItem?.comment,
             nomenclature: item.nomenclature,
           };
@@ -483,4 +491,3 @@ export default function WmsInventoryDetailPage() {
     </Box>
   );
 }
-

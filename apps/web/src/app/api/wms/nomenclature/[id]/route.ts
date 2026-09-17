@@ -3,6 +3,7 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { parseStockQuantity } from '@/lib/wms-validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,6 +71,12 @@ export async function PUT(
     }
 
     const formattedArticle = article?.trim() || null;
+    const normalizedMinStock = minStock === undefined || minStock === null || minStock === ''
+      ? null
+      : parseStockQuantity(minStock);
+    if (minStock !== undefined && minStock !== null && minStock !== '' && normalizedMinStock === null) {
+      return NextResponse.json({ success: false, error: 'Минимальный остаток должен быть конечным неотрицательным числом' }, { status: 400 });
+    }
     if (formattedArticle && formattedArticle !== existing.article) {
       const duplicate = await prisma.nomenclature.findUnique({
         where: { article: formattedArticle },
@@ -90,7 +97,7 @@ export async function PUT(
         unit: unit?.trim() || existing.unit,
         categoryId: categoryId !== undefined ? (categoryId || null) : existing.categoryId,
         description: description !== undefined ? (description?.trim() || null) : existing.description,
-        minStock: minStock !== undefined && minStock !== null && minStock !== '' ? Number(minStock) : null,
+        minStock: normalizedMinStock,
       },
       include: {
         category: true,
