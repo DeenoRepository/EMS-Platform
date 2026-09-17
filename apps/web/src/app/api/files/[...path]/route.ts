@@ -3,7 +3,10 @@ import fs from 'fs';
 import path from 'path';
 import { getAbsoluteFilePath } from '@/lib/storage';
 
-import { getCurrentUser, unauthorizedResponse } from '@/lib/auth-guard';
+import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { prisma } from '@ems/database';
+import { PERMISSIONS } from '@ems/shared';
+import { hasPermission } from '@ems/auth';
 
 export async function GET(
   req: NextRequest,
@@ -15,15 +18,38 @@ export async function GET(
     if (!user) {
       return unauthorizedResponse();
     }
+    if (!hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_VIEW)) {
+      return forbiddenResponse();
+    }
 
     const relativePath = params.path.join('/');
-    const fullPath = getAbsoluteFilePath(relativePath);
+    let fullPath: string;
+    try {
+      fullPath = getAbsoluteFilePath(relativePath);
+    } catch {
+      return forbiddenResponse('Доступ запрещен');
+    }
 
     // 2. Предотвращение Directory Traversal
-    const uploadRoot = path.resolve(process.cwd(), process.env.UPLOAD_DIR || './uploads');
+    const uploadRoot = path.resolve(process.cwd(), process.env.UPLOAD_DIR || process.env.STORAGE_LOCAL_DIR || './uploads');
     const resolvedFullPath = path.resolve(fullPath);
-    if (!resolvedFullPath.startsWith(uploadRoot)) {
-      return NextResponse.json({ success: false, error: 'Доступ запрещен' }, { status: 403 });
+    const resolvedRelativePath = path.relative(uploadRoot, resolvedFullPath);
+    if (resolvedRelativePath.startsWith('..') || path.isAbsolute(resolvedRelativePath)) {
+      return forbiddenResponse('Доступ запрещен');
+    }
+
+    const [document, photo] = await Promise.all([
+      prisma.document.findFirst({
+        where: { filePath: relativePath, deletedAt: null, equipment: { deletedAt: null } },
+        select: { id: true },
+      }),
+      prisma.photo.findFirst({
+        where: { filePath: relativePath, deletedAt: null, equipment: { deletedAt: null } },
+        select: { id: true },
+      }),
+    ]);
+    if (!document && !photo) {
+      return NextResponse.json({ success: false, error: 'Файл не найден' }, { status: 404 });
     }
 
     if (!fs.existsSync(resolvedFullPath)) {

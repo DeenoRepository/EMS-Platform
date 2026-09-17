@@ -91,7 +91,12 @@ export async function saveFile(
 }
 
 export function getAbsoluteFilePath(relativeFilePath: string): string {
-  return path.join(UPLOAD_ROOT, relativeFilePath);
+  const resolvedPath = path.resolve(UPLOAD_ROOT, relativeFilePath);
+  const relativePath = path.relative(UPLOAD_ROOT, resolvedPath);
+  if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+    throw new Error('Недопустимый путь к файлу');
+  }
+  return resolvedPath;
 }
 
 export function deleteFile(relativeFilePath: string): boolean {

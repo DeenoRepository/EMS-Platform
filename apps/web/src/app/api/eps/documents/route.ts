@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     const docType = searchParams.get('docType')?.trim() || '';
     const equipmentId = searchParams.get('equipmentId')?.trim() || '';
 
-    const where: any = {};
+    const where: any = { deletedAt: null, equipment: { deletedAt: null } };
 
     if (equipmentId) {
       where.equipmentId = equipmentId;
@@ -81,8 +81,9 @@ export async function GET(req: NextRequest) {
         take: pageSize,
       }),
       prisma.document.count({ where }),
-      prisma.document.findMany({
-        select: {
+       prisma.document.findMany({
+         where: { deletedAt: null, equipment: { deletedAt: null } },
+         select: {
           docType: true,
           fileSize: true,
         },
@@ -156,14 +157,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const equipment = await prisma.equipment.findUnique({ where: { id: equipmentId } });
+    const equipment = await prisma.equipment.findFirst({ where: { id: equipmentId, deletedAt: null } });
     if (!equipment) {
       return NextResponse.json({ success: false, error: 'Оборудование не найдено' }, { status: 404 });
     }
 
     const saved = await saveFile(file, 'documents');
-
-    const document = await prisma.document.create({
+    let document;
+    try {
+      document = await prisma.document.create({
       data: {
         equipmentId,
         fileName: saved.fileName,
@@ -190,7 +192,12 @@ export async function POST(req: NextRequest) {
           },
         },
       },
-    });
+      });
+    } catch (error) {
+      const { deleteFile } = await import('@/lib/storage');
+      deleteFile(saved.filePath);
+      throw error;
+    }
 
     await logAuditEvent({
       userId: user.userId,

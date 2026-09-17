@@ -17,7 +17,7 @@ export async function POST(
     if (!hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_EDIT)) return forbiddenResponse();
 
     const { id } = params;
-    const equipment = await prisma.equipment.findUnique({ where: { id } });
+    const equipment = await prisma.equipment.findFirst({ where: { id, deletedAt: null } });
     if (!equipment) {
       return NextResponse.json({ success: false, error: 'Оборудование не найдено' }, { status: 404 });
     }
@@ -33,24 +33,30 @@ export async function POST(
     // Сохраняем файл на диск
     const saved = await saveFile(file, 'photos');
 
-    // Если это главное фото, снимаем флаг с других
-    if (isPrimary) {
-      await prisma.photo.updateMany({
-        where: { equipmentId: id },
-        data: { isPrimary: false },
+    let photo;
+    try {
+      photo = await prisma.$transaction(async (tx) => {
+        if (isPrimary) {
+          await tx.photo.updateMany({
+            where: { equipmentId: id, deletedAt: null },
+            data: { isPrimary: false },
+          });
+        }
+        return tx.photo.create({
+          data: {
+            equipmentId: id,
+            fileName: saved.fileName,
+            originalName: saved.originalName,
+            filePath: saved.filePath,
+            isPrimary,
+            uploadedById: user.userId,
+          },
+        });
       });
+    } catch (error) {
+      deleteFile(saved.filePath);
+      throw error;
     }
-
-    const photo = await prisma.photo.create({
-      data: {
-        equipmentId: id,
-        fileName: saved.fileName,
-        originalName: saved.originalName,
-        filePath: saved.filePath,
-        isPrimary,
-        uploadedById: user.userId,
-      },
-    });
 
     await logAuditEvent({
       userId: user.userId,
@@ -80,19 +86,21 @@ export async function DELETE(
     if (!hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_EDIT)) return forbiddenResponse();
 
     const { searchParams } = new URL(req.url);
+    const { id } = params;
     const photoId = searchParams.get('photoId');
 
     if (!photoId) {
       return NextResponse.json({ success: false, error: 'Не указан photoId' }, { status: 400 });
     }
 
-    const photo = await prisma.photo.findUnique({ where: { id: photoId } });
+    const photo = await prisma.photo.findFirst({
+      where: { id: photoId, equipmentId: id, deletedAt: null, equipment: { deletedAt: null } },
+    });
     if (!photo) {
       return NextResponse.json({ success: false, error: 'Фото не найдено' }, { status: 404 });
     }
 
-    deleteFile(photo.filePath);
-    await prisma.photo.delete({ where: { id: photoId } });
+    await prisma.photo.update({ where: { id: photoId }, data: { deletedAt: new Date() } });
 
     return NextResponse.json({ success: true, message: 'Фото удалено' });
   } catch (error: any) {

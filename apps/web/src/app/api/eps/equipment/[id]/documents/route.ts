@@ -17,7 +17,7 @@ export async function POST(
     if (!hasPermission(user, PERMISSIONS.EPS_DOCUMENTS_UPLOAD)) return forbiddenResponse();
 
     const { id } = params;
-    const equipment = await prisma.equipment.findUnique({ where: { id } });
+    const equipment = await prisma.equipment.findFirst({ where: { id, deletedAt: null } });
     if (!equipment) {
       return NextResponse.json({ success: false, error: 'Оборудование не найдено' }, { status: 404 });
     }
@@ -33,20 +33,25 @@ export async function POST(
 
     // Сохраняем документ на диск
     const saved = await saveFile(file, 'documents');
-
-    const document = await prisma.document.create({
-      data: {
-        equipmentId: id,
-        fileName: saved.fileName,
-        originalName: saved.originalName,
-        filePath: saved.filePath,
-        fileType: saved.fileType,
-        fileSize: saved.fileSize,
-        docType,
-        description: description?.trim() || null,
-        uploadedById: user.userId,
-      },
-    });
+    let document;
+    try {
+      document = await prisma.document.create({
+        data: {
+          equipmentId: id,
+          fileName: saved.fileName,
+          originalName: saved.originalName,
+          filePath: saved.filePath,
+          fileType: saved.fileType,
+          fileSize: saved.fileSize,
+          docType,
+          description: description?.trim() || null,
+          uploadedById: user.userId,
+        },
+      });
+    } catch (error) {
+      deleteFile(saved.filePath);
+      throw error;
+    }
 
     await logAuditEvent({
       userId: user.userId,
@@ -76,19 +81,21 @@ export async function DELETE(
     if (!hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_EDIT)) return forbiddenResponse();
 
     const { searchParams } = new URL(req.url);
+    const { id } = params;
     const documentId = searchParams.get('documentId');
 
     if (!documentId) {
       return NextResponse.json({ success: false, error: 'Не указан documentId' }, { status: 400 });
     }
 
-    const document = await prisma.document.findUnique({ where: { id: documentId } });
+    const document = await prisma.document.findFirst({
+      where: { id: documentId, equipmentId: id, deletedAt: null, equipment: { deletedAt: null } },
+    });
     if (!document) {
       return NextResponse.json({ success: false, error: 'Документ не найден' }, { status: 404 });
     }
 
-    deleteFile(document.filePath);
-    await prisma.document.delete({ where: { id: documentId } });
+    await prisma.document.update({ where: { id: documentId }, data: { deletedAt: new Date() } });
 
     return NextResponse.json({ success: true, message: 'Документ удален' });
   } catch (error: any) {

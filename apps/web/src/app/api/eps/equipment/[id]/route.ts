@@ -24,8 +24,9 @@ export async function GET(
       where: { AND: [{ id }, equipmentVisibilityWhere(user.userId, canManageDrafts)] },
       include: {
         tags: { include: { tag: true } },
-        photos: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
+        photos: { where: { deletedAt: null }, orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
         documents: {
+          where: { deletedAt: null },
           include: { uploadedBy: { select: { displayName: true } } },
           orderBy: { createdAt: 'desc' },
         },
@@ -347,7 +348,7 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'Оборудование не найдено' }, { status: 404 });
     }
 
-    await prisma.equipment.delete({ where: { id } });
+    await prisma.equipment.update({ where: { id }, data: { deletedAt: new Date() } });
 
     await logAuditEvent({
       userId: user.userId,

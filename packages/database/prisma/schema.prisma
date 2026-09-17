@@ -331,11 +331,13 @@ model Photo {
   isPrimary     Boolean  @default(false)
   uploadedById  String
   createdAt     DateTime @default(now())
+  deletedAt     DateTime?
 
   equipment  Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
   uploadedBy User      @relation("UploadedPhotos", fields: [uploadedById], references: [id])
 
   @@index([equipmentId])
+  @@index([deletedAt])
 }
 
 model EquipmentApproval {
@@ -973,4 +975,3 @@ model FeedbackAttachment {
   @@index([ticketId])
   @@index([uploadedById])
 }
-

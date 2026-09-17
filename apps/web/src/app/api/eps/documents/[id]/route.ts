@@ -3,7 +3,6 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
-import { deleteFile } from '@/lib/storage';
 
 export async function DELETE(
   req: NextRequest,
@@ -18,8 +17,8 @@ export async function DELETE(
 
     const { id } = params;
 
-    const document = await prisma.document.findUnique({
-      where: { id },
+    const document = await prisma.document.findFirst({
+      where: { id, deletedAt: null, equipment: { deletedAt: null } },
       include: {
         equipment: {
           select: { id: true, name: true, inventoryNumber: true },
@@ -31,8 +30,7 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'Документ не найден' }, { status: 404 });
     }
 
-    deleteFile(document.filePath);
-    await prisma.document.delete({ where: { id } });
+    await prisma.document.update({ where: { id }, data: { deletedAt: new Date() } });
 
     await logAuditEvent({
       userId: user.userId,
