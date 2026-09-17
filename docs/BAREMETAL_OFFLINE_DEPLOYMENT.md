@@ -172,61 +172,158 @@ sudo journalctl -u ems-platform -f
 sudo journalctl -u ems-platform -n 100 --no-pager
 ```
 
-### Резервное копирование базы данных и файлов:
-Для создания резервной копии запустите встроенный скрипт:
+### Резервное копирование базы данных и файлов
+
+Для baremetal-установки используйте локальные PostgreSQL-утилиты. Скрипт
+`scripts/backup.sh` исторически поддерживает Docker и может вывести предупреждение
+`docker: command not found`, поэтому он не является основным способом backup для
+baremetal VPS.
+
 ```bash
-sudo /opt/ems-platform/scripts/backup.sh
+export APP_DIR="/opt/ems-platform"
+export TS="$(date +%Y%m%d_%H%M%S)"
+export BACKUP_DIR="/var/backups/ems-platform/$TS"
+
+sudo mkdir -p "$BACKUP_DIR"
+sudo -u postgres pg_dumpall | gzip | sudo tee "$BACKUP_DIR/database.sql.gz" >/dev/null
+sudo tar -czf "$BACKUP_DIR/uploads.tar.gz" -C "$APP_DIR" uploads
+sudo cp "$APP_DIR/.env.production" "$BACKUP_DIR/.env.production"
 ```
-Архивы базы данных и загруженных файлов будут сохранены в `/opt/ems-platform/backups/`.
+
+Проверьте, что backup базы не пустой:
+
+```bash
+sudo test -s "$BACKUP_DIR/database.sql.gz"
+sudo ls -lh "$BACKUP_DIR"
+```
 
 ---
 
-## 8. Процесс обновления в оффлайн-режиме (Rolling Update)
+## 8. Обновление действующей baremetal-установки
 
-При выпуске новой версии платформы:
-1. Соберите новый архив `ems-baremetal-bundle-new.tar.gz` на сборочной машине (`./scripts/baremetal-pack.sh`).
-2. Перенесите архив на целевую ВМ.
-3. Остановите службу:
-   ```bash
-   sudo systemctl stop ems-platform
-   ```
-4. Создайте резервную копию текущей БД:
-   ```bash
-   sudo /opt/ems-platform/scripts/backup.sh
-   ```
-5. Распакуйте новые файлы поверх `/opt/ems-platform` (файл `.env.production` и папка `uploads/` сохраняются).
-6. Примените новые миграции БД:
-   ```bash
-   sudo su -s /bin/sh ems -c "cd /opt/ems-platform && node \$(find node_modules -wholename '*prisma/build/index.js' | head -n 1) db push --schema=packages/database/prisma/schema.prisma --accept-data-loss"
-   ```
-7. Запустите службу:
-   ```bash
-    sudo systemctl start ems-platform
-    ```
+Для уже работающего VPS используется overlay-обновление. Не запускайте
+`install.sh`: он предназначен для первоначальной установки.
 
-### 8.1. Обновление реестра через встроенный мастер
+### 8.1. Сборка релиза
 
-После установки новой версии с поддержкой полной замены реестра:
-
-1. Войдите под пользователем с правами `eps.import.execute` и `eps.equipment.create`.
-2. Откройте `Администрирование -> Настройки модулей -> Импорт оборудования`.
-3. Загрузите файл `Реестр оборудования ОГМ (7).xlsx`.
-4. Проверьте, что колонка `ID оборудования` распознана как внутренний ID оборудования.
-5. На шаге коллизий выберите `Полностью заменить реестр`.
-6. Проверьте предварительный отчет: количество строк, нулевое количество дублей ID и отсутствие ошибок.
-7. В окне подтверждения введите `ЗАМЕНИТЬ` и подтвердите операцию.
-
-Режим полной замены удаляет карточки оборудования и каскадно связанные EPS-данные, затем импортирует новый файл. Пользователи, роли, склады, номенклатура и складские операции сохраняются.
-
-Перед импортом создайте резервную копию:
+На build-машине с исходниками:
 
 ```bash
-sudo /opt/ems-platform/scripts/backup.sh
+chmod +x scripts/baremetal-pack.sh
+./scripts/baremetal-pack.sh
+sha256sum ems-baremetal-release.tar.gz
 ```
 
-После импорта проверьте службу:
+Архив не содержит `.env.production`, текущие `uploads/`, `Temp/` или backup-файлы.
+
+### 8.2. Overlay на действующем VPS
+
+Перенесите архив на VPS и проверьте checksum:
 
 ```bash
-sudo systemctl restart ems-platform
-curl http://127.0.0.1:3000/api/system/health
+sha256sum /home/deps/ems-baremetal-release.tar.gz
 ```
+
+Перед обновлением остановите только приложение и создайте backup базы, файлов и
+конфигурации. PostgreSQL не останавливайте.
+
+```bash
+export APP_DIR="/opt/ems-platform"
+export ARCHIVE="/home/deps/ems-baremetal-release.tar.gz"
+export TS="$(date +%Y%m%d_%H%M%S)"
+export BACKUP_DIR="/var/backups/ems-platform/$TS"
+export RELEASE_DIR="/tmp/ems-release-$TS"
+export OLD_DIR="/opt/ems-platform.previous-$TS"
+
+sudo mkdir -p "$BACKUP_DIR"
+sudo -u postgres pg_dumpall | gzip | sudo tee "$BACKUP_DIR/database.sql.gz" >/dev/null
+sudo tar -czf "$BACKUP_DIR/uploads.tar.gz" -C "$APP_DIR" uploads
+sudo cp "$APP_DIR/.env.production" "$BACKUP_DIR/.env.production"
+sudo systemctl stop ems-platform
+
+mkdir -p "$RELEASE_DIR"
+tar -xzf "$ARCHIVE" -C "$RELEASE_DIR"
+sudo mv "$APP_DIR" "$OLD_DIR"
+sudo mv "$RELEASE_DIR/ems-baremetal-release" "$APP_DIR"
+sudo cp "$OLD_DIR/.env.production" "$APP_DIR/.env.production"
+sudo cp -a "$OLD_DIR/uploads" "$APP_DIR/uploads"
+sudo chown -R ems:ems "$APP_DIR"
+sudo chmod 600 "$APP_DIR/.env.production"
+```
+
+### 8.3. Безопасная синхронизация схемы
+
+Сначала проверьте Prisma без загрузки `.env.production` через shell. Это важно,
+если значения окружения содержат специальные символы:
+
+```bash
+sudo -u ems sh -c '
+  URL=$(sed -n "s/^DATABASE_URL=//p" /opt/ems-platform/.env.production | sed "s/^\"//; s/\"$//; s/\r$//")
+  export DATABASE_URL="$URL"
+  cd /opt/ems-platform
+  ./packages/database/node_modules/.bin/prisma validate \
+    --schema=packages/database/prisma/schema.prisma
+'
+```
+
+После успешной валидации примените только безопасное обновление схемы:
+
+```bash
+sudo -u ems sh -c '
+  URL=$(sed -n "s/^DATABASE_URL=//p" /opt/ems-platform/.env.production | sed "s/^\"//; s/\"$//; s/\r$//")
+  export DATABASE_URL="$URL"
+  cd /opt/ems-platform
+  ./packages/database/node_modules/.bin/prisma db push \
+    --schema=packages/database/prisma/schema.prisma \
+    --skip-generate
+'
+```
+
+Никогда не используйте на действующей базе:
+
+```text
+--accept-data-loss
+```
+
+Если Prisma сообщает о destructive changes или требует этот флаг, прекратите
+обновление и восстановите старую версию приложения из `$OLD_DIR`.
+
+### 8.4. Запуск и проверка
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl start ems-platform
+sudo systemctl status ems-platform --no-pager
+curl --fail http://127.0.0.1:3000/api/system/health
+sudo journalctl -u ems-platform -n 100 --no-pager
+```
+
+После успешной проверки убедитесь, что количество файлов не изменилось:
+
+```bash
+sudo find /opt/ems-platform/uploads -type f | wc -l
+sudo systemctl status postgresql --no-pager
+```
+
+### 8.5. Импорт оборудования
+
+Стратегия `FULL_REPLACE` отключена на сервере и удалена из интерфейса. Импорт
+использует только безопасные стратегии `UPSERT` и `SKIP`.
+
+Обычный импорт не публикует оборудование напрямую в `ACTIVE`: новые записи
+создаются как `DRAFT`, а изменения и commissioning проходят через approval workflow.
+
+### 8.6. Rollback кода
+
+```bash
+sudo systemctl stop ems-platform
+sudo rm -rf /opt/ems-platform
+sudo mv "$OLD_DIR" /opt/ems-platform
+sudo chown -R ems:ems /opt/ems-platform
+sudo chmod 600 /opt/ems-platform/.env.production
+sudo systemctl start ems-platform
+curl --fail http://127.0.0.1:3000/api/system/health
+```
+
+Обычный rollback кода не требует восстановления БД. Не выполняйте destructive
+rollback schema без отдельного согласованного плана восстановления.

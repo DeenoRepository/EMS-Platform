@@ -85,16 +85,6 @@ cp scripts/ems-baremetal.nginx.conf "$PACKAGE_DIR/scripts/ems-baremetal.nginx.co
 cp scripts/backup.sh "$PACKAGE_DIR/scripts/backup.sh"
 cp scripts/*.js "$PACKAGE_DIR/scripts/" 2>/dev/null || true
 cp scripts/*.sql "$PACKAGE_DIR/scripts/" 2>/dev/null || true
-if [ -d "Temp" ]; then
-    mkdir -p "$PACKAGE_DIR/Temp"
-    cp -r Temp/* "$PACKAGE_DIR/Temp/" 2>/dev/null || true
-elif [ -d "temp" ]; then
-    mkdir -p "$PACKAGE_DIR/temp"
-    cp -r temp/* "$PACKAGE_DIR/temp/" 2>/dev/null || true
-fi
-if [ -f "temp/init_custom_sections.sql" ]; then
-    cp temp/init_custom_sections.sql "$PACKAGE_DIR/scripts/init_custom_sections.sql"
-fi
 cp docs/BAREMETAL_OFFLINE_DEPLOYMENT.md "$PACKAGE_DIR/docs/"
 cp docs/BAREMETAL_OFFLINE_DEPLOYMENT.md "$PACKAGE_DIR/README.md"
 
