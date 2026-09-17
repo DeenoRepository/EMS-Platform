@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
     const enriched = items.map((item) => {
       const visibleStockItems = admin
         ? item.stockItems
-        : item.stockItems.filter((stockItem) => accessibleWarehouseIds?.includes(stockItem.warehouseId));
+        : item.stockItems.filter((stockItem) => accessibleWarehouseIds?.includes(stockItem.warehouseId) ?? false);
       const totalStock = visibleStockItems.reduce((sum, si) => sum + Number(si.quantity), 0);
       return {
         ...item,
