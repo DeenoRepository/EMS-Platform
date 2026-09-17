@@ -30,3 +30,10 @@ CREATE INDEX "WmsStockMovement_balance_idx"
 -- Add foreign keys only after validating the actual table and column names:
 -- ALTER TABLE "WmsStockMovement" ADD CONSTRAINT ... REFERENCES "Warehouse"("id");
 -- ALTER TABLE "WmsStockMovement" ADD CONSTRAINT ... REFERENCES "Nomenclature"("id");
+
+-- Future data-integrity constraints. Apply only after a read-only violation report:
+-- ALTER TABLE "StockItem" ADD CONSTRAINT "StockItem_quantity_nonnegative" CHECK ("quantity" >= 0);
+-- ALTER TABLE "StockOperationItem" ADD CONSTRAINT "StockOperationItem_quantity_positive" CHECK ("quantity" > 0);
+-- ALTER TABLE "StockTransferItem" ADD CONSTRAINT "StockTransferItem_quantity_positive" CHECK ("quantity" > 0);
+-- ALTER TABLE "StockTransfer" ADD CONSTRAINT "StockTransfer_distinct_warehouses" CHECK ("sourceWarehouseId" <> "targetWarehouseId");
+-- ALTER TABLE "StockTransfer" ALTER COLUMN "status" DROP DEFAULT;

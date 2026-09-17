@@ -30,6 +30,7 @@ async function main() {
   console.log(`📋 Найдено операций в истории: ${operations.length}`);
 
   const balances = new Map();
+  const violations = [];
 
   for (const op of operations) {
     for (const item of op.items) {
@@ -43,16 +44,32 @@ async function main() {
       };
 
       const qty = Number(item.quantity);
-      if (op.type === 'RECEIPT' || op.type === 'TRANSFER') {
+      if (!Number.isFinite(qty) || qty <= 0) {
+        violations.push({ operationId: op.id, itemId: item.id, reason: 'INVALID_QUANTITY' });
+        continue;
+      }
+
+      if (op.type === 'RECEIPT') {
         current.quantity += qty;
       } else if (op.type === 'ISSUE' || op.type === 'ISSUE_EMPLOYEE' || op.type === 'ISSUE_WRITE_OFF') {
-        current.quantity = Math.max(0, current.quantity - qty);
-      } else if (op.type === 'ADJUSTMENT') {
-        current.quantity = qty;
+        current.quantity -= qty;
+        if (current.quantity < 0) {
+          violations.push({ operationId: op.id, itemId: item.id, reason: 'NEGATIVE_INTERMEDIATE_BALANCE' });
+        }
+      } else {
+        violations.push({ operationId: op.id, itemId: item.id, reason: 'UNSUPPORTED_LEGACY_EVENT', type: op.type });
+        continue;
       }
 
       balances.set(key, current);
     }
+  }
+
+  if (violations.length > 0) {
+    console.error(`\n❌ Preview остановлен: найдено нарушений журнала: ${violations.length}`);
+    for (const violation of violations) console.error(JSON.stringify(violation));
+    process.exitCode = 3;
+    return;
   }
 
   let updatedCount = 0;
