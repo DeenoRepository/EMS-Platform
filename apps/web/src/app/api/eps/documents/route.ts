@@ -4,6 +4,11 @@ import { prisma, DocumentType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { saveFile } from '@/lib/storage';
+import {
+  buildDocumentOrderBy,
+  DOCUMENT_SORT_FIELDS,
+  parseEpsListQuery,
+} from '@/lib/eps-list-query';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,8 +25,7 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
-    const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '25', 10)));
+     const { page, pageSize, sortBy, sortDirection } = parseEpsListQuery(searchParams, DOCUMENT_SORT_FIELDS, 'date');
     const search = searchParams.get('search')?.trim() || '';
     const docType = searchParams.get('docType')?.trim() || '';
     const equipmentId = searchParams.get('equipmentId')?.trim() || '';
@@ -76,7 +80,7 @@ export async function GET(req: NextRequest) {
             },
           },
         },
-        orderBy: { createdAt: 'desc' },
+         orderBy: buildDocumentOrderBy(sortBy, sortDirection),
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),

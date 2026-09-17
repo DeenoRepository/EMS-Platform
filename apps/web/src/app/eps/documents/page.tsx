@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
+import React, { useEffect, useState, useCallback, Suspense } from 'react';
 import {
   Box,
   Card,
@@ -54,6 +54,12 @@ import {
   type TableColumnOption,
   FileUploadDropzone,
 } from '@/components/ui';
+import {
+  DOCUMENT_SORT_FIELDS,
+  parseEpsListQuery,
+  serializeEpsListQuery,
+  type DocumentSortField,
+} from '@/lib/eps-list-query';
 
 interface DocumentItem {
   id: string;
@@ -97,67 +103,20 @@ function DocumentsListContent() {
 
   const [items, setItems] = useState<DocumentItem[]>([]);
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const initialQuery = parseEpsListQuery(new URLSearchParams(searchParams?.toString() || ''), DOCUMENT_SORT_FIELDS, 'date');
+  const [page, setPage] = useState(initialQuery.page);
+  const [pageSize, setPageSize] = useState(initialQuery.pageSize);
   const [loading, setLoading] = useState(true);
 
   // Sorting
-  const [sortField, setSortField] = useState<string>('date');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [sortField, setSortField] = useState<DocumentSortField>(initialQuery.sortBy);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(initialQuery.sortDirection);
 
-  const handleRequestSort = (property: string) => {
+  const handleRequestSort = (property: DocumentSortField) => {
     const isAsc = sortField === property && sortDirection === 'asc';
     setSortDirection(isAsc ? 'desc' : 'asc');
     setSortField(property);
   };
-
-  const sortedItems = useMemo(() => {
-    if (!sortField) return items;
-    return [...items].sort((a, b) => {
-      let aVal: any = '';
-      let bVal: any = '';
-      switch (sortField) {
-        case 'name':
-          aVal = a.originalName || a.fileName || '';
-          bVal = b.originalName || b.fileName || '';
-          break;
-        case 'equipment':
-          aVal = a.equipment?.name || a.equipment?.inventoryNumber || '';
-          bVal = b.equipment?.name || b.equipment?.inventoryNumber || '';
-          break;
-        case 'docType':
-          aVal = a.docType || '';
-          bVal = b.docType || '';
-          break;
-        case 'description':
-          aVal = a.description || '';
-          bVal = b.description || '';
-          break;
-        case 'size':
-          aVal = Number(a.fileSize || 0);
-          bVal = Number(b.fileSize || 0);
-          break;
-        case 'uploadedBy':
-          aVal = a.uploadedBy?.displayName || a.uploadedBy?.ldapLogin || '';
-          bVal = b.uploadedBy?.displayName || b.uploadedBy?.ldapLogin || '';
-          break;
-        case 'date':
-          aVal = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-          break;
-        default:
-          aVal = (a as any)[sortField] || '';
-          bVal = (b as any)[sortField] || '';
-      }
-
-      if (typeof aVal === 'number' && typeof bVal === 'number') {
-        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
-      }
-      return sortDirection === 'asc'
-        ? String(aVal).localeCompare(String(bVal), 'ru')
-        : String(bVal).localeCompare(String(aVal), 'ru');
-    });
-  }, [items, sortField, sortDirection]);
 
   // Filters
   const [search, setSearch] = useState(searchParams?.get('search') || '');
@@ -220,6 +179,8 @@ function DocumentsListContent() {
       if (search) params.append('search', search);
       if (docTypeFilter) params.append('docType', docTypeFilter);
       if (equipmentFilter) params.append('equipmentId', equipmentFilter);
+      params.set('sortBy', sortField);
+      params.set('sortDirection', sortDirection);
 
       const res = await fetch(`/api/eps/documents?${params.toString()}`);
       if (res.ok) {
@@ -237,7 +198,26 @@ function DocumentsListContent() {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, search, docTypeFilter, equipmentFilter, enqueueSnackbar]);
+  }, [page, pageSize, search, docTypeFilter, equipmentFilter, sortField, sortDirection, enqueueSnackbar]);
+
+  useEffect(() => {
+    const query = parseEpsListQuery(new URLSearchParams(searchParams?.toString() || ''), DOCUMENT_SORT_FIELDS, 'date');
+    setSearch(searchParams?.get('search') || '');
+    setDocTypeFilter(searchParams?.get('docType') || '');
+    setEquipmentFilter(searchParams?.get('equipmentId') || '');
+    setPage(query.page);
+    setPageSize(query.pageSize);
+    setSortField(query.sortBy);
+    setSortDirection(query.sortDirection);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const query = serializeEpsListQuery(
+      { page, pageSize, sortBy: sortField, sortDirection },
+      { search, docType: docTypeFilter, equipmentId: equipmentFilter },
+    ).toString();
+    if (query !== searchParams?.toString()) router.replace(`/eps/documents?${query}`);
+  }, [page, pageSize, sortField, sortDirection, search, docTypeFilter, equipmentFilter, router, searchParams]);
 
   const canAccessDocs =
     user?.roles?.includes('admin') ||
@@ -690,7 +670,7 @@ function DocumentsListContent() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedItems.map((doc) => (
+            {items.map((doc) => (
               <TableRow key={doc.id} hover>
                 {visibleColumns.includes('name') && (
                   <TableCell>

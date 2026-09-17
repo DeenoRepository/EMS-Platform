@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
+import React, { useEffect, useState, useCallback, Suspense } from 'react';
 import {
   Box,
   Card,
@@ -61,6 +61,12 @@ import {
   type TableColumnOption,
 } from '@/components/ui';
 import { ApprovalWizardDialog } from '@/components/eps';
+import {
+  APPROVAL_SORT_FIELDS,
+  parseEpsListQuery,
+  serializeEpsListQuery,
+  type ApprovalSortField,
+} from '@/lib/eps-list-query';
 
 interface ApprovalItem {
   id: string;
@@ -113,75 +119,20 @@ function ApprovalsListContent() {
   const [items, setItems] = useState<ApprovalItem[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const initialQuery = parseEpsListQuery(new URLSearchParams(searchParams?.toString() || ''), APPROVAL_SORT_FIELDS, 'date');
+  const [page, setPage] = useState(initialQuery.page);
+  const [pageSize, setPageSize] = useState(initialQuery.pageSize);
   const [loading, setLoading] = useState(true);
 
   // Sorting
-  const [sortField, setSortField] = useState<string>('date');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [sortField, setSortField] = useState<ApprovalSortField>(initialQuery.sortBy);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(initialQuery.sortDirection);
 
-  const handleRequestSort = (property: string) => {
+  const handleRequestSort = (property: ApprovalSortField) => {
     const isAsc = sortField === property && sortDirection === 'asc';
     setSortDirection(isAsc ? 'desc' : 'asc');
     setSortField(property);
   };
-
-  const sortedItems = useMemo(() => {
-    if (!sortField) return items;
-    return [...items].sort((a, b) => {
-      let aVal: any = '';
-      let bVal: any = '';
-      switch (sortField) {
-        case 'title':
-          aVal = a.title || '';
-          bVal = b.title || '';
-          break;
-        case 'inventoryNumber':
-          aVal = a.equipment?.inventoryNumber || '';
-          bVal = b.equipment?.inventoryNumber || '';
-          break;
-        case 'equipment':
-          aVal = a.equipment?.name || '';
-          bVal = b.equipment?.name || '';
-          break;
-        case 'manufacturer':
-          aVal = a.equipment?.manufacturer || '';
-          bVal = b.equipment?.manufacturer || '';
-          break;
-        case 'type':
-          aVal = a.type || '';
-          bVal = b.type || '';
-          break;
-        case 'status':
-          aVal = a.status || '';
-          bVal = b.status || '';
-          break;
-        case 'requester':
-          aVal = a.requester?.displayName || '';
-          bVal = b.requester?.displayName || '';
-          break;
-        case 'date':
-          aVal = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-          break;
-        case 'reviewer':
-          aVal = a.reviewer?.displayName || '';
-          bVal = b.reviewer?.displayName || '';
-          break;
-        default:
-          aVal = (a as any)[sortField] || '';
-          bVal = (b as any)[sortField] || '';
-      }
-
-      if (typeof aVal === 'number' && typeof bVal === 'number') {
-        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
-      }
-      return sortDirection === 'asc'
-        ? String(aVal).localeCompare(String(bVal), 'ru')
-        : String(bVal).localeCompare(String(aVal), 'ru');
-    });
-  }, [items, sortField, sortDirection]);
 
   const canAccessApprovals =
     user?.roles?.includes('admin') ||
@@ -265,6 +216,8 @@ function ApprovalsListContent() {
       if (equipmentFilter) params.append('equipmentId', equipmentFilter);
       if (scopeTab === 'to_review') params.append('scope', 'to_review');
       if (scopeTab === 'my_requests') params.append('scope', 'my_requests');
+      params.set('sortBy', sortField);
+      params.set('sortDirection', sortDirection);
 
       const res = await fetch(`/api/eps/approvals?${params.toString()}`);
       if (res.ok) {
@@ -283,7 +236,28 @@ function ApprovalsListContent() {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, search, statusFilter, typeFilter, equipmentFilter, scopeTab, enqueueSnackbar]);
+  }, [page, pageSize, search, statusFilter, typeFilter, equipmentFilter, scopeTab, sortField, sortDirection, enqueueSnackbar]);
+
+  useEffect(() => {
+    const query = parseEpsListQuery(new URLSearchParams(searchParams?.toString() || ''), APPROVAL_SORT_FIELDS, 'date');
+    setSearch(searchParams?.get('search') || '');
+    setStatusFilter(searchParams?.get('status') || '');
+    setTypeFilter(searchParams?.get('type') || '');
+    setEquipmentFilter(searchParams?.get('equipmentId') || '');
+    setScopeTab((searchParams?.get('scope') as 'all' | 'to_review' | 'my_requests') || 'all');
+    setPage(query.page);
+    setPageSize(query.pageSize);
+    setSortField(query.sortBy);
+    setSortDirection(query.sortDirection);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const query = serializeEpsListQuery(
+      { page, pageSize, sortBy: sortField, sortDirection },
+      { search, status: statusFilter, type: typeFilter, equipmentId: equipmentFilter, scope: scopeTab === 'all' ? undefined : scopeTab },
+    ).toString();
+    if (query !== searchParams?.toString()) router.replace(`/eps/approvals?${query}`);
+  }, [page, pageSize, sortField, sortDirection, search, statusFilter, typeFilter, equipmentFilter, scopeTab, router, searchParams]);
 
   useEffect(() => {
     if (canAccessApprovals) {
@@ -811,7 +785,7 @@ function ApprovalsListContent() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedItems.map((app) => {
+            {items.map((app) => {
               const isPending = app.status === 'PENDING';
               const isRequester = user?.userId === app.requesterId;
 

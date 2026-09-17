@@ -4,6 +4,11 @@ import { prisma, ApprovalStatus, ApprovalType, Prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { z } from 'zod';
+import {
+  APPROVAL_SORT_FIELDS,
+  buildApprovalOrderBy,
+  parseEpsListQuery,
+} from '@/lib/eps-list-query';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,8 +26,7 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
-    const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '25', 10)));
+     const { page, pageSize, sortBy, sortDirection } = parseEpsListQuery(searchParams, APPROVAL_SORT_FIELDS, 'date');
     const status = searchParams.get('status')?.trim() || '';
     const type = searchParams.get('type')?.trim() || '';
     const equipmentId = searchParams.get('equipmentId')?.trim() || '';
@@ -100,7 +104,7 @@ export async function GET(req: NextRequest) {
             },
           },
         },
-        orderBy: { createdAt: 'desc' },
+         orderBy: buildApprovalOrderBy(sortBy, sortDirection),
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),

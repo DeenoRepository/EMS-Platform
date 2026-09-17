@@ -3,6 +3,11 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma, AuditAction } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
+import {
+  buildHistoryOrderBy,
+  HISTORY_SORT_FIELDS,
+  parseEpsListQuery,
+} from '@/lib/eps-list-query';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,8 +20,7 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
-    const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '25', 10)));
+     const { page, pageSize, sortBy, sortDirection } = parseEpsListQuery(searchParams, HISTORY_SORT_FIELDS, 'createdAt');
     const action = searchParams.get('action')?.trim() || '';
     const equipmentId = searchParams.get('equipmentId')?.trim() || '';
     const userId = searchParams.get('userId')?.trim() || '';
@@ -79,7 +83,7 @@ export async function GET(req: NextRequest) {
             },
           },
         },
-        orderBy: { createdAt: 'desc' },
+         orderBy: buildHistoryOrderBy(sortBy, sortDirection),
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),

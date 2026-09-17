@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
+import React, { useEffect, useState, useCallback, Suspense } from 'react';
 import {
   Box,
   Card,
@@ -57,6 +57,12 @@ import {
   FormDialog,
   type TableColumnOption,
 } from '@/components/ui';
+import {
+  HISTORY_SORT_FIELDS,
+  parseEpsListQuery,
+  serializeEpsListQuery,
+  type HistorySortField,
+} from '@/lib/eps-list-query';
 
 interface AuditLogItem {
   id: string;
@@ -178,59 +184,20 @@ function HistoryListContent() {
 
   const [items, setItems] = useState<AuditLogItem[]>([]);
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const initialQuery = parseEpsListQuery(new URLSearchParams(searchParams?.toString() || ''), HISTORY_SORT_FIELDS, 'createdAt');
+  const [page, setPage] = useState(initialQuery.page);
+  const [pageSize, setPageSize] = useState(initialQuery.pageSize);
   const [loading, setLoading] = useState(true);
 
   // Sorting
-  const [sortField, setSortField] = useState<string>('createdAt');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [sortField, setSortField] = useState<HistorySortField>(initialQuery.sortBy);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(initialQuery.sortDirection);
 
-  const handleRequestSort = (property: string) => {
+  const handleRequestSort = (property: HistorySortField) => {
     const isAsc = sortField === property && sortDirection === 'asc';
     setSortDirection(isAsc ? 'desc' : 'asc');
     setSortField(property);
   };
-
-  const sortedItems = useMemo(() => {
-    if (!sortField) return items;
-    return [...items].sort((a, b) => {
-      let aVal: any = '';
-      let bVal: any = '';
-      switch (sortField) {
-        case 'createdAt':
-          aVal = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-          break;
-        case 'user':
-          aVal = a.user?.displayName || a.user?.ldapLogin || '';
-          bVal = b.user?.displayName || b.user?.ldapLogin || '';
-          break;
-        case 'action':
-          aVal = a.action || '';
-          bVal = b.action || '';
-          break;
-        case 'entityType':
-          aVal = a.entityType || '';
-          bVal = b.entityType || '';
-          break;
-        case 'equipment':
-          aVal = a.equipment?.name || a.equipment?.inventoryNumber || '';
-          bVal = b.equipment?.name || b.equipment?.inventoryNumber || '';
-          break;
-        default:
-          aVal = (a as any)[sortField] || '';
-          bVal = (b as any)[sortField] || '';
-      }
-
-      if (typeof aVal === 'number' && typeof bVal === 'number') {
-        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
-      }
-      return sortDirection === 'asc'
-        ? String(aVal).localeCompare(String(bVal), 'ru')
-        : String(bVal).localeCompare(String(aVal), 'ru');
-    });
-  }, [items, sortField, sortDirection]);
 
   // Filters
   const [search, setSearch] = useState(searchParams?.get('search') || '');
@@ -286,6 +253,8 @@ function HistoryListContent() {
       if (equipmentFilter) params.append('equipmentId', equipmentFilter);
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
+      params.set('sortBy', sortField);
+      params.set('sortDirection', sortDirection);
 
       const res = await fetch(`/api/eps/history?${params.toString()}`);
       if (res.ok) {
@@ -303,7 +272,28 @@ function HistoryListContent() {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, search, actionFilter, equipmentFilter, startDate, endDate, enqueueSnackbar]);
+  }, [page, pageSize, search, actionFilter, equipmentFilter, startDate, endDate, sortField, sortDirection, enqueueSnackbar]);
+
+  useEffect(() => {
+    const query = parseEpsListQuery(new URLSearchParams(searchParams?.toString() || ''), HISTORY_SORT_FIELDS, 'createdAt');
+    setSearch(searchParams?.get('search') || '');
+    setActionFilter(searchParams?.get('action') || '');
+    setEquipmentFilter(searchParams?.get('equipmentId') || '');
+    setStartDate(searchParams?.get('startDate') || '');
+    setEndDate(searchParams?.get('endDate') || '');
+    setPage(query.page);
+    setPageSize(query.pageSize);
+    setSortField(query.sortBy);
+    setSortDirection(query.sortDirection);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const query = serializeEpsListQuery(
+      { page, pageSize, sortBy: sortField, sortDirection },
+      { search, action: actionFilter, equipmentId: equipmentFilter, startDate, endDate },
+    ).toString();
+    if (query !== searchParams?.toString()) router.replace(`/eps/history?${query}`);
+  }, [page, pageSize, sortField, sortDirection, search, actionFilter, equipmentFilter, startDate, endDate, router, searchParams]);
 
   useEffect(() => {
     fetchHistory();
@@ -643,7 +633,7 @@ function HistoryListContent() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedItems.map((log) => {
+            {items.map((log) => {
               const eq = log.equipment;
               const hasDiff = log.changes && Object.keys(log.changes).length > 0;
 
