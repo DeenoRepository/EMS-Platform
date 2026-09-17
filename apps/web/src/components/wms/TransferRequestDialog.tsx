@@ -100,10 +100,10 @@ export default function TransferRequestDialog({
         .then((json) => {
           if (json.success && Array.isArray(json.data)) {
             setWarehouses(json.data);
-            const myWh = json.data.find((w: any) => w.responsibleUserId === user?.userId) || json.data[0];
+            const myWh = json.data.find((w: any) => w.responsibleUserId === user?.userId);
             if (myWh) {
               setTargetWarehouseId(myWh.id);
-              const firstDonor = json.data.find((w: any) => w.id !== myWh.id);
+              const firstDonor = json.data.find((w: any) => w.id !== myWh.id && w.isActive !== false);
               if (firstDonor) {
                 setSourceWarehouseId(firstDonor.id);
               }

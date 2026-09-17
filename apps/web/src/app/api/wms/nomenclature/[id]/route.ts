@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { getCurrentUser, requireAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
@@ -49,11 +49,9 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await getCurrentUser(req);
-    if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE) && !user.roles?.includes('admin')) {
-      return forbiddenResponse();
-    }
+    const auth = await requireAuth(req, PERMISSIONS.WMS_NOMENCLATURE_MANAGE);
+    if (auth.errorResponse) return auth.errorResponse;
+    const { user } = auth;
 
     const body = await req.json();
     const { name, article, unit, categoryId, description, minStock } = body;

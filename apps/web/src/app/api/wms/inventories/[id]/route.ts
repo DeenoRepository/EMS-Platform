@@ -217,7 +217,7 @@ export async function PATCH(
           }
         }
 
-      });
+      }, { isolationLevel: 'Serializable' });
 
       await logAuditEvent({
         userId: user.userId,

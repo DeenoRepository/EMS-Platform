@@ -103,28 +103,41 @@ export async function POST(req: NextRequest) {
     }
 
     // Пользователь с правом WMS_INVENTORY_MANAGE может проводить инвентаризацию на любом складе
-    const inventory = await prisma.inventory.create({
-      data: {
-        warehouseId,
-        status: InventoryStatus.IN_PROGRESS,
-        comment: comment?.trim() || null,
-        createdById: user.userId,
-        items: {
-          create: warehouse.stockItems.map((si) => ({
-            nomenclatureId: si.nomenclatureId,
-            expectedQty: si.quantity,
-            actualQty: null,
-            diffQty: null,
-          })),
+    const inventory = await prisma.$transaction(async (tx) => {
+      const activeInventory = await tx.inventory.findFirst({
+        where: {
+          warehouseId,
+          status: { in: [InventoryStatus.DRAFT, InventoryStatus.IN_PROGRESS] },
         },
-      },
-      include: {
-        warehouse: true,
-        items: {
-          include: { nomenclature: true },
+        select: { id: true },
+      });
+      if (activeInventory) {
+        throw new Error('ACTIVE_INVENTORY_EXISTS');
+      }
+
+      return tx.inventory.create({
+        data: {
+          warehouseId,
+          status: InventoryStatus.IN_PROGRESS,
+          comment: comment?.trim() || null,
+          createdById: user.userId,
+          items: {
+            create: warehouse.stockItems.map((si) => ({
+              nomenclatureId: si.nomenclatureId,
+              expectedQty: si.quantity,
+              actualQty: null,
+              diffQty: null,
+            })),
+          },
         },
-      },
-    });
+        include: {
+          warehouse: true,
+          items: {
+            include: { nomenclature: true },
+          },
+        },
+      });
+    }, { isolationLevel: 'Serializable' });
 
     await logAuditEvent({
       userId: user.userId,
@@ -137,6 +150,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, data: inventory });
   } catch (error: any) {
     console.error('Ошибка создания инвентаризации:', error);
+    if (error?.message === 'ACTIVE_INVENTORY_EXISTS') {
+      return NextResponse.json(
+        { success: false, error: 'Для этого склада уже существует незавершенная инвентаризация' },
+        { status: 409 }
+      );
+    }
     return NextResponse.json({ success: false, error: 'Ошибка создания акта инвентаризации' }, { status: 500 });
   }
 }

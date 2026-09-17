@@ -59,14 +59,18 @@ export async function requireAuth(
   if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
     const origin = req.headers.get('origin');
     const host = req.headers.get('host');
+    const hasBearerToken = req.headers.get('authorization')?.startsWith('Bearer ') ?? false;
+    if (!hasBearerToken && (!origin || !host)) {
+        return { errorResponse: forbiddenResponse('Для изменения данных требуется проверка источника запроса') };
+    }
     if (origin && host) {
       try {
         const originUrl = new URL(origin);
-        if (originUrl.host !== host && !origin.includes('localhost')) {
+        if (originUrl.host !== host) {
           return { errorResponse: forbiddenResponse('Недопустимый источник запроса (CSRF protection)') };
         }
       } catch {
-        // Ignore parsing errors for custom local environments
+        return { errorResponse: forbiddenResponse('Недопустимый источник запроса (CSRF protection)') };
       }
     }
   }

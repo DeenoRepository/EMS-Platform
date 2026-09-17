@@ -53,6 +53,7 @@ interface WarehouseOption {
   name: string;
   code: string;
   responsibleUserId?: string | null;
+  isActive?: boolean;
   responsibleUser?: {
     id: string;
     displayName: string;
@@ -305,7 +306,7 @@ export function WmsOperationWizardDialog({
           if (transferWhData.success && transferWhData.data) {
             setTransferWarehouses(transferWhData.data);
             const userWh = whData.data?.find((w: WarehouseOption) => w.responsibleUserId === user?.userId) || (isAdmin ? whData.data?.[0] : null);
-            const targetWh = transferWhData.data.find((w: WarehouseOption) => w.id !== userWh?.id) || transferWhData.data[0];
+            const targetWh = transferWhData.data.find((w: WarehouseOption) => w.id !== userWh?.id && w.isActive !== false);
             if (targetWh) {
               setTargetWarehouseId(targetWh.id);
             }

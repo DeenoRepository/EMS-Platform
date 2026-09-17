@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
       userWarehouseIds = [warehouseId];
     } else if (!isAdmin) {
       const userWhs = await prisma.warehouse.findMany({
-        where: { responsibleUserId: user.userId },
+        where: { responsibleUserId: user.userId, isActive: true, deletedAt: null },
         select: { id: true },
       });
       userWarehouseIds = userWhs.map((w) => w.id);

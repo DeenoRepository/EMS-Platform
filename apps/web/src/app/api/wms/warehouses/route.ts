@@ -14,12 +14,12 @@ export async function GET(req: NextRequest) {
     if (!hasPermission(user, PERMISSIONS.WMS_STOCK_VIEW)) return forbiddenResponse();
 
     const { searchParams } = new URL(req.url);
-    const forManage = searchParams.get('forManage') === 'true';
+    const forTransfer = searchParams.get('forTransfer') === 'true';
 
     const isAdmin = isWmsAdmin(user);
 
     const where: any = { deletedAt: null, isActive: true };
-    if (!isAdmin) {
+    if (!isAdmin && !forTransfer) {
       where.responsibleUserId = user.userId;
     }
 

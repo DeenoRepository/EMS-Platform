@@ -25,6 +25,13 @@ export async function GET(req: NextRequest) {
 
     const where: any = {};
     if (warehouseId) {
+      if (!isAdmin) {
+        const assignedWarehouse = await prisma.warehouse.findFirst({
+          where: { id: warehouseId, responsibleUserId: user.userId, isActive: true, deletedAt: null },
+          select: { id: true },
+        });
+        if (!assignedWarehouse) return forbiddenResponse('Нет доступа к выбранному складу');
+      }
       where.warehouseId = warehouseId;
     } else if (!isAdmin) {
       const assignedWarehouses = await prisma.warehouse.findMany({

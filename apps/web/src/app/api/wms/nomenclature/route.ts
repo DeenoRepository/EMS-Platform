@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { getCurrentUser, requireAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { parseStockQuantity } from '@/lib/wms-validation';
+import { isWmsAdmin } from '@/lib/wms-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +19,15 @@ export async function GET(req: NextRequest) {
     const categoryId = searchParams.get('categoryId')?.trim() || '';
     const limit = Math.min(5000, Math.max(1, parseInt(searchParams.get('limit') || '1000', 10)));
 
-    const where: any = {};
+    const admin = isWmsAdmin(user);
+    const accessibleWarehouseIds = admin
+      ? null
+      : (await prisma.warehouse.findMany({
+          where: { responsibleUserId: user.userId, isActive: true, deletedAt: null },
+          select: { id: true },
+        })).map((warehouse) => warehouse.id);
+
+    const where: any = { deletedAt: null };
     if (categoryId) {
       where.categoryId = categoryId;
     }
@@ -47,9 +56,13 @@ export async function GET(req: NextRequest) {
 
     // Обогащаем суммарным остатком по всем складам
     const enriched = items.map((item) => {
-      const totalStock = item.stockItems.reduce((sum, si) => sum + Number(si.quantity), 0);
+      const visibleStockItems = admin
+        ? item.stockItems
+        : item.stockItems.filter((stockItem) => accessibleWarehouseIds?.includes(stockItem.warehouseId));
+      const totalStock = visibleStockItems.reduce((sum, si) => sum + Number(si.quantity), 0);
       return {
         ...item,
+        stockItems: visibleStockItems,
         totalStock,
         isLowStock: item.minStock !== null && totalStock <= Number(item.minStock),
       };
@@ -64,11 +77,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await getCurrentUser(req);
-    if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE) && !hasPermission(user, PERMISSIONS.WMS_OPERATIONS_CREATE)) {
-      return forbiddenResponse();
-    }
+    const auth = await requireAuth(req, [PERMISSIONS.WMS_NOMENCLATURE_MANAGE, PERMISSIONS.WMS_OPERATIONS_CREATE]);
+    if (auth.errorResponse) return auth.errorResponse;
+    const { user } = auth;
 
     const body = await req.json();
     const { name, article, unit, categoryId, description, minStock } = body;
