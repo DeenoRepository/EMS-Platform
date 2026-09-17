@@ -180,6 +180,17 @@ export async function POST(req: NextRequest) {
       return forbiddenResponse(`Вы не являетесь ответственным лицом за склад "${warehouse.name}". Выполнение операций разрешено только назначенному материально ответственному лицу.`);
     }
 
+    const cellIds = items.map((item) => item.cellId).filter((cellId): cellId is string => Boolean(cellId));
+    if (cellIds.length > 0) {
+      const cells = await prisma.storageCell.findMany({
+        where: { id: { in: cellIds } },
+        include: { zone: { select: { warehouseId: true } } },
+      });
+      if (cells.length !== new Set(cellIds).size || cells.some((cell) => cell.zone.warehouseId !== warehouseId)) {
+        return NextResponse.json({ success: false, error: 'Каждая ячейка должна принадлежать складу операции' }, { status: 400 });
+      }
+    }
+
     // Выполняем транзакцию изменения остатков с жестким контролем
     const lowStockAlerts: { nomenclatureName: string; currentQty: number; minStock: number }[] = [];
 

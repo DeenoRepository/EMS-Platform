@@ -147,6 +147,7 @@ function WmsOperationsContent() {
 
   // Transfers sub-tab
   const [transferTab, setTransferTab] = useState<'inbound' | 'requests' | 'outbound' | 'my_requests' | 'all'>('inbound');
+  const initialNomenclatureId = searchParams.get('nomenclatureId') || undefined;
 
   // Operations Data State
   const [operations, setOperations] = useState<StockOperation[]>([]);
@@ -181,6 +182,15 @@ function WmsOperationsContent() {
 
   // Handle URL actions
   useEffect(() => {
+    const tab = searchParams.get('tab');
+    const mode = searchParams.get('mode');
+    if (tab === 'operations' || tab === 'transfers') setActiveMainTab(tab);
+    if (mode === 'inbound' || mode === 'requests' || mode === 'outbound' || mode === 'my_requests' || mode === 'all') {
+      setTransferTab(mode);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     const action = searchParams.get('action') || searchParams.get('create');
     if (action) {
       if (action === 'RECEIPT') {
@@ -196,8 +206,9 @@ function WmsOperationsContent() {
         setWizardType('TRANSFER');
         setIsWizardOpen(true);
       }
+      router.replace('/wms/operations?tab=' + (action === 'TRANSFER' ? 'transfers' : 'operations'), { scroll: false });
     }
-  }, [searchParams]);
+  }, [searchParams, router]);
 
   // Fetch Operations
   const fetchOperations = useCallback(async () => {
@@ -412,6 +423,7 @@ function WmsOperationsContent() {
               variant="outlined"
               startIcon={<SendIcon />}
               onClick={() => setIsRequestDialogOpen(true)}
+              disabled={!hasPermission(PERMISSIONS.WMS_OPERATIONS_CREATE)}
               sx={{
                 height: 36,
                 px: 2,
@@ -456,7 +468,7 @@ function WmsOperationsContent() {
             value={activeMainTab}
             onChange={(val) => {
               setActiveMainTab(val as 'operations' | 'transfers');
-              router.push(`/wms/operations?tab=${val}`, { scroll: false });
+              router.push(`/wms/operations?tab=${val}${val === 'transfers' ? '&mode=inbound' : ''}`, { scroll: false });
             }}
           />
         }
@@ -1018,6 +1030,7 @@ function WmsOperationsContent() {
         open={isWizardOpen}
         onClose={() => setIsWizardOpen(false)}
         initialType={wizardType}
+        initialNomenclatureId={initialNomenclatureId}
         onSuccess={() => {
           if (activeMainTab === 'operations') {
             fetchOperations();
@@ -1034,6 +1047,8 @@ function WmsOperationsContent() {
         onSuccess={() => {
           fetchTransfers();
           setActiveMainTab('transfers');
+          setTransferTab('my_requests');
+          router.replace('/wms/operations?tab=transfers&mode=my_requests', { scroll: false });
         }}
       />
 

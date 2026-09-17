@@ -79,15 +79,20 @@ export async function POST(
       for (const item of transfer.items) {
         const qtyToReceive = Number(item.quantity);
         const cellAlloc = cellAllocations.find((c) => c.itemId === item.id);
-        const targetCellId = cellAlloc?.targetCellId || item.targetCellId || null;
+        const targetCellId = cellAlloc ? cellAlloc.targetCellId ?? null : item.targetCellId ?? null;
+
+        if (targetCellId) {
+          const targetCell = await tx.storageCell.findUnique({
+            where: { id: targetCellId },
+            include: { zone: { select: { warehouseId: true } } },
+          });
+          if (!targetCell || targetCell.zone.warehouseId !== transfer.targetWarehouseId) {
+            throw new Error('Ячейка назначения не принадлежит целевому складу');
+          }
+        }
 
         // Если указана ячейка, обновляем ее в строке перемещения
-        if (targetCellId) {
-          await tx.stockTransferItem.update({
-            where: { id: item.id },
-            data: { targetCellId },
-          });
-        }
+        await tx.stockTransferItem.update({ where: { id: item.id }, data: { targetCellId } });
 
         // Зачисляем остаток на склад-получатель
         const existingStock = await tx.stockItem.findUnique({
@@ -104,7 +109,7 @@ export async function POST(
             where: { id: existingStock.id },
             data: {
               quantity: { increment: qtyToReceive },
-              cellId: targetCellId || existingStock.cellId,
+              ...(targetCellId !== null ? { cellId: targetCellId } : {}),
             },
           });
         } else {

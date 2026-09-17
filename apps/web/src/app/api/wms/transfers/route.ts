@@ -326,6 +326,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const targetCellIds = normalizedItems.map((item) => item.targetCellId).filter((cellId): cellId is string => Boolean(cellId));
+    if (targetCellIds.length > 0) {
+      const cells = await prisma.storageCell.findMany({
+        where: { id: { in: targetCellIds } },
+        include: { zone: { select: { warehouseId: true } } },
+      });
+      if (cells.length !== new Set(targetCellIds).size || cells.some((cell) => cell.zone.warehouseId !== targetWarehouseId)) {
+        return NextResponse.json({ success: false, error: 'Каждая ячейка назначения должна принадлежать целевому складу' }, { status: 400 });
+      }
+    }
+
     const isAdmin = isWmsAdmin(user);
 
     // Проверка складов
