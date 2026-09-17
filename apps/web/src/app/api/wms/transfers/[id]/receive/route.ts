@@ -167,7 +167,7 @@ export async function POST(
         action: 'RECEIPT_CONFIRMED',
         transferNumber: transfer.transferNumber,
       },
-    });
+    }).catch((error) => console.error('Не удалось записать аудит приемки:', error));
 
     // Отправляем уведомление МОЛ склада-отправителя
     const senderUserId = transfer.sourceWarehouse.responsibleUserId || transfer.dispatchedById;

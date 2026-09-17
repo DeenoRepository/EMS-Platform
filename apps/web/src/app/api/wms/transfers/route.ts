@@ -458,7 +458,7 @@ export async function POST(req: NextRequest) {
           to: targetWh.name,
           itemsCount: items.length,
         },
-      });
+      }).catch((error) => console.error('Не удалось записать аудит перемещения:', error));
 
       // Отправляем уведомление МОЛ склада-получателя об отгрузке
       if (targetWh.responsibleUserId && targetWh.responsibleUserId !== user.userId) {
@@ -515,7 +515,7 @@ export async function POST(req: NextRequest) {
           to: targetWh.name,
           itemsCount: items.length,
         },
-      });
+      }).catch((error) => console.error('Не удалось записать аудит заявки:', error));
 
       // Отправляем уведомление МОЛ склада-донора о новом запросе
       if (sourceWh.responsibleUserId && sourceWh.responsibleUserId !== user.userId) {

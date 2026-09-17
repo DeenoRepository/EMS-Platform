@@ -228,7 +228,7 @@ export async function PATCH(
           status: 'COMPLETED',
           discrepanciesCount,
         },
-      });
+      }).catch((error) => console.error('Не удалось записать аудит инвентаризации:', error));
 
       return NextResponse.json({
         success: true,

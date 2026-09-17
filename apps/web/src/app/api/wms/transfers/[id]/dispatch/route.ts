@@ -114,7 +114,7 @@ export async function POST(
         action: 'DISPATCH_APPROVED',
         transferNumber: transfer.transferNumber,
       },
-    });
+    }).catch((error) => console.error('Не удалось записать аудит отгрузки:', error));
 
     // Отправляем уведомление МОЛ склада-получателя (или создателю запроса)
     const recipientUserId = transfer.targetWarehouse.responsibleUserId || transfer.createdById;

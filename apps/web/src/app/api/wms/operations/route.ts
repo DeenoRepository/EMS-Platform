@@ -369,7 +369,7 @@ export async function POST(req: NextRequest) {
           type: 'LOW_STOCK',
           link: '/wms/stock?lowStockOnly=true',
         },
-      });
+      }).catch((error) => console.error('Не удалось создать уведомление о дефиците:', error));
     }
 
     // 5. Логирование аудита
@@ -378,13 +378,8 @@ export async function POST(req: NextRequest) {
       action: 'CREATE',
       entityType: 'StockOperation',
       entityId: operation.id,
-      changes: {
-        warehouseId,
-        type,
-        itemsCount: items.length,
-        document,
-      },
-    });
+      changes: { warehouseId, type, itemsCount: items.length, document },
+    }).catch((error) => console.error('Не удалось записать аудит складской операции:', error));
 
     return NextResponse.json({ success: true, data: operation });
   } catch (error: any) {

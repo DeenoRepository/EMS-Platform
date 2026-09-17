@@ -137,7 +137,7 @@ export async function POST(
         transferNumber: transfer.transferNumber,
         reason,
       },
-    });
+    }).catch((error) => console.error('Не удалось записать аудит отклонения:', error));
 
     // Отправляем уведомление инициатору
     const isStockRestored = transfer.status === StockTransferStatus.IN_TRANSIT;
