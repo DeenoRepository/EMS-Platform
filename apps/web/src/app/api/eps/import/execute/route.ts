@@ -63,6 +63,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Стратегия FULL_REPLACE отключена из соображений безопасности' }, { status: 400 });
     }
 
+    const canManageDirectly = hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) || user.roles.includes('admin');
+
     // Step 1: Create or find Custom Sections & Fields in Dictionary
     const newlyCreatedFields: any[] = [];
     const sectionCache = new Map<string, string>(); // code/name -> id
@@ -254,16 +256,51 @@ export async function POST(req: NextRequest) {
             continue;
           }
 
-          // UPSERT Strategy: Update existing equipment
           const mergedCustom = {
             ...((existingEquipment.customFields as Record<string, any>) || {}),
             ...customFieldsObj,
           };
 
-            await db.equipment.update({
+          if (!canManageDirectly) {
+            const approval = await db.equipmentApproval.create({
+              data: {
+                 equipmentId: existingEquipment.id,
+                 type: 'PARAMETER_CHANGE',
+                 status: 'PENDING',
+                 title: `Изменения из импорта: ${nameVal}`,
+                 description: 'Изменения оборудования направлены на согласование из обычного импорта',
+                 proposedData: {
+                   name: nameVal || existingEquipment.name,
+                   inventoryNumber: invVal !== null ? invVal : existingEquipment.inventoryNumber,
+                   serialNumber: snVal || existingEquipment.serialNumber,
+                   manufacturer: mfgVal || existingEquipment.manufacturer,
+                   model: modelVal || existingEquipment.model,
+                   location: locVal || existingEquipment.location,
+                   status: statusVal,
+                  commissionDate: (commDateVal as Date | null)?.toISOString() || null,
+                  customFields: mergedCustom,
+                   tagIds: tagIdsToLink,
+                 },
+                 requesterId: user.userId,
+               },
+             });
+             await logAuditEvent({
+               userId: user.userId,
+               action: 'CREATE',
+               entityType: 'EquipmentApproval',
+               entityId: approval.id,
+               changes: { equipmentId: existingEquipment.id, source: 'equipment-import' },
+             });
+             updatedCount++;
+            continue;
+          }
+
+          // UPSERT Strategy: update existing equipment for approval managers.
+          await db.equipment.update({
             where: { id: existingEquipment.id },
             data: {
               name: nameVal || existingEquipment.name,
+              inventoryNumber: invVal !== null ? invVal : existingEquipment.inventoryNumber,
               serialNumber: snVal || existingEquipment.serialNumber,
               manufacturer: mfgVal || existingEquipment.manufacturer,
               model: modelVal || existingEquipment.model,
@@ -296,14 +333,45 @@ export async function POST(req: NextRequest) {
               manufacturer: mfgVal,
               model: modelVal,
               location: locVal,
-              status: statusVal,
+              status: canManageDirectly ? statusVal : 'DRAFT',
               commissionDate: commDateVal,
               customFields: Object.keys(customFieldsObj).length > 0 ? customFieldsObj : undefined,
               createdById: user.userId,
             },
           });
 
-          // Link tags
+           if (!canManageDirectly) {
+             const approval = await db.equipmentApproval.create({
+               data: {
+                 equipmentId: newEq.id,
+                 type: 'COMMISSIONING',
+                 status: 'PENDING',
+                 title: `Регистрация оборудования: ${newEq.name}`,
+                 description: 'Оборудование направлено на согласование из обычного импорта',
+                 proposedData: {
+                   targetStatus: statusVal,
+                   name: newEq.name,
+                   inventoryNumber: newEq.inventoryNumber,
+                   serialNumber: newEq.serialNumber,
+                   manufacturer: newEq.manufacturer,
+                   model: newEq.model,
+                   location: newEq.location,
+                   commissionDate: (commDateVal as Date | null)?.toISOString() || null,
+                   customFields: newEq.customFields,
+                 },
+                 requesterId: user.userId,
+               },
+             });
+             await logAuditEvent({
+               userId: user.userId,
+               action: 'CREATE',
+               entityType: 'EquipmentApproval',
+               entityId: approval.id,
+               changes: { equipmentId: newEq.id, source: 'equipment-import' },
+             });
+           }
+
+           // Link tags
           if (tagIdsToLink.length > 0) {
             await db.equipmentTag.createMany({
               data: tagIdsToLink.map((tagId) => ({ equipmentId: newEq.id, tagId })),

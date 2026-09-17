@@ -3,9 +3,13 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
+import { enforceRateLimit } from '@/lib/rate-limit';
 import * as XLSX from 'xlsx';
 
 export const dynamic = 'force-dynamic';
+
+const MAX_IMPORT_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_IMPORT_ROWS = 10_000;
 
 interface ColumnMatchRule {
   targetKey: string;
@@ -356,6 +360,9 @@ function makeEnglishSlug(str: string): string {
 }
 
 export async function POST(req: NextRequest) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 10, windowMs: 60 * 1000, prefix: 'eps-import-analyze' });
+  if (rateLimitError) return rateLimitError;
+
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
@@ -368,6 +375,9 @@ export async function POST(req: NextRequest) {
 
     if (!file) {
       return NextResponse.json({ success: false, error: 'Файл не загружен' }, { status: 400 });
+    }
+    if (file.size > MAX_IMPORT_FILE_SIZE) {
+      return NextResponse.json({ success: false, error: 'Размер файла превышает допустимый лимит (10 МБ)' }, { status: 413 });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -391,6 +401,9 @@ export async function POST(req: NextRequest) {
 
     if (rawJsonRows.length === 0) {
       return NextResponse.json({ success: false, error: 'Файл пуст или не содержит строк' }, { status: 400 });
+    }
+    if (rawJsonRows.length > MAX_IMPORT_ROWS) {
+      return NextResponse.json({ success: false, error: 'Количество строк превышает допустимый лимит (10000)' }, { status: 413 });
     }
 
     // Extract headers
