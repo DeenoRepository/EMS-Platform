@@ -1,0 +1,2771 @@
+diff --git a/apps/web/src/app/api/admin/roles/[id]/route.ts b/apps/web/src/app/api/admin/roles/[id]/route.ts
+index 27c94d2..5c01865 100644
+--- a/apps/web/src/app/api/admin/roles/[id]/route.ts
++++ b/apps/web/src/app/api/admin/roles/[id]/route.ts
+@@ -3,9 +3,16 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
+ import { prisma } from '@ems/database';
+ import { PERMISSIONS } from '@ems/shared';
+ import { hasPermission, logAuditEvent } from '@ems/auth';
++import { z } from 'zod';
+ 
+ export const dynamic = 'force-dynamic';
+ 
++const updateSchema = z.object({
++  displayName: z.string().optional(),
++  description: z.string().nullable().optional(),
++  permissionCodes: z.array(z.string()).optional(),
++});
++
+ export async function PATCH(
+   req: NextRequest,
+   { params }: { params: { id: string } }
+@@ -16,33 +23,34 @@ export async function PATCH(
+     if (!hasPermission(user, PERMISSIONS.ADMIN_ROLES_MANAGE)) return forbiddenResponse();
+ 
+     const { id } = params;
+-    const body = await req.json();
+-    const { displayName, description, permissionCodes } = body;
++    const { displayName, description, permissionCodes } = updateSchema.parse(await req.json());
+ 
+     const role = await prisma.role.findUnique({ where: { id } });
+     if (!role) {
+       return NextResponse.json({ success: false, error: 'Роль не найдена' }, { status: 404 });
+     }
+ 
+-    // Если передан список кодов прав, обновляем связи
+-    if (Array.isArray(permissionCodes)) {
+-      const perms = await prisma.permission.findMany({
+-        where: { code: { in: permissionCodes } },
+-      });
++    const updatedRole = await prisma.$transaction(async (tx) => {
++      if (Array.isArray(permissionCodes)) {
++        const uniqueCodes = [...new Set(permissionCodes)];
++        const perms = await tx.permission.findMany({ where: { code: { in: uniqueCodes } } });
++        if (perms.length !== uniqueCodes.length) {
++          throw new Error('Передан неизвестный код разрешения');
++        }
+ 
+-      // Удаляем старые связи и вставляем новые
+-      await prisma.rolePermission.deleteMany({ where: { roleId: id } });
+-      await prisma.rolePermission.createMany({
+-        data: perms.map((p) => ({ roleId: id, permissionId: p.id })),
+-      });
+-    }
++        await tx.rolePermission.deleteMany({ where: { roleId: id } });
++        await tx.rolePermission.createMany({
++          data: perms.map((p) => ({ roleId: id, permissionId: p.id })),
++        });
++      }
+ 
+-    const updatedRole = await prisma.role.update({
+-      where: { id },
+-      data: {
+-        displayName: displayName !== undefined ? displayName.trim() : undefined,
+-        description: description !== undefined ? description?.trim() || null : undefined,
+-      },
++      return tx.role.update({
++        where: { id },
++        data: {
++          displayName: displayName !== undefined ? displayName.trim() : undefined,
++          description: description !== undefined ? description?.trim() || null : undefined,
++        },
++      });
+     });
+ 
+     await logAuditEvent({
+@@ -55,7 +63,8 @@ export async function PATCH(
+ 
+     return NextResponse.json({ success: true, data: updatedRole });
+   } catch (error: any) {
+-    return NextResponse.json({ success: false, error: 'Ошибка обновления роли' }, { status: 500 });
++    const isValidationError = error?.message === 'Передан неизвестный код разрешения' || error instanceof z.ZodError;
++    return NextResponse.json({ success: false, error: isValidationError ? 'Validation error' : 'Ошибка обновления роли' }, { status: isValidationError ? 400 : 500 });
+   }
+ }
+ 
+diff --git a/apps/web/src/app/api/admin/users/[userId]/roles/[roleId]/route.ts b/apps/web/src/app/api/admin/users/[userId]/roles/[roleId]/route.ts
+new file mode 100644
+index 0000000..a5edd39
+--- /dev/null
++++ b/apps/web/src/app/api/admin/users/[userId]/roles/[roleId]/route.ts
+@@ -0,0 +1,53 @@
++import { NextRequest, NextResponse } from 'next/server';
++import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
++import { prisma } from '@ems/database';
++import { PERMISSIONS } from '@ems/shared';
++import { hasPermission, logAuditEvent } from '@ems/auth';
++
++export const dynamic = 'force-dynamic';
++
++export async function DELETE(
++  req: NextRequest,
++  { params }: { params: { userId: string; roleId: string } }
++) {
++  try {
++    const user = await getCurrentUser(req);
++    if (!user) return unauthorizedResponse();
++    if (!hasPermission(user, PERMISSIONS.ADMIN_USERS_MANAGE)) return forbiddenResponse();
++
++    const { userId, roleId } = params;
++    const targetRole = await prisma.role.findUnique({ where: { id: roleId } });
++    if (!targetRole) return NextResponse.json({ success: false, error: 'Роль не найдена' }, { status: 404 });
++
++    await prisma.$transaction(async (tx) => {
++      const assignment = await tx.userRole.findUnique({
++        where: { userId_roleId: { userId, roleId } },
++      });
++      if (!assignment) throw new Error('Назначение роли не найдено');
++
++      if (userId === user.userId && targetRole.name === 'admin') {
++        throw new Error('Запрещено удалять у себя роль администратора');
++      }
++
++      await tx.userRole.delete({ where: { userId_roleId: { userId, roleId } } });
++    });
++
++    await logAuditEvent({
++      userId: user.userId,
++      action: 'UPDATE',
++      entityType: 'UserRole',
++      entityId: `${userId}:${roleId}`,
++      changes: { userId, roleId, roleName: targetRole.name, action: 'REVOKE' },
++    });
++
++    return NextResponse.json({ success: true, message: 'Роль отозвана' });
++  } catch (error: unknown) {
++    if (error instanceof Error && error.message === 'Запрещено удалять у себя роль администратора') {
++      return NextResponse.json({ success: false, error: error.message }, { status: 400 });
++    }
++    if (error instanceof Error && error.message === 'Назначение роли не найдено') {
++      return NextResponse.json({ success: false, error: error.message }, { status: 404 });
++    }
++    return NextResponse.json({ success: false, error: 'Ошибка отзыва роли' }, { status: 500 });
++  }
++}
+diff --git a/apps/web/src/app/api/eps/approvals/[id]/route.ts b/apps/web/src/app/api/eps/approvals/[id]/route.ts
+index 6464288..266f5fa 100644
+--- a/apps/web/src/app/api/eps/approvals/[id]/route.ts
++++ b/apps/web/src/app/api/eps/approvals/[id]/route.ts
+@@ -17,14 +17,10 @@ export async function GET(
+       !hasPermission(user, PERMISSIONS.EPS_APPROVALS_CREATE) &&
+       !hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) &&
+       !user.roles.includes('admin')
+-    ) {
+-      return forbiddenResponse();
+-    }
+-
+-    const { id } = params;
++    ) return forbiddenResponse();
+ 
+     const approval = await prisma.equipmentApproval.findUnique({
+-      where: { id },
++      where: { id: params.id },
+       include: {
+         equipment: {
+           include: {
+@@ -32,27 +28,17 @@ export async function GET(
+             photos: { where: { isPrimary: true }, take: 1 },
+           },
+         },
+-        requester: {
+-          select: { id: true, displayName: true, ldapLogin: true, email: true },
+-        },
+-        reviewer: {
+-          select: { id: true, displayName: true, ldapLogin: true, email: true },
+-        },
++        requester: { select: { id: true, displayName: true, ldapLogin: true, email: true } },
++        reviewer: { select: { id: true, displayName: true, ldapLogin: true, email: true } },
+       },
+     });
+ 
+-    if (!approval) {
+-      return NextResponse.json({ success: false, error: 'Заявка на согласование не найдена' }, { status: 404 });
+-    }
+-
++    if (!approval) return NextResponse.json({ success: false, error: 'Заявка на согласование не найдена' }, { status: 404 });
+     return NextResponse.json({ success: true, data: approval });
+   } catch (error: unknown) {
+     console.error('Ошибка получения заявки на согласование:', error);
+     const message = error instanceof Error ? error.message : 'Unknown error';
+-    return NextResponse.json(
+-      { success: false, error: 'Ошибка получения заявки на согласование', details: message },
+-      { status: 500 }
+-    );
++    return NextResponse.json({ success: false, error: 'Ошибка получения заявки на согласование', details: message }, { status: 500 });
+   }
+ }
+ 
+@@ -61,6 +47,8 @@ const updateSchema = z.object({
+   resolutionComment: z.string().optional(),
+ });
+ 
++type EquipmentAudit = { entityId: string; changes: Record<string, unknown> };
++
+ export async function PATCH(
+   req: NextRequest,
+   { params }: { params: { id: string } }
+@@ -69,224 +57,136 @@ export async function PATCH(
+     const user = await getCurrentUser(req);
+     if (!user) return unauthorizedResponse();
+ 
+-    const { id } = params;
+-    const body = await req.json();
+-    const { status, resolutionComment } = updateSchema.parse(body);
+-
+-    const approval = await prisma.equipmentApproval.findUnique({
+-      where: { id },
+-      include: {
+-        equipment: true,
+-      },
+-    });
+-
+-    if (!approval) {
+-      return NextResponse.json({ success: false, error: 'Заявка не найдена' }, { status: 404 });
+-    }
+-
+-    if (approval.status !== 'PENDING' && status !== 'CANCELLED') {
+-      return NextResponse.json(
+-        { success: false, error: 'Решение по этой заявке уже было принято' },
+-        { status: 400 }
+-      );
+-    }
++    const { status, resolutionComment } = updateSchema.parse(await req.json());
++    const canManage = hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE);
+ 
+-    // Checking permissions: Requester can CANCEL their own request, review requires management permissions
+-    if (status === 'CANCELLED') {
+-      if (approval.requesterId !== user.userId && !hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE)) {
+-        return forbiddenResponse();
+-      }
+-    } else {
+-      if (!hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) && !hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_EDIT)) {
+-        return forbiddenResponse();
+-      }
++    if (status === 'CANCELLED' && !canManage) {
++      const approval = await prisma.equipmentApproval.findUnique({ where: { id: params.id }, select: { requesterId: true } });
++      if (!approval) return NextResponse.json({ success: false, error: 'Заявка не найдена' }, { status: 404 });
++      if (approval.requesterId !== user.userId) return forbiddenResponse();
++    } else if (status !== 'CANCELLED' && !canManage) {
++      return forbiddenResponse();
+     }
+ 
+-    // Execute automatic equipment update if APPROVED
+-    if (status === 'APPROVED' && approval.equipment) {
+-      const prevStatus = approval.equipment.status;
+-      const proposed = (approval.proposedData as any) || {};
+-
+-      if (approval.type === 'EQUIPMENT_CREATE' || approval.type === 'COMMISSIONING') {
+-        const targetStatus = (proposed.targetStatus && proposed.targetStatus in EquipmentStatus)
+-          ? (proposed.targetStatus as EquipmentStatus)
+-          : 'ACTIVE';
+-
+-        await prisma.equipment.update({
+-          where: { id: approval.equipment.id },
+-          data: {
+-            status: targetStatus,
+-            commissionDate: approval.equipment.commissionDate || (proposed.commissionDate ? new Date(proposed.commissionDate) : new Date()),
+-            name: proposed.name ? proposed.name.trim() : undefined,
+-            inventoryNumber: proposed.inventoryNumber !== undefined ? (proposed.inventoryNumber?.trim() || null) : undefined,
+-            serialNumber: proposed.serialNumber !== undefined ? (proposed.serialNumber?.trim() || null) : undefined,
+-            manufacturer: proposed.manufacturer !== undefined ? (proposed.manufacturer?.trim() || null) : undefined,
+-            model: proposed.model !== undefined ? (proposed.model?.trim() || null) : undefined,
+-            location: proposed.location !== undefined ? (proposed.location?.trim() || null) : undefined,
+-            customFields: proposed.customFields !== undefined ? proposed.customFields : undefined,
+-          },
+-        });
+-
+-        await logAuditEvent({
+-          userId: user.userId,
+-          action: 'UPDATE',
+-          entityType: 'Equipment',
+-          entityId: approval.equipment.id,
+-          changes: {
+-            status: { old: prevStatus, new: targetStatus },
+-            approvalId: approval.id,
+-            reason: `Утверждена регистрация оборудования: ${approval.title}`,
+-          },
+-        });
+-      } else if (approval.type === 'EQUIPMENT_UPDATE' || approval.type === 'PARAMETER_CHANGE') {
+-        const eqId = approval.equipment.id;
+-        const updatePayload: any = {};
+-        if (proposed.name) updatePayload.name = proposed.name.trim();
+-        if (proposed.inventoryNumber !== undefined) updatePayload.inventoryNumber = proposed.inventoryNumber?.trim() || null;
+-        if (proposed.serialNumber !== undefined) updatePayload.serialNumber = proposed.serialNumber?.trim() || null;
+-        if (proposed.manufacturer !== undefined) updatePayload.manufacturer = proposed.manufacturer?.trim() || null;
+-        if (proposed.model !== undefined) updatePayload.model = proposed.model?.trim() || null;
+-        if (proposed.location !== undefined) updatePayload.location = proposed.location?.trim() || null;
+-        if (proposed.status && proposed.status in EquipmentStatus) updatePayload.status = proposed.status;
+-        if (proposed.commissionDate) updatePayload.commissionDate = new Date(proposed.commissionDate);
+-        if (proposed.customFields) {
+-          const currentCustomFields = (approval.equipment.customFields as any) || {};
+-          updatePayload.customFields = { ...currentCustomFields, ...proposed.customFields };
+-        }
+-
+-        if (Array.isArray(proposed.tagIds)) {
+-          await prisma.equipmentTag.deleteMany({ where: { equipmentId: eqId } });
+-          if (proposed.tagIds.length > 0) {
+-            await prisma.equipmentTag.createMany({
+-              data: proposed.tagIds.map((tagId: string) => ({ equipmentId: eqId, tagId })),
+-            });
+-          }
+-        }
+-
+-        if (Object.keys(updatePayload).length > 0) {
+-          await prisma.equipment.update({
+-            where: { id: eqId },
+-            data: updatePayload,
++    const result = await prisma.$transaction(async (tx) => {
++      const approval = await tx.equipmentApproval.findUnique({ where: { id: params.id }, include: { equipment: true } });
++      if (!approval) throw new Error('APPROVAL_NOT_FOUND');
++      if (approval.status !== 'PENDING') throw new Error('APPROVAL_NOT_PENDING');
++      if (status !== 'CANCELLED' && approval.requesterId === user.userId) throw new Error('APPROVAL_SELF_DECISION');
++      if (status === 'CANCELLED' && !canManage && approval.requesterId !== user.userId) throw new Error('APPROVAL_FORBIDDEN');
++
++      let equipmentAudit: EquipmentAudit | undefined;
++      if (status === 'APPROVED' && approval.equipment) {
++        const equipment = approval.equipment;
++        const proposed = (approval.proposedData as Record<string, any>) || {};
++        const prevStatus = equipment.status;
++
++        if (approval.type === 'EQUIPMENT_CREATE' || approval.type === 'COMMISSIONING') {
++          const targetStatus = proposed.targetStatus && proposed.targetStatus in EquipmentStatus
++            ? proposed.targetStatus as EquipmentStatus
++            : 'ACTIVE';
++          await tx.equipment.update({
++            where: { id: equipment.id },
++            data: {
++              status: targetStatus,
++              commissionDate: equipment.commissionDate || (proposed.commissionDate ? new Date(proposed.commissionDate) : new Date()),
++              name: proposed.name ? proposed.name.trim() : undefined,
++              inventoryNumber: proposed.inventoryNumber !== undefined ? proposed.inventoryNumber?.trim() || null : undefined,
++              serialNumber: proposed.serialNumber !== undefined ? proposed.serialNumber?.trim() || null : undefined,
++              manufacturer: proposed.manufacturer !== undefined ? proposed.manufacturer?.trim() || null : undefined,
++              model: proposed.model !== undefined ? proposed.model?.trim() || null : undefined,
++              location: proposed.location !== undefined ? proposed.location?.trim() || null : undefined,
++              customFields: proposed.customFields !== undefined ? proposed.customFields : undefined,
++            },
+           });
++          equipmentAudit = { entityId: equipment.id, changes: { status: { old: prevStatus, new: targetStatus }, approvalId: approval.id, reason: `Утверждена регистрация оборудования: ${approval.title}` } };
++        } else if (approval.type === 'EQUIPMENT_UPDATE' || approval.type === 'PARAMETER_CHANGE') {
++          const updatePayload: Record<string, any> = {};
++          if (proposed.name) updatePayload.name = proposed.name.trim();
++          if (proposed.inventoryNumber !== undefined) updatePayload.inventoryNumber = proposed.inventoryNumber?.trim() || null;
++          if (proposed.serialNumber !== undefined) updatePayload.serialNumber = proposed.serialNumber?.trim() || null;
++          if (proposed.manufacturer !== undefined) updatePayload.manufacturer = proposed.manufacturer?.trim() || null;
++          if (proposed.model !== undefined) updatePayload.model = proposed.model?.trim() || null;
++          if (proposed.location !== undefined) updatePayload.location = proposed.location?.trim() || null;
++          if (proposed.status && proposed.status in EquipmentStatus) updatePayload.status = proposed.status;
++          if (proposed.commissionDate) updatePayload.commissionDate = new Date(proposed.commissionDate);
++          if (proposed.customFields) updatePayload.customFields = { ...((equipment.customFields as Record<string, any>) || {}), ...proposed.customFields };
++
++          if (Array.isArray(proposed.tagIds)) {
++            await tx.equipmentTag.deleteMany({ where: { equipmentId: equipment.id } });
++            if (proposed.tagIds.length > 0) await tx.equipmentTag.createMany({ data: proposed.tagIds.map((tagId: string) => ({ equipmentId: equipment.id, tagId })) });
++          }
++          if (Object.keys(updatePayload).length > 0) await tx.equipment.update({ where: { id: equipment.id }, data: updatePayload });
++          equipmentAudit = { entityId: equipment.id, changes: { updatedFields: updatePayload, approvalId: approval.id, reason: `Утверждены изменения паспорта: ${approval.title}` } };
++        } else if (approval.type === 'DECOMMISSIONING' || approval.type === 'EQUIPMENT_DELETE') {
++          await tx.equipment.update({ where: { id: equipment.id }, data: { status: 'DECOMMISSIONED' } });
++          equipmentAudit = { entityId: equipment.id, changes: { status: { old: prevStatus, new: 'DECOMMISSIONED' }, approvalId: approval.id, reason: `Утверждено списание/вывод из эксплуатации: ${approval.title}` } };
++        } else if (approval.type === 'STATUS_CHANGE' && proposed.targetStatus && proposed.targetStatus in EquipmentStatus) {
++          await tx.equipment.update({ where: { id: equipment.id }, data: { status: proposed.targetStatus as EquipmentStatus } });
++          equipmentAudit = { entityId: equipment.id, changes: { status: { old: prevStatus, new: proposed.targetStatus }, approvalId: approval.id, reason: `Утверждена смена рабочего статуса: ${approval.title}` } };
+         }
+-
+-        await logAuditEvent({
+-          userId: user.userId,
+-          action: 'UPDATE',
+-          entityType: 'Equipment',
+-          entityId: approval.equipment.id,
+-          changes: {
+-            updatedFields: updatePayload,
+-            approvalId: approval.id,
+-            reason: `Утверждены изменения паспорта: ${approval.title}`,
+-          },
+-        });
+-      } else if (approval.type === 'DECOMMISSIONING' || approval.type === 'EQUIPMENT_DELETE') {
+-        await prisma.equipment.update({
+-          where: { id: approval.equipment.id },
+-          data: { status: 'DECOMMISSIONED' },
+-        });
+-
+-        await logAuditEvent({
+-          userId: user.userId,
+-          action: 'UPDATE',
+-          entityType: 'Equipment',
+-          entityId: approval.equipment.id,
+-          changes: {
+-            status: { old: prevStatus, new: 'DECOMMISSIONED' },
+-            approvalId: approval.id,
+-            reason: `Утверждено списание/вывод из эксплуатации: ${approval.title}`,
+-          },
+-        });
+-      } else if (approval.type === 'STATUS_CHANGE' && proposed.targetStatus && proposed.targetStatus in EquipmentStatus) {
+-        await prisma.equipment.update({
+-          where: { id: approval.equipment.id },
+-          data: { status: proposed.targetStatus as EquipmentStatus },
+-        });
+-
+-        await logAuditEvent({
+-          userId: user.userId,
+-          action: 'UPDATE',
+-          entityType: 'Equipment',
+-          entityId: approval.equipment.id,
+-          changes: {
+-            status: { old: prevStatus, new: proposed.targetStatus },
+-            approvalId: approval.id,
+-            reason: `Утверждена смена рабочего статуса: ${approval.title}`,
+-          },
+-        });
+       }
+-    }
+ 
+-    // Update approval record
+-    const updatedApproval = await prisma.equipmentApproval.update({
+-      where: { id },
+-      data: {
+-        status: status as ApprovalStatus,
+-        reviewerId: status === 'CANCELLED' ? approval.reviewerId : user.userId,
+-        reviewedAt: status === 'CANCELLED' ? approval.reviewedAt : new Date(),
+-        resolutionComment: resolutionComment?.trim() || null,
+-      },
+-      include: {
+-        equipment: {
+-          select: { id: true, name: true, inventoryNumber: true, status: true },
++      const updated = await tx.equipmentApproval.updateMany({
++        where: { id: params.id, status: 'PENDING' },
++        data: {
++          status: status as ApprovalStatus,
++          reviewerId: status === 'CANCELLED' ? approval.reviewerId : user.userId,
++          reviewedAt: status === 'CANCELLED' ? approval.reviewedAt : new Date(),
++          resolutionComment: resolutionComment?.trim() || null,
+         },
+-        requester: {
+-          select: { id: true, displayName: true, ldapLogin: true },
++      });
++      if (updated.count !== 1) throw new Error('APPROVAL_NOT_PENDING');
++
++      const updatedApproval = await tx.equipmentApproval.findUnique({
++        where: { id: params.id },
++        include: {
++          equipment: { select: { id: true, name: true, inventoryNumber: true, status: true } },
++          requester: { select: { id: true, displayName: true, ldapLogin: true } },
++          reviewer: { select: { id: true, displayName: true, ldapLogin: true } },
+         },
+-        reviewer: {
+-          select: { id: true, displayName: true, ldapLogin: true },
+-        },
+-      },
++      });
++      return { approval, updatedApproval, equipmentAudit };
+     });
+ 
+-    // Отправка системного уведомления автору заявки
++    if (!result.updatedApproval) throw new Error('APPROVAL_NOT_FOUND');
++    if (result.equipmentAudit) await logAuditEvent({ userId: user.userId, action: 'UPDATE', entityType: 'Equipment', entityId: result.equipmentAudit.entityId, changes: result.equipmentAudit.changes });
++
+     try {
+-      if (approval.requesterId && (status === 'APPROVED' || status === 'REJECTED')) {
+-        const eqName = approval.equipment?.name || approval.title;
++      if (result.approval.requesterId && (status === 'APPROVED' || status === 'REJECTED')) {
++        const eqName = result.approval.equipment?.name || result.approval.title;
+         const isApproved = status === 'APPROVED';
+-
+         await prisma.notification.create({
+           data: {
+-            userId: approval.requesterId,
++            userId: result.approval.requesterId,
+             title: isApproved ? 'Паспорт оборудования согласован' : 'Заявка на согласование отклонена',
+             message: isApproved
+               ? `Заявка по оборудованию «${eqName}» успешно утверждена и опубликована в реестре.`
+               : `Заявка по оборудованию «${eqName}» отклонена. Причина: "${resolutionComment || 'Замечания проверяющего'}".`,
+             type: 'EQUIPMENT_CHANGED',
+-            link: approval.equipmentId ? `/eps/${approval.equipmentId}` : '/eps/approvals',
++            link: result.approval.equipmentId ? `/eps/${result.approval.equipmentId}` : '/eps/approvals',
+           },
+         });
+       }
+-    } catch (notifErr) {
+-      console.error('Ошибка отправки уведомления:', notifErr);
++    } catch (notificationError) {
++      console.error('Ошибка отправки уведомления:', notificationError);
+     }
+ 
+     await logAuditEvent({
+       userId: user.userId,
+       action: 'UPDATE',
+       entityType: 'EquipmentApproval',
+-      entityId: id,
+-      changes: {
+-        status: { old: approval.status, new: status },
+-        resolutionComment,
+-        equipmentId: approval.equipmentId,
+-      },
++      entityId: params.id,
++      changes: { status: { old: result.approval.status, new: status }, resolutionComment, equipmentId: result.approval.equipmentId },
+     });
+-
+-    return NextResponse.json({ success: true, data: updatedApproval });
++    return NextResponse.json({ success: true, data: result.updatedApproval });
+   } catch (error: unknown) {
+     console.error('Ошибка обработки согласования:', error);
+-    if (error instanceof z.ZodError) {
+-      return NextResponse.json(
+-        { success: false, error: 'Validation error', details: error.issues },
+-        { status: 400 }
+-      );
+-    }
++    if (error instanceof z.ZodError) return NextResponse.json({ success: false, error: 'Validation error', details: error.issues }, { status: 400 });
++    if (error instanceof Error && error.message === 'APPROVAL_NOT_FOUND') return NextResponse.json({ success: false, error: 'Заявка не найдена' }, { status: 404 });
++    if (error instanceof Error && error.message === 'APPROVAL_NOT_PENDING') return NextResponse.json({ success: false, error: 'Решение по этой заявке уже было принято' }, { status: 400 });
++    if (error instanceof Error && (error.message === 'APPROVAL_SELF_DECISION' || error.message === 'APPROVAL_FORBIDDEN')) return forbiddenResponse();
+     const message = error instanceof Error ? error.message : 'Unknown error';
+-    return NextResponse.json(
+-      { success: false, error: 'Ошибка сохранения решения по согласованию', details: message },
+-      { status: 500 }
+-    );
++    return NextResponse.json({ success: false, error: 'Ошибка сохранения решения по согласованию', details: message }, { status: 500 });
+   }
+ }
+diff --git a/apps/web/src/app/api/eps/custom-sections/route.ts b/apps/web/src/app/api/eps/custom-sections/route.ts
+index bb47392..799a650 100644
+--- a/apps/web/src/app/api/eps/custom-sections/route.ts
++++ b/apps/web/src/app/api/eps/custom-sections/route.ts
+@@ -24,310 +24,6 @@ export async function GET(req: NextRequest) {
+       },
+     });
+ 
+-    // Standard Sections Definition
+-    const standardSections = [
+-      { code: 'classifiers', name: 'Общероссийские и отраслевые классификаторы', description: 'Коды ОКОФ (ОК 013-2014), ОКПД2, классификаторы техпроцесса и децимальные номера', icon: 'Category', sortOrder: 1 },
+-      { code: 'condition_wear', name: 'Техническое состояние, износ и критичность', description: 'Процент износа, критичность для производства, класс чистоты ISO, признаки уникальности и импорта', icon: 'Speed', sortOrder: 2 },
+-      { code: 'maintenance_regulations', name: 'Регламент ТОиР и график обслуживания', description: 'Периодичность ТО, график на текущий год, ответственные лица и связь с 1С', icon: 'Shield', sortOrder: 3 },
+-      { code: 'electrical', name: 'Электротехнические параметры', description: 'Характеристики электропитания, мощности, напряжения и фазности', icon: 'Bolt', sortOrder: 4 },
+-      { code: 'mechanics', name: 'Механика, гидравлика и среда', description: 'Рабочие среды, давление, обороты и смазочные материалы', icon: 'WaterDrop', sortOrder: 5 },
+-      { code: 'operational', name: 'Эксплуатационные требования и метрология', description: 'Непрерывность процесса, поверки датчиков и регламентные условия', icon: 'Straighten', sortOrder: 6 },
+-    ];
+-
+-    // Bootstrap standard sections ONLY if database has no sections at all
+-    if (sections.length === 0) {
+-      for (const s of standardSections) {
+-        await prisma.customSection.upsert({
+-          where: { code: s.code },
+-          create: s,
+-          update: { name: s.name, description: s.description, icon: s.icon, sortOrder: s.sortOrder },
+-        });
+-      }
+-    }
+-
+-    const allSections = await prisma.customSection.findMany();
+-    const secMap = new Map(allSections.map((s) => [s.code, s.id]));
+-
+-    // 26 Canonical Custom Fields Specification
+-    const CANONICAL_SPECS: { key: string; name: string; sectionCode: string; fieldType: 'NUMBER' | 'DATE' | 'BOOLEAN' | 'TEXT'; unit?: string; sortOrder: number }[] = [
+-      // 1. Классификаторы
+-      { key: 'decimal_number', name: 'Децимальный номер', sectionCode: 'classifiers', fieldType: 'TEXT', sortOrder: 1 },
+-      { key: 'okof_code', name: 'Код по ОКОФ (ОК 013-2014)', sectionCode: 'classifiers', fieldType: 'TEXT', sortOrder: 2 },
+-      { key: 'okpd2_code', name: 'Код по ОКПД2 (ОК 034-2014)', sectionCode: 'classifiers', fieldType: 'TEXT', sortOrder: 3 },
+-      { key: 'process_classifier_code', name: 'Код технологического классификатора', sectionCode: 'classifiers', fieldType: 'TEXT', sortOrder: 4 },
+-      { key: 'equipment_group', name: 'Группа оборудования', sectionCode: 'classifiers', fieldType: 'TEXT', sortOrder: 5 },
+-      { key: 'equipment_type', name: 'Тип оборудования (Установка)', sectionCode: 'classifiers', fieldType: 'TEXT', sortOrder: 6 },
+-
+-      // 2. Состояние, износ и критичность
+-      { key: 'country_origin', name: 'Страна производитель', sectionCode: 'condition_wear', fieldType: 'TEXT', sortOrder: 1 },
+-      { key: 'prod_year', name: 'Год выпуска', sectionCode: 'condition_wear', fieldType: 'NUMBER', sortOrder: 2 },
+-      { key: 'comm_year', name: 'Год ввода', sectionCode: 'condition_wear', fieldType: 'NUMBER', sortOrder: 3 },
+-      { key: 'equipment_age', name: 'Возраст оборудования', sectionCode: 'condition_wear', fieldType: 'NUMBER', unit: 'лет', sortOrder: 4 },
+-      { key: 'actual_wear_percentage', name: 'Фактический процент износа', sectionCode: 'condition_wear', fieldType: 'NUMBER', unit: '%', sortOrder: 5 },
+-      { key: 'criticality', name: 'Категория критичности', sectionCode: 'condition_wear', fieldType: 'TEXT', sortOrder: 6 },
+-      { key: 'clean_room_class', name: 'Класс чистоты помещения (ISO)', sectionCode: 'condition_wear', fieldType: 'TEXT', sortOrder: 7 },
+-      { key: 'is_unique', name: 'Уникальное / единичное оборудование', sectionCode: 'condition_wear', fieldType: 'BOOLEAN', sortOrder: 8 },
+-      { key: 'is_imported', name: 'Импортное оборудование', sectionCode: 'condition_wear', fieldType: 'BOOLEAN', sortOrder: 9 },
+-
+-      // 3. Регламент ТОиР и график обслуживания
+-      { key: 'maintenance_periodicity', name: 'Периодичность регламентного ТО', sectionCode: 'maintenance_regulations', fieldType: 'TEXT', sortOrder: 1 },
+-      { key: 'maintenance_schedule_year', name: 'Утвержденный график ТО на 2026 год', sectionCode: 'maintenance_regulations', fieldType: 'TEXT', sortOrder: 2 },
+-      { key: 'to_count_scheduled', name: 'Количество ТО по графику', sectionCode: 'maintenance_regulations', fieldType: 'NUMBER', sortOrder: 3 },
+-      { key: 'responsible_person_name', name: 'Ответственное лицо (ФИО / Должность)', sectionCode: 'maintenance_regulations', fieldType: 'TEXT', sortOrder: 4 },
+-      { key: 'external_system_id', name: 'Идентификатор во внешней системе (1С / ERP)', sectionCode: 'maintenance_regulations', fieldType: 'TEXT', sortOrder: 5 },
+-
+-      // 4. Электротехнические параметры
+-      { key: 'operating_voltage', name: 'Рабочее напряжение', sectionCode: 'electrical', fieldType: 'TEXT', sortOrder: 1 },
+-      { key: 'power_kw', name: 'Номинальная мощность', sectionCode: 'electrical', fieldType: 'NUMBER', unit: 'кВт', sortOrder: 2 },
+-      { key: 'nominal_current', name: 'Номинальный ток', sectionCode: 'electrical', fieldType: 'NUMBER', unit: 'А', sortOrder: 3 },
+-      { key: 'phase_count', name: 'Количество фаз', sectionCode: 'electrical', fieldType: 'NUMBER', sortOrder: 4 },
+-      { key: 'ups_required', name: 'Требование к наличию ИБП', sectionCode: 'electrical', fieldType: 'TEXT', sortOrder: 5 },
+-
+-      // 5. Механика, гидравлика и среда
+-      { key: 'operating_pressure', name: 'Рабочее давление', sectionCode: 'mechanics', fieldType: 'NUMBER', unit: 'МПа', sortOrder: 1 },
+-      { key: 'coolant_type', name: 'Тип смазки / хладагента', sectionCode: 'mechanics', fieldType: 'TEXT', sortOrder: 2 },
+-      { key: 'rotation_speed', name: 'Частота вращения вала', sectionCode: 'mechanics', fieldType: 'NUMBER', unit: 'об/мин', sortOrder: 3 },
+-
+-      // 6. Эксплуатационные требования и метрология
+-      { key: 'is_critical_path', name: 'Влияет на непрерывность процесса', sectionCode: 'operational', fieldType: 'BOOLEAN', sortOrder: 1 },
+-      { key: 'calibration_interval', name: 'Периодичность поверки датчиков', sectionCode: 'operational', fieldType: 'NUMBER', unit: 'мес.', sortOrder: 2 },
+-    ];
+-
+-    // Alias and duplicate dictionary for automatic merging and cleanup
+-    const DUPLICATE_TO_CANONICAL: Record<string, string> = {
+-      // Classifiers duplicates
+-      kod_okof_2: 'okof_code',
+-      kod_po_okof_ok_013_2014: 'okof_code',
+-      kod_po_okof: 'okof_code',
+-      okof: 'okof_code',
+-      kod_okpd_2: 'okpd2_code',
+-      kod_po_okpd2_ok_034_2014: 'okpd2_code',
+-      kod_po_okpd2: 'okpd2_code',
+-      okpd2: 'okpd2_code',
+-      kod_tehnologicheskogo_klassifikatora: 'process_classifier_code',
+-      klassifikator_tehprotsessa_kod: 'process_classifier_code',
+-      klassifikator_tehprotsessa: 'process_classifier_code',
+-      tehnologicheskiy_klassifikator: 'process_classifier_code',
+-      detsimalnyy_nomer: 'decimal_number',
+-      detsimalnyy_no: 'decimal_number',
+-      gruppa_oborudovaniya: 'equipment_group',
+-      kompleks_gruppa: 'equipment_group',
+-      kompleks: 'equipment_group',
+-      tip_oborudovaniya_ustanovka: 'equipment_type',
+-      tip_oborudovaniya: 'equipment_type',
+-      ustanovka: 'equipment_type',
+-
+-      // Condition, Wear & Criticality duplicates
+-      kategoriya_kritichnosti: 'criticality',
+-      kritichnost: 'criticality',
+-      fakticheskiy_protsent_iznosa: 'actual_wear_percentage',
+-      fakticheskiy_iznos: 'actual_wear_percentage',
+-      protsent_iznosa: 'actual_wear_percentage',
+-      iznos: 'actual_wear_percentage',
+-      klass_chistoty_pomescheniya_iso: 'clean_room_class',
+-      klass_chistoty_pomescheniya: 'clean_room_class',
+-      klass_chistoty_iso: 'clean_room_class',
+-      klass_chistoty: 'clean_room_class',
+-      unikalnoe_edinichnoe_oborudovanie: 'is_unique',
+-      unikalnoe_oborudovanie: 'is_unique',
+-      unikal_noe_oborudovanie: 'is_unique',
+-      priznak_unikalnosti: 'is_unique',
+-      importnoe_oborudovanie: 'is_imported',
+-      import_noe_oborudovanie: 'is_imported',
+-      priznak_importa: 'is_imported',
+-      strana_proizvoditel: 'country_origin',
+-      strana_proishozhdeniya: 'country_origin',
+-      strana: 'country_origin',
+-      god_vypuska: 'prod_year',
+-      god_proizvodstva: 'prod_year',
+-      god_vvoda: 'comm_year',
+-      god_vvoda_v_ekspluatatsiyu: 'comm_year',
+-      vozrast_oborudovaniya: 'equipment_age',
+-      vozrast: 'equipment_age',
+-
+-      // Maintenance & Regulations duplicates
+-      periodichnost_reglamentnogo_to: 'maintenance_periodicity',
+-      periodichnost_tehnicheskogo_obsluzhivaniya: 'maintenance_periodicity',
+-      periodichnost_to: 'maintenance_periodicity',
+-      reglament_to: 'maintenance_periodicity',
+-      utverzhdennyy_grafik_to_na_2026_god: 'maintenance_schedule_year',
+-      tehnicheskoe_obsluzhivanie_2026: 'maintenance_schedule_year',
+-      utverzhdennyy_grafik_to: 'maintenance_schedule_year',
+-      grafik_to_na_2026_god: 'maintenance_schedule_year',
+-      grafik_to: 'maintenance_schedule_year',
+-      kolichestvo_to_po_grafiku: 'to_count_scheduled',
+-      kol_vo_to_po_grafiku: 'to_count_scheduled',
+-      kolichestvo_to: 'to_count_scheduled',
+-      otvetstvennoe_litso_fio_dolzhnost: 'responsible_person_name',
+-      otvetstvennyy: 'responsible_person_name',
+-      otvetstvennoe_litso: 'responsible_person_name',
+-      fio_otvetstvennogo: 'responsible_person_name',
+-      identifikator_vo_vneshney_sisteme_1s_erp: 'external_system_id',
+-      identifikator_vo_vneshney_sisteme: 'external_system_id',
+-      kod_1s_erp: 'external_system_id',
+-      kod_1s: 'external_system_id',
+-
+-      // Electrical duplicates
+-      rabochee_napryazhenie: 'operating_voltage',
+-      napryazhenie_pitaniya: 'operating_voltage',
+-      napryazhenie: 'operating_voltage',
+-      nominalnaya_moschnost: 'power_kw',
+-      moschnost: 'power_kw',
+-      nominalnyy_tok: 'nominal_current',
+-      tok: 'nominal_current',
+-      kolichestvo_faz: 'phase_count',
+-      faznost: 'phase_count',
+-      trebovanie_k_nalichiyu_ibp: 'ups_required',
+-      nalichie_ibp: 'ups_required',
+-      ibp: 'ups_required',
+-
+-      // Mechanics duplicates
+-      rabochee_davlenie: 'operating_pressure',
+-      davlenie: 'operating_pressure',
+-      tip_smazki_hladagenta: 'coolant_type',
+-      tip_smazki: 'coolant_type',
+-      hladagent: 'coolant_type',
+-      smazka: 'coolant_type',
+-      chastota_vrascheniya_vala: 'rotation_speed',
+-      chastota_vrascheniya: 'rotation_speed',
+-      skorost_vrascheniya: 'rotation_speed',
+-      oboroty: 'rotation_speed',
+-
+-      // Operational & Metrology duplicates
+-      vliyaet_na_nepreryvnost_protsessa: 'is_critical_path',
+-      nepreryvnost_protsessa: 'is_critical_path',
+-      periodichnost_poverki_datchikov: 'calibration_interval',
+-      poverka_datchikov: 'calibration_interval',
+-      interval_poverki: 'calibration_interval',
+-    };
+-
+-    // Custom field keys that mistakenly duplicate base model fields (should NOT be custom fields)
+-    const BASE_MODEL_DUPLICATE_KEYS = [
+-      'zavodskoy_nomer',
+-      'zavodskoy_no',
+-      'zavodskoy_num',
+-      'serial_number',
+-      'serialnumber',
+-      'raspolozhenie_ulitsa_korpus_etazh_uchastok',
+-      'raspolozhenie',
+-      'location',
+-      'mesto_ustanovki',
+-      'inventarnyy_nomer',
+-      'inventarnyy_no',
+-      'inventory_number',
+-      'inventorynumber',
+-      'naimenovanie_oborudovaniya',
+-      'naimenovanie',
+-      'name',
+-      'proizvoditel',
+-      'manufacturer',
+-      'model_modifikatsiya',
+-      'model',
+-      'data_vvoda_v_ekspluatatsiyu',
+-      'data_vvoda',
+-      'commission_date',
+-    ];
+-
+-    // 1. Delete all base model duplicate custom field definitions
+-    await prisma.customFieldDefinition.deleteMany({
+-      where: { key: { in: BASE_MODEL_DUPLICATE_KEYS } },
+-    });
+-
+-    // 2. Delete all duplicate/transliterated custom field definitions
+-    await prisma.customFieldDefinition.deleteMany({
+-      where: { key: { in: Object.keys(DUPLICATE_TO_CANONICAL) } },
+-    });
+-
+-    // 3. Ensure all 26 Canonical Field Definitions exist and are correctly bound to their sections
+-    for (const spec of CANONICAL_SPECS) {
+-      const secId = secMap.get(spec.sectionCode);
+-      if (secId) {
+-        await prisma.customFieldDefinition.upsert({
+-          where: { key: spec.key },
+-          create: {
+-            key: spec.key,
+-            name: spec.name,
+-            fieldType: spec.fieldType,
+-            unit: spec.unit,
+-            sectionId: secId,
+-            sortOrder: spec.sortOrder,
+-          },
+-          update: {
+-            name: spec.name,
+-            fieldType: spec.fieldType,
+-            unit: spec.unit,
+-            sectionId: secId,
+-            sortOrder: spec.sortOrder,
+-          },
+-        });
+-      }
+-    }
+-
+-    // 4. Migrate and clean Equipment.customFields JSON data
+-    try {
+-      const equipments = await prisma.equipment.findMany({
+-        select: { id: true, serialNumber: true, location: true, customFields: true },
+-      });
+-
+-      for (const eq of equipments) {
+-        const cf = eq.customFields as Record<string, any>;
+-        if (cf && typeof cf === 'object') {
+-          let modified = false;
+-          let updatedSerial = eq.serialNumber;
+-          let updatedLocation = eq.location;
+-
+-          // Migrate base field duplicates if model fields are empty
+-          if (!updatedSerial && (cf.zavodskoy_nomer || cf.serial_number)) {
+-            updatedSerial = String(cf.zavodskoy_nomer || cf.serial_number);
+-          }
+-          if (!updatedLocation && (cf.raspolozhenie_ulitsa_korpus_etazh_uchastok || cf.raspolozhenie)) {
+-            updatedLocation = String(cf.raspolozhenie_ulitsa_korpus_etazh_uchastok || cf.raspolozhenie);
+-          }
+-
+-          // Remove base model duplicates from customFields
+-          for (const k of BASE_MODEL_DUPLICATE_KEYS) {
+-            if (cf[k] !== undefined) {
+-              delete cf[k];
+-              modified = true;
+-            }
+-          }
+-
+-          // Migrate duplicate/translit keys to canonical keys
+-          for (const [oldKey, canonKey] of Object.entries(DUPLICATE_TO_CANONICAL)) {
+-            if (cf[oldKey] !== undefined) {
+-              if (cf[canonKey] === undefined) {
+-                cf[canonKey] = cf[oldKey];
+-              }
+-              delete cf[oldKey];
+-              modified = true;
+-            }
+-          }
+-
+-          if (modified || updatedSerial !== eq.serialNumber || updatedLocation !== eq.location) {
+-            await prisma.equipment.update({
+-              where: { id: eq.id },
+-              data: {
+-                customFields: cf,
+-                serialNumber: updatedSerial,
+-                location: updatedLocation,
+-              },
+-            });
+-          }
+-        }
+-      }
+-    } catch (err) {
+-      console.error('Ошибка миграции customFields в Equipment:', err);
+-    }
+-
+-    sections = await prisma.customSection.findMany({
+-      orderBy: { sortOrder: 'asc' },
+-      include: {
+-        fields: {
+-          orderBy: { sortOrder: 'asc' },
+-        },
+-      },
+-    });
+-
+     const unassignedFields = await prisma.customFieldDefinition.findMany({
+       where: { sectionId: null },
+       orderBy: { sortOrder: 'asc' },
+diff --git a/apps/web/src/app/api/eps/documents/[id]/route.ts b/apps/web/src/app/api/eps/documents/[id]/route.ts
+index fc96d1a..26e6668 100644
+--- a/apps/web/src/app/api/eps/documents/[id]/route.ts
++++ b/apps/web/src/app/api/eps/documents/[id]/route.ts
+@@ -3,7 +3,6 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
+ import { prisma } from '@ems/database';
+ import { PERMISSIONS } from '@ems/shared';
+ import { hasPermission, logAuditEvent } from '@ems/auth';
+-import { deleteFile } from '@/lib/storage';
+ 
+ export async function DELETE(
+   req: NextRequest,
+@@ -18,8 +17,8 @@ export async function DELETE(
+ 
+     const { id } = params;
+ 
+-    const document = await prisma.document.findUnique({
+-      where: { id },
++    const document = await prisma.document.findFirst({
++      where: { id, deletedAt: null, equipment: { deletedAt: null } },
+       include: {
+         equipment: {
+           select: { id: true, name: true, inventoryNumber: true },
+@@ -31,8 +30,7 @@ export async function DELETE(
+       return NextResponse.json({ success: false, error: 'Документ не найден' }, { status: 404 });
+     }
+ 
+-    deleteFile(document.filePath);
+-    await prisma.document.delete({ where: { id } });
++    await prisma.document.update({ where: { id }, data: { deletedAt: new Date() } });
+ 
+     await logAuditEvent({
+       userId: user.userId,
+diff --git a/apps/web/src/app/api/eps/documents/route.ts b/apps/web/src/app/api/eps/documents/route.ts
+index f123cc2..d5c9064 100644
+--- a/apps/web/src/app/api/eps/documents/route.ts
++++ b/apps/web/src/app/api/eps/documents/route.ts
+@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
+     const docType = searchParams.get('docType')?.trim() || '';
+     const equipmentId = searchParams.get('equipmentId')?.trim() || '';
+ 
+-    const where: any = {};
++    const where: any = { deletedAt: null, equipment: { deletedAt: null } };
+ 
+     if (equipmentId) {
+       where.equipmentId = equipmentId;
+@@ -81,8 +81,9 @@ export async function GET(req: NextRequest) {
+         take: pageSize,
+       }),
+       prisma.document.count({ where }),
+-      prisma.document.findMany({
+-        select: {
++       prisma.document.findMany({
++         where: { deletedAt: null, equipment: { deletedAt: null } },
++         select: {
+           docType: true,
+           fileSize: true,
+         },
+@@ -156,14 +157,15 @@ export async function POST(req: NextRequest) {
+       );
+     }
+ 
+-    const equipment = await prisma.equipment.findUnique({ where: { id: equipmentId } });
++    const equipment = await prisma.equipment.findFirst({ where: { id: equipmentId, deletedAt: null } });
+     if (!equipment) {
+       return NextResponse.json({ success: false, error: 'Оборудование не найдено' }, { status: 404 });
+     }
+ 
+     const saved = await saveFile(file, 'documents');
+-
+-    const document = await prisma.document.create({
++    let document;
++    try {
++      document = await prisma.document.create({
+       data: {
+         equipmentId,
+         fileName: saved.fileName,
+@@ -190,7 +192,12 @@ export async function POST(req: NextRequest) {
+           },
+         },
+       },
+-    });
++      });
++    } catch (error) {
++      const { deleteFile } = await import('@/lib/storage');
++      deleteFile(saved.filePath);
++      throw error;
++    }
+ 
+     await logAuditEvent({
+       userId: user.userId,
+diff --git a/apps/web/src/app/api/eps/equipment/[id]/documents/route.ts b/apps/web/src/app/api/eps/equipment/[id]/documents/route.ts
+index 4572c30..036c158 100644
+--- a/apps/web/src/app/api/eps/equipment/[id]/documents/route.ts
++++ b/apps/web/src/app/api/eps/equipment/[id]/documents/route.ts
+@@ -17,7 +17,7 @@ export async function POST(
+     if (!hasPermission(user, PERMISSIONS.EPS_DOCUMENTS_UPLOAD)) return forbiddenResponse();
+ 
+     const { id } = params;
+-    const equipment = await prisma.equipment.findUnique({ where: { id } });
++    const equipment = await prisma.equipment.findFirst({ where: { id, deletedAt: null } });
+     if (!equipment) {
+       return NextResponse.json({ success: false, error: 'Оборудование не найдено' }, { status: 404 });
+     }
+@@ -33,20 +33,25 @@ export async function POST(
+ 
+     // Сохраняем документ на диск
+     const saved = await saveFile(file, 'documents');
+-
+-    const document = await prisma.document.create({
+-      data: {
+-        equipmentId: id,
+-        fileName: saved.fileName,
+-        originalName: saved.originalName,
+-        filePath: saved.filePath,
+-        fileType: saved.fileType,
+-        fileSize: saved.fileSize,
+-        docType,
+-        description: description?.trim() || null,
+-        uploadedById: user.userId,
+-      },
+-    });
++    let document;
++    try {
++      document = await prisma.document.create({
++        data: {
++          equipmentId: id,
++          fileName: saved.fileName,
++          originalName: saved.originalName,
++          filePath: saved.filePath,
++          fileType: saved.fileType,
++          fileSize: saved.fileSize,
++          docType,
++          description: description?.trim() || null,
++          uploadedById: user.userId,
++        },
++      });
++    } catch (error) {
++      deleteFile(saved.filePath);
++      throw error;
++    }
+ 
+     await logAuditEvent({
+       userId: user.userId,
+@@ -76,19 +81,21 @@ export async function DELETE(
+     if (!hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_EDIT)) return forbiddenResponse();
+ 
+     const { searchParams } = new URL(req.url);
++    const { id } = params;
+     const documentId = searchParams.get('documentId');
+ 
+     if (!documentId) {
+       return NextResponse.json({ success: false, error: 'Не указан documentId' }, { status: 400 });
+     }
+ 
+-    const document = await prisma.document.findUnique({ where: { id: documentId } });
++    const document = await prisma.document.findFirst({
++      where: { id: documentId, equipmentId: id, deletedAt: null, equipment: { deletedAt: null } },
++    });
+     if (!document) {
+       return NextResponse.json({ success: false, error: 'Документ не найден' }, { status: 404 });
+     }
+ 
+-    deleteFile(document.filePath);
+-    await prisma.document.delete({ where: { id: documentId } });
++    await prisma.document.update({ where: { id: documentId }, data: { deletedAt: new Date() } });
+ 
+     return NextResponse.json({ success: true, message: 'Документ удален' });
+   } catch (error: any) {
+diff --git a/apps/web/src/app/api/eps/equipment/[id]/photos/route.ts b/apps/web/src/app/api/eps/equipment/[id]/photos/route.ts
+index 7a915cd..e0068f7 100644
+--- a/apps/web/src/app/api/eps/equipment/[id]/photos/route.ts
++++ b/apps/web/src/app/api/eps/equipment/[id]/photos/route.ts
+@@ -17,7 +17,7 @@ export async function POST(
+     if (!hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_EDIT)) return forbiddenResponse();
+ 
+     const { id } = params;
+-    const equipment = await prisma.equipment.findUnique({ where: { id } });
++    const equipment = await prisma.equipment.findFirst({ where: { id, deletedAt: null } });
+     if (!equipment) {
+       return NextResponse.json({ success: false, error: 'Оборудование не найдено' }, { status: 404 });
+     }
+@@ -33,25 +33,31 @@ export async function POST(
+     // Сохраняем файл на диск
+     const saved = await saveFile(file, 'photos');
+ 
+-    // Если это главное фото, снимаем флаг с других
+-    if (isPrimary) {
+-      await prisma.photo.updateMany({
+-        where: { equipmentId: id },
+-        data: { isPrimary: false },
++    let photo;
++    try {
++      photo = await prisma.$transaction(async (tx) => {
++        if (isPrimary) {
++          await tx.photo.updateMany({
++            where: { equipmentId: id, deletedAt: null },
++            data: { isPrimary: false },
++          });
++        }
++        return tx.photo.create({
++          data: {
++            equipmentId: id,
++            fileName: saved.fileName,
++            originalName: saved.originalName,
++            filePath: saved.filePath,
++            isPrimary,
++            uploadedById: user.userId,
++          },
++        });
+       });
++    } catch (error) {
++      deleteFile(saved.filePath);
++      throw error;
+     }
+ 
+-    const photo = await prisma.photo.create({
+-      data: {
+-        equipmentId: id,
+-        fileName: saved.fileName,
+-        originalName: saved.originalName,
+-        filePath: saved.filePath,
+-        isPrimary,
+-        uploadedById: user.userId,
+-      },
+-    });
+-
+     await logAuditEvent({
+       userId: user.userId,
+       action: 'UPDATE',
+@@ -80,19 +86,21 @@ export async function DELETE(
+     if (!hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_EDIT)) return forbiddenResponse();
+ 
+     const { searchParams } = new URL(req.url);
++    const { id } = params;
+     const photoId = searchParams.get('photoId');
+ 
+     if (!photoId) {
+       return NextResponse.json({ success: false, error: 'Не указан photoId' }, { status: 400 });
+     }
+ 
+-    const photo = await prisma.photo.findUnique({ where: { id: photoId } });
++    const photo = await prisma.photo.findFirst({
++      where: { id: photoId, equipmentId: id, deletedAt: null, equipment: { deletedAt: null } },
++    });
+     if (!photo) {
+       return NextResponse.json({ success: false, error: 'Фото не найдено' }, { status: 404 });
+     }
+ 
+-    deleteFile(photo.filePath);
+-    await prisma.photo.delete({ where: { id: photoId } });
++    await prisma.photo.update({ where: { id: photoId }, data: { deletedAt: new Date() } });
+ 
+     return NextResponse.json({ success: true, message: 'Фото удалено' });
+   } catch (error: any) {
+diff --git a/apps/web/src/app/api/eps/equipment/[id]/route.ts b/apps/web/src/app/api/eps/equipment/[id]/route.ts
+index 0cd0369..ca7c085 100644
+--- a/apps/web/src/app/api/eps/equipment/[id]/route.ts
++++ b/apps/web/src/app/api/eps/equipment/[id]/route.ts
+@@ -4,6 +4,7 @@ import { prisma, EquipmentStatus } from '@ems/database';
+ import { PERMISSIONS } from '@ems/shared';
+ import { hasPermission, logAuditEvent } from '@ems/auth';
+ import { z } from 'zod';
++import { canTransitionEquipmentStatus, equipmentVisibilityWhere } from '@/lib/eps-state-machine';
+ 
+ export const dynamic = 'force-dynamic';
+ 
+@@ -18,12 +19,14 @@ export async function GET(
+ 
+     const { id } = params;
+ 
+-    const equipment = await prisma.equipment.findUnique({
+-      where: { id },
++    const canManageDrafts = hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) || user.roles.includes('admin');
++    const equipment = await prisma.equipment.findFirst({
++      where: { AND: [{ id }, equipmentVisibilityWhere(user.userId, canManageDrafts)] },
+       include: {
+         tags: { include: { tag: true } },
+-        photos: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
++        photos: { where: { deletedAt: null }, orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
+         documents: {
++          where: { deletedAt: null },
+           include: { uploadedBy: { select: { displayName: true } } },
+           orderBy: { createdAt: 'desc' },
+         },
+@@ -130,8 +133,8 @@ export async function PATCH(
+       directSave,
+     } = parsedBody;
+ 
+-    const currentEquipment = await prisma.equipment.findUnique({
+-      where: { id },
++    const currentEquipment = await prisma.equipment.findFirst({
++      where: { id, deletedAt: null },
+       include: { tags: true },
+     });
+ 
+@@ -152,6 +155,10 @@ export async function PATCH(
+     const isOwner = currentEquipment.createdById === user.userId;
+     const isDraft = currentEquipment.status === 'DRAFT';
+ 
++    if (isDraft && !isOwner && !canManageDirectly) {
++      return forbiddenResponse('Редактировать черновик может только его автор или уполномоченный руководитель');
++    }
++
+     // Случай 1: Отправка на согласование или сохранение черновика изменений для утвержденного оборудования
+     if (!isDraft && (!canManageDirectly || submitForApproval)) {
+       const proposedData: Record<string, any> = {
+@@ -200,7 +207,7 @@ export async function PATCH(
+ 
+     // Случай 2: Редактирование черновика оборудования с отправкой на согласование (COMMISSIONING)
+     if (submitForApproval && isDraft) {
+-      const updated = await prisma.$transaction(async (tx) => {
++      const { updated, approval } = await prisma.$transaction(async (tx) => {
+         if (Array.isArray(tagIds)) {
+           await tx.equipmentTag.deleteMany({ where: { equipmentId: id } });
+           if (tagIds.length > 0) {
+@@ -210,7 +217,7 @@ export async function PATCH(
+           }
+         }
+ 
+-        return tx.equipment.update({
++        const updatedEquipment = await tx.equipment.update({
+           where: { id },
+           data: {
+             name: name !== undefined ? name.trim() : undefined,
+@@ -224,28 +231,28 @@ export async function PATCH(
+           },
+           include: { tags: { include: { tag: true } } },
+         });
+-      });
+-
+-      const approval = await prisma.equipmentApproval.create({
+-        data: {
+-          equipmentId: id,
+-          type: 'COMMISSIONING',
+-          status: 'PENDING',
+-          title: `Регистрация оборудования: ${updated.name}`,
+-          description: approvalComment?.trim() || 'Черновик направлен на согласование',
+-          proposedData: {
+-            targetStatus: status || 'ACTIVE',
+-            name: updated.name,
+-            inventoryNumber: updated.inventoryNumber,
+-            serialNumber: updated.serialNumber,
+-            manufacturer: updated.manufacturer,
+-            model: updated.model,
+-            location: updated.location,
+-            commissionDate: updated.commissionDate ? updated.commissionDate.toISOString() : null,
+-            customFields: updated.customFields,
++        const createdApproval = await tx.equipmentApproval.create({
++          data: {
++            equipmentId: id,
++            type: 'COMMISSIONING',
++            status: 'PENDING',
++            title: `Регистрация оборудования: ${updatedEquipment.name}`,
++            description: approvalComment?.trim() || 'Черновик направлен на согласование',
++            proposedData: {
++              targetStatus: status || 'ACTIVE',
++              name: updatedEquipment.name,
++              inventoryNumber: updatedEquipment.inventoryNumber,
++              serialNumber: updatedEquipment.serialNumber,
++              manufacturer: updatedEquipment.manufacturer,
++              model: updatedEquipment.model,
++              location: updatedEquipment.location,
++              commissionDate: updatedEquipment.commissionDate ? updatedEquipment.commissionDate.toISOString() : null,
++              customFields: updatedEquipment.customFields,
++            },
++            requesterId: user.userId,
+           },
+-          requesterId: user.userId,
+-        },
++        });
++        return { updated: updatedEquipment, approval: createdApproval };
+       });
+ 
+       return NextResponse.json({
+@@ -256,6 +263,13 @@ export async function PATCH(
+     }
+ 
+     // Случай 3: Прямое обновление черновика или прямое сохранение администратором
++    if (status !== undefined && !canTransitionEquipmentStatus(currentEquipment.status, status, false)) {
++      return NextResponse.json(
++        { success: false, error: 'Недопустимый переход статуса оборудования' },
++        { status: 400 },
++      );
++    }
++
+     const updated = await prisma.$transaction(async (tx) => {
+       if (Array.isArray(tagIds)) {
+         await tx.equipmentTag.deleteMany({ where: { equipmentId: id } });
+@@ -328,13 +342,13 @@ export async function DELETE(
+     if (!hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_DELETE)) return forbiddenResponse();
+ 
+     const { id } = params;
+-    const equipment = await prisma.equipment.findUnique({ where: { id } });
++    const equipment = await prisma.equipment.findFirst({ where: { id, deletedAt: null } });
+ 
+     if (!equipment) {
+       return NextResponse.json({ success: false, error: 'Оборудование не найдено' }, { status: 404 });
+     }
+ 
+-    await prisma.equipment.delete({ where: { id } });
++    await prisma.equipment.update({ where: { id }, data: { deletedAt: new Date() } });
+ 
+     await logAuditEvent({
+       userId: user.userId,
+diff --git a/apps/web/src/app/api/eps/equipment/route.ts b/apps/web/src/app/api/eps/equipment/route.ts
+index aec08e7..9f0753d 100644
+--- a/apps/web/src/app/api/eps/equipment/route.ts
++++ b/apps/web/src/app/api/eps/equipment/route.ts
+@@ -4,6 +4,7 @@ import { prisma, EquipmentStatus, Prisma } from '@ems/database';
+ import { PERMISSIONS } from '@ems/shared';
+ import { hasPermission, logAuditEvent } from '@ems/auth';
+ import { z } from 'zod';
++import { equipmentVisibilityWhere } from '@/lib/eps-state-machine';
+ 
+ export async function GET(req: NextRequest) {
+   try {
+@@ -19,7 +20,8 @@ export async function GET(req: NextRequest) {
+     const page = parseInt(searchParams.get('page') || '1', 10);
+     const pageSize = Math.min(1000, Math.max(1, parseInt(searchParams.get('pageSize') || searchParams.get('limit') || '20', 10)));
+ 
+-    const where: Prisma.EquipmentWhereInput = {};
++    const canManageDrafts = hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) || user.roles.includes('admin');
++    const where: Prisma.EquipmentWhereInput = equipmentVisibilityWhere(user.userId, canManageDrafts);
+ 
+     if (status) {
+       where.status = status;
+@@ -36,14 +38,22 @@ export async function GET(req: NextRequest) {
+     }
+ 
+     if (search) {
+-      where.OR = [
+-        { name: { contains: search, mode: 'insensitive' } },
+-        { inventoryNumber: { contains: search, mode: 'insensitive' } },
+-        { serialNumber: { contains: search, mode: 'insensitive' } },
+-        { manufacturer: { contains: search, mode: 'insensitive' } },
+-        { model: { contains: search, mode: 'insensitive' } },
+-        { location: { contains: search, mode: 'insensitive' } },
++      const visibilityWhere = { ...where };
++      delete visibilityWhere.OR;
++      where.AND = [
++        visibilityWhere,
++        {
++          OR: [
++            { name: { contains: search, mode: 'insensitive' } },
++            { inventoryNumber: { contains: search, mode: 'insensitive' } },
++            { serialNumber: { contains: search, mode: 'insensitive' } },
++            { manufacturer: { contains: search, mode: 'insensitive' } },
++            { model: { contains: search, mode: 'insensitive' } },
++            { location: { contains: search, mode: 'insensitive' } },
++          ],
++        },
+       ];
++      delete where.OR;
+     }
+ 
+     const [total, items, statusGroup] = await Promise.all([
+@@ -55,13 +65,13 @@ export async function GET(req: NextRequest) {
+             include: { tag: true },
+           },
+           photos: {
+-            where: { isPrimary: true },
++            where: { isPrimary: true, deletedAt: null },
+             take: 1,
+           },
+           _count: {
+             select: {
+-              documents: true,
+-              photos: true,
++              documents: { where: { deletedAt: null } },
++              photos: { where: { deletedAt: null } },
+               maintenancePlans: true,
+               spareParts: true,
+             },
+@@ -73,6 +83,7 @@ export async function GET(req: NextRequest) {
+       }),
+       prisma.equipment.groupBy({
+         by: ['status'],
++        where,
+         _count: { status: true },
+       }),
+     ]);
+@@ -191,55 +202,57 @@ export async function POST(req: NextRequest) {
+       ? 'DRAFT'
+       : (status || 'ACTIVE');
+ 
+-    const newEquipment = await prisma.equipment.create({
+-      data: {
+-        name: name.trim(),
+-        inventoryNumber: inventoryNumber?.trim() || null,
+-        serialNumber: serialNumber?.trim() || null,
+-        manufacturer: manufacturer?.trim() || null,
+-        model: model?.trim() || null,
+-        location: location?.trim() || null,
+-        status: initialStatus,
+-        commissionDate: commissionDate ? new Date(commissionDate) : null,
+-        customFields: customFields ? JSON.parse(JSON.stringify(customFields)) : {},
+-        createdById: user.userId,
+-        tags: Array.isArray(tagIds) && tagIds.length > 0
+-          ? {
+-              create: tagIds.map((tagId: string) => ({ tagId })),
+-            }
+-          : undefined,
+-      },
+-      include: {
+-        tags: { include: { tag: true } },
+-      },
+-    });
+-
+-    let approvalRecord: any = null;
+-
+-    // Если запрошена отправка на согласование
+-    if (submitForApproval || (!canManageDirectly && !asDraft)) {
+-      approvalRecord = await prisma.equipmentApproval.create({
++    const { newEquipment, approvalRecord } = await prisma.$transaction(async (tx) => {
++      const createdEquipment = await tx.equipment.create({
+         data: {
+-          equipmentId: newEquipment.id,
+-          type: 'COMMISSIONING',
+-          status: 'PENDING',
+-          title: `Регистрация оборудования: ${newEquipment.name}`,
+-          description: approvalComment?.trim() || 'Первичная регистрация нового паспорта оборудования',
+-          proposedData: {
+-            targetStatus: status || 'ACTIVE',
+-            name: newEquipment.name,
+-            inventoryNumber: newEquipment.inventoryNumber,
+-            serialNumber: newEquipment.serialNumber,
+-            manufacturer: newEquipment.manufacturer,
+-            model: newEquipment.model,
+-            location: newEquipment.location,
+-            commissionDate: newEquipment.commissionDate ? newEquipment.commissionDate.toISOString() : null,
+-            customFields: newEquipment.customFields,
+-          },
+-          requesterId: user.userId,
++          name: name.trim(),
++          inventoryNumber: inventoryNumber?.trim() || null,
++          serialNumber: serialNumber?.trim() || null,
++          manufacturer: manufacturer?.trim() || null,
++          model: model?.trim() || null,
++          location: location?.trim() || null,
++          status: initialStatus,
++          commissionDate: commissionDate ? new Date(commissionDate) : null,
++          customFields: customFields ? JSON.parse(JSON.stringify(customFields)) : {},
++          createdById: user.userId,
++          tags: Array.isArray(tagIds) && tagIds.length > 0
++            ? {
++                create: tagIds.map((tagId: string) => ({ tagId })),
++              }
++            : undefined,
++        },
++        include: {
++          tags: { include: { tag: true } },
+         },
+       });
+-    }
++
++      let createdApproval: any = null;
++      if (submitForApproval || (!canManageDirectly && !asDraft)) {
++        createdApproval = await tx.equipmentApproval.create({
++          data: {
++            equipmentId: createdEquipment.id,
++            type: 'COMMISSIONING',
++            status: 'PENDING',
++            title: `Регистрация оборудования: ${createdEquipment.name}`,
++            description: approvalComment?.trim() || 'Первичная регистрация нового паспорта оборудования',
++            proposedData: {
++              targetStatus: status || 'ACTIVE',
++              name: createdEquipment.name,
++              inventoryNumber: createdEquipment.inventoryNumber,
++              serialNumber: createdEquipment.serialNumber,
++              manufacturer: createdEquipment.manufacturer,
++              model: createdEquipment.model,
++              location: createdEquipment.location,
++              commissionDate: createdEquipment.commissionDate ? createdEquipment.commissionDate.toISOString() : null,
++              customFields: createdEquipment.customFields,
++            },
++            requesterId: user.userId,
++          },
++        });
++      }
++
++      return { newEquipment: createdEquipment, approvalRecord: createdApproval };
++    });
+ 
+     // Аудит события
+     await logAuditEvent({
+diff --git a/apps/web/src/app/api/eps/import/analyze/route.ts b/apps/web/src/app/api/eps/import/analyze/route.ts
+index 5b993b8..c7a2a19 100644
+--- a/apps/web/src/app/api/eps/import/analyze/route.ts
++++ b/apps/web/src/app/api/eps/import/analyze/route.ts
+@@ -3,10 +3,14 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
+ import { prisma } from '@ems/database';
+ import { PERMISSIONS } from '@ems/shared';
+ import { hasPermission } from '@ems/auth';
++import { enforceRateLimit } from '@/lib/rate-limit';
+ import * as XLSX from 'xlsx';
+ 
+ export const dynamic = 'force-dynamic';
+ 
++const MAX_IMPORT_FILE_SIZE = 10 * 1024 * 1024;
++const MAX_IMPORT_ROWS = 10_000;
++
+ interface ColumnMatchRule {
+   targetKey: string;
+   targetName: string;
+@@ -356,6 +360,9 @@ function makeEnglishSlug(str: string): string {
+ }
+ 
+ export async function POST(req: NextRequest) {
++  const rateLimitError = await enforceRateLimit(req, { limit: 10, windowMs: 60 * 1000, prefix: 'eps-import-analyze' });
++  if (rateLimitError) return rateLimitError;
++
+   try {
+     const user = await getCurrentUser(req);
+     if (!user) return unauthorizedResponse();
+@@ -369,6 +376,9 @@ export async function POST(req: NextRequest) {
+     if (!file) {
+       return NextResponse.json({ success: false, error: 'Файл не загружен' }, { status: 400 });
+     }
++    if (file.size > MAX_IMPORT_FILE_SIZE) {
++      return NextResponse.json({ success: false, error: 'Размер файла превышает допустимый лимит (10 МБ)' }, { status: 413 });
++    }
+ 
+     const buffer = Buffer.from(await file.arrayBuffer());
+     const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: true });
+@@ -392,6 +402,9 @@ export async function POST(req: NextRequest) {
+     if (rawJsonRows.length === 0) {
+       return NextResponse.json({ success: false, error: 'Файл пуст или не содержит строк' }, { status: 400 });
+     }
++    if (rawJsonRows.length > MAX_IMPORT_ROWS) {
++      return NextResponse.json({ success: false, error: 'Количество строк превышает допустимый лимит (10000)' }, { status: 413 });
++    }
+ 
+     // Extract headers
+     const fileHeaders = Object.keys(rawJsonRows[0]);
+diff --git a/apps/web/src/app/api/eps/import/execute/route.ts b/apps/web/src/app/api/eps/import/execute/route.ts
+index 3a23bfb..2ebbbe7 100644
+--- a/apps/web/src/app/api/eps/import/execute/route.ts
++++ b/apps/web/src/app/api/eps/import/execute/route.ts
+@@ -53,29 +53,17 @@ export async function POST(req: NextRequest) {
+       columnMapping = {},
+       newFieldDefinitions = [],
+       ignoredHeaders = [],
+-      conflictStrategy = 'UPSERT', // 'UPSERT' | 'SKIP' | 'FULL_REPLACE'
+-      fullReplaceConfirmed = false,
++      conflictStrategy = 'UPSERT', // 'UPSERT' | 'SKIP'
+     } = body;
+ 
+     if (!Array.isArray(rows) || rows.length === 0) {
+       return NextResponse.json({ success: false, error: 'Нет данных для импорта' }, { status: 400 });
+     }
+-    if (conflictStrategy === 'FULL_REPLACE' && fullReplaceConfirmed !== true) {
+-      return NextResponse.json({ success: false, error: 'Для полной замены реестра требуется подтверждение' }, { status: 400 });
+-    }
+     if (conflictStrategy === 'FULL_REPLACE') {
+-      const externalIdHeader = Object.keys(columnMapping).find((header) => columnMapping[header] === 'externalId');
+-      const externalIds = externalIdHeader
+-        ? rows.map((row: any) => String((row.data || row)[externalIdHeader] || '').trim())
+-        : [];
+-      const duplicateIds = [...new Set(externalIds.filter((id) => id && externalIds.indexOf(id) !== externalIds.lastIndexOf(id)))];
+-      if (!externalIdHeader || externalIds.some((id) => !id) || duplicateIds.length > 0) {
+-        return NextResponse.json({ success: false, error: 'Для полной замены требуется уникальный ID оборудования в каждой строке' }, { status: 400 });
+-      }
++      return NextResponse.json({ success: false, error: 'Стратегия FULL_REPLACE отключена из соображений безопасности' }, { status: 400 });
+     }
+ 
+-    const inventoryHeader = Object.keys(columnMapping).find((header) => columnMapping[header] === 'inventoryNumber');
+-    const usedInventoryNumbers = new Set<string>();
++    const canManageDirectly = hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) || user.roles.includes('admin');
+ 
+     // Step 1: Create or find Custom Sections & Fields in Dictionary
+     const newlyCreatedFields: any[] = [];
+@@ -177,8 +165,6 @@ export async function POST(req: NextRequest) {
+     });
+ 
+     const processRows = async (db: any) => {
+-      if (conflictStrategy === 'FULL_REPLACE') await db.equipment.deleteMany();
+-
+       // Step 2: Process each row
+       for (let i = 0; i < rows.length; i++) {
+       const rowItem = rows[i];
+@@ -230,29 +216,18 @@ export async function POST(req: NextRequest) {
+           continue;
+         }
+ 
+-        if (conflictStrategy === 'FULL_REPLACE' && invVal) {
+-          const inventoryValue = String(invVal);
+-          const isDuplicateInventory = usedInventoryNumbers.has(inventoryValue);
+-          if (inventoryValue.toLowerCase() === 'б/н' || isDuplicateInventory) {
+-            customFieldsObj.registry_inventory_number = inventoryValue;
+-            invVal = null;
+-          } else {
+-            usedInventoryNumbers.add(inventoryValue);
+-          }
+-        }
+-
+         // Check if equipment already exists in DB
+         let existingEquipment: any = null;
+         const externalId = customFieldsObj.external_system_id ? String(customFieldsObj.external_system_id).trim() : '';
+-        if (externalId && conflictStrategy !== 'FULL_REPLACE') {
++        if (externalId) {
+           existingEquipment = existingExternalMap.get(externalId) || null;
+         }
+-        if (invVal && conflictStrategy !== 'FULL_REPLACE') {
++        if (invVal) {
+           existingEquipment = existingEquipment || await db.equipment.findUnique({
+             where: { inventoryNumber: invVal },
+           });
+         }
+-        if (!existingEquipment && snVal && conflictStrategy !== 'FULL_REPLACE') {
++        if (!existingEquipment && snVal) {
+           existingEquipment = await db.equipment.findFirst({
+             where: { serialNumber: snVal },
+           });
+@@ -281,16 +256,51 @@ export async function POST(req: NextRequest) {
+             continue;
+           }
+ 
+-          // UPSERT Strategy: Update existing equipment
+           const mergedCustom = {
+             ...((existingEquipment.customFields as Record<string, any>) || {}),
+             ...customFieldsObj,
+           };
+ 
+-            await db.equipment.update({
++          if (!canManageDirectly) {
++            const approval = await db.equipmentApproval.create({
++              data: {
++                 equipmentId: existingEquipment.id,
++                 type: 'PARAMETER_CHANGE',
++                 status: 'PENDING',
++                 title: `Изменения из импорта: ${nameVal}`,
++                 description: 'Изменения оборудования направлены на согласование из обычного импорта',
++                 proposedData: {
++                   name: nameVal || existingEquipment.name,
++                   inventoryNumber: invVal !== null ? invVal : existingEquipment.inventoryNumber,
++                   serialNumber: snVal || existingEquipment.serialNumber,
++                   manufacturer: mfgVal || existingEquipment.manufacturer,
++                   model: modelVal || existingEquipment.model,
++                   location: locVal || existingEquipment.location,
++                   status: statusVal,
++                  commissionDate: (commDateVal as Date | null)?.toISOString() || null,
++                  customFields: mergedCustom,
++                   tagIds: tagIdsToLink,
++                 },
++                 requesterId: user.userId,
++               },
++             });
++             await logAuditEvent({
++               userId: user.userId,
++               action: 'CREATE',
++               entityType: 'EquipmentApproval',
++               entityId: approval.id,
++               changes: { equipmentId: existingEquipment.id, source: 'equipment-import' },
++             });
++             updatedCount++;
++            continue;
++          }
++
++          // UPSERT Strategy: update existing equipment for approval managers.
++          await db.equipment.update({
+             where: { id: existingEquipment.id },
+             data: {
+               name: nameVal || existingEquipment.name,
++              inventoryNumber: invVal !== null ? invVal : existingEquipment.inventoryNumber,
+               serialNumber: snVal || existingEquipment.serialNumber,
+               manufacturer: mfgVal || existingEquipment.manufacturer,
+               model: modelVal || existingEquipment.model,
+@@ -323,14 +333,45 @@ export async function POST(req: NextRequest) {
+               manufacturer: mfgVal,
+               model: modelVal,
+               location: locVal,
+-              status: statusVal,
++              status: canManageDirectly ? statusVal : 'DRAFT',
+               commissionDate: commDateVal,
+               customFields: Object.keys(customFieldsObj).length > 0 ? customFieldsObj : undefined,
+               createdById: user.userId,
+             },
+           });
+ 
+-          // Link tags
++           if (!canManageDirectly) {
++             const approval = await db.equipmentApproval.create({
++               data: {
++                 equipmentId: newEq.id,
++                 type: 'COMMISSIONING',
++                 status: 'PENDING',
++                 title: `Регистрация оборудования: ${newEq.name}`,
++                 description: 'Оборудование направлено на согласование из обычного импорта',
++                 proposedData: {
++                   targetStatus: statusVal,
++                   name: newEq.name,
++                   inventoryNumber: newEq.inventoryNumber,
++                   serialNumber: newEq.serialNumber,
++                   manufacturer: newEq.manufacturer,
++                   model: newEq.model,
++                   location: newEq.location,
++                   commissionDate: (commDateVal as Date | null)?.toISOString() || null,
++                   customFields: newEq.customFields,
++                 },
++                 requesterId: user.userId,
++               },
++             });
++             await logAuditEvent({
++               userId: user.userId,
++               action: 'CREATE',
++               entityType: 'EquipmentApproval',
++               entityId: approval.id,
++               changes: { equipmentId: newEq.id, source: 'equipment-import' },
++             });
++           }
++
++           // Link tags
+           if (tagIdsToLink.length > 0) {
+             await db.equipmentTag.createMany({
+               data: tagIdsToLink.map((tagId) => ({ equipmentId: newEq.id, tagId })),
+@@ -343,21 +384,11 @@ export async function POST(req: NextRequest) {
+       } catch (err: any) {
+         errorCount++;
+         errors.push({ row: i + 1, error: err.message || 'Ошибка обработки строки' });
+-        if (conflictStrategy === 'FULL_REPLACE') {
+-          throw new Error(`Ошибка полной замены в строке ${i + 1}: ${err.message || 'Ошибка обработки строки'}`);
+-        }
+       }
+       }
+     };
+ 
+-    if (conflictStrategy === 'FULL_REPLACE') {
+-      await prisma.$transaction((tx) => processRows(tx), {
+-        maxWait: 10_000,
+-        timeout: 120_000,
+-      });
+-    } else {
+-      await processRows(prisma);
+-    }
++    await processRows(prisma);
+ 
+     // Step 3: Log audit event
+     await logAuditEvent({
+diff --git a/apps/web/src/app/api/eps/reports/generate/route.ts b/apps/web/src/app/api/eps/reports/generate/route.ts
+index 5de4f0d..b4098b7 100644
+--- a/apps/web/src/app/api/eps/reports/generate/route.ts
++++ b/apps/web/src/app/api/eps/reports/generate/route.ts
+@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
+     const allAvailableColumns = [...baseColumns, ...customColumns];
+ 
+     // Build prisma query where filter
+-    const where: any = {};
++    const where: any = { deletedAt: null };
+ 
+     if (filters.status && filters.status in EquipmentStatus) {
+       where.status = filters.status as EquipmentStatus;
+@@ -152,8 +152,8 @@ export async function POST(req: NextRequest) {
+       where,
+       include: {
+         tags: { include: { tag: true } },
+-        documents: { select: { id: true } },
+-        photos: { select: { id: true } },
++        documents: { where: { deletedAt: null }, select: { id: true } },
++        photos: { where: { deletedAt: null }, select: { id: true } },
+         maintenancePlans: { select: { id: true } },
+         spareParts: { select: { nomenclatureId: true } },
+         createdBy: { select: { displayName: true } },
+diff --git a/apps/web/src/app/api/files/[...path]/route.ts b/apps/web/src/app/api/files/[...path]/route.ts
+index b5214e3..dd15075 100644
+--- a/apps/web/src/app/api/files/[...path]/route.ts
++++ b/apps/web/src/app/api/files/[...path]/route.ts
+@@ -3,7 +3,10 @@ import fs from 'fs';
+ import path from 'path';
+ import { getAbsoluteFilePath } from '@/lib/storage';
+ 
+-import { getCurrentUser, unauthorizedResponse } from '@/lib/auth-guard';
++import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
++import { prisma } from '@ems/database';
++import { PERMISSIONS } from '@ems/shared';
++import { hasPermission } from '@ems/auth';
+ 
+ export async function GET(
+   req: NextRequest,
+@@ -15,15 +18,38 @@ export async function GET(
+     if (!user) {
+       return unauthorizedResponse();
+     }
++    if (!hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_VIEW)) {
++      return forbiddenResponse();
++    }
+ 
+     const relativePath = params.path.join('/');
+-    const fullPath = getAbsoluteFilePath(relativePath);
++    let fullPath: string;
++    try {
++      fullPath = getAbsoluteFilePath(relativePath);
++    } catch {
++      return forbiddenResponse('Доступ запрещен');
++    }
+ 
+     // 2. Предотвращение Directory Traversal
+-    const uploadRoot = path.resolve(process.cwd(), process.env.UPLOAD_DIR || './uploads');
++    const uploadRoot = path.resolve(process.cwd(), process.env.UPLOAD_DIR || process.env.STORAGE_LOCAL_DIR || './uploads');
+     const resolvedFullPath = path.resolve(fullPath);
+-    if (!resolvedFullPath.startsWith(uploadRoot)) {
+-      return NextResponse.json({ success: false, error: 'Доступ запрещен' }, { status: 403 });
++    const resolvedRelativePath = path.relative(uploadRoot, resolvedFullPath);
++    if (resolvedRelativePath.startsWith('..') || path.isAbsolute(resolvedRelativePath)) {
++      return forbiddenResponse('Доступ запрещен');
++    }
++
++    const [document, photo] = await Promise.all([
++      prisma.document.findFirst({
++        where: { filePath: relativePath, deletedAt: null, equipment: { deletedAt: null } },
++        select: { id: true },
++      }),
++      prisma.photo.findFirst({
++        where: { filePath: relativePath, deletedAt: null, equipment: { deletedAt: null } },
++        select: { id: true },
++      }),
++    ]);
++    if (!document && !photo) {
++      return NextResponse.json({ success: false, error: 'Файл не найден' }, { status: 404 });
+     }
+ 
+     if (!fs.existsSync(resolvedFullPath)) {
+diff --git a/apps/web/src/components/eps/SmartImportWizard.tsx b/apps/web/src/components/eps/SmartImportWizard.tsx
+index a2e3307..79eef1e 100644
+--- a/apps/web/src/components/eps/SmartImportWizard.tsx
++++ b/apps/web/src/components/eps/SmartImportWizard.tsx
+@@ -41,7 +41,6 @@ import {
+   StatusBadge,
+   FileUploadDropzone,
+   CriticalAlertBanner,
+-  ConfirmDialog,
+ } from '@/components/ui';
+ 
+ export interface MissingFieldItem {
+@@ -96,8 +95,7 @@ export function SmartImportWizard() {
+   const [availableSections, setAvailableSections] = useState<{ id: string; name: string }[]>([]);
+ 
+   // Step 3: Conflict strategy & rows state
+-  const [conflictStrategy, setConflictStrategy] = useState<'UPSERT' | 'SKIP' | 'FULL_REPLACE'>('UPSERT');
+-  const [fullReplaceDialogOpen, setFullReplaceDialogOpen] = useState(false);
++  const [conflictStrategy, setConflictStrategy] = useState<'UPSERT' | 'SKIP'>('UPSERT');
+   const [validatedRows, setValidatedRows] = useState<ValidatedRow[]>([]);
+   const [previewFilter, setPreviewFilter] = useState<'ALL' | 'NEW' | 'COLLISION' | 'ERROR'>('ALL');
+   const [totalRowsCount, setTotalRowsCount] = useState(0);
+@@ -207,15 +205,7 @@ export function SmartImportWizard() {
+   };
+ 
+   // Step 3: Execute Import
+-  const handleExecuteImport = async (confirmedFullReplace = false) => {
+-    if (conflictStrategy === 'FULL_REPLACE' && duplicateExternalIds.length > 0) {
+-      enqueueSnackbar('В файле есть повторяющиеся ID оборудования', { variant: 'error' });
+-      return;
+-    }
+-    if (conflictStrategy === 'FULL_REPLACE' && !confirmedFullReplace) {
+-      setFullReplaceDialogOpen(true);
+-      return;
+-    }
++  const handleExecuteImport = async () => {
+     setExecutingImport(true);
+ 
+     const newFieldDefs = Object.values(resolutions)
+@@ -245,7 +235,6 @@ export function SmartImportWizard() {
+           newFieldDefinitions: newFieldDefs,
+           ignoredHeaders,
+           conflictStrategy,
+-          fullReplaceConfirmed: confirmedFullReplace,
+         }),
+       });
+ 
+@@ -631,30 +620,6 @@ export function SmartImportWizard() {
+                   </Paper>
+                 </Grid>
+ 
+-                <Grid item xs={12}>
+-                  <Paper
+-                    variant="outlined"
+-                    onClick={() => setConflictStrategy('FULL_REPLACE')}
+-                    sx={{
+-                      p: 2.5,
+-                      cursor: 'pointer',
+-                      borderRadius: '8px',
+-                      border: '2px solid',
+-                      borderColor: conflictStrategy === 'FULL_REPLACE' ? 'error.main' : 'divider',
+-                      backgroundColor: conflictStrategy === 'FULL_REPLACE' ? 'error.50' : 'background.paper',
+-                    }}
+-                  >
+-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+-                      <Radio checked={conflictStrategy === 'FULL_REPLACE'} size="small" color="error" />
+-                      <Typography variant="subtitle1" fontWeight={700} color={conflictStrategy === 'FULL_REPLACE' ? 'error.main' : 'inherit'}>
+-                        Полностью заменить реестр
+-                      </Typography>
+-                    </Box>
+-                    <Typography variant="body2" color="text.secondary" sx={{ pl: 4 }}>
+-                      Удалить существующее оборудование и связанные EPS-данные, затем загрузить записи из файла. Пользователи, склады и номенклатура сохранятся.
+-                    </Typography>
+-                  </Paper>
+-                </Grid>
+               </Grid>
+             </CardContent>
+           </Card>
+@@ -863,23 +828,6 @@ export function SmartImportWizard() {
+           </CardContent>
+         </Card>
+       )}
+-      <ConfirmDialog
+-        open={fullReplaceDialogOpen}
+-        title="Полная замена реестра оборудования"
+-        subtitle="Текущие EPS-записи будут удалены"
+-        message="Будут удалены карточки оборудования и каскадно связанные документы, фотографии, теги, планы ТО и согласования. Пользователи, склады, номенклатура и складские операции сохранятся."
+-        variant="danger"
+-        confirmText="Заменить реестр"
+-        confirmWord="ЗАМЕНИТЬ"
+-        confirmWordPlaceholder="Введите ЗАМЕНИТЬ"
+-        countdownSeconds={3}
+-        onClose={() => setFullReplaceDialogOpen(false)}
+-        onConfirm={() => {
+-          setFullReplaceDialogOpen(false);
+-          void handleExecuteImport(true);
+-        }}
+-        loading={executingImport}
+-      />
+     </Box>
+   );
+ }
+diff --git a/apps/web/src/lib/__tests__/eps-approval-route.test.ts b/apps/web/src/lib/__tests__/eps-approval-route.test.ts
+new file mode 100644
+index 0000000..29f7e50
+--- /dev/null
++++ b/apps/web/src/lib/__tests__/eps-approval-route.test.ts
+@@ -0,0 +1,103 @@
++import { describe, test, beforeEach, mock } from 'node:test';
++import assert from 'node:assert/strict';
++
++const permissions = {
++  EPS_APPROVALS_VIEW: 'eps.approvals.view',
++  EPS_APPROVALS_CREATE: 'eps.approvals.create',
++  EPS_APPROVALS_MANAGE: 'eps.approvals.manage',
++  EPS_EQUIPMENT_EDIT: 'eps.equipment.edit',
++};
++
++let currentUser = { userId: 'reviewer-1', roles: ['engineer'], permissions: [permissions.EPS_APPROVALS_MANAGE] };
++let canManage = true;
++const events: string[] = [];
++
++const approval = {
++  id: 'approval-1', equipmentId: 'equipment-1', type: 'EQUIPMENT_UPDATE', status: 'PENDING',
++  title: 'Изменение оборудования', requesterId: 'requester-1', reviewerId: null, reviewedAt: null,
++  resolutionComment: null, proposedData: { name: 'Новый насос', tagIds: ['tag-1'] },
++  equipment: {
++    id: 'equipment-1', name: 'Старый насос', inventoryNumber: 'INV-1', serialNumber: null,
++    manufacturer: null, model: null, location: null, status: 'DRAFT', commissionDate: null, customFields: {},
++  },
++};
++
++const updatedApproval = {
++  ...approval, status: 'APPROVED', reviewerId: 'reviewer-1', reviewedAt: new Date(), resolutionComment: 'Принято',
++  equipment: { id: 'equipment-1', name: 'Новый насос', inventoryNumber: 'INV-1', status: 'DRAFT' },
++  requester: { id: 'requester-1', displayName: 'Автор', ldapLogin: 'requester' },
++  reviewer: { id: 'reviewer-1', displayName: 'Проверяющий', ldapLogin: 'reviewer' },
++};
++
++mock.module('@ems/shared', { namedExports: { PERMISSIONS: permissions } });
++mock.module('@/lib/auth-guard', { namedExports: {
++  getCurrentUser: async () => currentUser,
++  unauthorizedResponse: () => new Response(null, { status: 401 }),
++  forbiddenResponse: () => new Response(null, { status: 403 }),
++} });
++mock.module('@ems/auth', { namedExports: {
++  hasPermission: () => canManage,
++  logAuditEvent: async ({ entityType }: { entityType: string }) => events.push(`audit:${entityType}`),
++} });
++mock.module('@ems/database', { namedExports: {
++  ApprovalStatus: { PENDING: 'PENDING', APPROVED: 'APPROVED', REJECTED: 'REJECTED', CANCELLED: 'CANCELLED' },
++  EquipmentStatus: { ACTIVE: 'ACTIVE', DRAFT: 'DRAFT', DECOMMISSIONED: 'DECOMMISSIONED' },
++  prisma: {
++    equipmentApproval: { findUnique: async () => approval },
++    notification: { create: async () => events.push('notification') },
++    $transaction: async (callback: (client: any) => unknown) => {
++      const result = await callback({
++        equipmentApproval: {
++          findUnique: async () => events.includes('approval.updateMany') ? updatedApproval : approval,
++          updateMany: async () => { events.push('approval.updateMany'); return { count: 1 }; },
++        },
++        equipment: { update: async () => events.push('equipment.update') },
++        equipmentTag: {
++          deleteMany: async () => events.push('tags.deleteMany'),
++          createMany: async () => events.push('tags.createMany'),
++        },
++      });
++      events.push('commit');
++      return result;
++    },
++  },
++} });
++
++function makeRequest(body: unknown): Request {
++  return new Request('http://localhost/api/eps/approvals/approval-1', {
++    method: 'PATCH', body: JSON.stringify(body), headers: { 'content-type': 'application/json' },
++  });
++}
++
++describe('PATCH /api/eps/approvals/[id]', () => {
++  beforeEach(() => {
++    currentUser = { userId: 'reviewer-1', roles: ['engineer'], permissions: [permissions.EPS_APPROVALS_MANAGE] };
++    canManage = true;
++    events.length = 0;
++  });
++
++  test('performs writes in one transaction and notifies after commit', async () => {
++    const { PATCH } = await import('../../app/api/eps/approvals/[id]/route');
++    const response = await PATCH(makeRequest({ status: 'APPROVED', resolutionComment: 'Принято' }) as never, { params: { id: 'approval-1' } });
++    assert.equal(response.status, 200);
++    assert.ok(events.indexOf('tags.deleteMany') < events.indexOf('approval.updateMany'));
++    assert.ok(events.indexOf('commit') < events.indexOf('notification'));
++  });
++
++  test('rejects self-approval before transaction', async () => {
++    currentUser = { userId: 'requester-1', roles: ['engineer'], permissions: [permissions.EPS_APPROVALS_MANAGE] };
++    const { PATCH } = await import('../../app/api/eps/approvals/[id]/route');
++    const response = await PATCH(makeRequest({ status: 'REJECTED', resolutionComment: 'Нельзя' }) as never, { params: { id: 'approval-1' } });
++    assert.equal(response.status, 403);
++    assert.deepEqual(events, []);
++  });
++
++  test('does not let equipment edit permission decide an approval', async () => {
++    canManage = false;
++    currentUser = { userId: 'reviewer-1', roles: ['engineer'], permissions: [permissions.EPS_EQUIPMENT_EDIT] };
++    const { PATCH } = await import('../../app/api/eps/approvals/[id]/route');
++    const response = await PATCH(makeRequest({ status: 'REJECTED', resolutionComment: 'Нет' }) as never, { params: { id: 'approval-1' } });
++    assert.equal(response.status, 403);
++    assert.deepEqual(events, []);
++  });
++});
+diff --git a/apps/web/src/lib/__tests__/eps-equipment-routes.test.ts b/apps/web/src/lib/__tests__/eps-equipment-routes.test.ts
+new file mode 100644
+index 0000000..7010c4c
+--- /dev/null
++++ b/apps/web/src/lib/__tests__/eps-equipment-routes.test.ts
+@@ -0,0 +1,148 @@
++import { beforeEach, describe, mock, test } from 'node:test';
++import assert from 'node:assert/strict';
++
++const permissions = {
++  EPS_EQUIPMENT_CREATE: 'eps.equipment.create',
++  EPS_EQUIPMENT_EDIT: 'eps.equipment.edit',
++  EPS_APPROVALS_MANAGE: 'eps.approvals.manage',
++};
++const user = { userId: 'user-1', roles: ['engineer'], permissions: Object.values(permissions) };
++const calls: string[] = [];
++let approvalError: Error | null = null;
++
++mock.module('@ems/shared', { namedExports: { PERMISSIONS: permissions } });
++mock.module('@/lib/auth-guard', {
++  namedExports: {
++    getCurrentUser: async () => user,
++    unauthorizedResponse: () => new Response(null, { status: 401 }),
++    forbiddenResponse: () => new Response(null, { status: 403 }),
++  },
++});
++mock.module('@ems/auth', {
++  namedExports: {
++    hasPermission: (_user: typeof user, permission: string) => permission !== permissions.EPS_APPROVALS_MANAGE,
++    logAuditEvent: async () => calls.push('audit'),
++  },
++});
++mock.module('@/lib/eps-state-machine', {
++  namedExports: {
++    equipmentVisibilityWhere: () => ({ deletedAt: null }),
++    canTransitionEquipmentStatus: () => true,
++  },
++});
++
++const equipment = {
++  id: 'equipment-1',
++  name: 'Pump',
++  inventoryNumber: 'INV-1',
++  serialNumber: null,
++  manufacturer: null,
++  model: null,
++  location: null,
++  status: 'DRAFT',
++  commissionDate: null,
++  customFields: {},
++  createdById: user.userId,
++  tags: [],
++};
++
++const prisma: any = {
++  equipment: {
++    findUnique: async () => null,
++    findFirst: async () => equipment,
++    create: async () => equipment,
++    update: async () => equipment,
++  },
++  equipmentApproval: {
++    create: async () => {
++      calls.push('approval.create');
++      if (approvalError) throw approvalError;
++      return { id: 'approval-1' };
++    },
++  },
++  equipmentTag: {
++    deleteMany: async () => calls.push('tag.deleteMany'),
++    createMany: async () => calls.push('tag.createMany'),
++  },
++  $transaction: async <T>(callback: (tx: typeof prisma) => Promise<T>) => {
++    calls.push('transaction.begin');
++    try {
++      const result = await callback(prisma);
++      calls.push('transaction.commit');
++      return result;
++    } catch (error) {
++      calls.push('transaction.rollback');
++      throw error;
++    }
++  },
++};
++
++mock.module('@ems/database', {
++  namedExports: {
++    prisma,
++    EquipmentStatus: { ACTIVE: 'ACTIVE', DRAFT: 'DRAFT' },
++  },
++});
++
++function request(method: string, body: unknown): Request {
++  return new Request('http://localhost/api/eps/equipment', {
++    method,
++    body: JSON.stringify(body),
++    headers: { 'content-type': 'application/json' },
++  });
++}
++
++describe('EPS equipment transactional handlers', () => {
++  beforeEach(() => {
++    calls.length = 0;
++    approvalError = null;
++  });
++
++  test('POST creates equipment and commissioning approval in one transaction', async () => {
++    prisma.equipment.create = async () => {
++      calls.push('equipment.create');
++      return { ...equipment, status: 'DRAFT' };
++    };
++    const { POST } = await import('../../app/api/eps/equipment/route');
++    const response = await POST(request('POST', { name: 'Pump', submitForApproval: true }) as never);
++
++    assert.equal(response.status, 200);
++    assert.deepEqual(calls, ['transaction.begin', 'equipment.create', 'approval.create', 'transaction.commit', 'audit']);
++  });
++
++  test('POST rolls back equipment when commissioning approval fails', async () => {
++    approvalError = new Error('approval failed');
++    const { POST } = await import('../../app/api/eps/equipment/route');
++    const response = await POST(request('POST', { name: 'Pump', submitForApproval: true }) as never);
++
++    assert.equal(response.status, 500);
++    assert.deepEqual(calls, ['transaction.begin', 'equipment.create', 'approval.create', 'transaction.rollback']);
++  });
++
++  test('PATCH draft update and commissioning approval share one transaction', async () => {
++    prisma.equipment.update = async () => {
++      calls.push('equipment.update');
++      return { ...equipment, name: 'Updated pump' };
++    };
++    const { PATCH } = await import('../../app/api/eps/equipment/[id]/route');
++    const response = await PATCH(
++      request('PATCH', { name: 'Updated pump', submitForApproval: true }) as never,
++      { params: { id: equipment.id } },
++    );
++
++    assert.equal(response.status, 200);
++    assert.deepEqual(calls, ['transaction.begin', 'equipment.update', 'approval.create', 'transaction.commit']);
++  });
++
++  test('PATCH rolls back draft update when commissioning approval fails', async () => {
++    approvalError = new Error('approval failed');
++    const { PATCH } = await import('../../app/api/eps/equipment/[id]/route');
++    const response = await PATCH(
++      request('PATCH', { name: 'Updated pump', submitForApproval: true }) as never,
++      { params: { id: equipment.id } },
++    );
++
++    assert.equal(response.status, 500);
++    assert.deepEqual(calls, ['transaction.begin', 'equipment.update', 'approval.create', 'transaction.rollback']);
++  });
++});
+diff --git a/apps/web/src/lib/__tests__/eps-import-routes.test.ts b/apps/web/src/lib/__tests__/eps-import-routes.test.ts
+new file mode 100644
+index 0000000..fee4c32
+--- /dev/null
++++ b/apps/web/src/lib/__tests__/eps-import-routes.test.ts
+@@ -0,0 +1,143 @@
++import { beforeEach, describe, mock, test } from 'node:test';
++import assert from 'node:assert/strict';
++
++const permissions = {
++  EPS_EQUIPMENT_VIEW: 'eps.equipment.view',
++  EPS_EQUIPMENT_CREATE: 'eps.equipment.create',
++  EPS_IMPORT_EXECUTE: 'eps.import.execute',
++  EPS_APPROVALS_MANAGE: 'eps.approvals.manage',
++};
++const user = { userId: 'user-1', roles: ['engineer'], permissions: Object.values(permissions) };
++const calls: Array<{ operation: string; data?: Record<string, unknown> }> = [];
++let rateLimitResponse: Response | null = null;
++let existingEquipment: Record<string, unknown> | null = null;
++
++mock.module('@ems/shared', { namedExports: { PERMISSIONS: permissions } });
++mock.module('@/lib/auth-guard', {
++  namedExports: {
++    getCurrentUser: async () => user,
++    unauthorizedResponse: () => new Response(null, { status: 401 }),
++    forbiddenResponse: () => new Response(null, { status: 403 }),
++  },
++});
++mock.module('@/lib/rate-limit', { namedExports: { enforceRateLimit: async () => rateLimitResponse } });
++mock.module('@ems/auth', {
++  namedExports: {
++    hasPermission: (_currentUser: typeof user, permission: string) => permission !== permissions.EPS_APPROVALS_MANAGE,
++    logAuditEvent: async () => undefined,
++  },
++});
++mock.module('@ems/database', {
++  namedExports: {
++    EquipmentStatus: { ACTIVE: 'ACTIVE', DRAFT: 'DRAFT' },
++    FieldType: { TEXT: 'TEXT' },
++    prisma: {
++      customFieldDefinition: { findMany: async () => [] },
++      customSection: { findMany: async () => [] },
++      tag: { findMany: async () => [] },
++      equipment: {
++        findMany: async () => existingEquipment ? [existingEquipment] : [],
++        findUnique: async () => existingEquipment,
++        findFirst: async () => null,
++        create: async ({ data }: { data: Record<string, unknown> }) => {
++          calls.push({ operation: 'equipment.create', data });
++          return { id: 'new-equipment', ...data };
++        },
++        update: async ({ data }: { data: Record<string, unknown> }) => {
++          calls.push({ operation: 'equipment.update', data });
++          return { id: 'existing-equipment', ...data };
++        },
++      },
++      equipmentApproval: {
++        create: async ({ data }: { data: Record<string, unknown> }) => {
++          calls.push({ operation: 'equipmentApproval.create', data });
++          return { id: 'approval-1', ...data };
++        },
++      },
++      equipmentTag: {
++        upsert: async () => calls.push({ operation: 'equipmentTag.upsert' }),
++        createMany: async () => calls.push({ operation: 'equipmentTag.createMany' }),
++      },
++    },
++  },
++});
++
++function analyzeRequest(file: File): Request {
++  const formData = new FormData();
++  formData.set('file', file);
++  return new Request('http://localhost/api/eps/import/analyze', { method: 'POST', body: formData });
++}
++
++function executeRequest(body: unknown): Request {
++  return new Request('http://localhost/api/eps/import/execute', {
++    method: 'POST',
++    body: JSON.stringify(body),
++    headers: { 'content-type': 'application/json' },
++  });
++}
++
++describe('EPS import production handlers', () => {
++  beforeEach(() => {
++    calls.length = 0;
++    rateLimitResponse = null;
++    existingEquipment = null;
++  });
++
++  test('analyze applies rate limit before reading multipart input', async () => {
++    rateLimitResponse = new Response(null, { status: 429 });
++    const { POST } = await import('../../app/api/eps/import/analyze/route');
++
++    const response = await POST(new Request('http://localhost/api/eps/import/analyze', { method: 'POST' }) as never);
++
++    assert.equal(response.status, 429);
++    assert.deepEqual(calls, []);
++  });
++
++  test('analyze rejects oversized files before XLSX parsing', async () => {
++    const { POST } = await import('../../app/api/eps/import/analyze/route');
++    const response = await POST(analyzeRequest(new File([new Uint8Array(10 * 1024 * 1024 + 1)], 'large.xlsx')) as never);
++
++    assert.equal(response.status, 413);
++    assert.match((await response.json()).error, /10 МБ/);
++  });
++
++  test('ordinary import creates DRAFT and commissioning approval for ACTIVE input', async () => {
++    const { POST } = await import('../../app/api/eps/import/execute/route');
++    const response = await POST(executeRequest({
++      rows: [{ name: 'Pump', inventory: 'INV-1', status: 'ACTIVE' }],
++      columnMapping: { name: 'name', inventory: 'inventoryNumber', status: 'status' },
++    }) as never);
++
++    assert.equal(response.status, 200);
++    const create = calls.find((call) => call.operation === 'equipment.create');
++    const approval = calls.find((call) => call.operation === 'equipmentApproval.create');
++    assert.equal(create?.data?.status, 'DRAFT');
++    assert.equal(create?.data?.inventoryNumber, 'INV-1');
++    assert.equal(approval?.data?.type, 'COMMISSIONING');
++    assert.equal((approval?.data?.proposedData as Record<string, unknown>).targetStatus, 'ACTIVE');
++  });
++
++  test('ordinary UPSERT creates approval with the new inventory number without updating directly', async () => {
++    existingEquipment = {
++      id: 'existing-equipment',
++      name: 'Old pump',
++      inventoryNumber: 'OLD-1',
++      serialNumber: null,
++      manufacturer: null,
++      model: null,
++      location: null,
++      status: 'ACTIVE',
++      customFields: {},
++    };
++    const { POST } = await import('../../app/api/eps/import/execute/route');
++    const response = await POST(executeRequest({
++      rows: [{ name: 'Updated pump', inventory: 'NEW-1' }],
++      columnMapping: { name: 'name', inventory: 'inventoryNumber' },
++    }) as never);
++
++    assert.equal(response.status, 200);
++    assert.equal(calls.some((call) => call.operation === 'equipment.update'), false);
++    const approval = calls.find((call) => call.operation === 'equipmentApproval.create');
++    assert.equal((approval?.data?.proposedData as Record<string, unknown>).inventoryNumber, 'NEW-1');
++  });
++});
+diff --git a/apps/web/src/lib/__tests__/eps-protective-routes.test.ts b/apps/web/src/lib/__tests__/eps-protective-routes.test.ts
+new file mode 100644
+index 0000000..14a67b1
+--- /dev/null
++++ b/apps/web/src/lib/__tests__/eps-protective-routes.test.ts
+@@ -0,0 +1,98 @@
++import { describe, test, beforeEach, mock } from 'node:test';
++import assert from 'node:assert/strict';
++
++const permissions = {
++  EPS_EQUIPMENT_VIEW: 'eps.equipment.view',
++  EPS_CUSTOM_FIELDS_MANAGE: 'eps.custom-fields.manage',
++  EPS_EQUIPMENT_CREATE: 'eps.equipment.create',
++  EPS_IMPORT_EXECUTE: 'eps.import.execute',
++};
++
++const findManyCalls: unknown[] = [];
++const writeCalls: string[] = [];
++
++mock.module('@ems/shared', { namedExports: { PERMISSIONS: permissions } });
++mock.module('@/lib/auth-guard', {
++  namedExports: {
++    getCurrentUser: async () => ({ userId: 'user-1', roles: ['engineer'], permissions: Object.values(permissions) }),
++    unauthorizedResponse: () => new Response(null, { status: 401 }),
++    forbiddenResponse: () => new Response(null, { status: 403 }),
++  },
++});
++mock.module('@ems/auth', {
++  namedExports: {
++    hasPermission: () => true,
++    logAuditEvent: async () => undefined,
++  },
++});
++mock.module('@/lib/rate-limit', { namedExports: { enforceRateLimit: async () => null } });
++mock.module('@ems/database', {
++  namedExports: {
++    prisma: {
++      customSection: {
++        findMany: async (args: unknown) => {
++          findManyCalls.push(args);
++          return [];
++        },
++      },
++      customFieldDefinition: {
++        findMany: async (args: unknown) => {
++          findManyCalls.push(args);
++          return [];
++        },
++        deleteMany: async () => writeCalls.push('customFieldDefinition.deleteMany'),
++        updateMany: async () => writeCalls.push('customFieldDefinition.updateMany'),
++        create: async () => writeCalls.push('customFieldDefinition.create'),
++        update: async () => writeCalls.push('customFieldDefinition.update'),
++      },
++      equipment: {
++        findMany: async () => [],
++        deleteMany: async () => writeCalls.push('equipment.deleteMany'),
++      },
++    },
++    FieldType: { TEXT: 'TEXT' },
++    EquipmentStatus: { ACTIVE: 'ACTIVE' },
++  },
++});
++
++function makeRequest(url: string, body?: unknown): Request {
++  return new Request(url, {
++    method: body === undefined ? 'GET' : 'POST',
++    body: body === undefined ? undefined : JSON.stringify(body),
++    headers: body === undefined ? undefined : { 'content-type': 'application/json' },
++  });
++}
++
++describe('EPS protective production handlers', () => {
++  beforeEach(() => {
++    findManyCalls.length = 0;
++    writeCalls.length = 0;
++  });
++
++  test('GET /api/eps/custom-sections only reads data', async () => {
++    const { GET } = await import('../../app/api/eps/custom-sections/route');
++
++    const response = await GET(makeRequest('http://localhost/api/eps/custom-sections') as never);
++
++    assert.equal(response.status, 200);
++    assert.deepEqual(writeCalls, []);
++    assert.equal(findManyCalls.length, 2);
++  });
++
++  test('POST /api/eps/import/execute rejects FULL_REPLACE before database writes', async () => {
++    const { POST } = await import('../../app/api/eps/import/execute/route');
++
++    const response = await POST(
++      makeRequest('http://localhost/api/eps/import/execute', {
++        rows: [{ name: 'Pump' }],
++        columnMapping: { name: 'name' },
++        conflictStrategy: 'FULL_REPLACE',
++        fullReplaceConfirmed: true,
++      }) as never
++    );
++
++    assert.equal(response.status, 400);
++    assert.match((await response.json()).error, /FULL_REPLACE/);
++    assert.deepEqual(writeCalls, []);
++  });
++});
+diff --git a/apps/web/src/lib/__tests__/eps-rbac-routes.test.ts b/apps/web/src/lib/__tests__/eps-rbac-routes.test.ts
+new file mode 100644
+index 0000000..738b1ec
+--- /dev/null
++++ b/apps/web/src/lib/__tests__/eps-rbac-routes.test.ts
+@@ -0,0 +1,66 @@
++import { describe, test, mock } from 'node:test';
++import assert from 'node:assert/strict';
++
++const calls: string[] = [];
++const user = { userId: 'admin-1', roles: ['admin'], permissions: [] };
++
++mock.module('@ems/shared', { namedExports: { PERMISSIONS: { ADMIN_USERS_MANAGE: 'admin.users.manage', ADMIN_ROLES_MANAGE: 'admin.roles.manage' } } });
++mock.module('@/lib/auth-guard', {
++  namedExports: {
++    getCurrentUser: async () => user,
++    unauthorizedResponse: () => new Response(null, { status: 401 }),
++    forbiddenResponse: () => new Response(null, { status: 403 }),
++  },
++});
++mock.module('@ems/auth', {
++  namedExports: {
++    hasPermission: () => true,
++    logAuditEvent: async () => calls.push('audit'),
++  },
++});
++mock.module('@ems/database', {
++  namedExports: {
++    prisma: {
++      role: { findUnique: async () => ({ id: 'role-1', name: 'engineer', isSystem: false }) },
++      permission: { findMany: async () => [{ id: 'perm-1', code: 'known.permission' }] },
++      rolePermission: { deleteMany: async () => calls.push('rolePermission.deleteMany'), createMany: async () => calls.push('rolePermission.createMany') },
++      userRole: {
++        findUnique: async () => ({ userId: 'target-1', roleId: 'role-1' }),
++        delete: async () => calls.push('userRole.delete'),
++      },
++      $transaction: async (callback: (tx: unknown) => unknown) => callback({
++        permission: { findMany: async () => [{ id: 'perm-1', code: 'known.permission' }] },
++        rolePermission: { deleteMany: async () => calls.push('rolePermission.deleteMany'), createMany: async () => calls.push('rolePermission.createMany') },
++        role: { update: async () => ({ id: 'role-1' }) },
++        userRole: { findUnique: async () => ({ userId: 'target-1', roleId: 'role-1' }), delete: async () => calls.push('userRole.delete') },
++      }),
++    },
++  },
++});
++
++describe('EPS RBAC protective production handlers', () => {
++  test('role PATCH performs permission replacement in a transaction', async () => {
++    const { PATCH } = await import('../../app/api/admin/roles/[id]/route');
++    const response = await PATCH(
++      new Request('http://localhost/api/admin/roles/role-1', {
++        method: 'PATCH',
++        body: JSON.stringify({ permissionCodes: ['known.permission'] }),
++        headers: { 'content-type': 'application/json' },
++      }) as never,
++      { params: { id: 'role-1' } },
++    );
++    assert.equal(response.status, 200);
++    assert.deepEqual(calls.slice(0, 2), ['rolePermission.deleteMany', 'rolePermission.createMany']);
++  });
++
++  test('revoke-by-ID deletes only the requested user-role link', async () => {
++    calls.length = 0;
++    const { DELETE } = await import('../../app/api/admin/users/[userId]/roles/[roleId]/route');
++    const response = await DELETE(
++      new Request('http://localhost/api/admin/users/target-1/roles/role-1', { method: 'DELETE' }) as never,
++      { params: { userId: 'target-1', roleId: 'role-1' } },
++    );
++    assert.equal(response.status, 200);
++    assert.deepEqual(calls, ['userRole.delete', 'audit']);
++  });
++});
+diff --git a/apps/web/src/lib/__tests__/eps-stage7-routes.test.ts b/apps/web/src/lib/__tests__/eps-stage7-routes.test.ts
+new file mode 100644
+index 0000000..f0104d3
+--- /dev/null
++++ b/apps/web/src/lib/__tests__/eps-stage7-routes.test.ts
+@@ -0,0 +1,164 @@
++import { describe, test, beforeEach, mock } from 'node:test';
++import assert from 'node:assert/strict';
++import path from 'node:path';
++
++const state = {
++  user: { userId: 'user-1', roles: ['engineer'], permissions: ['eps.equipment.view', 'eps.equipment.edit', 'eps.documents.upload'] },
++  hasPermission: true,
++  equipment: null as unknown,
++  document: null as unknown,
++  photo: null as unknown,
++  documentCreateError: false,
++  photoCreateError: false,
++  calls: [] as unknown[],
++};
++
++mock.module('@ems/shared', {
++  namedExports: {
++    PERMISSIONS: {
++      EPS_EQUIPMENT_VIEW: 'eps.equipment.view',
++      EPS_EQUIPMENT_EDIT: 'eps.equipment.edit',
++      EPS_DOCUMENTS_UPLOAD: 'eps.documents.upload',
++    },
++  },
++});
++mock.module('@/lib/auth-guard', {
++  namedExports: {
++    getCurrentUser: async () => state.user,
++    unauthorizedResponse: () => new Response(null, { status: 401 }),
++    forbiddenResponse: () => new Response(null, { status: 403 }),
++  },
++});
++mock.module('@ems/auth', {
++  namedExports: {
++    hasPermission: () => state.hasPermission,
++    logAuditEvent: async () => undefined,
++  },
++});
++mock.module('@/lib/storage', {
++  namedExports: {
++    saveFile: async (_file: File, subFolder: string) => ({ fileName: 'saved.file', originalName: 'source.file', filePath: `${subFolder}/saved.file`, fileSize: 4, fileType: 'application/octet-stream' }),
++    deleteFile: (filePath: string) => state.calls.push(['deleteFile', filePath]),
++    getAbsoluteFilePath: (filePath: string) => path.resolve(process.cwd(), process.env.UPLOAD_DIR || process.env.STORAGE_LOCAL_DIR || './uploads', filePath),
++  },
++});
++mock.module('@ems/database', {
++  namedExports: {
++    DocumentType: { OTHER: 'OTHER' },
++    prisma: {
++      equipment: {
++        findFirst: async () => state.equipment,
++      },
++      document: {
++        findFirst: async (args: unknown) => {
++          state.calls.push(['document.findFirst', args]);
++          return state.document;
++        },
++        create: async () => {
++          if (state.documentCreateError) throw new Error('database failure');
++          return { id: 'document-1' };
++        },
++        update: async (args: unknown) => state.calls.push(['document.update', args]),
++      },
++      photo: {
++        findFirst: async (args: unknown) => {
++          state.calls.push(['photo.findFirst', args]);
++          return state.photo;
++        },
++        update: async (args: unknown) => state.calls.push(['photo.update', args]),
++      },
++      $transaction: async (callback: (tx: unknown) => unknown) => callback({
++        photo: {
++          updateMany: async () => undefined,
++          create: async () => {
++            if (state.photoCreateError) throw new Error('database failure');
++            return { id: 'photo-1' };
++          },
++        },
++      }),
++    },
++  },
++});
++
++function request(url: string, method: string, body?: BodyInit): Request {
++  return new Request(url, { method, body });
++}
++
++describe('Stage 7 EPS route handlers', () => {
++  beforeEach(() => {
++    state.hasPermission = true;
++    state.equipment = null;
++    state.document = null;
++    state.photo = null;
++    state.documentCreateError = false;
++    state.photoCreateError = false;
++    state.calls.length = 0;
++  });
++
++  test('document and photo uploads reject soft-deleted equipment', async () => {
++    const documents = await import('../../app/api/eps/equipment/[id]/documents/route');
++    const photos = await import('../../app/api/eps/equipment/[id]/photos/route');
++    const form = new FormData();
++    form.set('file', new File(['data'], 'source.pdf', { type: 'application/pdf' }));
++
++    const documentResponse = await documents.POST(request('http://localhost/api/eps/equipment/equipment-1/documents', 'POST', form) as never, { params: { id: 'equipment-1' } });
++    const photoResponse = await photos.POST(request('http://localhost/api/eps/equipment/equipment-1/photos', 'POST', form) as never, { params: { id: 'equipment-1' } });
++
++    assert.equal(documentResponse.status, 404);
++    assert.equal(photoResponse.status, 404);
++  });
++
++  test('document and photo deletes scope the child ID to the route equipment', async () => {
++    const documents = await import('../../app/api/eps/equipment/[id]/documents/route');
++    const photos = await import('../../app/api/eps/equipment/[id]/photos/route');
++
++    const documentResponse = await documents.DELETE(request('http://localhost/api/eps/equipment/equipment-1/documents?documentId=document-2', 'DELETE') as never, { params: { id: 'equipment-1' } });
++    const photoResponse = await photos.DELETE(request('http://localhost/api/eps/equipment/equipment-1/photos?photoId=photo-2', 'DELETE') as never, { params: { id: 'equipment-1' } });
++
++    assert.equal(documentResponse.status, 404);
++    assert.equal(photoResponse.status, 404);
++    assert.deepEqual(state.calls.map((call) => (call as unknown[])[0]), ['document.findFirst', 'photo.findFirst']);
++    assert.equal(((state.calls[0] as unknown[])[1] as { where: { equipmentId: string } }).where.equipmentId, 'equipment-1');
++    assert.equal(((state.calls[1] as unknown[])[1] as { where: { equipmentId: string } }).where.equipmentId, 'equipment-1');
++  });
++
++  test('download requires EPS permission before reading any file', async () => {
++    state.hasPermission = false;
++    const { GET } = await import('../../app/api/files/[...path]/route');
++    const response = await GET(request('http://localhost/api/files/documents/saved.pdf', 'GET') as never, { params: { path: ['documents', 'saved.pdf'] } });
++    assert.equal(response.status, 403);
++    assert.deepEqual(state.calls, []);
++  });
++
++  test('download rejects paths without an active owned EPS record', async () => {
++    state.hasPermission = true;
++    const { GET } = await import('../../app/api/files/[...path]/route');
++    const response = await GET(request('http://localhost/api/files/documents/missing.pdf', 'GET') as never, { params: { path: ['documents', 'missing.pdf'] } });
++    assert.equal(response.status, 404);
++    assert.deepEqual(state.calls.map((call) => (call as unknown[])[0]), ['document.findFirst', 'photo.findFirst']);
++  });
++
++  test('upload rolls back the saved file when document persistence fails', async () => {
++    state.equipment = { id: 'equipment-1', deletedAt: null };
++    state.documentCreateError = true;
++    const { POST } = await import('../../app/api/eps/equipment/[id]/documents/route');
++    const form = new FormData();
++    form.set('file', new File(['data'], 'source.pdf', { type: 'application/pdf' }));
++
++    const response = await POST(request('http://localhost/api/eps/equipment/equipment-1/documents', 'POST', form) as never, { params: { id: 'equipment-1' } });
++    assert.equal(response.status, 500);
++    assert.deepEqual(state.calls, [['deleteFile', 'documents/saved.file']]);
++  });
++
++  test('photo upload rolls back the saved file when persistence fails', async () => {
++    state.equipment = { id: 'equipment-1', deletedAt: null };
++    state.photoCreateError = true;
++    const { POST } = await import('../../app/api/eps/equipment/[id]/photos/route');
++    const form = new FormData();
++    form.set('file', new File(['data'], 'source.jpg', { type: 'image/jpeg' }));
++
++    const response = await POST(request('http://localhost/api/eps/equipment/equipment-1/photos', 'POST', form) as never, { params: { id: 'equipment-1' } });
++    assert.equal(response.status, 500);
++    assert.deepEqual(state.calls, [['deleteFile', 'photos/saved.file']]);
++  });
++});
+diff --git a/apps/web/src/lib/__tests__/eps-state-machine.test.ts b/apps/web/src/lib/__tests__/eps-state-machine.test.ts
+new file mode 100644
+index 0000000..fc5dd06
+--- /dev/null
++++ b/apps/web/src/lib/__tests__/eps-state-machine.test.ts
+@@ -0,0 +1,20 @@
++import { describe, test } from 'node:test';
++import assert from 'node:assert/strict';
++import { canTransitionEquipmentStatus, equipmentVisibilityWhere } from '../eps-state-machine';
++
++describe('EPS equipment visibility and state machine', () => {
++  test('hides чужие drafts from regular users', () => {
++    assert.deepEqual(equipmentVisibilityWhere('user-1', false), {
++      deletedAt: null,
++      OR: [{ status: { not: 'DRAFT' } }, { status: 'DRAFT', createdById: 'user-1' }],
++    });
++  });
++
++  test('requires approval to publish drafts and decommission equipment', () => {
++    assert.equal(canTransitionEquipmentStatus('DRAFT', 'ACTIVE'), false);
++    assert.equal(canTransitionEquipmentStatus('DRAFT', 'ACTIVE', true), true);
++    assert.equal(canTransitionEquipmentStatus('ACTIVE', 'DECOMMISSIONED'), false);
++    assert.equal(canTransitionEquipmentStatus('ACTIVE', 'DECOMMISSIONED', true), true);
++    assert.equal(canTransitionEquipmentStatus('DECOMMISSIONED', 'ACTIVE', true), false);
++  });
++});
+diff --git a/apps/web/src/lib/__tests__/storage-stage7.test.ts b/apps/web/src/lib/__tests__/storage-stage7.test.ts
+new file mode 100644
+index 0000000..58d81de
+--- /dev/null
++++ b/apps/web/src/lib/__tests__/storage-stage7.test.ts
+@@ -0,0 +1,7 @@
++import { test } from 'node:test';
++import assert from 'node:assert/strict';
++import { getAbsoluteFilePath } from '../storage';
++
++test('storage rejects paths outside the upload root', () => {
++  assert.throws(() => getAbsoluteFilePath('../outside.txt'), /Недопустимый путь/);
++});
+diff --git a/apps/web/src/lib/auth-guard.ts b/apps/web/src/lib/auth-guard.ts
+index 9336876..906ec3a 100644
+--- a/apps/web/src/lib/auth-guard.ts
++++ b/apps/web/src/lib/auth-guard.ts
+@@ -34,8 +34,8 @@ export async function getCurrentUser(req?: NextRequest): Promise<JwtUserPayload
+     const { roles, permissions } = await getUserRolesAndPermissions(session.userId);
+     return {
+       ...session,
+-      roles: roles && roles.length > 0 ? roles : session.roles || [],
+-      permissions: permissions && permissions.length > 0 ? permissions : session.permissions || [],
++      roles,
++      permissions,
+     };
+   } catch {
+     return session;
+@@ -113,4 +113,3 @@ export async function requireAuth(
+ 
+   return { user };
+ }
+-
+diff --git a/apps/web/src/lib/eps-state-machine.ts b/apps/web/src/lib/eps-state-machine.ts
+new file mode 100644
+index 0000000..d65c764
+--- /dev/null
++++ b/apps/web/src/lib/eps-state-machine.ts
+@@ -0,0 +1,21 @@
++import { EquipmentStatus } from '@ems/database';
++
++export function canTransitionEquipmentStatus(
++  current: EquipmentStatus,
++  next: EquipmentStatus,
++  viaApproval = false,
++): boolean {
++  if (current === next) return true;
++  if (current === 'DECOMMISSIONED') return false;
++  if (current === 'DRAFT') return viaApproval && next !== 'DRAFT';
++  if (next === 'DECOMMISSIONED') return viaApproval;
++  return true;
++}
++
++export function equipmentVisibilityWhere(userId: string, canManageDrafts: boolean) {
++  if (canManageDrafts) return { deletedAt: null };
++  return {
++    deletedAt: null,
++    OR: [{ status: { not: 'DRAFT' as const } }, { status: 'DRAFT' as const, createdById: userId }],
++  };
++}
+diff --git a/apps/web/src/lib/storage.ts b/apps/web/src/lib/storage.ts
+index 8f57dcc..39f5334 100644
+--- a/apps/web/src/lib/storage.ts
++++ b/apps/web/src/lib/storage.ts
+@@ -91,7 +91,12 @@ export async function saveFile(
+ }
+ 
+ export function getAbsoluteFilePath(relativeFilePath: string): string {
+-  return path.join(UPLOAD_ROOT, relativeFilePath);
++  const resolvedPath = path.resolve(UPLOAD_ROOT, relativeFilePath);
++  const relativePath = path.relative(UPLOAD_ROOT, resolvedPath);
++  if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
++    throw new Error('Недопустимый путь к файлу');
++  }
++  return resolvedPath;
+ }
+ 
+ export function deleteFile(relativeFilePath: string): boolean {
+diff --git a/package.json b/package.json
+index 70618e3..b2b1190 100644
+--- a/package.json
++++ b/package.json
+@@ -7,7 +7,7 @@
+     "build": "turbo run build",
+     "dev": "turbo run dev",
+     "lint": "turbo run lint",
+-    "test": "tsx --test packages/auth/src/*.test.ts apps/web/src/lib/__tests__/rate-limit.test.ts apps/web/src/lib/__tests__/auth-guard.test.ts apps/web/src/lib/__tests__/wms-transfers.test.ts apps/web/src/lib/__tests__/database-backup.test.ts apps/web/src/lib/__tests__/eps-columns.test.ts",
++    "test": "TSX_TSCONFIG_PATH=apps/web/tsconfig.json node --experimental-test-module-mocks --import tsx --test packages/auth/src/*.test.ts apps/web/src/lib/__tests__/rate-limit.test.ts apps/web/src/lib/__tests__/auth-guard.test.ts apps/web/src/lib/__tests__/wms-transfers.test.ts apps/web/src/lib/__tests__/database-backup.test.ts apps/web/src/lib/__tests__/eps-columns.test.ts apps/web/src/lib/__tests__/eps-protective-routes.test.ts apps/web/src/lib/__tests__/eps-state-machine.test.ts apps/web/src/lib/__tests__/eps-equipment-routes.test.ts apps/web/src/lib/__tests__/eps-import-routes.test.ts apps/web/src/lib/__tests__/eps-approval-route.test.ts apps/web/src/lib/__tests__/eps-stage7-routes.test.ts apps/web/src/lib/__tests__/storage-stage7.test.ts",
+     "start:prod": "pnpm --filter @ems/web start",
+     "prod:up": "docker compose -f docker-compose.prod.yml up -d --build",
+     "prod:down": "docker compose -f docker-compose.prod.yml down",
+@@ -28,4 +28,3 @@
+     "typescript": "^5.7.3"
+   }
+ }
+-
+diff --git a/packages/database/prisma/schema.prisma b/packages/database/prisma/schema.prisma
+index 1174482..3cb1139 100644
+--- a/packages/database/prisma/schema.prisma
++++ b/packages/database/prisma/schema.prisma
+@@ -331,11 +331,13 @@ model Photo {
+   isPrimary     Boolean  @default(false)
+   uploadedById  String
+   createdAt     DateTime @default(now())
++  deletedAt     DateTime?
+ 
+   equipment  Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+   uploadedBy User      @relation("UploadedPhotos", fields: [uploadedById], references: [id])
+ 
+   @@index([equipmentId])
++  @@index([deletedAt])
+ }
+ 
+ model EquipmentApproval {
+@@ -973,4 +975,3 @@ model FeedbackAttachment {
+   @@index([ticketId])
+   @@index([uploadedById])
+ }
+-
