@@ -1,21 +1,17 @@
 #!/usr/bin/env node
 /**
  * Скрипт пересчета остатков StockItem из журнала StockOperation.
- * По умолчанию выполняет только read-only preview.
- * Режим --apply намеренно не реализован до внедрения проверяемого ledger.
+ * По умолчанию отключен. Legacy preview намеренно не реализован:
+ * неподдерживаемые события требуют отдельного read-only аудита.
  */
 
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
-  if (!process.argv.includes('--dry-run')) {
-    console.error('❌ Пересчет отключен: используйте только явный --dry-run до внедрения нового ledger.');
-    process.exitCode = 2;
-    return;
-  }
-
-  console.log('🔄 Запуск пересчета остатков ТМЦ на основе журнала операций...');
+  console.error('❌ Legacy recalculation is disabled. Use scripts/wms-legacy-audit.js --read-only on an isolated local database.');
+  process.exitCode = 2;
+  return;
 
   const operations = await prisma.stockOperation.findMany({
     include: {
