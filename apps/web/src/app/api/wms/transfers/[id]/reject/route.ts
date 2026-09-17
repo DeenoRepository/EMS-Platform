@@ -74,6 +74,14 @@ export async function POST(
 
     // Транзакционно выполняем возврат остатков (если было списано в IN_TRANSIT) и обновляем статус
     const updatedTransfer = await prisma.$transaction(async (tx) => {
+      const claimed = await tx.stockTransfer.updateMany({
+        where: { id: transferId, status: transfer.status },
+        data: { status: StockTransferStatus.REJECTED, rejectedAt: new Date(), rejectedById: user.userId, rejectionReason: reason },
+      });
+      if (claimed.count !== 1) {
+        throw new Error('Перемещение уже обрабатывается или имеет другой статус');
+      }
+
       // Если было IN_TRANSIT, возвращаем остатки на склад-отправитель
       if (transfer.status === StockTransferStatus.IN_TRANSIT) {
         for (const item of transfer.items) {
@@ -90,7 +98,7 @@ export async function POST(
           if (stock) {
             await tx.stockItem.update({
               where: { id: stock.id },
-              data: { quantity: Number(stock.quantity) + qtyToRestore },
+              data: { quantity: { increment: qtyToRestore } },
             });
           } else {
             await tx.stockItem.create({
@@ -109,9 +117,6 @@ export async function POST(
         where: { id: transferId },
         data: {
           status: StockTransferStatus.REJECTED,
-          rejectedAt: new Date(),
-          rejectedById: user.userId,
-          rejectionReason: reason,
         },
         include: {
           sourceWarehouse: true,

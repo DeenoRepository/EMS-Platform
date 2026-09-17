@@ -68,6 +68,14 @@ export async function POST(
 
     // Транзакционно зачисляем ТМЦ на склад-получатель и обновляем статус
     const updatedTransfer = await prisma.$transaction(async (tx) => {
+      const claimed = await tx.stockTransfer.updateMany({
+        where: { id: transferId, status: StockTransferStatus.IN_TRANSIT },
+        data: { status: StockTransferStatus.COMPLETED, receivedAt: new Date(), receivedById: user.userId },
+      });
+      if (claimed.count !== 1) {
+        throw new Error('Перемещение уже обрабатывается или имеет другой статус');
+      }
+
       for (const item of transfer.items) {
         const qtyToReceive = Number(item.quantity);
         const cellAlloc = cellAllocations.find((c) => c.itemId === item.id);
@@ -95,7 +103,7 @@ export async function POST(
           await tx.stockItem.update({
             where: { id: existingStock.id },
             data: {
-              quantity: Number(existingStock.quantity) + qtyToReceive,
+              quantity: { increment: qtyToReceive },
               cellId: targetCellId || existingStock.cellId,
             },
           });
@@ -135,8 +143,6 @@ export async function POST(
         where: { id: transferId },
         data: {
           status: StockTransferStatus.COMPLETED,
-          receivedAt: new Date(),
-          receivedById: user.userId,
         },
         include: {
           sourceWarehouse: true,

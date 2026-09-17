@@ -376,8 +376,8 @@ export async function POST(req: NextRequest) {
     if (!isRequest) {
       const result = await prisma.$transaction(async (tx) => {
         // Проверяем наличие всех позиций на складе-отправителе
-        for (const item of items) {
-          const qtyToTransfer = Number(item.quantity);
+        for (const item of normalizedItems) {
+          const qtyToTransfer = item.quantity as number;
           const stock = await tx.stockItem.findUnique({
             where: {
               warehouseId_nomenclatureId: {
@@ -397,12 +397,13 @@ export async function POST(req: NextRequest) {
             );
           }
 
-          // Списываем ТМЦ со склада-отправителя
-          const newQty = availableQty - qtyToTransfer;
-          await tx.stockItem.update({
-            where: { id: stock!.id },
-            data: { quantity: newQty },
+          const changed = await tx.stockItem.updateMany({
+            where: { id: stock!.id, quantity: { gte: qtyToTransfer } },
+            data: { quantity: { decrement: qtyToTransfer } },
           });
+          if (changed.count !== 1) {
+            throw new Error(`Остаток для "${stock?.nomenclature?.name || 'ТМЦ'}" изменился параллельно`);
+          }
         }
 
         // Создаем запись перемещения со статусом IN_TRANSIT

@@ -51,6 +51,14 @@ export async function POST(
 
     // Транзакционно проверяем и списываем ТМЦ со склада-отправителя
     const updatedTransfer = await prisma.$transaction(async (tx) => {
+      const claimed = await tx.stockTransfer.updateMany({
+        where: { id: transferId, status: StockTransferStatus.REQUESTED },
+        data: { status: StockTransferStatus.IN_TRANSIT, dispatchedAt: new Date(), dispatchedById: user.userId },
+      });
+      if (claimed.count !== 1) {
+        throw new Error('Перемещение уже обрабатывается или имеет другой статус');
+      }
+
       for (const item of transfer.items) {
         const qtyToTransfer = Number(item.quantity);
         const stock = await tx.stockItem.findUnique({
@@ -73,15 +81,12 @@ export async function POST(
         }
 
         // Списываем со склада-отправителя
-        const updated = await tx.stockItem.update({
-          where: { id: stock!.id },
-          data: { quantity: availableQty - qtyToTransfer },
+        const changed = await tx.stockItem.updateMany({
+          where: { id: stock!.id, quantity: { gte: qtyToTransfer } },
+          data: { quantity: { decrement: qtyToTransfer } },
         });
-
-        if (Number(updated.quantity) < 0) {
-          throw new Error(
-            `Остаток для "${item.nomenclature?.name || 'ТМЦ'}" на складе "${transfer.sourceWarehouse.name}" не может быть отрицательным.`
-          );
+        if (changed.count !== 1) {
+          throw new Error(`Остаток для "${item.nomenclature?.name || 'ТМЦ'}" изменился параллельно.`);
         }
       }
 
@@ -90,8 +95,6 @@ export async function POST(
         where: { id: transferId },
         data: {
           status: StockTransferStatus.IN_TRANSIT,
-          dispatchedAt: new Date(),
-          dispatchedById: user.userId,
         },
         include: {
           sourceWarehouse: true,

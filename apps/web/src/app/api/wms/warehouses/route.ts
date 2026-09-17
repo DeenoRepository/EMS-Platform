@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     const isAdmin = isWmsAdmin(user);
 
     const where: any = { deletedAt: null, isActive: true };
-    if (!isAdmin && !forManage) {
+    if (!isAdmin) {
       where.responsibleUserId = user.userId;
     }
 

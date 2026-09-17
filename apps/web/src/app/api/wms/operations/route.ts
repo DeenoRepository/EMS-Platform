@@ -259,7 +259,7 @@ export async function POST(req: NextRequest) {
             await tx.stockItem.update({
               where: { id: existingStock.id },
               data: {
-                quantity: Number(existingStock.quantity) + qtyNum,
+                quantity: { increment: qtyNum },
                 ...(item.cellId ? { cellId: item.cellId } : {}),
               },
             });
@@ -301,11 +301,16 @@ export async function POST(req: NextRequest) {
             throw new Error(`Недостаточно остатка для "${existingStock.nomenclature.name}". Доступный остаток исчерпан.`);
           }
 
-          const updatedStock = await tx.stockItem.update({
+          const changed = await tx.stockItem.updateMany({
+            where: { id: existingStock.id, quantity: { gte: qtyNum } },
+            data: { quantity: { decrement: qtyNum } },
+          });
+          if (changed.count !== 1) {
+            throw new Error(`Недостаточно остатка для "${existingStock.nomenclature.name}". Остаток изменился параллельно.`);
+          }
+
+          const updatedStock = await tx.stockItem.findUniqueOrThrow({
             where: { id: existingStock.id },
-            data: {
-              quantity: remainingQty,
-            },
             include: { nomenclature: true },
           });
 
