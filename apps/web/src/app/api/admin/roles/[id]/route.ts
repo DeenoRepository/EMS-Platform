@@ -24,25 +24,27 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: 'Роль не найдена' }, { status: 404 });
     }
 
-    // Если передан список кодов прав, обновляем связи
-    if (Array.isArray(permissionCodes)) {
-      const perms = await prisma.permission.findMany({
-        where: { code: { in: permissionCodes } },
-      });
+    const updatedRole = await prisma.$transaction(async (tx) => {
+      if (Array.isArray(permissionCodes)) {
+        const uniqueCodes = [...new Set(permissionCodes.filter((code): code is string => typeof code === 'string'))];
+        const perms = await tx.permission.findMany({ where: { code: { in: uniqueCodes } } });
+        if (perms.length !== uniqueCodes.length) {
+          throw new Error('Передан неизвестный код разрешения');
+        }
 
-      // Удаляем старые связи и вставляем новые
-      await prisma.rolePermission.deleteMany({ where: { roleId: id } });
-      await prisma.rolePermission.createMany({
-        data: perms.map((p) => ({ roleId: id, permissionId: p.id })),
-      });
-    }
+        await tx.rolePermission.deleteMany({ where: { roleId: id } });
+        await tx.rolePermission.createMany({
+          data: perms.map((p) => ({ roleId: id, permissionId: p.id })),
+        });
+      }
 
-    const updatedRole = await prisma.role.update({
-      where: { id },
-      data: {
-        displayName: displayName !== undefined ? displayName.trim() : undefined,
-        description: description !== undefined ? description?.trim() || null : undefined,
-      },
+      return tx.role.update({
+        where: { id },
+        data: {
+          displayName: displayName !== undefined ? displayName.trim() : undefined,
+          description: description !== undefined ? description?.trim() || null : undefined,
+        },
+      });
     });
 
     await logAuditEvent({
@@ -55,7 +57,8 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, data: updatedRole });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: 'Ошибка обновления роли' }, { status: 500 });
+    const isValidationError = error?.message === 'Передан неизвестный код разрешения';
+    return NextResponse.json({ success: false, error: isValidationError ? error.message : 'Ошибка обновления роли' }, { status: isValidationError ? 400 : 500 });
   }
 }
 

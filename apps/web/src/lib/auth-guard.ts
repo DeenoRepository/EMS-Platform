@@ -34,8 +34,8 @@ export async function getCurrentUser(req?: NextRequest): Promise<JwtUserPayload 
     const { roles, permissions } = await getUserRolesAndPermissions(session.userId);
     return {
       ...session,
-      roles: roles && roles.length > 0 ? roles : session.roles || [],
-      permissions: permissions && permissions.length > 0 ? permissions : session.permissions || [],
+      roles,
+      permissions,
     };
   } catch {
     return session;
@@ -113,4 +113,3 @@ export async function requireAuth(
 
   return { user };
 }
-
