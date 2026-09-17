@@ -53,29 +53,15 @@ export async function POST(req: NextRequest) {
       columnMapping = {},
       newFieldDefinitions = [],
       ignoredHeaders = [],
-      conflictStrategy = 'UPSERT', // 'UPSERT' | 'SKIP' | 'FULL_REPLACE'
-      fullReplaceConfirmed = false,
+      conflictStrategy = 'UPSERT', // 'UPSERT' | 'SKIP'
     } = body;
 
     if (!Array.isArray(rows) || rows.length === 0) {
       return NextResponse.json({ success: false, error: 'Нет данных для импорта' }, { status: 400 });
     }
-    if (conflictStrategy === 'FULL_REPLACE' && fullReplaceConfirmed !== true) {
-      return NextResponse.json({ success: false, error: 'Для полной замены реестра требуется подтверждение' }, { status: 400 });
-    }
     if (conflictStrategy === 'FULL_REPLACE') {
-      const externalIdHeader = Object.keys(columnMapping).find((header) => columnMapping[header] === 'externalId');
-      const externalIds = externalIdHeader
-        ? rows.map((row: any) => String((row.data || row)[externalIdHeader] || '').trim())
-        : [];
-      const duplicateIds = [...new Set(externalIds.filter((id) => id && externalIds.indexOf(id) !== externalIds.lastIndexOf(id)))];
-      if (!externalIdHeader || externalIds.some((id) => !id) || duplicateIds.length > 0) {
-        return NextResponse.json({ success: false, error: 'Для полной замены требуется уникальный ID оборудования в каждой строке' }, { status: 400 });
-      }
+      return NextResponse.json({ success: false, error: 'Стратегия FULL_REPLACE отключена из соображений безопасности' }, { status: 400 });
     }
-
-    const inventoryHeader = Object.keys(columnMapping).find((header) => columnMapping[header] === 'inventoryNumber');
-    const usedInventoryNumbers = new Set<string>();
 
     // Step 1: Create or find Custom Sections & Fields in Dictionary
     const newlyCreatedFields: any[] = [];
@@ -177,8 +163,6 @@ export async function POST(req: NextRequest) {
     });
 
     const processRows = async (db: any) => {
-      if (conflictStrategy === 'FULL_REPLACE') await db.equipment.deleteMany();
-
       // Step 2: Process each row
       for (let i = 0; i < rows.length; i++) {
       const rowItem = rows[i];
@@ -230,29 +214,18 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        if (conflictStrategy === 'FULL_REPLACE' && invVal) {
-          const inventoryValue = String(invVal);
-          const isDuplicateInventory = usedInventoryNumbers.has(inventoryValue);
-          if (inventoryValue.toLowerCase() === 'б/н' || isDuplicateInventory) {
-            customFieldsObj.registry_inventory_number = inventoryValue;
-            invVal = null;
-          } else {
-            usedInventoryNumbers.add(inventoryValue);
-          }
-        }
-
         // Check if equipment already exists in DB
         let existingEquipment: any = null;
         const externalId = customFieldsObj.external_system_id ? String(customFieldsObj.external_system_id).trim() : '';
-        if (externalId && conflictStrategy !== 'FULL_REPLACE') {
+        if (externalId) {
           existingEquipment = existingExternalMap.get(externalId) || null;
         }
-        if (invVal && conflictStrategy !== 'FULL_REPLACE') {
+        if (invVal) {
           existingEquipment = existingEquipment || await db.equipment.findUnique({
             where: { inventoryNumber: invVal },
           });
         }
-        if (!existingEquipment && snVal && conflictStrategy !== 'FULL_REPLACE') {
+        if (!existingEquipment && snVal) {
           existingEquipment = await db.equipment.findFirst({
             where: { serialNumber: snVal },
           });
@@ -343,21 +316,11 @@ export async function POST(req: NextRequest) {
       } catch (err: any) {
         errorCount++;
         errors.push({ row: i + 1, error: err.message || 'Ошибка обработки строки' });
-        if (conflictStrategy === 'FULL_REPLACE') {
-          throw new Error(`Ошибка полной замены в строке ${i + 1}: ${err.message || 'Ошибка обработки строки'}`);
-        }
       }
       }
     };
 
-    if (conflictStrategy === 'FULL_REPLACE') {
-      await prisma.$transaction((tx) => processRows(tx), {
-        maxWait: 10_000,
-        timeout: 120_000,
-      });
-    } else {
-      await processRows(prisma);
-    }
+    await processRows(prisma);
 
     // Step 3: Log audit event
     await logAuditEvent({
