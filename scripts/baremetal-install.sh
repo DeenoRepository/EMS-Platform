@@ -44,24 +44,18 @@ fi
 
 cd "$INSTALL_DIR"
 
-# 5. Setup Production Environment (.env.production)
+# 5. Require production environment supplied by the operator.
 if [ ! -f ".env.production" ]; then
-    echo "⚙️ Создание файла конфигурации .env.production..."
-    RANDOM_JWT="ems_jwt_secret_$(openssl rand -hex 24 2>/dev/null || echo 'default_secure_secret_key_ems_32chars')"
-    cat << EOF > .env.production
-DATABASE_URL="postgresql://ems_user:ems_secure_password@localhost:5432/ems_db?schema=public"
-POSTGRES_USER=ems_user
-POSTGRES_PASSWORD=ems_secure_password
-POSTGRES_DB=ems_db
-JWT_SECRET="${RANDOM_JWT}"
-PORT=3000
-NODE_ENV=production
-UPLOAD_DIR="/opt/ems-platform/uploads"
-STORAGE_LOCAL_DIR="/opt/ems-platform/uploads"
-EOF
-    cp .env.production .env
-    echo "✅ Файл .env.production сформирован (DATABASE_URL настроен на localhost:5432/ems_db)."
+    echo "❌ Не найден .env.production. Создайте его из .env.production.example с production secrets." >&2
+    exit 2
 fi
+grep -q '^DATABASE_URL=' .env.production || { echo "❌ DATABASE_URL отсутствует в .env.production" >&2; exit 2; }
+grep -q '^JWT_SECRET=' .env.production || { echo "❌ JWT_SECRET отсутствует в .env.production" >&2; exit 2; }
+if grep -Eq 'CHANGE_ME|super_secret_jwt_key|ems_secure_password' .env.production; then
+    echo "❌ .env.production содержит placeholder/default secret" >&2
+    exit 2
+fi
+cp .env.production .env
 
 # Ensure .env exists for Prisma CLI auto-discovery
 cp -n .env.production .env 2>/dev/null || true
@@ -74,25 +68,10 @@ find "$INSTALL_DIR/node_modules" -name "libquery_engine*.so.node" -exec cp {} "$
 chown -R ems:ems "$INSTALL_DIR"
 chmod -R 755 "$INSTALL_DIR"
 
-# 7. Push Database Schema via local Prisma Engine
-echo "🗄️ Синхронизация схемы базы данных PostgreSQL..."
-set +e
-su -s /bin/sh ems -c "cd '$INSTALL_DIR' && export \$(grep -v '^#' .env.production | xargs) && ./packages/database/node_modules/.bin/prisma db push --schema=packages/database/prisma/schema.prisma --accept-data-loss"
-PRISMA_STATUS=$?
-set -e
-
-if [ $PRISMA_STATUS -ne 0 ]; then
-    echo "⚠️ Внимание: Не удалось автоматически синхронизировать схему БД."
-    echo "Убедитесь, что служба PostgreSQL запущена, база данных создана и пароль в .env.production верен:"
-    echo "  sudo systemctl status postgresql"
-    echo "  sudo -u postgres psql -c \"CREATE USER ems_user WITH PASSWORD 'ems_secure_password';\""
-    echo "  sudo -u postgres psql -c \"CREATE DATABASE ems_db OWNER ems_user;\""
-else
-    if [ -f "$INSTALL_DIR/scripts/fix-equipment-booleans.js" ]; then
-        echo "✨ Нормализация булевых характеристик оборудования..."
-        su -s /bin/sh ems -c "cd '$INSTALL_DIR' && export \$(grep -v '^#' .env.production | xargs) && export NODE_PATH='$INSTALL_DIR/node_modules:$INSTALL_DIR/packages/database/node_modules:$INSTALL_DIR/apps/web/node_modules' && node scripts/fix-equipment-booleans.js" || true
-    fi
-fi
+# 7. Database schema is intentionally not changed by installation.
+echo "🛑 Автоматическое изменение схемы БД отключено."
+echo "Перед запуском новой версии выполните backup, подтвердите baseline и отдельно запустите:"
+echo "  sudo -u ems env WMS_MIGRATION_APPROVED=1 WMS_BACKUP_VERIFIED=1 WMS_BASELINE_VERIFIED=1 DATABASE_URL=... scripts/apply-wms-migration.sh"
 
 # 8. Setup & Enable Systemd Service
 echo "⚙️ Регистрация системной службы systemd (ems-platform.service)..."
