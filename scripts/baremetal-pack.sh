@@ -84,6 +84,7 @@ cp scripts/ems-platform.service "$PACKAGE_DIR/scripts/ems-platform.service"
 cp scripts/ems-baremetal.nginx.conf "$PACKAGE_DIR/scripts/ems-baremetal.nginx.conf"
 cp scripts/backup.sh "$PACKAGE_DIR/scripts/backup.sh"
 cp scripts/apply-wms-migration.sh "$PACKAGE_DIR/scripts/apply-wms-migration.sh"
+cp scripts/baremetal-overlay-patch.sh "$PACKAGE_DIR/scripts/baremetal-overlay-patch.sh"
 cp scripts/*.js "$PACKAGE_DIR/scripts/" 2>/dev/null || true
 cp scripts/*.sql "$PACKAGE_DIR/scripts/" 2>/dev/null || true
 cp docs/BAREMETAL_OFFLINE_DEPLOYMENT.md "$PACKAGE_DIR/docs/"
@@ -94,6 +95,7 @@ cp docs/BAREMETAL_OFFLINE_DEPLOYMENT.md "$PACKAGE_DIR/README.md"
 
 chmod +x "$PACKAGE_DIR/install.sh" "$PACKAGE_DIR/scripts/backup.sh"
 chmod +x "$PACKAGE_DIR/scripts/apply-wms-migration.sh"
+chmod +x "$PACKAGE_DIR/scripts/baremetal-overlay-patch.sh"
 
 # 7. Compress into portable tar.gz
 echo "🗜️ Архивация в ${ARCHIVE_NAME}..."
