@@ -105,6 +105,19 @@ export async function POST(
         if (changed.count !== 1) {
           throw new Error(`Остаток для "${item.nomenclature?.name || 'ТМЦ'}" изменился параллельно.`);
         }
+
+        if (item.sourceCellId) {
+          const cellChanged = await tx.stockCellBalance.updateMany({
+            where: {
+              warehouseId: transfer.sourceWarehouseId,
+              cellId: item.sourceCellId,
+              nomenclatureId: item.nomenclatureId,
+              quantity: { gte: qtyToTransfer },
+            },
+            data: { quantity: { decrement: qtyToTransfer } },
+          });
+          if (cellChanged.count !== 1) throw new Error('Недостаточно остатка в исходной ячейке');
+        }
       }
 
       await tx.stockReservation.createMany({

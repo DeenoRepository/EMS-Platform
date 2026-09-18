@@ -264,6 +264,7 @@ export async function GET(req: NextRequest) {
 interface TransferItemInput {
   nomenclatureId: string;
   quantity: number;
+  sourceCellId?: string | null;
   targetCellId?: string | null;
 }
 
@@ -353,18 +354,18 @@ export async function POST(req: NextRequest) {
     const [sourceWh, targetWh] = await Promise.all([
       prisma.warehouse.findUnique({
         where: { id: sourceWarehouseId },
-        select: { id: true, name: true, responsibleUserId: true, isActive: true },
+        select: { id: true, name: true, responsibleUserId: true, isActive: true, deletedAt: true },
       }),
       prisma.warehouse.findUnique({
         where: { id: targetWarehouseId },
-        select: { id: true, name: true, responsibleUserId: true, isActive: true },
+        select: { id: true, name: true, responsibleUserId: true, isActive: true, deletedAt: true },
       }),
     ]);
 
-    if (!sourceWh || !sourceWh.isActive) {
+    if (!sourceWh || !sourceWh.isActive || sourceWh.deletedAt) {
       return NextResponse.json({ success: false, error: 'Склад-отправитель не найден или неактивен' }, { status: 400 });
     }
-    if (!targetWh || !targetWh.isActive) {
+    if (!targetWh || !targetWh.isActive || targetWh.deletedAt) {
       return NextResponse.json({ success: false, error: 'Склад-получатель не найден или неактивен' }, { status: 400 });
     }
 
@@ -430,6 +431,21 @@ export async function POST(req: NextRequest) {
           if (changed.count !== 1) {
             throw new Error(`Остаток для "${stock?.nomenclature?.name || 'ТМЦ'}" изменился параллельно`);
           }
+
+          if (item.sourceCellId) {
+            const cellChanged = await tx.stockCellBalance.updateMany({
+              where: {
+                warehouseId: sourceWarehouseId,
+                cellId: item.sourceCellId,
+                nomenclatureId: item.nomenclatureId,
+                quantity: { gte: qtyToTransfer },
+              },
+              data: { quantity: { decrement: qtyToTransfer } },
+            });
+            if (cellChanged.count !== 1) {
+              throw new Error(`Недостаточно остатка в ячейке для перемещения позиции "${stock?.nomenclature?.name || 'ТМЦ'}"`);
+            }
+          }
         }
 
         // Создаем запись перемещения со статусом IN_TRANSIT
@@ -449,6 +465,7 @@ export async function POST(req: NextRequest) {
               create: normalizedItems.map((it) => ({
                 nomenclatureId: it.nomenclatureId,
                 quantity: it.quantity as number,
+                sourceCellId: it.sourceCellId || null,
                 targetCellId: it.targetCellId || null,
               })),
             },

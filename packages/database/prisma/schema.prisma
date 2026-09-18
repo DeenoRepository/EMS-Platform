@@ -445,10 +445,11 @@ model StorageCell {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  zone          StorageZone         @relation(fields: [zoneId], references: [id], onDelete: Cascade)
-  stockItems    StockItem[]
-  transferItems StockTransferItem[]
-  cellBalances  StockCellBalance[]
+  zone                StorageZone         @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  stockItems          StockItem[]
+  sourceTransferItems StockTransferItem[] @relation("TransferSourceCell")
+  targetTransferItems StockTransferItem[] @relation("TransferTargetCell")
+  cellBalances        StockCellBalance[]
 
   @@unique([zoneId, code])
   @@index([zoneId])
@@ -717,11 +718,13 @@ model StockTransferItem {
   transferId     String
   nomenclatureId String
   quantity       Decimal
+  sourceCellId   String? // Ячейка списания на складе-отправителе
   targetCellId   String? // Ячейка зачисления на складе-получателе
 
   transfer     StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
   nomenclature Nomenclature  @relation(fields: [nomenclatureId], references: [id], onDelete: Cascade)
-  targetCell   StorageCell?  @relation(fields: [targetCellId], references: [id], onDelete: SetNull)
+  sourceCell   StorageCell?  @relation("TransferSourceCell", fields: [sourceCellId], references: [id], onDelete: SetNull)
+  targetCell   StorageCell?  @relation("TransferTargetCell", fields: [targetCellId], references: [id], onDelete: SetNull)
 
   @@index([transferId])
   @@index([nomenclatureId])
