@@ -47,6 +47,7 @@ export async function GET(req: NextRequest) {
               { inventoryNumber: { contains: search, mode: 'insensitive' } },
               { serialNumber: { contains: search, mode: 'insensitive' } },
               { manufacturer: { contains: search, mode: 'insensitive' } },
+              { model: { contains: search, mode: 'insensitive' } },
             ],
           },
         },
@@ -181,6 +182,7 @@ export async function POST(req: NextRequest) {
             id: true,
             name: true,
             inventoryNumber: true,
+            model: true,
           },
         },
         uploadedBy: {

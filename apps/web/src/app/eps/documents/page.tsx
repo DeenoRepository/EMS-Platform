@@ -87,6 +87,7 @@ interface EquipmentOption {
   id: string;
   name: string;
   inventoryNumber: string | null;
+  model: string | null;
 }
 
 function DocumentsListContent() {
@@ -199,6 +200,7 @@ function DocumentsListContent() {
                 id: eq.id,
                 name: eq.name,
                 inventoryNumber: eq.inventoryNumber,
+                model: eq.model,
               }))
             );
           }
@@ -582,7 +584,7 @@ function DocumentsListContent() {
                   <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все оборудование</MenuItem>
                   {equipmentList.map((eq) => (
                     <MenuItem key={eq.id} value={eq.id} sx={{ fontSize: '0.8125rem' }}>
-                      {eq.inventoryNumber ? `[${eq.inventoryNumber}] ` : ''}{eq.name}
+                      {eq.inventoryNumber ? `[${eq.inventoryNumber}] ` : ''}{eq.name}{eq.model ? ` — ${eq.model}` : ''}
                     </MenuItem>
                   ))}
                 </TextField>
@@ -747,6 +749,9 @@ function DocumentsListContent() {
                         >
                           {doc.equipment.inventoryNumber || 'Б/Н'}
                         </Paper>
+                        <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.3 }}>
+                          Модель: {doc.equipment.model || '—'}
+                        </Typography>
                       </Box>
                     ) : (
                       <Typography variant="caption" color="text.secondary">
@@ -854,7 +859,7 @@ function DocumentsListContent() {
           {/* Equipment Picker */}
           <Autocomplete
             options={equipmentList}
-            getOptionLabel={(option) => `${option.inventoryNumber ? `[${option.inventoryNumber}] ` : ''}${option.name}`}
+            getOptionLabel={(option) => `${option.inventoryNumber ? `[${option.inventoryNumber}] ` : ''}${option.name}${option.model ? ` — ${option.model}` : ''}`}
             value={selectedEquipmentForUpload}
             onChange={(_, val) => setSelectedEquipmentForUpload(val)}
             renderInput={(params) => (

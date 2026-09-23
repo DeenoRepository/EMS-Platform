@@ -1269,6 +1269,7 @@ function EquipmentPassportContent() {
                   <TableRow>
                     <TableCell sx={{ fontWeight: 600 }}>Имя файла</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Тип документа</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Модель оборудования</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Описание</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Размер</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Загрузил</TableCell>
@@ -1295,6 +1296,7 @@ function EquipmentPassportContent() {
                           variant="outlined"
                         />
                       </TableCell>
+                      <TableCell sx={{ fontSize: '0.8125rem' }}>{equipment.model || '—'}</TableCell>
                       <TableCell>{doc.description || '—'}</TableCell>
                       <TableCell sx={{ fontSize: '0.8125rem' }}>{formatBytes(doc.fileSize)}</TableCell>
                       <TableCell sx={{ fontSize: '0.8125rem' }}>{doc.uploadedBy?.displayName}</TableCell>
@@ -1964,6 +1966,13 @@ function EquipmentPassportContent() {
         submitDisabled={!selectedFile || uploading}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+          <TextField
+            size="small"
+            label="Модель оборудования"
+            value={equipment.model || ''}
+            fullWidth
+            disabled
+          />
           <FileUploadDropzone
             files={selectedFile ? [selectedFile] : []}
             onChange={(files) => setSelectedFile(files[0] || null)}
