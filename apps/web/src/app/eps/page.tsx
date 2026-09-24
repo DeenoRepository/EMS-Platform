@@ -38,6 +38,8 @@ import ConstructionOutlinedIcon from '@mui/icons-material/ConstructionOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
+import FilterAltIcon from '@mui/icons-material/FilterAlt';
+import FilterListIcon from '@mui/icons-material/FilterList';
 import PageHeader from '@/components/layout/PageHeader';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { EQUIPMENT_STATUS_MAP, formatDate, PERMISSIONS } from '@ems/shared';
@@ -59,7 +61,20 @@ import {
   type TableDensity,
   type TableColumnOption,
 } from '@/components/ui';
-import { EquipmentWizardDialog } from '@/components/eps';
+import {
+  EquipmentWizardDialog,
+  EquipmentFilterDrawer,
+  EquipmentColumnFiltersRow,
+  EquipmentActiveFilterChips,
+  type EquipmentFilters,
+  DEFAULT_EQUIPMENT_FILTERS,
+} from '@/components/eps';
+import {
+  countActiveEquipmentFilters,
+  getActiveEquipmentFilterBadges,
+  buildEquipmentFilterSearchParams,
+  matchesAllEquipmentFilters,
+} from '@/lib/eps-filter-helpers';
 import { PlatformMaintenanceStatus } from '@ems/shared';
 
 interface EquipmentItem {
@@ -136,10 +151,15 @@ function EquipmentListContent() {
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [openCreateWizard, setOpenCreateWizard] = useState(false);
 
-  // Filters
-  const [search, setSearch] = useState(searchParams?.get('search') || '');
-  const [statusFilter, setStatusFilter] = useState(searchParams?.get('status') || '');
-  const [tagFilter, setTagFilter] = useState(searchParams?.get('tagId') || '');
+  // Comprehensive Filters across all 27 fields
+  const [filters, setFilters] = useState<EquipmentFilters>(() => ({
+    ...DEFAULT_EQUIPMENT_FILTERS,
+    search: searchParams?.get('search') || '',
+    status: searchParams?.get('status') || '',
+    tagId: searchParams?.get('tagId') || '',
+  }));
+  const [openFilterDrawer, setOpenFilterDrawer] = useState(false);
+  const [showColumnFilters, setShowColumnFilters] = useState(false);
 
   // Status Counts for KPI
   const [statusCounts, setStatusCounts] = useState({
@@ -178,13 +198,11 @@ function EquipmentListContent() {
   const fetchEquipment = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: String(page),
-        pageSize: viewMode === 'grid' ? '12' : String(pageSize),
-      });
-      if (search) params.append('search', search);
-      if (statusFilter) params.append('status', statusFilter);
-      if (tagFilter) params.append('tagId', tagFilter);
+      const params = buildEquipmentFilterSearchParams(
+        filters,
+        page,
+        viewMode === 'grid' ? 12 : pageSize
+      );
 
       const res = await fetch(`/api/eps/equipment?${params.toString()}`);
       if (res.ok) {
@@ -209,7 +227,7 @@ function EquipmentListContent() {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, search, statusFilter, tagFilter, viewMode, enqueueSnackbar]);
+  }, [page, pageSize, filters, viewMode, enqueueSnackbar]);
 
   const canAccessEquipment =
     user?.roles?.includes('admin') ||
@@ -223,25 +241,44 @@ function EquipmentListContent() {
     }
   }, [canAccessEquipment, fetchEquipment]);
 
-  // Reset Filters
-  const handleResetFilters = () => {
-    setSearch('');
-    setStatusFilter('');
-    setTagFilter('');
+  // Filter change handlers
+  const handleFilterChange = (key: keyof EquipmentFilters, value: string) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
     setPage(1);
   };
 
-  const activeFilterCount = useMemo(() => {
-    let count = 0;
-    if (search) count++;
-    if (statusFilter) count++;
-    if (tagFilter) count++;
-    return count;
-  }, [search, statusFilter, tagFilter]);
+  const handleResetFilters = () => {
+    setFilters(DEFAULT_EQUIPMENT_FILTERS);
+    setPage(1);
+  };
+
+  const handleResetSingleFilter = (keysToReset: (keyof EquipmentFilters)[]) => {
+    setFilters((prev) => {
+      const next = { ...prev };
+      for (const k of keysToReset) {
+        next[k] = '';
+      }
+      return next;
+    });
+    setPage(1);
+  };
+
+  const activeFilterCount = useMemo(() => countActiveEquipmentFilters(filters), [filters]);
+
+  const activeBadges = useMemo(() => {
+    const statusMap: Record<string, string> = {};
+    for (const [k, v] of Object.entries(EQUIPMENT_STATUS_MAP)) {
+      statusMap[k] = v.label;
+    }
+    return getActiveEquipmentFilterBadges(filters, tags, statusMap);
+  }, [filters, tags]);
 
   // Quick filter by clicking KPI card
   const handleKpiFilter = (status: string | null) => {
-    setStatusFilter((prev) => (prev === status ? '' : status || ''));
+    setFilters((prev) => ({
+      ...prev,
+      status: prev.status === status ? '' : status || '',
+    }));
     setPage(1);
   };
 
@@ -258,7 +295,10 @@ function EquipmentListContent() {
   const [sortField, setSortField] = useState<string>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  const equipmentList = useMemo(() => (Array.isArray(items) ? items : []), [items]);
+  const equipmentList = useMemo(() => {
+    const list = Array.isArray(items) ? items : [];
+    return list.filter((item) => matchesAllEquipmentFilters(item, filters));
+  }, [items, filters]);
 
   const handleRequestSort = (property: string) => {
     const isAsc = sortField === property && sortDirection === 'asc';
@@ -589,7 +629,7 @@ function EquipmentListContent() {
             subtitle="Единиц в реестре"
             icon={<InventoryIcon sx={{ fontSize: 20 }} />}
             accentColor="#0284c7"
-            active={!statusFilter}
+            active={!filters.status}
             onClick={() => handleKpiFilter(null)}
             loading={loading && statusCounts.total === 0}
           />
@@ -602,7 +642,7 @@ function EquipmentListContent() {
             subtitle="В штатной эксплуатации"
             icon={<CheckCircleOutlineIcon sx={{ fontSize: 20 }} />}
             accentColor="#16a34a"
-            active={statusFilter === 'ACTIVE'}
+            active={filters.status === 'ACTIVE'}
             onClick={() => handleKpiFilter('ACTIVE')}
             loading={loading && statusCounts.total === 0}
           />
@@ -615,7 +655,7 @@ function EquipmentListContent() {
             subtitle="ТО или аварийные работы"
             icon={<BuildCircleOutlinedIcon sx={{ fontSize: 20 }} />}
             accentColor="#d97706"
-            active={statusFilter === 'UNDER_REPAIR'}
+            active={filters.status === 'UNDER_REPAIR'}
             onClick={() => handleKpiFilter('UNDER_REPAIR')}
             loading={loading && statusCounts.total === 0}
           />
@@ -628,7 +668,7 @@ function EquipmentListContent() {
             subtitle="Резерв и консервация"
             icon={<InventoryIcon sx={{ fontSize: 20 }} />}
             accentColor="#64748b"
-            active={statusFilter === 'IN_STORAGE'}
+            active={filters.status === 'IN_STORAGE'}
             onClick={() => handleKpiFilter('IN_STORAGE')}
             loading={loading && statusCounts.total === 0}
           />
@@ -641,7 +681,7 @@ function EquipmentListContent() {
             subtitle="Выведено из эксплуатации"
             icon={<CancelOutlinedIcon sx={{ fontSize: 20 }} />}
             accentColor="#dc2626"
-            active={statusFilter === 'DECOMMISSIONED'}
+            active={filters.status === 'DECOMMISSIONED'}
             onClick={() => handleKpiFilter('DECOMMISSIONED')}
             loading={loading && statusCounts.total === 0}
           />
@@ -683,101 +723,139 @@ function EquipmentListContent() {
           />
         }
         toolbar={
-          <FilterToolbar
-            variant="embedded"
-            activeFilterCount={activeFilterCount}
-            onResetFilters={handleResetFilters}
-            actions={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <TextField
-                  select
-                  size="small"
-                  value={statusFilter}
-                  onChange={(e) => {
-                    setStatusFilter(e.target.value);
-                    setPage(1);
-                  }}
-                  SelectProps={{ displayEmpty: true }}
-                  sx={{
-                    minWidth: 140,
-                    backgroundColor: 'background.paper',
-                    '& .MuiOutlinedInput-root': {
+          <Box sx={{ width: '100%' }}>
+            <FilterToolbar
+              variant="embedded"
+              activeFilterCount={activeFilterCount}
+              onResetFilters={handleResetFilters}
+              actions={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                  <Button
+                    variant={activeFilterCount > 0 ? 'contained' : 'outlined'}
+                    size="small"
+                    startIcon={<FilterAltIcon fontSize="small" />}
+                    onClick={() => setOpenFilterDrawer(true)}
+                    sx={{
+                      height: 36,
                       borderRadius: '8px',
                       fontSize: '0.8125rem',
-                      height: 36,
-                      '& fieldset': { borderColor: 'divider' },
-                      '&:hover fieldset': { borderColor: 'grey.400' },
-                    },
-                  }}
-                >
-                  <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все статусы</MenuItem>
-                  {Object.entries(EQUIPMENT_STATUS_MAP).map(([key, info]) => (
-                    <MenuItem key={key} value={key} sx={{ fontSize: '0.8125rem' }}>
-                      {info.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                      fontWeight: 600,
+                      textTransform: 'none',
+                      px: 1.5,
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    Все фильтры {activeFilterCount > 0 && `(${activeFilterCount})`}
+                  </Button>
 
-                <TextField
-                  select
-                  size="small"
-                  value={tagFilter}
-                  onChange={(e) => {
-                    setTagFilter(e.target.value);
-                    setPage(1);
-                  }}
-                  SelectProps={{ displayEmpty: true }}
-                  sx={{
-                    minWidth: 130,
-                    backgroundColor: 'background.paper',
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '8px',
-                      fontSize: '0.8125rem',
-                      height: 36,
-                      '& fieldset': { borderColor: 'divider' },
-                      '&:hover fieldset': { borderColor: 'grey.400' },
-                    },
-                  }}
-                >
-                  <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все теги</MenuItem>
-                  {tags.map((t) => (
-                    <MenuItem key={t.id} value={t.id} sx={{ fontSize: '0.8125rem' }}>
-                      {t.name}
-                    </MenuItem>
-                  ))}
-                </TextField>
-                <ToggleButtonGroup
-                  value={viewMode}
-                  exclusive
-                  onChange={(_, mode) => mode && setViewMode(mode)}
-                  size="small"
-                  sx={{ height: 36 }}
-                >
-                  <ToggleButton value="table" aria-label="табличный вид" sx={{ px: 1, py: 0.5, borderRadius: '8px' }}>
-                    <Tooltip title="Табличный вид">
-                      <ViewListIcon fontSize="small" />
-                    </Tooltip>
-                  </ToggleButton>
-                  <ToggleButton value="grid" aria-label="сетка карточек" sx={{ px: 1, py: 0.5, borderRadius: '8px' }}>
-                    <Tooltip title="Сетка карточек">
-                      <ViewModuleIcon fontSize="small" />
-                    </Tooltip>
-                  </ToggleButton>
-                </ToggleButtonGroup>
+                  <Tooltip title={showColumnFilters ? 'Скрыть фильтры в колонках' : 'Показать фильтры в колонках таблицы'}>
+                    <Button
+                      variant={showColumnFilters ? 'contained' : 'outlined'}
+                      color={showColumnFilters ? 'secondary' : 'inherit'}
+                      size="small"
+                      startIcon={<FilterListIcon fontSize="small" />}
+                      onClick={() => setShowColumnFilters((prev) => !prev)}
+                      sx={{
+                        height: 36,
+                        borderRadius: '8px',
+                        fontSize: '0.8125rem',
+                        fontWeight: 600,
+                        textTransform: 'none',
+                        px: 1.25,
+                        borderColor: 'divider',
+                      }}
+                    >
+                      Фильтры колонок
+                    </Button>
+                  </Tooltip>
+
+                  <TextField
+                    select
+                    size="small"
+                    value={filters.status || ''}
+                    onChange={(e) => handleFilterChange('status', e.target.value)}
+                    SelectProps={{ displayEmpty: true }}
+                    sx={{
+                      minWidth: 140,
+                      backgroundColor: 'background.paper',
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '8px',
+                        fontSize: '0.8125rem',
+                        height: 36,
+                        '& fieldset': { borderColor: 'divider' },
+                        '&:hover fieldset': { borderColor: 'grey.400' },
+                      },
+                    }}
+                  >
+                    <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все статусы</MenuItem>
+                    {Object.entries(EQUIPMENT_STATUS_MAP).map(([key, info]) => (
+                      <MenuItem key={key} value={key} sx={{ fontSize: '0.8125rem' }}>
+                        {info.label}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+
+                  <TextField
+                    select
+                    size="small"
+                    value={filters.tagId || ''}
+                    onChange={(e) => handleFilterChange('tagId', e.target.value)}
+                    SelectProps={{ displayEmpty: true }}
+                    sx={{
+                      minWidth: 130,
+                      backgroundColor: 'background.paper',
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '8px',
+                        fontSize: '0.8125rem',
+                        height: 36,
+                        '& fieldset': { borderColor: 'divider' },
+                        '&:hover fieldset': { borderColor: 'grey.400' },
+                      },
+                    }}
+                  >
+                    <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все теги</MenuItem>
+                    {tags.map((t) => (
+                      <MenuItem key={t.id} value={t.id} sx={{ fontSize: '0.8125rem' }}>
+                        {t.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  <ToggleButtonGroup
+                    value={viewMode}
+                    exclusive
+                    onChange={(_, mode) => mode && setViewMode(mode)}
+                    size="small"
+                    sx={{ height: 36 }}
+                  >
+                    <ToggleButton value="table" aria-label="табличный вид" sx={{ px: 1, py: 0.5, borderRadius: '8px' }}>
+                      <Tooltip title="Табличный вид">
+                        <ViewListIcon fontSize="small" />
+                      </Tooltip>
+                    </ToggleButton>
+                    <ToggleButton value="grid" aria-label="сетка карточек" sx={{ px: 1, py: 0.5, borderRadius: '8px' }}>
+                      <Tooltip title="Сетка карточек">
+                        <ViewModuleIcon fontSize="small" />
+                      </Tooltip>
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+                </Box>
+              }
+            >
+              <Box sx={{ minWidth: { xs: '100%', sm: 260, md: 320 }, flexGrow: 1 }}>
+                <SearchInput
+                  value={filters.search || ''}
+                  placeholder="Поиск по наименованию, номеру..."
+                  onSearch={(val) => handleFilterChange('search', val)}
+                />
               </Box>
-            }
-          >
-            <Box sx={{ minWidth: { xs: '100%', sm: 260, md: 320 }, flexGrow: 1 }}>
-              <SearchInput
-                value={search}
-                placeholder="Поиск по наименованию, номеру..."
-                onSearch={(val) => {
-                  setSearch(val);
-                  setPage(1);
-                }}
-              />
-            </Box>
-          </FilterToolbar>
+            </FilterToolbar>
+
+            <EquipmentActiveFilterChips
+              activeBadges={activeBadges}
+              onResetSingle={handleResetSingleFilter}
+              onResetAll={handleResetFilters}
+            />
+          </Box>
         }
         gridContent={
           <Grid container spacing={2.5}>
@@ -1251,6 +1329,14 @@ function EquipmentListContent() {
                 </TableCell>
               )}
             </TableRow>
+            {showColumnFilters && (
+              <EquipmentColumnFiltersRow
+                visibleColumns={visibleColumns}
+                filters={filters}
+                onChangeFilter={handleFilterChange}
+                tags={tags}
+              />
+            )}
           </TableHead>
           <TableBody>
             {sortedEquipmentList.map((eq) => {
@@ -1609,6 +1695,19 @@ function EquipmentListContent() {
           fetchEquipment();
           router.push(`/eps/${newId}`);
         }}
+      />
+
+      {/* Панель расширенной фильтрации по всем полям */}
+      <EquipmentFilterDrawer
+        open={openFilterDrawer}
+        onClose={() => setOpenFilterDrawer(false)}
+        filters={filters}
+        onApplyFilters={(newFilters) => {
+          setFilters(newFilters);
+          setPage(1);
+        }}
+        onResetFilters={handleResetFilters}
+        tags={tags}
       />
     </Box>
   );

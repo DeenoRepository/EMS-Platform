@@ -4,6 +4,7 @@ import { prisma, EquipmentStatus, Prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { z } from 'zod';
+import { buildEquipmentWhereInput } from '@/lib/eps-query-builder';
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,32 +20,7 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const pageSize = Math.min(1000, Math.max(1, parseInt(searchParams.get('pageSize') || searchParams.get('limit') || '20', 10)));
 
-    const where: Prisma.EquipmentWhereInput = {};
-
-    if (status) {
-      where.status = status;
-    }
-
-    if (manufacturer) {
-      where.manufacturer = { contains: manufacturer, mode: 'insensitive' };
-    }
-
-    if (tagId) {
-      where.tags = {
-        some: { tagId },
-      };
-    }
-
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { inventoryNumber: { contains: search, mode: 'insensitive' } },
-        { serialNumber: { contains: search, mode: 'insensitive' } },
-        { manufacturer: { contains: search, mode: 'insensitive' } },
-        { model: { contains: search, mode: 'insensitive' } },
-        { location: { contains: search, mode: 'insensitive' } },
-      ];
-    }
+    const where = buildEquipmentWhereInput(searchParams);
 
     const [total, items, statusGroup] = await Promise.all([
       prisma.equipment.count({ where }),
