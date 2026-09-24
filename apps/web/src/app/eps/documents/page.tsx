@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef, Suspense } from 'react';
 import {
   Box,
   Card,
@@ -201,10 +201,14 @@ function DocumentsListContent() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedEquipmentForUpload, setSelectedEquipmentForUpload] = useState<EquipmentOption | null>(null);
   const [equipmentSearchInput, setEquipmentSearchInput] = useState('');
-  const filteredEquipmentList = useMemo(
-    () => filterEquipmentOptions(equipmentList, equipmentSearchInput),
-    [equipmentList, equipmentSearchInput]
-  );
+  const [uploadEquipmentOptions, setUploadEquipmentOptions] = useState<EquipmentOption[]>([]);
+  const uploadSearchRequestRef = useRef(0);
+  const uploadEquipmentOptionsWithSelected = useMemo(() => {
+    if (!selectedEquipmentForUpload || uploadEquipmentOptions.some((option) => option.id === selectedEquipmentForUpload.id)) {
+      return uploadEquipmentOptions;
+    }
+    return [selectedEquipmentForUpload, ...uploadEquipmentOptions];
+  }, [selectedEquipmentForUpload, uploadEquipmentOptions]);
   const [uploadDocType, setUploadDocType] = useState('SCHEMA');
   const [uploadDescription, setUploadDescription] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -238,6 +242,38 @@ function DocumentsListContent() {
     }
     loadEquipment();
   }, []);
+
+  useEffect(() => {
+    const query = equipmentSearchInput.trim();
+    const requestId = ++uploadSearchRequestRef.current;
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({ page: '1', pageSize: '50' });
+        if (query) params.set('search', query);
+        const response = await fetch(`/api/eps/equipment?${params.toString()}`, { signal: controller.signal });
+        if (!response.ok || requestId !== uploadSearchRequestRef.current) return;
+        const json = await response.json();
+        if (json.success && Array.isArray(json.data?.items) && requestId === uploadSearchRequestRef.current) {
+          setUploadEquipmentOptions(json.data.items.map((equipment: EquipmentOption) => ({
+            id: equipment.id,
+            name: equipment.name,
+            inventoryNumber: equipment.inventoryNumber,
+            model: equipment.model,
+          })));
+        }
+      } catch (error) {
+        if (!(error instanceof DOMException && error.name === 'AbortError')) {
+          console.error('Ошибка поиска оборудования для документа:', error);
+        }
+      }
+    }, 300);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [equipmentSearchInput]);
 
   const fetchDocuments = useCallback(async () => {
     setLoading(true);
@@ -886,7 +922,7 @@ function DocumentsListContent() {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
           {/* Equipment Picker */}
           <Autocomplete
-            options={filteredEquipmentList}
+            options={uploadEquipmentOptionsWithSelected}
             getOptionLabel={(option) => `${option.inventoryNumber ? `[${option.inventoryNumber}] ` : ''}${option.name}${option.model ? ` — ${option.model}` : ''}`}
             filterOptions={(options) => options}
             value={selectedEquipmentForUpload}

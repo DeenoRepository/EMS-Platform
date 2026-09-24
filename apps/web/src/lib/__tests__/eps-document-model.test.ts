@@ -21,8 +21,9 @@ describe('EPS document equipment model', () => {
     assert.match(source, /model:\s*eq\.model/);
     assert.match(source, /Модель:\s*\{doc\.equipment\.model \|\| '—'\}/);
     assert.match(source, /option\.model \? ` — \$\{option\.model\}`/);
-    assert.match(source, /filterEquipmentOptions\(equipmentList, equipmentSearchInput\)/);
-    assert.match(source, /options=\{filteredEquipmentList\}/);
+    assert.match(source, /api\/eps\/equipment\?\$\{params\.toString\(\)\}/);
+    assert.match(source, /setTimeout\(async \(\) =>/);
+    assert.match(source, /options=\{uploadEquipmentOptionsWithSelected\}/);
     assert.match(source, /filterOptions=\{\(options\) => options\}/);
     assert.match(source, /inputValue=\{equipmentSearchInput\}/);
     assert.match(source, /onInputChange=\{\(_, value\) => setEquipmentSearchInput\(value\)\}/);
