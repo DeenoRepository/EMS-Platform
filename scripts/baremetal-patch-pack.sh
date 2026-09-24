@@ -6,8 +6,15 @@ ARCHIVE_NAME="${PACKAGE_DIR}.tar.gz"
 
 rm -rf "$PACKAGE_DIR" "$ARCHIVE_NAME"
 
-echo "Building current production application"
-pnpm build
+if [[ "${SKIP_BUILD:-0}" != "1" ]]; then
+  echo "Building current production application"
+  rm -rf apps/web/.next .turbo
+  pnpm --filter @ems/database generate
+  pnpm build
+else
+  echo "Using prebuilt and compatibility-tested apps/web/.next"
+  [[ -f apps/web/.next/BUILD_ID ]] || { echo "apps/web/.next/BUILD_ID is missing" >&2; exit 2; }
+fi
 
 mkdir -p "$PACKAGE_DIR/apps/web" "$PACKAGE_DIR/scripts" "$PACKAGE_DIR/docs"
 cp -a apps/web/.next "$PACKAGE_DIR/apps/web/.next"
