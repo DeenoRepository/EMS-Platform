@@ -201,6 +201,10 @@ function DocumentsListContent() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedEquipmentForUpload, setSelectedEquipmentForUpload] = useState<EquipmentOption | null>(null);
   const [equipmentSearchInput, setEquipmentSearchInput] = useState('');
+  const filteredEquipmentList = useMemo(
+    () => filterEquipmentOptions(equipmentList, equipmentSearchInput),
+    [equipmentList, equipmentSearchInput]
+  );
   const [uploadDocType, setUploadDocType] = useState('SCHEMA');
   const [uploadDescription, setUploadDescription] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -882,9 +886,9 @@ function DocumentsListContent() {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
           {/* Equipment Picker */}
           <Autocomplete
-            options={equipmentList}
+            options={filteredEquipmentList}
             getOptionLabel={(option) => `${option.inventoryNumber ? `[${option.inventoryNumber}] ` : ''}${option.name}${option.model ? ` — ${option.model}` : ''}`}
-            filterOptions={(options) => filterEquipmentOptions(options, equipmentSearchInput)}
+            filterOptions={(options) => options}
             value={selectedEquipmentForUpload}
             onChange={(_, val) => setSelectedEquipmentForUpload(val)}
             inputValue={equipmentSearchInput}
