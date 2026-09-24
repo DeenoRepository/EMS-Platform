@@ -26,7 +26,9 @@ describe('EPS document equipment model', () => {
     assert.match(source, /options=\{uploadEquipmentOptionsWithSelected\}/);
     assert.match(source, /filterOptions=\{\(options\) => options\}/);
     assert.match(source, /inputValue=\{equipmentSearchInput\}/);
-    assert.match(source, /onInputChange=\{\(_, value\) => setEquipmentSearchInput\(value\)\}/);
+    assert.match(source, /onInputChange=\{\(_, value, reason\) =>/);
+    assert.match(source, /setUploadEquipmentOptions\(\[\]\)/);
+    assert.match(source, /loading=\{uploadEquipmentLoading\}/);
     assert.match(source, /option\.inventoryNumber[\s\S]*option\.name[\s\S]*option\.model/);
     assert.match(source, /Поиск по инв\. номеру, наименованию или модели/);
   });

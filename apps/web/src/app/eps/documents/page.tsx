@@ -202,9 +202,11 @@ function DocumentsListContent() {
   const [selectedEquipmentForUpload, setSelectedEquipmentForUpload] = useState<EquipmentOption | null>(null);
   const [equipmentSearchInput, setEquipmentSearchInput] = useState('');
   const [uploadEquipmentOptions, setUploadEquipmentOptions] = useState<EquipmentOption[]>([]);
+  const [uploadEquipmentLoading, setUploadEquipmentLoading] = useState(false);
   const uploadSearchRequestRef = useRef(0);
   const uploadEquipmentOptionsWithSelected = useMemo(() => {
-    if (!selectedEquipmentForUpload || uploadEquipmentOptions.some((option) => option.id === selectedEquipmentForUpload.id)) {
+    const selectedMatchesSearch = !equipmentSearchInput.trim() || filterEquipmentOptions([selectedEquipmentForUpload].filter(Boolean) as EquipmentOption[], equipmentSearchInput).length > 0;
+    if (!selectedEquipmentForUpload || !selectedMatchesSearch || uploadEquipmentOptions.some((option) => option.id === selectedEquipmentForUpload.id)) {
       return uploadEquipmentOptions;
     }
     return [selectedEquipmentForUpload, ...uploadEquipmentOptions];
@@ -247,6 +249,8 @@ function DocumentsListContent() {
     const query = equipmentSearchInput.trim();
     const requestId = ++uploadSearchRequestRef.current;
     const controller = new AbortController();
+    setUploadEquipmentOptions([]);
+    setUploadEquipmentLoading(true);
     const timer = window.setTimeout(async () => {
       try {
         const params = new URLSearchParams({ page: '1', pageSize: '50' });
@@ -266,6 +270,8 @@ function DocumentsListContent() {
         if (!(error instanceof DOMException && error.name === 'AbortError')) {
           console.error('Ошибка поиска оборудования для документа:', error);
         }
+      } finally {
+        if (requestId === uploadSearchRequestRef.current) setUploadEquipmentLoading(false);
       }
     }, 300);
 
@@ -928,7 +934,13 @@ function DocumentsListContent() {
             value={selectedEquipmentForUpload}
             onChange={(_, val) => setSelectedEquipmentForUpload(val)}
             inputValue={equipmentSearchInput}
-            onInputChange={(_, value) => setEquipmentSearchInput(value)}
+            onInputChange={(_, value, reason) => {
+              if (reason === 'input' || reason === 'clear') {
+                setUploadEquipmentOptions([]);
+              }
+              setEquipmentSearchInput(value);
+            }}
+            loading={uploadEquipmentLoading}
             noOptionsText="Оборудование не найдено"
             renderInput={(params) => (
               <TextField
