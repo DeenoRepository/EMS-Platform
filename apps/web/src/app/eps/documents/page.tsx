@@ -930,7 +930,7 @@ function DocumentsListContent() {
           <Autocomplete
             options={uploadEquipmentOptionsWithSelected}
             getOptionLabel={(option) => `${option.inventoryNumber ? `[${option.inventoryNumber}] ` : ''}${option.name}${option.model ? ` — ${option.model}` : ''}`}
-            filterOptions={(options) => options}
+            filterOptions={(options, state) => filterEquipmentOptions(options, state.inputValue || equipmentSearchInput)}
             value={selectedEquipmentForUpload}
             onChange={(_, val) => setSelectedEquipmentForUpload(val)}
             inputValue={equipmentSearchInput}

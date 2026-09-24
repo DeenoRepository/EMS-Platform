@@ -24,7 +24,7 @@ describe('EPS document equipment model', () => {
     assert.match(source, /api\/eps\/equipment\?\$\{params\.toString\(\)\}/);
     assert.match(source, /setTimeout\(async \(\) =>/);
     assert.match(source, /options=\{uploadEquipmentOptionsWithSelected\}/);
-    assert.match(source, /filterOptions=\{\(options\) => options\}/);
+    assert.match(source, /filterOptions=\{\(options, state\) => filterEquipmentOptions\(options, state\.inputValue \|\| equipmentSearchInput\)\}/);
     assert.match(source, /inputValue=\{equipmentSearchInput\}/);
     assert.match(source, /onInputChange=\{\(_, value, reason\) =>/);
     assert.match(source, /setUploadEquipmentOptions\(\[\]\)/);
