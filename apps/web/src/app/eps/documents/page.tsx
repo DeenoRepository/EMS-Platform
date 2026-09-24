@@ -200,6 +200,7 @@ function DocumentsListContent() {
   // Upload Modal State
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedEquipmentForUpload, setSelectedEquipmentForUpload] = useState<EquipmentOption | null>(null);
+  const [equipmentSearchInput, setEquipmentSearchInput] = useState('');
   const [uploadDocType, setUploadDocType] = useState('SCHEMA');
   const [uploadDescription, setUploadDescription] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -338,6 +339,7 @@ function DocumentsListContent() {
         setUploadModalOpen(false);
         setSelectedFile(null);
         setSelectedEquipmentForUpload(null);
+        setEquipmentSearchInput('');
         setUploadDescription('');
         setUploadDocType('SCHEMA');
         fetchDocuments();
@@ -882,9 +884,12 @@ function DocumentsListContent() {
           <Autocomplete
             options={equipmentList}
             getOptionLabel={(option) => `${option.inventoryNumber ? `[${option.inventoryNumber}] ` : ''}${option.name}${option.model ? ` — ${option.model}` : ''}`}
-            filterOptions={(options, state) => filterEquipmentOptions(options, state.inputValue)}
+            filterOptions={(options) => filterEquipmentOptions(options, equipmentSearchInput)}
             value={selectedEquipmentForUpload}
             onChange={(_, val) => setSelectedEquipmentForUpload(val)}
+            inputValue={equipmentSearchInput}
+            onInputChange={(_, value) => setEquipmentSearchInput(value)}
+            noOptionsText="Оборудование не найдено"
             renderInput={(params) => (
               <TextField
                 {...params}
