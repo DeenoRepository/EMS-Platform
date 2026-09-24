@@ -97,15 +97,12 @@ function applySingleDateRange(
   if (!from && !to) return;
   const range: Prisma.DateTimeFilter = {};
   if (from) {
-    const dFrom = new Date(from);
+    const dFrom = new Date(from.includes('T') ? from : `${from}T00:00:00.000Z`);
     if (!isNaN(dFrom.getTime())) range.gte = dFrom;
   }
   if (to) {
-    const dTo = new Date(to);
-    if (!isNaN(dTo.getTime())) {
-      dTo.setHours(23, 59, 59, 999);
-      range.lte = dTo;
-    }
+    const dTo = new Date(to.includes('T') ? to : `${to}T23:59:59.999Z`);
+    if (!isNaN(dTo.getTime())) range.lte = dTo;
   }
   and.push({ [field]: range });
 }
@@ -224,16 +221,20 @@ function applyBooleanField(and: Prisma.EquipmentWhereInput[], fieldKey: string, 
         { customFields: { path: [fieldKey], equals: 'true' } },
         { customFields: { path: [fieldKey], equals: 'Да' } },
         { customFields: { path: [fieldKey], equals: 'да' } },
+        { customFields: { path: [fieldKey], equals: 1 } },
       ],
     });
   } else if (v === 'false') {
     and.push({
-      OR: [
-        { customFields: { path: [fieldKey], equals: false } },
-        { customFields: { path: [fieldKey], equals: 'false' } },
-        { customFields: { path: [fieldKey], equals: 'Нет' } },
-        { customFields: { path: [fieldKey], equals: 'нет' } },
-      ],
+      NOT: {
+        OR: [
+          { customFields: { path: [fieldKey], equals: true } },
+          { customFields: { path: [fieldKey], equals: 'true' } },
+          { customFields: { path: [fieldKey], equals: 'Да' } },
+          { customFields: { path: [fieldKey], equals: 'да' } },
+          { customFields: { path: [fieldKey], equals: 1 } },
+        ],
+      },
     });
   }
 }

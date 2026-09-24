@@ -13,10 +13,6 @@ export async function GET(req: NextRequest) {
     if (!hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_VIEW)) return forbiddenResponse();
 
     const { searchParams } = new URL(req.url);
-    const search = searchParams.get('search');
-    const status = searchParams.get('status') as EquipmentStatus | null;
-    const tagId = searchParams.get('tagId');
-    const manufacturer = searchParams.get('manufacturer');
     const page = parseInt(searchParams.get('page') || '1', 10);
     const pageSize = Math.min(1000, Math.max(1, parseInt(searchParams.get('pageSize') || searchParams.get('limit') || '20', 10)));
 

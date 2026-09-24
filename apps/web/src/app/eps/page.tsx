@@ -73,7 +73,6 @@ import {
   countActiveEquipmentFilters,
   getActiveEquipmentFilterBadges,
   buildEquipmentFilterSearchParams,
-  matchesAllEquipmentFilters,
 } from '@/lib/eps-filter-helpers';
 import { PlatformMaintenanceStatus } from '@ems/shared';
 
@@ -295,10 +294,7 @@ function EquipmentListContent() {
   const [sortField, setSortField] = useState<string>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  const equipmentList = useMemo(() => {
-    const list = Array.isArray(items) ? items : [];
-    return list.filter((item) => matchesAllEquipmentFilters(item, filters));
-  }, [items, filters]);
+  const equipmentList = useMemo(() => (Array.isArray(items) ? items : []), [items]);
 
   const handleRequestSort = (property: string) => {
     const isAsc = sortField === property && sortDirection === 'asc';

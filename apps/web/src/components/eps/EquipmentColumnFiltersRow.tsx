@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   TableRow,
   TableCell,
@@ -33,6 +33,44 @@ const inputSx = {
   },
 };
 
+function DebouncedColumnInput({
+  value,
+  placeholder,
+  type = 'text',
+  onChange,
+}: {
+  value?: string;
+  placeholder?: string;
+  type?: string;
+  onChange: (val: string) => void;
+}) {
+  const [localVal, setLocalVal] = useState(value || '');
+
+  useEffect(() => {
+    setLocalVal(value || '');
+  }, [value]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localVal !== (value || '')) {
+        onChange(localVal);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [localVal, value, onChange]);
+
+  return (
+    <TextField
+      size="small"
+      type={type}
+      placeholder={placeholder}
+      value={localVal}
+      onChange={(e) => setLocalVal(e.target.value)}
+      sx={inputSx}
+    />
+  );
+}
+
 export function EquipmentColumnFiltersRow({
   visibleColumns,
   filters,
@@ -45,37 +83,37 @@ export function EquipmentColumnFiltersRow({
 
       {visibleColumns.includes('inventoryNumber') && (
         <TableCell sx={{ p: 0.75 }}>
-          <TextField size="small" placeholder="Инв. №" value={filters.inventoryNumber || ''} onChange={(e) => onChangeFilter('inventoryNumber', e.target.value)} sx={inputSx} />
+          <DebouncedColumnInput placeholder="Инв. №" value={filters.inventoryNumber} onChange={(v) => onChangeFilter('inventoryNumber', v)} />
         </TableCell>
       )}
 
       {visibleColumns.includes('name') && (
         <TableCell sx={{ p: 0.75 }}>
-          <TextField size="small" placeholder="Поиск наименования..." value={filters.name || ''} onChange={(e) => onChangeFilter('name', e.target.value)} sx={inputSx} />
+          <DebouncedColumnInput placeholder="Поиск наименования..." value={filters.name} onChange={(v) => onChangeFilter('name', v)} />
         </TableCell>
       )}
 
       {visibleColumns.includes('serialNumber') && (
         <TableCell sx={{ p: 0.75 }}>
-          <TextField size="small" placeholder="Серийный №" value={filters.serialNumber || ''} onChange={(e) => onChangeFilter('serialNumber', e.target.value)} sx={inputSx} />
+          <DebouncedColumnInput placeholder="Серийный №" value={filters.serialNumber} onChange={(v) => onChangeFilter('serialNumber', v)} />
         </TableCell>
       )}
 
       {visibleColumns.includes('manufacturer') && (
         <TableCell sx={{ p: 0.75 }}>
-          <TextField size="small" placeholder="Производитель" value={filters.manufacturer || ''} onChange={(e) => onChangeFilter('manufacturer', e.target.value)} sx={inputSx} />
+          <DebouncedColumnInput placeholder="Производитель" value={filters.manufacturer} onChange={(v) => onChangeFilter('manufacturer', v)} />
         </TableCell>
       )}
 
       {visibleColumns.includes('model') && (
         <TableCell sx={{ p: 0.75 }}>
-          <TextField size="small" placeholder="Модель" value={filters.model || ''} onChange={(e) => onChangeFilter('model', e.target.value)} sx={inputSx} />
+          <DebouncedColumnInput placeholder="Модель" value={filters.model} onChange={(v) => onChangeFilter('model', v)} />
         </TableCell>
       )}
 
       {visibleColumns.includes('location') && (
         <TableCell sx={{ p: 0.75 }}>
-          <TextField size="small" placeholder="Локация" value={filters.location || ''} onChange={(e) => onChangeFilter('location', e.target.value)} sx={inputSx} />
+          <DebouncedColumnInput placeholder="Локация" value={filters.location} onChange={(v) => onChangeFilter('location', v)} />
         </TableCell>
       )}
 
@@ -103,61 +141,61 @@ export function EquipmentColumnFiltersRow({
 
       {visibleColumns.includes('actualWear') && (
         <TableCell sx={{ p: 0.75 }}>
-          <TextField size="small" placeholder="Макс %" type="number" value={filters.wearMax || ''} onChange={(e) => onChangeFilter('wearMax', e.target.value)} sx={inputSx} />
+          <DebouncedColumnInput placeholder="Макс %" type="number" value={filters.wearMax} onChange={(v) => onChangeFilter('wearMax', v)} />
         </TableCell>
       )}
 
       {visibleColumns.includes('eqGroup') && (
         <TableCell sx={{ p: 0.75 }}>
-          <TextField size="small" placeholder="Подразделение" value={filters.eqGroup || ''} onChange={(e) => onChangeFilter('eqGroup', e.target.value)} sx={inputSx} />
+          <DebouncedColumnInput placeholder="Подразделение" value={filters.eqGroup} onChange={(v) => onChangeFilter('eqGroup', v)} />
         </TableCell>
       )}
 
       {visibleColumns.includes('eqType') && (
         <TableCell sx={{ p: 0.75 }}>
-          <TextField size="small" placeholder="Вид" value={filters.eqType || ''} onChange={(e) => onChangeFilter('eqType', e.target.value)} sx={inputSx} />
+          <DebouncedColumnInput placeholder="Вид" value={filters.eqType} onChange={(v) => onChangeFilter('eqType', v)} />
         </TableCell>
       )}
 
       {visibleColumns.includes('respPerson') && (
         <TableCell sx={{ p: 0.75 }}>
-          <TextField size="small" placeholder="МОЛ" value={filters.respPerson || ''} onChange={(e) => onChangeFilter('respPerson', e.target.value)} sx={inputSx} />
+          <DebouncedColumnInput placeholder="МОЛ" value={filters.respPerson} onChange={(v) => onChangeFilter('respPerson', v)} />
         </TableCell>
       )}
 
       {visibleColumns.includes('okofCode') && (
         <TableCell sx={{ p: 0.75 }}>
-          <TextField size="small" placeholder="ОКОФ" value={filters.okofCode || ''} onChange={(e) => onChangeFilter('okofCode', e.target.value)} sx={inputSx} />
+          <DebouncedColumnInput placeholder="ОКОФ" value={filters.okofCode} onChange={(v) => onChangeFilter('okofCode', v)} />
         </TableCell>
       )}
 
       {visibleColumns.includes('okpd2Code') && (
         <TableCell sx={{ p: 0.75 }}>
-          <TextField size="small" placeholder="ОКПД2" value={filters.okpd2Code || ''} onChange={(e) => onChangeFilter('okpd2Code', e.target.value)} sx={inputSx} />
+          <DebouncedColumnInput placeholder="ОКПД2" value={filters.okpd2Code} onChange={(v) => onChangeFilter('okpd2Code', v)} />
         </TableCell>
       )}
 
       {visibleColumns.includes('procCode') && (
         <TableCell sx={{ p: 0.75 }}>
-          <TextField size="small" placeholder="Техпроцесс" value={filters.procCode || ''} onChange={(e) => onChangeFilter('procCode', e.target.value)} sx={inputSx} />
+          <DebouncedColumnInput placeholder="Техпроцесс" value={filters.procCode} onChange={(v) => onChangeFilter('procCode', v)} />
         </TableCell>
       )}
 
       {visibleColumns.includes('maintPeriodicity') && (
         <TableCell sx={{ p: 0.75 }}>
-          <TextField size="small" placeholder="Период ТО" value={filters.maintPeriodicity || ''} onChange={(e) => onChangeFilter('maintPeriodicity', e.target.value)} sx={inputSx} />
+          <DebouncedColumnInput placeholder="Период ТО" value={filters.maintPeriodicity} onChange={(v) => onChangeFilter('maintPeriodicity', v)} />
         </TableCell>
       )}
 
       {visibleColumns.includes('calibrationInterval') && (
         <TableCell sx={{ p: 0.75 }}>
-          <TextField size="small" placeholder="Макс мес." type="number" value={filters.calibrationIntervalMax || ''} onChange={(e) => onChangeFilter('calibrationIntervalMax', e.target.value)} sx={inputSx} />
+          <DebouncedColumnInput placeholder="Макс мес." type="number" value={filters.calibrationIntervalMax} onChange={(v) => onChangeFilter('calibrationIntervalMax', v)} />
         </TableCell>
       )}
 
       {visibleColumns.includes('cleanRoom') && (
         <TableCell sx={{ p: 0.75 }}>
-          <TextField size="small" placeholder="ISO" value={filters.cleanRoom || ''} onChange={(e) => onChangeFilter('cleanRoom', e.target.value)} sx={inputSx} />
+          <DebouncedColumnInput placeholder="ISO" value={filters.cleanRoom} onChange={(v) => onChangeFilter('cleanRoom', v)} />
         </TableCell>
       )}
 
@@ -224,19 +262,19 @@ export function EquipmentColumnFiltersRow({
 
       {visibleColumns.includes('commissionDate') && (
         <TableCell sx={{ p: 0.75 }}>
-          <TextField size="small" type="date" value={filters.commissionDateFrom || ''} onChange={(e) => onChangeFilter('commissionDateFrom', e.target.value)} sx={inputSx} />
+          <DebouncedColumnInput type="date" value={filters.commissionDateFrom} onChange={(v) => onChangeFilter('commissionDateFrom', v)} />
         </TableCell>
       )}
 
       {visibleColumns.includes('updatedAt') && (
         <TableCell sx={{ p: 0.75 }}>
-          <TextField size="small" type="date" value={filters.updatedAtFrom || ''} onChange={(e) => onChangeFilter('updatedAtFrom', e.target.value)} sx={inputSx} />
+          <DebouncedColumnInput type="date" value={filters.updatedAtFrom} onChange={(v) => onChangeFilter('updatedAtFrom', v)} />
         </TableCell>
       )}
 
       {visibleColumns.includes('createdAt') && (
         <TableCell sx={{ p: 0.75 }}>
-          <TextField size="small" type="date" value={filters.createdAtFrom || ''} onChange={(e) => onChangeFilter('createdAtFrom', e.target.value)} sx={inputSx} />
+          <DebouncedColumnInput type="date" value={filters.createdAtFrom} onChange={(v) => onChangeFilter('createdAtFrom', v)} />
         </TableCell>
       )}
     </TableRow>

@@ -14,8 +14,9 @@ describe('EPS Query Builder (Where input construction)', () => {
     const params = new URLSearchParams({ search: 'вакуум' });
     const where = buildEquipmentWhereInput(params);
     assert.ok(where.AND);
-    assert.strictEqual(where.AND.length, 1);
-    const searchCond = (where.AND[0] as any).OR;
+    const and = where.AND as any[];
+    assert.strictEqual(and.length, 1);
+    const searchCond = and[0].OR;
     assert.ok(Array.isArray(searchCond));
     assert.strictEqual(searchCond.length, 6);
   });
@@ -31,7 +32,8 @@ describe('EPS Query Builder (Where input construction)', () => {
     });
     const where = buildEquipmentWhereInput(params);
     assert.ok(where.AND);
-    assert.strictEqual(where.AND.length, 6);
+    const and = where.AND as any[];
+    assert.strictEqual(and.length, 6);
   });
 
   it('adds status, tag, and document relations filters', () => {
@@ -43,11 +45,12 @@ describe('EPS Query Builder (Where input construction)', () => {
     });
     const where = buildEquipmentWhereInput(params);
     assert.ok(where.AND);
-    assert.strictEqual(where.AND.length, 4);
-    assert.deepStrictEqual(where.AND[0], { status: 'ACTIVE' });
-    assert.deepStrictEqual(where.AND[1], { tags: { some: { tagId: 'tag-123' } } });
-    assert.deepStrictEqual(where.AND[2], { documents: { some: {} } });
-    assert.deepStrictEqual(where.AND[3], { spareParts: { none: {} } });
+    const and = where.AND as any[];
+    assert.strictEqual(and.length, 4);
+    assert.deepStrictEqual(and[0], { status: 'ACTIVE' });
+    assert.deepStrictEqual(and[1], { tags: { some: { tagId: 'tag-123' } } });
+    assert.deepStrictEqual(and[2], { documents: { some: {} } });
+    assert.deepStrictEqual(and[3], { spareParts: { none: {} } });
   });
 
   it('adds date range filters with proper boundaries', () => {
@@ -57,8 +60,9 @@ describe('EPS Query Builder (Where input construction)', () => {
     });
     const where = buildEquipmentWhereInput(params);
     assert.ok(where.AND);
-    assert.strictEqual(where.AND.length, 1);
-    const dateRange = (where.AND[0] as any).commissionDate;
+    const and = where.AND as any[];
+    assert.strictEqual(and.length, 1);
+    const dateRange = and[0].commissionDate;
     assert.ok(dateRange.gte instanceof Date);
     assert.ok(dateRange.lte instanceof Date);
   });
@@ -73,6 +77,7 @@ describe('EPS Query Builder (Where input construction)', () => {
     });
     const where = buildEquipmentWhereInput(params);
     assert.ok(where.AND);
-    assert.strictEqual(where.AND.length, 5);
+    const and = where.AND as any[];
+    assert.strictEqual(and.length, 5);
   });
 });
