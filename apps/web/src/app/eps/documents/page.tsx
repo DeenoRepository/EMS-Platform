@@ -90,6 +90,28 @@ interface EquipmentOption {
   model: string | null;
 }
 
+function normalizeEquipmentSearch(value: string | null | undefined): string {
+  return (value || '')
+    .toLocaleLowerCase('ru-RU')
+    .replace(/ё/g, 'е')
+    .replace(/[^a-zа-я0-9]+/gi, ' ')
+    .trim();
+}
+
+function filterEquipmentOptions(options: EquipmentOption[], inputValue: string): EquipmentOption[] {
+  const searchTokens = normalizeEquipmentSearch(inputValue).split(/\s+/).filter(Boolean);
+  if (searchTokens.length === 0) return options;
+
+  return options.filter((option) => {
+    const searchable = normalizeEquipmentSearch([
+      option.inventoryNumber,
+      option.name,
+      option.model,
+    ].filter(Boolean).join(' '));
+    return searchTokens.every((token) => searchable.includes(token));
+  });
+}
+
 function DocumentsListContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -860,13 +882,14 @@ function DocumentsListContent() {
           <Autocomplete
             options={equipmentList}
             getOptionLabel={(option) => `${option.inventoryNumber ? `[${option.inventoryNumber}] ` : ''}${option.name}${option.model ? ` — ${option.model}` : ''}`}
+            filterOptions={(options, state) => filterEquipmentOptions(options, state.inputValue)}
             value={selectedEquipmentForUpload}
             onChange={(_, val) => setSelectedEquipmentForUpload(val)}
             renderInput={(params) => (
               <TextField
                 {...params}
                 label="Оборудование"
-                placeholder="Выберите единицу оборудования"
+                placeholder="Поиск по инв. номеру, наименованию или модели"
                 size="small"
                 fullWidth
                 required
