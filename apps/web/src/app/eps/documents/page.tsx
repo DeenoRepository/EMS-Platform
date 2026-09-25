@@ -213,7 +213,7 @@ function DocumentsListContent() {
   }, [selectedEquipmentForUpload, uploadEquipmentOptions]);
   const [uploadDocType, setUploadDocType] = useState('SCHEMA');
   const [uploadDescription, setUploadDescription] = useState('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
 
   // Confirm Delete Dialog State
@@ -358,8 +358,8 @@ function DocumentsListContent() {
   };
 
   const handleUploadSubmit = async () => {
-    if (!selectedFile) {
-      enqueueSnackbar('Выберите файл для загрузки', { variant: 'warning' });
+    if (selectedFiles.length === 0) {
+      enqueueSnackbar('Выберите хотя бы один файл для загрузки', { variant: 'warning' });
       return;
     }
     if (!selectedEquipmentForUpload) {
@@ -370,7 +370,9 @@ function DocumentsListContent() {
     setUploading(true);
     try {
       const fd = new FormData();
-      fd.append('file', selectedFile);
+      selectedFiles.forEach((file) => {
+        fd.append('files', file);
+      });
       fd.append('equipmentId', selectedEquipmentForUpload.id);
       fd.append('docType', uploadDocType);
       fd.append('description', uploadDescription);
@@ -381,19 +383,25 @@ function DocumentsListContent() {
       });
       const json = await res.json();
       if (json.success) {
-        enqueueSnackbar('Документ успешно загружен и прикреплен', { variant: 'success' });
+        const count = json.count || selectedFiles.length;
+        enqueueSnackbar(
+          count > 1
+            ? `Успешно загружено и прикреплено документов: ${count}`
+            : 'Документ успешно загружен и прикреплен',
+          { variant: 'success' }
+        );
         setUploadModalOpen(false);
-        setSelectedFile(null);
+        setSelectedFiles([]);
         setSelectedEquipmentForUpload(null);
         setEquipmentSearchInput('');
         setUploadDescription('');
         setUploadDocType('SCHEMA');
         fetchDocuments();
       } else {
-        enqueueSnackbar(json.error || 'Ошибка загрузки документа', { variant: 'error' });
+        enqueueSnackbar(json.error || 'Ошибка загрузки документов', { variant: 'error' });
       }
     } catch {
-      enqueueSnackbar('Ошибка сети при загрузке документа', { variant: 'error' });
+      enqueueSnackbar('Ошибка сети при загрузке документов', { variant: 'error' });
     } finally {
       setUploading(false);
     }
@@ -916,14 +924,23 @@ function DocumentsListContent() {
       {/* Upload Document Modal Dialog */}
       <FormDialog
         open={uploadModalOpen}
-        onClose={() => setUploadModalOpen(false)}
-        title="Загрузка документа в архив EPS"
+        onClose={() => {
+          setUploadModalOpen(false);
+          setSelectedFiles([]);
+        }}
+        title="Загрузка документов в архив EPS"
         icon={<UploadFileIcon color="primary" />}
         maxWidth="sm"
         loading={uploading}
-        submitLabel={uploading ? 'Загрузка...' : 'Загрузить в архив'}
+        submitLabel={
+          uploading
+            ? 'Загрузка...'
+            : selectedFiles.length > 1
+            ? `Загрузить в архив (${selectedFiles.length})`
+            : 'Загрузить в архив'
+        }
         onSubmit={handleUploadSubmit}
-        submitDisabled={!selectedFile || !selectedEquipmentForUpload || uploading}
+        submitDisabled={selectedFiles.length === 0 || !selectedEquipmentForUpload || uploading}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
           {/* Equipment Picker */}
@@ -973,16 +990,17 @@ function DocumentsListContent() {
 
           {/* File Picker */}
           <FileUploadDropzone
-            files={selectedFile ? [selectedFile] : []}
-            onChange={(files) => setSelectedFile(files[0] || null)}
+            multiple
+            files={selectedFiles}
+            onChange={(files) => setSelectedFiles(files)}
             compact
-            title="Перетащите файл документа или выберите"
-            description="PDF, Word, Excel, чертежи и схемы (до 15 МБ)"
+            title="Перетащите файлы документов или выберите"
+            description="PDF, Word, Excel, чертежи и схемы (до 15 МБ на файл)"
           />
 
           {/* Description */}
           <TextField
-            label="Описание / Примечание к документу"
+            label="Описание / Примечание к документам"
             value={uploadDescription}
             onChange={(e) => setUploadDescription(e.target.value)}
             multiline

@@ -3,7 +3,8 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma, DocumentType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
-import { saveFile, deleteFile } from '@/lib/storage';
+import { saveFile, deleteFile, ALLOWED_EXTENSIONS } from '@/lib/storage';
+import path from 'path';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,40 +24,71 @@ export async function POST(
     }
 
     const formData = await req.formData();
-    const file = formData.get('file') as File | null;
     const docType = (formData.get('docType') as DocumentType) || 'OTHER';
     const description = formData.get('description') as string | null;
 
-    if (!file) {
-      return NextResponse.json({ success: false, error: 'Файл не прикреплен' }, { status: 400 });
+    const rawFiles = [...formData.getAll('files'), ...formData.getAll('file')];
+    const files = rawFiles.filter((f): f is File => f instanceof File && f.size > 0);
+
+    if (files.length === 0) {
+      return NextResponse.json({ success: false, error: 'Файлы не прикреплены' }, { status: 400 });
     }
 
-    // Сохраняем документ на диск
-    const saved = await saveFile(file, 'documents');
+    // Предварительная валидация расширений и размеров всех файлов перед сохранением
+    for (const file of files) {
+      const ext = path.extname(file.name || '').toLowerCase();
+      if (!ALLOWED_EXTENSIONS.documents.has(ext)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Недопустимый формат файла «${file.name}». Разрешены только: ${Array.from(ALLOWED_EXTENSIONS.documents).join(', ')}`,
+          },
+          { status: 400 }
+        );
+      }
+      if (file.size > 50 * 1024 * 1024) {
+        return NextResponse.json(
+          { success: false, error: `Файл «${file.name}» превышает допустимый лимит 50 МБ` },
+          { status: 400 }
+        );
+      }
+    }
 
-    const document = await prisma.document.create({
-      data: {
-        equipmentId: id,
-        fileName: saved.fileName,
-        originalName: saved.originalName,
-        filePath: saved.filePath,
-        fileType: saved.fileType,
-        fileSize: saved.fileSize,
-        docType,
-        description: description?.trim() || null,
-        uploadedById: user.userId,
-      },
+    const createdDocuments = [];
+    for (const file of files) {
+      const saved = await saveFile(file, 'documents');
+
+      const document = await prisma.document.create({
+        data: {
+          equipmentId: id,
+          fileName: saved.fileName,
+          originalName: saved.originalName,
+          filePath: saved.filePath,
+          fileType: saved.fileType,
+          fileSize: saved.fileSize,
+          docType,
+          description: description?.trim() || null,
+          uploadedById: user.userId,
+        },
+      });
+
+      await logAuditEvent({
+        userId: user.userId,
+        action: 'CREATE',
+        entityType: 'EquipmentDocument',
+        entityId: document.id,
+        changes: { equipmentId: id, fileName: saved.originalName, docType },
+      });
+
+      createdDocuments.push(document);
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: createdDocuments.length === 1 ? createdDocuments[0] : createdDocuments,
+      items: createdDocuments,
+      count: createdDocuments.length,
     });
-
-    await logAuditEvent({
-      userId: user.userId,
-      action: 'CREATE',
-      entityType: 'EquipmentDocument',
-      entityId: document.id,
-      changes: { equipmentId: id, fileName: saved.originalName, docType },
-    });
-
-    return NextResponse.json({ success: true, data: document });
   } catch (error: any) {
     console.error('Ошибка загрузки документа:', error);
     return NextResponse.json(

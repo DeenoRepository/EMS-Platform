@@ -242,7 +242,7 @@ function EquipmentPassportContent() {
   const [submittingApproval, setSubmittingApproval] = useState(false);
 
   // Upload States
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [docType, setDocType] = useState('SCHEMA');
   const [docDescription, setDocDescription] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -432,11 +432,13 @@ function EquipmentPassportContent() {
 
   // Upload Document
   const handleUploadDocument = async () => {
-    if (!selectedFile) return;
+    if (selectedFiles.length === 0) return;
     setUploading(true);
     try {
       const fd = new FormData();
-      fd.append('file', selectedFile);
+      selectedFiles.forEach((file) => {
+        fd.append('files', file);
+      });
       fd.append('equipmentId', id);
       fd.append('docType', docType);
       fd.append('description', docDescription);
@@ -447,9 +449,13 @@ function EquipmentPassportContent() {
       });
       const data = await res.json();
       if (data.success) {
-        enqueueSnackbar('Документ успешно прикреплен', { variant: 'success' });
+        const count = data.count || selectedFiles.length;
+        enqueueSnackbar(
+          count > 1 ? `Успешно прикреплено документов: ${count}` : 'Документ успешно прикреплен',
+          { variant: 'success' }
+        );
         setDocModalOpen(false);
-        setSelectedFile(null);
+        setSelectedFiles([]);
         setDocDescription('');
         fetchEquipmentAndMeta();
       } else {
@@ -1957,13 +1963,22 @@ function EquipmentPassportContent() {
       {/* Upload Document Dialog */}
       <FormDialog
         open={docModalOpen}
-        onClose={() => setDocModalOpen(false)}
-        title="Прикрепление документа"
-        maxWidth="xs"
+        onClose={() => {
+          setDocModalOpen(false);
+          setSelectedFiles([]);
+        }}
+        title="Прикрепление документов"
+        maxWidth="sm"
         loading={uploading}
-        submitLabel={uploading ? 'Прикрепление...' : 'Прикрепить документ'}
+        submitLabel={
+          uploading
+            ? 'Прикрепление...'
+            : selectedFiles.length > 1
+            ? `Прикрепить документы (${selectedFiles.length})`
+            : 'Прикрепить документ'
+        }
         onSubmit={handleUploadDocument}
-        submitDisabled={!selectedFile || uploading}
+        submitDisabled={selectedFiles.length === 0 || uploading}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
           <TextField
@@ -1974,11 +1989,12 @@ function EquipmentPassportContent() {
             disabled
           />
           <FileUploadDropzone
-            files={selectedFile ? [selectedFile] : []}
-            onChange={(files) => setSelectedFile(files[0] || null)}
+            multiple
+            files={selectedFiles}
+            onChange={(files) => setSelectedFiles(files)}
             compact
-            title="Перетащите файл документа или выберите"
-            description="PDF, DOCX, XLSX, чертежи (до 15 МБ)"
+            title="Перетащите файлы документов или выберите"
+            description="PDF, DOCX, XLSX, чертежи (до 15 МБ на файл)"
           />
 
           <TextField
