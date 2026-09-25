@@ -138,7 +138,7 @@ async function main() {
   // Загружаем все оборудование для сопоставления
   const allEquipment = await prisma.equipment.findMany({
     where: { deletedAt: null },
-    select: { id: true, name: true, inventoryNumber: true, serialNumber: true },
+    select: { id: true, name: true, inventoryNumber: true, serialNumber: true, model: true, customFields: true },
   });
 
   console.log(`Загружено ${allEquipment.length} единиц оборудования из базы данных.`);
@@ -148,6 +148,24 @@ async function main() {
 
   let linkedCount = 0;
   let skippedCount = 0;
+
+  function getDecimalNumber(customFields) {
+    if (!customFields || typeof customFields !== 'object') return '';
+    return String(
+      customFields.decimal_number ||
+      customFields.detsimalnyy_nomer ||
+      customFields.decimalNumber ||
+      customFields['децимальный номер'] ||
+      ''
+    ).trim();
+  }
+
+  function normalize(s) {
+    return (s || '')
+      .toLowerCase()
+      .replace(/ё/g, 'е')
+      .replace(/[^a-zа-я0-9]/gi, '');
+  }
 
   for (const filePath of files) {
     const fileName = path.basename(filePath);
@@ -159,42 +177,39 @@ async function main() {
     // Относительный путь от папки uploads
     const relativePath = path.relative(targetDir, filePath);
     const subFolder = relativePath.includes(path.sep) ? path.dirname(relativePath) : '';
+    const normFileAndFolder = normalize(`${fileName} ${subFolder}`);
 
     // Ищем соответствие с оборудованием:
     // 1. По точному или частичному совпадению инвентарного номера
     // 2. По серийному номеру
-    // 3. По названию родительской подпапки
-    let matchedEq = null;
+    // 3. По децимальному номеру
+    // 4. По модели
+    let matchedEqList = [];
 
     for (const eq of allEquipment) {
       const inv = (eq.inventoryNumber || '').trim();
       const sn = (eq.serialNumber || '').trim();
+      const model = (eq.model || '').trim();
+      const dec = getDecimalNumber(eq.customFields);
 
+      let matched = false;
       if (inv && (fileName.includes(inv) || subFolder.includes(inv))) {
-        matchedEq = eq;
-        break;
+        matched = true;
+      } else if (sn && sn.length >= 3 && (fileName.includes(sn) || subFolder.includes(sn))) {
+        matched = true;
+      } else if (dec && dec.length >= 4 && normFileAndFolder.includes(normalize(dec))) {
+        matched = true;
+      } else if (model && model.length >= 3 && normFileAndFolder.includes(normalize(model))) {
+        matched = true;
       }
-      if (sn && sn.length >= 3 && (fileName.includes(sn) || subFolder.includes(sn))) {
-        matchedEq = eq;
-        break;
+
+      if (matched) {
+        matchedEqList.push(eq);
       }
     }
 
-    if (!matchedEq) {
-      // console.log(`⚠️ Не удалось определить оборудование для файла: ${fileName}`);
+    if (matchedEqList.length === 0) {
       skippedCount++;
-      continue;
-    }
-
-    // Проверяем, существует ли уже запись в базе для этого файла
-    const existingDoc = await prisma.document.findFirst({
-      where: {
-        equipmentId: matchedEq.id,
-        originalName: fileName,
-      },
-    });
-
-    if (existingDoc) {
       continue;
     }
 
@@ -208,23 +223,36 @@ async function main() {
       fs.mkdirSync(destinationFolder, { recursive: true });
     }
 
-    // Сохраняем/регистрируем документ
-    await prisma.document.create({
-      data: {
-        equipmentId: matchedEq.id,
-        fileName: fileName,
-        originalName: fileName,
-        filePath: `documents/${fileName}`,
-        fileType: mimeType,
-        fileSize: stat.size,
-        docType: docType,
-        uploadedById: adminUser.id,
-        description: `Автоматически импортированный документ (${matchedEq.inventoryNumber || matchedEq.name})`,
-      },
-    });
+    for (const matchedEq of matchedEqList) {
+      // Проверяем, существует ли уже запись в базе для этого файла и оборудования
+      const existingDoc = await prisma.document.findFirst({
+        where: {
+          equipmentId: matchedEq.id,
+          originalName: fileName,
+        },
+      });
 
-    linkedCount++;
-    console.log(`🔗 Привязан: "${fileName}" ➔ Оборудование [Инв. № ${matchedEq.inventoryNumber || '—'}] ${matchedEq.name}`);
+      if (existingDoc) {
+        continue;
+      }
+
+      await prisma.document.create({
+        data: {
+          equipmentId: matchedEq.id,
+          fileName: fileName,
+          originalName: fileName,
+          filePath: `documents/${fileName}`,
+          fileType: mimeType,
+          fileSize: stat.size,
+          docType: docType,
+          uploadedById: adminUser.id,
+          description: `Автоматически импортированный документ (${matchedEq.inventoryNumber || matchedEq.name})`,
+        },
+      });
+
+      linkedCount++;
+      console.log(`🔗 Привязан: "${fileName}" ➔ Оборудование [Инв. № ${matchedEq.inventoryNumber || '—'}] ${matchedEq.name} (Модель: ${matchedEq.model || '—'}, Дец: ${getDecimalNumber(matchedEq.customFields) || '—'})`);
+    }
   }
 
   console.log('======================================================');

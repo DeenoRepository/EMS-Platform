@@ -23,6 +23,11 @@ import {
   Autocomplete,
   Paper,
   Divider,
+  ToggleButton,
+  ToggleButtonGroup,
+  FormControlLabel,
+  Checkbox,
+  Alert,
 } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import SearchIcon from '@mui/icons-material/Search';
@@ -222,7 +227,18 @@ function DocumentsListContent() {
 
   // Upload Modal State
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [bindingMode, setBindingMode] = useState<'EQUIPMENT' | 'MODEL' | 'DECIMAL'>('EQUIPMENT');
   const [selectedEquipmentForUpload, setSelectedEquipmentForUpload] = useState<EquipmentOption | null>(null);
+  const [selectedModelForUpload, setSelectedModelForUpload] = useState<string | null>(null);
+  const [modelSearchInput, setModelSearchInput] = useState('');
+  const [selectedDecimalForUpload, setSelectedDecimalForUpload] = useState<string | null>(null);
+  const [decimalSearchInput, setDecimalSearchInput] = useState('');
+  const [applyToAllModel, setApplyToAllModel] = useState(false);
+  const [applyToAllDecimal, setApplyToAllDecimal] = useState(false);
+  const [availableBindingTargets, setAvailableBindingTargets] = useState<{
+    models: { model: string; count: number; sampleEquipment: string[] }[];
+    decimalNumbers: { decimalNumber: string; count: number; sampleEquipment: string[] }[];
+  }>({ models: [], decimalNumbers: [] });
   const [equipmentSearchInput, setEquipmentSearchInput] = useState('');
   const [uploadEquipmentOptions, setUploadEquipmentOptions] = useState<EquipmentOption[]>([]);
   const [uploadEquipmentLoading, setUploadEquipmentLoading] = useState(false);
@@ -242,6 +258,21 @@ function DocumentsListContent() {
   // Confirm Delete Dialog State
   const [deleteDialogDoc, setDeleteDialogDoc] = useState<{ id: string; name: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Fetch binding targets (distinct models and decimal numbers with counts)
+  const fetchBindingTargets = useCallback(async () => {
+    try {
+      const res = await fetch('/api/eps/documents/binding-targets');
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          setAvailableBindingTargets(json.data);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   // Load equipment list for picker
   useEffect(() => {
@@ -266,7 +297,8 @@ function DocumentsListContent() {
       }
     }
     loadEquipment();
-  }, []);
+    fetchBindingTargets();
+  }, [fetchBindingTargets]);
 
   useEffect(() => {
     const query = equipmentSearchInput.trim();
@@ -387,8 +419,16 @@ function DocumentsListContent() {
       enqueueSnackbar('Выберите хотя бы один файл для загрузки', { variant: 'warning' });
       return;
     }
-    if (!selectedEquipmentForUpload) {
+    if (bindingMode === 'EQUIPMENT' && !selectedEquipmentForUpload) {
       enqueueSnackbar('Выберите оборудование, к которому относится документ', { variant: 'warning' });
+      return;
+    }
+    if (bindingMode === 'MODEL' && !selectedModelForUpload?.trim()) {
+      enqueueSnackbar('Выберите или укажите модель оборудования', { variant: 'warning' });
+      return;
+    }
+    if (bindingMode === 'DECIMAL' && !selectedDecimalForUpload?.trim()) {
+      enqueueSnackbar('Выберите или укажите децимальный номер', { variant: 'warning' });
       return;
     }
 
@@ -398,9 +438,19 @@ function DocumentsListContent() {
       selectedFiles.forEach((file) => {
         fd.append('files', file);
       });
-      fd.append('equipmentId', selectedEquipmentForUpload.id);
       fd.append('docType', uploadDocType);
       fd.append('description', uploadDescription);
+      fd.append('bindingMode', bindingMode);
+
+      if (bindingMode === 'EQUIPMENT' && selectedEquipmentForUpload) {
+        fd.append('equipmentId', selectedEquipmentForUpload.id);
+        if (applyToAllModel) fd.append('applyToAllModel', 'true');
+        if (applyToAllDecimal) fd.append('applyToAllDecimal', 'true');
+      } else if (bindingMode === 'MODEL' && selectedModelForUpload) {
+        fd.append('model', selectedModelForUpload.trim());
+      } else if (bindingMode === 'DECIMAL' && selectedDecimalForUpload) {
+        fd.append('decimalNumber', selectedDecimalForUpload.trim());
+      }
 
       const res = await fetch('/api/eps/documents', {
         method: 'POST',
@@ -408,20 +458,29 @@ function DocumentsListContent() {
       });
       const json = await res.json();
       if (json.success) {
-        const count = json.count || selectedFiles.length;
-        enqueueSnackbar(
-          count > 1
-            ? `Успешно загружено и прикреплено документов: ${count}`
-            : 'Документ успешно загружен и прикреплен',
-          { variant: 'success' }
-        );
+        const docCount = json.count || selectedFiles.length;
+        const eqCount = json.equipmentCount || 1;
+        const msg =
+          eqCount > 1
+            ? `Успешно привязано документов: ${docCount} (к ${eqCount} ед. оборудования)`
+            : docCount > 1
+            ? `Успешно загружено и прикреплено документов: ${docCount}`
+            : 'Документ успешно загружен и прикреплен';
+        enqueueSnackbar(msg, { variant: 'success' });
         setUploadModalOpen(false);
         setSelectedFiles([]);
         setSelectedEquipmentForUpload(null);
+        setSelectedModelForUpload(null);
+        setSelectedDecimalForUpload(null);
+        setModelSearchInput('');
+        setDecimalSearchInput('');
+        setApplyToAllModel(false);
+        setApplyToAllDecimal(false);
         setEquipmentSearchInput('');
         setUploadDescription('');
         setUploadDocType('SCHEMA');
         fetchDocuments();
+        fetchBindingTargets();
       } else {
         enqueueSnackbar(json.error || 'Ошибка загрузки документов', { variant: 'error' });
       }
@@ -855,6 +914,11 @@ function DocumentsListContent() {
                         <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.3 }}>
                           Модель: {doc.equipment.model || '—'}
                         </Typography>
+                        {getEquipmentDecimalNumber(doc.equipment) ? (
+                          <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.3 }}>
+                            Дец. №: {getEquipmentDecimalNumber(doc.equipment)}
+                          </Typography>
+                        ) : null}
                       </Box>
                     ) : (
                       <Typography variant="caption" color="text.secondary">
@@ -965,57 +1029,242 @@ function DocumentsListContent() {
             : 'Загрузить в архив'
         }
         onSubmit={handleUploadSubmit}
-        submitDisabled={selectedFiles.length === 0 || !selectedEquipmentForUpload || uploading}
+        submitDisabled={
+          uploading ||
+          selectedFiles.length === 0 ||
+          (bindingMode === 'EQUIPMENT' && !selectedEquipmentForUpload) ||
+          (bindingMode === 'MODEL' && !selectedModelForUpload?.trim()) ||
+          (bindingMode === 'DECIMAL' && !selectedDecimalForUpload?.trim())
+        }
       >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-          {/* Equipment Picker */}
-          <Autocomplete
-            options={uploadEquipmentOptionsWithSelected}
-            getOptionLabel={(option) => `${option.inventoryNumber ? `[${option.inventoryNumber}] ` : ''}${option.name}${option.model ? ` — ${option.model}` : ''}${option.decimalNumber ? ` (дец. № ${option.decimalNumber})` : ''}`}
-            filterOptions={(options, state) => filterEquipmentOptions(options, state.inputValue || equipmentSearchInput)}
-            value={selectedEquipmentForUpload}
-            onChange={(_, val) => setSelectedEquipmentForUpload(val)}
-            inputValue={equipmentSearchInput}
-            onInputChange={(_, value, reason) => {
-              if (reason === 'input' || reason === 'clear') {
-                setUploadEquipmentOptions([]);
-              }
-              setEquipmentSearchInput(value);
-            }}
-            loading={uploadEquipmentLoading}
-            noOptionsText="Оборудование не найдено"
-            renderOption={(props, option) => (
-              <Box component="li" {...props} key={option.id}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
-                    {option.inventoryNumber ? `[${option.inventoryNumber}] ` : ''}{option.name}
-                  </Typography>
-                  <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mt: 0.25 }}>
-                    {option.model && (
-                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
-                        Модель: <strong>{option.model}</strong>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.25, pt: 1 }}>
+          {/* Binding Mode Selector */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+            <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+              Способ привязки документа:
+            </Typography>
+            <ToggleButtonGroup
+              value={bindingMode}
+              exclusive
+              onChange={(_, val) => val && setBindingMode(val)}
+              size="small"
+              fullWidth
+              sx={{
+                '& .MuiToggleButton-root': {
+                  textTransform: 'none',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  py: 0.6,
+                },
+              }}
+            >
+              <ToggleButton value="EQUIPMENT">По единице оборудования</ToggleButton>
+              <ToggleButton value="MODEL">По модели</ToggleButton>
+              <ToggleButton value="DECIMAL">По децимальному номеру</ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+
+          {/* Mode 1: EQUIPMENT */}
+          {bindingMode === 'EQUIPMENT' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Autocomplete
+                options={uploadEquipmentOptionsWithSelected}
+                getOptionLabel={(option) => `${option.inventoryNumber ? `[${option.inventoryNumber}] ` : ''}${option.name}${option.model ? ` — ${option.model}` : ''}${option.decimalNumber ? ` (дец. № ${option.decimalNumber})` : ''}`}
+                filterOptions={(options, state) => filterEquipmentOptions(options, state.inputValue || equipmentSearchInput)}
+                value={selectedEquipmentForUpload}
+                onChange={(_, val) => {
+                  setSelectedEquipmentForUpload(val);
+                  setApplyToAllModel(false);
+                  setApplyToAllDecimal(false);
+                }}
+                inputValue={equipmentSearchInput}
+                onInputChange={(_, value, reason) => {
+                  if (reason === 'input' || reason === 'clear') {
+                    setUploadEquipmentOptions([]);
+                  }
+                  setEquipmentSearchInput(value);
+                }}
+                loading={uploadEquipmentLoading}
+                noOptionsText="Оборудование не найдено"
+                renderOption={(props, option) => (
+                  <Box component="li" {...props} key={option.id}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                        {option.inventoryNumber ? `[${option.inventoryNumber}] ` : ''}{option.name}
                       </Typography>
-                    )}
-                    {option.decimalNumber && (
-                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
-                        Дец. №: <strong>{option.decimalNumber}</strong>
-                      </Typography>
-                    )}
+                      <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mt: 0.25 }}>
+                        {option.model && (
+                          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                            Модель: <strong>{option.model}</strong>
+                          </Typography>
+                        )}
+                        {option.decimalNumber && (
+                          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                            Дец. №: <strong>{option.decimalNumber}</strong>
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
                   </Box>
-                </Box>
-              </Box>
-            )}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Оборудование"
-                placeholder="Поиск по инв. номеру, наименованию или модели, децимальному номеру"
-                size="small"
-                fullWidth
-                required
+                )}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Оборудование"
+                    placeholder="Поиск по инв. номеру, наименованию или модели, децимальному номеру"
+                    size="small"
+                    fullWidth
+                    required
+                  />
+                )}
               />
-            )}
-          />
+
+              {selectedEquipmentForUpload?.model && (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={applyToAllModel}
+                      onChange={(e) => setApplyToAllModel(e.target.checked)}
+                    />
+                  }
+                  label={
+                    <Typography variant="caption" sx={{ color: 'text.primary', fontWeight: 500 }}>
+                      Привязать также ко всем единицам модели «<strong>{selectedEquipmentForUpload.model}</strong>»
+                    </Typography>
+                  }
+                />
+              )}
+              {selectedEquipmentForUpload?.decimalNumber && (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={applyToAllDecimal}
+                      onChange={(e) => setApplyToAllDecimal(e.target.checked)}
+                    />
+                  }
+                  label={
+                    <Typography variant="caption" sx={{ color: 'text.primary', fontWeight: 500 }}>
+                      Привязать также ко всем единицам с децимальным номером «<strong>{selectedEquipmentForUpload.decimalNumber}</strong>»
+                    </Typography>
+                  }
+                />
+              )}
+            </Box>
+          )}
+
+          {/* Mode 2: MODEL */}
+          {bindingMode === 'MODEL' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Autocomplete
+                freeSolo
+                options={availableBindingTargets.models.map((m) => m.model)}
+                value={selectedModelForUpload}
+                onChange={(_, val) => setSelectedModelForUpload(val)}
+                inputValue={modelSearchInput}
+                onInputChange={(_, val) => {
+                  setModelSearchInput(val);
+                  setSelectedModelForUpload(val);
+                }}
+                renderOption={(props, option) => {
+                  const info = availableBindingTargets.models.find((m) => m.model === option);
+                  return (
+                    <Box component="li" {...props} key={option}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{option}</Typography>
+                        {info && (
+                          <Chip
+                            label={`${info.count} ед.`}
+                            size="small"
+                            sx={{ height: 20, fontSize: '0.6875rem', fontWeight: 600 }}
+                          />
+                        )}
+                      </Box>
+                    </Box>
+                  );
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Модель / Типоразмер оборудования"
+                    placeholder="Выберите модель из списка или введите название"
+                    size="small"
+                    fullWidth
+                    required
+                  />
+                )}
+              />
+
+              {selectedModelForUpload && (
+                <Alert severity="info" sx={{ py: 0.5, fontSize: '0.75rem' }}>
+                  Документ будет автоматически привязан ко всему оборудованию модели «<strong>{selectedModelForUpload}</strong>»
+                  {(() => {
+                    const info = availableBindingTargets.models.find(
+                      (m) => m.model.toLowerCase() === selectedModelForUpload.toLowerCase()
+                    );
+                    return info ? ` (${info.count} ед. оборудования в реестре)` : '';
+                  })()}
+                </Alert>
+              )}
+            </Box>
+          )}
+
+          {/* Mode 3: DECIMAL */}
+          {bindingMode === 'DECIMAL' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Autocomplete
+                freeSolo
+                options={availableBindingTargets.decimalNumbers.map((d) => d.decimalNumber)}
+                value={selectedDecimalForUpload}
+                onChange={(_, val) => setSelectedDecimalForUpload(val)}
+                inputValue={decimalSearchInput}
+                onInputChange={(_, val) => {
+                  setDecimalSearchInput(val);
+                  setSelectedDecimalForUpload(val);
+                }}
+                renderOption={(props, option) => {
+                  const info = availableBindingTargets.decimalNumbers.find((d) => d.decimalNumber === option);
+                  return (
+                    <Box component="li" {...props} key={option}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{option}</Typography>
+                        {info && (
+                          <Chip
+                            label={`${info.count} ед.`}
+                            size="small"
+                            sx={{ height: 20, fontSize: '0.6875rem', fontWeight: 600 }}
+                          />
+                        )}
+                      </Box>
+                    </Box>
+                  );
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Децимальный номер"
+                    placeholder="Выберите децимальный номер из списка или введите"
+                    size="small"
+                    fullWidth
+                    required
+                  />
+                )}
+              />
+
+              {selectedDecimalForUpload && (
+                <Alert severity="info" sx={{ py: 0.5, fontSize: '0.75rem' }}>
+                  Документ будет автоматически привязан ко всему оборудованию с децимальным номером «<strong>{selectedDecimalForUpload}</strong>»
+                  {(() => {
+                    const info = availableBindingTargets.decimalNumbers.find(
+                      (d) => d.decimalNumber.toLowerCase() === selectedDecimalForUpload.toLowerCase()
+                    );
+                    return info ? ` (${info.count} ед. оборудования в реестре)` : '';
+                  })()}
+                </Alert>
+              )}
+            </Box>
+          )}
 
           {/* Document Type */}
           <TextField

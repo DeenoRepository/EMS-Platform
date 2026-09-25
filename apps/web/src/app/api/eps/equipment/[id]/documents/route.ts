@@ -8,6 +8,17 @@ import path from 'path';
 
 export const dynamic = 'force-dynamic';
 
+function getEquipmentDecimalNumber(customFields: any): string {
+  if (!customFields || typeof customFields !== 'object') return '';
+  return String(
+    customFields.decimal_number ||
+    customFields.detsimalnyy_nomer ||
+    customFields.decimalNumber ||
+    customFields['децимальный номер'] ||
+    ''
+  ).trim();
+}
+
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -18,7 +29,10 @@ export async function POST(
     if (!hasPermission(user, PERMISSIONS.EPS_DOCUMENTS_UPLOAD)) return forbiddenResponse();
 
     const { id } = params;
-    const equipment = await prisma.equipment.findUnique({ where: { id } });
+    const equipment = await prisma.equipment.findUnique({
+      where: { id },
+      select: { id: true, name: true, inventoryNumber: true, model: true, customFields: true },
+    });
     if (!equipment) {
       return NextResponse.json({ success: false, error: 'Оборудование не найдено' }, { status: 404 });
     }
@@ -26,6 +40,8 @@ export async function POST(
     const formData = await req.formData();
     const docType = (formData.get('docType') as DocumentType) || 'OTHER';
     const description = formData.get('description') as string | null;
+    const applyToAllModel = formData.get('applyToAllModel') === 'true' || formData.get('applyToAllModel') === '1';
+    const applyToAllDecimal = formData.get('applyToAllDecimal') === 'true' || formData.get('applyToAllDecimal') === '1';
 
     const rawFiles = [...formData.getAll('files'), ...formData.getAll('file')];
     const files = rawFiles.filter((f): f is File => f instanceof File && f.size > 0);
@@ -33,6 +49,43 @@ export async function POST(
     if (files.length === 0) {
       return NextResponse.json({ success: false, error: 'Файлы не прикреплены' }, { status: 400 });
     }
+
+    const eqMap = new Map<string, typeof equipment>();
+    eqMap.set(equipment.id, equipment);
+
+    if (applyToAllModel && equipment.model && equipment.model.trim()) {
+      const sameModel = await prisma.equipment.findMany({
+        where: {
+          deletedAt: null,
+          model: { equals: equipment.model.trim(), mode: 'insensitive' },
+        },
+        select: { id: true, name: true, inventoryNumber: true, model: true, customFields: true },
+      });
+      sameModel.forEach((eq) => eqMap.set(eq.id, eq));
+    }
+
+    const dec = getEquipmentDecimalNumber(equipment.customFields);
+    if (applyToAllDecimal && dec) {
+      const sameDec = await prisma.equipment.findMany({
+        where: {
+          deletedAt: null,
+          OR: [
+            { customFields: { path: ['decimal_number'], string_contains: dec } },
+            { customFields: { path: ['detsimalnyy_nomer'], string_contains: dec } },
+            { customFields: { path: ['decimalNumber'], string_contains: dec } },
+            { customFields: { path: ['децимальный номер'], string_contains: dec } },
+          ],
+        },
+        select: { id: true, name: true, inventoryNumber: true, model: true, customFields: true },
+      });
+      sameDec.forEach((eq) => {
+        if (getEquipmentDecimalNumber(eq.customFields).toLowerCase() === dec.toLowerCase()) {
+          eqMap.set(eq.id, eq);
+        }
+      });
+    }
+
+    const targetEquipments = Array.from(eqMap.values());
 
     // Предварительная валидация расширений и размеров всех файлов перед сохранением
     for (const file of files) {
@@ -58,29 +111,31 @@ export async function POST(
     for (const file of files) {
       const saved = await saveFile(file, 'documents');
 
-      const document = await prisma.document.create({
-        data: {
-          equipmentId: id,
-          fileName: saved.fileName,
-          originalName: saved.originalName,
-          filePath: saved.filePath,
-          fileType: saved.fileType,
-          fileSize: saved.fileSize,
-          docType,
-          description: description?.trim() || null,
-          uploadedById: user.userId,
-        },
-      });
+      for (const targetEq of targetEquipments) {
+        const document = await prisma.document.create({
+          data: {
+            equipmentId: targetEq.id,
+            fileName: saved.fileName,
+            originalName: saved.originalName,
+            filePath: saved.filePath,
+            fileType: saved.fileType,
+            fileSize: saved.fileSize,
+            docType,
+            description: description?.trim() || null,
+            uploadedById: user.userId,
+          },
+        });
 
-      await logAuditEvent({
-        userId: user.userId,
-        action: 'CREATE',
-        entityType: 'EquipmentDocument',
-        entityId: document.id,
-        changes: { equipmentId: id, fileName: saved.originalName, docType },
-      });
+        await logAuditEvent({
+          userId: user.userId,
+          action: 'CREATE',
+          entityType: 'EquipmentDocument',
+          entityId: document.id,
+          changes: { equipmentId: targetEq.id, fileName: saved.originalName, docType },
+        });
 
-      createdDocuments.push(document);
+        createdDocuments.push(document);
+      }
     }
 
     return NextResponse.json({
@@ -88,6 +143,7 @@ export async function POST(
       data: createdDocuments.length === 1 ? createdDocuments[0] : createdDocuments,
       items: createdDocuments,
       count: createdDocuments.length,
+      equipmentCount: targetEquipments.length,
     });
   } catch (error: any) {
     console.error('Ошибка загрузки документа:', error);
@@ -119,7 +175,15 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'Документ не найден' }, { status: 404 });
     }
 
-    deleteFile(document.filePath);
+    const otherDocsCount = await prisma.document.count({
+      where: {
+        filePath: document.filePath,
+        id: { not: documentId },
+      },
+    });
+    if (otherDocsCount === 0) {
+      deleteFile(document.filePath);
+    }
     await prisma.document.delete({ where: { id: documentId } });
 
     return NextResponse.json({ success: true, message: 'Документ удален' });

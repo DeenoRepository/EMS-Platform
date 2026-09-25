@@ -29,6 +29,7 @@ import {
   Select,
   Tooltip,
   LinearProgress,
+  Checkbox,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -246,6 +247,8 @@ function EquipmentPassportContent() {
   const [docType, setDocType] = useState('SCHEMA');
   const [docDescription, setDocDescription] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [applyToAllModel, setApplyToAllModel] = useState(false);
+  const [applyToAllDecimal, setApplyToAllDecimal] = useState(false);
 
   // SRM Incident Dialog State
   const [openCreateSrmModal, setOpenCreateSrmModal] = useState(false);
@@ -442,6 +445,8 @@ function EquipmentPassportContent() {
       fd.append('equipmentId', id);
       fd.append('docType', docType);
       fd.append('description', docDescription);
+      if (applyToAllModel) fd.append('applyToAllModel', 'true');
+      if (applyToAllDecimal) fd.append('applyToAllDecimal', 'true');
 
       const res = await fetch('/api/eps/documents', {
         method: 'POST',
@@ -449,14 +454,20 @@ function EquipmentPassportContent() {
       });
       const data = await res.json();
       if (data.success) {
-        const count = data.count || selectedFiles.length;
-        enqueueSnackbar(
-          count > 1 ? `Успешно прикреплено документов: ${count}` : 'Документ успешно прикреплен',
-          { variant: 'success' }
-        );
+        const docCount = data.count || selectedFiles.length;
+        const eqCount = data.equipmentCount || 1;
+        const msg =
+          eqCount > 1
+            ? `Успешно привязано документов: ${docCount} (к ${eqCount} ед. оборудования)`
+            : docCount > 1
+            ? `Успешно прикреплено документов: ${docCount}`
+            : 'Документ успешно прикреплен';
+        enqueueSnackbar(msg, { variant: 'success' });
         setDocModalOpen(false);
         setSelectedFiles([]);
         setDocDescription('');
+        setApplyToAllModel(false);
+        setApplyToAllDecimal(false);
         fetchEquipmentAndMeta();
       } else {
         enqueueSnackbar(data.error || 'Ошибка загрузки документа', { variant: 'error' });
@@ -1996,6 +2007,47 @@ function EquipmentPassportContent() {
             title="Перетащите файлы документов или выберите"
             description="PDF, DOCX, XLSX, чертежи (до 15 МБ на файл)"
           />
+
+          {equipment.model && (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  size="small"
+                  checked={applyToAllModel}
+                  onChange={(e) => setApplyToAllModel(e.target.checked)}
+                />
+              }
+              label={
+                <Typography variant="caption" sx={{ color: 'text.primary', fontWeight: 500 }}>
+                  Привязать также ко всем единицам модели «<strong>{equipment.model}</strong>»
+                </Typography>
+              }
+            />
+          )}
+
+          {(() => {
+            const dec = equipment.customFields?.decimal_number ||
+              equipment.customFields?.detsimalnyy_nomer ||
+              equipment.customFields?.decimalNumber ||
+              equipment.customFields?.['децимальный номер'];
+            if (!dec) return null;
+            return (
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={applyToAllDecimal}
+                    onChange={(e) => setApplyToAllDecimal(e.target.checked)}
+                  />
+                }
+                label={
+                  <Typography variant="caption" sx={{ color: 'text.primary', fontWeight: 500 }}>
+                    Привязать также ко всем единицам с дец. номером «<strong>{String(dec)}</strong>»
+                  </Typography>
+                }
+              />
+            );
+          })()}
 
           <TextField
             select
