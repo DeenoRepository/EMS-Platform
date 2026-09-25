@@ -38,4 +38,13 @@ describe('EPS document equipment model', () => {
     assert.match(source, /Модель оборудования/);
     assert.match(source, /equipment\.model \|\| '—'/);
   });
+
+  test('document upload picker searches equipment by inventory, model, decimal number, and name', () => {
+    const source = readProjectFile('apps/web/src/app/eps/documents/page.tsx');
+    assert.match(source, /getEquipmentDecimalNumber/);
+    assert.match(source, /decimal_number/);
+    assert.match(source, /decimalNumber:\s*getEquipmentDecimalNumber/);
+    assert.match(source, /searchable\s*=\s*normalizeEquipmentSearch\(\[\s*option\.inventoryNumber,\s*option\.name,\s*option\.model,\s*decimalNumber/);
+    assert.match(source, /Дец\. №/);
+  });
 });

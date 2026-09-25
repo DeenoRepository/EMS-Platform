@@ -10,7 +10,7 @@ describe('EPS Query Builder (Where input construction)', () => {
     assert.strictEqual(where.AND, undefined);
   });
 
-  it('adds search OR condition across key text fields', () => {
+  it('adds search OR condition across key text fields and decimal number', () => {
     const params = new URLSearchParams({ search: 'вакуум' });
     const where = buildEquipmentWhereInput(params);
     assert.ok(where.AND);
@@ -18,7 +18,7 @@ describe('EPS Query Builder (Where input construction)', () => {
     assert.strictEqual(and.length, 1);
     const searchCond = and[0].OR;
     assert.ok(Array.isArray(searchCond));
-    assert.strictEqual(searchCond.length, 6);
+    assert.strictEqual(searchCond.length, 9);
   });
 
   it('adds specific text column filters', () => {
@@ -79,5 +79,15 @@ describe('EPS Query Builder (Where input construction)', () => {
     assert.ok(where.AND);
     const and = where.AND as any[];
     assert.strictEqual(and.length, 5);
+  });
+
+  it('adds decimal number query filter', () => {
+    const params = new URLSearchParams({ decimalNumber: 'АБВГ.123456' });
+    const where = buildEquipmentWhereInput(params);
+    assert.ok(where.AND);
+    const and = where.AND as any[];
+    assert.strictEqual(and.length, 1);
+    assert.ok(Array.isArray(and[0].OR));
+    assert.strictEqual(and[0].OR.length, 3);
   });
 });

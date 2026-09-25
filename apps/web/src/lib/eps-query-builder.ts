@@ -37,6 +37,9 @@ function applyTextSearchFilters(and: Prisma.EquipmentWhereInput[], params: URLSe
         { manufacturer: { contains: search, mode: 'insensitive' } },
         { model: { contains: search, mode: 'insensitive' } },
         { location: { contains: search, mode: 'insensitive' } },
+        { customFields: { path: ['decimal_number'], string_contains: search } },
+        { customFields: { path: ['detsimalnyy_nomer'], string_contains: search } },
+        { customFields: { path: ['decimalNumber'], string_contains: search } },
       ],
     });
   }
@@ -47,6 +50,17 @@ function applyTextSearchFilters(and: Prisma.EquipmentWhereInput[], params: URLSe
     if (val) {
       and.push({ [field]: { contains: val, mode: 'insensitive' } });
     }
+  }
+
+  const decimalNumber = params.get('decimalNumber')?.trim() || params.get('decimal_number')?.trim();
+  if (decimalNumber) {
+    and.push({
+      OR: [
+        { customFields: { path: ['decimal_number'], string_contains: decimalNumber } },
+        { customFields: { path: ['detsimalnyy_nomer'], string_contains: decimalNumber } },
+        { customFields: { path: ['decimalNumber'], string_contains: decimalNumber } },
+      ],
+    });
   }
 }
 

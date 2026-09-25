@@ -88,25 +88,48 @@ interface EquipmentOption {
   name: string;
   inventoryNumber: string | null;
   model: string | null;
+  decimalNumber?: string | null;
+  customFields?: Record<string, any> | null;
+}
+
+function getEquipmentDecimalNumber(item: any): string {
+  if (!item) return '';
+  if (item.decimalNumber) return String(item.decimalNumber).trim();
+  const custom = item.customFields;
+  if (!custom) return '';
+  return String(
+    custom.decimal_number ||
+    custom.detsimalnyy_nomer ||
+    custom.decimalNumber ||
+    custom['децимальный номер'] ||
+    ''
+  ).trim();
 }
 
 function normalizeEquipmentSearch(value: string | null | undefined): string {
-  return (value || '')
-    .toLocaleLowerCase('ru-RU')
-    .replace(/ё/g, 'е')
-    .replace(/[^a-zа-я0-9]+/gi, ' ')
-    .trim();
+  const raw = (value || '').toLocaleLowerCase('ru-RU').replace(/ё/g, 'е');
+  const tokens = raw.replace(/[^a-zа-я0-9]+/gi, ' ').trim();
+  const compact = raw.replace(/[^a-zа-я0-9]+/gi, '');
+  return `${tokens} ${compact}`.trim();
 }
 
 function filterEquipmentOptions(options: EquipmentOption[], inputValue: string): EquipmentOption[] {
-  const searchTokens = normalizeEquipmentSearch(inputValue).split(/\s+/).filter(Boolean);
+  const searchTokens = (inputValue || '')
+    .toLocaleLowerCase('ru-RU')
+    .replace(/ё/g, 'е')
+    .replace(/[^a-zа-я0-9]+/gi, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
   if (searchTokens.length === 0) return options;
 
   return options.filter((option) => {
+    const decimalNumber = getEquipmentDecimalNumber(option);
     const searchable = normalizeEquipmentSearch([
       option.inventoryNumber,
       option.name,
       option.model,
+      decimalNumber,
     ].filter(Boolean).join(' '));
     return searchTokens.every((token) => searchable.includes(token));
   });
@@ -259,11 +282,13 @@ function DocumentsListContent() {
         if (!response.ok || requestId !== uploadSearchRequestRef.current) return;
         const json = await response.json();
         if (json.success && Array.isArray(json.data?.items) && requestId === uploadSearchRequestRef.current) {
-          setUploadEquipmentOptions(json.data.items.map((equipment: EquipmentOption) => ({
+          setUploadEquipmentOptions(json.data.items.map((equipment: any) => ({
             id: equipment.id,
             name: equipment.name,
             inventoryNumber: equipment.inventoryNumber,
             model: equipment.model,
+            decimalNumber: getEquipmentDecimalNumber(equipment),
+            customFields: equipment.customFields,
           })));
         }
       } catch (error) {
@@ -946,7 +971,7 @@ function DocumentsListContent() {
           {/* Equipment Picker */}
           <Autocomplete
             options={uploadEquipmentOptionsWithSelected}
-            getOptionLabel={(option) => `${option.inventoryNumber ? `[${option.inventoryNumber}] ` : ''}${option.name}${option.model ? ` — ${option.model}` : ''}`}
+            getOptionLabel={(option) => `${option.inventoryNumber ? `[${option.inventoryNumber}] ` : ''}${option.name}${option.model ? ` — ${option.model}` : ''}${option.decimalNumber ? ` (дец. № ${option.decimalNumber})` : ''}`}
             filterOptions={(options, state) => filterEquipmentOptions(options, state.inputValue || equipmentSearchInput)}
             value={selectedEquipmentForUpload}
             onChange={(_, val) => setSelectedEquipmentForUpload(val)}
@@ -959,11 +984,32 @@ function DocumentsListContent() {
             }}
             loading={uploadEquipmentLoading}
             noOptionsText="Оборудование не найдено"
+            renderOption={(props, option) => (
+              <Box component="li" {...props} key={option.id}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                    {option.inventoryNumber ? `[${option.inventoryNumber}] ` : ''}{option.name}
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mt: 0.25 }}>
+                    {option.model && (
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                        Модель: <strong>{option.model}</strong>
+                      </Typography>
+                    )}
+                    {option.decimalNumber && (
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                        Дец. №: <strong>{option.decimalNumber}</strong>
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              </Box>
+            )}
             renderInput={(params) => (
               <TextField
                 {...params}
                 label="Оборудование"
-                placeholder="Поиск по инв. номеру, наименованию или модели"
+                placeholder="Поиск по инв. номеру, наименованию или модели, децимальному номеру"
                 size="small"
                 fullWidth
                 required
