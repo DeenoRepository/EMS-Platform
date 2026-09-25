@@ -48,6 +48,7 @@ build
 uploads/*
 !uploads/.gitkeep
 temp/
+Temp/
 backups/
 *.dump
 *.sql

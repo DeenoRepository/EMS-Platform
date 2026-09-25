@@ -6,7 +6,7 @@ SERVICE_NAME="${EMS_SERVICE_NAME:-ems-platform}"
 BUNDLE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BACKUP_DIR="${EMS_BACKUP_DIR:-/var/backups/ems-platform}"
 STAMP="$(date +%Y%m%d_%H%M%S)"
-ROLLBACK_ARCHIVE="$BACKUP_DIR/app-before-eps-doc-model-$STAMP.tar.gz"
+ROLLBACK_ARCHIVE="$BACKUP_DIR/app-before-patch-$STAMP.tar.gz"
 
 if [[ "${EMS_PATCH_APPROVED:-}" != "1" ]]; then
   echo "Patch is not approved. Set EMS_PATCH_APPROVED=1." >&2
