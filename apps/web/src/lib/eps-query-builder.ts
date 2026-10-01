@@ -24,6 +24,44 @@ export function buildEquipmentWhereInput(searchParams: URLSearchParams): Prisma.
 }
 
 /**
+ * Построение Prisma.EquipmentOrderByWithRelationInput для сортировки по всей базе данных
+ */
+export function buildEquipmentOrderBy(searchParams: URLSearchParams): Prisma.EquipmentOrderByWithRelationInput {
+  const sortBy = searchParams.get('sortBy') || searchParams.get('sortField') || 'updatedAt';
+  const sortDirection = (searchParams.get('sortOrder') || searchParams.get('sortDirection') || 'desc').toLowerCase();
+  const dir: Prisma.SortOrder = sortDirection === 'asc' ? 'asc' : 'desc';
+
+  switch (sortBy) {
+    case 'name':
+      return { name: dir };
+    case 'inventoryNumber':
+      return { inventoryNumber: dir };
+    case 'serialNumber':
+      return { serialNumber: dir };
+    case 'manufacturer':
+      return { manufacturer: dir };
+    case 'model':
+      return { model: dir };
+    case 'location':
+      return { location: dir };
+    case 'status':
+      return { status: dir };
+    case 'commissionDate':
+      return { commissionDate: dir };
+    case 'createdAt':
+      return { createdAt: dir };
+    case 'updatedAt':
+      return { updatedAt: dir };
+    case 'documentsCount':
+      return { documents: { _count: dir } };
+    case 'sparePartsCount':
+      return { spareParts: { _count: dir } };
+    default:
+      return { updatedAt: dir };
+  }
+}
+
+/**
  * Фильтрация по текстовым колонкам (глобальный поиск и поля таблицы)
  */
 function applyTextSearchFilters(and: Prisma.EquipmentWhereInput[], params: URLSearchParams): void {

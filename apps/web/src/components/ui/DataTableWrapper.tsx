@@ -482,18 +482,21 @@ export function DataTableWrapper({
       sx={{
         width: '100%',
         borderRadius: '12px',
-        border: '1px solid #e2e8f0',
-        backgroundColor: '#ffffff',
+        border: '1px solid',
+        borderColor: 'divider',
+        backgroundColor: 'background.paper',
         overflow: 'hidden',
         boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
         display: 'flex',
         flexDirection: 'column',
+        maxHeight: maxHeight || 'calc(100vh - 240px)',
       }}
     >
       {/* 0. Integrated Navigation Tabs Header */}
       {tabs && (
         <Box
           sx={{
+            flexShrink: 0,
             px: { xs: 1, sm: 1.5 },
             backgroundColor: '#ffffff',
             borderBottom: '1px solid #f1f5f9',
@@ -511,6 +514,7 @@ export function DataTableWrapper({
       {hasHeader && (
         <Box
           sx={{
+            flexShrink: 0,
             p: { xs: 1.5, sm: 2 },
             backgroundColor: '#ffffff',
             borderBottom: '1px solid #f1f5f9',
@@ -540,6 +544,7 @@ export function DataTableWrapper({
       {toolbar && (
         <Box
           sx={{
+            flexShrink: 0,
             p: { xs: 1.25, sm: 1.5 },
             backgroundColor: '#ffffff',
             borderBottom: '1px solid #f1f5f9',
@@ -634,7 +639,8 @@ export function DataTableWrapper({
       ) : (
         <TableContainer
           sx={{
-            maxHeight: maxHeight || 'calc(100vh - 280px)',
+            flex: '1 1 auto',
+            minHeight: 180,
             overflowX: 'auto',
             overflowY: 'auto',
             '&::-webkit-scrollbar': { height: 9, width: 8 },
@@ -657,6 +663,7 @@ export function DataTableWrapper({
       {(showPagination || footerActions) && (
         <Box
           sx={{
+            flexShrink: 0,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { buildEquipmentWhereInput } from '../eps-query-builder';
+import { buildEquipmentWhereInput, buildEquipmentOrderBy } from '../eps-query-builder';
 
 describe('EPS Query Builder (Where input construction)', () => {
   it('builds deletedAt: null by default', () => {
@@ -89,5 +89,22 @@ describe('EPS Query Builder (Where input construction)', () => {
     assert.strictEqual(and.length, 1);
     assert.ok(Array.isArray(and[0].OR));
     assert.strictEqual(and[0].OR.length, 3);
+  });
+
+  it('builds whole-database orderBy for equipment query', () => {
+    const defaultOrder = buildEquipmentOrderBy(new URLSearchParams());
+    assert.deepStrictEqual(defaultOrder, { updatedAt: 'desc' });
+
+    const nameAsc = buildEquipmentOrderBy(new URLSearchParams({ sortBy: 'name', sortOrder: 'asc' }));
+    assert.deepStrictEqual(nameAsc, { name: 'asc' });
+
+    const invDesc = buildEquipmentOrderBy(new URLSearchParams({ sortBy: 'inventoryNumber', sortOrder: 'desc' }));
+    assert.deepStrictEqual(invDesc, { inventoryNumber: 'desc' });
+
+    const commAsc = buildEquipmentOrderBy(new URLSearchParams({ sortBy: 'commissionDate', sortOrder: 'asc' }));
+    assert.deepStrictEqual(commAsc, { commissionDate: 'asc' });
+
+    const docCountDesc = buildEquipmentOrderBy(new URLSearchParams({ sortBy: 'documentsCount', sortOrder: 'desc' }));
+    assert.deepStrictEqual(docCountDesc, { documents: { _count: 'desc' } });
   });
 });

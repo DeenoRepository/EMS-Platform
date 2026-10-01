@@ -4,7 +4,7 @@ import { prisma, EquipmentStatus, Prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { z } from 'zod';
-import { buildEquipmentWhereInput } from '@/lib/eps-query-builder';
+import { buildEquipmentWhereInput, buildEquipmentOrderBy } from '@/lib/eps-query-builder';
 
 export async function GET(req: NextRequest) {
   try {
@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
     const pageSize = Math.min(1000, Math.max(1, parseInt(searchParams.get('pageSize') || searchParams.get('limit') || '20', 10)));
 
     const where = buildEquipmentWhereInput(searchParams);
+    const orderBy = buildEquipmentOrderBy(searchParams);
 
     const [total, items, statusGroup] = await Promise.all([
       prisma.equipment.count({ where }),
@@ -39,7 +40,7 @@ export async function GET(req: NextRequest) {
             },
           },
         },
-        orderBy: { updatedAt: 'desc' },
+        orderBy,
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),

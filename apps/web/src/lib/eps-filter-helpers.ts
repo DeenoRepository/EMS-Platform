@@ -197,12 +197,17 @@ export function countActiveEquipmentFilters(f: EquipmentFilters): number {
 export function buildEquipmentFilterSearchParams(
   filters: EquipmentFilters,
   page: number,
-  pageSize: number
+  pageSize: number,
+  sortBy?: string,
+  sortOrder?: 'asc' | 'desc'
 ): URLSearchParams {
   const params = new URLSearchParams({
     page: String(page),
     pageSize: String(pageSize),
   });
+
+  if (sortBy) params.append('sortBy', sortBy);
+  if (sortOrder) params.append('sortOrder', sortOrder);
 
   const filterEntries = Object.entries(filters) as [keyof EquipmentFilters, string | undefined][];
   for (const [key, val] of filterEntries) {

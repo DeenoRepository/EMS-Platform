@@ -163,6 +163,10 @@ function EquipmentListContent() {
   const [openFilterDrawer, setOpenFilterDrawer] = useState(false);
   const [showColumnFilters, setShowColumnFilters] = useState(false);
 
+  // Sorting state for whole-database query
+  const [sortField, setSortField] = useState<string>('updatedAt');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+
   // Status Counts for KPI
   const [statusCounts, setStatusCounts] = useState({
     total: 0,
@@ -203,7 +207,9 @@ function EquipmentListContent() {
       const params = buildEquipmentFilterSearchParams(
         filters,
         page,
-        viewMode === 'grid' ? 12 : pageSize
+        viewMode === 'grid' ? 12 : pageSize,
+        sortField,
+        sortDirection
       );
 
       const res = await fetch(`/api/eps/equipment?${params.toString()}`);
@@ -229,7 +235,7 @@ function EquipmentListContent() {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, filters, viewMode, enqueueSnackbar]);
+  }, [page, pageSize, filters, sortField, sortDirection, viewMode, enqueueSnackbar]);
 
   const canAccessEquipment =
     user?.roles?.includes('admin') ||
@@ -276,14 +282,14 @@ function EquipmentListContent() {
     if (typeof window === 'undefined') return;
     const elem = tableWrapperRef.current;
     if (!elem) {
-      setTableMaxHeight('calc(100vh - 280px)');
+      setTableMaxHeight('calc(100vh - 240px)');
       return;
     }
     const rect = elem.getBoundingClientRect();
     // Высота от верхнего края таблицы до нижней границы видимого окна браузера
-    // за вычетом высоты пагинации (~52px) и комфортного отступа (~16px)
-    const available = window.innerHeight - rect.top - 68;
-    const finalHeight = Math.max(340, Math.floor(available));
+    // с отступом 20px от края окна для гарантированной видимости строки пагинации
+    const available = window.innerHeight - rect.top - 20;
+    const finalHeight = Math.max(380, Math.floor(available));
     setTableMaxHeight(finalHeight);
   }, []);
 
@@ -333,12 +339,10 @@ function EquipmentListContent() {
   // Bulk Selection State
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  // Columns visibility & Sorting
+  // Columns visibility
   const [visibleColumns, setVisibleColumns] = useState<string[]>(() =>
     EPS_COLUMNS.map((c) => c.id)
   );
-  const [sortField, setSortField] = useState<string>('name');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const equipmentList = useMemo(() => (Array.isArray(items) ? items : []), [items]);
 
@@ -346,6 +350,7 @@ function EquipmentListContent() {
     const isAsc = sortField === property && sortDirection === 'asc';
     setSortDirection(isAsc ? 'desc' : 'asc');
     setSortField(property);
+    setPage(1);
   };
 
   const sortedEquipmentList = useMemo(() => {
