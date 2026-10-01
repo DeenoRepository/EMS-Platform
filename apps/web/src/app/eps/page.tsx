@@ -37,6 +37,7 @@ import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import ConstructionOutlinedIcon from '@mui/icons-material/ConstructionOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
+import FindReplaceIcon from '@mui/icons-material/FindReplace';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import FilterListIcon from '@mui/icons-material/FilterList';
@@ -68,6 +69,7 @@ import {
   EquipmentFilterDrawer,
   EquipmentColumnFiltersRow,
   EquipmentActiveFilterChips,
+  EquipmentBatchEditDialog,
   type EquipmentFilters,
   DEFAULT_EQUIPMENT_FILTERS,
 } from '@/components/eps';
@@ -335,9 +337,11 @@ function EquipmentListContent() {
 
   const canCreate = hasPermission(PERMISSIONS.EPS_EQUIPMENT_CREATE);
   const canImport = hasPermission(PERMISSIONS.EPS_IMPORT_EXECUTE);
+  const canBatchEdit = hasPermission(PERMISSIONS.EPS_EQUIPMENT_BATCH_EDIT);
 
   // Bulk Selection State
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [openBatchEditDialog, setOpenBatchEditDialog] = useState<boolean>(false);
 
   // Columns visibility
   const [visibleColumns, setVisibleColumns] = useState<string[]>(() =>
@@ -628,6 +632,31 @@ function EquipmentListContent() {
             >
               Экспорт
             </Button>
+            {canBatchEdit && (
+              <Button
+                variant="outlined"
+                startIcon={<FindReplaceIcon />}
+                onClick={() => setOpenBatchEditDialog(true)}
+                sx={{
+                  height: 38,
+                  borderRadius: '8px',
+                  borderColor: 'divider',
+                  color: 'primary.main',
+                  px: 2,
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  backgroundColor: 'background.paper',
+                  boxSizing: 'border-box',
+                  '&:hover': {
+                    borderColor: 'primary.main',
+                    backgroundColor: 'action.hover',
+                  },
+                }}
+              >
+                Массовое редактирование
+              </Button>
+            )}
             {canCreate && (
               <Button
                 variant="contained"
@@ -761,6 +790,33 @@ function EquipmentListContent() {
         onViewModeChange={setViewMode}
         selectedCount={selectedIds.length}
         onClearSelection={() => setSelectedIds([])}
+        selectionActions={
+          canBatchEdit ? (
+            <Button
+              size="small"
+              variant="outlined"
+              color="inherit"
+              startIcon={<FindReplaceIcon sx={{ fontSize: 15 }} />}
+              onClick={() => setOpenBatchEditDialog(true)}
+              sx={{
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                py: 0.2,
+                px: 1,
+                borderColor: '#15803d',
+                color: '#15803d',
+                textTransform: 'none',
+                backgroundColor: '#ffffff',
+                '&:hover': {
+                  backgroundColor: '#f0fdf4',
+                  borderColor: '#15803d',
+                },
+              }}
+            >
+              Массовое редактирование ({selectedIds.length})
+            </Button>
+          ) : undefined
+        }
         empty={items.length === 0 && !loading}
         emptyState={
           <EmptyState
@@ -1860,6 +1916,19 @@ function EquipmentListContent() {
         }}
         onResetFilters={handleResetFilters}
         tags={tags}
+      />
+
+      {/* Диалог массового редактирования позиций оборудования */}
+      <EquipmentBatchEditDialog
+        open={openBatchEditDialog}
+        onClose={() => setOpenBatchEditDialog(false)}
+        onSuccess={() => {
+          fetchEquipment();
+          setSelectedIds([]);
+        }}
+        selectedIds={selectedIds}
+        filterParams={filters as Record<string, string>}
+        totalCount={total}
       />
     </Box>
   );

@@ -18,6 +18,7 @@ async function main() {
     { code: 'eps.equipment.view', displayName: 'Просмотр оборудования', module: 'eps', description: 'Доступ к реестру и карточкам оборудования' },
     { code: 'eps.equipment.create', displayName: 'Создание оборудования', module: 'eps', description: 'Возможность создавать новые единицы оборудования' },
     { code: 'eps.equipment.edit', displayName: 'Редактирование оборудования', module: 'eps', description: 'Изменение данных паспорта оборудования' },
+    { code: 'eps.equipment.batch_edit', displayName: 'Массовое редактирование оборудования', module: 'eps', description: 'Пакетное изменение параметров, поиск одинаковых значений и массовая замена в реестре оборудования' },
     { code: 'eps.equipment.delete', displayName: 'Удаление оборудования', module: 'eps', description: 'Удаление единиц оборудования' },
     { code: 'eps.documents.view', displayName: 'Просмотр документов', module: 'eps', description: 'Просмотр чертежей, схем и документов оборудования' },
     { code: 'eps.documents.upload', displayName: 'Загрузка документов', module: 'eps', description: 'Прикрепление файлов и схем к оборудованию' },

@@ -72,6 +72,8 @@ export interface DataTableWrapperProps {
   selectedCount?: number;
   /** Сброс выбора */
   onClearSelection?: () => void;
+  /** Действия с выбранными строками (в баннере выбора) */
+  selectionActions?: React.ReactNode;
   /** Дополнительные контролы в подвале (слева от пагинации) */
   footerActions?: React.ReactNode;
   /** Пагинация */
@@ -123,6 +125,7 @@ export function DataTableWrapper({
   refreshing = false,
   selectedCount = 0,
   onClearSelection,
+  selectionActions,
   footerActions,
   page,
   pageSize,
@@ -601,18 +604,21 @@ export function DataTableWrapper({
             </Typography>
           </Box>
 
-          {onClearSelection && (
-            <Button
-              size="small"
-              variant="text"
-              color="inherit"
-              startIcon={<CloseIcon sx={{ fontSize: 14 }} />}
-              onClick={onClearSelection}
-              sx={{ fontSize: '0.75rem', fontWeight: 600, py: 0.2, color: '#15803d' }}
-            >
-              Снять выделение
-            </Button>
-          )}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {selectionActions}
+            {onClearSelection && (
+              <Button
+                size="small"
+                variant="text"
+                color="inherit"
+                startIcon={<CloseIcon sx={{ fontSize: 14 }} />}
+                onClick={onClearSelection}
+                sx={{ fontSize: '0.75rem', fontWeight: 600, py: 0.2, color: '#15803d' }}
+              >
+                Снять выделение
+              </Button>
+            )}
+          </Box>
         </Box>
       )}
 

@@ -7,6 +7,7 @@ export const PERMISSIONS = {
   EPS_EQUIPMENT_VIEW: 'eps.equipment.view',
   EPS_EQUIPMENT_CREATE: 'eps.equipment.create',
   EPS_EQUIPMENT_EDIT: 'eps.equipment.edit',
+  EPS_EQUIPMENT_BATCH_EDIT: 'eps.equipment.batch_edit',
   EPS_EQUIPMENT_DELETE: 'eps.equipment.delete',
   EPS_DOCUMENTS_VIEW: 'eps.documents.view',
   EPS_DOCUMENTS_UPLOAD: 'eps.documents.upload',
@@ -109,6 +110,12 @@ export const PERMISSION_DEFINITIONS: Record<PermissionCode, PermissionDefinition
     displayName: 'Редактирование характеристик',
     module: 'eps',
     description: 'Внесение изменений в технические параметры, реквизиты и привязку оборудования',
+  },
+  'eps.equipment.batch_edit': {
+    code: 'eps.equipment.batch_edit',
+    displayName: 'Массовое редактирование оборудования',
+    module: 'eps',
+    description: 'Пакетное изменение параметров, поиск одинаковых значений и массовая замена в колонках реестра оборудования',
   },
   'eps.equipment.delete': {
     code: 'eps.equipment.delete',

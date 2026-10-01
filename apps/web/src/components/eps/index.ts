@@ -5,3 +5,4 @@ export * from './EquipmentFilterTypes';
 export { default as EquipmentFilterDrawer } from './EquipmentFilterDrawer';
 export { default as EquipmentColumnFiltersRow } from './EquipmentColumnFiltersRow';
 export { default as EquipmentActiveFilterChips } from './EquipmentActiveFilterChips';
+export * from './EquipmentBatchEditDialog';
