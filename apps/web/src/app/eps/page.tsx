@@ -279,47 +279,50 @@ function EquipmentListContent() {
   // Адаптивный расчет высоты таблицы, чтобы горизонтальный скроллбар и пагинация
   // всегда находились внутри видимой области окна браузера (viewport)
   const tableWrapperRef = useRef<HTMLDivElement>(null);
-  const [tableMaxHeight, setTableMaxHeight] = useState<number | string>('calc(100vh - 280px)');
+  const [tableMaxHeight, setTableMaxHeight] = useState<number | string>('calc(100vh - 180px)');
   const [showKpiCards, setShowKpiCards] = useState<boolean>(true);
 
   const calculateTableHeight = useCallback(() => {
     if (typeof window === 'undefined') return;
     const elem = tableWrapperRef.current;
     if (!elem) {
-      setTableMaxHeight('calc(100vh - 260px)');
+      setTableMaxHeight('calc(100vh - 180px)');
       return;
     }
     const rect = elem.getBoundingClientRect();
-    const elemTopDoc = rect.top + window.scrollY;
     const viewportHeight = window.innerHeight;
 
-    // Безопасный отступ снизу (паддинги страницы + подвал + зазор от границы окна браузера)
-    const bottomSafetyMargin = 56;
+    // Минимальный аккуратный зазор от нижней кромки видимого окна браузера (8px),
+    // чтобы пагинация находилась максимально близко к низу окна
+    const bottomGap = 8;
+    const headerHeight = 64;
+    const effectiveTop = Math.max(headerHeight, rect.top);
+    const availableHeight = viewportHeight - effectiveTop - bottomGap;
 
-    // 1) Ограничение высоты таблицы, чтобы при прокрутке к ней она полностью помещалась во viewport:
-    const maxViewportFit = Math.max(340, viewportHeight - 134);
-
-    // 2) При нахождении вверху страницы (видны заголовок и KPI):
-    const availableFromTop = viewportHeight - elemTopDoc - bottomSafetyMargin;
-
-    // Гарантируем, что пагинация всегда видна в видимой области окна
-    const finalHeight = availableFromTop >= 360
-      ? Math.floor(availableFromTop)
-      : Math.floor(maxViewportFit);
-
+    const finalHeight = Math.max(360, Math.floor(availableHeight));
     setTableMaxHeight(finalHeight);
   }, []);
 
   useEffect(() => {
     calculateTableHeight();
     const handleResize = () => calculateTableHeight();
+    const handleScroll = () => calculateTableHeight();
 
     window.addEventListener('resize', handleResize);
-    const timer = setTimeout(calculateTableHeight, 150);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined' && tableWrapperRef.current) {
+      resizeObserver = new ResizeObserver(() => {
+        calculateTableHeight();
+      });
+      resizeObserver.observe(tableWrapperRef.current);
+    }
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      clearTimeout(timer);
+      window.removeEventListener('scroll', handleScroll);
+      resizeObserver?.disconnect();
     };
   }, [calculateTableHeight, activeFilterCount, showColumnFilters, viewMode, showKpiCards]);
 
@@ -587,7 +590,7 @@ function EquipmentListContent() {
   }
 
   return (
-    <Box sx={{ pb: 2 }}>
+    <Box sx={{ pb: 0.5 }}>
       {/* Admin Maintenance Preview Banner */}
       {isModuleInMaintenance && (
         <Alert
