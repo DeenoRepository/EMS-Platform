@@ -54,6 +54,7 @@ import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import BugReportOutlinedIcon from '@mui/icons-material/BugReportOutlined';
 import LayersOutlinedIcon from '@mui/icons-material/LayersOutlined';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import PageHeader from '@/components/layout/PageHeader';
 import { SmartImportWizard } from '@/components/eps/SmartImportWizard';
 import { useSnackbar } from 'notistack';
@@ -330,6 +331,33 @@ function ModuleSettingsContent() {
           }
         } catch {
           enqueueSnackbar('Ошибка сети', { variant: 'error' });
+        }
+      },
+    });
+  };
+
+  // Reset / Bootstrap Standard Sections
+  const handleResetStandardSections = () => {
+    setDeleteConfirm({
+      open: true,
+      title: 'Восстановление типовых разделов',
+      message:
+        'Восстановить 6 стандартных технических разделов и типовые характеристики паспорта оборудования? Существующая структура будет дополнена стандартными разделами.',
+      onConfirm: async () => {
+        try {
+          const res = await fetch('/api/eps/custom-sections?resetDefaults=true');
+          const data = await res.json();
+          if (data.success) {
+            enqueueSnackbar('Стандартные разделы и характеристики успешно восстановлены', {
+              variant: 'success',
+            });
+            setDeleteConfirm((prev) => ({ ...prev, open: false }));
+            fetchEpsData();
+          } else {
+            enqueueSnackbar(data.error || 'Ошибка восстановления разделов', { variant: 'error' });
+          }
+        } catch {
+          enqueueSnackbar('Ошибка сети при восстановлении разделов', { variant: 'error' });
         }
       },
     });
@@ -713,6 +741,16 @@ function ModuleSettingsContent() {
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        color="inherit"
+                        startIcon={<RestartAltIcon />}
+                        onClick={handleResetStandardSections}
+                        sx={{ borderRadius: '8px' }}
+                      >
+                        Восстановить типовые
+                      </Button>
                       <Button
                         variant="outlined"
                         size="small"

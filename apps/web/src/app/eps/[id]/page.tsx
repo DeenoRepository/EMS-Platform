@@ -198,7 +198,7 @@ interface EquipmentDetails {
 function EquipmentPassportContent() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { hasPermission } = useAuth();
+  const { user, hasPermission } = useAuth();
   const { enqueueSnackbar } = useSnackbar();
 
   const searchParams = useSearchParams();
@@ -948,65 +948,71 @@ function EquipmentPassportContent() {
             iconBgColor="#e0f2fe"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Физический износ"
-            value={actualWear !== null ? `${actualWear}%` : '—'}
-            subtitle={
-              actualWear !== null
-                ? actualWear < 30
-                  ? 'Состояние в норме'
-                  : actualWear < 70
-                  ? 'Умеренный износ'
-                  : 'Критический износ'
-                : 'Амортизация не задана'
-            }
-            icon={<SpeedIcon sx={{ fontSize: 24 }} />}
-            accentColor={
-              actualWear !== null && actualWear > 70
-                ? '#ef4444'
-                : actualWear !== null && actualWear > 30
-                ? '#f59e0b'
-                : '#10b981'
-            }
-            iconColor={
-              actualWear !== null && actualWear > 70
-                ? '#ef4444'
-                : actualWear !== null && actualWear > 30
-                ? '#f59e0b'
-                : '#10b981'
-            }
-            iconBgColor={
-              actualWear !== null && actualWear > 70
-                ? 'error.light'
-                : actualWear !== null && actualWear > 30
-                ? 'warning.light'
-                : 'success.light'
-            }
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Регламент ТОиР"
-            value={maintPeriodicity || (equipment.maintenancePlans.length > 0 ? `${equipment.maintenancePlans.length} плана ТО` : 'По регламенту')}
-            subtitle={maintScheduleYear ? `График: ${maintScheduleYear}` : 'График ППР 2026'}
-            icon={<ShieldIcon sx={{ fontSize: 24 }} />}
-            accentColor="#10b981"
-            iconColor="#10b981"
-            iconBgColor="#dcfce7"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Критичность актива"
-            value={`Класс ${criticality}`}
-            subtitle={equipment.spareParts.length > 0 ? `Запас ТМЦ: ${equipment.spareParts.length} поз.` : 'Категория надежности'}
-            icon={<CategoryIcon sx={{ fontSize: 24 }} />}
-            accentColor={criticality === 'A' ? '#ef4444' : criticality === 'B' ? '#f59e0b' : '#0ea5e9'}
-            iconColor={criticality === 'A' ? '#ef4444' : criticality === 'B' ? '#f59e0b' : '#0ea5e9'}
-            iconBgColor={criticality === 'A' ? 'error.light' : criticality === 'B' ? 'warning.light' : '#e0f2fe'}
-          />
-        </Grid>
+        {sections.some((s) => s.fields.some((f) => f.key === 'actual_wear_percentage' || f.key === 'actualWear')) && (
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Физический износ"
+              value={actualWear !== null ? `${actualWear}%` : '—'}
+              subtitle={
+                actualWear !== null
+                  ? actualWear < 30
+                    ? 'Состояние в норме'
+                    : actualWear < 70
+                    ? 'Умеренный износ'
+                    : 'Критический износ'
+                  : 'Амортизация не задана'
+              }
+              icon={<SpeedIcon sx={{ fontSize: 24 }} />}
+              accentColor={
+                actualWear !== null && actualWear > 70
+                  ? '#ef4444'
+                  : actualWear !== null && actualWear > 30
+                  ? '#f59e0b'
+                  : '#10b981'
+              }
+              iconColor={
+                actualWear !== null && actualWear > 70
+                  ? '#ef4444'
+                  : actualWear !== null && actualWear > 30
+                  ? '#f59e0b'
+                  : '#10b981'
+              }
+              iconBgColor={
+                actualWear !== null && actualWear > 70
+                  ? 'error.light'
+                  : actualWear !== null && actualWear > 30
+                  ? 'warning.light'
+                  : 'success.light'
+              }
+            />
+          </Grid>
+        )}
+        {sections.some((s) => s.fields.some((f) => f.key === 'maintenance_periodicity')) && (
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Регламент ТОиР"
+              value={maintPeriodicity || (equipment.maintenancePlans.length > 0 ? `${equipment.maintenancePlans.length} плана ТО` : 'По регламенту')}
+              subtitle={maintScheduleYear ? `График: ${maintScheduleYear}` : 'График ППР 2026'}
+              icon={<ShieldIcon sx={{ fontSize: 24 }} />}
+              accentColor="#10b981"
+              iconColor="#10b981"
+              iconBgColor="#dcfce7"
+            />
+          </Grid>
+        )}
+        {sections.some((s) => s.fields.some((f) => f.key === 'criticality')) && (
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Критичность актива"
+              value={`Класс ${criticality}`}
+              subtitle={equipment.spareParts.length > 0 ? `Запас ТМЦ: ${equipment.spareParts.length} поз.` : 'Категория надежности'}
+              icon={<CategoryIcon sx={{ fontSize: 24 }} />}
+              accentColor={criticality === 'A' ? '#ef4444' : criticality === 'B' ? '#f59e0b' : '#0ea5e9'}
+              iconColor={criticality === 'A' ? '#ef4444' : criticality === 'B' ? '#f59e0b' : '#0ea5e9'}
+              iconBgColor={criticality === 'A' ? 'error.light' : criticality === 'B' ? 'warning.light' : '#e0f2fe'}
+            />
+          </Grid>
+        )}
       </Grid>
 
       {/* TAB 0: Паспорт (Сбалансированная инженерная сетка 5/7) */}
@@ -1061,384 +1067,198 @@ function EquipmentPassportContent() {
               </Alert>
             )}
 
-            <Grid container spacing={3}>
-              {/* LEFT COLUMN (5/12): Идентификация, Размещение, Метрология, Надежность */}
-              <Grid item xs={12} lg={5}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  {/* Card 1: Основные реквизиты и размещение */}
-                  <Card sx={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-                    <CardContent sx={{ p: 2.5 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                        <PrecisionManufacturingIcon color="primary" />
-                        <Typography variant="h6" fontWeight={700}>
-                          Основные реквизиты и размещение
-                        </Typography>
-                      </Box>
-                      <Divider sx={{ mb: 1.5 }} />
-
-                      <TableContainer>
-                        <Table size="small">
-                          <TableBody>
-                            <TableRow>
-                              <TableCell sx={{ fontWeight: 500, width: '42%', color: 'text.secondary', py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                  <span>Наименование</span>
-                                  <Tooltip title="Обязательное поле паспорта">
-                                    <Typography component="span" sx={{ color: 'error.main', fontWeight: 700, fontSize: '0.875rem' }}>*</Typography>
-                                  </Tooltip>
-                                </Box>
-                              </TableCell>
-                              <TableCell sx={{ fontWeight: 700, py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                                {equipment.name}
-                              </TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                  <span>Инвентарный номер</span>
-                                  <Tooltip title="Обязательное поле паспорта">
-                                    <Typography component="span" sx={{ color: 'error.main', fontWeight: 700, fontSize: '0.875rem' }}>*</Typography>
-                                  </Tooltip>
-                                </Box>
-                              </TableCell>
-                              <TableCell sx={{ py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                                {equipment.inventoryNumber ? (
-                                  <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
-                                    <Paper
-                                      variant="outlined"
-                                      sx={{
-                                        px: 1,
-                                        py: 0.2,
-                                        fontFamily: 'monospace',
-                                        fontWeight: 700,
-                                        bgcolor: 'background.default',
-                                        fontSize: '0.8125rem',
-                                        borderRadius: '5px',
-                                        color: 'text.primary',
-                                        borderColor: 'grey.400',
-                                        lineHeight: 1.4,
-                                      }}
-                                    >
-                                      {equipment.inventoryNumber}
-                                    </Paper>
-                                    <Tooltip title="Скопировать инвентарный номер">
-                                      <IconButton
-                                        size="small"
-                                        sx={{ p: 0.5, color: 'text.disabled', '&:hover': { color: 'primary.main' } }}
-                                        onClick={() => handleCopy(equipment.inventoryNumber || '', 'Инвентарный номер')}
-                                      >
-                                        <ContentCopyIcon sx={{ fontSize: 15 }} />
-                                      </IconButton>
-                                    </Tooltip>
-                                  </Box>
-                                ) : (
-                                  <Chip
-                                    size="small"
-                                    label="Не заполнено *"
-                                    color="warning"
-                                    variant="outlined"
-                                    sx={{ height: 20, fontSize: '0.7rem', fontWeight: 600, borderColor: 'warning.main', backgroundColor: 'warning.50' }}
-                                  />
-                                )}
-                              </TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                  <span>Заводской / Серийный №</span>
-                                  <Tooltip title="Обязательное поле паспорта">
-                                    <Typography component="span" sx={{ color: 'error.main', fontWeight: 700, fontSize: '0.875rem' }}>*</Typography>
-                                  </Tooltip>
-                                </Box>
-                              </TableCell>
-                              <TableCell sx={{ py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                                {equipment.serialNumber ? (
-                                  <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
-                                    <Paper
-                                      variant="outlined"
-                                      sx={{
-                                        px: 1,
-                                        py: 0.2,
-                                        fontFamily: 'monospace',
-                                        fontWeight: 700,
-                                        bgcolor: 'background.default',
-                                        fontSize: '0.8125rem',
-                                        borderRadius: '5px',
-                                        color: 'text.primary',
-                                        borderColor: 'grey.400',
-                                        lineHeight: 1.4,
-                                      }}
-                                    >
-                                      {equipment.serialNumber}
-                                    </Paper>
-                                    <Tooltip title="Скопировать серийный номер">
-                                      <IconButton
-                                        size="small"
-                                        sx={{ p: 0.5, color: 'text.disabled', '&:hover': { color: 'primary.main' } }}
-                                        onClick={() => handleCopy(equipment.serialNumber || '', 'Серийный номер')}
-                                      >
-                                        <ContentCopyIcon sx={{ fontSize: 15 }} />
-                                      </IconButton>
-                                    </Tooltip>
-                                  </Box>
-                                ) : (
-                                  <Chip
-                                    size="small"
-                                    label="Не заполнено *"
-                                    color="warning"
-                                    variant="outlined"
-                                    sx={{ height: 20, fontSize: '0.7rem', fontWeight: 600, borderColor: 'warning.main', backgroundColor: 'warning.50' }}
-                                  />
-                                )}
-                              </TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                  <span>Производитель (Бренд)</span>
-                                  <Tooltip title="Обязательное поле паспорта">
-                                    <Typography component="span" sx={{ color: 'error.main', fontWeight: 700, fontSize: '0.875rem' }}>*</Typography>
-                                  </Tooltip>
-                                </Box>
-                              </TableCell>
-                              <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                                {equipment.manufacturer || (
-                                  <Chip
-                                    size="small"
-                                    label="Не заполнено *"
-                                    color="warning"
-                                    variant="outlined"
-                                    sx={{ height: 20, fontSize: '0.7rem', fontWeight: 600, borderColor: 'warning.main', backgroundColor: 'warning.50' }}
-                                  />
-                                )}
-                              </TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                  <span>Модель / Модификация</span>
-                                  <Tooltip title="Обязательное поле паспорта">
-                                    <Typography component="span" sx={{ color: 'error.main', fontWeight: 700, fontSize: '0.875rem' }}>*</Typography>
-                                  </Tooltip>
-                                </Box>
-                              </TableCell>
-                              <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                                {equipment.model || (
-                                  <Chip
-                                    size="small"
-                                    label="Не заполнено *"
-                                    color="warning"
-                                    variant="outlined"
-                                    sx={{ height: 20, fontSize: '0.7rem', fontWeight: 600, borderColor: 'warning.main', backgroundColor: 'warning.50' }}
-                                  />
-                                )}
-                              </TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                  <span>Место установки (Локация)</span>
-                                  <Tooltip title="Обязательное поле паспорта">
-                                    <Typography component="span" sx={{ color: 'error.main', fontWeight: 700, fontSize: '0.875rem' }}>*</Typography>
-                                  </Tooltip>
-                                </Box>
-                              </TableCell>
-                              <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                                {equipment.location || (
-                                  <Chip
-                                    size="small"
-                                    label="Не заполнено *"
-                                    color="warning"
-                                    variant="outlined"
-                                    sx={{ height: 20, fontSize: '0.7rem', fontWeight: 600, borderColor: 'warning.main', backgroundColor: 'warning.50' }}
-                                  />
-                                )}
-                              </TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                  <span>Ответственное лицо (МОЛ)</span>
-                                  <Tooltip title="Обязательное поле паспорта">
-                                    <Typography component="span" sx={{ color: 'error.main', fontWeight: 700, fontSize: '0.875rem' }}>*</Typography>
-                                  </Tooltip>
-                                </Box>
-                              </TableCell>
-                              <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                                    {respPerson ? (
-                                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                        {respPerson}
-                                      </Typography>
-                                    ) : (
-                                      <Chip
-                                        size="small"
-                                        label="Не назначен *"
-                                        color="warning"
-                                        variant="outlined"
-                                        sx={{ height: 20, fontSize: '0.7rem', fontWeight: 600, borderColor: 'warning.main', backgroundColor: 'warning.50' }}
-                                      />
-                                    )}
-                                    {custom.responsible_user_login && (
-                                      <Chip
-                                        label={`@${custom.responsible_user_login}`}
-                                        size="small"
-                                        variant="outlined"
-                                        color="primary"
-                                        sx={{ height: 20, fontSize: '0.7rem', fontFamily: 'monospace', fontWeight: 600 }}
-                                      />
-                                    )}
-                                  </Box>
-                                  {canEdit && (
-                                    <Button
-                                      size="small"
-                                      variant="outlined"
-                                      startIcon={<EditIcon sx={{ fontSize: 13 }} />}
-                                      onClick={() => {
-                                        setNewRespName(respPerson);
-                                        setNewRespUser(null);
-                                        setChangeRespModalOpen(true);
-                                      }}
-                                      sx={{
-                                        height: 26,
-                                        fontSize: '0.75rem',
-                                        fontWeight: 600,
-                                        textTransform: 'none',
-                                        px: 1,
-                                        borderColor: 'divider',
-                                        color: 'primary.main',
-                                        backgroundColor: 'background.paper',
-                                        '&:hover': {
-                                          backgroundColor: 'action.hover',
-                                          borderColor: 'primary.main',
-                                        },
-                                      }}
-                                    >
-                                      Сменить
-                                    </Button>
-                                  )}
-                                </Box>
-                              </TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                  <span>Дата ввода в эксплуатацию</span>
-                                  <Tooltip title="Обязательное поле паспорта">
-                                    <Typography component="span" sx={{ color: 'error.main', fontWeight: 700, fontSize: '0.875rem' }}>*</Typography>
-                                  </Tooltip>
-                                </Box>
-                              </TableCell>
-                              <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                                {equipment.commissionDate ? (
-                                  formatDate(equipment.commissionDate)
-                                ) : (
-                                  <Chip
-                                    size="small"
-                                    label="Не заполнено *"
-                                    color="warning"
-                                    variant="outlined"
-                                    sx={{ height: 20, fontSize: '0.7rem', fontWeight: 600, borderColor: 'warning.main', backgroundColor: 'warning.50' }}
-                                  />
-                                  )}
-                                </TableCell>
-                              </TableRow>
-                              <TableRow>
-                                <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: 0 }}>
-                            Паспорт зарегистрировал
-                          </TableCell>
-                          <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: 0 }}>
-                            {equipment.createdBy?.displayName} ({formatDate(equipment.createdAt)})
-                          </TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </CardContent>
-              </Card>
-
-              {/* Card 2: Индекс технического состояния */}
-              <HealthScoreGauge
-                score={healthScore}
-                size="sm"
-                title="Индекс технического состояния"
-                subtitle="Комплексная надежность и готовность актива"
-                metrics={[
-                  { label: 'Планы ТО', value: equipment.maintenancePlans.length, status: equipment.maintenancePlans.length > 0 ? 'good' : 'warning' },
-                  { label: 'Инциденты', value: (equipment.jiraIssues || []).length, status: (equipment.jiraIssues || []).length > 0 ? 'critical' : 'good' },
-                  { label: 'Запас ТМЦ', value: equipment.spareParts.length, status: 'good' },
-                ]}
+            {sections.length === 0 ? (
+              <EmptyState
+                title="Технические разделы паспорта не настроены"
+                description="В системе пока нет активных технических разделов. Настройте структуру паспорта и перечень характеристик в параметрах модуля EPS."
+                actionText={
+                  user?.roles?.includes('admin') || hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE)
+                    ? 'Перейти к настройке разделов'
+                    : undefined
+                }
+                onAction={() => router.push('/admin/module-settings')}
+                minHeight={240}
               />
-            </Box>
-          </Grid>
+            ) : (
+              <Grid container spacing={3}>
+                {sections.map((sec) => (
+                  <Grid item xs={12} lg={6} key={sec.id}>
+                    <Card
+                      sx={{
+                        borderRadius: '12px',
+                        border: '1px solid #e2e8f0',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                      }}
+                    >
+                      <CardContent sx={{ p: 2.5, flex: '1 1 auto' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            {SECTION_ICONS[sec.icon || 'Category'] || <CategoryIcon color="primary" />}
+                            <Box>
+                              <Typography variant="h6" fontWeight={700}>
+                                {sec.name}
+                              </Typography>
+                              {sec.description && (
+                                <Typography variant="caption" color="text.secondary">
+                                  {sec.description}
+                                </Typography>
+                              )}
+                            </Box>
+                          </Box>
+                          <Chip
+                            label={`${sec.fields.length} параметров`}
+                            size="small"
+                            variant="outlined"
+                            sx={{ height: 20, fontSize: '0.7rem' }}
+                          />
+                        </Box>
+                        <Divider sx={{ mb: 1.5 }} />
 
-          {/* RIGHT COLUMN (7/12): Все технические разделы и характеристики */}
-          <Grid item xs={12} lg={7}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {/* Dynamic Custom Sections from Database */}
-              {sections.map((sec) => (
-                <Card key={sec.id} sx={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-                  <CardContent sx={{ p: 2.5 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                      {SECTION_ICONS[sec.icon || 'Category'] || <CategoryIcon color="primary" />}
-                      <Box>
-                        <Typography variant="h6" fontWeight={700}>
-                          {sec.name}
-                        </Typography>
-                        {sec.description && (
-                          <Typography variant="caption" color="text.secondary">
-                            {sec.description}
-                          </Typography>
-                        )}
-                      </Box>
-                    </Box>
-                    <Divider sx={{ mb: 1.5 }} />
-
-                    <TableContainer>
-                      <Table size="small">
-                        <TableBody>
-                          {sec.fields.length === 0 ? (
-                            <TableRow>
-                              <TableCell colSpan={2} sx={{ py: 1.5, color: 'text.secondary', textAlign: 'center' }}>
-                                В данном разделе пока нет настроенных характеристик
-                              </TableCell>
-                            </TableRow>
-                          ) : (
-                            sec.fields.map((f, fIdx) => {
-                              const val = getEquipmentFieldValue(equipment, f.key);
-                              const isLast = fIdx === sec.fields.length - 1;
-                              return (
-                                <TableRow key={f.key}>
-                                  <TableCell sx={{ fontWeight: 500, color: 'text.secondary', width: '42%', py: 1, borderBottom: isLast ? 0 : '1px solid #f1f5f9' }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                      <span>{f.name}</span>
-                                      {f.isRequired && (
-                                        <Tooltip title="Обязательное поле паспорта">
-                                          <Typography component="span" sx={{ color: 'error.main', fontWeight: 700, fontSize: '0.875rem' }}>*</Typography>
-                                        </Tooltip>
-                                      )}
-                                    </Box>
-                                  </TableCell>
-                                  <TableCell sx={{ py: 1, borderBottom: isLast ? 0 : '1px solid #f1f5f9' }}>
-                                    {renderCustomFieldValue(f, val)}
+                        <TableContainer>
+                          <Table size="small">
+                            <TableBody>
+                              {sec.fields.length === 0 ? (
+                                <TableRow>
+                                  <TableCell colSpan={2} sx={{ py: 2, color: 'text.secondary', textAlign: 'center' }}>
+                                    В данном разделе пока нет добавленных характеристик
                                   </TableCell>
                                 </TableRow>
-                              );
-                            })
-                          )}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  </CardContent>
-                </Card>
-              ))}
-            </Box>
-          </Grid>
-        </Grid>
-      </Box>
-    );
-  })()}
+                              ) : (
+                                sec.fields.map((f, fIdx) => {
+                                  const val = getEquipmentFieldValue(equipment, f.key);
+                                  const isLast = fIdx === sec.fields.length - 1;
+                                  return (
+                                    <TableRow key={f.key}>
+                                      <TableCell
+                                        sx={{
+                                          fontWeight: 500,
+                                          color: 'text.secondary',
+                                          width: '44%',
+                                          py: 1,
+                                          borderBottom: isLast ? 0 : '1px solid #f1f5f9',
+                                        }}
+                                      >
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                          <span>{f.name}</span>
+                                          {f.isRequired && (
+                                            <Tooltip title="Обязательное поле паспорта">
+                                              <Typography
+                                                component="span"
+                                                sx={{ color: 'error.main', fontWeight: 700, fontSize: '0.875rem' }}
+                                              >
+                                                *
+                                              </Typography>
+                                            </Tooltip>
+                                          )}
+                                        </Box>
+                                      </TableCell>
+                                      <TableCell sx={{ py: 1, borderBottom: isLast ? 0 : '1px solid #f1f5f9' }}>
+                                        {f.key === 'responsible_person_name' ? (
+                                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                                {respPerson || (
+                                                  <Typography component="span" variant="body2" sx={{ color: 'text.disabled' }}>
+                                                    —
+                                                  </Typography>
+                                                )}
+                                              </Typography>
+                                              {custom.responsible_user_login && (
+                                                <Chip
+                                                  label={`@${custom.responsible_user_login}`}
+                                                  size="small"
+                                                  variant="outlined"
+                                                  color="primary"
+                                                  sx={{
+                                                    height: 20,
+                                                    fontSize: '0.7rem',
+                                                    fontFamily: 'monospace',
+                                                    fontWeight: 600,
+                                                  }}
+                                                />
+                                              )}
+                                            </Box>
+                                            {canEdit && (
+                                              <Button
+                                                size="small"
+                                                variant="outlined"
+                                                startIcon={<EditIcon sx={{ fontSize: 13 }} />}
+                                                onClick={() => {
+                                                  setNewRespName(respPerson);
+                                                  setNewRespUser(null);
+                                                  setChangeRespModalOpen(true);
+                                                }}
+                                                sx={{
+                                                  height: 24,
+                                                  fontSize: '0.75rem',
+                                                  fontWeight: 600,
+                                                  textTransform: 'none',
+                                                  px: 1,
+                                                  borderColor: 'divider',
+                                                  color: 'primary.main',
+                                                }}
+                                              >
+                                                Сменить
+                                              </Button>
+                                            )}
+                                          </Box>
+                                        ) : f.key === 'inventoryNumber' || f.key === 'serialNumber' ? (
+                                          val ? (
+                                            <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
+                                              <Paper
+                                                variant="outlined"
+                                                sx={{
+                                                  px: 1,
+                                                  py: 0.2,
+                                                  fontFamily: 'monospace',
+                                                  fontWeight: 700,
+                                                  bgcolor: 'background.default',
+                                                  fontSize: '0.8125rem',
+                                                  borderRadius: '5px',
+                                                  borderColor: 'grey.400',
+                                                  lineHeight: 1.4,
+                                                }}
+                                              >
+                                                {val}
+                                              </Paper>
+                                              <Tooltip title="Скопировать">
+                                                <IconButton
+                                                  size="small"
+                                                  sx={{ p: 0.5, color: 'text.disabled', '&:hover': { color: 'primary.main' } }}
+                                                  onClick={() => handleCopy(String(val), f.name)}
+                                                >
+                                                  <ContentCopyIcon sx={{ fontSize: 14 }} />
+                                                </IconButton>
+                                              </Tooltip>
+                                            </Box>
+                                          ) : (
+                                            renderCustomFieldValue(f, val)
+                                          )
+                                        ) : f.key === 'status' ? (
+                                          <StatusBadge status={equipment.status} />
+                                        ) : (
+                                          renderCustomFieldValue(f, val)
+                                        )}
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                })
+                              )}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            )}
+          </Box>
+        );
+      })()}
 
       {/* TAB 1: Документация */}
       {activeTab === 1 && (

@@ -31,3 +31,10 @@ WHERE "key" IN (
 -- Удаление осиротевших характеристик из базы данных при удалении разделов
 DELETE FROM "CustomFieldDefinition"
 WHERE "sectionId" IS NULL;
+
+-- Фиксация флага первичной инициализации разделов, чтобы удаленные пользователем разделы не воссоздавались автоматически
+INSERT INTO "SystemSetting" ("id", "key", "value", "description")
+SELECT gen_random_uuid()::text, 'eps_custom_sections_bootstrapped', 'true', 'EPS custom sections initial bootstrap completed'
+WHERE NOT EXISTS (
+  SELECT 1 FROM "SystemSetting" WHERE "key" = 'eps_custom_sections_bootstrapped'
+);

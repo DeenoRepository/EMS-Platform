@@ -28,52 +28,32 @@ describe('EPS Sections & Custom Fields Management & Passport Specifications', ()
     assert.match(apiSource, /prisma\.customFieldDefinition\.delete/);
   });
 
-  it('EPS equipment registry columns correspond to technical sections and exclude tags', () => {
+  it('EPS equipment registry tableColumns dynamically display only configured sections characteristics and exclude tags', () => {
     const pageSource = readProjectFile('apps/web/src/app/eps/page.tsx');
     // Ensure tags column is removed
     assert.doesNotMatch(pageSource, /\{\s*id:\s*'tags'/);
 
-    // Section 1: Classifiers
-    assert.match(pageSource, /id:\s*'decimalNumber'/);
-    assert.match(pageSource, /id:\s*'okofCode'/);
-    assert.match(pageSource, /id:\s*'okpd2Code'/);
-    assert.match(pageSource, /id:\s*'procCode'/);
-    assert.match(pageSource, /id:\s*'eqGroup'/);
-    assert.match(pageSource, /id:\s*'eqType'/);
+    // Dynamic columns from active sections
+    assert.match(pageSource, /const tableColumns = useMemo/);
+    assert.match(pageSource, /for \(const sec of sections\)/);
+    assert.match(pageSource, /renderDynamicTableCell/);
 
-    // Section 2: Condition & Wear
-    assert.match(pageSource, /id:\s*'countryOrigin'/);
-    assert.match(pageSource, /id:\s*'prodYear'/);
-    assert.match(pageSource, /id:\s*'commYear'/);
-    assert.match(pageSource, /id:\s*'equipmentAge'/);
-    assert.match(pageSource, /id:\s*'actualWear'/);
-    assert.match(pageSource, /id:\s*'criticality'/);
-    assert.match(pageSource, /id:\s*'cleanRoom'/);
-    assert.match(pageSource, /id:\s*'isUnique'/);
-    assert.match(pageSource, /id:\s*'isImported'/);
-
-    // Section 3: Maintenance & Regulations
-    assert.match(pageSource, /id:\s*'maintPeriodicity'/);
-    assert.match(pageSource, /id:\s*'maintScheduleYear'/);
-    assert.match(pageSource, /id:\s*'toCountScheduled'/);
-    assert.match(pageSource, /id:\s*'respPerson'/);
-    assert.match(pageSource, /id:\s*'extSysId'/);
-
-    // Section 4: Electrical
-    assert.match(pageSource, /id:\s*'operatingVoltage'/);
-    assert.match(pageSource, /id:\s*'powerKw'/);
-    assert.match(pageSource, /id:\s*'nominalCurrent'/);
-    assert.match(pageSource, /id:\s*'phaseCount'/);
-    assert.match(pageSource, /id:\s*'upsRequired'/);
-
-    // Section 5: Mechanics
-    assert.match(pageSource, /id:\s*'operatingPressure'/);
-    assert.match(pageSource, /id:\s*'coolantType'/);
-    assert.match(pageSource, /id:\s*'rotationSpeed'/);
-
-    // Section 6: Operational & Metrology
-    assert.match(pageSource, /id:\s*'isCriticalPath'/);
-    assert.match(pageSource, /id:\s*'calibrationInterval'/);
+    // Database fields catalog defines canonical mappings
+    const dbFieldsSource = readProjectFile('apps/web/src/lib/eps-database-fields.ts');
+    assert.match(dbFieldsSource, /decimal_number/);
+    assert.match(dbFieldsSource, /okof_code/);
+    assert.match(dbFieldsSource, /okpd2_code/);
+    assert.match(dbFieldsSource, /process_classifier_code/);
+    assert.match(dbFieldsSource, /equipment_group/);
+    assert.match(dbFieldsSource, /equipment_type/);
+    assert.match(dbFieldsSource, /country_origin/);
+    assert.match(dbFieldsSource, /prod_year/);
+    assert.match(dbFieldsSource, /criticality/);
+    assert.match(dbFieldsSource, /maintenance_periodicity/);
+    assert.match(dbFieldsSource, /operating_voltage/);
+    assert.match(dbFieldsSource, /power_kw/);
+    assert.match(dbFieldsSource, /operating_pressure/);
+    assert.match(dbFieldsSource, /is_critical_path/);
   });
 
   it('Admin module settings page allows adding, editing and deleting technical sections and fields without tags column', () => {

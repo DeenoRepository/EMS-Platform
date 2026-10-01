@@ -87,8 +87,14 @@ export async function GET(req: NextRequest) {
       { code: 'operational', name: 'Эксплуатационные требования и метрология', description: 'Непрерывность процесса, поверки датчиков и регламентные условия', icon: 'Straighten', sortOrder: 6 },
     ];
 
-    // Initial bootstrap ONLY if database has no sections at all
-    if (sections.length === 0) {
+    // Bootstrap logic: executed ONLY ONCE on clean system, or when explicit ?resetDefaults=true is requested
+    const bootstrappedSetting = await prisma.systemSetting.findUnique({
+      where: { key: 'eps_custom_sections_bootstrapped' },
+    });
+
+    const isResetRequested = req.nextUrl?.searchParams?.get('resetDefaults') === 'true';
+
+    if (!bootstrappedSetting || isResetRequested) {
       for (const s of standardSections) {
         await prisma.customSection.upsert({
           where: { code: s.code },
@@ -125,16 +131,16 @@ export async function GET(req: NextRequest) {
           });
         }
       }
-    }
 
-    // Ensure mandatory standard fields are flagged as isRequired: true in database
-    for (const spec of CANONICAL_SPECS) {
-      if (spec.isRequired) {
-        await prisma.customFieldDefinition.updateMany({
-          where: { key: spec.key, isRequired: false },
-          data: { isRequired: true },
-        });
-      }
+      await prisma.systemSetting.upsert({
+        where: { key: 'eps_custom_sections_bootstrapped' },
+        create: {
+          key: 'eps_custom_sections_bootstrapped',
+          value: 'true',
+          description: 'EPS custom sections initial bootstrap completed',
+        },
+        update: { value: 'true' },
+      });
     }
 
     // Alias and duplicate dictionary for automatic merging and cleanup
