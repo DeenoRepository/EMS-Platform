@@ -36,6 +36,7 @@ import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import ConstructionOutlinedIcon from '@mui/icons-material/ConstructionOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
+import BarChartIcon from '@mui/icons-material/BarChart';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import FindReplaceIcon from '@mui/icons-material/FindReplace';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
@@ -279,44 +280,48 @@ function EquipmentListContent() {
   // всегда находились внутри видимой области окна браузера (viewport)
   const tableWrapperRef = useRef<HTMLDivElement>(null);
   const [tableMaxHeight, setTableMaxHeight] = useState<number | string>('calc(100vh - 280px)');
+  const [showKpiCards, setShowKpiCards] = useState<boolean>(true);
 
   const calculateTableHeight = useCallback(() => {
     if (typeof window === 'undefined') return;
     const elem = tableWrapperRef.current;
     if (!elem) {
-      setTableMaxHeight('calc(100vh - 240px)');
+      setTableMaxHeight('calc(100vh - 260px)');
       return;
     }
     const rect = elem.getBoundingClientRect();
-    // Высота от верхнего края таблицы до нижней границы видимого окна браузера
-    // с отступом 20px от края окна для гарантированной видимости строки пагинации
-    const available = window.innerHeight - rect.top - 20;
-    const finalHeight = Math.max(380, Math.floor(available));
+    const elemTopDoc = rect.top + window.scrollY;
+    const viewportHeight = window.innerHeight;
+
+    // Безопасный отступ снизу (паддинги страницы + подвал + зазор от границы окна браузера)
+    const bottomSafetyMargin = 56;
+
+    // 1) Ограничение высоты таблицы, чтобы при прокрутке к ней она полностью помещалась во viewport:
+    const maxViewportFit = Math.max(340, viewportHeight - 134);
+
+    // 2) При нахождении вверху страницы (видны заголовок и KPI):
+    const availableFromTop = viewportHeight - elemTopDoc - bottomSafetyMargin;
+
+    // Гарантируем, что пагинация всегда видна в видимой области окна
+    const finalHeight = availableFromTop >= 360
+      ? Math.floor(availableFromTop)
+      : Math.floor(maxViewportFit);
+
     setTableMaxHeight(finalHeight);
   }, []);
 
   useEffect(() => {
     calculateTableHeight();
     const handleResize = () => calculateTableHeight();
-    const handleScroll = () => calculateTableHeight();
 
     window.addEventListener('resize', handleResize);
-    window.addEventListener('scroll', handleScroll, { passive: true });
-
-    let resizeObserver: ResizeObserver | null = null;
-    if (typeof ResizeObserver !== 'undefined' && tableWrapperRef.current) {
-      resizeObserver = new ResizeObserver(() => {
-        calculateTableHeight();
-      });
-      resizeObserver.observe(tableWrapperRef.current);
-    }
+    const timer = setTimeout(calculateTableHeight, 150);
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('scroll', handleScroll);
-      resizeObserver?.disconnect();
+      clearTimeout(timer);
     };
-  }, [calculateTableHeight, activeFilterCount, showColumnFilters, viewMode]);
+  }, [calculateTableHeight, activeFilterCount, showColumnFilters, viewMode, showKpiCards]);
 
   const activeBadges = useMemo(() => {
     const statusMap: Record<string, string> = {};
@@ -609,6 +614,31 @@ function EquipmentListContent() {
         ]}
         actions={
           <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+            <Tooltip title={showKpiCards ? 'Скрыть блок KPI карточек для увеличения места под таблицу' : 'Показать аналитические карточки KPI'}>
+              <Button
+                variant="outlined"
+                startIcon={<BarChartIcon />}
+                onClick={() => setShowKpiCards((prev) => !prev)}
+                sx={{
+                  height: 38,
+                  borderRadius: '8px',
+                  borderColor: 'divider',
+                  color: showKpiCards ? 'text.secondary' : 'primary.main',
+                  px: 1.5,
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  backgroundColor: 'background.paper',
+                  boxSizing: 'border-box',
+                  '&:hover': {
+                    borderColor: 'grey.400',
+                    backgroundColor: 'background.default',
+                  },
+                }}
+              >
+                {showKpiCards ? 'Скрыть KPI' : 'Показать KPI'}
+              </Button>
+            </Tooltip>
             <Button
               variant="outlined"
               startIcon={<FileDownloadOutlinedIcon />}
@@ -701,72 +731,74 @@ function EquipmentListContent() {
       )}
 
       {/* Top Interactive KPI Metric Cards */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={2.4}>
-          <StatCard
-            title="Всего оборудования"
-            value={statusCounts.total}
-            subtitle="Единиц в реестре"
-            icon={<InventoryIcon sx={{ fontSize: 20 }} />}
-            accentColor="#0284c7"
-            active={!filters.status}
-            onClick={() => handleKpiFilter(null)}
-            loading={loading && statusCounts.total === 0}
-          />
-        </Grid>
+      {showKpiCards && (
+        <Grid container spacing={2} sx={{ mb: 2.5 }}>
+          <Grid item xs={12} sm={6} md={2.4}>
+            <StatCard
+              title="Всего оборудования"
+              value={statusCounts.total}
+              subtitle="Единиц в реестре"
+              icon={<InventoryIcon sx={{ fontSize: 20 }} />}
+              accentColor="#0284c7"
+              active={!filters.status}
+              onClick={() => handleKpiFilter(null)}
+              loading={loading && statusCounts.total === 0}
+            />
+          </Grid>
 
-        <Grid item xs={12} sm={6} md={2.4}>
-          <StatCard
-            title="В работе"
-            value={statusCounts.active}
-            subtitle="В штатной эксплуатации"
-            icon={<CheckCircleOutlineIcon sx={{ fontSize: 20 }} />}
-            accentColor="#16a34a"
-            active={filters.status === 'ACTIVE'}
-            onClick={() => handleKpiFilter('ACTIVE')}
-            loading={loading && statusCounts.total === 0}
-          />
-        </Grid>
+          <Grid item xs={12} sm={6} md={2.4}>
+            <StatCard
+              title="В работе"
+              value={statusCounts.active}
+              subtitle="В штатной эксплуатации"
+              icon={<CheckCircleOutlineIcon sx={{ fontSize: 20 }} />}
+              accentColor="#16a34a"
+              active={filters.status === 'ACTIVE'}
+              onClick={() => handleKpiFilter('ACTIVE')}
+              loading={loading && statusCounts.total === 0}
+            />
+          </Grid>
 
-        <Grid item xs={12} sm={6} md={2.4}>
-          <StatCard
-            title="В ремонте"
-            value={statusCounts.underRepair}
-            subtitle="ТО или аварийные работы"
-            icon={<BuildCircleOutlinedIcon sx={{ fontSize: 20 }} />}
-            accentColor="#d97706"
-            active={filters.status === 'UNDER_REPAIR'}
-            onClick={() => handleKpiFilter('UNDER_REPAIR')}
-            loading={loading && statusCounts.total === 0}
-          />
-        </Grid>
+          <Grid item xs={12} sm={6} md={2.4}>
+            <StatCard
+              title="В ремонте"
+              value={statusCounts.underRepair}
+              subtitle="ТО или аварийные работы"
+              icon={<BuildCircleOutlinedIcon sx={{ fontSize: 20 }} />}
+              accentColor="#d97706"
+              active={filters.status === 'UNDER_REPAIR'}
+              onClick={() => handleKpiFilter('UNDER_REPAIR')}
+              loading={loading && statusCounts.total === 0}
+            />
+          </Grid>
 
-        <Grid item xs={12} sm={6} md={2.4}>
-          <StatCard
-            title="На складе"
-            value={statusCounts.inStorage}
-            subtitle="Резерв и консервация"
-            icon={<InventoryIcon sx={{ fontSize: 20 }} />}
-            accentColor="#64748b"
-            active={filters.status === 'IN_STORAGE'}
-            onClick={() => handleKpiFilter('IN_STORAGE')}
-            loading={loading && statusCounts.total === 0}
-          />
-        </Grid>
+          <Grid item xs={12} sm={6} md={2.4}>
+            <StatCard
+              title="На складе"
+              value={statusCounts.inStorage}
+              subtitle="Резерв и консервация"
+              icon={<InventoryIcon sx={{ fontSize: 20 }} />}
+              accentColor="#64748b"
+              active={filters.status === 'IN_STORAGE'}
+              onClick={() => handleKpiFilter('IN_STORAGE')}
+              loading={loading && statusCounts.total === 0}
+            />
+          </Grid>
 
-        <Grid item xs={12} sm={6} md={2.4}>
-          <StatCard
-            title="Списано"
-            value={statusCounts.decommissioned}
-            subtitle="Выведено из эксплуатации"
-            icon={<CancelOutlinedIcon sx={{ fontSize: 20 }} />}
-            accentColor="#dc2626"
-            active={filters.status === 'DECOMMISSIONED'}
-            onClick={() => handleKpiFilter('DECOMMISSIONED')}
-            loading={loading && statusCounts.total === 0}
-          />
+          <Grid item xs={12} sm={6} md={2.4}>
+            <StatCard
+              title="Списано"
+              value={statusCounts.decommissioned}
+              subtitle="Выведено из эксплуатации"
+              icon={<CancelOutlinedIcon sx={{ fontSize: 20 }} />}
+              accentColor="#dc2626"
+              active={filters.status === 'DECOMMISSIONED'}
+              onClick={() => handleKpiFilter('DECOMMISSIONED')}
+              loading={loading && statusCounts.total === 0}
+            />
+          </Grid>
         </Grid>
-      </Grid>
+      )}
 
       {/* Unified Enterprise Data Grid: Filter Toolbar + Table/Grid + Pagination */}
       <Box ref={tableWrapperRef} sx={{ width: '100%' }}>

@@ -678,7 +678,8 @@ export function DataTableWrapper({
             backgroundColor: 'background.paper',
             px: 1.5,
             py: 0.5,
-            flexWrap: 'wrap',
+            flexWrap: 'nowrap',
+            overflowX: 'auto',
             gap: 1,
             position: 'sticky',
             bottom: 0,
@@ -705,6 +706,7 @@ export function DataTableWrapper({
               }
               sx={{
                 ml: 'auto',
+                flexShrink: 0,
                 fontSize: '0.75rem',
                 border: 'none',
                 '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
@@ -717,7 +719,8 @@ export function DataTableWrapper({
                   fontWeight: 600,
                 },
                 '& .MuiTablePagination-toolbar': {
-                  minHeight: 48,
+                  minHeight: 44,
+                  height: 44,
                   p: 0,
                 },
               }}
