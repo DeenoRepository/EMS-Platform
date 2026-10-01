@@ -16,3 +16,14 @@ WHERE r."name" IN ('admin', 'engineer')
     SELECT 1 FROM "RolePermission" rp
     WHERE rp."roleId" = r."id" AND rp."permissionId" = p."id"
   );
+
+-- Подсветка обязательных позиций технических разделов паспорта оборудования
+UPDATE "CustomFieldDefinition"
+SET "isRequired" = true
+WHERE "key" IN (
+  'criticality',
+  'maintenance_periodicity',
+  'responsible_person_name',
+  'equipment_group',
+  'equipment_type'
+);

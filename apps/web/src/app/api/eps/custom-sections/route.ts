@@ -25,14 +25,22 @@ export async function GET(req: NextRequest) {
     });
 
     // 26 Canonical Custom Fields Specification
-    const CANONICAL_SPECS: { key: string; name: string; sectionCode: string; fieldType: 'NUMBER' | 'DATE' | 'BOOLEAN' | 'TEXT'; unit?: string; sortOrder: number }[] = [
+    const CANONICAL_SPECS: {
+      key: string;
+      name: string;
+      sectionCode: string;
+      fieldType: 'NUMBER' | 'DATE' | 'BOOLEAN' | 'TEXT';
+      unit?: string;
+      sortOrder: number;
+      isRequired?: boolean;
+    }[] = [
       // 1. Классификаторы
       { key: 'decimal_number', name: 'Децимальный номер', sectionCode: 'classifiers', fieldType: 'TEXT', sortOrder: 1 },
       { key: 'okof_code', name: 'Код по ОКОФ (ОК 013-2014)', sectionCode: 'classifiers', fieldType: 'TEXT', sortOrder: 2 },
       { key: 'okpd2_code', name: 'Код по ОКПД2 (ОК 034-2014)', sectionCode: 'classifiers', fieldType: 'TEXT', sortOrder: 3 },
       { key: 'process_classifier_code', name: 'Код технологического классификатора', sectionCode: 'classifiers', fieldType: 'TEXT', sortOrder: 4 },
-      { key: 'equipment_group', name: 'Группа оборудования', sectionCode: 'classifiers', fieldType: 'TEXT', sortOrder: 5 },
-      { key: 'equipment_type', name: 'Тип оборудования (Установка)', sectionCode: 'classifiers', fieldType: 'TEXT', sortOrder: 6 },
+      { key: 'equipment_group', name: 'Группа оборудования', sectionCode: 'classifiers', fieldType: 'TEXT', sortOrder: 5, isRequired: true },
+      { key: 'equipment_type', name: 'Тип оборудования (Установка)', sectionCode: 'classifiers', fieldType: 'TEXT', sortOrder: 6, isRequired: true },
 
       // 2. Состояние, износ и критичность
       { key: 'country_origin', name: 'Страна производитель', sectionCode: 'condition_wear', fieldType: 'TEXT', sortOrder: 1 },
@@ -40,16 +48,16 @@ export async function GET(req: NextRequest) {
       { key: 'comm_year', name: 'Год ввода', sectionCode: 'condition_wear', fieldType: 'NUMBER', sortOrder: 3 },
       { key: 'equipment_age', name: 'Возраст оборудования', sectionCode: 'condition_wear', fieldType: 'NUMBER', unit: 'лет', sortOrder: 4 },
       { key: 'actual_wear_percentage', name: 'Фактический процент износа', sectionCode: 'condition_wear', fieldType: 'NUMBER', unit: '%', sortOrder: 5 },
-      { key: 'criticality', name: 'Категория критичности', sectionCode: 'condition_wear', fieldType: 'TEXT', sortOrder: 6 },
+      { key: 'criticality', name: 'Категория критичности', sectionCode: 'condition_wear', fieldType: 'TEXT', sortOrder: 6, isRequired: true },
       { key: 'clean_room_class', name: 'Класс чистоты помещения (ISO)', sectionCode: 'condition_wear', fieldType: 'TEXT', sortOrder: 7 },
       { key: 'is_unique', name: 'Уникальное / единичное оборудование', sectionCode: 'condition_wear', fieldType: 'BOOLEAN', sortOrder: 8 },
       { key: 'is_imported', name: 'Импортное оборудование', sectionCode: 'condition_wear', fieldType: 'BOOLEAN', sortOrder: 9 },
 
       // 3. Регламент ТОиР и график обслуживания
-      { key: 'maintenance_periodicity', name: 'Периодичность регламентного ТО', sectionCode: 'maintenance_regulations', fieldType: 'TEXT', sortOrder: 1 },
+      { key: 'maintenance_periodicity', name: 'Периодичность регламентного ТО', sectionCode: 'maintenance_regulations', fieldType: 'TEXT', sortOrder: 1, isRequired: true },
       { key: 'maintenance_schedule_year', name: 'Утвержденный график ТО на 2026 год', sectionCode: 'maintenance_regulations', fieldType: 'TEXT', sortOrder: 2 },
       { key: 'to_count_scheduled', name: 'Количество ТО по графику', sectionCode: 'maintenance_regulations', fieldType: 'NUMBER', sortOrder: 3 },
-      { key: 'responsible_person_name', name: 'Ответственное лицо (ФИО / Должность)', sectionCode: 'maintenance_regulations', fieldType: 'TEXT', sortOrder: 4 },
+      { key: 'responsible_person_name', name: 'Ответственное лицо (ФИО / Должность)', sectionCode: 'maintenance_regulations', fieldType: 'TEXT', sortOrder: 4, isRequired: true },
       { key: 'external_system_id', name: 'Идентификатор в 1С:Предприятие', sectionCode: 'maintenance_regulations', fieldType: 'TEXT', sortOrder: 5 },
 
       // 4. Электротехнические параметры
@@ -104,6 +112,7 @@ export async function GET(req: NextRequest) {
               unit: spec.unit,
               sectionId: secId,
               sortOrder: spec.sortOrder,
+              isRequired: Boolean(spec.isRequired),
             },
             update: {
               name: spec.name,
@@ -111,9 +120,20 @@ export async function GET(req: NextRequest) {
               unit: spec.unit,
               sectionId: secId,
               sortOrder: spec.sortOrder,
+              isRequired: Boolean(spec.isRequired),
             },
           });
         }
+      }
+    }
+
+    // Ensure mandatory standard fields are flagged as isRequired: true in database
+    for (const spec of CANONICAL_SPECS) {
+      if (spec.isRequired) {
+        await prisma.customFieldDefinition.updateMany({
+          where: { key: spec.key, isRequired: false },
+          data: { isRequired: true },
+        });
       }
     }
 

@@ -481,8 +481,19 @@ function ModuleSettingsContent() {
           </TableHead>
           <TableBody>
             {fieldList.map((f) => (
-              <TableRow key={f.id} hover>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>{f.name}</TableCell>
+              <TableRow key={f.id} hover sx={f.isRequired ? { backgroundColor: 'rgba(239, 68, 68, 0.02)' } : undefined}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <span>{f.name}</span>
+                    {f.isRequired && (
+                      <Tooltip title="Обязательно для заполнения в паспорте оборудования">
+                        <Typography component="span" sx={{ color: 'error.main', fontWeight: 700, fontSize: '0.9rem' }}>
+                          *
+                        </Typography>
+                      </Tooltip>
+                    )}
+                  </Box>
+                </TableCell>
                 <TableCell>
                   <Chip label={f.key} size="small" variant="outlined" sx={{ fontFamily: 'monospace', borderRadius: '4px', height: 20 }} />
                 </TableCell>
@@ -492,7 +503,21 @@ function ModuleSettingsContent() {
                 <TableCell>
                   {f.unit ? <Chip label={f.unit} size="small" variant="outlined" sx={{ fontWeight: 700, borderRadius: '4px', height: 20 }} /> : '—'}
                 </TableCell>
-                <TableCell sx={{ fontSize: '0.8125rem' }}>{f.isRequired ? 'Да' : 'Нет'}</TableCell>
+                <TableCell sx={{ fontSize: '0.8125rem' }}>
+                  {f.isRequired ? (
+                    <Chip
+                      label="Обязательное *"
+                      size="small"
+                      color="error"
+                      variant="filled"
+                      sx={{ height: 22, fontSize: '0.7rem', fontWeight: 700 }}
+                    />
+                  ) : (
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      Опционально
+                    </Typography>
+                  )}
+                </TableCell>
                 <TableCell>
                   {f.fieldType === 'SELECT' && f.options ? (
                     <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
