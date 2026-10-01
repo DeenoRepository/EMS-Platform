@@ -53,6 +53,7 @@ backups/
 *.dump
 *.sql
 *.sql.gz
+!scripts/patch-permissions.sql
 *.tar.gz
 .system_generated/
 coverage/

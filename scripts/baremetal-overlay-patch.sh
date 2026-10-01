@@ -45,6 +45,17 @@ if [[ -d "$BUNDLE_DIR/apps/web/public" ]]; then
 fi
 chown -R ems:ems "$INSTALL_DIR/apps/web/.next" "$INSTALL_DIR/apps/web/public" 2>/dev/null || true
 
+# Apply database permissions if script is present and psql is available
+if [[ -f "$BUNDLE_DIR/scripts/patch-permissions.sql" ]]; then
+  echo "Applying database permissions updates..."
+  if command -v psql >/dev/null 2>&1; then
+    DB_URL="$(grep '^DATABASE_URL=' "$INSTALL_DIR/.env.production" | head -n1 | cut -d '=' -f2- | tr -d '"' | tr -d "'" || true)"
+    if [[ -n "$DB_URL" ]]; then
+      psql "$DB_URL" -f "$BUNDLE_DIR/scripts/patch-permissions.sql" 2>/dev/null || true
+    fi
+  fi
+fi
+
 systemctl start "$SERVICE_NAME"
 for attempt in $(seq 1 30); do
   if curl --silent --fail http://127.0.0.1:3000/api/system/health >/dev/null; then

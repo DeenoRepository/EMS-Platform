@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PACKAGE_DIR="${1:-ems-eps-registry-filter-patch}"
+PACKAGE_DIR="${1:-ems-eps-batch-edit-patch}"
 ARCHIVE_NAME="${PACKAGE_DIR}.tar.gz"
 
 rm -rf "$PACKAGE_DIR" "$ARCHIVE_NAME"
@@ -23,11 +23,17 @@ if [[ -d apps/web/public ]]; then
   cp -a apps/web/public "$PACKAGE_DIR/apps/web/public"
 fi
 cp scripts/baremetal-overlay-patch.sh "$PACKAGE_DIR/scripts/baremetal-overlay-patch.sh"
+if [[ -f scripts/patch-permissions.sql ]]; then
+  cp scripts/patch-permissions.sql "$PACKAGE_DIR/scripts/patch-permissions.sql"
+fi
 if [[ -f docs/EPS_REGISTRY_FILTER_PATCH.md ]]; then
   cp docs/EPS_REGISTRY_FILTER_PATCH.md "$PACKAGE_DIR/docs/"
 fi
 if [[ -f docs/EPS_DOCUMENT_MODEL_PATCH.md ]]; then
   cp docs/EPS_DOCUMENT_MODEL_PATCH.md "$PACKAGE_DIR/docs/"
+fi
+if [[ -f docs/EPS_BATCH_EDIT_PATCH.md ]]; then
+  cp docs/EPS_BATCH_EDIT_PATCH.md "$PACKAGE_DIR/docs/"
 fi
 chmod +x "$PACKAGE_DIR/scripts/baremetal-overlay-patch.sh"
 
