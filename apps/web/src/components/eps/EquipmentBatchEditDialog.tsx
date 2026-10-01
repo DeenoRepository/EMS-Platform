@@ -39,6 +39,7 @@ import DoneAllIcon from '@mui/icons-material/DoneAll';
 import { useSnackbar } from 'notistack';
 import { ConfirmDialog } from '@/components/ui';
 import { BATCH_EDIT_COLUMNS, BatchColumnConfig } from '@/lib/eps-batch-edit';
+import { ResponsibleUserSelect } from './ResponsibleUserSelect';
 
 export interface EquipmentBatchEditDialogProps {
   open: boolean;
@@ -335,6 +336,13 @@ export function EquipmentBatchEditDialog({
                   ))}
                 </Select>
               </FormControl>
+            ) : field === 'responsible_person_name' ? (
+              <ResponsibleUserSelect
+                label="Новый ответственный сотрудник (МОЛ)"
+                value={replaceValue}
+                onChange={(name) => setReplaceValue(name)}
+                placeholder="Выберите сотрудника из списка аккаунтов или введите ФИО"
+              />
             ) : (
               <TextField
                 size="small"

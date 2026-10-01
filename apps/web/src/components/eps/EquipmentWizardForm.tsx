@@ -41,6 +41,7 @@ import SendIcon from '@mui/icons-material/Send';
 import { useSnackbar } from 'notistack';
 import { StatusBadge, DatePickerField } from '@/components/ui';
 import { EQUIPMENT_STATUS_MAP } from '@ems/shared';
+import { ResponsibleUserSelect } from './ResponsibleUserSelect';
 
 export interface TagItem {
   id: string;
@@ -228,6 +229,32 @@ export function EquipmentWizardForm({
             required={def.isRequired}
             value={customFieldValues[def.key] || ''}
             onChange={(e) => handleCustomFieldChange(def.key, e.target.value)}
+          />
+        </Box>
+      );
+    }
+
+    if (
+      def.key === 'responsible_person_name' ||
+      def.key.toLowerCase().includes('responsible') ||
+      def.key.toLowerCase().includes('otvetstvenn')
+    ) {
+      return (
+        <Box key={def.key} sx={{ gridColumn: { xs: 'span 1', sm: 'span 1' } }}>
+          <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+            {def.name} {def.isRequired && <Box component="span" sx={{ color: 'error.main' }}>*</Box>}
+          </Typography>
+          <ResponsibleUserSelect
+            label=""
+            required={def.isRequired}
+            value={customFieldValues[def.key] || ''}
+            onChange={(val, u) => {
+              handleCustomFieldChange(def.key, val);
+              if (u) {
+                handleCustomFieldChange('responsible_user_id', u.id);
+                handleCustomFieldChange('responsible_user_login', u.ldapLogin);
+              }
+            }}
           />
         </Box>
       );

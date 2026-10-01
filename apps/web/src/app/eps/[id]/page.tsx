@@ -29,6 +29,7 @@ import {
   Select,
   Tooltip,
   LinearProgress,
+  CircularProgress,
   Checkbox,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
@@ -55,6 +56,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import LaunchIcon from '@mui/icons-material/Launch';
 import BuildCircleIcon from '@mui/icons-material/BuildCircle';
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import PageHeader from '@/components/layout/PageHeader';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -89,6 +91,7 @@ import {
   type LifecycleEvent,
 } from '@/components/ui';
 import { CreateServiceRequestDialog } from '@/components/srm';
+import { ResponsibleUserSelect, type AuthorizedUser } from '@/components/eps';
 
 interface CustomFieldDef {
   id: string;
@@ -253,6 +256,12 @@ function EquipmentPassportContent() {
   // SRM Incident Dialog State
   const [openCreateSrmModal, setOpenCreateSrmModal] = useState(false);
 
+  // Responsible Person Quick Modal State
+  const [changeRespModalOpen, setChangeRespModalOpen] = useState(false);
+  const [newRespName, setNewRespName] = useState('');
+  const [newRespUser, setNewRespUser] = useState<AuthorizedUser | null>(null);
+  const [savingResp, setSavingResp] = useState(false);
+
   // Confirm State
   const [confirmState, setConfirmState] = useState<{
     open: boolean;
@@ -405,6 +414,43 @@ function EquipmentPassportContent() {
       }
     } catch {
       enqueueSnackbar('Ошибка отправки данных', { variant: 'error' });
+    }
+  };
+
+  // Quick Change Responsible Person Submit
+  const handleSaveResponsiblePerson = async () => {
+    if (!newRespName.trim()) {
+      enqueueSnackbar('Укажите или выберите ответственное лицо', { variant: 'warning' });
+      return;
+    }
+    setSavingResp(true);
+    try {
+      const nextCustom = {
+        ...(equipment?.customFields || {}),
+        responsible_person_name: newRespName.trim(),
+        responsible_user_id: newRespUser?.id || null,
+        responsible_user_login: newRespUser?.ldapLogin || null,
+      };
+      const res = await fetch(`/api/eps/equipment/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customFields: nextCustom,
+          directSave: true,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        enqueueSnackbar('Ответственное лицо (МОЛ) успешно обновлено', { variant: 'success' });
+        setChangeRespModalOpen(false);
+        fetchEquipmentAndMeta();
+      } else {
+        enqueueSnackbar(data.error || 'Ошибка при смене ответственного', { variant: 'error' });
+      }
+    } catch {
+      enqueueSnackbar('Сетевая ошибка при смене ответственного', { variant: 'error' });
+    } finally {
+      setSavingResp(false);
     }
   };
 
@@ -1080,7 +1126,50 @@ function EquipmentPassportContent() {
                             Ответственное лицо (МОЛ)
                           </TableCell>
                           <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: '1px solid #f1f5f9' }}>
-                            {respPerson || <Typography component="span" variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>}
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                  {respPerson || <Typography component="span" variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>}
+                                </Typography>
+                                {custom.responsible_user_login && (
+                                  <Chip
+                                    label={`@${custom.responsible_user_login}`}
+                                    size="small"
+                                    variant="outlined"
+                                    color="primary"
+                                    sx={{ height: 20, fontSize: '0.7rem', fontFamily: 'monospace', fontWeight: 600 }}
+                                  />
+                                )}
+                              </Box>
+                              {canEdit && (
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  startIcon={<EditIcon sx={{ fontSize: 13 }} />}
+                                  onClick={() => {
+                                    setNewRespName(respPerson);
+                                    setNewRespUser(null);
+                                    setChangeRespModalOpen(true);
+                                  }}
+                                  sx={{
+                                    height: 26,
+                                    fontSize: '0.75rem',
+                                    fontWeight: 600,
+                                    textTransform: 'none',
+                                    px: 1,
+                                    borderColor: 'divider',
+                                    color: 'primary.main',
+                                    backgroundColor: 'background.paper',
+                                    '&:hover': {
+                                      backgroundColor: 'action.hover',
+                                      borderColor: 'primary.main',
+                                    },
+                                  }}
+                                >
+                                  Сменить
+                                </Button>
+                              )}
+                            </Box>
                           </TableCell>
                         </TableRow>
                         <TableRow>
@@ -1922,6 +2011,29 @@ function EquipmentPassportContent() {
                     );
                   }
 
+                  if (
+                    f.key === 'responsible_person_name' ||
+                    f.key.toLowerCase().includes('responsible') ||
+                    f.key.toLowerCase().includes('otvetstvenn')
+                  ) {
+                    return (
+                      <Grid item xs={12} sm={6} key={f.key}>
+                        <ResponsibleUserSelect
+                          label={f.name}
+                          value={editCustomFields[f.key] ?? ''}
+                          onChange={(name, user) => {
+                            setEditCustomFields({
+                              ...editCustomFields,
+                              [f.key]: name,
+                              responsible_user_id: user?.id || null,
+                              responsible_user_login: user?.ldapLogin || null,
+                            });
+                          }}
+                        />
+                      </Grid>
+                    );
+                  }
+
                   return (
                     <Grid item xs={12} sm={6} key={f.key}>
                       <TextField
@@ -1949,24 +2061,100 @@ function EquipmentPassportContent() {
                 Дополнительные характеристики
               </Typography>
               <Grid container spacing={2}>
-                {unassignedFields.map((f) => (
-                  <Grid item xs={12} sm={6} key={f.key}>
-                    <TextField
-                      label={f.unit ? `${f.name} (${f.unit})` : f.name}
-                      type={f.fieldType === 'NUMBER' ? 'number' : f.fieldType === 'DATE' ? 'date' : 'text'}
-                      InputLabelProps={f.fieldType === 'DATE' ? { shrink: true } : undefined}
-                      fullWidth
-                      size="small"
-                      value={editCustomFields[f.key] ?? ''}
-                      onChange={(e) =>
-                        setEditCustomFields({ ...editCustomFields, [f.key]: e.target.value })
-                      }
-                    />
-                  </Grid>
-                ))}
+                {unassignedFields.map((f) => {
+                  if (
+                    f.key === 'responsible_person_name' ||
+                    f.key.toLowerCase().includes('responsible') ||
+                    f.key.toLowerCase().includes('otvetstvenn')
+                  ) {
+                    return (
+                      <Grid item xs={12} sm={6} key={f.key}>
+                        <ResponsibleUserSelect
+                          label={f.name}
+                          value={editCustomFields[f.key] ?? ''}
+                          onChange={(name, user) => {
+                            setEditCustomFields({
+                              ...editCustomFields,
+                              [f.key]: name,
+                              responsible_user_id: user?.id || null,
+                              responsible_user_login: user?.ldapLogin || null,
+                            });
+                          }}
+                        />
+                      </Grid>
+                    );
+                  }
+
+                  return (
+                    <Grid item xs={12} sm={6} key={f.key}>
+                      <TextField
+                        label={f.unit ? `${f.name} (${f.unit})` : f.name}
+                        type={f.fieldType === 'NUMBER' ? 'number' : f.fieldType === 'DATE' ? 'date' : 'text'}
+                        InputLabelProps={f.fieldType === 'DATE' ? { shrink: true } : undefined}
+                        fullWidth
+                        size="small"
+                        value={editCustomFields[f.key] ?? ''}
+                        onChange={(e) =>
+                          setEditCustomFields({ ...editCustomFields, [f.key]: e.target.value })
+                        }
+                      />
+                    </Grid>
+                  );
+                })}
               </Grid>
             </Box>
           )}
+        </Box>
+      </FormDialog>
+
+      {/* Быстрая смена ответственного лица (МОЛ) */}
+      <FormDialog
+        open={changeRespModalOpen}
+        onClose={() => setChangeRespModalOpen(false)}
+        title="Смена ответственного лица (МОЛ)"
+        subtitle={`Оборудование: ${equipment?.name} (Инв. № ${equipment?.inventoryNumber || 'Б/Н'})`}
+        icon={<PersonOutlineIcon color="primary" />}
+        maxWidth="sm"
+        actions={
+          <>
+            <Button onClick={() => setChangeRespModalOpen(false)} color="inherit" size="small">
+              Отмена
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              color="primary"
+              disabled={savingResp || !newRespName.trim()}
+              onClick={handleSaveResponsiblePerson}
+            >
+              {savingResp ? <CircularProgress size={16} /> : 'Назначить ответственного'}
+            </Button>
+          </>
+        }
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+          <Box sx={{ p: 1.5, borderRadius: '8px', bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider' }}>
+            <Typography variant="caption" color="text.secondary">
+              Текущий ответственный в паспорте:
+            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              {respPerson || 'Не назначен'}
+            </Typography>
+          </Box>
+
+          <ResponsibleUserSelect
+            label="Новое ответственное лицо (МОЛ)"
+            value={newRespName}
+            onChange={(name, user) => {
+              setNewRespName(name);
+              setNewRespUser(user || null);
+            }}
+            required
+          />
+
+          <Typography variant="caption" color="text.secondary">
+            Сотрудник выбирается из базы авторизованных пользователей проекта. При сохранении изменение фиксируется в журнале аудита паспорта оборудования.
+          </Typography>
         </Box>
       </FormDialog>
 
