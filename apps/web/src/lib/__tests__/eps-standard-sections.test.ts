@@ -9,31 +9,26 @@ function readProjectFile(relativePath: string): string {
   return fs.readFileSync(path.join(projectRoot, relativePath), 'utf8');
 }
 
-describe('EPS Standard Sections & Passport Specifications', () => {
-  it('Custom sections API blocks POST, PATCH, and DELETE operations with 403 status', () => {
+describe('EPS Sections & Custom Fields Management & Passport Specifications', () => {
+  it('Custom sections API supports POST, PATCH, and DELETE operations', () => {
     const apiSource = readProjectFile('apps/web/src/app/api/eps/custom-sections/route.ts');
     assert.match(apiSource, /export async function POST/);
     assert.match(apiSource, /export async function PATCH/);
     assert.match(apiSource, /export async function DELETE/);
-    assert.match(apiSource, /status:\s*403/);
-    assert.match(
-      apiSource,
-      /Технические разделы и характеристики паспорта зафиксированы нормативным стандартом и не подлежат созданию, изменению или удалению/
-    );
+    assert.match(apiSource, /prisma\.customSection\.create/);
+    assert.match(apiSource, /prisma\.customSection\.update/);
+    assert.match(apiSource, /prisma\.customSection\.delete/);
   });
 
-  it('Custom fields API blocks POST and DELETE mutations with 403 status', () => {
+  it('Custom fields API supports POST and DELETE mutations', () => {
     const apiSource = readProjectFile('apps/web/src/app/api/eps/custom-fields/route.ts');
     assert.match(apiSource, /export async function POST/);
     assert.match(apiSource, /export async function DELETE/);
-    assert.match(apiSource, /status:\s*403/);
-    assert.match(
-      apiSource,
-      /Технические разделы и характеристики паспорта зафиксированы нормативным стандартом и не подлежат созданию, изменению или удалению/
-    );
+    assert.match(apiSource, /prisma\.customFieldDefinition\.upsert/);
+    assert.match(apiSource, /prisma\.customFieldDefinition\.delete/);
   });
 
-  it('EPS equipment registry columns correspond to all 6 technical sections and exclude tags', () => {
+  it('EPS equipment registry columns correspond to technical sections and exclude tags', () => {
     const pageSource = readProjectFile('apps/web/src/app/eps/page.tsx');
     // Ensure tags column is removed
     assert.doesNotMatch(pageSource, /\{\s*id:\s*'tags'/);
@@ -81,21 +76,20 @@ describe('EPS Standard Sections & Passport Specifications', () => {
     assert.match(pageSource, /id:\s*'calibrationInterval'/);
   });
 
-  it('Admin module settings page displays technical sections in fixed read-only standard mode without tags column', () => {
+  it('Admin module settings page allows adding, editing and deleting technical sections and fields without tags column', () => {
     const adminSource = readProjectFile('apps/web/src/app/admin/module-settings/page.tsx');
     // Ensure tags column is removed
     assert.doesNotMatch(adminSource, /Метки и классификаторы/);
     assert.doesNotMatch(adminSource, /Добавить метку/);
     assert.doesNotMatch(adminSource, /Создание классификатора \/ метки/);
 
-    // Ensure section create/delete buttons are removed
-    assert.doesNotMatch(adminSource, /Добавить раздел/);
-    assert.doesNotMatch(adminSource, /Добавить параметр/);
-    assert.doesNotMatch(adminSource, /title="Удалить раздел"/);
-    assert.doesNotMatch(adminSource, /title="Редактировать раздел"/);
-
-    // Ensure standard banner is present
-    assert.match(adminSource, /Технические разделы и характеристики паспорта оборудования зафиксированы/);
+    // Ensure section create/edit/delete buttons are present
+    assert.match(adminSource, /Добавить раздел/);
+    assert.match(adminSource, /Добавить параметр/);
+    assert.match(adminSource, /title="Удалить раздел"/);
+    assert.match(adminSource, /title="Редактировать раздел"/);
+    assert.match(adminSource, /title="Редактировать параметр"/);
+    assert.match(adminSource, /title="Удалить параметр"/);
   });
 
   it('Equipment passport page (/eps/[id]) removes classification tags table row', () => {

@@ -24,28 +24,6 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    // Standard Sections Definition
-    const standardSections = [
-      { code: 'classifiers', name: 'Общероссийские и отраслевые классификаторы', description: 'Коды ОКОФ (ОК 013-2014), ОКПД2, классификаторы техпроцесса и децимальные номера', icon: 'Category', sortOrder: 1 },
-      { code: 'condition_wear', name: 'Техническое состояние, износ и критичность', description: 'Процент износа, критичность для производства, класс чистоты ISO, признаки уникальности и импорта', icon: 'Speed', sortOrder: 2 },
-      { code: 'maintenance_regulations', name: 'Регламент ТОиР и график обслуживания', description: 'Периодичность ТО, график на текущий год, ответственные лица и связь с 1С', icon: 'Shield', sortOrder: 3 },
-      { code: 'electrical', name: 'Электротехнические параметры', description: 'Характеристики электропитания, мощности, напряжения и фазности', icon: 'Bolt', sortOrder: 4 },
-      { code: 'mechanics', name: 'Механика, гидравлика и среда', description: 'Рабочие среды, давление, обороты и смазочные материалы', icon: 'WaterDrop', sortOrder: 5 },
-      { code: 'operational', name: 'Эксплуатационные требования и метрология', description: 'Непрерывность процесса, поверки датчиков и регламентные условия', icon: 'Straighten', sortOrder: 6 },
-    ];
-
-    // Ensure all 6 standard sections exist with canonical definitions
-    for (const s of standardSections) {
-      await prisma.customSection.upsert({
-        where: { code: s.code },
-        create: s,
-        update: { name: s.name, description: s.description, icon: s.icon, sortOrder: s.sortOrder },
-      });
-    }
-
-    const allSections = await prisma.customSection.findMany();
-    const secMap = new Map(allSections.map((s) => [s.code, s.id]));
-
     // 26 Canonical Custom Fields Specification
     const CANONICAL_SPECS: { key: string; name: string; sectionCode: string; fieldType: 'NUMBER' | 'DATE' | 'BOOLEAN' | 'TEXT'; unit?: string; sortOrder: number }[] = [
       // 1. Классификаторы
@@ -72,24 +50,72 @@ export async function GET(req: NextRequest) {
       { key: 'maintenance_schedule_year', name: 'Утвержденный график ТО на 2026 год', sectionCode: 'maintenance_regulations', fieldType: 'TEXT', sortOrder: 2 },
       { key: 'to_count_scheduled', name: 'Количество ТО по графику', sectionCode: 'maintenance_regulations', fieldType: 'NUMBER', sortOrder: 3 },
       { key: 'responsible_person_name', name: 'Ответственное лицо (ФИО / Должность)', sectionCode: 'maintenance_regulations', fieldType: 'TEXT', sortOrder: 4 },
-      { key: 'external_system_id', name: 'Идентификатор во внешней системе (1С / ERP)', sectionCode: 'maintenance_regulations', fieldType: 'TEXT', sortOrder: 5 },
+      { key: 'external_system_id', name: 'Идентификатор в 1С:Предприятие', sectionCode: 'maintenance_regulations', fieldType: 'TEXT', sortOrder: 5 },
 
       // 4. Электротехнические параметры
-      { key: 'operating_voltage', name: 'Рабочее напряжение', sectionCode: 'electrical', fieldType: 'TEXT', sortOrder: 1 },
-      { key: 'power_kw', name: 'Номинальная мощность', sectionCode: 'electrical', fieldType: 'NUMBER', unit: 'кВт', sortOrder: 2 },
-      { key: 'nominal_current', name: 'Номинальный ток', sectionCode: 'electrical', fieldType: 'NUMBER', unit: 'А', sortOrder: 3 },
-      { key: 'phase_count', name: 'Количество фаз', sectionCode: 'electrical', fieldType: 'NUMBER', sortOrder: 4 },
-      { key: 'ups_required', name: 'Требование к наличию ИБП', sectionCode: 'electrical', fieldType: 'TEXT', sortOrder: 5 },
+      { key: 'operating_voltage', name: 'Рабочее напряжение питания', sectionCode: 'electrical', fieldType: 'TEXT', sortOrder: 1 },
+      { key: 'power_kw', name: 'Потребляемая мощность', sectionCode: 'electrical', fieldType: 'NUMBER', unit: 'кВт', sortOrder: 2 },
+      { key: 'nominal_current', name: 'Номинальный рабочий ток', sectionCode: 'electrical', fieldType: 'NUMBER', unit: 'А', sortOrder: 3 },
+      { key: 'phase_count', name: 'Количество фаз электросети', sectionCode: 'electrical', fieldType: 'TEXT', sortOrder: 4 },
+      { key: 'ups_required', name: 'Требование подключения через ИБП', sectionCode: 'electrical', fieldType: 'TEXT', sortOrder: 5 },
 
       // 5. Механика, гидравлика и среда
-      { key: 'operating_pressure', name: 'Рабочее давление', sectionCode: 'mechanics', fieldType: 'NUMBER', unit: 'МПа', sortOrder: 1 },
-      { key: 'coolant_type', name: 'Тип смазки / хладагента', sectionCode: 'mechanics', fieldType: 'TEXT', sortOrder: 2 },
-      { key: 'rotation_speed', name: 'Частота вращения вала', sectionCode: 'mechanics', fieldType: 'NUMBER', unit: 'об/мин', sortOrder: 3 },
+      { key: 'operating_pressure', name: 'Рабочее давление системы', sectionCode: 'mechanics', fieldType: 'NUMBER', unit: 'МПа', sortOrder: 1 },
+      { key: 'coolant_type', name: 'Тип смазочного материала / хладагента', sectionCode: 'mechanics', fieldType: 'TEXT', sortOrder: 2 },
+      { key: 'rotation_speed', name: 'Частота вращения вала / ротора', sectionCode: 'mechanics', fieldType: 'NUMBER', unit: 'об/мин', sortOrder: 3 },
 
       // 6. Эксплуатационные требования и метрология
       { key: 'is_critical_path', name: 'Влияет на непрерывность процесса', sectionCode: 'operational', fieldType: 'BOOLEAN', sortOrder: 1 },
       { key: 'calibration_interval', name: 'Периодичность поверки датчиков', sectionCode: 'operational', fieldType: 'NUMBER', unit: 'мес.', sortOrder: 2 },
     ];
+
+    // Standard Sections Definition
+    const standardSections = [
+      { code: 'classifiers', name: 'Общероссийские и отраслевые классификаторы', description: 'Коды ОКОФ (ОК 013-2014), ОКПД2, классификаторы техпроцесса и децимальные номера', icon: 'Category', sortOrder: 1 },
+      { code: 'condition_wear', name: 'Техническое состояние, износ и критичность', description: 'Процент износа, критичность для производства, класс чистоты ISO, признаки уникальности и импорта', icon: 'Speed', sortOrder: 2 },
+      { code: 'maintenance_regulations', name: 'Регламент ТОиР и график обслуживания', description: 'Периодичность ТО, график на текущий год, ответственные лица и связь с 1С', icon: 'Shield', sortOrder: 3 },
+      { code: 'electrical', name: 'Электротехнические параметры', description: 'Характеристики электропитания, мощности, напряжения и фазности', icon: 'Bolt', sortOrder: 4 },
+      { code: 'mechanics', name: 'Механика, гидравлика и среда', description: 'Рабочие среды, давление, обороты и смазочные материалы', icon: 'WaterDrop', sortOrder: 5 },
+      { code: 'operational', name: 'Эксплуатационные требования и метрология', description: 'Непрерывность процесса, поверки датчиков и регламентные условия', icon: 'Straighten', sortOrder: 6 },
+    ];
+
+    // Initial bootstrap ONLY if database has no sections at all
+    if (sections.length === 0) {
+      for (const s of standardSections) {
+        await prisma.customSection.upsert({
+          where: { code: s.code },
+          create: s,
+          update: { name: s.name, description: s.description, icon: s.icon, sortOrder: s.sortOrder },
+        });
+      }
+
+      const allBootSections = await prisma.customSection.findMany();
+      const bootSecMap = new Map(allBootSections.map((s) => [s.code, s.id]));
+
+      for (const spec of CANONICAL_SPECS) {
+        const secId = bootSecMap.get(spec.sectionCode);
+        if (secId) {
+          await prisma.customFieldDefinition.upsert({
+            where: { key: spec.key },
+            create: {
+              key: spec.key,
+              name: spec.name,
+              fieldType: spec.fieldType,
+              unit: spec.unit,
+              sectionId: secId,
+              sortOrder: spec.sortOrder,
+            },
+            update: {
+              name: spec.name,
+              fieldType: spec.fieldType,
+              unit: spec.unit,
+              sectionId: secId,
+              sortOrder: spec.sortOrder,
+            },
+          });
+        }
+      }
+    }
 
     // Alias and duplicate dictionary for automatic merging and cleanup
     const DUPLICATE_TO_CANONICAL: Record<string, string> = {
@@ -236,31 +262,6 @@ export async function GET(req: NextRequest) {
       where: { key: { in: Object.keys(DUPLICATE_TO_CANONICAL) } },
     });
 
-    // 3. Ensure all 26 Canonical Field Definitions exist and are correctly bound to their sections
-    for (const spec of CANONICAL_SPECS) {
-      const secId = secMap.get(spec.sectionCode);
-      if (secId) {
-        await prisma.customFieldDefinition.upsert({
-          where: { key: spec.key },
-          create: {
-            key: spec.key,
-            name: spec.name,
-            fieldType: spec.fieldType,
-            unit: spec.unit,
-            sectionId: secId,
-            sortOrder: spec.sortOrder,
-          },
-          update: {
-            name: spec.name,
-            fieldType: spec.fieldType,
-            unit: spec.unit,
-            sectionId: secId,
-            sortOrder: spec.sortOrder,
-          },
-        });
-      }
-    }
-
     // 4. Migrate and clean Equipment.customFields JSON data
     try {
       const equipments = await prisma.equipment.findMany({
@@ -344,35 +345,149 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST: Создание кастомного раздела заблокировано нормативным стандартом
-export async function POST(_req: NextRequest) {
-  return NextResponse.json(
-    {
-      success: false,
-      error: 'Технические разделы и характеристики паспорта зафиксированы нормативным стандартом и не подлежат созданию, изменению или удалению',
-    },
-    { status: 403 }
-  );
+// POST: Создание нового технического раздела
+export async function POST(req: NextRequest) {
+  try {
+    const user = await getCurrentUser(req);
+    if (!user) return unauthorizedResponse();
+
+    if (!hasPermission(user, PERMISSIONS.EPS_CUSTOM_FIELDS_MANAGE) && !hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE)) {
+      return forbiddenResponse();
+    }
+
+    const body = await req.json();
+    const { code, name, description, icon, sortOrder } = body;
+
+    if (!name || typeof name !== 'string') {
+      return NextResponse.json({ success: false, error: 'Укажите название раздела' }, { status: 400 });
+    }
+
+    const sectionCode = (code || name)
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9_]/gi, '_')
+      .replace(/_+/g, '_');
+
+    const existing = await prisma.customSection.findUnique({
+      where: { code: sectionCode },
+    });
+
+    if (existing) {
+      return NextResponse.json({ success: false, error: 'Раздел с таким системным кодом уже существует' }, { status: 409 });
+    }
+
+    const section = await prisma.customSection.create({
+      data: {
+        code: sectionCode,
+        name: name.trim(),
+        description: description?.trim() || null,
+        icon: icon?.trim() || null,
+        sortOrder: Number(sortOrder) || 0,
+      },
+    });
+
+    await logAuditEvent({
+      userId: user.userId,
+      action: 'CREATE',
+      entityType: 'CustomSection',
+      entityId: section.id,
+      changes: { code: section.code, name: section.name },
+    });
+
+    return NextResponse.json({ success: true, data: section }, { status: 201 });
+  } catch (error: any) {
+    console.error('Ошибка POST /api/eps/custom-sections:', error);
+    return NextResponse.json({ success: false, error: error.message || 'Ошибка сервера' }, { status: 500 });
+  }
 }
 
-// PATCH: Редактирование кастомного раздела заблокировано нормативным стандартом
-export async function PATCH(_req: NextRequest) {
-  return NextResponse.json(
-    {
-      success: false,
-      error: 'Технические разделы и характеристики паспорта зафиксированы нормативным стандартом и не подлежат созданию, изменению или удалению',
-    },
-    { status: 403 }
-  );
+// PATCH: Редактирование существующего технического раздела
+export async function PATCH(req: NextRequest) {
+  try {
+    const user = await getCurrentUser(req);
+    if (!user) return unauthorizedResponse();
+
+    if (!hasPermission(user, PERMISSIONS.EPS_CUSTOM_FIELDS_MANAGE) && !hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE)) {
+      return forbiddenResponse();
+    }
+
+    const body = await req.json();
+    const { id, name, description, icon, sortOrder } = body;
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'ID раздела обязателен' }, { status: 400 });
+    }
+
+    const updated = await prisma.customSection.update({
+      where: { id },
+      data: {
+        ...(name ? { name: name.trim() } : {}),
+        description: description !== undefined ? description?.trim() || null : undefined,
+        icon: icon !== undefined ? icon?.trim() || null : undefined,
+        sortOrder: sortOrder !== undefined ? Number(sortOrder) : undefined,
+      },
+    });
+
+    await logAuditEvent({
+      userId: user.userId,
+      action: 'UPDATE',
+      entityType: 'CustomSection',
+      entityId: updated.id,
+      changes: body,
+    });
+
+    return NextResponse.json({ success: true, data: updated });
+  } catch (error: any) {
+    console.error('Ошибка PATCH /api/eps/custom-sections:', error);
+    return NextResponse.json({ success: false, error: 'Ошибка обновления раздела' }, { status: 500 });
+  }
 }
 
-// DELETE: Удаление кастомного раздела заблокировано нормативным стандартом
-export async function DELETE(_req: NextRequest) {
-  return NextResponse.json(
-    {
-      success: false,
-      error: 'Технические разделы и характеристики паспорта зафиксированы нормативным стандартом и не подлежат созданию, изменению или удалению',
-    },
-    { status: 403 }
-  );
+// DELETE: Удаление технического раздела
+export async function DELETE(req: NextRequest) {
+  try {
+    const user = await getCurrentUser(req);
+    if (!user) return unauthorizedResponse();
+
+    if (!hasPermission(user, PERMISSIONS.EPS_CUSTOM_FIELDS_MANAGE) && !hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE)) {
+      return forbiddenResponse();
+    }
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+    const deleteFields = searchParams.get('deleteFields') === 'true';
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'ID раздела обязателен' }, { status: 400 });
+    }
+
+    // Unassign or delete child fields before deleting section
+    if (deleteFields) {
+      await prisma.customFieldDefinition.deleteMany({
+        where: { sectionId: id },
+      });
+    } else {
+      await prisma.customFieldDefinition.updateMany({
+        where: { sectionId: id },
+        data: { sectionId: null },
+      });
+    }
+
+    const deleted = await prisma.customSection.delete({
+      where: { id },
+    });
+
+    await logAuditEvent({
+      userId: user.userId,
+      action: 'DELETE',
+      entityType: 'CustomSection',
+      entityId: id,
+      changes: { deletedName: deleted.name, deleteFields },
+    });
+
+    return NextResponse.json({ success: true, message: 'Раздел удален' });
+  } catch (error: any) {
+    console.error('Ошибка DELETE /api/eps/custom-sections:', error);
+    return NextResponse.json({ success: false, error: error.message || 'Ошибка удаления раздела' }, { status: 500 });
+  }
 }

@@ -347,6 +347,20 @@ function ModuleSettingsContent() {
     setFieldDialogOpen(true);
   };
 
+  // Open Edit Field Modal
+  const handleOpenEditField = (f: CustomFieldItem, sectionId?: string) => {
+    setFieldTargetSectionId(sectionId || f.sectionId || (sections[0]?.id || ''));
+    setFieldKey(f.key);
+    setFieldName(f.name);
+    setFieldType(f.fieldType);
+    setFieldUnit(f.unit || '');
+    setIsRequired(Boolean(f.isRequired));
+    setDefaultValue(f.defaultValue || '');
+    setOptionsStr(f.options ? f.options.join(', ') : '');
+    setSortOrder(f.sortOrder || 1);
+    setFieldDialogOpen(true);
+  };
+
   // Save Field
   const handleSaveField = async () => {
     if (!fieldKey.trim() || !fieldName.trim()) {
@@ -439,14 +453,14 @@ function ModuleSettingsContent() {
     }
   };
 
-  const renderFieldTable = (fieldList: CustomFieldItem[]) => {
+  const renderFieldTable = (fieldList: CustomFieldItem[], sectionId?: string) => {
     if (fieldList.length === 0) {
       return (
         <EmptyState
           title="В этом разделе пока нет добавленных полей"
-          description="Вы можете добавить кастомное поле с заданным типом данных и единицей измерения."
-          actionText="Добавить поле"
-          onAction={() => handleOpenCreateField()}
+          description="Вы можете добавить технический параметр с заданным типом данных и единицей измерения."
+          actionText="Добавить параметр"
+          onAction={() => handleOpenCreateField(sectionId)}
         />
       );
     }
@@ -462,6 +476,7 @@ function ModuleSettingsContent() {
               <TableCell sx={{ fontWeight: 700, width: 90 }}>Ед. изм.</TableCell>
               <TableCell sx={{ fontWeight: 700, width: 110 }}>Обязательное</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Значение / Опции</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 700, width: 90 }}>Действия</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -488,6 +503,25 @@ function ModuleSettingsContent() {
                   ) : (
                     f.defaultValue || '—'
                   )}
+                </TableCell>
+                <TableCell align="right">
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleOpenEditField(f, sectionId)}
+                      title="Редактировать параметр"
+                    >
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={() => handleDeleteField(f)}
+                      title="Удалить параметр"
+                    >
+                      <DeleteOutlineIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
                 </TableCell>
               </TableRow>
             ))}
@@ -662,19 +696,36 @@ function ModuleSettingsContent() {
                       >
                         Импорт оборудования
                       </Button>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<AddIcon />}
+                        onClick={handleOpenCreateSection}
+                        sx={{ borderRadius: '8px' }}
+                      >
+                        Добавить раздел
+                      </Button>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        startIcon={<AddIcon />}
+                        onClick={() => handleOpenCreateField()}
+                        sx={{ borderRadius: '8px' }}
+                      >
+                        Добавить параметр
+                      </Button>
                     </Box>
                   </Box>
-                <Alert severity="info" sx={{ mb: 2.5, borderRadius: '8px', border: '1px solid #bfdbfe', backgroundColor: '#eff6ff' }}>
-                  <strong>Корпоративный нормативный стандарт:</strong> Технические разделы и характеристики паспорта оборудования зафиксированы и не подлежат редактированию или удалению.
-                </Alert>
                 <Divider sx={{ mb: 2.5 }} />
 
                 {loadingEps ? (
                   <PageLoading text="Загрузка структуры разделов..." minHeight={160} size={28} />
                 ) : sections.length === 0 ? (
                   <EmptyState
-                    title="Разделы загружаются"
-                    description="Инициализация нормативной структуры технических разделов и характеристик..."
+                    title="Разделы не созданы"
+                    description="Технические разделы еще не созданы. Нажмите «Добавить раздел» для создания структуры паспорта."
+                    actionText="Добавить раздел"
+                    onAction={handleOpenCreateSection}
                     minHeight={160}
                   />
                 ) : (
@@ -705,11 +756,41 @@ function ModuleSettingsContent() {
                             </Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                               <Chip label={`${sec.fields.length} параметров`} size="small" />
+                              <IconButton
+                                size="small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenEditSection(sec);
+                                }}
+                                title="Редактировать раздел"
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteSection(sec);
+                                }}
+                                title="Удалить раздел"
+                              >
+                                <DeleteOutlineIcon fontSize="small" />
+                              </IconButton>
                             </Box>
                           </Box>
                         </AccordionSummary>
                         <AccordionDetails sx={{ p: 0 }}>
-                          {renderFieldTable(sec.fields)}
+                          {renderFieldTable(sec.fields, sec.id)}
+                          <Box sx={{ p: 1.5, display: 'flex', justifyContent: 'flex-end', backgroundColor: '#fafafa', borderTop: '1px solid #f1f5f9' }}>
+                            <Button
+                              size="small"
+                              startIcon={<AddIcon />}
+                              onClick={() => handleOpenCreateField(sec.id)}
+                            >
+                              Добавить параметр в «{sec.name}»
+                            </Button>
+                          </Box>
                         </AccordionDetails>
                       </Accordion>
                     ))}
