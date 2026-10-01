@@ -28,6 +28,7 @@ import {
   Paper,
   Tooltip,
   Alert,
+  Autocomplete,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -66,6 +67,7 @@ import {
   StatusBadge,
   NavTabsContainer,
 } from '@/components/ui';
+import { DATABASE_EQUIPMENT_FIELD_OPTIONS } from '@/lib/eps-database-fields';
 
 interface CustomFieldItem {
   id: string;
@@ -314,13 +316,13 @@ function ModuleSettingsContent() {
     setDeleteConfirm({
       open: true,
       title: 'Удаление технического раздела',
-      message: `Удалить технический раздел «${s.name}»? Привязанные характеристики будут сохранены как общие параметры.`,
+      message: `Удалить технический раздел «${s.name}»? Все привязанные характеристики раздела (${s.fields.length} шт.) будут также удалены из структуры паспорта оборудования.`,
       onConfirm: async () => {
         try {
-          const res = await fetch(`/api/eps/custom-sections?id=${s.id}`, { method: 'DELETE' });
+          const res = await fetch(`/api/eps/custom-sections?id=${s.id}&deleteFields=true`, { method: 'DELETE' });
           const data = await res.json();
           if (data.success) {
-            enqueueSnackbar('Технический раздел удален', { variant: 'info' });
+            enqueueSnackbar('Технический раздел и его характеристики удалены', { variant: 'info' });
             setDeleteConfirm((prev) => ({ ...prev, open: false }));
             fetchEpsData();
           } else {
@@ -1047,6 +1049,54 @@ function ModuleSettingsContent() {
               </MenuItem>
             ))}
           </TextField>
+
+          <Autocomplete
+            options={DATABASE_EQUIPMENT_FIELD_OPTIONS}
+            groupBy={(option) => option.group}
+            getOptionLabel={(option) => `${option.name} (${option.key})`}
+            value={
+              DATABASE_EQUIPMENT_FIELD_OPTIONS.find((opt) => opt.key === fieldKey) || null
+            }
+            onChange={(_e, option) => {
+              if (option) {
+                setFieldKey(option.key);
+                setFieldName(option.name);
+                setFieldType(option.fieldType);
+                setFieldUnit(option.unit || '');
+                setIsRequired(Boolean(option.isRequired));
+                if (option.options) {
+                  setOptionsStr(option.options.join(', '));
+                }
+              }
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                size="small"
+                label="Привязать к полю позиции из базы данных"
+                placeholder="Поиск по названию или ключу поля в БД..."
+                helperText="Выберите поле сущности оборудования для автоматического заполнения реквизитов"
+              />
+            )}
+            renderOption={(props, option) => (
+              <Box component="li" {...props} key={option.key} sx={{ py: 0.75, display: 'flex', justifyContent: 'space-between', width: '100%', gap: 1 }}>
+                <Box>
+                  <Typography variant="body2" fontWeight={600}>
+                    {option.name}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+                    {option.key} {option.unit ? `• ${option.unit}` : ''}
+                  </Typography>
+                </Box>
+                <Chip
+                  label={FIELD_TYPE_LABELS[option.fieldType] || option.fieldType}
+                  size="small"
+                  variant="outlined"
+                  sx={{ height: 20, fontSize: '0.7rem' }}
+                />
+              </Box>
+            )}
+          />
 
           <TextField
             label="Отображаемое наименование параметра"

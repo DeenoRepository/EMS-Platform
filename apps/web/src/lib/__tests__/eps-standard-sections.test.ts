@@ -92,9 +92,48 @@ describe('EPS Sections & Custom Fields Management & Passport Specifications', ()
     assert.match(adminSource, /title="Удалить параметр"/);
   });
 
-  it('Equipment passport page (/eps/[id]) removes classification tags table row', () => {
+  it('Equipment passport page (/eps/[id]) removes unassigned fields block and only shows configured sections', () => {
     const passportSource = readProjectFile('apps/web/src/app/eps/[id]/page.tsx');
     assert.doesNotMatch(passportSource, /Теги классификации/);
+    assert.doesNotMatch(passportSource, /Дополнительные параметры/);
+    assert.doesNotMatch(passportSource, /Дополнительные характеристики/);
+  });
+
+  it('getEquipmentFieldValue helper resolves both base model attributes and customFields transparently', () => {
+    const { getEquipmentFieldValue } = require('../eps-helpers');
+    const sample = {
+      name: 'Пресс КД-2126',
+      inventoryNumber: 'INV-999',
+      serialNumber: 'SN-001',
+      manufacturer: 'Савеловский МЗ',
+      model: 'КД-2126',
+      location: 'Цех 5',
+      status: 'ACTIVE',
+      customFields: {
+        decimal_number: '710.02.00',
+        criticality: 'A',
+      },
+    };
+
+    assert.strictEqual(getEquipmentFieldValue(sample, 'name'), 'Пресс КД-2126');
+    assert.strictEqual(getEquipmentFieldValue(sample, 'inventoryNumber'), 'INV-999');
+    assert.strictEqual(getEquipmentFieldValue(sample, 'manufacturer'), 'Савеловский МЗ');
+    assert.strictEqual(getEquipmentFieldValue(sample, 'model'), 'КД-2126');
+    assert.strictEqual(getEquipmentFieldValue(sample, 'decimal_number'), '710.02.00');
+    assert.strictEqual(getEquipmentFieldValue(sample, 'criticality'), 'A');
+  });
+
+  it('Admin module settings provides DATABASE_EQUIPMENT_FIELD_OPTIONS for binding section fields to database columns', () => {
+    const adminSource = readProjectFile('apps/web/src/app/admin/module-settings/page.tsx');
+    assert.match(adminSource, /DATABASE_EQUIPMENT_FIELD_OPTIONS/);
+    assert.match(adminSource, /Привязать к полю позиции из базы данных/);
+
+    const { DATABASE_EQUIPMENT_FIELD_OPTIONS } = require('../eps-database-fields');
+    assert.ok(Array.isArray(DATABASE_EQUIPMENT_FIELD_OPTIONS));
+    assert.ok(DATABASE_EQUIPMENT_FIELD_OPTIONS.length >= 25);
+    assert.ok(DATABASE_EQUIPMENT_FIELD_OPTIONS.some((o: any) => o.key === 'inventoryNumber'));
+    assert.ok(DATABASE_EQUIPMENT_FIELD_OPTIONS.some((o: any) => o.key === 'manufacturer'));
+    assert.ok(DATABASE_EQUIPMENT_FIELD_OPTIONS.some((o: any) => o.key === 'is_critical_path'));
   });
 
   it('Equipment wizard form (/eps/new) removes tags and labels step', () => {

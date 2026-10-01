@@ -132,3 +132,50 @@ export function checkEquipmentCardCompleteness(item: EquipmentCheckTarget): Equi
     missingFields,
   };
 }
+
+/**
+ * Извлекает значение поля оборудования по ключу:
+ * проверяет как прямые поля сущности Equipment, так и customFields.
+ */
+export function getEquipmentFieldValue(item: any, fieldKey: string): any {
+  if (!item) return '';
+  const custom = (item.customFields || {}) as Record<string, any>;
+
+  switch (fieldKey) {
+    case 'name':
+      return item.name || '';
+    case 'inventoryNumber':
+    case 'inventory_number':
+      return item.inventoryNumber || custom.inventory_number || '';
+    case 'serialNumber':
+    case 'serial_number':
+    case 'zavodskoy_nomer':
+      return item.serialNumber || custom.serial_number || custom.zavodskoy_nomer || '';
+    case 'manufacturer':
+    case 'proizvoditel':
+      return item.manufacturer || custom.manufacturer || custom.proizvoditel || '';
+    case 'model':
+    case 'marka':
+      return item.model || custom.model || custom.marka || '';
+    case 'location':
+    case 'raspolozhenie':
+      return item.location || custom.location || custom.raspolozhenie || '';
+    case 'status':
+      return item.status || '';
+    case 'commissionDate':
+    case 'commission_date':
+      return item.commissionDate || custom.commission_date || '';
+    case 'department':
+    case 'equipment_group': {
+      const dept = getEquipmentDepartment(custom);
+      return dept !== '—' ? dept : (custom[fieldKey] || '');
+    }
+    case 'equipment_kind':
+    case 'equipment_type': {
+      const kind = getEquipmentKind(custom);
+      return kind !== '—' ? kind : (custom[fieldKey] || '');
+    }
+    default:
+      return custom[fieldKey] !== undefined && custom[fieldKey] !== null ? custom[fieldKey] : '';
+  }
+}

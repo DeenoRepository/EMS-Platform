@@ -74,7 +74,7 @@ import {
 } from '@ems/shared';
 import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
-import { isTruthyBoolean, checkEquipmentCardCompleteness } from '@/lib/eps-helpers';
+import { isTruthyBoolean, checkEquipmentCardCompleteness, getEquipmentFieldValue } from '@/lib/eps-helpers';
 import {
   StatCard,
   StatusBadge,
@@ -1406,7 +1406,7 @@ function EquipmentPassportContent() {
                             </TableRow>
                           ) : (
                             sec.fields.map((f, fIdx) => {
-                              const val = equipment.customFields?.[f.key];
+                              const val = getEquipmentFieldValue(equipment, f.key);
                               const isLast = fIdx === sec.fields.length - 1;
                               return (
                                 <TableRow key={f.key}>
@@ -1433,49 +1433,6 @@ function EquipmentPassportContent() {
                   </CardContent>
                 </Card>
               ))}
-
-              {/* Unassigned Custom Fields if any */}
-              {unassignedFields.length > 0 && (
-                <Card sx={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-                  <CardContent sx={{ p: 2.5 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                      <TuneIcon color="primary" />
-                      <Typography variant="h6" fontWeight={700}>
-                        Дополнительные параметры
-                      </Typography>
-                    </Box>
-                    <Divider sx={{ mb: 1.5 }} />
-
-                    <TableContainer>
-                      <Table size="small">
-                        <TableBody>
-                          {unassignedFields.map((f, uIdx) => {
-                            const val = equipment.customFields?.[f.key];
-                            const isLast = uIdx === unassignedFields.length - 1;
-                            return (
-                              <TableRow key={f.key}>
-                                <TableCell sx={{ fontWeight: 500, color: 'text.secondary', width: '42%', py: 1, borderBottom: isLast ? 0 : '1px solid #f1f5f9' }}>
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                    <span>{f.name}</span>
-                                    {f.isRequired && (
-                                      <Tooltip title="Обязательное поле паспорта">
-                                        <Typography component="span" sx={{ color: 'error.main', fontWeight: 700, fontSize: '0.875rem' }}>*</Typography>
-                                      </Tooltip>
-                                    )}
-                                  </Box>
-                                </TableCell>
-                                <TableCell sx={{ py: 1, borderBottom: isLast ? 0 : '1px solid #f1f5f9' }}>
-                                  {renderCustomFieldValue(f, val)}
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  </CardContent>
-                </Card>
-              )}
             </Box>
           </Grid>
         </Grid>
@@ -2236,68 +2193,6 @@ function EquipmentPassportContent() {
               </Grid>
             </Box>
           ))}
-
-          {/* Section 3: Unassigned Custom Fields (if any) */}
-          {unassignedFields.length > 0 && (
-            <Box>
-              <Typography variant="subtitle1" fontWeight={700} color="text.secondary" sx={{ mb: 2 }}>
-                Дополнительные характеристики
-              </Typography>
-              <Grid container spacing={2}>
-                {unassignedFields.map((f) => {
-                  if (
-                    f.key === 'responsible_person_name' ||
-                    f.key.toLowerCase().includes('responsible') ||
-                    f.key.toLowerCase().includes('otvetstvenn')
-                  ) {
-                    return (
-                      <Grid item xs={12} sm={6} key={f.key}>
-                        <ResponsibleUserSelect
-                          label={f.isRequired ? `${f.name} *` : f.name}
-                          required={f.isRequired}
-                          error={Boolean(f.isRequired && !editCustomFields[f.key])}
-                          value={editCustomFields[f.key] ?? ''}
-                          onChange={(name, user) => {
-                            setEditCustomFields({
-                              ...editCustomFields,
-                              [f.key]: name,
-                              responsible_user_id: user?.id || null,
-                              responsible_user_login: user?.ldapLogin || null,
-                            });
-                          }}
-                        />
-                      </Grid>
-                    );
-                  }
-
-                  return (
-                    <Grid item xs={12} sm={6} key={f.key}>
-                      <TextField
-                        label={
-                          f.isRequired
-                            ? `${f.unit ? `${f.name} (${f.unit})` : f.name} *`
-                            : f.unit
-                            ? `${f.name} (${f.unit})`
-                            : f.name
-                        }
-                        required={f.isRequired}
-                        error={Boolean(f.isRequired && !editCustomFields[f.key])}
-                        helperText={f.isRequired && !editCustomFields[f.key] ? 'Обязательное поле паспорта' : undefined}
-                        type={f.fieldType === 'NUMBER' ? 'number' : f.fieldType === 'DATE' ? 'date' : 'text'}
-                        InputLabelProps={f.fieldType === 'DATE' ? { shrink: true } : undefined}
-                        fullWidth
-                        size="small"
-                        value={editCustomFields[f.key] ?? ''}
-                        onChange={(e) =>
-                          setEditCustomFields({ ...editCustomFields, [f.key]: e.target.value })
-                        }
-                      />
-                    </Grid>
-                  );
-                })}
-              </Grid>
-            </Box>
-          )}
         </Box>
       </FormDialog>
 

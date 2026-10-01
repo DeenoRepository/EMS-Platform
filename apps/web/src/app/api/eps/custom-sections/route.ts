@@ -282,6 +282,16 @@ export async function GET(req: NextRequest) {
       where: { key: { in: Object.keys(DUPLICATE_TO_CANONICAL) } },
     });
 
+    // 3. Delete unassigned orphan field definitions without section
+    await prisma.customFieldDefinition.deleteMany({
+      where: {
+        OR: [
+          { sectionId: null },
+          { section: { is: null } },
+        ],
+      },
+    });
+
     // 4. Migrate and clean Equipment.customFields JSON data
     try {
       const equipments = await prisma.equipment.findMany({
@@ -475,13 +485,13 @@ export async function DELETE(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
-    const deleteFields = searchParams.get('deleteFields') === 'true';
+    const deleteFields = searchParams.get('deleteFields') !== 'false';
 
     if (!id) {
       return NextResponse.json({ success: false, error: 'ID раздела обязателен' }, { status: 400 });
     }
 
-    // Unassign or delete child fields before deleting section
+    // By default delete child fields associated with this section
     if (deleteFields) {
       await prisma.customFieldDefinition.deleteMany({
         where: { sectionId: id },

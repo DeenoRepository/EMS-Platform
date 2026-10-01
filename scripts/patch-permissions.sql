@@ -27,3 +27,7 @@ WHERE "key" IN (
   'equipment_group',
   'equipment_type'
 );
+
+-- Удаление осиротевших характеристик из базы данных при удалении разделов
+DELETE FROM "CustomFieldDefinition"
+WHERE "sectionId" IS NULL;
