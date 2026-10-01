@@ -191,19 +191,11 @@ function PrimaryFieldsSection({
           <Grid item xs={12}>
             <TextField fullWidth size="small" label="Локация / установка" value={draft.location || ''} onChange={(e) => onChange('location', e.target.value)} />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12}>
             <TextField select fullWidth size="small" label="Статус" value={draft.status || ''} onChange={(e) => onChange('status', e.target.value)}>
               <MenuItem value="">Все статусы</MenuItem>
               {Object.entries(EQUIPMENT_STATUS_MAP).map(([k, v]) => (
                 <MenuItem key={k} value={k}>{v.label}</MenuItem>
-              ))}
-            </TextField>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField select fullWidth size="small" label="Тег" value={draft.tagId || ''} onChange={(e) => onChange('tagId', e.target.value)}>
-              <MenuItem value="">Все теги</MenuItem>
-              {tags.map((t) => (
-                <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>
               ))}
             </TextField>
           </Grid>

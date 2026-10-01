@@ -120,7 +120,6 @@ export function EquipmentWizardForm({
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
 
   // Dictionaries
-  const [tags, setTags] = useState<TagItem[]>([]);
   const [sections, setSections] = useState<CustomSectionDef[]>([]);
   const [unassignedFields, setUnassignedFields] = useState<CustomFieldDef[]>([]);
   const [isLoadingMeta, setIsLoadingMeta] = useState(true);
@@ -128,13 +127,10 @@ export function EquipmentWizardForm({
 
   useEffect(() => {
     setIsLoadingMeta(true);
-    // Single consolidated metadata fetch
-    Promise.all([
-      fetch('/api/eps/tags').then((r) => r.json()),
-      fetch('/api/eps/custom-sections').then((r) => r.json()),
-    ])
-      .then(([tagsJson, sectionsJson]) => {
-        if (tagsJson.success) setTags(tagsJson.data || []);
+    // Consolidated metadata fetch
+    fetch('/api/eps/custom-sections')
+      .then((r) => r.json())
+      .then((sectionsJson) => {
         if (sectionsJson.success && sectionsJson.data) {
           setSections(sectionsJson.data.sections || []);
           setUnassignedFields(sectionsJson.data.unassignedFields || []);
@@ -626,41 +622,6 @@ export function EquipmentWizardForm({
                   size="small"
                   fullWidth
                 />
-              </Box>
-
-              <Box sx={{ gridColumn: { xs: 'span 1', sm: 'span 2' } }}>
-                <Typography variant="subtitle2" fontWeight={700} color="#334155" sx={{ mb: 1.25 }}>
-                  Метки и теги оборудования
-                </Typography>
-                <Paper variant="outlined" sx={{ p: 2, borderRadius: '8px', minHeight: 80, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                  {tags.length === 0 ? (
-                    <Typography variant="body2" color="text.secondary">
-                      Теги пока не созданы в справочнике
-                    </Typography>
-                  ) : (
-                    tags.map((tag) => {
-                      const isSelected = selectedTagIds.includes(tag.id);
-                      return (
-                        <Chip
-                          key={tag.id}
-                          label={tag.name}
-                          onClick={() => {
-                            setSelectedTagIds((prev) =>
-                              isSelected ? prev.filter((id) => id !== tag.id) : [...prev, tag.id]
-                            );
-                          }}
-                          color={isSelected ? 'primary' : 'default'}
-                          variant={isSelected ? 'filled' : 'outlined'}
-                          sx={{
-                            fontWeight: 600,
-                            borderRadius: '6px',
-                            borderColor: tag.color || undefined,
-                          }}
-                        />
-                      );
-                    })
-                  )}
-                </Paper>
               </Box>
             </Box>
           </Stack>

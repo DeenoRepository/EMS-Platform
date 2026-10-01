@@ -27,6 +27,7 @@ import {
   AccordionDetails,
   Paper,
   Tooltip,
+  Alert,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -456,12 +457,11 @@ function ModuleSettingsContent() {
           <TableHead>
             <TableRow>
               <TableCell sx={{ fontWeight: 700 }}>Название поля</TableCell>
-              <TableCell sx={{ fontWeight: 700, width: 140 }}>Системный ключ</TableCell>
+              <TableCell sx={{ fontWeight: 700, width: 180 }}>Системный ключ</TableCell>
               <TableCell sx={{ fontWeight: 700, width: 140 }}>Тип данных</TableCell>
               <TableCell sx={{ fontWeight: 700, width: 90 }}>Ед. изм.</TableCell>
               <TableCell sx={{ fontWeight: 700, width: 110 }}>Обязательное</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Значение / Опции</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 700, width: 80 }}>Действия</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -488,11 +488,6 @@ function ModuleSettingsContent() {
                   ) : (
                     f.defaultValue || '—'
                   )}
-                </TableCell>
-                <TableCell align="right">
-                  <IconButton size="small" color="error" onClick={() => handleDeleteField(f)}>
-                    <DeleteOutlineIcon fontSize="small" />
-                  </IconButton>
                 </TableCell>
               </TableRow>
             ))}
@@ -644,7 +639,7 @@ function ModuleSettingsContent() {
         <Box>
           <Grid container spacing={3}>
             {/* Main Column: Custom Sections with their Fields */}
-            <Grid item xs={12} lg={8}>
+            <Grid item xs={12}>
               <Card sx={{ mb: 3 }}>
                 <CardContent sx={{ p: 3 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1.5 }}>
@@ -653,7 +648,7 @@ function ModuleSettingsContent() {
                         Технические разделы и характеристики паспорта
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Группировка технических параметров по разделам паспорта с единицами измерения
+                        Нормативная структура разделов и технических характеристик паспорта оборудования
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -667,34 +662,19 @@ function ModuleSettingsContent() {
                       >
                         Импорт оборудования
                       </Button>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<AddIcon />}
-                        onClick={handleOpenCreateSection}
-                        sx={{ borderRadius: '8px' }}
-                      >
-                        Добавить раздел
-                      </Button>
-                      <Button
-                        variant="contained"
-                        size="small"
-                        startIcon={<AddIcon />}
-                        onClick={() => handleOpenCreateField()}
-                        sx={{ borderRadius: '8px' }}
-                      >
-                        Добавить параметр
-                      </Button>
                     </Box>
                   </Box>
+                <Alert severity="info" sx={{ mb: 2.5, borderRadius: '8px', border: '1px solid #bfdbfe', backgroundColor: '#eff6ff' }}>
+                  <strong>Корпоративный нормативный стандарт:</strong> Технические разделы и характеристики паспорта оборудования зафиксированы и не подлежат редактированию или удалению.
+                </Alert>
                 <Divider sx={{ mb: 2.5 }} />
 
                 {loadingEps ? (
                   <PageLoading text="Загрузка структуры разделов..." minHeight={160} size={28} />
                 ) : sections.length === 0 ? (
                   <EmptyState
-                    title="Разделы не созданы"
-                    description="Технические разделы еще не созданы. Нажмите «Добавить раздел» для группировки параметров."
+                    title="Разделы загружаются"
+                    description="Инициализация нормативной структуры технических разделов и характеристик..."
                     minHeight={160}
                   />
                 ) : (
@@ -725,130 +705,15 @@ function ModuleSettingsContent() {
                             </Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                               <Chip label={`${sec.fields.length} параметров`} size="small" />
-                              <IconButton
-                                size="small"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOpenEditSection(sec);
-                                }}
-                                title="Редактировать раздел"
-                              >
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                              <IconButton
-                                size="small"
-                                color="error"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteSection(sec);
-                                }}
-                                title="Удалить раздел"
-                              >
-                                <DeleteOutlineIcon fontSize="small" />
-                              </IconButton>
                             </Box>
                           </Box>
                         </AccordionSummary>
                         <AccordionDetails sx={{ p: 0 }}>
                           {renderFieldTable(sec.fields)}
-                          <Box sx={{ p: 1.5, display: 'flex', justifyContent: 'flex-end', backgroundColor: '#fafafa', borderTop: '1px solid #f1f5f9' }}>
-                            <Button
-                              size="small"
-                              startIcon={<AddIcon />}
-                              onClick={() => handleOpenCreateField(sec.id)}
-                            >
-                              Добавить параметр в «{sec.name}»
-                            </Button>
-                          </Box>
                         </AccordionDetails>
                       </Accordion>
                     ))}
-
-                    {/* Unassigned Fields Section if any */}
-                    {unassignedFields.length > 0 && (
-                      <Accordion defaultExpanded variant="outlined" sx={{ borderRadius: '8px !important', overflow: 'hidden' }}>
-                        <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ backgroundColor: '#fffbeb' }}>
-                          <Typography variant="subtitle1" fontWeight={700} color="warning.dark">
-                            Общие параметры (базовые характеристики)
-                          </Typography>
-                        </AccordionSummary>
-                        <AccordionDetails sx={{ p: 0 }}>
-                          {renderFieldTable(unassignedFields)}
-                        </AccordionDetails>
-                      </Accordion>
-                    )}
                   </Box>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Side Column: Tags & Colors */}
-          <Grid item xs={12} lg={4}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Box>
-                    <Typography variant="h6" fontWeight={700}>
-                      Метки и классификаторы
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Категории и цветовая маркировка
-                    </Typography>
-                  </Box>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={<AddIcon />}
-                    onClick={() => {
-                      setTagName('');
-                      setTagColor('#0284c7');
-                      setTagDialogOpen(true);
-                    }}
-                  >
-                    Добавить метку
-                  </Button>
-                </Box>
-                <Divider sx={{ mb: 2.5 }} />
-
-                {loadingEps ? (
-                  <PageLoading text="Загрузка списка тегов..." minHeight={140} size={24} />
-                ) : (
-                  <DataTableWrapper total={tags.length} stickyHeader>
-                    <Table size="small" aria-label="Таблица тегов оборудования">
-                      <TableHead sx={{ backgroundColor: 'action.hover' }}>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 700 }}>Тег</TableCell>
-                          <TableCell sx={{ fontWeight: 700 }}>Цвет</TableCell>
-                          <TableCell sx={{ fontWeight: 700 }}>Оборудование</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {tags.map((t) => (
-                          <TableRow key={t.id} hover>
-                            <TableCell>
-                              <StatusBadge
-                                status={t.name}
-                                label={t.name}
-                                customColor={t.color}
-                                size="small"
-                                variant="outlined"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Box sx={{ width: 16, height: 16, borderRadius: '50%', backgroundColor: t.color }} />
-                                <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>
-                                  {t.color}
-                                </Typography>
-                              </Box>
-                            </TableCell>
-                            <TableCell>{t.equipmentCount} ед.</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </DataTableWrapper>
                 )}
               </CardContent>
             </Card>
@@ -1165,53 +1030,6 @@ function ModuleSettingsContent() {
             }
             label="Обязательно для заполнения в паспорте"
           />
-        </Box>
-      </FormDialog>
-
-      {/* Create Tag Modal */}
-      <FormDialog
-        open={tagDialogOpen}
-        onClose={() => setTagDialogOpen(false)}
-        title="Создание классификатора / метки"
-        maxWidth="xs"
-        loading={savingTag}
-        submitLabel={savingTag ? 'Создание...' : 'Создать метку'}
-        onSubmit={handleSaveTag}
-        submitDisabled={savingTag || !tagName}
-      >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-          <TextField
-            label="Наименование метки"
-            placeholder="например: Взрывозащищенное"
-            value={tagName}
-            onChange={(e) => setTagName(e.target.value)}
-            fullWidth
-            size="small"
-            required
-          />
-          <Box>
-            <Typography variant="caption" color="text.secondary" gutterBottom display="block">
-              Цвет метки:
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              {PRESET_COLORS.map((color) => (
-                <Box
-                  key={color}
-                  onClick={() => setTagColor(color)}
-                  sx={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: '50%',
-                    backgroundColor: color,
-                    cursor: 'pointer',
-                    border: tagColor === color ? '3px solid #0f172a' : '2px solid transparent',
-                    transition: 'transform 0.1s ease',
-                    '&:hover': { transform: 'scale(1.15)' },
-                  }}
-                />
-              ))}
-            </Box>
-          </Box>
         </Box>
       </FormDialog>
 

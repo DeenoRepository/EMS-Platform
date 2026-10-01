@@ -265,17 +265,6 @@ export function EquipmentColumnFiltersRow({
         </TableCell>
       )}
 
-      {visibleColumns.includes('tags') && (
-        <TableCell sx={{ p: 0.75 }}>
-          <TextField select size="small" value={filters.tagId || ''} onChange={(e) => onChangeFilter('tagId', e.target.value)} sx={inputSx}>
-            <MenuItem value="" sx={{ fontSize: '0.75rem' }}>Все</MenuItem>
-            {tags.map((t) => (
-              <MenuItem key={t.id} value={t.id} sx={{ fontSize: '0.75rem' }}>{t.name}</MenuItem>
-            ))}
-          </TextField>
-        </TableCell>
-      )}
-
       {visibleColumns.includes('commissionDate') && (
         <TableCell sx={{ p: 0.75 }}>
           <DebouncedColumnInput type="date" value={filters.commissionDateFrom} onChange={(v) => onChangeFilter('commissionDateFrom', v)} />

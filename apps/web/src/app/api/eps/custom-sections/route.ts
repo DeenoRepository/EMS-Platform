@@ -34,15 +34,13 @@ export async function GET(req: NextRequest) {
       { code: 'operational', name: 'Эксплуатационные требования и метрология', description: 'Непрерывность процесса, поверки датчиков и регламентные условия', icon: 'Straighten', sortOrder: 6 },
     ];
 
-    // Bootstrap standard sections ONLY if database has no sections at all
-    if (sections.length === 0) {
-      for (const s of standardSections) {
-        await prisma.customSection.upsert({
-          where: { code: s.code },
-          create: s,
-          update: { name: s.name, description: s.description, icon: s.icon, sortOrder: s.sortOrder },
-        });
-      }
+    // Ensure all 6 standard sections exist with canonical definitions
+    for (const s of standardSections) {
+      await prisma.customSection.upsert({
+        where: { code: s.code },
+        create: s,
+        update: { name: s.name, description: s.description, icon: s.icon, sortOrder: s.sortOrder },
+      });
     }
 
     const allSections = await prisma.customSection.findMany();
@@ -346,149 +344,35 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST: Создание нового кастомного раздела
-export async function POST(req: NextRequest) {
-  try {
-    const user = await getCurrentUser(req);
-    if (!user) return unauthorizedResponse();
-
-    if (!hasPermission(user, PERMISSIONS.EPS_CUSTOM_FIELDS_MANAGE) && !hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE)) {
-      return forbiddenResponse();
-    }
-
-    const body = await req.json();
-    const { code, name, description, icon, sortOrder } = body;
-
-    if (!name || typeof name !== 'string') {
-      return NextResponse.json({ success: false, error: 'Укажите название раздела' }, { status: 400 });
-    }
-
-    const sectionCode = (code || name)
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9_]/gi, '_')
-      .replace(/_+/g, '_');
-
-    const existing = await prisma.customSection.findUnique({
-      where: { code: sectionCode },
-    });
-
-    if (existing) {
-      return NextResponse.json({ success: false, error: 'Раздел с таким системным кодом уже существует' }, { status: 409 });
-    }
-
-    const section = await prisma.customSection.create({
-      data: {
-        code: sectionCode,
-        name: name.trim(),
-        description: description?.trim() || null,
-        icon: icon?.trim() || null,
-        sortOrder: Number(sortOrder) || 0,
-      },
-    });
-
-    await logAuditEvent({
-      userId: user.userId,
-      action: 'CREATE',
-      entityType: 'CustomSection',
-      entityId: section.id,
-      changes: { code: section.code, name: section.name },
-    });
-
-    return NextResponse.json({ success: true, data: section }, { status: 201 });
-  } catch (error: any) {
-    console.error('Ошибка POST /api/eps/custom-sections:', error);
-    return NextResponse.json({ success: false, error: error.message || 'Ошибка сервера' }, { status: 500 });
-  }
+// POST: Создание кастомного раздела заблокировано нормативным стандартом
+export async function POST(_req: NextRequest) {
+  return NextResponse.json(
+    {
+      success: false,
+      error: 'Технические разделы и характеристики паспорта зафиксированы нормативным стандартом и не подлежат созданию, изменению или удалению',
+    },
+    { status: 403 }
+  );
 }
 
-// PATCH: Редактирование кастомного раздела
-export async function PATCH(req: NextRequest) {
-  try {
-    const user = await getCurrentUser(req);
-    if (!user) return unauthorizedResponse();
-
-    if (!hasPermission(user, PERMISSIONS.EPS_CUSTOM_FIELDS_MANAGE) && !hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE)) {
-      return forbiddenResponse();
-    }
-
-    const body = await req.json();
-    const { id, name, description, icon, sortOrder } = body;
-
-    if (!id) {
-      return NextResponse.json({ success: false, error: 'ID раздела обязателен' }, { status: 400 });
-    }
-
-    const updated = await prisma.customSection.update({
-      where: { id },
-      data: {
-        ...(name ? { name: name.trim() } : {}),
-        description: description !== undefined ? description?.trim() || null : undefined,
-        icon: icon !== undefined ? icon?.trim() || null : undefined,
-        sortOrder: sortOrder !== undefined ? Number(sortOrder) : undefined,
-      },
-    });
-
-    await logAuditEvent({
-      userId: user.userId,
-      action: 'UPDATE',
-      entityType: 'CustomSection',
-      entityId: updated.id,
-      changes: body,
-    });
-
-    return NextResponse.json({ success: true, data: updated });
-  } catch (error: any) {
-    console.error('Ошибка PATCH /api/eps/custom-sections:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка обновления раздела' }, { status: 500 });
-  }
+// PATCH: Редактирование кастомного раздела заблокировано нормативным стандартом
+export async function PATCH(_req: NextRequest) {
+  return NextResponse.json(
+    {
+      success: false,
+      error: 'Технические разделы и характеристики паспорта зафиксированы нормативным стандартом и не подлежат созданию, изменению или удалению',
+    },
+    { status: 403 }
+  );
 }
 
-// DELETE: Удаление кастомного раздела
-export async function DELETE(req: NextRequest) {
-  try {
-    const user = await getCurrentUser(req);
-    if (!user) return unauthorizedResponse();
-
-    if (!hasPermission(user, PERMISSIONS.EPS_CUSTOM_FIELDS_MANAGE) && !hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE)) {
-      return forbiddenResponse();
-    }
-
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
-    const deleteFields = searchParams.get('deleteFields') === 'true';
-
-    if (!id) {
-      return NextResponse.json({ success: false, error: 'ID раздела обязателен' }, { status: 400 });
-    }
-
-    // Unassign or delete child fields before deleting section
-    if (deleteFields) {
-      await prisma.customFieldDefinition.deleteMany({
-        where: { sectionId: id },
-      });
-    } else {
-      await prisma.customFieldDefinition.updateMany({
-        where: { sectionId: id },
-        data: { sectionId: null },
-      });
-    }
-
-    const deleted = await prisma.customSection.delete({
-      where: { id },
-    });
-
-    await logAuditEvent({
-      userId: user.userId,
-      action: 'DELETE',
-      entityType: 'CustomSection',
-      entityId: id,
-      changes: { deletedName: deleted.name, deleteFields },
-    });
-
-    return NextResponse.json({ success: true, message: 'Раздел удален' });
-  } catch (error: any) {
-    console.error('Ошибка DELETE /api/eps/custom-sections:', error);
-    return NextResponse.json({ success: false, error: error.message || 'Ошибка удаления раздела' }, { status: 500 });
-  }
+// DELETE: Удаление кастомного раздела заблокировано нормативным стандартом
+export async function DELETE(_req: NextRequest) {
+  return NextResponse.json(
+    {
+      success: false,
+      error: 'Технические разделы и характеристики паспорта зафиксированы нормативным стандартом и не подлежат созданию, изменению или удалению',
+    },
+    { status: 403 }
+  );
 }

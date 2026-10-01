@@ -107,6 +107,7 @@ interface TagItem {
 }
 
 const EPS_COLUMNS: TableColumnOption[] = [
+  // Базовые реквизиты паспорта
   { id: 'completeness', label: 'Полнота заполнения карточки', defaultVisible: true },
   { id: 'inventoryNumber', label: 'Инвентарный номер', defaultVisible: true },
   { id: 'name', label: 'Наименование оборудования', defaultVisible: true },
@@ -115,24 +116,53 @@ const EPS_COLUMNS: TableColumnOption[] = [
   { id: 'model', label: 'Модель / Типоразмер', defaultVisible: true },
   { id: 'location', label: 'Место установки / Технологическая позиция', defaultVisible: true },
   { id: 'status', label: 'Эксплуатационный статус', defaultVisible: true },
+  { id: 'commissionDate', label: 'Дата ввода в эксплуатацию', defaultVisible: true },
+
+  // 1. Общероссийские и отраслевые классификаторы
+  { id: 'decimalNumber', label: 'Децимальный номер', defaultVisible: false },
+  { id: 'okofCode', label: 'Код по ОКОФ (ОК 013-2014)', defaultVisible: false },
+  { id: 'okpd2Code', label: 'Код по ОКПД2 (ОК 034-2014)', defaultVisible: false },
+  { id: 'procCode', label: 'Код технологического классификатора', defaultVisible: false },
+  { id: 'eqGroup', label: 'Группа оборудования', defaultVisible: false },
+  { id: 'eqType', label: 'Вид оборудования (Установка)', defaultVisible: false },
+
+  // 2. Техническое состояние, износ и критичность
+  { id: 'countryOrigin', label: 'Страна производитель', defaultVisible: false },
+  { id: 'prodYear', label: 'Год выпуска', defaultVisible: false },
+  { id: 'commYear', label: 'Год ввода', defaultVisible: false },
+  { id: 'equipmentAge', label: 'Возраст оборудования (лет)', defaultVisible: false },
+  { id: 'actualWear', label: 'Фактический процент износа (%)', defaultVisible: false },
   { id: 'criticality', label: 'Категория критичности (A / B / C)', defaultVisible: false },
-  { id: 'actualWear', label: 'Степень физического износа (%)', defaultVisible: false },
-  { id: 'eqGroup', label: 'Подразделение / группа', defaultVisible: false },
-  { id: 'eqType', label: 'Вид оборудования', defaultVisible: false },
-  { id: 'respPerson', label: 'Ответственное лицо (МОЛ)', defaultVisible: false },
-  { id: 'okofCode', label: 'Код ОКОФ (ОК 013-2014)', defaultVisible: false },
-  { id: 'okpd2Code', label: 'Код ОКПД2 (ОК 034-2014)', defaultVisible: false },
-  { id: 'procCode', label: 'Код технологического процесса', defaultVisible: false },
-  { id: 'maintPeriodicity', label: 'Периодичность регламентного ТО', defaultVisible: false },
-  { id: 'calibrationInterval', label: 'Межповерочный интервал (мес.)', defaultVisible: false },
   { id: 'cleanRoom', label: 'Класс чистоты помещения (ISO)', defaultVisible: false },
-  { id: 'isCriticalPath', label: 'Влияние на непрерывность процесса', defaultVisible: false },
   { id: 'isUnique', label: 'Уникальное / единичное оборудование', defaultVisible: false },
   { id: 'isImported', label: 'Импортное оборудование', defaultVisible: false },
+
+  // 3. Регламент ТОиР и график обслуживания
+  { id: 'maintPeriodicity', label: 'Периодичность регламентного ТО', defaultVisible: false },
+  { id: 'maintScheduleYear', label: 'Утвержденный график ТО на год', defaultVisible: false },
+  { id: 'toCountScheduled', label: 'Количество ТО по графику', defaultVisible: false },
+  { id: 'respPerson', label: 'Ответственное лицо (МОЛ)', defaultVisible: false },
+  { id: 'extSysId', label: 'Идентификатор в 1С / ERP', defaultVisible: false },
+
+  // 4. Электротехнические параметры
+  { id: 'operatingVoltage', label: 'Рабочее напряжение', defaultVisible: false },
+  { id: 'powerKw', label: 'Номинальная мощность (кВт)', defaultVisible: false },
+  { id: 'nominalCurrent', label: 'Номинальный ток (А)', defaultVisible: false },
+  { id: 'phaseCount', label: 'Количество фаз', defaultVisible: false },
+  { id: 'upsRequired', label: 'Требование к наличию ИБП', defaultVisible: false },
+
+  // 5. Механика, гидравлика и среда
+  { id: 'operatingPressure', label: 'Рабочее давление (МПа)', defaultVisible: false },
+  { id: 'coolantType', label: 'Тип смазки / хладагента', defaultVisible: false },
+  { id: 'rotationSpeed', label: 'Частота вращения вала (об/мин)', defaultVisible: false },
+
+  // 6. Эксплуатационные требования и метрология
+  { id: 'isCriticalPath', label: 'Влияние на непрерывность процесса', defaultVisible: false },
+  { id: 'calibrationInterval', label: 'Межповерочный интервал (мес.)', defaultVisible: false },
+
+  // Сопутствующие реквизиты
   { id: 'documentsCount', label: 'Комплект документации (ед.)', defaultVisible: false },
   { id: 'sparePartsCount', label: 'Комплект ЗИП / Запчасти (ед.)', defaultVisible: false },
-  { id: 'tags', label: 'Технологические метки (теги)', defaultVisible: true },
-  { id: 'commissionDate', label: 'Дата ввода в эксплуатацию', defaultVisible: true },
   { id: 'updatedAt', label: 'Дата последней корректировки', defaultVisible: false },
   { id: 'createdAt', label: 'Дата первичной регистрации', defaultVisible: false },
 ];
@@ -144,7 +174,6 @@ function EquipmentListContent() {
   const { enqueueSnackbar } = useSnackbar();
 
   const [items, setItems] = useState<EquipmentItem[]>([]);
-  const [tags, setTags] = useState<TagItem[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
@@ -156,12 +185,11 @@ function EquipmentListContent() {
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [openCreateWizard, setOpenCreateWizard] = useState(false);
 
-  // Comprehensive Filters across all 27 fields
+  // Comprehensive Filters across technical sections
   const [filters, setFilters] = useState<EquipmentFilters>(() => ({
     ...DEFAULT_EQUIPMENT_FILTERS,
     search: searchParams?.get('search') || '',
     status: searchParams?.get('status') || '',
-    tagId: searchParams?.get('tagId') || '',
   }));
   const [openFilterDrawer, setOpenFilterDrawer] = useState(false);
   const [showColumnFilters, setShowColumnFilters] = useState(false);
@@ -191,18 +219,6 @@ function EquipmentListContent() {
       })
       .catch(() => {});
   }, []);
-
-  const fetchTags = async () => {
-    try {
-      const res = await fetch('/api/eps/tags');
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success) setTags(json.data);
-      }
-    } catch {
-      // ignore
-    }
-  };
 
   const fetchEquipment = useCallback(async () => {
     setLoading(true);
@@ -247,7 +263,6 @@ function EquipmentListContent() {
 
   useEffect(() => {
     if (canAccessEquipment) {
-      fetchTags();
       fetchEquipment();
     }
   }, [canAccessEquipment, fetchEquipment]);
@@ -331,8 +346,8 @@ function EquipmentListContent() {
     for (const [k, v] of Object.entries(EQUIPMENT_STATUS_MAP)) {
       statusMap[k] = v.label;
     }
-    return getActiveEquipmentFilterBadges(filters, tags, statusMap);
-  }, [filters, tags]);
+    return getActiveEquipmentFilterBadges(filters, [], statusMap);
+  }, [filters]);
 
   // Quick filter by clicking KPI card
   const handleKpiFilter = (status: string | null) => {
@@ -522,21 +537,36 @@ function EquipmentListContent() {
       'Модель / Марка': eq.model || '—',
       'Место установки': eq.location || '—',
       'Статус': EQUIPMENT_STATUS_MAP[eq.status]?.label || eq.status,
-      'Критичность': eq.customFields?.criticality || '—',
-      'Износ (%)': eq.customFields?.actual_wear_percentage ? `${eq.customFields.actual_wear_percentage}%` : '—',
-      'Подразделение / группа': getEquipmentDepartment(eq.customFields),
-      'Вид оборудования': getEquipmentKind(eq.customFields),
-      'МОЛ / Ответственный': eq.customFields?.responsible_person_name || '—',
+      'Децимальный номер': eq.customFields?.decimal_number || '—',
       'Код ОКОФ': eq.customFields?.okof_code || '—',
       'Код ОКПД2': eq.customFields?.okpd2_code || '—',
       'Код техпроцесса': eq.customFields?.process_classifier_code || '—',
-      'Периодичность ТО': eq.customFields?.maintenance_periodicity || '—',
+      'Подразделение / группа': getEquipmentDepartment(eq.customFields),
+      'Вид оборудования': getEquipmentKind(eq.customFields),
+      'Страна производитель': eq.customFields?.country_origin || '—',
+      'Год выпуска': eq.customFields?.prod_year || '—',
+      'Год ввода': eq.customFields?.comm_year || '—',
+      'Возраст (лет)': eq.customFields?.equipment_age || '—',
+      'Износ (%)': eq.customFields?.actual_wear_percentage ? `${eq.customFields.actual_wear_percentage}%` : '—',
+      'Критичность': eq.customFields?.criticality || '—',
       'Класс чистоты': eq.customFields?.clean_room_class || '—',
-      'Интервал поверки (мес.)': eq.customFields?.calibration_interval || '—',
-      'Критический путь': isTruthyBoolean(eq.customFields?.is_critical_path) ? 'Да' : 'Нет',
       'Уникальное': isTruthyBoolean(eq.customFields?.is_unique) ? 'Да' : 'Нет',
       'Импортное': isTruthyBoolean(eq.customFields?.is_imported) ? 'Да' : 'Нет',
-      'Теги': eq.tags.map((t) => t.name).join(', ') || '—',
+      'Периодичность ТО': eq.customFields?.maintenance_periodicity || '—',
+      'График ТО на год': eq.customFields?.maintenance_schedule_year || '—',
+      'Количество ТО по графику': eq.customFields?.to_count_scheduled !== undefined ? eq.customFields?.to_count_scheduled : '—',
+      'МОЛ / Ответственный': eq.customFields?.responsible_person_name || '—',
+      'Код 1С / ERP': eq.customFields?.external_system_id || '—',
+      'Рабочее напряжение': eq.customFields?.operating_voltage || '—',
+      'Номинальная мощность': eq.customFields?.power_kw ? `${eq.customFields.power_kw} кВт` : '—',
+      'Номинальный ток': eq.customFields?.nominal_current ? `${eq.customFields.nominal_current} А` : '—',
+      'Количество фаз': eq.customFields?.phase_count || '—',
+      'Требование к ИБП': eq.customFields?.ups_required || '—',
+      'Рабочее давление': eq.customFields?.operating_pressure ? `${eq.customFields.operating_pressure} МПа` : '—',
+      'Тип смазки': eq.customFields?.coolant_type || '—',
+      'Частота вращения вала': eq.customFields?.rotation_speed ? `${eq.customFields.rotation_speed} об/мин` : '—',
+      'Критический путь': isTruthyBoolean(eq.customFields?.is_critical_path) ? 'Да' : 'Нет',
+      'Интервал поверки (мес.)': eq.customFields?.calibration_interval || '—',
       'Ввод в эксплуатацию': formatDate(eq.commissionDate),
       'Дата изменения': formatDate(eq.updatedAt),
       'Дата создания': formatDate(eq.createdAt),
@@ -939,31 +969,6 @@ function EquipmentListContent() {
                     ))}
                   </TextField>
 
-                  <TextField
-                    select
-                    size="small"
-                    value={filters.tagId || ''}
-                    onChange={(e) => handleFilterChange('tagId', e.target.value)}
-                    SelectProps={{ displayEmpty: true }}
-                    sx={{
-                      minWidth: 130,
-                      backgroundColor: 'background.paper',
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: '8px',
-                        fontSize: '0.8125rem',
-                        height: 36,
-                        '& fieldset': { borderColor: 'divider' },
-                        '&:hover fieldset': { borderColor: 'grey.400' },
-                      },
-                    }}
-                  >
-                    <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все теги</MenuItem>
-                    {tags.map((t) => (
-                      <MenuItem key={t.id} value={t.id} sx={{ fontSize: '0.8125rem' }}>
-                        {t.name}
-                      </MenuItem>
-                    ))}
-                  </TextField>
                   <ToggleButtonGroup
                     value={viewMode}
                     exclusive
@@ -1100,20 +1105,23 @@ function EquipmentListContent() {
                     </Typography>
 
                     <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 2, flexGrow: 1 }}>
-                      {eq.tags.map((t) => (
+                      {eq.customFields?.equipment_type && (
                         <Chip
-                          key={t.id}
-                          label={t.name}
+                          label={eq.customFields.equipment_type}
                           size="small"
-                          sx={{
-                            fontSize: '0.65rem',
-                            height: 18,
-                            backgroundColor: t.color ? `${t.color}15` : undefined,
-                            color: t.color || 'text.primary',
-                            borderRadius: '4px',
-                          }}
+                          variant="outlined"
+                          sx={{ fontSize: '0.6875rem', height: 20, borderRadius: '4px' }}
                         />
-                      ))}
+                      )}
+                      {eq.customFields?.equipment_group && (
+                        <Chip
+                          label={eq.customFields.equipment_group}
+                          size="small"
+                          variant="outlined"
+                          color="primary"
+                          sx={{ fontSize: '0.6875rem', height: 20, borderRadius: '4px' }}
+                        />
+                      )}
                     </Box>
 
                     <Box
@@ -1474,14 +1482,194 @@ function EquipmentListContent() {
                 </TableCell>
               )}
 
-              {visibleColumns.includes('tags') && (
+              {visibleColumns.includes('decimalNumber') && (
+                <TableCell sx={{ minWidth: 150 }}>
+                  <TableSortLabel
+                    active={sortField === 'decimalNumber'}
+                    direction={sortField === 'decimalNumber' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('decimalNumber')}
+                  >
+                    Децимальный номер
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('countryOrigin') && (
+                <TableCell sx={{ minWidth: 140 }}>
+                  <TableSortLabel
+                    active={sortField === 'countryOrigin'}
+                    direction={sortField === 'countryOrigin' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('countryOrigin')}
+                  >
+                    Страна
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('prodYear') && (
                 <TableCell sx={{ minWidth: 110 }}>
                   <TableSortLabel
-                    active={sortField === 'tags'}
-                    direction={sortField === 'tags' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('tags')}
+                    active={sortField === 'prodYear'}
+                    direction={sortField === 'prodYear' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('prodYear')}
                   >
-                    Теги
+                    Год выпуска
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('commYear') && (
+                <TableCell sx={{ minWidth: 110 }}>
+                  <TableSortLabel
+                    active={sortField === 'commYear'}
+                    direction={sortField === 'commYear' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('commYear')}
+                  >
+                    Год ввода
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('equipmentAge') && (
+                <TableCell sx={{ minWidth: 120 }}>
+                  <TableSortLabel
+                    active={sortField === 'equipmentAge'}
+                    direction={sortField === 'equipmentAge' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('equipmentAge')}
+                  >
+                    Возраст (лет)
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('maintScheduleYear') && (
+                <TableCell sx={{ minWidth: 150 }}>
+                  <TableSortLabel
+                    active={sortField === 'maintScheduleYear'}
+                    direction={sortField === 'maintScheduleYear' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('maintScheduleYear')}
+                  >
+                    График ТО
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('toCountScheduled') && (
+                <TableCell sx={{ minWidth: 120 }}>
+                  <TableSortLabel
+                    active={sortField === 'toCountScheduled'}
+                    direction={sortField === 'toCountScheduled' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('toCountScheduled')}
+                  >
+                    Кол-во ТО
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('extSysId') && (
+                <TableCell sx={{ minWidth: 140 }}>
+                  <TableSortLabel
+                    active={sortField === 'extSysId'}
+                    direction={sortField === 'extSysId' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('extSysId')}
+                  >
+                    Код 1С / ERP
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('operatingVoltage') && (
+                <TableCell sx={{ minWidth: 130 }}>
+                  <TableSortLabel
+                    active={sortField === 'operatingVoltage'}
+                    direction={sortField === 'operatingVoltage' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('operatingVoltage')}
+                  >
+                    Напряжение
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('powerKw') && (
+                <TableCell sx={{ minWidth: 130 }}>
+                  <TableSortLabel
+                    active={sortField === 'powerKw'}
+                    direction={sortField === 'powerKw' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('powerKw')}
+                  >
+                    Мощность
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('nominalCurrent') && (
+                <TableCell sx={{ minWidth: 120 }}>
+                  <TableSortLabel
+                    active={sortField === 'nominalCurrent'}
+                    direction={sortField === 'nominalCurrent' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('nominalCurrent')}
+                  >
+                    Ном. ток
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('phaseCount') && (
+                <TableCell sx={{ minWidth: 110 }}>
+                  <TableSortLabel
+                    active={sortField === 'phaseCount'}
+                    direction={sortField === 'phaseCount' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('phaseCount')}
+                  >
+                    Фазность
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('upsRequired') && (
+                <TableCell sx={{ minWidth: 120 }}>
+                  <TableSortLabel
+                    active={sortField === 'upsRequired'}
+                    direction={sortField === 'upsRequired' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('upsRequired')}
+                  >
+                    ИБП
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('operatingPressure') && (
+                <TableCell sx={{ minWidth: 130 }}>
+                  <TableSortLabel
+                    active={sortField === 'operatingPressure'}
+                    direction={sortField === 'operatingPressure' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('operatingPressure')}
+                  >
+                    Давление (МПа)
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('coolantType') && (
+                <TableCell sx={{ minWidth: 140 }}>
+                  <TableSortLabel
+                    active={sortField === 'coolantType'}
+                    direction={sortField === 'coolantType' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('coolantType')}
+                  >
+                    Тип смазки
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.includes('rotationSpeed') && (
+                <TableCell sx={{ minWidth: 130 }}>
+                  <TableSortLabel
+                    active={sortField === 'rotationSpeed'}
+                    direction={sortField === 'rotationSpeed' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('rotationSpeed')}
+                  >
+                    Частота вала
                   </TableSortLabel>
                 </TableCell>
               )}
@@ -1527,7 +1715,6 @@ function EquipmentListContent() {
                 visibleColumns={visibleColumns}
                 filters={filters}
                 onChangeFilter={handleFilterChange}
-                tags={tags}
               />
             )}
           </TableHead>
@@ -1856,30 +2043,99 @@ function EquipmentListContent() {
                     </TableCell>
                   )}
 
-                  {visibleColumns.includes('tags') && (
-                    <TableCell>
-                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                        {eq.tags && eq.tags.length > 0 ? (
-                          eq.tags.map((t) => (
-                            <Chip
-                              key={t.id}
-                              label={t.name}
-                              size="small"
-                              sx={{
-                                fontSize: '0.6875rem',
-                                height: 22,
-                                backgroundColor: 'background.paper',
-                                color: 'text.secondary',
-                                border: '1px solid #e2e8f0',
-                                borderRadius: '4px',
-                                fontWeight: 500,
-                              }}
-                            />
-                          ))
-                        ) : (
-                          <Typography variant="caption" sx={{ color: 'text.disabled' }}>—</Typography>
-                        )}
-                      </Box>
+                  {visibleColumns.includes('decimalNumber') && (
+                    <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace' }}>
+                      {custom.decimal_number || '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('countryOrigin') && (
+                    <TableCell sx={{ fontSize: '0.8125rem' }}>
+                      {custom.country_origin || '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('prodYear') && (
+                    <TableCell sx={{ fontSize: '0.8125rem' }}>
+                      {custom.prod_year || '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('commYear') && (
+                    <TableCell sx={{ fontSize: '0.8125rem' }}>
+                      {custom.comm_year || '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('equipmentAge') && (
+                    <TableCell sx={{ fontSize: '0.8125rem' }}>
+                      {custom.equipment_age ? `${custom.equipment_age} лет` : '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('maintScheduleYear') && (
+                    <TableCell sx={{ fontSize: '0.8125rem' }}>
+                      {custom.maintenance_schedule_year || '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('toCountScheduled') && (
+                    <TableCell sx={{ fontSize: '0.8125rem' }}>
+                      {custom.to_count_scheduled !== undefined ? custom.to_count_scheduled : '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('extSysId') && (
+                    <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace' }}>
+                      {custom.external_system_id || '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('operatingVoltage') && (
+                    <TableCell sx={{ fontSize: '0.8125rem' }}>
+                      {custom.operating_voltage || '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('powerKw') && (
+                    <TableCell sx={{ fontSize: '0.8125rem' }}>
+                      {custom.power_kw ? `${custom.power_kw} кВт` : '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('nominalCurrent') && (
+                    <TableCell sx={{ fontSize: '0.8125rem' }}>
+                      {custom.nominal_current ? `${custom.nominal_current} А` : '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('phaseCount') && (
+                    <TableCell sx={{ fontSize: '0.8125rem' }}>
+                      {custom.phase_count || '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('upsRequired') && (
+                    <TableCell sx={{ fontSize: '0.8125rem' }}>
+                      {custom.ups_required || '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('operatingPressure') && (
+                    <TableCell sx={{ fontSize: '0.8125rem' }}>
+                      {custom.operating_pressure ? `${custom.operating_pressure} МПа` : '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('coolantType') && (
+                    <TableCell sx={{ fontSize: '0.8125rem' }}>
+                      {custom.coolant_type || '—'}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('rotationSpeed') && (
+                    <TableCell sx={{ fontSize: '0.8125rem' }}>
+                      {custom.rotation_speed ? `${custom.rotation_speed} об/мин` : '—'}
                     </TableCell>
                   )}
 
@@ -1950,7 +2206,6 @@ function EquipmentListContent() {
           setPage(1);
         }}
         onResetFilters={handleResetFilters}
-        tags={tags}
       />
 
       {/* Диалог массового редактирования позиций оборудования */}

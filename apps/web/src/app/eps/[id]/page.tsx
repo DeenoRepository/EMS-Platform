@@ -1181,39 +1181,13 @@ function EquipmentPassportContent() {
                           </TableCell>
                         </TableRow>
                         <TableRow>
-                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: equipment.tags.length > 0 ? '1px solid #f1f5f9' : 0 }}>
+                          <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: 0 }}>
                             Паспорт зарегистрировал
                           </TableCell>
-                          <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: equipment.tags.length > 0 ? '1px solid #f1f5f9' : 0 }}>
+                          <TableCell sx={{ fontWeight: 600, py: 1, borderBottom: 0 }}>
                             {equipment.createdBy?.displayName} ({formatDate(equipment.createdAt)})
                           </TableCell>
                         </TableRow>
-                        {equipment.tags.length > 0 && (
-                          <TableRow>
-                            <TableCell sx={{ fontWeight: 500, color: 'text.secondary', py: 1, borderBottom: 0 }}>
-                              Теги классификации
-                            </TableCell>
-                            <TableCell sx={{ py: 1, borderBottom: 0 }}>
-                              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                {equipment.tags.map(({ tag }) => (
-                                  <Chip
-                                    key={tag.id}
-                                    label={tag.name}
-                                    size="small"
-                                    variant="outlined"
-                                    sx={{
-                                      backgroundColor: tag.color ? `${tag.color}15` : undefined,
-                                      color: tag.color || 'inherit',
-                                      borderColor: tag.color || undefined,
-                                      fontWeight: 600,
-                                      height: 22,
-                                    }}
-                                  />
-                                ))}
-                              </Box>
-                            </TableCell>
-                          </TableRow>
-                        )}
                       </TableBody>
                     </Table>
                   </TableContainer>
