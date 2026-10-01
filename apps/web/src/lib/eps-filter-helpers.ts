@@ -1,5 +1,5 @@
 import type { EquipmentFilters, ActiveFilterItem } from '../components/eps/EquipmentFilterTypes';
-import { getEquipmentDepartment, getEquipmentKind, isTruthyBoolean } from './eps-helpers';
+import { getEquipmentDepartment, getEquipmentKind, isTruthyBoolean, checkEquipmentCardCompleteness } from './eps-helpers';
 
 /**
  * Проверка текстового соответствия без учета регистра
@@ -161,6 +161,11 @@ export function matchesAllEquipmentFilters(
   item: Record<string, any>,
   filters: EquipmentFilters
 ): boolean {
+  if (filters.completeness === 'incomplete') {
+    if (!checkEquipmentCardCompleteness(item).isIncomplete) return false;
+  } else if (filters.completeness === 'complete') {
+    if (checkEquipmentCardCompleteness(item).isIncomplete) return false;
+  }
   if (!matchesGlobalSearch(item, filters.search)) return false;
   if (!matchesPrimaryFields(item, filters)) return false;
   if (!matchesCustomClassifierFields(item, filters)) return false;
@@ -219,6 +224,11 @@ export function getActiveEquipmentFilterBadges(
 ): ActiveFilterItem[] {
   const badges: ActiveFilterItem[] = [];
 
+  if (f.completeness === 'incomplete') {
+    badges.push({ key: 'completeness', keysToReset: ['completeness'], label: 'Заполнение', value: 'Не все поля (!)' });
+  } else if (f.completeness === 'complete') {
+    badges.push({ key: 'completeness', keysToReset: ['completeness'], label: 'Заполнение', value: 'Заполнены все' });
+  }
   if (f.search) {
     badges.push({ key: 'search', keysToReset: ['search'], label: 'Поиск', value: f.search });
   }

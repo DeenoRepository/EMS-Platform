@@ -207,6 +207,20 @@ function PrimaryFieldsSection({
               ))}
             </TextField>
           </Grid>
+          <Grid item xs={12}>
+            <TextField
+              select
+              fullWidth
+              size="small"
+              label="Полнота заполнения карточки"
+              value={draft.completeness || ''}
+              onChange={(e) => onChange('completeness', e.target.value)}
+            >
+              <MenuItem value="">Любое заполнение</MenuItem>
+              <MenuItem value="incomplete">Не все поля заполнены (!)</MenuItem>
+              <MenuItem value="complete">Заполнены все поля</MenuItem>
+            </TextField>
+          </Grid>
         </Grid>
       </AccordionDetails>
     </Accordion>

@@ -1,4 +1,5 @@
 export interface EquipmentFilters {
+  completeness?: string; // '' | 'all' | 'incomplete' | 'complete'
   search?: string;
   inventoryNumber?: string;
   name?: string;
@@ -35,6 +36,7 @@ export interface EquipmentFilters {
 }
 
 export const DEFAULT_EQUIPMENT_FILTERS: EquipmentFilters = {
+  completeness: '',
   search: '',
   inventoryNumber: '',
   name: '',

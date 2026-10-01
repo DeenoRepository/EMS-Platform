@@ -67,3 +67,68 @@ export function isTruthyBoolean(val: any): boolean {
   }
   return Boolean(val);
 }
+
+export interface EquipmentCompletenessResult {
+  isIncomplete: boolean;
+  filledCount: number;
+  totalCount: number;
+  missingFields: string[];
+}
+
+interface EquipmentCheckTarget {
+  name?: string | null;
+  inventoryNumber?: string | null;
+  serialNumber?: string | null;
+  manufacturer?: string | null;
+  model?: string | null;
+  location?: string | null;
+  commissionDate?: string | Date | null;
+  status?: string | null;
+  customFields?: Record<string, any> | null;
+}
+
+function isValidText(val?: string | null): boolean {
+  if (!val) return false;
+  const trimmed = val.trim();
+  return Boolean(trimmed && trimmed !== '—' && trimmed !== '-');
+}
+
+/**
+ * Проверка полноты заполнения ключевых полей карточки оборудования.
+ * Возвращает флаг неполноты, количество заполненных и список отсутствующих полей.
+ */
+export function checkEquipmentCardCompleteness(item: EquipmentCheckTarget): EquipmentCompletenessResult {
+  const custom = item.customFields || {};
+  const missingFields: string[] = [];
+
+  const checks: [string, boolean][] = [
+    ['Инвентарный номер', isValidText(item.inventoryNumber)],
+    ['Наименование оборудования', isValidText(item.name)],
+    ['Заводской (серийный) номер', isValidText(item.serialNumber)],
+    ['Предприятие-изготовитель', isValidText(item.manufacturer)],
+    ['Модель / типоразмер', isValidText(item.model)],
+    ['Место установки (локация)', isValidText(item.location)],
+    ['Дата ввода в эксплуатацию', Boolean(item.commissionDate && isValidText(String(item.commissionDate)))],
+    ['Ответственное лицо (МОЛ)', isValidText(custom.responsible_person_name)],
+    ['Категория критичности', Boolean(custom.criticality && ['A', 'B', 'C'].includes(String(custom.criticality).trim().toUpperCase()))],
+    ['Подразделение / группа', getEquipmentDepartment(custom) !== '—'],
+    ['Вид оборудования', getEquipmentKind(custom) !== '—'],
+    ['Периодичность регламентного ТО', isValidText(custom.maintenance_periodicity)],
+  ];
+
+  let filledCount = 0;
+  for (const [name, isFilled] of checks) {
+    if (isFilled) {
+      filledCount++;
+    } else {
+      missingFields.push(name);
+    }
+  }
+
+  return {
+    isIncomplete: missingFields.length > 0,
+    filledCount,
+    totalCount: checks.length,
+    missingFields,
+  };
+}

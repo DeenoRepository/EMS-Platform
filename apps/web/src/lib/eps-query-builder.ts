@@ -62,6 +62,31 @@ function applyTextSearchFilters(and: Prisma.EquipmentWhereInput[], params: URLSe
       ],
     });
   }
+
+  const completeness = params.get('completeness')?.trim();
+  if (completeness === 'incomplete') {
+    and.push({
+      OR: [
+        { inventoryNumber: null },
+        { serialNumber: null },
+        { manufacturer: null },
+        { model: null },
+        { location: null },
+        { commissionDate: null },
+      ],
+    });
+  } else if (completeness === 'complete') {
+    and.push({
+      AND: [
+        { inventoryNumber: { not: null } },
+        { serialNumber: { not: null } },
+        { manufacturer: { not: null } },
+        { model: { not: null } },
+        { location: { not: null } },
+        { commissionDate: { not: null } },
+      ],
+    });
+  }
 }
 
 /**

@@ -40,13 +40,15 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import FilterListIcon from '@mui/icons-material/FilterList';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
 import PageHeader from '@/components/layout/PageHeader';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { EQUIPMENT_STATUS_MAP, formatDate, PERMISSIONS } from '@ems/shared';
 import * as XLSX from 'xlsx';
 import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
-import { getEquipmentKind, getEquipmentDepartment, isTruthyBoolean } from '@/lib/eps-helpers';
+import { getEquipmentKind, getEquipmentDepartment, isTruthyBoolean, checkEquipmentCardCompleteness } from '@/lib/eps-helpers';
 import {
   StatCard,
   StatusBadge,
@@ -102,6 +104,7 @@ interface TagItem {
 }
 
 const EPS_COLUMNS: TableColumnOption[] = [
+  { id: 'completeness', label: 'Полнота заполнения карточки', defaultVisible: true },
   { id: 'inventoryNumber', label: 'Инвентарный номер', defaultVisible: true },
   { id: 'name', label: 'Наименование оборудования', defaultVisible: true },
   { id: 'serialNumber', label: 'Заводской (серийный) номер', defaultVisible: false },
@@ -308,6 +311,10 @@ function EquipmentListContent() {
       let aVal: any = '';
       let bVal: any = '';
       switch (sortField) {
+        case 'completeness':
+          aVal = checkEquipmentCardCompleteness(a).isIncomplete ? 1 : 0;
+          bVal = checkEquipmentCardCompleteness(b).isIncomplete ? 1 : 0;
+          break;
         case 'inventoryNumber':
           aVal = a.inventoryNumber || '';
           bVal = b.inventoryNumber || '';
@@ -896,6 +903,27 @@ function EquipmentListContent() {
                     ) : (
                       <PrecisionManufacturingIcon sx={{ fontSize: 54, color: 'grey.400' }} />
                     )}
+                    {checkEquipmentCardCompleteness(eq).isIncomplete && (
+                      <Box sx={{ position: 'absolute', top: 8, left: 8 }}>
+                        <Tooltip title="В карточке заполнены не все поля">
+                          <Box
+                            sx={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: 24,
+                              height: 24,
+                              borderRadius: '50%',
+                              bgcolor: 'warning.light',
+                              color: 'warning.dark',
+                              boxShadow: 1,
+                            }}
+                          >
+                            <WarningAmberIcon sx={{ fontSize: 16 }} />
+                          </Box>
+                        </Tooltip>
+                      </Box>
+                    )}
                     <Box sx={{ position: 'absolute', top: 8, right: 8 }}>
                       <StatusBadge status={eq.status} />
                     </Box>
@@ -1000,6 +1028,34 @@ function EquipmentListContent() {
                   inputProps={{ 'aria-label': 'Выбрать все записи' }}
                 />
               </TableCell>
+
+              {visibleColumns.includes('completeness') && (
+                <TableCell sx={{ width: 44, minWidth: 44, px: 0.5, textAlign: 'center' }}>
+                  <Tooltip title="Сортировать по полноте заполнения карточки">
+                    <TableSortLabel
+                      active={sortField === 'completeness'}
+                      direction={sortField === 'completeness' ? sortDirection : 'asc'}
+                      onClick={() => handleRequestSort('completeness')}
+                    >
+                      <Box
+                        component="span"
+                        sx={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: 22,
+                          height: 22,
+                          borderRadius: '50%',
+                          bgcolor: 'action.hover',
+                          color: 'text.secondary',
+                        }}
+                      >
+                        <PriorityHighIcon sx={{ fontSize: 14 }} />
+                      </Box>
+                    </TableSortLabel>
+                  </Tooltip>
+                </TableCell>
+              )}
 
               {visibleColumns.includes('inventoryNumber') && (
                 <TableCell sx={{ minWidth: 140 }}>
@@ -1361,6 +1417,55 @@ function EquipmentListContent() {
                       inputProps={{ 'aria-label': `Выбрать ${eq.name}` }}
                     />
                   </TableCell>
+
+                  {visibleColumns.includes('completeness') && (() => {
+                    const comp = checkEquipmentCardCompleteness(eq);
+                    return (
+                      <TableCell align="center" sx={{ width: 44, minWidth: 44, px: 0.5 }} onClick={(e) => e.stopPropagation()}>
+                        {comp.isIncomplete ? (
+                          <Tooltip
+                            title={
+                              <Box sx={{ p: 0.5 }}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'inherit', mb: 0.5 }}>
+                                  В карточке заполнены не все поля
+                                </Typography>
+                                <Typography variant="caption" sx={{ display: 'block', mb: 0.75, opacity: 0.9 }}>
+                                  Заполнено {comp.filledCount} из {comp.totalCount} полей
+                                </Typography>
+                                <Box component="ul" sx={{ m: 0, pl: 2, fontSize: '0.75rem', lineHeight: 1.45 }}>
+                                  {comp.missingFields.map((field) => (
+                                    <li key={field}>{field}</li>
+                                  ))}
+                                </Box>
+                              </Box>
+                            }
+                            arrow
+                            placement="right"
+                          >
+                            <Box
+                              sx={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: 24,
+                                height: 24,
+                                borderRadius: '50%',
+                                bgcolor: 'warning.light',
+                                color: 'warning.dark',
+                                cursor: 'help',
+                                transition: 'transform 0.15s ease-in-out',
+                                '&:hover': {
+                                  transform: 'scale(1.15)',
+                                },
+                              }}
+                            >
+                              <WarningAmberIcon sx={{ fontSize: 16 }} />
+                            </Box>
+                          </Tooltip>
+                        ) : null}
+                      </TableCell>
+                    );
+                  })()}
 
                   {visibleColumns.includes('inventoryNumber') && (
                     <TableCell>

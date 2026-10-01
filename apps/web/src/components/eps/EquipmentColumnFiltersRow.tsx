@@ -81,6 +81,22 @@ export function EquipmentColumnFiltersRow({
     <TableRow sx={{ bgcolor: 'action.hover' }}>
       <TableCell padding="checkbox" sx={{ pl: 2 }} />
 
+      {visibleColumns.includes('completeness') && (
+        <TableCell sx={{ p: 0.75, width: 44, minWidth: 44 }}>
+          <TextField
+            select
+            size="small"
+            value={filters.completeness || ''}
+            onChange={(e) => onChangeFilter('completeness', e.target.value)}
+            sx={inputSx}
+          >
+            <MenuItem value="" sx={{ fontSize: '0.75rem' }}>Все</MenuItem>
+            <MenuItem value="incomplete" sx={{ fontSize: '0.75rem' }}>Не все (!)</MenuItem>
+            <MenuItem value="complete" sx={{ fontSize: '0.75rem' }}>Все</MenuItem>
+          </TextField>
+        </TableCell>
+      )}
+
       {visibleColumns.includes('inventoryNumber') && (
         <TableCell sx={{ p: 0.75 }}>
           <DebouncedColumnInput placeholder="Инв. №" value={filters.inventoryNumber} onChange={(v) => onChangeFilter('inventoryNumber', v)} />
