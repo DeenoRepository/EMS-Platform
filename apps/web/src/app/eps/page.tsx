@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef, Suspense } from 'react';
 import {
   Box,
   Card,
@@ -266,6 +266,49 @@ function EquipmentListContent() {
   };
 
   const activeFilterCount = useMemo(() => countActiveEquipmentFilters(filters), [filters]);
+
+  // Адаптивный расчет высоты таблицы, чтобы горизонтальный скроллбар и пагинация
+  // всегда находились внутри видимой области окна браузера (viewport)
+  const tableWrapperRef = useRef<HTMLDivElement>(null);
+  const [tableMaxHeight, setTableMaxHeight] = useState<number | string>('calc(100vh - 280px)');
+
+  const calculateTableHeight = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    const elem = tableWrapperRef.current;
+    if (!elem) {
+      setTableMaxHeight('calc(100vh - 280px)');
+      return;
+    }
+    const rect = elem.getBoundingClientRect();
+    // Высота от верхнего края таблицы до нижней границы видимого окна браузера
+    // за вычетом высоты пагинации (~52px) и комфортного отступа (~16px)
+    const available = window.innerHeight - rect.top - 68;
+    const finalHeight = Math.max(340, Math.floor(available));
+    setTableMaxHeight(finalHeight);
+  }, []);
+
+  useEffect(() => {
+    calculateTableHeight();
+    const handleResize = () => calculateTableHeight();
+    const handleScroll = () => calculateTableHeight();
+
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined' && tableWrapperRef.current) {
+      resizeObserver = new ResizeObserver(() => {
+        calculateTableHeight();
+      });
+      resizeObserver.observe(tableWrapperRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll);
+      resizeObserver?.disconnect();
+    };
+  }, [calculateTableHeight, activeFilterCount, showColumnFilters, viewMode]);
 
   const activeBadges = useMemo(() => {
     const statusMap: Record<string, string> = {};
@@ -692,18 +735,20 @@ function EquipmentListContent() {
       </Grid>
 
       {/* Unified Enterprise Data Grid: Filter Toolbar + Table/Grid + Pagination */}
-      <DataTableWrapper
-        loading={loading}
-        page={page - 1}
-        pageSize={pageSize}
-        total={total}
-        onPageChange={(_, newPage) => setPage(newPage + 1)}
-        onPageSizeChange={(e) => {
-          setPageSize(parseInt(e.target.value, 10));
-          setPage(1);
-        }}
-        stickyHeader
-        storageKey="eps_equipment_table"
+      <Box ref={tableWrapperRef} sx={{ width: '100%' }}>
+        <DataTableWrapper
+          loading={loading}
+          page={page - 1}
+          pageSize={pageSize}
+          total={total}
+          onPageChange={(_, newPage) => setPage(newPage + 1)}
+          onPageSizeChange={(e) => {
+            setPageSize(parseInt(e.target.value, 10));
+            setPage(1);
+          }}
+          stickyHeader
+          maxHeight={tableMaxHeight}
+          storageKey="eps_equipment_table"
         columns={EPS_COLUMNS}
         visibleColumns={visibleColumns}
         onVisibleColumnsChange={setVisibleColumns}
@@ -1010,7 +1055,7 @@ function EquipmentListContent() {
           </Grid>
         }
       >
-        <Table size="small" aria-label="Реестр оборудования">
+        <Table stickyHeader size="small" aria-label="Реестр оборудования" sx={{ minWidth: 1400 }}>
           <TableHead>
             <TableRow sx={{ backgroundColor: 'background.paper' }}>
               <TableCell padding="checkbox" sx={{ width: 44, pl: 2 }}>
@@ -1765,6 +1810,7 @@ function EquipmentListContent() {
           </TableBody>
         </Table>
       </DataTableWrapper>
+    </Box>
 
 
       {/* Floating Bulk Action Bar */}

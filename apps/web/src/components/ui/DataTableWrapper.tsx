@@ -634,10 +634,18 @@ export function DataTableWrapper({
       ) : (
         <TableContainer
           sx={{
-            maxHeight: maxHeight || 'none',
-            '&::-webkit-scrollbar': { height: 6, width: 6 },
-            '&::-webkit-scrollbar-track': { backgroundColor: '#f8fafc' },
-            '&::-webkit-scrollbar-thumb': { backgroundColor: '#cbd5e1', borderRadius: 3 },
+            maxHeight: maxHeight || 'calc(100vh - 280px)',
+            overflowX: 'auto',
+            overflowY: 'auto',
+            '&::-webkit-scrollbar': { height: 9, width: 8 },
+            '&::-webkit-scrollbar-track': { backgroundColor: 'action.hover', borderRadius: 4 },
+            '&::-webkit-scrollbar-thumb': {
+              backgroundColor: 'grey.400',
+              borderRadius: 4,
+              border: '2px solid transparent',
+              backgroundClip: 'content-box',
+              '&:hover': { backgroundColor: 'grey.600' },
+            },
             ...densityStyles,
           }}
         >
@@ -652,12 +660,17 @@ export function DataTableWrapper({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderTop: '1px solid #f1f5f9',
-            backgroundColor: '#ffffff',
+            borderTop: '1px solid',
+            borderColor: 'divider',
+            backgroundColor: 'background.paper',
             px: 1.5,
             py: 0.5,
             flexWrap: 'wrap',
             gap: 1,
+            position: 'sticky',
+            bottom: 0,
+            zIndex: 3,
+            boxShadow: '0 -2px 6px rgba(0, 0, 0, 0.03)',
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
