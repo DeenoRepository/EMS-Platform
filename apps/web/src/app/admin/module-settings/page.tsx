@@ -373,7 +373,7 @@ function ModuleSettingsContent() {
     setIsRequired(false);
     setDefaultValue('');
     setOptionsStr('');
-    setSortOrder(1);
+    setSortOrder((sections.find((s) => s.id === (sectionId || sections[0]?.id))?.fields.length || 0) + 1);
     setFieldDialogOpen(true);
   };
 
@@ -393,6 +393,10 @@ function ModuleSettingsContent() {
 
   // Save Field
   const handleSaveField = async () => {
+    if (!fieldTargetSectionId) {
+      enqueueSnackbar('Выберите целевой раздел паспорта для параметра', { variant: 'warning' });
+      return;
+    }
     if (!fieldKey.trim() || !fieldName.trim()) {
       enqueueSnackbar('Укажите системный ключ и наименование параметра', { variant: 'warning' });
       return;
@@ -774,6 +778,7 @@ function ModuleSettingsContent() {
                         variant="contained"
                         size="small"
                         startIcon={<AddIcon />}
+                        disabled={sections.length === 0}
                         onClick={() => handleOpenCreateField()}
                         sx={{ borderRadius: '8px' }}
                       >
@@ -1078,9 +1083,10 @@ function ModuleSettingsContent() {
             onChange={(e) => setFieldTargetSectionId(e.target.value)}
             fullWidth
             size="small"
-            SelectProps={{ displayEmpty: true }}
+            required
+            error={!fieldTargetSectionId}
+            helperText={!fieldTargetSectionId ? 'Выберите раздел, в котором будет отображаться параметр' : undefined}
           >
-            <MenuItem value="">— Общий (без раздела) —</MenuItem>
             {sections.map((s) => (
               <MenuItem key={s.id} value={s.id}>
                 {s.name}

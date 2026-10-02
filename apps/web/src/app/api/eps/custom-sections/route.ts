@@ -278,24 +278,9 @@ export async function GET(req: NextRequest) {
       'commission_date',
     ];
 
-    // 1. Delete all base model duplicate custom field definitions
-    await prisma.customFieldDefinition.deleteMany({
-      where: { key: { in: BASE_MODEL_DUPLICATE_KEYS } },
-    });
-
     // 2. Delete all duplicate/transliterated custom field definitions
     await prisma.customFieldDefinition.deleteMany({
       where: { key: { in: Object.keys(DUPLICATE_TO_CANONICAL) } },
-    });
-
-    // 3. Delete unassigned orphan field definitions without section
-    await prisma.customFieldDefinition.deleteMany({
-      where: {
-        OR: [
-          { sectionId: null },
-          { section: { is: null } },
-        ],
-      },
     });
 
     // 4. Migrate and clean Equipment.customFields JSON data
