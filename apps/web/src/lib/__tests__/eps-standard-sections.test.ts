@@ -103,17 +103,12 @@ describe('EPS Sections & Custom Fields Management & Passport Specifications', ()
     assert.strictEqual(getEquipmentFieldValue(sample, 'criticality'), 'A');
   });
 
-  it('Admin module settings provides DATABASE_EQUIPMENT_FIELD_OPTIONS for binding section fields to database columns', () => {
+  it('Admin module settings allows creating section fields from scratch without autocompletion', () => {
     const adminSource = readProjectFile('apps/web/src/app/admin/module-settings/page.tsx');
-    assert.match(adminSource, /DATABASE_EQUIPMENT_FIELD_OPTIONS/);
-    assert.match(adminSource, /Привязать к полю позиции из базы данных/);
-
-    const { DATABASE_EQUIPMENT_FIELD_OPTIONS } = require('../eps-database-fields');
-    assert.ok(Array.isArray(DATABASE_EQUIPMENT_FIELD_OPTIONS));
-    assert.ok(DATABASE_EQUIPMENT_FIELD_OPTIONS.length >= 25);
-    assert.ok(DATABASE_EQUIPMENT_FIELD_OPTIONS.some((o: any) => o.key === 'inventoryNumber'));
-    assert.ok(DATABASE_EQUIPMENT_FIELD_OPTIONS.some((o: any) => o.key === 'manufacturer'));
-    assert.ok(DATABASE_EQUIPMENT_FIELD_OPTIONS.some((o: any) => o.key === 'is_critical_path'));
+    assert.doesNotMatch(adminSource, /DATABASE_EQUIPMENT_FIELD_OPTIONS/);
+    assert.doesNotMatch(adminSource, /Привязать к полю позиции из базы данных/);
+    assert.match(adminSource, /Отображаемое наименование параметра/);
+    assert.match(adminSource, /Системный ключ \(латиницей\)/);
   });
 
   it('Equipment wizard form (/eps/new) removes tags and labels step', () => {

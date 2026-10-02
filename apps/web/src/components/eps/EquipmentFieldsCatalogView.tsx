@@ -31,7 +31,6 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import CloseIcon from '@mui/icons-material/Close';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import SearchIcon from '@mui/icons-material/Search';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import { useSnackbar } from 'notistack';
@@ -42,7 +41,6 @@ import {
   PageLoading,
   EmptyState,
 } from '@/components/ui';
-import { DATABASE_EQUIPMENT_FIELD_OPTIONS, DatabaseFieldOption } from '@/lib/eps-database-fields';
 
 export interface CatalogFieldItem {
   id: string;
@@ -138,17 +136,6 @@ export function EquipmentFieldsCatalogView() {
     setDefaultValue(f.defaultValue || '');
     setOptionsStr(f.options ? f.options.join(', ') : '');
     setDialogOpen(true);
-  };
-
-  const handleSelectTemplate = (opt: DatabaseFieldOption) => {
-    setFieldKey(opt.key);
-    setFieldName(opt.name);
-    setFieldType(opt.fieldType);
-    setFieldUnit(opt.unit || '');
-    setIsRequired(Boolean(opt.isRequired));
-    if (opt.options) {
-      setOptionsStr(opt.options.join(', '));
-    }
   };
 
   const handleSaveField = async () => {
@@ -362,38 +349,8 @@ export function EquipmentFieldsCatalogView() {
           </DialogTitle>
 
           <DialogContent sx={{ pt: 2.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {!editingFieldId && (
-              <Box sx={{ p: 1.5, backgroundColor: 'action.hover', borderRadius: '8px', border: '1px solid', borderColor: 'divider' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
-                  <AutoAwesomeIcon fontSize="small" color="primary" />
-                  <Typography variant="subtitle2" fontWeight={700}>
-                    Быстро заполнить из типовых реквизитов:
-                  </Typography>
-                </Box>
-                <TextField
-                  select
-                  size="small"
-                  fullWidth
-                  label="Выбрать типовой шаблон поля"
-                  value=""
-                  onChange={(e) => {
-                    const opt = DATABASE_EQUIPMENT_FIELD_OPTIONS.find((o) => o.key === e.target.value);
-                    if (opt) handleSelectTemplate(opt);
-                  }}
-                  SelectProps={{ displayEmpty: true }}
-                >
-                  <MenuItem value="">— Выберите из списка для автозаполнения —</MenuItem>
-                  {DATABASE_EQUIPMENT_FIELD_OPTIONS.map((opt) => (
-                    <MenuItem key={opt.key} value={opt.key}>
-                      {opt.name} ({opt.key}) {opt.unit ? `[${opt.unit}]` : ''}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Box>
-            )}
-
             <TextField
-              label="Системный ключ поля (slug)"
+              label="Системный ключ поля (slug) *"
               placeholder="например: power_kw, serialNumber, operating_pressure"
               value={fieldKey}
               onChange={(e) => setFieldKey(e.target.value)}
@@ -404,7 +361,7 @@ export function EquipmentFieldsCatalogView() {
             />
 
             <TextField
-              label="Наименование поля"
+              label="Наименование поля *"
               placeholder="например: Номинальная мощность"
               value={fieldName}
               onChange={(e) => setFieldName(e.target.value)}

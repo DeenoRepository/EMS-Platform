@@ -10,10 +10,11 @@ function readProjectFile(relativePath: string): string {
 }
 
 describe('EPS Field Catalog & Import Mapping', () => {
-  it('EquipmentFieldsCatalogView component renders catalog table with fields, keys, units and sections', () => {
+  it('EquipmentFieldsCatalogView component renders catalog table with fields, keys, units and sections created from scratch without autocompletion', () => {
     const componentSource = readProjectFile('apps/web/src/components/eps/EquipmentFieldsCatalogView.tsx');
     assert.match(componentSource, /Справочник полей паспорта оборудования/);
-    assert.match(componentSource, /DATABASE_EQUIPMENT_FIELD_OPTIONS/);
+    assert.doesNotMatch(componentSource, /DATABASE_EQUIPMENT_FIELD_OPTIONS/);
+    assert.doesNotMatch(componentSource, /Быстро заполнить из типовых реквизитов/);
     assert.match(componentSource, /fetch\('\/api\/eps\/custom-fields'\)/);
     assert.match(componentSource, /fetch\('\/api\/eps\/custom-sections'\)/);
     assert.match(componentSource, /handleSaveField/);
