@@ -95,9 +95,68 @@ function isValidText(val?: string | null): boolean {
 
 /**
  * Проверка полноты заполнения ключевых полей карточки оборудования.
- * Возвращает флаг неполноты, количество заполненных и список отсутствующих полей.
+ * Если переданы сконфигурированные разделы (configuredSections),
+ * проверяются СТРОГО только те поля, у которых f.isRequired === true.
+ * Если разделы не настроены (пустой массив), карточка считается полной (isIncomplete: false).
  */
-export function checkEquipmentCardCompleteness(item: EquipmentCheckTarget): EquipmentCompletenessResult {
+export function checkEquipmentCardCompleteness(
+  item: EquipmentCheckTarget,
+  configuredSections?: Array<{ fields?: Array<{ key: string; name: string; isRequired?: boolean }> }>
+): EquipmentCompletenessResult {
+  // Динамическая проверка по настроенным разделам
+  if (configuredSections !== undefined) {
+    if (!configuredSections || configuredSections.length === 0) {
+      return {
+        isIncomplete: false,
+        filledCount: 0,
+        totalCount: 0,
+        missingFields: [],
+      };
+    }
+
+    const requiredFields: Array<{ key: string; name: string }> = [];
+    const seenKeys = new Set<string>();
+
+    for (const sec of configuredSections) {
+      for (const f of sec.fields || []) {
+        if (f.isRequired && !seenKeys.has(f.key)) {
+          seenKeys.add(f.key);
+          requiredFields.push({ key: f.key, name: f.name });
+        }
+      }
+    }
+
+    if (requiredFields.length === 0) {
+      return {
+        isIncomplete: false,
+        filledCount: 0,
+        totalCount: 0,
+        missingFields: [],
+      };
+    }
+
+    let filledCount = 0;
+    const missingFields: string[] = [];
+
+    for (const f of requiredFields) {
+      const val = getEquipmentFieldValue(item, f.key);
+      const isFilled = isValidText(val !== undefined && val !== null ? String(val) : '');
+      if (isFilled) {
+        filledCount++;
+      } else {
+        missingFields.push(f.name);
+      }
+    }
+
+    return {
+      isIncomplete: missingFields.length > 0,
+      filledCount,
+      totalCount: requiredFields.length,
+      missingFields,
+    };
+  }
+
+  // Fallback проверки (для тестов или вызовов без передачи структуры разделов)
   const custom = item.customFields || {};
   const missingFields: string[] = [];
 

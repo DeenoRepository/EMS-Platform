@@ -439,38 +439,35 @@ function EquipmentListContent() {
 
   // Таблица реестра отображает строго только те колонки, что присутствуют в разделах паспорта
   const tableColumns = useMemo<TableColumnOption[]>(() => {
-    // 1. Обязательные базовые колонки таблицы
-    const baseCols: TableColumnOption[] = [
-      { id: 'completeness', label: 'Полнота карточки', defaultVisible: true },
-      { id: 'inventoryNumber', label: 'Инвентарный номер', defaultVisible: true },
-      { id: 'name', label: 'Наименование оборудования', defaultVisible: true },
-    ];
+    if (!sections || sections.length === 0) {
+      return [];
+    }
 
-    // 2. Колонки, сконфигурированные в активных разделах
-    const fieldMap = new Map<string, { label: string }>();
+    const cols: TableColumnOption[] = [];
+    const hasRequiredFields = sections.some((s) => (s.fields || []).some((f) => f.isRequired));
+    if (hasRequiredFields) {
+      cols.push({ id: 'completeness', label: 'Полнота карточки', defaultVisible: true });
+    }
+
+    const seenKeys = new Set<string>();
     for (const sec of sections) {
       for (const f of sec.fields || []) {
-        if (f.key !== 'inventoryNumber' && f.key !== 'name') {
-          if (!fieldMap.has(f.key)) {
-            fieldMap.set(f.key, {
-              label: f.unit ? `${f.name} (${f.unit})` : f.name,
-            });
-          }
+        if (!seenKeys.has(f.key)) {
+          seenKeys.add(f.key);
+          cols.push({
+            id: f.key,
+            label: f.unit ? `${f.name} (${f.unit})` : f.name,
+            defaultVisible: true,
+          });
         }
       }
     }
 
-    const dynamicCols: TableColumnOption[] = Array.from(fieldMap.entries()).map(([key, info]) => ({
-      id: key,
-      label: info.label,
-      defaultVisible: true,
-    }));
-
-    return [...baseCols, ...dynamicCols];
+    return cols;
   }, [sections]);
 
   // Columns visibility synced with tableColumns
-  const [visibleColumns, setVisibleColumns] = useState<string[]>(['completeness', 'inventoryNumber', 'name']);
+  const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
 
   useEffect(() => {
     if (tableColumns.length > 0) {
@@ -479,6 +476,8 @@ function EquipmentListContent() {
         const valid = prev.filter((id) => allIds.includes(id));
         return valid.length > 0 ? valid : allIds;
       });
+    } else {
+      setVisibleColumns([]);
     }
   }, [tableColumns]);
 
@@ -812,53 +811,68 @@ function EquipmentListContent() {
 
       {/* Unified Enterprise Data Grid: Filter Toolbar + Table/Grid + Pagination */}
       <Box ref={tableWrapperRef} sx={{ width: '100%' }}>
-        <DataTableWrapper
-          loading={loading}
-          page={page - 1}
-          pageSize={pageSize}
-          total={total}
-          onPageChange={(_, newPage) => setPage(newPage + 1)}
-          onPageSizeChange={(e) => {
-            setPageSize(parseInt(e.target.value, 10));
-            setPage(1);
-          }}
-          stickyHeader
-          maxHeight={tableMaxHeight}
-          storageKey="eps_equipment_table"
-          columns={tableColumns}
-          visibleColumns={visibleColumns}
-        onVisibleColumnsChange={setVisibleColumns}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        selectedCount={selectedIds.length}
-        onClearSelection={() => setSelectedIds([])}
-        selectionActions={
-          canBatchEdit ? (
-            <Button
-              size="small"
-              variant="outlined"
-              color="inherit"
-              startIcon={<FindReplaceIcon sx={{ fontSize: 15 }} />}
-              onClick={() => setOpenBatchEditDialog(true)}
-              sx={{
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                py: 0.2,
-                px: 1,
-                borderColor: '#15803d',
-                color: '#15803d',
-                textTransform: 'none',
-                backgroundColor: '#ffffff',
-                '&:hover': {
-                  backgroundColor: '#f0fdf4',
-                  borderColor: '#15803d',
-                },
-              }}
-            >
-              Массовое редактирование ({selectedIds.length})
-            </Button>
-          ) : undefined
-        }
+        {sections.length === 0 ? (
+          <Paper variant="outlined" sx={{ p: 4, borderRadius: '12px', textAlign: 'center' }}>
+            <EmptyState
+              title="Технические разделы и характеристики не настроены"
+              description="В системе пока нет активных разделов паспорта. Настройте структуру технических разделов и характеристики оборудования в параметрах модуля EPS."
+              actionText={
+                user?.roles?.includes('admin') || hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE)
+                  ? 'Перейти к настройке разделов'
+                  : undefined
+              }
+              onAction={() => router.push('/admin/module-settings')}
+              minHeight={280}
+            />
+          </Paper>
+        ) : (
+          <DataTableWrapper
+            loading={loading}
+            page={page - 1}
+            pageSize={pageSize}
+            total={total}
+            onPageChange={(_, newPage) => setPage(newPage + 1)}
+            onPageSizeChange={(e) => {
+              setPageSize(parseInt(e.target.value, 10));
+              setPage(1);
+            }}
+            stickyHeader
+            maxHeight={tableMaxHeight}
+            storageKey="eps_equipment_table"
+            columns={tableColumns}
+            visibleColumns={visibleColumns}
+            onVisibleColumnsChange={setVisibleColumns}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            selectedCount={selectedIds.length}
+            onClearSelection={() => setSelectedIds([])}
+            selectionActions={
+              canBatchEdit ? (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="inherit"
+                  startIcon={<FindReplaceIcon sx={{ fontSize: 15 }} />}
+                  onClick={() => setOpenBatchEditDialog(true)}
+                  sx={{
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    py: 0.2,
+                    px: 1,
+                    borderColor: '#15803d',
+                    color: '#15803d',
+                    textTransform: 'none',
+                    backgroundColor: '#ffffff',
+                    '&:hover': {
+                      backgroundColor: '#f0fdf4',
+                      borderColor: '#15803d',
+                    },
+                  }}
+                >
+                  Массовое редактирование ({selectedIds.length})
+                </Button>
+              ) : undefined
+            }
         empty={items.length === 0 && !loading}
         emptyState={
           <EmptyState
@@ -1183,37 +1197,13 @@ function EquipmentListContent() {
                 </TableCell>
               )}
 
-              {visibleColumns.includes('inventoryNumber') && (
-                <TableCell sx={{ minWidth: 140 }}>
-                  <TableSortLabel
-                    active={sortField === 'inventoryNumber'}
-                    direction={sortField === 'inventoryNumber' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('inventoryNumber')}
-                  >
-                    Инв. номер
-                  </TableSortLabel>
-                </TableCell>
-              )}
-
-              {visibleColumns.includes('name') && (
-                <TableCell sx={{ minWidth: 220 }}>
-                  <TableSortLabel
-                    active={sortField === 'name'}
-                    direction={sortField === 'name' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('name')}
-                  >
-                    Наименование оборудования
-                  </TableSortLabel>
-                </TableCell>
-              )}
-
-              {/* Динамические колонки из настроенных разделов паспорта */}
+              {/* Динамические колонки строго из настроенных разделов паспорта */}
               {tableColumns
-                .filter((col) => col.id !== 'completeness' && col.id !== 'inventoryNumber' && col.id !== 'name')
+                .filter((col) => col.id !== 'completeness')
                 .map((col) => {
                   if (!visibleColumns.includes(col.id)) return null;
                   return (
-                    <TableCell key={col.id} sx={{ minWidth: 140 }}>
+                    <TableCell key={col.id} sx={{ minWidth: col.id === 'name' ? 220 : 140 }}>
                       <TableSortLabel
                         active={sortField === col.id}
                         direction={sortField === col.id ? sortDirection : 'asc'}
@@ -1263,7 +1253,7 @@ function EquipmentListContent() {
                   </TableCell>
 
                   {visibleColumns.includes('completeness') && (() => {
-                    const comp = checkEquipmentCardCompleteness(eq);
+                    const comp = checkEquipmentCardCompleteness(eq, sections);
                     return (
                       <TableCell align="center" sx={{ width: 44, minWidth: 44, px: 0.5 }} onClick={(e) => e.stopPropagation()}>
                         {comp.isIncomplete ? (
@@ -1311,55 +1301,60 @@ function EquipmentListContent() {
                     );
                   })()}
 
-                  {visibleColumns.includes('inventoryNumber') && (
-                    <TableCell>
-                      {eq.inventoryNumber ? (
-                        <Paper
-                          variant="outlined"
-                          sx={{
-                            display: 'inline-block',
-                            px: 0.85,
-                            py: 0.15,
-                            fontFamily: 'monospace',
-                            fontWeight: 700,
-                            bgcolor: 'background.default',
-                            fontSize: '0.75rem',
-                            borderRadius: '4px',
-                            color: 'text.secondary',
-                            borderColor: 'grey.400',
-                            lineHeight: 1.3,
-                          }}
-                        >
-                          {eq.inventoryNumber}
-                        </Paper>
-                      ) : (
-                        <Typography variant="caption" sx={{ color: 'text.disabled' }}>—</Typography>
-                      )}
-                    </TableCell>
-                  )}
-
-                  {visibleColumns.includes('name') && (
-                    <TableCell>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          fontWeight: 600,
-                          color: 'primary.main',
-                          fontSize: '0.8125rem',
-                          lineHeight: 1.35,
-                          '&:hover': { textDecoration: 'underline' },
-                        }}
-                      >
-                        {eq.name}
-                      </Typography>
-                    </TableCell>
-                  )}
-
-                  {/* Динамический рендеринг значений колонок, присутствующих в разделах паспорта */}
+                  {/* Динамический рендеринг значений колонок строго по настроенным разделам */}
                   {tableColumns
-                    .filter((col) => col.id !== 'completeness' && col.id !== 'inventoryNumber' && col.id !== 'name')
+                    .filter((col) => col.id !== 'completeness')
                     .map((col) => {
                       if (!visibleColumns.includes(col.id)) return null;
+
+                      if (col.id === 'name') {
+                        return (
+                          <TableCell key={col.id}>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontWeight: 600,
+                                color: 'primary.main',
+                                fontSize: '0.8125rem',
+                                lineHeight: 1.35,
+                                '&:hover': { textDecoration: 'underline' },
+                              }}
+                            >
+                              {eq.name}
+                            </Typography>
+                          </TableCell>
+                        );
+                      }
+
+                      if (col.id === 'inventoryNumber') {
+                        return (
+                          <TableCell key={col.id}>
+                            {eq.inventoryNumber ? (
+                              <Paper
+                                variant="outlined"
+                                sx={{
+                                  display: 'inline-block',
+                                  px: 0.85,
+                                  py: 0.15,
+                                  fontFamily: 'monospace',
+                                  fontWeight: 700,
+                                  bgcolor: 'background.default',
+                                  fontSize: '0.75rem',
+                                  borderRadius: '4px',
+                                  color: 'text.secondary',
+                                  borderColor: 'grey.400',
+                                  lineHeight: 1.3,
+                                }}
+                              >
+                                {eq.inventoryNumber}
+                              </Paper>
+                            ) : (
+                              <Typography variant="caption" sx={{ color: 'text.disabled' }}>—</Typography>
+                            )}
+                          </TableCell>
+                        );
+                      }
+
                       return (
                         <TableCell key={col.id} sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
                           {renderDynamicTableCell(eq, col.id)}
@@ -1372,7 +1367,8 @@ function EquipmentListContent() {
           </TableBody>
         </Table>
       </DataTableWrapper>
-    </Box>
+    )}
+  </Box>
 
 
       {/* Floating Bulk Action Bar */}

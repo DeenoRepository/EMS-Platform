@@ -936,91 +936,93 @@ function EquipmentPassportContent() {
       )}
 
       {/* Top Overview KPI Panel (4x StatCards) */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Статус актива"
-            value={statusInfo.label}
-            subtitle={equipment.location ? `Локация: ${equipment.location}` : `Ввод: ${formatDate(equipment.commissionDate)}`}
-            icon={<PrecisionManufacturingIcon sx={{ fontSize: 24 }} />}
-            accentColor="#0284c7"
-            iconColor="#0284c7"
-            iconBgColor="#e0f2fe"
-          />
+      {sections.length > 0 && (
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Статус актива"
+              value={statusInfo.label}
+              subtitle={equipment.location ? `Локация: ${equipment.location}` : `Ввод: ${formatDate(equipment.commissionDate)}`}
+              icon={<PrecisionManufacturingIcon sx={{ fontSize: 24 }} />}
+              accentColor="#0284c7"
+              iconColor="#0284c7"
+              iconBgColor="#e0f2fe"
+            />
+          </Grid>
+          {sections.some((s) => s.fields.some((f) => f.key === 'actual_wear_percentage' || f.key === 'actualWear')) && (
+            <Grid item xs={12} sm={6} md={3}>
+              <StatCard
+                title="Физический износ"
+                value={actualWear !== null ? `${actualWear}%` : '—'}
+                subtitle={
+                  actualWear !== null
+                    ? actualWear < 30
+                      ? 'Состояние в норме'
+                      : actualWear < 70
+                      ? 'Умеренный износ'
+                      : 'Критический износ'
+                    : 'Амортизация не задана'
+                }
+                icon={<SpeedIcon sx={{ fontSize: 24 }} />}
+                accentColor={
+                  actualWear !== null && actualWear > 70
+                    ? '#ef4444'
+                    : actualWear !== null && actualWear > 30
+                    ? '#f59e0b'
+                    : '#10b981'
+                }
+                iconColor={
+                  actualWear !== null && actualWear > 70
+                    ? '#ef4444'
+                    : actualWear !== null && actualWear > 30
+                    ? '#f59e0b'
+                    : '#10b981'
+                }
+                iconBgColor={
+                  actualWear !== null && actualWear > 70
+                    ? 'error.light'
+                    : actualWear !== null && actualWear > 30
+                    ? 'warning.light'
+                    : 'success.light'
+                }
+              />
+            </Grid>
+          )}
+          {sections.some((s) => s.fields.some((f) => f.key === 'maintenance_periodicity')) && (
+            <Grid item xs={12} sm={6} md={3}>
+              <StatCard
+                title="Регламент ТОиР"
+                value={maintPeriodicity || (equipment.maintenancePlans.length > 0 ? `${equipment.maintenancePlans.length} плана ТО` : 'По регламенту')}
+                subtitle={maintScheduleYear ? `График: ${maintScheduleYear}` : 'График ППР 2026'}
+                icon={<ShieldIcon sx={{ fontSize: 24 }} />}
+                accentColor="#10b981"
+                iconColor="#10b981"
+                iconBgColor="#dcfce7"
+              />
+            </Grid>
+          )}
+          {sections.some((s) => s.fields.some((f) => f.key === 'criticality')) && (
+            <Grid item xs={12} sm={6} md={3}>
+              <StatCard
+                title="Критичность актива"
+                value={`Класс ${criticality}`}
+                subtitle={equipment.spareParts.length > 0 ? `Запас ТМЦ: ${equipment.spareParts.length} поз.` : 'Категория надежности'}
+                icon={<CategoryIcon sx={{ fontSize: 24 }} />}
+                accentColor={criticality === 'A' ? '#ef4444' : criticality === 'B' ? '#f59e0b' : '#0ea5e9'}
+                iconColor={criticality === 'A' ? '#ef4444' : criticality === 'B' ? '#f59e0b' : '#0ea5e9'}
+                iconBgColor={criticality === 'A' ? 'error.light' : criticality === 'B' ? 'warning.light' : '#e0f2fe'}
+              />
+            </Grid>
+          )}
         </Grid>
-        {sections.some((s) => s.fields.some((f) => f.key === 'actual_wear_percentage' || f.key === 'actualWear')) && (
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard
-              title="Физический износ"
-              value={actualWear !== null ? `${actualWear}%` : '—'}
-              subtitle={
-                actualWear !== null
-                  ? actualWear < 30
-                    ? 'Состояние в норме'
-                    : actualWear < 70
-                    ? 'Умеренный износ'
-                    : 'Критический износ'
-                  : 'Амортизация не задана'
-              }
-              icon={<SpeedIcon sx={{ fontSize: 24 }} />}
-              accentColor={
-                actualWear !== null && actualWear > 70
-                  ? '#ef4444'
-                  : actualWear !== null && actualWear > 30
-                  ? '#f59e0b'
-                  : '#10b981'
-              }
-              iconColor={
-                actualWear !== null && actualWear > 70
-                  ? '#ef4444'
-                  : actualWear !== null && actualWear > 30
-                  ? '#f59e0b'
-                  : '#10b981'
-              }
-              iconBgColor={
-                actualWear !== null && actualWear > 70
-                  ? 'error.light'
-                  : actualWear !== null && actualWear > 30
-                  ? 'warning.light'
-                  : 'success.light'
-              }
-            />
-          </Grid>
-        )}
-        {sections.some((s) => s.fields.some((f) => f.key === 'maintenance_periodicity')) && (
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard
-              title="Регламент ТОиР"
-              value={maintPeriodicity || (equipment.maintenancePlans.length > 0 ? `${equipment.maintenancePlans.length} плана ТО` : 'По регламенту')}
-              subtitle={maintScheduleYear ? `График: ${maintScheduleYear}` : 'График ППР 2026'}
-              icon={<ShieldIcon sx={{ fontSize: 24 }} />}
-              accentColor="#10b981"
-              iconColor="#10b981"
-              iconBgColor="#dcfce7"
-            />
-          </Grid>
-        )}
-        {sections.some((s) => s.fields.some((f) => f.key === 'criticality')) && (
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard
-              title="Критичность актива"
-              value={`Класс ${criticality}`}
-              subtitle={equipment.spareParts.length > 0 ? `Запас ТМЦ: ${equipment.spareParts.length} поз.` : 'Категория надежности'}
-              icon={<CategoryIcon sx={{ fontSize: 24 }} />}
-              accentColor={criticality === 'A' ? '#ef4444' : criticality === 'B' ? '#f59e0b' : '#0ea5e9'}
-              iconColor={criticality === 'A' ? '#ef4444' : criticality === 'B' ? '#f59e0b' : '#0ea5e9'}
-              iconBgColor={criticality === 'A' ? 'error.light' : criticality === 'B' ? 'warning.light' : '#e0f2fe'}
-            />
-          </Grid>
-        )}
-      </Grid>
+      )}
 
       {/* TAB 0: Паспорт (Сбалансированная инженерная сетка 5/7) */}
       {activeTab === 0 && (() => {
-        const comp = checkEquipmentCardCompleteness(equipment);
+        const comp = checkEquipmentCardCompleteness(equipment, sections);
         return (
           <Box>
-            {comp.isIncomplete && (
+            {sections.length > 0 && comp.isIncomplete && comp.totalCount > 0 && (
               <Alert
                 severity="warning"
                 icon={<WarningAmberIcon />}
@@ -1795,224 +1797,186 @@ function EquipmentPassportContent() {
         }
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 1 }}>
-          {/* Section 1: Basic specifications */}
-          <Box>
-            <Typography variant="subtitle1" fontWeight={700} color="primary.main" sx={{ mb: 2 }}>
-              Основные параметры
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  label="Наименование оборудования *"
-                  fullWidth
-                  size="small"
-                  required
-                  error={!editForm.name}
-                  helperText={!editForm.name ? 'Обязательное поле' : undefined}
-                  value={editForm.name || ''}
-                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Инвентарный номер *"
-                  fullWidth
-                  size="small"
-                  required
-                  error={!editForm.inventoryNumber}
-                  helperText={!editForm.inventoryNumber ? 'Обязательное поле' : undefined}
-                  value={editForm.inventoryNumber || ''}
-                  onChange={(e) => setEditForm({ ...editForm, inventoryNumber: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Заводской / Серийный номер *"
-                  fullWidth
-                  size="small"
-                  error={!editForm.serialNumber}
-                  helperText={!editForm.serialNumber ? 'Обязательно для паспорта' : undefined}
-                  value={editForm.serialNumber || ''}
-                  onChange={(e) => setEditForm({ ...editForm, serialNumber: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Предприятие-изготовитель *"
-                  fullWidth
-                  size="small"
-                  error={!editForm.manufacturer}
-                  helperText={!editForm.manufacturer ? 'Обязательно для паспорта' : undefined}
-                  value={editForm.manufacturer || ''}
-                  onChange={(e) => setEditForm({ ...editForm, manufacturer: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Модель / типоразмер *"
-                  fullWidth
-                  size="small"
-                  error={!editForm.model}
-                  helperText={!editForm.model ? 'Обязательно для паспорта' : undefined}
-                  value={editForm.model || ''}
-                  onChange={(e) => setEditForm({ ...editForm, model: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Место установки (Локация) *"
-                  fullWidth
-                  size="small"
-                  error={!editForm.location}
-                  helperText={!editForm.location ? 'Обязательно для паспорта' : undefined}
-                  value={editForm.location || ''}
-                  onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <DatePickerField
-                  label="Дата ввода в эксплуатацию *"
-                  value={editForm.commissionDate ? editForm.commissionDate.substring(0, 10) : ''}
-                  onChange={(val) => setEditForm({ ...editForm, commissionDate: val })}
-                  size="small"
-                  fullWidth
-                  required
-                  error={!editForm.commissionDate ? 'Обязательно для паспорта' : undefined}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth size="small">
-                  <InputLabel id="edit-status-label">Статус оборудования</InputLabel>
-                  <Select
-                    labelId="edit-status-label"
-                    label="Статус оборудования"
-                    value={editForm.status || 'ACTIVE'}
-                    onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-                  >
-                    {Object.entries(EQUIPMENT_STATUS_MAP).map(([k]) => (
-                      <MenuItem key={k} value={k}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <StatusBadge status={k} />
-                        </Box>
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-            </Grid>
-          </Box>
+          {sections.length === 0 ? (
+            <EmptyState
+              title="Технические разделы паспорта не настроены"
+              description="В системе пока нет активных технических разделов. Настройте структуру разделов и перечень характеристик в параметрах модуля EPS."
+              actionText={
+                user?.roles?.includes('admin') || hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE)
+                  ? 'Перейти к настройке разделов'
+                  : undefined
+              }
+              onAction={() => router.push('/admin/module-settings')}
+              minHeight={220}
+            />
+          ) : (
+            sections.map((sec) => (
+              <Box key={sec.id}>
+                <Typography variant="subtitle1" fontWeight={700} color="primary.main" sx={{ mb: 2 }}>
+                  {sec.name}
+                </Typography>
+                <Grid container spacing={2}>
+                  {sec.fields.map((f) => {
+                    const isBaseField = [
+                      'name',
+                      'inventoryNumber',
+                      'serialNumber',
+                      'manufacturer',
+                      'model',
+                      'location',
+                      'status',
+                      'commissionDate',
+                    ].includes(f.key);
 
-          <Divider />
+                    const currentValue = isBaseField
+                      ? editForm[f.key] ?? ''
+                      : editCustomFields[f.key] ?? '';
 
-          {/* Section 2: Custom Sections Inputs */}
-          {sections.map((sec) => (
-            <Box key={sec.id}>
-              <Typography variant="subtitle1" fontWeight={700} color="primary.main" sx={{ mb: 2 }}>
-                {sec.name}
-              </Typography>
-              <Grid container spacing={2}>
-                {sec.fields.map((f) => {
-                  if (f.fieldType === 'BOOLEAN') {
-                    return (
-                      <Grid item xs={12} sm={6} key={f.key}>
-                        <Paper variant="outlined" sx={{ p: 1.5, display: 'flex', alignItems: 'center' }}>
-                          <FormControlLabel
-                            control={
-                              <Switch
-                                checked={Boolean(editCustomFields[f.key])}
-                                onChange={(e) =>
-                                  setEditCustomFields({ ...editCustomFields, [f.key]: e.target.checked })
-                                }
-                                color="primary"
-                              />
-                            }
-                            label={<Typography variant="body2">{f.name}</Typography>}
+                    const handleFieldUpdate = (val: any) => {
+                      if (isBaseField) {
+                        setEditForm((prev: any) => ({ ...prev, [f.key]: val }));
+                      } else {
+                        setEditCustomFields((prev: any) => ({ ...prev, [f.key]: val }));
+                      }
+                    };
+
+                    if (f.fieldType === 'BOOLEAN') {
+                      return (
+                        <Grid item xs={12} sm={6} key={f.key}>
+                          <Paper variant="outlined" sx={{ p: 1.5, display: 'flex', alignItems: 'center' }}>
+                            <FormControlLabel
+                              control={
+                                <Switch
+                                  checked={Boolean(currentValue)}
+                                  onChange={(e) => handleFieldUpdate(e.target.checked)}
+                                  color="primary"
+                                />
+                              }
+                              label={<Typography variant="body2">{f.name}</Typography>}
+                            />
+                          </Paper>
+                        </Grid>
+                      );
+                    }
+
+                    if (f.key === 'status') {
+                      return (
+                        <Grid item xs={12} sm={6} key={f.key}>
+                          <FormControl fullWidth size="small">
+                            <InputLabel id={`edit-status-${f.key}`}>Статус оборудования</InputLabel>
+                            <Select
+                              labelId={`edit-status-${f.key}`}
+                              label="Статус оборудования"
+                              value={currentValue || 'ACTIVE'}
+                              onChange={(e) => handleFieldUpdate(e.target.value)}
+                            >
+                              {Object.entries(EQUIPMENT_STATUS_MAP).map(([k]) => (
+                                <MenuItem key={k} value={k}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <StatusBadge status={k} />
+                                  </Box>
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        </Grid>
+                      );
+                    }
+
+                    if (f.fieldType === 'DATE' || f.key === 'commissionDate' || f.key === 'commission_date') {
+                      return (
+                        <Grid item xs={12} sm={6} key={f.key}>
+                          <DatePickerField
+                            label={f.isRequired ? `${f.name} *` : f.name}
+                            value={currentValue ? String(currentValue).substring(0, 10) : ''}
+                            onChange={(val) => handleFieldUpdate(val || '')}
+                            size="small"
+                            fullWidth
+                            required={f.isRequired}
+                            error={f.isRequired && !currentValue ? 'Обязательное поле паспорта' : undefined}
                           />
-                        </Paper>
-                      </Grid>
-                    );
-                  }
+                        </Grid>
+                      );
+                    }
 
-                  if (f.fieldType === 'SELECT' && f.options && Array.isArray(f.options)) {
+                    if (f.fieldType === 'SELECT' && f.options && Array.isArray(f.options)) {
+                      return (
+                        <Grid item xs={12} sm={6} key={f.key}>
+                          <TextField
+                            select
+                            label={f.isRequired ? `${f.name} *` : f.name}
+                            required={f.isRequired}
+                            error={Boolean(f.isRequired && !currentValue)}
+                            helperText={f.isRequired && !currentValue ? 'Обязательное поле паспорта' : undefined}
+                            fullWidth
+                            size="small"
+                            value={currentValue || ''}
+                            onChange={(e) => handleFieldUpdate(e.target.value)}
+                          >
+                            <MenuItem value="">— Не выбрано —</MenuItem>
+                            {f.options.map((opt: string) => (
+                              <MenuItem key={opt} value={opt}>
+                                {opt}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        </Grid>
+                      );
+                    }
+
+                    if (
+                      f.key === 'responsible_person_name' ||
+                      f.key.toLowerCase().includes('responsible') ||
+                      f.key.toLowerCase().includes('otvetstvenn')
+                    ) {
+                      return (
+                        <Grid item xs={12} sm={6} key={f.key}>
+                          <ResponsibleUserSelect
+                            label={f.isRequired ? `${f.name} *` : f.name}
+                            required={f.isRequired}
+                            error={Boolean(f.isRequired && !currentValue)}
+                            value={currentValue ?? ''}
+                            onChange={(name, u) => {
+                              handleFieldUpdate(name);
+                              if (u) {
+                                setEditCustomFields((prev: any) => ({
+                                  ...prev,
+                                  responsible_user_id: u.id,
+                                  responsible_user_login: u.ldapLogin,
+                                }));
+                              }
+                            }}
+                          />
+                        </Grid>
+                      );
+                    }
+
                     return (
                       <Grid item xs={12} sm={6} key={f.key}>
                         <TextField
-                          select
-                          label={f.isRequired ? `${f.name} *` : f.name}
+                          label={
+                            f.isRequired
+                              ? `${f.unit ? `${f.name} (${f.unit})` : f.name} *`
+                              : f.unit
+                              ? `${f.name} (${f.unit})`
+                              : f.name
+                          }
                           required={f.isRequired}
-                          error={Boolean(f.isRequired && !editCustomFields[f.key])}
-                          helperText={f.isRequired && !editCustomFields[f.key] ? 'Обязательное поле паспорта' : undefined}
+                          error={Boolean(f.isRequired && !currentValue)}
+                          helperText={f.isRequired && !currentValue ? 'Обязательное поле паспорта' : undefined}
+                          type={f.fieldType === 'NUMBER' ? 'number' : 'text'}
                           fullWidth
                           size="small"
-                          value={editCustomFields[f.key] || ''}
-                          onChange={(e) =>
-                            setEditCustomFields({ ...editCustomFields, [f.key]: e.target.value })
-                          }
-                        >
-                          <MenuItem value="">— Не выбрано —</MenuItem>
-                          {f.options.map((opt: string) => (
-                            <MenuItem key={opt} value={opt}>
-                              {opt}
-                            </MenuItem>
-                          ))}
-                        </TextField>
-                      </Grid>
-                    );
-                  }
-
-                  if (
-                    f.key === 'responsible_person_name' ||
-                    f.key.toLowerCase().includes('responsible') ||
-                    f.key.toLowerCase().includes('otvetstvenn')
-                  ) {
-                    return (
-                      <Grid item xs={12} sm={6} key={f.key}>
-                        <ResponsibleUserSelect
-                          label={f.isRequired ? `${f.name} *` : f.name}
-                          required={f.isRequired}
-                          error={Boolean(f.isRequired && !editCustomFields[f.key])}
-                          value={editCustomFields[f.key] ?? ''}
-                          onChange={(name, user) => {
-                            setEditCustomFields({
-                              ...editCustomFields,
-                              [f.key]: name,
-                              responsible_user_id: user?.id || null,
-                              responsible_user_login: user?.ldapLogin || null,
-                            });
-                          }}
+                          value={currentValue ?? ''}
+                          onChange={(e) => handleFieldUpdate(e.target.value)}
                         />
                       </Grid>
                     );
-                  }
-
-                  return (
-                    <Grid item xs={12} sm={6} key={f.key}>
-                      <TextField
-                        label={
-                          f.isRequired
-                            ? `${f.unit ? `${f.name} (${f.unit})` : f.name} *`
-                            : f.unit
-                            ? `${f.name} (${f.unit})`
-                            : f.name
-                        }
-                        required={f.isRequired}
-                        error={Boolean(f.isRequired && !editCustomFields[f.key])}
-                        helperText={f.isRequired && !editCustomFields[f.key] ? 'Обязательное поле паспорта' : undefined}
-                        type={f.fieldType === 'NUMBER' ? 'number' : f.fieldType === 'DATE' ? 'date' : 'text'}
-                        InputLabelProps={f.fieldType === 'DATE' ? { shrink: true } : undefined}
-                        fullWidth
-                        size="small"
-                        value={editCustomFields[f.key] ?? ''}
-                        onChange={(e) =>
-                          setEditCustomFields({ ...editCustomFields, [f.key]: e.target.value })
-                        }
-                      />
-                    </Grid>
-                  );
-                })}
-              </Grid>
-            </Box>
-          ))}
+                  })}
+                </Grid>
+              </Box>
+            ))
+          )}
         </Box>
       </FormDialog>
 
