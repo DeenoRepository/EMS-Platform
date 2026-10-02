@@ -26,10 +26,12 @@ describe('EPS Field Catalog & Import Mapping', () => {
     assert.match(adminSource, /EquipmentFieldsCatalogView/);
   });
 
-  it('Sidebar includes link to passport fields catalog', () => {
+  it('Passport fields catalog is located strictly in module settings and excluded from sidebar', () => {
     const sidebarSource = readProjectFile('apps/web/src/components/layout/Sidebar.tsx');
-    assert.match(sidebarSource, /Справочник полей паспорта/);
-    assert.match(sidebarSource, /\/admin\/module-settings\?tab=eps/);
+    assert.doesNotMatch(sidebarSource, /Справочник полей паспорта/);
+
+    const adminSource = readProjectFile('apps/web/src/app/admin/module-settings/page.tsx');
+    assert.match(adminSource, /<EquipmentFieldsCatalogView \/>/);
   });
 
   it('SmartImportWizard provides option to map file columns to existing catalog fields', () => {

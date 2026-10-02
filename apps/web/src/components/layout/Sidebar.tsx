@@ -47,7 +47,6 @@ import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import LogoutIcon from '@mui/icons-material/Logout';
 import FeedbackOutlinedIcon from '@mui/icons-material/FeedbackOutlined';
-import MenuBookIcon from '@mui/icons-material/MenuBook';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS, PlatformMaintenanceStatus } from '@ems/shared';
 import { StatusBadge } from '@/components/ui';
@@ -353,12 +352,6 @@ export default function Sidebar({
               : rejectedApprovalsCount && rejectedApprovalsCount > 0
               ? `${rejectedApprovalsCount} отклоненных заявок требует доработки`
               : undefined,
-        },
-        {
-          label: 'Справочник полей паспорта',
-          path: '/admin/module-settings?tab=eps',
-          icon: <MenuBookIcon sx={{ fontSize: 15 }} />,
-          permissions: [PERMISSIONS.ADMIN_SETTINGS_MANAGE, PERMISSIONS.EPS_CUSTOM_FIELDS_MANAGE],
         },
         {
           label: 'История изменений и аудит',
