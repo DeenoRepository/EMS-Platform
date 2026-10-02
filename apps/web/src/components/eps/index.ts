@@ -7,3 +7,4 @@ export { default as EquipmentColumnFiltersRow } from './EquipmentColumnFiltersRo
 export { default as EquipmentActiveFilterChips } from './EquipmentActiveFilterChips';
 export * from './EquipmentBatchEditDialog';
 export * from './ResponsibleUserSelect';
+export * from './EquipmentFieldsCatalogView';

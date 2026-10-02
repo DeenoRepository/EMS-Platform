@@ -251,38 +251,6 @@ export async function GET(req: NextRequest) {
       interval_poverki: 'calibration_interval',
     };
 
-    // Custom field keys that mistakenly duplicate base model fields (should NOT be custom fields)
-    const BASE_MODEL_DUPLICATE_KEYS = [
-      'zavodskoy_nomer',
-      'zavodskoy_no',
-      'zavodskoy_num',
-      'serial_number',
-      'serialnumber',
-      'raspolozhenie_ulitsa_korpus_etazh_uchastok',
-      'raspolozhenie',
-      'location',
-      'mesto_ustanovki',
-      'inventarnyy_nomer',
-      'inventarnyy_no',
-      'inventory_number',
-      'inventorynumber',
-      'naimenovanie_oborudovaniya',
-      'naimenovanie',
-      'name',
-      'proizvoditel',
-      'manufacturer',
-      'model_modifikatsiya',
-      'model',
-      'data_vvoda_v_ekspluatatsiyu',
-      'data_vvoda',
-      'commission_date',
-    ];
-
-    // 2. Delete all duplicate/transliterated custom field definitions
-    await prisma.customFieldDefinition.deleteMany({
-      where: { key: { in: Object.keys(DUPLICATE_TO_CANONICAL) } },
-    });
-
     // 4. Migrate and clean Equipment.customFields JSON data
     try {
       const equipments = await prisma.equipment.findMany({
@@ -302,14 +270,6 @@ export async function GET(req: NextRequest) {
           }
           if (!updatedLocation && (cf.raspolozhenie_ulitsa_korpus_etazh_uchastok || cf.raspolozhenie)) {
             updatedLocation = String(cf.raspolozhenie_ulitsa_korpus_etazh_uchastok || cf.raspolozhenie);
-          }
-
-          // Remove base model duplicates from customFields
-          for (const k of BASE_MODEL_DUPLICATE_KEYS) {
-            if (cf[k] !== undefined) {
-              delete cf[k];
-              modified = true;
-            }
           }
 
           // Migrate duplicate/translit keys to canonical keys

@@ -55,8 +55,10 @@ import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import BugReportOutlinedIcon from '@mui/icons-material/BugReportOutlined';
 import LayersOutlinedIcon from '@mui/icons-material/LayersOutlined';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
 import PageHeader from '@/components/layout/PageHeader';
 import { SmartImportWizard } from '@/components/eps/SmartImportWizard';
+import { EquipmentFieldsCatalogView } from '@/components/eps/EquipmentFieldsCatalogView';
 import { useSnackbar } from 'notistack';
 import {
   StatCard,
@@ -729,7 +731,10 @@ function ModuleSettingsContent() {
 
       {/* TAB 0: EPS — Разделы, Поля, Теги */}
       {activeTab === 0 && (
-        <Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {/* Справочник полей паспорта оборудования */}
+          <EquipmentFieldsCatalogView />
+
           <Grid container spacing={3}>
             {/* Main Column: Custom Sections with their Fields */}
             <Grid item xs={12}>

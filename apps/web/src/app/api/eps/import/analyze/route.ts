@@ -398,7 +398,13 @@ export async function POST(req: NextRequest) {
 
     // Fetch existing dictionary metadata
     const [existingCustomFields, sections] = await Promise.all([
-      prisma.customFieldDefinition.findMany(),
+      prisma.customFieldDefinition.findMany({
+        include: {
+          section: {
+            select: { id: true, name: true },
+          },
+        },
+      }),
       prisma.customSection.findMany({ orderBy: { sortOrder: 'asc' } }),
     ]);
 
@@ -627,6 +633,13 @@ export async function POST(req: NextRequest) {
         mappedColumns,
         missingFields,
         availableSections: sections,
+        catalogFields: existingCustomFields.map((cf) => ({
+          key: cf.key,
+          name: cf.name,
+          unit: cf.unit,
+          fieldType: cf.fieldType,
+          section: cf.section ? { id: cf.section.id, name: cf.section.name } : null,
+        })),
         previewRows: validatedRows.slice(0, 50),
         allRows: validatedRows,
       },

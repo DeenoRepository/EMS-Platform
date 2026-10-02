@@ -26,6 +26,7 @@ import {
   RadioGroup,
   FormControlLabel,
   FormControl,
+  Autocomplete,
 } from '@mui/material';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -55,7 +56,8 @@ export interface MissingFieldItem {
 
 export interface MissingFieldResolution {
   header: string;
-  action: 'CREATE' | 'IGNORE';
+  action: 'CREATE' | 'MAP_EXISTING' | 'IGNORE';
+  mappedExistingKey?: string;
   name: string;
   key: string;
   fieldType: 'TEXT' | 'NUMBER' | 'DATE' | 'BOOLEAN' | 'SELECT';
@@ -94,6 +96,7 @@ export function SmartImportWizard() {
   const [missingFields, setMissingFields] = useState<MissingFieldItem[]>([]);
   const [resolutions, setResolutions] = useState<Record<string, MissingFieldResolution>>({});
   const [availableSections, setAvailableSections] = useState<{ id: string; name: string }[]>([]);
+  const [catalogFields, setCatalogFields] = useState<{ key: string; name: string; unit?: string | null; section?: { name: string } | null }[]>([]);
 
   // Step 3: Conflict strategy & rows state
   const [conflictStrategy, setConflictStrategy] = useState<'UPSERT' | 'SKIP' | 'FULL_REPLACE'>('UPSERT');
@@ -146,6 +149,17 @@ export function SmartImportWizard() {
         setColumnMapping(json.data.mappedColumns || {});
         setMissingFields(json.data.missingFields || []);
         setAvailableSections(json.data.availableSections || []);
+        if (json.data.catalogFields) {
+          setCatalogFields(json.data.catalogFields);
+        } else {
+          // Fallback fetch catalog fields if not provided in analyze
+          fetch('/api/eps/custom-fields')
+            .then((r) => r.json())
+            .then((cfJson) => {
+              if (cfJson.success && cfJson.data) setCatalogFields(cfJson.data);
+            })
+            .catch(() => {});
+        }
         setValidatedRows(json.data.allRows || []);
         setTotalRowsCount(json.data.totalRows);
         setNewCount(json.data.newCount);
@@ -198,6 +212,12 @@ export function SmartImportWizard() {
     Object.entries(resolutions).forEach(([header, res]) => {
       if (res.action === 'CREATE') {
         updatedMapping[header] = `custom_${res.key}`;
+      } else if (res.action === 'MAP_EXISTING' && res.mappedExistingKey) {
+        updatedMapping[header] = res.mappedExistingKey.startsWith('custom_') || [
+          'name', 'inventoryNumber', 'serialNumber', 'manufacturer', 'model', 'location', 'status', 'commissionDate', 'externalId'
+        ].includes(res.mappedExistingKey)
+          ? res.mappedExistingKey
+          : `custom_${res.mappedExistingKey}`;
       } else {
         delete updatedMapping[header];
       }
@@ -422,18 +442,48 @@ export function SmartImportWizard() {
                               </Typography>
                             </Grid>
 
-                            <Grid item xs={12} md={3}>
+                            <Grid item xs={12} md={3.5}>
                               <FormControl component="fieldset">
                                 <RadioGroup
                                   row
                                   value={res.action}
                                   onChange={(e) => handleUpdateResolution(mf.header, { action: e.target.value as any })}
                                 >
-                                  <FormControlLabel value="CREATE" control={<Radio size="small" />} label="Добавить в справочник" />
-                                  <FormControlLabel value="IGNORE" control={<Radio size="small" />} label="Игнорировать" />
+                                  <FormControlLabel value="CREATE" control={<Radio size="small" />} label="Новое поле" />
+                                  <FormControlLabel value="MAP_EXISTING" control={<Radio size="small" />} label="Из справочника" />
+                                  <FormControlLabel value="IGNORE" control={<Radio size="small" />} label="Игнор" />
                                 </RadioGroup>
                               </FormControl>
                             </Grid>
+
+                            {res.action === 'MAP_EXISTING' && (
+                              <Grid item xs={12} md={5.5}>
+                                <TextField
+                                  select
+                                  size="small"
+                                  fullWidth
+                                  label="Привязать к существующему полю справочника"
+                                  value={res.mappedExistingKey || ''}
+                                  onChange={(e) => {
+                                    const selectedKey = e.target.value;
+                                    const matched = catalogFields.find((cf) => cf.key === selectedKey);
+                                    handleUpdateResolution(mf.header, {
+                                      mappedExistingKey: selectedKey,
+                                      name: matched ? matched.name : res.name,
+                                      key: selectedKey,
+                                    });
+                                  }}
+                                  SelectProps={{ displayEmpty: true }}
+                                >
+                                  <MenuItem value="">— Выберите поле из справочника —</MenuItem>
+                                  {catalogFields.map((cf) => (
+                                    <MenuItem key={cf.key} value={cf.key}>
+                                      {cf.name} ({cf.key}) {cf.unit ? `[${cf.unit}]` : ''} {cf.section ? `• ${cf.section.name}` : ''}
+                                    </MenuItem>
+                                  ))}
+                                </TextField>
+                              </Grid>
+                            )}
 
                             {res.action === 'CREATE' && (
                               <>
@@ -528,6 +578,8 @@ export function SmartImportWizard() {
                             {isMissing ? (
                               res?.action === 'CREATE' ? (
                                 <StatusBadge status="ACTIVE" label="Будет создано новое поле" size="small" />
+                              ) : res?.action === 'MAP_EXISTING' ? (
+                                <StatusBadge status="INFO" label="Привязано к полю справочника" size="small" />
                               ) : (
                                 <StatusBadge status="DECOMMISSIONED" label="Будет пропущено (Игнорируется)" size="small" />
                               )
@@ -536,7 +588,13 @@ export function SmartImportWizard() {
                             )}
                           </TableCell>
                           <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
-                            {isMissing ? (res?.action === 'CREATE' ? `${res.name} (${res.key})` : '—') : mappedKey}
+                            {isMissing
+                              ? res?.action === 'CREATE'
+                                ? `${res.name} (${res.key})`
+                                : res?.action === 'MAP_EXISTING'
+                                ? `${res.name} (${res.mappedExistingKey})`
+                                : '—'
+                              : mappedKey}
                           </TableCell>
                         </TableRow>
                       );
