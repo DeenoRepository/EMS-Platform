@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     const docType = searchParams.get('docType')?.trim() || '';
     const equipmentId = searchParams.get('equipmentId')?.trim() || '';
 
-    const where: any = {};
+    const where: any = { deletedAt: null, equipment: { deletedAt: null } };
 
     if (equipmentId) {
       where.equipmentId = equipmentId;
@@ -164,7 +164,11 @@ export async function POST(req: NextRequest) {
     const decimalNumber = (formData.get('decimalNumber') as string | null)?.trim() || null;
     const applyToAllModel = formData.get('applyToAllModel') === 'true' || formData.get('applyToAllModel') === '1';
     const applyToAllDecimal = formData.get('applyToAllDecimal') === 'true' || formData.get('applyToAllDecimal') === '1';
-    const docType = (formData.get('docType') as DocumentType) || 'OTHER';
+    const rawDocType = formData.get('docType');
+    const docType = (rawDocType || 'OTHER') as DocumentType;
+    if (!Object.values(DocumentType).includes(docType)) {
+      return NextResponse.json({ success: false, error: 'Недопустимый тип документа' }, { status: 400 });
+    }
     const description = formData.get('description') as string | null;
 
     const rawFiles = [...formData.getAll('files'), ...formData.getAll('file')];

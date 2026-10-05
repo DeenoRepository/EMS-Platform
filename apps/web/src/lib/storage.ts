@@ -2,7 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 
-const UPLOAD_ROOT = path.resolve(process.cwd(), process.env.UPLOAD_DIR || process.env.STORAGE_LOCAL_DIR || './uploads');
+export const UPLOAD_ROOT = path.resolve(
+  process.cwd(),
+  process.env.STORAGE_LOCAL_DIR || process.env.UPLOAD_DIR || './uploads'
+);
 
 // Обеспечиваем существование базовых папок
 export function ensureUploadDirs() {
@@ -91,7 +94,18 @@ export async function saveFile(
 }
 
 export function getAbsoluteFilePath(relativeFilePath: string): string {
-  return path.join(UPLOAD_ROOT, relativeFilePath);
+  const resolved = resolveUploadPath(relativeFilePath);
+  if (!resolved) throw new Error('Недопустимый путь к файлу');
+  return resolved;
+}
+
+/** Resolve only paths strictly inside the configured upload root. */
+export function resolveUploadPath(relativeFilePath: string): string | null {
+  const resolved = path.resolve(UPLOAD_ROOT, relativeFilePath);
+  const relative = path.relative(UPLOAD_ROOT, resolved);
+  return relative && !relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative)
+    ? resolved
+    : null;
 }
 
 export function deleteFile(relativeFilePath: string): boolean {

@@ -106,6 +106,13 @@ export async function POST(req: NextRequest) {
     const { action, field, matchMode, findValue, replaceValue, scope, selectedIds, filterParams } =
       parsed.data;
 
+    if (scope === 'SELECTED' && (!selectedIds || selectedIds.length === 0)) {
+      return NextResponse.json({ success: false, error: 'Для выбранных позиций требуется непустой список ID' }, { status: 400 });
+    }
+    if (scope === 'FILTERED' && !filterParams) {
+      return NextResponse.json({ success: false, error: 'Для отфильтрованных позиций требуется набор фильтров' }, { status: 400 });
+    }
+
     const columnConfig = BATCH_EDIT_COLUMNS.find((c) => c.id === field);
     if (!columnConfig) {
       return NextResponse.json(

@@ -249,6 +249,9 @@ export function EquipmentWizardForm({
               if (u) {
                 handleCustomFieldChange('responsible_user_id', u.id);
                 handleCustomFieldChange('responsible_user_login', u.ldapLogin);
+              } else {
+                handleCustomFieldChange('responsible_user_id', null);
+                handleCustomFieldChange('responsible_user_login', null);
               }
             }}
           />

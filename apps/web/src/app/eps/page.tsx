@@ -278,7 +278,7 @@ function EquipmentListContent() {
       const params = buildEquipmentFilterSearchParams(
         filters,
         page,
-        viewMode === 'grid' ? 12 : pageSize,
+        pageSize,
         sortField,
         sortDirection
       );
@@ -450,7 +450,7 @@ function EquipmentListContent() {
     const cols: TableColumnOption[] = [];
     const hasRequiredFields = sections.some((s) => (s.fields || []).some((f) => f.isRequired));
     if (hasRequiredFields) {
-      cols.push({ id: 'completeness', label: 'Полнота карточки', defaultVisible: true });
+      cols.push({ id: 'completeness', label: 'Полнота заполнения карточки', defaultVisible: true });
     }
 
     const seenKeys = new Set<string>();
@@ -546,7 +546,8 @@ function EquipmentListContent() {
         } else if (col.id === 'commissionDate' || col.id === 'commission_date') {
           row[col.label] = formatDate(getEquipmentFieldValue(eq, col.id) || eq.commissionDate);
         } else {
-          row[col.label] = getEquipmentFieldValue(eq, col.id) || '—';
+          const value = getEquipmentFieldValue(eq, col.id);
+          row[col.label] = value === undefined || value === null || value === '' ? '—' : value;
         }
       }
       return row;

@@ -10,6 +10,9 @@ export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
+    if (!hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_VIEW) && !hasPermission(user, PERMISSIONS.EPS_CUSTOM_FIELDS_MANAGE)) {
+      return forbiddenResponse();
+    }
 
     const fields = await prisma.customFieldDefinition.findMany({
       orderBy: { sortOrder: 'asc' },
@@ -35,7 +38,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { key, name, fieldType, unit, sectionId, isRequired, defaultValue, options, sortOrder } = body;
+    const { id, key, name, fieldType, unit, sectionId, isRequired, defaultValue, options, sortOrder } = body;
 
     if (!key || !name || !fieldType) {
       return NextResponse.json({ success: false, error: 'Заполните обязательные параметры поля' }, { status: 400 });
@@ -43,9 +46,7 @@ export async function POST(req: NextRequest) {
 
     const cleanKey = key.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
 
-    const field = await prisma.customFieldDefinition.upsert({
-      where: { key: cleanKey },
-      update: {
+    const updateData = {
         name: name.trim(),
         fieldType: fieldType as FieldType,
         unit: unit?.trim() || null,
@@ -54,7 +55,27 @@ export async function POST(req: NextRequest) {
         defaultValue: defaultValue !== undefined && defaultValue !== null ? String(defaultValue) : null,
         options: options || undefined,
         sortOrder: typeof sortOrder === 'number' ? sortOrder : 0,
-      },
+    };
+
+    const field = id
+      ? await (async () => {
+          const existing = await prisma.customFieldDefinition.findUnique({ where: { id } });
+          if (!existing) throw new Error('FIELD_NOT_FOUND');
+          const conflicting = await prisma.customFieldDefinition.findFirst({
+            where: { key: cleanKey, id: { not: id } },
+            select: { id: true },
+          });
+          if (conflicting) throw new Error('FIELD_KEY_CONFLICT');
+          return prisma.customFieldDefinition.update({
+            where: { id },
+            // The system key is immutable during an ordinary edit.
+            data: updateData,
+            include: { section: true },
+          });
+        })()
+      : await prisma.customFieldDefinition.upsert({
+      where: { key: cleanKey },
+      update: updateData,
       create: {
         key: cleanKey,
         name: name.trim(),

@@ -30,6 +30,10 @@ export async function POST(req: NextRequest) {
       sort = { field: 'createdAt', order: 'desc' },
       limit,
     } = body;
+    const requestedLimit = Number(limit ?? 1000);
+    if (!Number.isInteger(requestedLimit) || requestedLimit < 1 || requestedLimit > 5000) {
+      return NextResponse.json({ success: false, error: 'Лимит отчета должен быть от 1 до 5000' }, { status: 400 });
+    }
 
     // Fetch custom sections and fields definition for dictionary
     const [sections, unassignedFields] = await Promise.all([
@@ -104,7 +108,7 @@ export async function POST(req: NextRequest) {
     const allAvailableColumns = [...baseColumns, ...customColumns];
 
     // Build prisma query where filter
-    const where: any = {};
+    const where: any = { deletedAt: null };
 
     if (filters.status && filters.status in EquipmentStatus) {
       where.status = filters.status as EquipmentStatus;
@@ -159,7 +163,7 @@ export async function POST(req: NextRequest) {
         createdBy: { select: { displayName: true } },
       },
       orderBy,
-      take: limit && limit > 0 ? limit : undefined,
+      take: requestedLimit,
     });
 
     // Also get Jira issues count if needed

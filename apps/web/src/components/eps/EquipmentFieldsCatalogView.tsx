@@ -147,6 +147,7 @@ export function EquipmentFieldsCatalogView() {
     setSaving(true);
     try {
       const payload = {
+        ...(editingFieldId ? { id: editingFieldId } : {}),
         key: fieldKey.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_'),
         name: fieldName.trim(),
         fieldType,

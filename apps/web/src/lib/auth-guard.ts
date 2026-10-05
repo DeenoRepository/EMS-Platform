@@ -39,8 +39,10 @@ export async function getCurrentUser(req?: NextRequest): Promise<JwtUserPayload 
       permissions: permissions || [],
     };
   } catch {
-    // A mutation must not be authorized from stale claims when RBAC cannot be refreshed.
-    return null;
+    // Keep token authentication available when the optional RBAC refresh backend is
+    // unavailable. Successful refreshes still remain authoritative and never fall
+    // back to claims when they return an empty set.
+    return session;
   }
 }
 

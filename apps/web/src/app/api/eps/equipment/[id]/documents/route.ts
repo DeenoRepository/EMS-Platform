@@ -38,7 +38,11 @@ export async function POST(
     }
 
     const formData = await req.formData();
-    const docType = (formData.get('docType') as DocumentType) || 'OTHER';
+    const rawDocType = formData.get('docType');
+    const docType = (rawDocType || 'OTHER') as DocumentType;
+    if (!Object.values(DocumentType).includes(docType)) {
+      return NextResponse.json({ success: false, error: 'Недопустимый тип документа' }, { status: 400 });
+    }
     const description = formData.get('description') as string | null;
     const applyToAllModel = formData.get('applyToAllModel') === 'true' || formData.get('applyToAllModel') === '1';
     const applyToAllDecimal = formData.get('applyToAllDecimal') === 'true' || formData.get('applyToAllDecimal') === '1';
@@ -108,10 +112,13 @@ export async function POST(
     }
 
     const createdDocuments = [];
-    for (const file of files) {
-      const saved = await saveFile(file, 'documents');
+    const savedPaths: string[] = [];
+    try {
+      for (const file of files) {
+        const saved = await saveFile(file, 'documents');
+        savedPaths.push(saved.filePath);
 
-      for (const targetEq of targetEquipments) {
+        for (const targetEq of targetEquipments) {
         const document = await prisma.document.create({
           data: {
             equipmentId: targetEq.id,
@@ -134,8 +141,15 @@ export async function POST(
           changes: { equipmentId: targetEq.id, fileName: saved.originalName, docType },
         });
 
-        createdDocuments.push(document);
+          createdDocuments.push(document);
+        }
       }
+    } catch (error) {
+      if (createdDocuments.length > 0) {
+        await prisma.document.deleteMany({ where: { id: { in: createdDocuments.map((document) => document.id) } } });
+      }
+      for (const filePath of savedPaths) deleteFile(filePath);
+      throw error;
     }
 
     return NextResponse.json({
@@ -170,21 +184,14 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'Не указан documentId' }, { status: 400 });
     }
 
-    const document = await prisma.document.findUnique({ where: { id: documentId } });
+    const document = await prisma.document.findFirst({ where: { id: documentId, equipmentId: params.id, deletedAt: null } });
     if (!document) {
       return NextResponse.json({ success: false, error: 'Документ не найден' }, { status: 404 });
     }
 
-    const otherDocsCount = await prisma.document.count({
-      where: {
-        filePath: document.filePath,
-        id: { not: documentId },
-      },
-    });
-    if (otherDocsCount === 0) {
-      deleteFile(document.filePath);
-    }
     await prisma.document.delete({ where: { id: documentId } });
+    const otherDocsCount = await prisma.document.count({ where: { filePath: document.filePath } });
+    if (otherDocsCount === 0) deleteFile(document.filePath);
 
     return NextResponse.json({ success: true, message: 'Документ удален' });
   } catch (error: any) {

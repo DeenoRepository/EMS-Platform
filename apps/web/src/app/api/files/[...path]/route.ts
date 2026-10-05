@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { getAbsoluteFilePath } from '@/lib/storage';
+import { UPLOAD_ROOT, resolveUploadPath } from '@/lib/storage';
 
 import { getCurrentUser, unauthorizedResponse } from '@/lib/auth-guard';
+import { prisma } from '@ems/database';
+import { PERMISSIONS } from '@ems/shared';
+import { hasPermission } from '@ems/auth';
 
 export async function GET(
   req: NextRequest,
@@ -17,21 +20,41 @@ export async function GET(
     }
 
     const relativePath = params.path.join('/');
-    const fullPath = getAbsoluteFilePath(relativePath);
-
-    // 2. Предотвращение Directory Traversal
-    const uploadRoot = path.resolve(process.cwd(), process.env.UPLOAD_DIR || './uploads');
-    const resolvedFullPath = path.resolve(fullPath);
-    if (!resolvedFullPath.startsWith(uploadRoot)) {
+    const fullPath = resolveUploadPath(relativePath);
+    if (!fullPath) {
       return NextResponse.json({ success: false, error: 'Доступ запрещен' }, { status: 403 });
+    }
+
+    const resolvedFullPath = path.resolve(fullPath);
+    const relativeToRoot = path.relative(UPLOAD_ROOT, resolvedFullPath);
+    if (!relativeToRoot || relativeToRoot.startsWith(`..${path.sep}`) || path.isAbsolute(relativeToRoot)) {
+      return NextResponse.json({ success: false, error: 'Доступ запрещен' }, { status: 403 });
+    }
+
+    if (!hasPermission(user, PERMISSIONS.EPS_DOCUMENTS_VIEW) && !hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_VIEW)) {
+      return NextResponse.json({ success: false, error: 'Доступ запрещен' }, { status: 403 });
+    }
+
+    const [document, photo] = await Promise.all([
+      prisma.document.findFirst({ where: { filePath: relativePath, deletedAt: null, equipment: { deletedAt: null } }, select: { id: true } }),
+      prisma.photo.findFirst({ where: { filePath: relativePath, equipment: { deletedAt: null } }, select: { id: true } }),
+    ]);
+    if (!document && !photo) {
+      return NextResponse.json({ success: false, error: 'Файл не найден' }, { status: 404 });
     }
 
     if (!fs.existsSync(resolvedFullPath)) {
       return NextResponse.json({ success: false, error: 'Файл не найден' }, { status: 404 });
     }
+    const realRoot = fs.realpathSync(UPLOAD_ROOT);
+    const realFile = fs.realpathSync(resolvedFullPath);
+    const realRelative = path.relative(realRoot, realFile);
+    if (!realRelative || realRelative.startsWith(`..${path.sep}`) || path.isAbsolute(realRelative)) {
+      return NextResponse.json({ success: false, error: 'Доступ запрещен' }, { status: 403 });
+    }
 
-    const fileStat = fs.statSync(resolvedFullPath);
-    const fileStream = fs.createReadStream(resolvedFullPath);
+    const fileStat = fs.statSync(realFile);
+    const fileStream = fs.createReadStream(realFile);
     // Convert Node.js readable stream to Web ReadableStream
     const webStream = new ReadableStream({
       start(controller) {
@@ -44,7 +67,7 @@ export async function GET(
       },
     });
 
-    const ext = path.extname(resolvedFullPath).toLowerCase();
+    const ext = path.extname(realFile).toLowerCase();
 
     let contentType = 'application/octet-stream';
     if (ext === '.jpg' || ext === '.jpeg') contentType = 'image/jpeg';
@@ -59,7 +82,7 @@ export async function GET(
     else if (ext === '.csv') contentType = 'text/csv; charset=utf-8';
     else if (ext === '.txt') contentType = 'text/plain; charset=utf-8';
 
-    const fileName = path.basename(resolvedFullPath);
+    const fileName = path.basename(realFile);
 
     return new NextResponse(webStream as any, {
       headers: {

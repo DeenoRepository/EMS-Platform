@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -90,6 +90,8 @@ export function EquipmentBatchEditDialog({
 
   const [applying, setApplying] = useState<boolean>(false);
   const [confirmOpen, setConfirmOpen] = useState<boolean>(false);
+  const [previewKey, setPreviewKey] = useState<string | null>(null);
+  const previewRequestRef = useRef(0);
 
   const activeColumn = BATCH_EDIT_COLUMNS.find((c) => c.id === field);
 
@@ -121,6 +123,7 @@ export function EquipmentBatchEditDialog({
       setScope(selectedIds.length > 0 ? 'SELECTED' : 'ALL');
       setMatchedCount(null);
       setSampleItems([]);
+      setPreviewKey(null);
     }
   }, [open, selectedIds.length]);
 
@@ -130,7 +133,24 @@ export function EquipmentBatchEditDialog({
     setReplaceValue('');
     setMatchedCount(null);
     setSampleItems([]);
+    setPreviewKey(null);
   };
+
+  const currentPreviewKey = JSON.stringify({
+    field,
+    matchMode,
+    findValue: findValue.trim(),
+    replaceValue: replaceValue.trim(),
+    scope,
+    selectedIds: [...selectedIds].sort(),
+    filterParams,
+  });
+
+  useEffect(() => {
+    setPreviewKey(null);
+    setMatchedCount(null);
+    setSampleItems([]);
+  }, [currentPreviewKey]);
 
   const handleFetchPreview = async () => {
     if (!findValue.trim()) {
@@ -138,6 +158,8 @@ export function EquipmentBatchEditDialog({
       return;
     }
     setLoadingPreview(true);
+    const requestId = ++previewRequestRef.current;
+    const requestKey = currentPreviewKey;
     try {
       const res = await fetch('/api/eps/equipment/batch-edit', {
         method: 'POST',
@@ -154,9 +176,11 @@ export function EquipmentBatchEditDialog({
         }),
       });
       const data = await res.json();
+      if (requestId !== previewRequestRef.current) return;
       if (data.success) {
         setMatchedCount(data.matchedCount);
         setSampleItems(data.sampleItems || []);
+        setPreviewKey(requestKey);
       } else {
         enqueueSnackbar(data.error || 'Ошибка предпросмотра', { variant: 'error' });
       }
@@ -168,6 +192,14 @@ export function EquipmentBatchEditDialog({
   };
 
   const handleApplyChanges = async () => {
+    if (scope === 'SELECTED' && selectedIds.length === 0) {
+      enqueueSnackbar('Выберите хотя бы одну позицию оборудования', { variant: 'warning' });
+      return;
+    }
+    if (previewKey !== currentPreviewKey || matchedCount === null) {
+      enqueueSnackbar('Сначала обновите предпросмотр для текущих параметров', { variant: 'warning' });
+      return;
+    }
     setApplying(true);
     try {
       const res = await fetch('/api/eps/equipment/batch-edit', {
@@ -453,7 +485,7 @@ export function EquipmentBatchEditDialog({
             size="small"
             color="primary"
             startIcon={<DoneAllIcon />}
-            disabled={matchedCount === 0 || !findValue.trim() || applying}
+            disabled={matchedCount === 0 || previewKey !== currentPreviewKey || !findValue.trim() || applying}
             onClick={() => setConfirmOpen(true)}
           >
             Применить замену

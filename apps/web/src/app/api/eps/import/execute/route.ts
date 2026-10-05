@@ -65,6 +65,12 @@ export async function POST(req: NextRequest) {
     if (conflictStrategy === 'FULL_REPLACE' && fullReplaceConfirmed !== true) {
       return NextResponse.json({ success: false, error: 'Для полной замены реестра требуется подтверждение' }, { status: 400 });
     }
+    if (conflictStrategy === 'FULL_REPLACE' && !hasPermission(user, PERMISSIONS.EPS_DATABASE_PURGE)) {
+      return forbiddenResponse('Полная замена реестра требует права очистки базы');
+    }
+    if (newFieldDefinitions.length > 0 && !hasPermission(user, PERMISSIONS.EPS_CUSTOM_FIELDS_MANAGE)) {
+      return forbiddenResponse('Создание полей через импорт требует права управления справочником');
+    }
 
     // Определяем колонку уникального ID оборудования (выбранную пользователем или сопоставленную)
     const effectivePkHeader =
@@ -205,16 +211,18 @@ export async function POST(req: NextRequest) {
 
       try {
         // Extract base fields based on mapping
-        let nameVal = '';
-        if (nameHeader && rawData[nameHeader] !== undefined && rawData[nameHeader] !== null && String(rawData[nameHeader]).trim()) {
-          nameVal = String(rawData[nameHeader]).trim();
+         let nameVal = '';
+         let nameMapped = false;
+         if (nameHeader && rawData[nameHeader] !== undefined && rawData[nameHeader] !== null && String(rawData[nameHeader]).trim()) {
+           nameVal = String(rawData[nameHeader]).trim();
+           nameMapped = true;
         }
         let invVal: string | null = null;
         let snVal: string | null = null;
         let mfgVal: string | null = null;
         let modelVal: string | null = null;
         let locVal: string | null = null;
-        let statusVal: EquipmentStatus = 'ACTIVE';
+         let statusVal: EquipmentStatus | undefined;
         let commDateVal: Date | null = null;
         let tagsRaw = '';
 
@@ -226,14 +234,17 @@ export async function POST(req: NextRequest) {
           if (val === undefined || val === null || String(val).trim() === '') return;
 
           const fieldStr = String(targetField);
-          if (fieldStr === 'name') nameVal = String(val).trim();
+           if (fieldStr === 'name') {
+             nameVal = String(val).trim();
+             nameMapped = true;
+           }
           else if (fieldStr === 'externalId') customFieldsObj.external_system_id = String(val).trim();
           else if (fieldStr === 'inventoryNumber') invVal = String(val).trim();
           else if (fieldStr === 'serialNumber') snVal = String(val).trim();
           else if (fieldStr === 'manufacturer') mfgVal = String(val).trim();
           else if (fieldStr === 'model') modelVal = String(val).trim();
           else if (fieldStr === 'location') locVal = String(val).trim();
-          else if (fieldStr === 'status') statusVal = parseEquipmentStatus(val);
+           else if (fieldStr === 'status') statusVal = parseEquipmentStatus(val);
           else if (fieldStr === 'commissionDate') commDateVal = parseCommissionDate(val);
           else if (fieldStr === 'tags') tagsRaw = String(val).trim();
           else if (fieldStr.startsWith('custom_')) {
@@ -370,13 +381,13 @@ export async function POST(req: NextRequest) {
             await db.equipment.update({
             where: { id: existingEquipment.id },
             data: {
-              name: nameVal || existingEquipment.name,
-              serialNumber: snVal || existingEquipment.serialNumber,
-              manufacturer: mfgVal || existingEquipment.manufacturer,
-              model: modelVal || existingEquipment.model,
-              location: locVal || existingEquipment.location,
-              status: statusVal || existingEquipment.status,
-              commissionDate: commDateVal || existingEquipment.commissionDate,
+               ...(nameMapped ? { name: nameVal } : {}),
+               ...(snVal !== null ? { serialNumber: snVal } : {}),
+               ...(mfgVal !== null ? { manufacturer: mfgVal } : {}),
+               ...(modelVal !== null ? { model: modelVal } : {}),
+               ...(locVal !== null ? { location: locVal } : {}),
+               ...(statusVal !== undefined ? { status: statusVal } : {}),
+               ...(commDateVal !== null ? { commissionDate: commDateVal } : {}),
               customFields: mergedCustom,
             },
           });
@@ -403,7 +414,7 @@ export async function POST(req: NextRequest) {
               manufacturer: mfgVal,
               model: modelVal,
               location: locVal,
-              status: statusVal,
+               status: statusVal || 'ACTIVE',
               commissionDate: commDateVal,
               customFields: Object.keys(customFieldsObj).length > 0 ? customFieldsObj : undefined,
               createdById: user.userId,

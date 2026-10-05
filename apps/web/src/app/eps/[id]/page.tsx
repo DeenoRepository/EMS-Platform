@@ -206,20 +206,20 @@ function EquipmentPassportContent() {
 
   const TAB_KEY_MAP: Record<string, number> = {
     overview: 0,
-    specs: 1,
-    photos: 2,
-    docs: 3,
-    'spare-parts': 4,
-    mro: 5,
-    srm: 6,
-    history: 7,
+    docs: 1,
+    approvals: 2,
+    'spare-parts': 3,
+    mro: 4,
+    srm: 5,
+    history: 6,
   };
-  const TAB_INDEX_MAP = ['overview', 'specs', 'photos', 'docs', 'spare-parts', 'mro', 'srm', 'history'];
+  const TAB_INDEX_MAP = ['overview', 'docs', 'approvals', 'spare-parts', 'mro', 'srm', 'history'];
 
   const [equipment, setEquipment] = useState<EquipmentDetails | null>(null);
   const [sections, setSections] = useState<CustomSectionDef[]>([]);
   const [unassignedFields, setUnassignedFields] = useState<CustomFieldDef[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState(() => {
     if (tabParam && TAB_KEY_MAP[tabParam] !== undefined) {
@@ -227,6 +227,11 @@ function EquipmentPassportContent() {
     }
     return 0;
   });
+
+  useEffect(() => {
+    const nextTab = tabParam && TAB_KEY_MAP[tabParam] !== undefined ? TAB_KEY_MAP[tabParam] : 0;
+    setActiveTab(nextTab);
+  }, [tabParam]);
 
   // Modals state
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -273,13 +278,18 @@ function EquipmentPassportContent() {
 
   const fetchEquipmentAndMeta = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const [eqRes, secRes] = await Promise.all([
         fetch(`/api/eps/equipment/${id}`),
         fetch('/api/eps/custom-sections'),
       ]);
 
-      if (eqRes.ok) {
+      if (eqRes.status === 403) {
+        setLoadError('Недостаточно прав для просмотра паспорта оборудования.');
+      } else if (eqRes.status === 404) {
+        setLoadError('Оборудование не найдено.');
+      } else if (eqRes.ok) {
         const json = await eqRes.json();
         if (json.success && json.data) {
           setEquipment(json.data);
@@ -295,6 +305,8 @@ function EquipmentPassportContent() {
           });
           setEditCustomFields(json.data.customFields || {});
         }
+      } else {
+        setLoadError('Не удалось загрузить паспорт оборудования.');
       }
 
       if (secRes.ok) {
@@ -305,6 +317,7 @@ function EquipmentPassportContent() {
         }
       }
     } catch {
+      setLoadError('Ошибка сети при загрузке паспорта оборудования.');
       enqueueSnackbar('Ошибка загрузки паспорта оборудования', { variant: 'error' });
     } finally {
       setLoading(false);
@@ -647,8 +660,18 @@ function EquipmentPassportContent() {
     return evts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [equipment, auditLogs]);
 
-  if (loading || !equipment) {
+  if (loading) {
     return <PageLoading text="Загрузка электронного паспорта оборудования..." />;
+  }
+  if (loadError || !equipment) {
+    return (
+      <EmptyState
+        title={loadError || 'Оборудование не найдено'}
+        description="Проверьте адрес или повторите загрузку."
+        actionText="Повторить"
+        onAction={fetchEquipmentAndMeta}
+      />
+    );
   }
 
   const statusInfo = EQUIPMENT_STATUS_MAP[equipment.status] || { label: equipment.status, color: 'default' };
@@ -887,6 +910,9 @@ function EquipmentPassportContent() {
             value={activeTab}
             onChange={(val) => {
               setActiveTab(val);
+              const params = new URLSearchParams(window.location.search);
+              params.set('tab', TAB_INDEX_MAP[val] || 'overview');
+              router.replace(`/eps/${id}?${params.toString()}`);
               if (val === 6) fetchAudit();
             }}
             tabs={[
@@ -1761,7 +1787,10 @@ function EquipmentPassportContent() {
       {/* Edit Equipment Dialog with Custom Sections */}
       <FormDialog
         open={editModalOpen}
-        onClose={() => setEditModalOpen(false)}
+        onClose={() => {
+          setEditModalOpen(false);
+          fetchEquipmentAndMeta();
+        }}
         title="Редактирование паспорта оборудования"
         icon={<PrecisionManufacturingIcon color="primary" />}
         maxWidth="md"
@@ -1769,7 +1798,10 @@ function EquipmentPassportContent() {
           <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
             <Button
               variant="text"
-              onClick={() => setEditModalOpen(false)}
+              onClick={() => {
+                setEditModalOpen(false);
+                fetchEquipmentAndMeta();
+              }}
               sx={{ color: 'text.secondary', fontWeight: 600 }}
             >
               Отмена

@@ -33,24 +33,30 @@ export async function POST(
     // Сохраняем файл на диск
     const saved = await saveFile(file, 'photos');
 
-    // Если это главное фото, снимаем флаг с других
-    if (isPrimary) {
-      await prisma.photo.updateMany({
-        where: { equipmentId: id },
-        data: { isPrimary: false },
+    let photo;
+    try {
+      photo = await prisma.$transaction(async (tx) => {
+        if (isPrimary) {
+          await tx.photo.updateMany({
+            where: { equipmentId: id },
+            data: { isPrimary: false },
+          });
+        }
+        return tx.photo.create({
+          data: {
+            equipmentId: id,
+            fileName: saved.fileName,
+            originalName: saved.originalName,
+            filePath: saved.filePath,
+            isPrimary,
+            uploadedById: user.userId,
+          },
+        });
       });
+    } catch (error) {
+      deleteFile(saved.filePath);
+      throw error;
     }
-
-    const photo = await prisma.photo.create({
-      data: {
-        equipmentId: id,
-        fileName: saved.fileName,
-        originalName: saved.originalName,
-        filePath: saved.filePath,
-        isPrimary,
-        uploadedById: user.userId,
-      },
-    });
 
     await logAuditEvent({
       userId: user.userId,
@@ -86,13 +92,14 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'Не указан photoId' }, { status: 400 });
     }
 
-    const photo = await prisma.photo.findUnique({ where: { id: photoId } });
+    const photo = await prisma.photo.findFirst({ where: { id: photoId, equipmentId: params.id } });
     if (!photo) {
       return NextResponse.json({ success: false, error: 'Фото не найдено' }, { status: 404 });
     }
 
-    deleteFile(photo.filePath);
     await prisma.photo.delete({ where: { id: photoId } });
+    const otherPhotos = await prisma.photo.count({ where: { filePath: photo.filePath } });
+    if (otherPhotos === 0) deleteFile(photo.filePath);
 
     return NextResponse.json({ success: true, message: 'Фото удалено' });
   } catch (error: any) {

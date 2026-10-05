@@ -31,16 +31,9 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'Документ не найден' }, { status: 404 });
     }
 
-    const otherDocsCount = await prisma.document.count({
-      where: {
-        filePath: document.filePath,
-        id: { not: id },
-      },
-    });
-    if (otherDocsCount === 0) {
-      deleteFile(document.filePath);
-    }
     await prisma.document.delete({ where: { id } });
+    const otherDocsCount = await prisma.document.count({ where: { filePath: document.filePath } });
+    if (otherDocsCount === 0) deleteFile(document.filePath);
 
     await logAuditEvent({
       userId: user.userId,
