@@ -224,9 +224,11 @@ export function SmartImportWizard() {
 
         const initialResolutions: Record<string, MissingFieldResolution> = {};
         (json.data.missingFields || []).forEach((mf: any) => {
+          const autoMapped = json.data.mappedColumns?.[mf.header];
           initialResolutions[mf.header] = {
             header: mf.header,
-            action: 'CREATE',
+            action: autoMapped ? 'MAP_EXISTING' : 'CREATE',
+            mappedExistingKey: autoMapped || '',
             name: mf.suggestedName,
             key: mf.suggestedKey,
             fieldType: mf.suggestedType,
@@ -235,6 +237,23 @@ export function SmartImportWizard() {
             ...(mf.suggestedSectionName ? { sectionName: mf.suggestedSectionName } : {}),
             ...(mf.suggestedSectionCode ? { sectionCode: mf.suggestedSectionCode } : {}),
           } as any;
+        });
+
+        // Также инициализируем resolutions для заголовков, сопоставленных с базовыми полями
+        (json.data.fileHeaders || []).forEach((h: string) => {
+          if (!initialResolutions[h]) {
+            const mapped = json.data.mappedColumns?.[h];
+            initialResolutions[h] = {
+              header: h,
+              action: mapped ? 'MAP_EXISTING' : 'IGNORE',
+              mappedExistingKey: mapped || '',
+              name: h,
+              key: h.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
+              fieldType: 'TEXT',
+              unit: '',
+              sectionId: '',
+            };
+          }
         });
         setResolutions(initialResolutions);
 
@@ -278,6 +297,9 @@ export function SmartImportWizard() {
       return;
     }
     const updatedMapping = { ...columnMapping };
+    if (effectiveName) {
+      updatedMapping[effectiveName] = 'name';
+    }
     Object.entries(resolutions).forEach(([header, res]) => {
       if (res.action === 'CREATE') {
         updatedMapping[header] = `custom_${res.key}`;
@@ -287,7 +309,7 @@ export function SmartImportWizard() {
         ].includes(res.mappedExistingKey)
           ? res.mappedExistingKey
           : `custom_${res.mappedExistingKey}`;
-      } else {
+      } else if (res.action === 'IGNORE' && header !== effectiveName) {
         delete updatedMapping[header];
       }
     });
