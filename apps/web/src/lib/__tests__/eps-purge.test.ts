@@ -10,16 +10,23 @@ function readProjectFile(relativePath: string): string {
 }
 
 describe('EPS Equipment Database Purge Feature', () => {
-  it('API route /api/eps/equipment/purge implements GET and DELETE methods restricted to admins', () => {
+  it('API route /api/eps/equipment/purge enforces EPS_DATABASE_PURGE permission', () => {
     const apiSource = readProjectFile('apps/web/src/app/api/eps/equipment/purge/route.ts');
     assert.match(apiSource, /export async function GET/);
     assert.match(apiSource, /export async function DELETE/);
-    assert.match(apiSource, /isUserAdmin/);
-    assert.match(apiSource, /roles\?\.includes\('admin'\)/);
+    assert.match(apiSource, /canPurgeDatabase/);
+    assert.match(apiSource, /hasPermission\(user, PERMISSIONS\.EPS_DATABASE_PURGE\)/);
     assert.match(apiSource, /enforceRateLimit/);
     assert.match(apiSource, /logAuditEvent/);
     assert.match(apiSource, /prisma\.\$transaction/);
     assert.match(apiSource, /tx\.equipment\.deleteMany/);
+  });
+
+  it('Matrix includes EPS_DATABASE_PURGE code and description', () => {
+    const sharedSource = readProjectFile('packages/shared/src/index.ts');
+    assert.match(sharedSource, /EPS_DATABASE_PURGE:\s*'eps\.database\.purge'/);
+    assert.match(sharedSource, /'eps\.database\.purge':\s*\{/);
+    assert.match(sharedSource, /Очистка базы данных оборудования/);
   });
 
   it('API purge endpoint requires confirmation word УДАЛИТЬ or DELETE', () => {
@@ -36,11 +43,12 @@ describe('EPS Equipment Database Purge Feature', () => {
     assert.match(componentSource, /method:\s*'DELETE'/);
   });
 
-  it('EPS equipment registry page includes "Очистить базу" button for administrators', () => {
+  it('EPS equipment registry page includes "Очистить базу" button controlled by EPS_DATABASE_PURGE permission', () => {
     const pageSource = readProjectFile('apps/web/src/app/eps/page.tsx');
     assert.match(pageSource, /EquipmentPurgeDialog/);
     assert.match(pageSource, /setOpenPurgeDialog\(true\)/);
     assert.match(pageSource, /Очистить базу/);
-    assert.match(pageSource, /isAdmin &&/);
+    assert.match(pageSource, /canPurge &&/);
+    assert.match(pageSource, /hasPermission\(PERMISSIONS\.EPS_DATABASE_PURGE\)/);
   });
 });

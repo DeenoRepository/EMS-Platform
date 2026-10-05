@@ -1,26 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
 import { prisma } from '@ems/database';
-import { logAuditEvent } from '@ems/auth';
+import { PERMISSIONS } from '@ems/shared';
+import { hasPermission, logAuditEvent } from '@ems/auth';
 import { deleteFile } from '@/lib/storage';
 import { enforceRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
-function isUserAdmin(user: any): boolean {
+function canPurgeDatabase(user: any): boolean {
   if (!user) return false;
-  return Boolean(
-    user.roles?.includes('admin') ||
-    user.roles?.includes('administrator')
-  );
+  return hasPermission(user, PERMISSIONS.EPS_DATABASE_PURGE);
 }
 
-// GET: Получение статистики позиций перед очисткой (только для администраторов)
+// GET: Получение статистики позиций перед очисткой (требуется разрешение eps.database.purge)
 export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
-    if (!isUserAdmin(user)) return forbiddenResponse();
+    if (!canPurgeDatabase(user)) return forbiddenResponse();
 
     const [equipmentCount, documentsCount, photosCount] = await Promise.all([
       prisma.equipment.count(),
@@ -45,7 +43,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// DELETE / POST: Полная очистка всех позиций оборудования из базы данных EPS (только для администраторов)
+// DELETE / POST: Полная очистка всех позиций оборудования из базы данных EPS (требуется разрешение eps.database.purge)
 export async function DELETE(req: NextRequest) {
   const rateLimitError = await enforceRateLimit(req, {
     limit: 5,
@@ -57,7 +55,7 @@ export async function DELETE(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
-    if (!isUserAdmin(user)) return forbiddenResponse();
+    if (!canPurgeDatabase(user)) return forbiddenResponse();
 
     // Проверка слова-подтверждения
     let confirmation = '';

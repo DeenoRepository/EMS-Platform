@@ -17,6 +17,25 @@ WHERE r."name" IN ('admin', 'engineer')
     WHERE rp."roleId" = r."id" AND rp."permissionId" = p."id"
   );
 
+-- Идемпотентное добавление права eps.database.purge в каталог прав
+INSERT INTO "Permission" ("id", "code", "displayName", "module", "description")
+SELECT gen_random_uuid()::text, 'eps.database.purge', 'Очистка базы данных оборудования', 'eps', 'Полное безвозвратное удаление всех позиций оборудования, связанных документов и паспортов из модуля EPS'
+WHERE NOT EXISTS (
+  SELECT 1 FROM "Permission" WHERE "code" = 'eps.database.purge'
+);
+
+-- Назначение права роли admin по умолчанию
+INSERT INTO "RolePermission" ("roleId", "permissionId")
+SELECT r."id", p."id"
+FROM "Role" r
+CROSS JOIN "Permission" p
+WHERE r."name" IN ('admin', 'administrator')
+  AND p."code" = 'eps.database.purge'
+  AND NOT EXISTS (
+    SELECT 1 FROM "RolePermission" rp
+    WHERE rp."roleId" = r."id" AND rp."permissionId" = p."id"
+  );
+
 -- Подсветка обязательных позиций технических разделов паспорта оборудования
 UPDATE "CustomFieldDefinition"
 SET "isRequired" = true

@@ -19,6 +19,7 @@ export const PERMISSIONS = {
   EPS_REPORTS_VIEW: 'eps.reports.view',
   EPS_REPORTS_MANAGE: 'eps.reports.manage',
   EPS_IMPORT_EXECUTE: 'eps.import.execute',
+  EPS_DATABASE_PURGE: 'eps.database.purge',
 
   // WMS
   WMS_STOCK_VIEW: 'wms.stock.view',
@@ -182,6 +183,12 @@ export const PERMISSION_DEFINITIONS: Record<PermissionCode, PermissionDefinition
     displayName: 'Пакетный импорт данных',
     module: 'eps',
     description: 'Загрузка и валидация реестров оборудования из внешних файлов Excel через мастер импорта',
+  },
+  'eps.database.purge': {
+    code: 'eps.database.purge',
+    displayName: 'Очистка базы данных оборудования',
+    module: 'eps',
+    description: 'Полное безвозвратное удаление всех позиций оборудования, связанных документов и паспортов из модуля EPS',
   },
 
   // WMS

@@ -30,6 +30,7 @@ async function main() {
     { code: 'eps.reports.view', displayName: 'Просмотр отчетов EPS', module: 'eps', description: 'Формирование и выгрузка отчетов по оборудованию' },
     { code: 'eps.reports.manage', displayName: 'Управление шаблонами отчетов', module: 'eps', description: 'Создание и редактирование шаблонов отчетов' },
     { code: 'eps.import.execute', displayName: 'Импорт оборудования', module: 'eps', description: 'Пакетный импорт оборудования из файлов Excel' },
+    { code: 'eps.database.purge', displayName: 'Очистка базы данных оборудования', module: 'eps', description: 'Полное безвозвратное удаление всех позиций оборудования из базы данных EPS' },
 
     // WMS
     { code: 'wms.stock.view', displayName: 'Просмотр остатков и складов', module: 'wms', description: 'Просмотр наличия ТМЦ и складов' },

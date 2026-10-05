@@ -413,6 +413,7 @@ function EquipmentListContent() {
   const canCreate = hasPermission(PERMISSIONS.EPS_EQUIPMENT_CREATE);
   const canImport = hasPermission(PERMISSIONS.EPS_IMPORT_EXECUTE);
   const canBatchEdit = hasPermission(PERMISSIONS.EPS_EQUIPMENT_BATCH_EDIT);
+  const canPurge = hasPermission(PERMISSIONS.EPS_DATABASE_PURGE);
 
   // Bulk Selection State
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -699,7 +700,7 @@ function EquipmentListContent() {
                 Массовое редактирование
               </Button>
             )}
-            {isAdmin && (
+            {canPurge && (
               <Button
                 variant="outlined"
                 color="error"
