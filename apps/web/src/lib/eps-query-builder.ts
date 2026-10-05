@@ -248,7 +248,7 @@ function applyCustomFieldsFilters(and: Prisma.EquipmentWhereInput[], params: URL
     });
   }
 
-  const respPerson = params.get('respPerson')?.trim();
+  const respPerson = (params.get('respPerson') || params.get('responsible_person_name'))?.trim();
   if (respPerson) {
     and.push({
       customFields: {
@@ -257,6 +257,7 @@ function applyCustomFieldsFilters(and: Prisma.EquipmentWhereInput[], params: URL
       },
     });
   }
+
 }
 
 /**

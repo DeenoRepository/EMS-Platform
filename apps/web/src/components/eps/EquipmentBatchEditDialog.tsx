@@ -436,10 +436,10 @@ export function EquipmentBatchEditDialog({
                   <Table size="small" stickyHeader>
                     <TableHead>
                       <TableRow>
-                        <TableCell sx={{ fontWeight: 600 }}>Инв. №</TableCell>
-                        <TableCell sx={{ fontWeight: 600 }}>Оборудование</TableCell>
-                        <TableCell sx={{ fontWeight: 600 }}>Текущее значение</TableCell>
-                        <TableCell sx={{ fontWeight: 600 }}>Новое значение</TableCell>
+                        <TableCell component="th" scope="col" sx={{ fontWeight: 600 }}>Инв. №</TableCell>
+                        <TableCell component="th" scope="col" sx={{ fontWeight: 600 }}>Оборудование</TableCell>
+                        <TableCell component="th" scope="col" sx={{ fontWeight: 600 }}>Текущее значение</TableCell>
+                        <TableCell component="th" scope="col" sx={{ fontWeight: 600 }}>Новое значение</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>

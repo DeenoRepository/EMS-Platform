@@ -271,13 +271,13 @@ export function EquipmentFieldsCatalogView() {
             <Table size="small" aria-label="Справочник полей оборудования">
               <TableHead sx={{ backgroundColor: 'action.hover' }}>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 700 }}>Название поля</TableCell>
-                  <TableCell sx={{ fontWeight: 700, width: 180 }}>Системный ключ</TableCell>
-                  <TableCell sx={{ fontWeight: 700, width: 140 }}>Тип данных</TableCell>
-                  <TableCell sx={{ fontWeight: 700, width: 90 }}>Ед. изм.</TableCell>
-                  <TableCell sx={{ fontWeight: 700, width: 220 }}>Раздел паспорта</TableCell>
-                  <TableCell sx={{ fontWeight: 700, width: 110 }}>Обязательное</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 700, width: 90 }}>Действия</TableCell>
+                  <TableCell component="th" scope="col" sx={{ fontWeight: 700 }}>Название поля</TableCell>
+                  <TableCell component="th" scope="col" sx={{ fontWeight: 700, width: 180 }}>Системный ключ</TableCell>
+                  <TableCell component="th" scope="col" sx={{ fontWeight: 700, width: 140 }}>Тип данных</TableCell>
+                  <TableCell component="th" scope="col" sx={{ fontWeight: 700, width: 90 }}>Ед. изм.</TableCell>
+                  <TableCell component="th" scope="col" sx={{ fontWeight: 700, width: 220 }}>Раздел паспорта</TableCell>
+                  <TableCell component="th" scope="col" sx={{ fontWeight: 700, width: 110 }}>Обязательное</TableCell>
+                  <TableCell component="th" scope="col" align="right" sx={{ fontWeight: 700, width: 90 }}>Действия</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>

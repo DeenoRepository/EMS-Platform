@@ -46,6 +46,7 @@ export async function GET(req: NextRequest) {
       }),
       prisma.equipment.groupBy({
         by: ['status'],
+        where,
         _count: { status: true },
       }),
     ]);

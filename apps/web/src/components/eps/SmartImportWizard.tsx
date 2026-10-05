@@ -639,10 +639,10 @@ export function SmartImportWizard() {
                 <Table size="small" aria-label="Таблица сопоставления колонок">
                   <TableHead sx={{ backgroundColor: 'action.hover' }}>
                     <TableRow>
-                      <TableCell sx={{ fontWeight: 700, width: '25%' }}>Колонка в файле</TableCell>
-                      <TableCell sx={{ fontWeight: 700, width: '20%' }}>Примеры значений</TableCell>
-                      <TableCell sx={{ fontWeight: 700, width: '25%' }}>Действие</TableCell>
-                      <TableCell sx={{ fontWeight: 700, width: '30%' }}>Целевое поле в EMS</TableCell>
+                      <TableCell component="th" scope="col" sx={{ fontWeight: 700, width: '25%' }}>Колонка в файле</TableCell>
+                      <TableCell component="th" scope="col" sx={{ fontWeight: 700, width: '20%' }}>Примеры значений</TableCell>
+                      <TableCell component="th" scope="col" sx={{ fontWeight: 700, width: '25%' }}>Действие</TableCell>
+                      <TableCell component="th" scope="col" sx={{ fontWeight: 700, width: '30%' }}>Целевое поле в EMS</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -676,6 +676,7 @@ export function SmartImportWizard() {
                           <TableCell>
                             <FormControl component="fieldset">
                               <RadioGroup
+                                aria-label={`Действие для колонки ${header}`}
                                 row
                                 value={res.action}
                                 onChange={(e) => {

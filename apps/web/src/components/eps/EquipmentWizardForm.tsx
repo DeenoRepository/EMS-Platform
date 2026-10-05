@@ -189,10 +189,13 @@ export function EquipmentWizardForm({
     if (def.fieldType === 'SELECT' && def.options && Array.isArray(def.options)) {
       return (
         <Box key={def.key} sx={{ gridColumn: { xs: 'span 1', sm: 'span 1' } }}>
-          <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+          <Typography variant="body2" fontWeight={600} color="text.primary" sx={{ mb: 0.5 }}>
             {def.name} {def.isRequired && <Box component="span" sx={{ color: 'error.main' }}>*</Box>}
           </Typography>
           <TextField
+            id={`custom-field-${def.key}`}
+            label={def.name}
+            aria-label={def.name}
             select
             fullWidth
             size="small"
@@ -214,10 +217,13 @@ export function EquipmentWizardForm({
     if (def.fieldType === 'TEXTAREA') {
       return (
         <Box key={def.key} sx={{ gridColumn: { xs: 'span 1', sm: 'span 2' } }}>
-          <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+          <Typography variant="body2" fontWeight={600} color="text.primary" sx={{ mb: 0.5 }}>
             {def.name} {def.isRequired && <Box component="span" sx={{ color: 'error.main' }}>*</Box>}
           </Typography>
           <TextField
+            id={`custom-field-${def.key}`}
+            label={def.name}
+            aria-label={def.name}
             multiline
             rows={2}
             fullWidth
@@ -237,11 +243,11 @@ export function EquipmentWizardForm({
     ) {
       return (
         <Box key={def.key} sx={{ gridColumn: { xs: 'span 1', sm: 'span 1' } }}>
-          <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+          <Typography variant="body2" fontWeight={600} color="text.primary" sx={{ mb: 0.5 }}>
             {def.name} {def.isRequired && <Box component="span" sx={{ color: 'error.main' }}>*</Box>}
           </Typography>
           <ResponsibleUserSelect
-            label=""
+            label={def.name}
             required={def.isRequired}
             value={customFieldValues[def.key] || ''}
             onChange={(val, u) => {
@@ -261,10 +267,13 @@ export function EquipmentWizardForm({
 
     return (
       <Box key={def.key} sx={{ gridColumn: { xs: 'span 1', sm: 'span 1' } }}>
-        <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+        <Typography variant="body2" fontWeight={600} color="text.primary" sx={{ mb: 0.5 }}>
           {def.name} {def.isRequired && <Box component="span" sx={{ color: 'error.main' }}>*</Box>}
         </Typography>
         <TextField
+          id={`custom-field-${def.key}`}
+          label={def.name}
+          aria-label={def.name}
           type={def.fieldType === 'NUMBER' ? 'number' : def.fieldType === 'DATE' ? 'date' : 'text'}
           InputProps={
             def.unit
@@ -426,8 +435,11 @@ export function EquipmentWizardForm({
                 <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
                   Наименование оборудования <Box component="span" sx={{ color: 'error.main' }}>*</Box>
                 </Typography>
-                <TextField
-                  placeholder="например: Центробежный насос подачи охлаждающей воды"
+                  <TextField
+                    id="equipment-name"
+                    label="Наименование оборудования"
+                    aria-label="Наименование оборудования"
+                    placeholder="например: Центробежный насос подачи охлаждающей воды"
                   required
                   fullWidth
                   size="small"
@@ -441,6 +453,9 @@ export function EquipmentWizardForm({
                   Инвентарный номер
                 </Typography>
                 <TextField
+                  id="equipment-inventory-number"
+                  label="Инвентарный номер"
+                  aria-label="Инвентарный номер"
                   placeholder="например: EQ-2024-001"
                   fullWidth
                   size="small"
@@ -454,6 +469,9 @@ export function EquipmentWizardForm({
                   Заводской / Серийный номер
                 </Typography>
                 <TextField
+                  id="equipment-serial-number"
+                  label="Заводской / Серийный номер"
+                  aria-label="Заводской / Серийный номер"
                   placeholder="например: SN-998234-A"
                   fullWidth
                   size="small"
@@ -467,6 +485,9 @@ export function EquipmentWizardForm({
                   Производитель (Бренд)
                 </Typography>
                 <TextField
+                  id="equipment-manufacturer"
+                  label="Производитель (Бренд)"
+                  aria-label="Производитель (Бренд)"
                   placeholder="например: Siemens / Atlas Copco"
                   fullWidth
                   size="small"
@@ -480,6 +501,9 @@ export function EquipmentWizardForm({
                   Модель / Модификация
                 </Typography>
                 <TextField
+                  id="equipment-model"
+                  label="Модель / Модификация"
+                  aria-label="Модель / Модификация"
                   placeholder="например: GA 45 VSD+ / 11 кВт"
                   fullWidth
                   size="small"
@@ -493,6 +517,9 @@ export function EquipmentWizardForm({
                   Место установки (Цех, участок, позиция)
                 </Typography>
                 <TextField
+                  id="equipment-location"
+                  label="Место установки (Цех, участок, позиция)"
+                  aria-label="Место установки (Цех, участок, позиция)"
                   placeholder="например: Компрессорный цех, поз. К-2"
                   fullWidth
                   size="small"
@@ -600,7 +627,10 @@ export function EquipmentWizardForm({
                   Статус оборудования
                 </Typography>
                 <FormControl fullWidth size="small">
+                  <InputLabel id="equipment-status-label">Статус оборудования</InputLabel>
                   <Select
+                    labelId="equipment-status-label"
+                    label="Статус оборудования"
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
                   >

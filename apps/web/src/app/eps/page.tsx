@@ -1033,6 +1033,9 @@ function EquipmentListContent() {
             {sortedEquipmentList.map((eq) => (
               <Grid item xs={12} sm={6} md={4} lg={3} key={eq.id}>
                 <Card
+                  role="link"
+                  tabIndex={0}
+                  aria-label={`Открыть паспорт оборудования: ${eq.name}`}
                   sx={{
                     height: '100%',
                     display: 'flex',
@@ -1048,6 +1051,12 @@ function EquipmentListContent() {
                     },
                   }}
                   onClick={() => handleRowClick(eq)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      handleRowClick(eq);
+                    }
+                  }}
                 >
                   <Box
                     sx={{
@@ -1184,7 +1193,7 @@ function EquipmentListContent() {
         <Table stickyHeader size="small" aria-label="Реестр оборудования" sx={{ minWidth: 1400 }}>
           <TableHead>
             <TableRow sx={{ backgroundColor: 'background.paper' }}>
-              <TableCell padding="checkbox" sx={{ width: 44, pl: 2 }}>
+              <TableCell component="th" scope="col" padding="checkbox" sx={{ width: 44, pl: 2 }}>
                 <Checkbox
                   size="small"
                   indeterminate={selectedIds.length > 0 && selectedIds.length < equipmentList.length}
@@ -1201,7 +1210,7 @@ function EquipmentListContent() {
               </TableCell>
 
               {visibleColumns.includes('completeness') && (
-                <TableCell sx={{ width: 44, minWidth: 44, px: 0.5, textAlign: 'center' }}>
+                <TableCell component="th" scope="col" sx={{ width: 44, minWidth: 44, px: 0.5, textAlign: 'center' }}>
                   <Tooltip title="Сортировать по полноте заполнения карточки">
                     <TableSortLabel
                       active={sortField === 'completeness'}
@@ -1234,7 +1243,7 @@ function EquipmentListContent() {
                 .map((col) => {
                   if (!visibleColumns.includes(col.id)) return null;
                   return (
-                    <TableCell key={col.id} sx={{ minWidth: col.id === 'name' ? 220 : 140 }}>
+                    <TableCell component="th" scope="col" key={col.id} sx={{ minWidth: col.id === 'name' ? 220 : 140 }}>
                       <TableSortLabel
                         active={sortField === col.id}
                         direction={sortField === col.id ? sortDirection : 'asc'}
@@ -1265,9 +1274,18 @@ function EquipmentListContent() {
               return (
                 <TableRow
                   key={eq.id}
+                  tabIndex={0}
+                  role="link"
+                  aria-label={`Открыть паспорт оборудования: ${eq.name}`}
                   hover
                   sx={{ cursor: 'pointer' }}
                   onClick={() => handleRowClick(eq)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      handleRowClick(eq);
+                    }
+                  }}
                 >
                   <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()} sx={{ pl: 2 }}>
                     <Checkbox

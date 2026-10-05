@@ -100,8 +100,9 @@ export function EquipmentPurgeDialog({
           alignItems: 'center',
           justifyContent: 'space-between',
           pb: 1.5,
-          borderBottom: '1px solid #fee2e2',
-          bgcolor: '#fff5f5',
+          borderBottom: '1px solid',
+          borderColor: 'error.light',
+          bgcolor: 'error.lighter',
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
@@ -111,7 +112,7 @@ export function EquipmentPurgeDialog({
           </Typography>
         </Box>
         {!purging && (
-          <IconButton size="small" onClick={onClose}>
+          <IconButton size="small" onClick={onClose} aria-label="Закрыть диалог удаления">
             <CloseIcon fontSize="small" />
           </IconButton>
         )}
@@ -123,15 +124,16 @@ export function EquipmentPurgeDialog({
           icon={<WarningAmberIcon fontSize="large" />}
           sx={{
             borderRadius: '8px',
-            border: '1px solid #fca5a5',
-            backgroundColor: '#fef2f2',
+            border: '1px solid',
+            borderColor: 'error.light',
+            backgroundColor: 'error.lighter',
             '& .MuiAlert-message': { width: '100%' },
           }}
         >
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, color: '#991b1b' }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5, color: 'error.dark' }}>
             Внимание! Критическое необратимое действие
           </Typography>
-          <Typography variant="body2" sx={{ color: '#7f1d1d', lineHeight: 1.5 }}>
+          <Typography variant="body2" sx={{ color: 'error.dark', lineHeight: 1.5 }}>
             Вы собираетесь безвозвратно удалить <strong>ВСЕ позиции оборудования</strong> из базы
             данных модуля EPS. Все связанные паспорта, прикрепленные документы, фотографии,
             история согласований и графики обслуживания будут полностью удалены без возможности
@@ -190,6 +192,9 @@ export function EquipmentPurgeDialog({
             Для подтверждения удаления введите слово <strong>УДАЛИТЬ</strong>:
           </Typography>
           <TextField
+            id="purge-confirmation"
+            label="Подтверждение удаления"
+            aria-describedby="purge-confirmation-help"
             fullWidth
             size="small"
             placeholder="УДАЛИТЬ"
@@ -203,6 +208,7 @@ export function EquipmentPurgeDialog({
                 ? 'Введите точное слово УДАЛИТЬ заглавными буквами'
                 : 'Операция будет зарегистрирована в журнале системного аудита'
             }
+            FormHelperTextProps={{ id: 'purge-confirmation-help' }}
           />
         </Box>
       </DialogContent>
