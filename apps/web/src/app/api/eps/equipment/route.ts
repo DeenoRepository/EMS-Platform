@@ -17,12 +17,16 @@ export async function GET(req: NextRequest) {
     const pageSize = Math.min(1000, Math.max(1, parseInt(searchParams.get('pageSize') || searchParams.get('limit') || '20', 10)));
 
     const where = buildEquipmentWhereInput(searchParams);
+    const broadFilterIds = await resolveJsonFilters(searchParams);
+    const effectiveWhere = broadFilterIds
+      ? { AND: [where, { id: { in: broadFilterIds } }] }
+      : where;
     const orderBy = buildEquipmentOrderBy(searchParams);
 
     const [total, items, statusGroup] = await Promise.all([
-      prisma.equipment.count({ where }),
+      prisma.equipment.count({ where: effectiveWhere }),
       prisma.equipment.findMany({
-        where,
+        where: effectiveWhere,
         include: {
           tags: {
             include: { tag: true },
@@ -46,7 +50,7 @@ export async function GET(req: NextRequest) {
       }),
       prisma.equipment.groupBy({
         by: ['status'],
-        where,
+        where: effectiveWhere,
         _count: { status: true },
       }),
     ]);
@@ -104,6 +108,37 @@ export async function GET(req: NextRequest) {
     console.error('Ошибка /api/eps/equipment:', error);
     return NextResponse.json({ success: false, error: 'Ошибка получения реестра оборудования' }, { status: 500 });
   }
+}
+
+/** JSON fields are schemaless, so Prisma cannot search arbitrary custom keys.
+ * Resolve broad search/range predicates against all records before pagination. */
+async function resolveJsonFilters(params: URLSearchParams): Promise<string[] | null> {
+  const search = params.get('search')?.trim().toLocaleLowerCase();
+  const ranges = [
+    ['actual_wear_percentage', params.get('wearMin'), params.get('wearMax')],
+    ['calibration_interval', params.get('calibrationIntervalMin'), params.get('calibrationIntervalMax')],
+  ] as const;
+  if (!search && !ranges.some(([, min, max]) => min || max)) return null;
+
+  const baseParams = new URLSearchParams(params);
+  baseParams.delete('search');
+  baseParams.delete('wearMin');
+  baseParams.delete('wearMax');
+  baseParams.delete('calibrationIntervalMin');
+  baseParams.delete('calibrationIntervalMax');
+  const baseWhere = buildEquipmentWhereInput(baseParams);
+  const candidates = await prisma.equipment.findMany({ where: baseWhere, select: { id: true, customFields: true } });
+  return candidates.filter(({ customFields }) => {
+    const values = (customFields && typeof customFields === 'object' ? customFields : {}) as Record<string, unknown>;
+    const textMatch = !search || JSON.stringify(values).toLocaleLowerCase().includes(search);
+    const rangesMatch = ranges.every(([key, min, max]) => {
+      if (!min && !max) return true;
+      const value = Number(values[key]);
+      if (!Number.isFinite(value)) return false;
+      return (!min || value >= Number(min)) && (!max || value <= Number(max));
+    });
+    return textMatch && rangesMatch;
+  }).map(({ id }) => id);
 }
 
 const createSchema = z.object({

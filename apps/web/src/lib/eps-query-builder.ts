@@ -238,7 +238,7 @@ function applyCustomFieldsFilters(and: Prisma.EquipmentWhereInput[], params: URL
     });
   }
 
-  const maintPeriodicity = params.get('maintPeriodicity')?.trim();
+  const maintPeriodicity = (params.get('maintPeriodicity') || params.get('maintenance_periodicity'))?.trim();
   if (maintPeriodicity) {
     and.push({
       customFields: {
@@ -264,7 +264,7 @@ function applyCustomFieldsFilters(and: Prisma.EquipmentWhereInput[], params: URL
  * Фильтрация по классификаторам (вид, подразделение) и логическим флагам
  */
 function applyClassifierAndBooleanFilters(and: Prisma.EquipmentWhereInput[], params: URLSearchParams): void {
-  const eqGroup = params.get('eqGroup')?.trim();
+  const eqGroup = (params.get('eqGroup') || params.get('equipment_group') || params.get('department'))?.trim();
   if (eqGroup) {
     and.push({
       OR: [
@@ -275,7 +275,7 @@ function applyClassifierAndBooleanFilters(and: Prisma.EquipmentWhereInput[], par
     });
   }
 
-  const eqType = params.get('eqType')?.trim();
+  const eqType = (params.get('eqType') || params.get('equipment_type') || params.get('equipment_kind'))?.trim();
   if (eqType) {
     and.push({
       OR: [
