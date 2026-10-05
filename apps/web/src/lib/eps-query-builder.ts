@@ -250,12 +250,7 @@ function applyCustomFieldsFilters(and: Prisma.EquipmentWhereInput[], params: URL
 
   const respPerson = (params.get('respPerson') || params.get('responsible_person_name'))?.trim();
   if (respPerson) {
-    and.push({
-      customFields: {
-        path: ['responsible_person_name'],
-        string_contains: respPerson,
-      },
-    });
+    and.push({ customFields: { path: ['responsible_person_name'], string_contains: respPerson } });
   }
 
 }

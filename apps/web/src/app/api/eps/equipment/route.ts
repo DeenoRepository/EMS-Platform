@@ -16,7 +16,10 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const pageSize = Math.min(1000, Math.max(1, parseInt(searchParams.get('pageSize') || searchParams.get('limit') || '20', 10)));
 
-    const where = buildEquipmentWhereInput(searchParams);
+    const whereParams = new URLSearchParams(searchParams);
+    whereParams.delete('respPerson');
+    whereParams.delete('responsible_person_name');
+    const where = buildEquipmentWhereInput(whereParams);
     const broadFilterIds = await resolveJsonFilters(searchParams);
     const effectiveWhere = broadFilterIds
       ? { AND: [where, { id: { in: broadFilterIds } }] }
@@ -114,30 +117,47 @@ export async function GET(req: NextRequest) {
  * Resolve broad search/range predicates against all records before pagination. */
 async function resolveJsonFilters(params: URLSearchParams): Promise<string[] | null> {
   const search = params.get('search')?.trim().toLocaleLowerCase();
+  const responsible = (params.get('respPerson') || params.get('responsible_person_name'))?.trim().toLocaleLowerCase();
   const ranges = [
     ['actual_wear_percentage', params.get('wearMin'), params.get('wearMax')],
     ['calibration_interval', params.get('calibrationIntervalMin'), params.get('calibrationIntervalMax')],
   ] as const;
-  if (!search && !ranges.some(([, min, max]) => min || max)) return null;
+  if (!search && !responsible && !ranges.some(([, min, max]) => min || max)) return null;
 
   const baseParams = new URLSearchParams(params);
   baseParams.delete('search');
+  baseParams.delete('respPerson');
+  baseParams.delete('responsible_person_name');
   baseParams.delete('wearMin');
   baseParams.delete('wearMax');
   baseParams.delete('calibrationIntervalMin');
   baseParams.delete('calibrationIntervalMax');
   const baseWhere = buildEquipmentWhereInput(baseParams);
-  const candidates = await prisma.equipment.findMany({ where: baseWhere, select: { id: true, customFields: true } });
-  return candidates.filter(({ customFields }) => {
+  const candidates = await prisma.equipment.findMany({
+    where: baseWhere,
+    select: { id: true, name: true, inventoryNumber: true, serialNumber: true, manufacturer: true, model: true, location: true, customFields: true },
+  });
+  return candidates.filter(({ name, inventoryNumber, serialNumber, manufacturer, model, location, customFields }) => {
     const values = (customFields && typeof customFields === 'object' ? customFields : {}) as Record<string, unknown>;
-    const textMatch = !search || JSON.stringify(values).toLocaleLowerCase().includes(search);
+    const searchableText = [name, inventoryNumber, serialNumber, manufacturer, model, location, JSON.stringify(values)]
+      .filter(Boolean)
+      .join(' ')
+      .toLocaleLowerCase();
+    const textMatch = !search || searchableText.includes(search);
+    const responsibleMatch = !responsible || [
+      values.responsible_person_name,
+      values.responsible_user_login,
+      values.responsible_user_id,
+      values.otvetstvennoe_litso_fio_dolzhnost,
+      values.otvetstvennyy,
+    ].some((value) => String(value ?? '').toLocaleLowerCase().includes(responsible));
     const rangesMatch = ranges.every(([key, min, max]) => {
       if (!min && !max) return true;
       const value = Number(values[key]);
       if (!Number.isFinite(value)) return false;
       return (!min || value >= Number(min)) && (!max || value <= Number(max));
     });
-    return textMatch && rangesMatch;
+    return textMatch && responsibleMatch && rangesMatch;
   }).map(({ id }) => id);
 }
 
