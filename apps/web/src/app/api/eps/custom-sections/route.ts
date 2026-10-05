@@ -24,6 +24,10 @@ export async function GET(req: NextRequest) {
       },
     });
 
+    // GET is intentionally read-only. Bootstrap and legacy JSON migration must
+    // run from an explicit admin-only maintenance command, never from a read.
+    return NextResponse.json({ success: true, data: sections });
+
     // 26 Canonical Custom Fields Specification
     const CANONICAL_SPECS: {
       key: string;

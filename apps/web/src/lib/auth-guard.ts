@@ -34,11 +34,13 @@ export async function getCurrentUser(req?: NextRequest): Promise<JwtUserPayload 
     const { roles, permissions } = await getUserRolesAndPermissions(session.userId);
     return {
       ...session,
-      roles: roles && roles.length > 0 ? roles : session.roles || [],
-      permissions: permissions && permissions.length > 0 ? permissions : session.permissions || [],
+      // The database is authoritative. Never restore revoked permissions from a JWT.
+      roles: roles || [],
+      permissions: permissions || [],
     };
   } catch {
-    return session;
+    // A mutation must not be authorized from stale claims when RBAC cannot be refreshed.
+    return null;
   }
 }
 
@@ -113,4 +115,3 @@ export async function requireAuth(
 
   return { user };
 }
-
