@@ -24,10 +24,6 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    // GET is intentionally read-only. Bootstrap and legacy JSON migration must
-    // run from an explicit admin-only maintenance command, never from a read.
-    return NextResponse.json({ success: true, data: sections });
-
     // 26 Canonical Custom Fields Specification
     const CANONICAL_SPECS: {
       key: string;
@@ -91,14 +87,9 @@ export async function GET(req: NextRequest) {
       { code: 'operational', name: 'Эксплуатационные требования и метрология', description: 'Непрерывность процесса, поверки датчиков и регламентные условия', icon: 'Straighten', sortOrder: 6 },
     ];
 
-    // Bootstrap logic: executed ONLY ONCE on clean system, or when explicit ?resetDefaults=true is requested
-    const bootstrappedSetting = await prisma.systemSetting.findUnique({
-      where: { key: 'eps_custom_sections_bootstrapped' },
-    });
-
-    const isResetRequested = req.nextUrl?.searchParams?.get('resetDefaults') === 'true';
-
-    if (!bootstrappedSetting || isResetRequested) {
+    // Bootstrap only an empty catalog and only for a manager. Never reset an
+    // existing catalog or migrate equipment data as a side effect of GET.
+    if (sections.length === 0 && hasPermission(user, PERMISSIONS.EPS_CUSTOM_FIELDS_MANAGE)) {
       for (const s of standardSections) {
         await prisma.customSection.upsert({
           where: { code: s.code },
@@ -254,54 +245,6 @@ export async function GET(req: NextRequest) {
       poverka_datchikov: 'calibration_interval',
       interval_poverki: 'calibration_interval',
     };
-
-    // 4. Migrate and clean Equipment.customFields JSON data
-    try {
-      const equipments = await prisma.equipment.findMany({
-        select: { id: true, serialNumber: true, location: true, customFields: true },
-      });
-
-      for (const eq of equipments) {
-        const cf = eq.customFields as Record<string, any>;
-        if (cf && typeof cf === 'object') {
-          let modified = false;
-          let updatedSerial = eq.serialNumber;
-          let updatedLocation = eq.location;
-
-          // Migrate base field duplicates if model fields are empty
-          if (!updatedSerial && (cf.zavodskoy_nomer || cf.serial_number)) {
-            updatedSerial = String(cf.zavodskoy_nomer || cf.serial_number);
-          }
-          if (!updatedLocation && (cf.raspolozhenie_ulitsa_korpus_etazh_uchastok || cf.raspolozhenie)) {
-            updatedLocation = String(cf.raspolozhenie_ulitsa_korpus_etazh_uchastok || cf.raspolozhenie);
-          }
-
-          // Migrate duplicate/translit keys to canonical keys
-          for (const [oldKey, canonKey] of Object.entries(DUPLICATE_TO_CANONICAL)) {
-            if (cf[oldKey] !== undefined) {
-              if (cf[canonKey] === undefined) {
-                cf[canonKey] = cf[oldKey];
-              }
-              delete cf[oldKey];
-              modified = true;
-            }
-          }
-
-          if (modified || updatedSerial !== eq.serialNumber || updatedLocation !== eq.location) {
-            await prisma.equipment.update({
-              where: { id: eq.id },
-              data: {
-                customFields: cf,
-                serialNumber: updatedSerial,
-                location: updatedLocation,
-              },
-            });
-          }
-        }
-      }
-    } catch (err) {
-      console.error('Ошибка миграции customFields в Equipment:', err);
-    }
 
     sections = await prisma.customSection.findMany({
       orderBy: { sortOrder: 'asc' },
