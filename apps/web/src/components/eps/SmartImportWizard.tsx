@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   Box,
   Card,
@@ -80,6 +80,18 @@ const STEPS = [
   'Результаты импорта',
 ];
 
+const BASE_SYSTEM_FIELDS = [
+  { key: 'name', name: 'Наименование оборудования', unit: null, isRequired: true, group: 'Основные реквизиты' },
+  { key: 'inventoryNumber', name: 'Инвентарный номер', unit: null, isRequired: false, group: 'Основные реквизиты' },
+  { key: 'serialNumber', name: 'Заводской / Серийный номер', unit: null, isRequired: false, group: 'Основные реквизиты' },
+  { key: 'manufacturer', name: 'Предприятие-изготовитель', unit: null, isRequired: false, group: 'Основные реквизиты' },
+  { key: 'model', name: 'Модель / Типоразмер', unit: null, isRequired: false, group: 'Основные реквизиты' },
+  { key: 'location', name: 'Место установки (локация)', unit: null, isRequired: false, group: 'Основные реквизиты' },
+  { key: 'status', name: 'Эксплуатационный статус', unit: null, isRequired: false, group: 'Основные реквизиты' },
+  { key: 'commissionDate', name: 'Дата ввода в эксплуатацию', unit: null, isRequired: false, group: 'Основные реквизиты' },
+  { key: 'externalId', name: 'Внутренний ID / 1C ERP', unit: null, isRequired: false, group: 'Основные реквизиты' },
+];
+
 export function SmartImportWizard() {
   const { enqueueSnackbar } = useSnackbar();
   const router = useRouter();
@@ -94,10 +106,35 @@ export function SmartImportWizard() {
   const [fileHeaders, setFileHeaders] = useState<string[]>([]);
   const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
   const [primaryKeyHeader, setPrimaryKeyHeader] = useState<string>('');
+  const [nameHeader, setNameHeader] = useState<string>('');
   const [missingFields, setMissingFields] = useState<MissingFieldItem[]>([]);
   const [resolutions, setResolutions] = useState<Record<string, MissingFieldResolution>>({});
   const [availableSections, setAvailableSections] = useState<{ id: string; name: string }[]>([]);
   const [catalogFields, setCatalogFields] = useState<{ key: string; name: string; unit?: string | null; section?: { name: string } | null }[]>([]);
+
+  const allAvailableTargetFields = useMemo(() => {
+    const list: Array<{
+      key: string;
+      name: string;
+      unit: string | null;
+      isRequired: boolean;
+      group: string;
+    }> = [...BASE_SYSTEM_FIELDS];
+
+    catalogFields.forEach((cf) => {
+      if (!list.some((item) => item.key === cf.key)) {
+        list.push({
+          key: cf.key,
+          name: cf.name,
+          unit: cf.unit || null,
+          isRequired: false,
+          group: cf.section?.name ? `Раздел: ${cf.section.name}` : 'Справочник полей',
+        });
+      }
+    });
+
+    return list;
+  }, [catalogFields]);
 
   // Step 3: Conflict strategy & rows state
   const [conflictStrategy, setConflictStrategy] = useState<'UPSERT' | 'SKIP' | 'FULL_REPLACE'>('UPSERT');
@@ -148,12 +185,23 @@ export function SmartImportWizard() {
       if (json.success && json.data) {
         setFileHeaders(json.data.fileHeaders);
         setColumnMapping(json.data.mappedColumns || {});
-        // Auto-detect primary key column if found among headers, or pick first likely column
+        // Auto-detect primary key column
         const foundPk = (json.data.fileHeaders || []).find((h: string) => {
           const l = h.toLowerCase();
           return l.includes('инв') || l.includes('id') || l.includes('идентифик') || l.includes('серийн') || l.includes('номер');
         }) || (json.data.fileHeaders?.[0] || '');
         setPrimaryKeyHeader(foundPk);
+
+        // Auto-detect equipment name column
+        const foundName = (json.data.fileHeaders || []).find((h: string) => {
+          const l = h.toLowerCase();
+          return l.includes('наименование') || l.includes('название') || l.includes('оборудование') || l.includes('name') || l.includes('title');
+        }) || (json.data.fileHeaders?.[1] || json.data.fileHeaders?.[0] || '');
+        setNameHeader(foundName);
+        if (foundName) {
+          json.data.mappedColumns = json.data.mappedColumns || {};
+          json.data.mappedColumns[foundName] = 'name';
+        }
         setMissingFields(json.data.missingFields || []);
         setAvailableSections(json.data.availableSections || []);
         if (json.data.catalogFields) {
@@ -217,6 +265,16 @@ export function SmartImportWizard() {
   const handleProceedToCollisions = () => {
     if (!primaryKeyHeader) {
       enqueueSnackbar('Пожалуйста, укажите колонку уникального ID оборудования', { variant: 'warning' });
+      return;
+    }
+    let effectiveName = nameHeader;
+    if (!effectiveName) {
+      effectiveName = Object.keys(columnMapping).find((h) => columnMapping[h] === 'name') ||
+        Object.keys(resolutions).find((h) => resolutions[h]?.mappedExistingKey === 'name') || '';
+      if (effectiveName) setNameHeader(effectiveName);
+    }
+    if (!effectiveName) {
+      enqueueSnackbar('Пожалуйста, укажите колонку с наименованием оборудования', { variant: 'warning' });
       return;
     }
     const updatedMapping = { ...columnMapping };
@@ -309,6 +367,7 @@ export function SmartImportWizard() {
           conflictStrategy,
           fullReplaceConfirmed: confirmedFullReplace,
           primaryKeyHeader,
+          nameHeader,
         }),
       });
 
@@ -449,22 +508,22 @@ export function SmartImportWizard() {
             />
           </Box>
 
-          {/* Primary Key / Unique ID Selection Card */}
+          {/* Primary Key & Equipment Name Selection Card */}
           <Card sx={{ mb: 3, borderRadius: '12px', border: '1px solid #0284c7', bgcolor: 'rgba(2, 132, 199, 0.02)' }}>
             <CardContent sx={{ p: 2.5 }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                <Typography variant="subtitle1" fontWeight={700} color="primary.main">
-                  Поле уникального ID оборудования
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Выберите колонку файла, которая служит уникальным идентификатором оборудования (инвентарный номер, заводской номер или ID во внешней системе). По этому полю определяются совпадения и дубликаты.
-                </Typography>
-                <Box sx={{ maxWidth: 400, mt: 1 }}>
+              <Typography variant="subtitle1" fontWeight={700} color="primary.main" gutterBottom>
+                Ключевые колонки идентификации оборудования
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Укажите ключевые колонки файла для уникального ID и наименования. По уникальному ID отслеживаются коллизии и дубликаты, а наименование является обязательным реквизитом карточки паспорта.
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     select
                     size="small"
                     fullWidth
-                    label="Уникальный ID оборудования"
+                    label="Уникальный ID оборудования *"
                     value={primaryKeyHeader}
                     onChange={(e) => setPrimaryKeyHeader(e.target.value)}
                     helperText={primaryKeyHeader ? `Выбрана колонка: «${primaryKeyHeader}»` : 'Обязательно выберите колонку уникального ID'}
@@ -476,8 +535,41 @@ export function SmartImportWizard() {
                       </MenuItem>
                     ))}
                   </TextField>
-                </Box>
-              </Box>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    select
+                    size="small"
+                    fullWidth
+                    label="Наименование оборудования *"
+                    value={nameHeader}
+                    onChange={(e) => {
+                      const newNameHeader = e.target.value;
+                      setNameHeader(newNameHeader);
+                      if (newNameHeader) {
+                        setColumnMapping((prev) => ({
+                          ...prev,
+                          [newNameHeader]: 'name',
+                        }));
+                        handleUpdateResolution(newNameHeader, {
+                          action: 'MAP_EXISTING',
+                          mappedExistingKey: 'name',
+                          name: 'Наименование оборудования',
+                          key: 'name',
+                        });
+                      }
+                    }}
+                    helperText={nameHeader ? `Выбрана колонка: «${nameHeader}»` : 'Обязательно выберите колонку наименования'}
+                    error={!nameHeader}
+                  >
+                    {fileHeaders.map((header) => (
+                      <MenuItem key={header} value={header}>
+                        {header}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+              </Grid>
             </CardContent>
           </Card>
 
@@ -604,9 +696,16 @@ export function SmartImportWizard() {
                                 SelectProps={{ displayEmpty: true }}
                               >
                                 <MenuItem value="">— Не назначено —</MenuItem>
-                                {catalogFields.map((cf) => (
+                                {allAvailableTargetFields.map((cf: { key: string; name: string; unit: string | null; isRequired: boolean; group: string }) => (
                                   <MenuItem key={cf.key} value={cf.key}>
-                                    {cf.name} ({cf.key}) {cf.unit ? `[${cf.unit}]` : ''} {cf.section ? `• ${cf.section.name}` : ''}
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', gap: 1 }}>
+                                      <Typography variant="body2" sx={{ fontWeight: cf.key === 'name' ? 700 : 500 }}>
+                                        {cf.name} {cf.key === 'name' ? '*' : ''}
+                                      </Typography>
+                                      <Typography variant="caption" sx={{ color: 'text.secondary', fontFamily: 'monospace' }}>
+                                        {cf.key} {cf.unit ? `[${cf.unit}]` : ''} • {cf.group}
+                                      </Typography>
+                                    </Box>
                                   </MenuItem>
                                 ))}
                               </TextField>

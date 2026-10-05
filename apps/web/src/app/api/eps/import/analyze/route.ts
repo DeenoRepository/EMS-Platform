@@ -24,8 +24,9 @@ const KNOWN_BASE_FIELDS: ColumnMatchRule[] = [
     targetName: 'Наименование оборудования',
     aliases: [
       'наименование оборудования', 'название оборудования', 'наименование', 'название',
-      'наименование актива', 'название актива', 'наименование объекта',
-      'name', 'title', 'equipment name', 'equipment_name'
+      'наименование актива', 'название актива', 'наименование объекта', 'наименование тмц',
+      'оборудование', 'актив', 'объект', 'позиция', 'станок', 'агрегат', 'прибор', 'установка',
+      'name', 'title', 'equipment', 'equipment name', 'equipment_name', 'asset', 'item'
     ],
   },
   {
@@ -633,13 +634,24 @@ export async function POST(req: NextRequest) {
         mappedColumns,
         missingFields,
         availableSections: sections,
-        catalogFields: existingCustomFields.map((cf) => ({
-          key: cf.key,
-          name: cf.name,
-          unit: cf.unit,
-          fieldType: cf.fieldType,
-          section: cf.section ? { id: cf.section.id, name: cf.section.name } : null,
-        })),
+        catalogFields: [
+          ...KNOWN_BASE_FIELDS.filter((f) => f.targetKey !== 'tags').map((f) => ({
+            key: f.targetKey,
+            name: f.targetName,
+            unit: null,
+            fieldType: f.targetKey === 'commissionDate' ? 'DATE' : 'TEXT',
+            section: { id: 'base', name: 'Основные реквизиты' },
+            isBase: true,
+          })),
+          ...existingCustomFields.map((cf) => ({
+            key: cf.key,
+            name: cf.name,
+            unit: cf.unit,
+            fieldType: cf.fieldType,
+            section: cf.section ? { id: cf.section.id, name: cf.section.name } : null,
+            isBase: false,
+          })),
+        ],
         previewRows: validatedRows.slice(0, 50),
         allRows: validatedRows,
       },

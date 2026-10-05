@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
       conflictStrategy = 'UPSERT', // 'UPSERT' | 'SKIP' | 'FULL_REPLACE'
       fullReplaceConfirmed = false,
       primaryKeyHeader = '',
+      nameHeader = '',
     } = body;
 
     if (!Array.isArray(rows) || rows.length === 0) {
@@ -205,6 +206,9 @@ export async function POST(req: NextRequest) {
       try {
         // Extract base fields based on mapping
         let nameVal = '';
+        if (nameHeader && rawData[nameHeader] && String(rawData[nameHeader]).trim()) {
+          nameVal = String(rawData[nameHeader]).trim();
+        }
         let invVal: string | null = null;
         let snVal: string | null = null;
         let mfgVal: string | null = null;
@@ -249,10 +253,43 @@ export async function POST(req: NextRequest) {
           }
         });
 
+        // Комплексный поиск наименования оборудования (поиск по альтернативным колонкам, модели или номеру)
         if (!nameVal) {
-          errorCount++;
-          errors.push({ row: i + 1, error: 'Отсутствует наименование оборудования' });
-          continue;
+          const customName =
+            customFieldsObj.name ||
+            customFieldsObj.naimenovanie ||
+            customFieldsObj.equipment_name ||
+            customFieldsObj.naimenovanie_oborudovaniya;
+          if (customName && String(customName).trim()) {
+            nameVal = String(customName).trim();
+          }
+        }
+        if (!nameVal && nameHeader && rawData[nameHeader] && String(rawData[nameHeader]).trim()) {
+          nameVal = String(rawData[nameHeader]).trim();
+        }
+        if (!nameVal) {
+          for (const [k, v] of Object.entries(rawData)) {
+            if (/наименование|название|оборудование|name|title|позиция|станок|агрегат/i.test(k) && v && String(v).trim()) {
+              nameVal = String(v).trim();
+              break;
+            }
+          }
+        }
+        if (!nameVal && modelVal) {
+          nameVal = modelVal;
+        }
+        if (!nameVal && invVal) {
+          nameVal = `Оборудование ${invVal}`;
+        }
+        if (!nameVal && snVal) {
+          nameVal = `Оборудование ${snVal}`;
+        }
+        if (!nameVal && effectivePkHeader && rawData[effectivePkHeader] && String(rawData[effectivePkHeader]).trim()) {
+          nameVal = `Оборудование ${String(rawData[effectivePkHeader]).trim()}`;
+        }
+
+        if (!nameVal) {
+          nameVal = `Оборудование #${i + 1}`;
         }
 
         if (conflictStrategy === 'FULL_REPLACE' && invVal) {

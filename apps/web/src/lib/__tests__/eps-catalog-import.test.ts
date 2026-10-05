@@ -43,7 +43,7 @@ describe('EPS Field Catalog & Import Mapping', () => {
     assert.match(importSource, /Сбросить все назначения/);
     assert.match(importSource, /catalogFields/);
     assert.match(importSource, /primaryKeyHeader/);
-    assert.match(importSource, /Поле уникального ID оборудования/);
+    assert.match(importSource, /Уникальный ID оборудования/);
   });
 
   it('Import execute API accepts user-defined primaryKeyHeader to identify unique equipment', () => {
@@ -54,6 +54,7 @@ describe('EPS Field Catalog & Import Mapping', () => {
 
   it('Import analyze API returns catalogFields for column binding', () => {
     const analyzeApiSource = readProjectFile('apps/web/src/app/api/eps/import/analyze/route.ts');
-    assert.match(analyzeApiSource, /catalogFields:\s*existingCustomFields\.map/);
+    assert.match(analyzeApiSource, /catalogFields:\s*\[/);
+    assert.match(analyzeApiSource, /existingCustomFields\.map/);
   });
 });
