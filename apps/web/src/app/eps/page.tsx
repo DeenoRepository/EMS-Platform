@@ -39,6 +39,7 @@ import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import FindReplaceIcon from '@mui/icons-material/FindReplace';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import FilterListIcon from '@mui/icons-material/FilterList';
@@ -77,6 +78,7 @@ import {
   EquipmentColumnFiltersRow,
   EquipmentActiveFilterChips,
   EquipmentBatchEditDialog,
+  EquipmentPurgeDialog,
   type EquipmentFilters,
   DEFAULT_EQUIPMENT_FILTERS,
 } from '@/components/eps';
@@ -415,6 +417,7 @@ function EquipmentListContent() {
   // Bulk Selection State
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [openBatchEditDialog, setOpenBatchEditDialog] = useState<boolean>(false);
+  const [openPurgeDialog, setOpenPurgeDialog] = useState<boolean>(false);
 
   // Active Technical Sections and their configured fields
   const [sections, setSections] = useState<CustomSectionDefItem[]>([]);
@@ -694,6 +697,32 @@ function EquipmentListContent() {
                 }}
               >
                 Массовое редактирование
+              </Button>
+            )}
+            {isAdmin && (
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<DeleteForeverIcon />}
+                onClick={() => setOpenPurgeDialog(true)}
+                sx={{
+                  height: 38,
+                  borderRadius: '8px',
+                  borderColor: 'error.main',
+                  color: 'error.main',
+                  px: 2,
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  backgroundColor: 'background.paper',
+                  boxSizing: 'border-box',
+                  '&:hover': {
+                    borderColor: 'error.dark',
+                    backgroundColor: 'error.50',
+                  },
+                }}
+              >
+                Очистить базу
               </Button>
             )}
             {canCreate && (
@@ -1425,6 +1454,17 @@ function EquipmentListContent() {
         selectedIds={selectedIds}
         filterParams={filters as Record<string, string>}
         totalCount={total}
+      />
+
+      {/* Диалог полной очистки базы данных оборудования администратором */}
+      <EquipmentPurgeDialog
+        open={openPurgeDialog}
+        onClose={() => setOpenPurgeDialog(false)}
+        onSuccess={() => {
+          fetchEquipment();
+          setSelectedIds([]);
+        }}
+        currentCount={total}
       />
     </Box>
   );

@@ -8,3 +8,4 @@ export { default as EquipmentActiveFilterChips } from './EquipmentActiveFilterCh
 export * from './EquipmentBatchEditDialog';
 export * from './ResponsibleUserSelect';
 export * from './EquipmentFieldsCatalogView';
+export * from './EquipmentPurgeDialog';
