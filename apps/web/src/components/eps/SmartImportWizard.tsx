@@ -341,6 +341,9 @@ export function SmartImportWizard() {
 
     // Ensure final mapping includes all MAP_EXISTING choices
     const finalMapping = { ...columnMapping };
+    if (nameHeader) {
+      finalMapping[nameHeader] = 'name';
+    }
     Object.entries(resolutions).forEach(([header, res]) => {
       if (res.action === 'CREATE') {
         finalMapping[header] = `custom_${res.key}`;
@@ -350,7 +353,7 @@ export function SmartImportWizard() {
         ].includes(res.mappedExistingKey)
           ? res.mappedExistingKey
           : `custom_${res.mappedExistingKey}`;
-      } else if (res.action === 'IGNORE') {
+      } else if (res.action === 'IGNORE' && header !== nameHeader) {
         delete finalMapping[header];
       }
     });

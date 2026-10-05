@@ -580,7 +580,15 @@ export async function POST(req: NextRequest) {
       const invHeader = Object.keys(mappedColumns).find((h) => mappedColumns[h] === 'inventoryNumber');
       const snHeader = Object.keys(mappedColumns).find((h) => mappedColumns[h] === 'serialNumber');
 
-      const nameVal = nameHeader ? String(row[nameHeader] || '').trim() : '';
+      let nameVal = nameHeader ? String(row[nameHeader] || '').trim() : '';
+      if (!nameVal) {
+        for (const [k, v] of Object.entries(row)) {
+          if (/наименование|название|оборудование|name|title|позиция|станок|агрегат/i.test(k) && v && String(v).trim()) {
+            nameVal = String(v).trim();
+            break;
+          }
+        }
+      }
       const invVal = invHeader ? String(row[invHeader] || '').trim() : '';
       const snVal = snHeader ? String(row[snHeader] || '').trim() : '';
       const externalIdVal = externalIdHeader ? String(row[externalIdHeader] || '').trim() : '';

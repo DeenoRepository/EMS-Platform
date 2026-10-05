@@ -206,7 +206,7 @@ export async function POST(req: NextRequest) {
       try {
         // Extract base fields based on mapping
         let nameVal = '';
-        if (nameHeader && rawData[nameHeader] && String(rawData[nameHeader]).trim()) {
+        if (nameHeader && rawData[nameHeader] !== undefined && rawData[nameHeader] !== null && String(rawData[nameHeader]).trim()) {
           nameVal = String(rawData[nameHeader]).trim();
         }
         let invVal: string | null = null;
@@ -221,7 +221,7 @@ export async function POST(req: NextRequest) {
         const customFieldsObj: Record<string, any> = {};
 
         Object.entries(columnMapping).forEach(([header, targetField]) => {
-          if (ignoredHeaders.includes(header)) return;
+          if (ignoredHeaders.includes(header) && header !== nameHeader) return;
           const val = rawData[header];
           if (val === undefined || val === null || String(val).trim() === '') return;
 
@@ -254,6 +254,9 @@ export async function POST(req: NextRequest) {
         });
 
         // Комплексный поиск наименования оборудования (поиск по альтернативным колонкам, модели или номеру)
+        if (!nameVal && nameHeader && rawData[nameHeader] !== undefined && rawData[nameHeader] !== null && String(rawData[nameHeader]).trim()) {
+          nameVal = String(rawData[nameHeader]).trim();
+        }
         if (!nameVal) {
           const customName =
             customFieldsObj.name ||
@@ -263,9 +266,6 @@ export async function POST(req: NextRequest) {
           if (customName && String(customName).trim()) {
             nameVal = String(customName).trim();
           }
-        }
-        if (!nameVal && nameHeader && rawData[nameHeader] && String(rawData[nameHeader]).trim()) {
-          nameVal = String(rawData[nameHeader]).trim();
         }
         if (!nameVal) {
           for (const [k, v] of Object.entries(rawData)) {
