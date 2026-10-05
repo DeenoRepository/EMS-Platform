@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
       ignoredHeaders = [],
       conflictStrategy = 'UPSERT', // 'UPSERT' | 'SKIP' | 'FULL_REPLACE'
       fullReplaceConfirmed = false,
+      primaryKeyHeader = '',
     } = body;
 
     if (!Array.isArray(rows) || rows.length === 0) {
@@ -63,14 +64,31 @@ export async function POST(req: NextRequest) {
     if (conflictStrategy === 'FULL_REPLACE' && fullReplaceConfirmed !== true) {
       return NextResponse.json({ success: false, error: 'Для полной замены реестра требуется подтверждение' }, { status: 400 });
     }
+
+    // Определяем колонку уникального ID оборудования (выбранную пользователем или сопоставленную)
+    const effectivePkHeader =
+      primaryKeyHeader ||
+      Object.keys(columnMapping).find((header) => columnMapping[header] === 'externalId') ||
+      Object.keys(columnMapping).find((header) => columnMapping[header] === 'inventoryNumber') ||
+      Object.keys(columnMapping).find((header) => columnMapping[header] === 'serialNumber') ||
+      Object.keys(columnMapping)[0] ||
+      '';
+
     if (conflictStrategy === 'FULL_REPLACE') {
-      const externalIdHeader = Object.keys(columnMapping).find((header) => columnMapping[header] === 'externalId');
-      const externalIds = externalIdHeader
-        ? rows.map((row: any) => String((row.data || row)[externalIdHeader] || '').trim())
+      const externalIds = effectivePkHeader
+        ? rows.map((row: any) => String((row.data || row)[effectivePkHeader] || '').trim())
         : [];
       const duplicateIds = [...new Set(externalIds.filter((id) => id && externalIds.indexOf(id) !== externalIds.lastIndexOf(id)))];
-      if (!externalIdHeader || externalIds.some((id) => !id) || duplicateIds.length > 0) {
-        return NextResponse.json({ success: false, error: 'Для полной замены требуется уникальный ID оборудования в каждой строке' }, { status: 400 });
+      if (!effectivePkHeader || externalIds.some((id) => !id) || duplicateIds.length > 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: effectivePkHeader
+              ? `В выбранной колонке уникального ID («${effectivePkHeader}») обнаружены пустые значения или дубликаты (${duplicateIds.join(', ')})`
+              : 'Для полной замены требуется указать колонку уникального ID оборудования',
+          },
+          { status: 400 }
+        );
       }
     }
 
@@ -250,12 +268,30 @@ export async function POST(req: NextRequest) {
 
         // Check if equipment already exists in DB
         let existingEquipment: any = null;
+
+        // 1. Поиск по выбранной пользователем колонке уникального ID
+        if (effectivePkHeader && conflictStrategy !== 'FULL_REPLACE') {
+          const rawPkVal = String(rawData[effectivePkHeader] || '').trim();
+          if (rawPkVal) {
+            existingEquipment =
+              existingExternalMap.get(rawPkVal) ||
+              (await db.equipment.findFirst({
+                where: {
+                  OR: [
+                    { inventoryNumber: rawPkVal },
+                    { serialNumber: rawPkVal },
+                  ],
+                },
+              }));
+          }
+        }
+
         const externalId = customFieldsObj.external_system_id ? String(customFieldsObj.external_system_id).trim() : '';
-        if (externalId && conflictStrategy !== 'FULL_REPLACE') {
+        if (!existingEquipment && externalId && conflictStrategy !== 'FULL_REPLACE') {
           existingEquipment = existingExternalMap.get(externalId) || null;
         }
-        if (invVal && conflictStrategy !== 'FULL_REPLACE') {
-          existingEquipment = existingEquipment || await db.equipment.findUnique({
+        if (!existingEquipment && invVal && conflictStrategy !== 'FULL_REPLACE') {
+          existingEquipment = await db.equipment.findUnique({
             where: { inventoryNumber: invVal },
           });
         }

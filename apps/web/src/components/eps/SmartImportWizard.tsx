@@ -93,6 +93,7 @@ export function SmartImportWizard() {
   // Step 2: Mapping & Missing fields state
   const [fileHeaders, setFileHeaders] = useState<string[]>([]);
   const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
+  const [primaryKeyHeader, setPrimaryKeyHeader] = useState<string>('');
   const [missingFields, setMissingFields] = useState<MissingFieldItem[]>([]);
   const [resolutions, setResolutions] = useState<Record<string, MissingFieldResolution>>({});
   const [availableSections, setAvailableSections] = useState<{ id: string; name: string }[]>([]);
@@ -147,6 +148,12 @@ export function SmartImportWizard() {
       if (json.success && json.data) {
         setFileHeaders(json.data.fileHeaders);
         setColumnMapping(json.data.mappedColumns || {});
+        // Auto-detect primary key column if found among headers, or pick first likely column
+        const foundPk = (json.data.fileHeaders || []).find((h: string) => {
+          const l = h.toLowerCase();
+          return l.includes('инв') || l.includes('id') || l.includes('идентифик') || l.includes('серийн') || l.includes('номер');
+        }) || (json.data.fileHeaders?.[0] || '');
+        setPrimaryKeyHeader(foundPk);
         setMissingFields(json.data.missingFields || []);
         setAvailableSections(json.data.availableSections || []);
         if (json.data.catalogFields) {
@@ -208,6 +215,10 @@ export function SmartImportWizard() {
 
   // Step 2 -> Step 3
   const handleProceedToCollisions = () => {
+    if (!primaryKeyHeader) {
+      enqueueSnackbar('Пожалуйста, укажите колонку уникального ID оборудования', { variant: 'warning' });
+      return;
+    }
     const updatedMapping = { ...columnMapping };
     Object.entries(resolutions).forEach(([header, res]) => {
       if (res.action === 'CREATE') {
@@ -222,6 +233,21 @@ export function SmartImportWizard() {
         delete updatedMapping[header];
       }
     });
+
+    // Recalculate duplicate external IDs based on the user-selected primary key column
+    const idCounts = new Map<string, number>();
+    validatedRows.forEach((row) => {
+      const rowData = row.data || row;
+      const rawId = String(rowData[primaryKeyHeader] || '').trim();
+      if (rawId) {
+        idCounts.set(rawId, (idCounts.get(rawId) || 0) + 1);
+      }
+    });
+    const dupes = Array.from(idCounts.entries())
+      .filter(([_, count]) => count > 1)
+      .map(([id, count]) => ({ id, count }));
+    setDuplicateExternalIds(dupes);
+
     setColumnMapping(updatedMapping);
     setActiveStep(2);
   };
@@ -282,6 +308,7 @@ export function SmartImportWizard() {
           ignoredHeaders,
           conflictStrategy,
           fullReplaceConfirmed: confirmedFullReplace,
+          primaryKeyHeader,
         }),
       });
 
@@ -421,6 +448,38 @@ export function SmartImportWizard() {
               ]}
             />
           </Box>
+
+          {/* Primary Key / Unique ID Selection Card */}
+          <Card sx={{ mb: 3, borderRadius: '12px', border: '1px solid #0284c7', bgcolor: 'rgba(2, 132, 199, 0.02)' }}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Typography variant="subtitle1" fontWeight={700} color="primary.main">
+                  Поле уникального ID оборудования
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Выберите колонку файла, которая служит уникальным идентификатором оборудования (инвентарный номер, заводской номер или ID во внешней системе). По этому полю определяются совпадения и дубликаты.
+                </Typography>
+                <Box sx={{ maxWidth: 400, mt: 1 }}>
+                  <TextField
+                    select
+                    size="small"
+                    fullWidth
+                    label="Уникальный ID оборудования"
+                    value={primaryKeyHeader}
+                    onChange={(e) => setPrimaryKeyHeader(e.target.value)}
+                    helperText={primaryKeyHeader ? `Выбрана колонка: «${primaryKeyHeader}»` : 'Обязательно выберите колонку уникального ID'}
+                    error={!primaryKeyHeader}
+                  >
+                    {fileHeaders.map((header) => (
+                      <MenuItem key={header} value={header}>
+                        {header}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
 
           {/* Table: Full manual column mapping */}
           <Card sx={{ mb: 3, borderRadius: '12px' }}>

@@ -42,6 +42,14 @@ describe('EPS Field Catalog & Import Mapping', () => {
     assert.match(importSource, /Выберите поле из справочника/);
     assert.match(importSource, /Сбросить все назначения/);
     assert.match(importSource, /catalogFields/);
+    assert.match(importSource, /primaryKeyHeader/);
+    assert.match(importSource, /Поле уникального ID оборудования/);
+  });
+
+  it('Import execute API accepts user-defined primaryKeyHeader to identify unique equipment', () => {
+    const executeApiSource = readProjectFile('apps/web/src/app/api/eps/import/execute/route.ts');
+    assert.match(executeApiSource, /primaryKeyHeader/);
+    assert.match(executeApiSource, /effectivePkHeader/);
   });
 
   it('Import analyze API returns catalogFields for column binding', () => {
