@@ -221,6 +221,13 @@ export async function POST(req: NextRequest) {
             } else {
               customFieldsObj[customKey] = typeof val === 'string' ? val.trim() : val;
             }
+          } else {
+            // Прямой ключ из справочника полей (например: power_kw, operating_pressure и др.)
+            if (['is_unique', 'is_imported', 'is_critical_path', 'ups_required'].includes(fieldStr)) {
+              customFieldsObj[fieldStr] = isTruthyBoolean(val);
+            } else {
+              customFieldsObj[fieldStr] = typeof val === 'string' ? val.trim() : val;
+            }
           }
         });
 

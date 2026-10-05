@@ -255,13 +255,29 @@ export function SmartImportWizard() {
       .filter((r) => r.action === 'IGNORE')
       .map((r) => r.header);
 
+    // Ensure final mapping includes all MAP_EXISTING choices
+    const finalMapping = { ...columnMapping };
+    Object.entries(resolutions).forEach(([header, res]) => {
+      if (res.action === 'CREATE') {
+        finalMapping[header] = `custom_${res.key}`;
+      } else if (res.action === 'MAP_EXISTING' && res.mappedExistingKey) {
+        finalMapping[header] = res.mappedExistingKey.startsWith('custom_') || [
+          'name', 'inventoryNumber', 'serialNumber', 'manufacturer', 'model', 'location', 'status', 'commissionDate', 'externalId'
+        ].includes(res.mappedExistingKey)
+          ? res.mappedExistingKey
+          : `custom_${res.mappedExistingKey}`;
+      } else if (res.action === 'IGNORE') {
+        delete finalMapping[header];
+      }
+    });
+
     try {
       const res = await fetch('/api/eps/import/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           rows: validatedRows,
-          columnMapping,
+          columnMapping: finalMapping,
           newFieldDefinitions: newFieldDefs,
           ignoredHeaders,
           conflictStrategy,
@@ -389,212 +405,199 @@ export function SmartImportWizard() {
       )}
 
       {/* ─── STEP 1: Сопоставление колонок и недостающие поля ─── */}
+      {/* ─── STEP 1: Ручное сопоставление колонок файла с полями справочника ─── */}
       {activeStep === 1 && (
         <Box>
-          {missingFields.length > 0 && (
-            <Box sx={{ mb: 3 }}>
-              <CriticalAlertBanner
-                alerts={[
-                  {
-                    id: 'missing-fields-alert',
-                    severity: 'INFO',
-                    title: `Обнаружено новых колонок: ${missingFields.length}`,
-                    description:
-                      'В загруженном файле найдены колонки, которых пока нет в справочнике характеристик оборудования. Вы можете добавить их в систему как новые поля или пропустить.',
-                  },
-                ]}
-              />
-            </Box>
-          )}
+          <Box sx={{ mb: 3 }}>
+            <CriticalAlertBanner
+              alerts={[
+                {
+                  id: 'mapping-guide-alert',
+                  severity: 'INFO',
+                  title: `Колонок в загруженном файле: ${fileHeaders.length}`,
+                  description:
+                    'Назначьте для каждой колонки файла соответствующее поле из справочника характеристик оборудования или выберите действие (создать новое поле или игнорировать колонку).',
+                },
+              ]}
+            />
+          </Box>
 
-          {/* Missing Fields Cards */}
-          {missingFields.length > 0 && (
-            <Card sx={{ mb: 3, border: '1px solid #0284c7', borderRadius: '12px' }}>
-              <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <AddCircleOutlineIcon color="primary" sx={{ fontSize: 24 }} />
-                  <Typography variant="h6" fontWeight={700}>
-                    Разрешение недостающих полей ({missingFields.length})
-                  </Typography>
-                </Box>
-
-                <Grid container spacing={2.5}>
-                  {missingFields.map((mf) => {
-                    const res = resolutions[mf.header] || {
-                      action: 'CREATE',
-                      name: mf.suggestedName,
-                      key: mf.suggestedKey,
-                      fieldType: mf.suggestedType,
-                      unit: '',
-                      sectionId: '',
-                    };
-
-                    return (
-                      <Grid item xs={12} key={mf.header}>
-                        <Paper variant="outlined" sx={{ p: 2.5, backgroundColor: res.action === 'CREATE' ? 'success.light' : 'background.default', borderRadius: '8px' }}>
-                          <Grid container spacing={2} alignItems="center">
-                            <Grid item xs={12} md={3}>
-                              <Typography variant="subtitle2" fontWeight={700} color="primary.main">
-                                «{mf.header}»
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary" display="block">
-                                Примеры из файла: {mf.sampleValues.slice(0, 2).join(', ') || '—'}
-                              </Typography>
-                            </Grid>
-
-                            <Grid item xs={12} md={3.5}>
-                              <FormControl component="fieldset">
-                                <RadioGroup
-                                  row
-                                  value={res.action}
-                                  onChange={(e) => handleUpdateResolution(mf.header, { action: e.target.value as any })}
-                                >
-                                  <FormControlLabel value="CREATE" control={<Radio size="small" />} label="Новое поле" />
-                                  <FormControlLabel value="MAP_EXISTING" control={<Radio size="small" />} label="Из справочника" />
-                                  <FormControlLabel value="IGNORE" control={<Radio size="small" />} label="Игнор" />
-                                </RadioGroup>
-                              </FormControl>
-                            </Grid>
-
-                            {res.action === 'MAP_EXISTING' && (
-                              <Grid item xs={12} md={5.5}>
-                                <TextField
-                                  select
-                                  size="small"
-                                  fullWidth
-                                  label="Привязать к существующему полю справочника"
-                                  value={res.mappedExistingKey || ''}
-                                  onChange={(e) => {
-                                    const selectedKey = e.target.value;
-                                    const matched = catalogFields.find((cf) => cf.key === selectedKey);
-                                    handleUpdateResolution(mf.header, {
-                                      mappedExistingKey: selectedKey,
-                                      name: matched ? matched.name : res.name,
-                                      key: selectedKey,
-                                    });
-                                  }}
-                                  SelectProps={{ displayEmpty: true }}
-                                >
-                                  <MenuItem value="">— Выберите поле из справочника —</MenuItem>
-                                  {catalogFields.map((cf) => (
-                                    <MenuItem key={cf.key} value={cf.key}>
-                                      {cf.name} ({cf.key}) {cf.unit ? `[${cf.unit}]` : ''} {cf.section ? `• ${cf.section.name}` : ''}
-                                    </MenuItem>
-                                  ))}
-                                </TextField>
-                              </Grid>
-                            )}
-
-                            {res.action === 'CREATE' && (
-                              <>
-                                <Grid item xs={12} sm={4} md={2}>
-                                  <TextField
-                                    label="Название поля"
-                                    size="small"
-                                    fullWidth
-                                    value={res.name}
-                                    onChange={(e) => handleUpdateResolution(mf.header, { name: e.target.value })}
-                                  />
-                                </Grid>
-                                <Grid item xs={12} sm={4} md={1.5}>
-                                  <TextField
-                                    select
-                                    label="Тип данных"
-                                    size="small"
-                                    fullWidth
-                                    value={res.fieldType}
-                                    onChange={(e) => handleUpdateResolution(mf.header, { fieldType: e.target.value as any })}
-                                  >
-                                    <MenuItem value="TEXT">Текст</MenuItem>
-                                    <MenuItem value="NUMBER">Число</MenuItem>
-                                    <MenuItem value="DATE">Дата</MenuItem>
-                                    <MenuItem value="BOOLEAN">Да/Нет</MenuItem>
-                                  </TextField>
-                                </Grid>
-                                <Grid item xs={12} sm={4} md={1}>
-                                  <TextField
-                                    label="Ед. изм."
-                                    size="small"
-                                    fullWidth
-                                    value={res.unit}
-                                    placeholder="кВт, бар..."
-                                    onChange={(e) => handleUpdateResolution(mf.header, { unit: e.target.value })}
-                                  />
-                                </Grid>
-                                <Grid item xs={12} sm={6} md={1.5}>
-                                  <TextField
-                                    select
-                                    label="Раздел"
-                                    size="small"
-                                    fullWidth
-                                    value={res.sectionId}
-                                    onChange={(e) => handleUpdateResolution(mf.header, { sectionId: e.target.value })}
-                                  >
-                                    <MenuItem value="">Общий раздел</MenuItem>
-                                    {availableSections.map((sec) => (
-                                      <MenuItem key={sec.id} value={sec.id}>
-                                        {sec.name}
-                                      </MenuItem>
-                                    ))}
-                                  </TextField>
-                                </Grid>
-                              </>
-                            )}
-                          </Grid>
-                        </Paper>
-                      </Grid>
-                    );
-                  })}
-                </Grid>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* All Mapped Columns Summary */}
+          {/* Table: Full manual column mapping */}
           <Card sx={{ mb: 3, borderRadius: '12px' }}>
             <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" fontWeight={700} gutterBottom>
-                Итоговая карта сопоставления колонок
-              </Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Box>
+                  <Typography variant="h6" fontWeight={700}>
+                    Сопоставление колонок файла со справочником
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Выберите поле из справочника оборудования для каждой колонки файла
+                  </Typography>
+                </Box>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => {
+                    const cleared: Record<string, string> = {};
+                    setColumnMapping(cleared);
+                    const resetRes: Record<string, MissingFieldResolution> = {};
+                    fileHeaders.forEach((h) => {
+                      resetRes[h] = {
+                        header: h,
+                        action: 'IGNORE',
+                        name: h,
+                        key: h.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
+                        fieldType: 'TEXT',
+                        unit: '',
+                        sectionId: '',
+                      };
+                    });
+                    setResolutions(resetRes);
+                  }}
+                >
+                  Сбросить все назначения
+                </Button>
+              </Box>
+
               <DataTableWrapper total={fileHeaders.length} stickyHeader>
-                <Table size="small" aria-label="Карта сопоставления колонок">
+                <Table size="small" aria-label="Таблица сопоставления колонок">
                   <TableHead sx={{ backgroundColor: 'action.hover' }}>
                     <TableRow>
-                      <TableCell sx={{ fontWeight: 700 }}>Колонка в файле</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Статус распознавания</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Поле в EMS</TableCell>
+                      <TableCell sx={{ fontWeight: 700, width: '25%' }}>Колонка в файле</TableCell>
+                      <TableCell sx={{ fontWeight: 700, width: '20%' }}>Примеры значений</TableCell>
+                      <TableCell sx={{ fontWeight: 700, width: '25%' }}>Действие</TableCell>
+                      <TableCell sx={{ fontWeight: 700, width: '30%' }}>Целевое поле в EMS</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {fileHeaders.map((header) => {
-                      const isMissing = missingFields.some((mf) => mf.header === header);
-                      const res = resolutions[header];
-                      const mappedKey = columnMapping[header];
+                      const res = resolutions[header] || {
+                        header,
+                        action: columnMapping[header] ? 'MAP_EXISTING' : 'IGNORE',
+                        mappedExistingKey: columnMapping[header] || '',
+                        name: header,
+                        key: header.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
+                        fieldType: 'TEXT',
+                        unit: '',
+                        sectionId: '',
+                      };
+
+                      // Get sample values for this column from validatedRows
+                      const sampleVals = validatedRows
+                        .slice(0, 3)
+                        .map((r) => r.data?.[header])
+                        .filter((v) => v !== undefined && v !== null && v !== '')
+                        .slice(0, 2);
 
                       return (
                         <TableRow key={header} hover>
-                          <TableCell sx={{ fontWeight: 600 }}>{header}</TableCell>
-                          <TableCell>
-                            {isMissing ? (
-                              res?.action === 'CREATE' ? (
-                                <StatusBadge status="ACTIVE" label="Будет создано новое поле" size="small" />
-                              ) : res?.action === 'MAP_EXISTING' ? (
-                                <StatusBadge status="INFO" label="Привязано к полю справочника" size="small" />
-                              ) : (
-                                <StatusBadge status="DECOMMISSIONED" label="Будет пропущено (Игнорируется)" size="small" />
-                              )
-                            ) : (
-                              <StatusBadge status="ACTIVE" label="Распознано автоматически" size="small" variant="outlined" />
-                            )}
+                          <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>
+                            «{header}»
                           </TableCell>
-                          <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
-                            {isMissing
-                              ? res?.action === 'CREATE'
-                                ? `${res.name} (${res.key})`
-                                : res?.action === 'MAP_EXISTING'
-                                ? `${res.name} (${res.mappedExistingKey})`
-                                : '—'
-                              : mappedKey}
+                          <TableCell sx={{ fontSize: '0.75rem', color: 'text.secondary', fontFamily: 'monospace' }}>
+                            {sampleVals.length > 0 ? sampleVals.join(', ') : '—'}
+                          </TableCell>
+                          <TableCell>
+                            <FormControl component="fieldset">
+                              <RadioGroup
+                                row
+                                value={res.action}
+                                onChange={(e) => {
+                                  const act = e.target.value as any;
+                                  handleUpdateResolution(header, { action: act });
+                                  if (act === 'IGNORE') {
+                                    setColumnMapping((prev) => {
+                                      const next = { ...prev };
+                                      delete next[header];
+                                      return next;
+                                    });
+                                  }
+                                }}
+                              >
+                                <FormControlLabel value="MAP_EXISTING" control={<Radio size="small" />} label="Из справочника" />
+                                <FormControlLabel value="CREATE" control={<Radio size="small" />} label="Новое" />
+                                <FormControlLabel value="IGNORE" control={<Radio size="small" />} label="Игнор" />
+                              </RadioGroup>
+                            </FormControl>
+                          </TableCell>
+                          <TableCell>
+                            {res.action === 'MAP_EXISTING' && (
+                              <TextField
+                                select
+                                size="small"
+                                fullWidth
+                                label="Выберите поле из справочника"
+                                value={res.mappedExistingKey || columnMapping[header] || ''}
+                                onChange={(e) => {
+                                  const selectedKey = e.target.value;
+                                  const matched = catalogFields.find((cf) => cf.key === selectedKey);
+                                  handleUpdateResolution(header, {
+                                    action: 'MAP_EXISTING',
+                                    mappedExistingKey: selectedKey,
+                                    name: matched ? matched.name : header,
+                                    key: selectedKey,
+                                  });
+                                  setColumnMapping((prev) => ({
+                                    ...prev,
+                                    [header]: selectedKey,
+                                  }));
+                                }}
+                                SelectProps={{ displayEmpty: true }}
+                              >
+                                <MenuItem value="">— Не назначено —</MenuItem>
+                                {catalogFields.map((cf) => (
+                                  <MenuItem key={cf.key} value={cf.key}>
+                                    {cf.name} ({cf.key}) {cf.unit ? `[${cf.unit}]` : ''} {cf.section ? `• ${cf.section.name}` : ''}
+                                  </MenuItem>
+                                ))}
+                              </TextField>
+                            )}
+
+                            {res.action === 'CREATE' && (
+                              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                <TextField
+                                  label="Название"
+                                  size="small"
+                                  value={res.name}
+                                  onChange={(e) => handleUpdateResolution(header, { name: e.target.value })}
+                                  sx={{ flex: '1 1 120px' }}
+                                />
+                                <TextField
+                                  select
+                                  label="Тип"
+                                  size="small"
+                                  value={res.fieldType}
+                                  onChange={(e) => handleUpdateResolution(header, { fieldType: e.target.value as any })}
+                                  sx={{ width: 100 }}
+                                >
+                                  <MenuItem value="TEXT">Текст</MenuItem>
+                                  <MenuItem value="NUMBER">Число</MenuItem>
+                                  <MenuItem value="DATE">Дата</MenuItem>
+                                  <MenuItem value="BOOLEAN">Да/Нет</MenuItem>
+                                </TextField>
+                                <TextField
+                                  select
+                                  label="Раздел"
+                                  size="small"
+                                  value={res.sectionId}
+                                  onChange={(e) => handleUpdateResolution(header, { sectionId: e.target.value })}
+                                  sx={{ flex: '1 1 140px' }}
+                                >
+                                  <MenuItem value="">Общий раздел</MenuItem>
+                                  {availableSections.map((sec) => (
+                                    <MenuItem key={sec.id} value={sec.id}>
+                                      {sec.name}
+                                    </MenuItem>
+                                  ))}
+                                </TextField>
+                              </Box>
+                            )}
+
+                            {res.action === 'IGNORE' && (
+                              <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+                                Колонка будет пропущена при импорте
+                              </Typography>
+                            )}
                           </TableCell>
                         </TableRow>
                       );
@@ -610,7 +613,12 @@ export function SmartImportWizard() {
             <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={() => setActiveStep(0)}>
               Назад к выбору файла
             </Button>
-            <Button variant="contained" endIcon={<ArrowForwardIcon />} onClick={handleProceedToCollisions} sx={{ fontWeight: 700, px: 3 }}>
+            <Button
+              variant="contained"
+              endIcon={<ArrowForwardIcon />}
+              onClick={handleProceedToCollisions}
+              sx={{ fontWeight: 700, px: 3 }}
+            >
               Продолжить к проверке коллизий
             </Button>
           </Box>

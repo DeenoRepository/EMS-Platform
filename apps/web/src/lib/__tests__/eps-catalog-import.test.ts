@@ -35,13 +35,13 @@ describe('EPS Field Catalog & Import Mapping', () => {
     assert.match(adminSource, /<EquipmentFieldsCatalogView \/>/);
   });
 
-  it('SmartImportWizard provides option to map file columns to existing catalog fields', () => {
+  it('SmartImportWizard provides manual mapping table for all file columns to catalog fields', () => {
     const importSource = readProjectFile('apps/web/src/components/eps/SmartImportWizard.tsx');
     assert.match(importSource, /MAP_EXISTING/);
     assert.match(importSource, /Из справочника/);
-    assert.match(importSource, /Привязать к существующему полю справочника/);
+    assert.match(importSource, /Выберите поле из справочника/);
+    assert.match(importSource, /Сбросить все назначения/);
     assert.match(importSource, /catalogFields/);
-    assert.match(importSource, /Привязано к полю справочника/);
   });
 
   it('Import analyze API returns catalogFields for column binding', () => {
