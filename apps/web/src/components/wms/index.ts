@@ -20,3 +20,5 @@ export { default as WarehouseSelect } from './WarehouseSelect';
 export * from './WarehouseSelect';
 export { default as EditNomenclatureDialog } from './EditNomenclatureDialog';
 export * from './EditNomenclatureDialog';
+export { default as BulkLocationModal } from './BulkLocationModal';
+export * from './BulkLocationModal';

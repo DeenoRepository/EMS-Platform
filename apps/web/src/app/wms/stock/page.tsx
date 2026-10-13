@@ -43,6 +43,7 @@ import {
   WarehouseSelect,
   WmsOperationWizardDialog,
   EditNomenclatureDialog,
+  BulkLocationModal,
   type PrintableLabelItem,
   type OperationType,
 } from '@/components/wms';
@@ -176,6 +177,9 @@ function WmsStockContent() {
   const [warehouseZonesForLoc, setWarehouseZonesForLoc] = useState<ZoneOption[]>([]);
   const [selectedCellId, setSelectedCellId] = useState<string>('');
   const [isSavingLoc, setIsSavingLoc] = useState(false);
+
+  // Modal: Bulk Location Move
+  const [isBulkLocationOpen, setIsBulkLocationOpen] = useState(false);
 
   // Slide-over Drawer: Stock Item Detail
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -1237,6 +1241,12 @@ function WmsStockContent() {
         onClearSelection={() => setSelectedIds([])}
         actions={[
           {
+            label: 'Переместить в ячейку',
+            icon: <PlaceOutlinedIcon fontSize="small" />,
+            onClick: () => setIsBulkLocationOpen(true),
+            color: 'primary',
+          },
+          {
             label: 'Печать этикеток',
             icon: <PrintIcon fontSize="small" />,
             onClick: handleOpenPrintBulk,
@@ -1255,6 +1265,17 @@ function WmsStockContent() {
             color: 'warning',
           },
         ]}
+      />
+
+      {/* Модальное окно пакетного перемещения по ячейкам */}
+      <BulkLocationModal
+        open={isBulkLocationOpen}
+        onClose={() => setIsBulkLocationOpen(false)}
+        onSuccess={() => {
+          fetchStock();
+          setSelectedIds([]);
+        }}
+        selectedItems={items.filter((i) => selectedIds.includes(i.id))}
       />
 
       {/* Slide-over Drawer для детального просмотра ТМЦ */}

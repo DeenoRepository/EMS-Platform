@@ -82,6 +82,19 @@ interface CategoryOption {
   name: string;
 }
 
+interface StorageCellItem {
+  id: string;
+  code: string;
+  name?: string | null;
+}
+
+interface ZoneWithCells {
+  id: string;
+  name: string;
+  code: string;
+  cells: StorageCellItem[];
+}
+
 interface OperationLineItem {
   nomenclatureId: string;
   nomenclatureName: string;
@@ -91,6 +104,7 @@ interface OperationLineItem {
   equipmentId?: string;
   equipmentName?: string;
   writeOffReason?: string;
+  cellId?: string | null;
 }
 
 interface WmsOperationWizardDialogProps {
@@ -169,9 +183,13 @@ export function WmsOperationWizardDialog({
   const [selectedNomenclature, setSelectedNomenclature] = useState<NomenclatureOption | null>(null);
   const [searchInputValue, setSearchInputValue] = useState('');
   const [itemQty, setItemQty] = useState('1');
+  const [itemCellId, setItemCellId] = useState('');
   const [itemEquipmentId, setItemEquipmentId] = useState('');
   const [selectedItemEquipment, setSelectedItemEquipment] = useState<EquipmentOption | null>(null);
   const [itemWriteOffType, setItemWriteOffType] = useState<'EQUIPMENT' | 'DEFECT' | 'SCRAP' | 'OTHER'>('EQUIPMENT');
+
+  // Warehouse topology (zones and cells)
+  const [warehouseZones, setWarehouseZones] = useState<ZoneWithCells[]>([]);
 
   // Nomenclature creation dialog state
   const [isCreateNomDialogOpen, setIsCreateNomDialogOpen] = useState(false);
@@ -265,10 +283,33 @@ export function WmsOperationWizardDialog({
   useEffect(() => {
     if (warehouseId) {
       fetchStock(warehouseId);
+      fetch(`/api/wms/warehouses/${warehouseId}/zones`)
+        .then((res) => res.json())
+        .then((json) => {
+          if (json.success && json.data) {
+            setWarehouseZones(json.data);
+          } else {
+            setWarehouseZones([]);
+          }
+        })
+        .catch(() => setWarehouseZones([]));
     } else {
       setStockMap({});
+      setWarehouseZones([]);
     }
+    setItemCellId('');
   }, [warehouseId, fetchStock]);
+
+  const flatWarehouseCells = React.useMemo(() => {
+    return warehouseZones.flatMap((zone) =>
+      zone.cells.map((cell) => ({
+        id: cell.id,
+        code: cell.code,
+        name: cell.name,
+        zoneName: `${zone.name} (${zone.code})`,
+      }))
+    );
+  }, [warehouseZones]);
 
   useEffect(() => {
     if (open) {
@@ -354,7 +395,8 @@ export function WmsOperationWizardDialog({
     setIsCreateNomDialogOpen(false);
 
     // If quantity is specified, automatically add to line items for RECEIPT
-    const qty = parseFloat(itemQty) || 1;
+    const qty = parseFloat(createdNom.initialQuantity) || parseFloat(itemQty) || 1;
+    const cell = createdNom.initialCellId || itemCellId || null;
     if (operationType === 'RECEIPT' && qty > 0) {
       setLineItems((prev) => [
         ...prev,
@@ -364,11 +406,13 @@ export function WmsOperationWizardDialog({
           nomenclatureArticle: formattedNom.article || undefined,
           unit: formattedNom.unit,
           quantity: qty,
+          cellId: cell,
         },
       ]);
-      enqueueSnackbar(`Позиция «${formattedNom.name}» создана и добавлена в приход`, { variant: 'success' });
+      enqueueSnackbar(`Позиция «${formattedNom.name}» (${qty} ${formattedNom.unit}) создана и добавлена в приход`, { variant: 'success' });
       setSelectedNomenclature(null);
       setItemQty('1');
+      setItemCellId('');
     }
   };
 
@@ -430,14 +474,36 @@ export function WmsOperationWizardDialog({
         equipmentId: finalEquipmentId,
         equipmentName: finalEquipmentName,
         writeOffReason: finalWriteOffReason,
+        cellId: operationType === 'RECEIPT' ? itemCellId || null : null,
       },
     ]);
 
     setSelectedNomenclature(null);
     setSearchInputValue('');
     setItemQty('1');
+    setItemCellId('');
     setItemEquipmentId('');
     setSelectedItemEquipment(null);
+  };
+
+  const handleUpdateItemQuantity = (index: number, newQty: number) => {
+    setLineItems((prev) => {
+      const updated = [...prev];
+      if (updated[index]) {
+        updated[index] = { ...updated[index], quantity: newQty };
+      }
+      return updated;
+    });
+  };
+
+  const handleUpdateItemCell = (index: number, newCellId: string) => {
+    setLineItems((prev) => {
+      const updated = [...prev];
+      if (updated[index]) {
+        updated[index] = { ...updated[index], cellId: newCellId || null };
+      }
+      return updated;
+    });
   };
 
   const handleRemoveItem = (index: number) => {
@@ -466,17 +532,26 @@ export function WmsOperationWizardDialog({
             nomenclatureArticle: selectedNomenclature.article || undefined,
             unit: selectedNomenclature.unit,
             quantity: qty,
+            cellId: operationType === 'RECEIPT' ? itemCellId || null : null,
           };
           currentItems = [autoItem];
           setLineItems(currentItems);
           setSelectedNomenclature(null);
           setItemQty('1');
+          setItemCellId('');
         }
       }
 
       if (currentItems.length === 0) {
         enqueueSnackbar('Добавьте хотя бы одну позицию ТМЦ', { variant: 'warning' });
         return;
+      }
+
+      for (const item of currentItems) {
+        if (!item.quantity || item.quantity <= 0 || isNaN(item.quantity)) {
+          enqueueSnackbar(`Укажите корректное количество (> 0) для «${item.nomenclatureName}»`, { variant: 'warning' });
+          return;
+        }
       }
       if (isOutflow) {
         for (const item of currentItems) {
@@ -538,6 +613,7 @@ export function WmsOperationWizardDialog({
             nomenclatureId: item.nomenclatureId,
             quantity: item.quantity,
             equipmentId: item.equipmentId || undefined,
+            cellId: item.cellId || undefined,
           })),
         }),
       });
@@ -972,7 +1048,12 @@ export function WmsOperationWizardDialog({
                   </Grid>
                 )}
 
-                <Grid item xs={12} sm={7.5} md={8}>
+                <Grid
+                  item
+                  xs={12}
+                  sm={operationType === 'RECEIPT' && flatWarehouseCells.length > 0 ? 5 : 7.5}
+                  md={operationType === 'RECEIPT' && flatWarehouseCells.length > 0 ? 5 : 8}
+                >
                   <Autocomplete
                     size="small"
                     options={nomenclatures}
@@ -1124,7 +1205,12 @@ export function WmsOperationWizardDialog({
                   />
                 </Grid>
 
-                <Grid item xs={6} sm={2.25} md={2}>
+                <Grid
+                  item
+                  xs={6}
+                  sm={operationType === 'RECEIPT' && flatWarehouseCells.length > 0 ? 2 : 2.25}
+                  md={2}
+                >
                   <TextField
                     size="small"
                     fullWidth
@@ -1160,7 +1246,40 @@ export function WmsOperationWizardDialog({
                   />
                 </Grid>
 
-                <Grid item xs={6} sm={2.25} md={2}>
+                {operationType === 'RECEIPT' && flatWarehouseCells.length > 0 && (
+                  <Grid item xs={6} sm={2.75} md={3}>
+                    <TextField
+                      select
+                      size="small"
+                      fullWidth
+                      label="Целевая ячейка"
+                      value={itemCellId}
+                      onChange={(e) => setItemCellId(e.target.value)}
+                      helperText="Адрес хранения (необязательно)"
+                    >
+                      <MenuItem value="">
+                        <em>— Без ячейки —</em>
+                      </MenuItem>
+                      {warehouseZones.map((zone) => [
+                        <MenuItem key={`add-head-${zone.id}`} disabled sx={{ fontWeight: 700, bgcolor: 'grey.100', fontSize: '0.75rem' }}>
+                          {zone.name} ({zone.code})
+                        </MenuItem>,
+                        ...zone.cells.map((cell) => (
+                          <MenuItem key={cell.id} value={cell.id} sx={{ pl: 3, fontSize: '0.8125rem' }}>
+                            {cell.code} {cell.name ? `— ${cell.name}` : ''}
+                          </MenuItem>
+                        )),
+                      ])}
+                    </TextField>
+                  </Grid>
+                )}
+
+                <Grid
+                  item
+                  xs={operationType === 'RECEIPT' && flatWarehouseCells.length > 0 ? 12 : 6}
+                  sm={operationType === 'RECEIPT' && flatWarehouseCells.length > 0 ? 2.25 : 2.25}
+                  md={operationType === 'RECEIPT' && flatWarehouseCells.length > 0 ? 2 : 2}
+                >
                   <Button
                     fullWidth
                     variant="contained"
@@ -1219,8 +1338,11 @@ export function WmsOperationWizardDialog({
                         {operationType === 'ISSUE_WRITE_OFF' && (
                           <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Назначение / Оборудование</TableCell>
                         )}
+                        {operationType === 'RECEIPT' && (
+                          <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', minWidth: 170 }}>Ячейка хранения</TableCell>
+                        )}
                         <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Остаток на складе</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Количество в операции</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem', minWidth: 140 }}>Количество в операции</TableCell>
                         <TableCell align="center" sx={{ width: 50 }} />
                       </TableRow>
                     </TableHead>
@@ -1257,6 +1379,44 @@ export function WmsOperationWizardDialog({
                                 )}
                               </TableCell>
                             )}
+                            {operationType === 'RECEIPT' && (
+                              <TableCell sx={{ py: 0.75 }}>
+                                {flatWarehouseCells.length > 0 ? (
+                                  <TextField
+                                    select
+                                    size="small"
+                                    fullWidth
+                                    value={item.cellId || ''}
+                                    onChange={(e) => handleUpdateItemCell(idx, e.target.value)}
+                                    sx={{
+                                      minWidth: 160,
+                                      '& .MuiOutlinedInput-root': {
+                                        fontSize: '0.8125rem',
+                                        height: 32,
+                                        borderRadius: '6px',
+                                        bgcolor: 'background.paper',
+                                      },
+                                    }}
+                                  >
+                                    <MenuItem value=""><em>— Без ячейки —</em></MenuItem>
+                                    {warehouseZones.map((zone) => [
+                                      <MenuItem key={`tbl-cell-head-${zone.id}`} disabled sx={{ fontWeight: 700, bgcolor: 'grey.100', fontSize: '0.75rem' }}>
+                                        {zone.name} ({zone.code})
+                                      </MenuItem>,
+                                      ...zone.cells.map((cell) => (
+                                        <MenuItem key={cell.id} value={cell.id} sx={{ pl: 3, fontSize: '0.8125rem' }}>
+                                          {cell.code} {cell.name ? `— ${cell.name}` : ''}
+                                        </MenuItem>
+                                      )),
+                                    ])}
+                                  </TextField>
+                                ) : (
+                                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                                    Без ячеек
+                                  </Typography>
+                                )}
+                              </TableCell>
+                            )}
                             <TableCell align="right" sx={{ py: 1 }}>
                               <Chip
                                 size="small"
@@ -1266,11 +1426,49 @@ export function WmsOperationWizardDialog({
                                 sx={{ fontWeight: 600, fontSize: '0.75rem', height: 22 }}
                               />
                             </TableCell>
-                            <TableCell align="right" sx={{ py: 1, fontWeight: 700, fontFeatureSettings: '"tnum"', color: hasDeficit ? 'error.main' : 'inherit' }}>
-                              {item.quantity} {item.unit}
+                            <TableCell align="right" sx={{ py: 0.75 }}>
+                              <Stack direction="row" spacing={1} alignItems="center" justifyContent="flex-end">
+                                <TextField
+                                  size="small"
+                                  type="number"
+                                  value={item.quantity}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value);
+                                    handleUpdateItemQuantity(idx, isNaN(val) ? 0 : val);
+                                  }}
+                                  inputProps={{
+                                    min: 0.01,
+                                    step: 'any',
+                                    style: {
+                                      textAlign: 'right',
+                                      fontWeight: 700,
+                                      fontFeatureSettings: '"tnum"',
+                                      padding: '4px 8px',
+                                      height: 24,
+                                    },
+                                  }}
+                                  error={item.quantity <= 0 || hasDeficit}
+                                  sx={{
+                                    width: 100,
+                                    '& .MuiOutlinedInput-root': {
+                                      height: 32,
+                                      borderRadius: '6px',
+                                      bgcolor: 'background.paper',
+                                    },
+                                  }}
+                                />
+                                <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', minWidth: 20 }}>
+                                  {item.unit}
+                                </Typography>
+                              </Stack>
                               {hasDeficit && (
-                                <Typography variant="caption" sx={{ display: 'block', color: 'error.main', fontWeight: 700 }}>
-                                  Превышение остатка!
+                                <Typography variant="caption" sx={{ display: 'block', color: 'error.main', fontWeight: 700, textAlign: 'right', mt: 0.25 }}>
+                                  Превышение!
+                                </Typography>
+                              )}
+                              {item.quantity <= 0 && (
+                                <Typography variant="caption" sx={{ display: 'block', color: 'error.main', fontWeight: 700, textAlign: 'right', mt: 0.25 }}>
+                                  Укажите &gt; 0
                                 </Typography>
                               )}
                             </TableCell>
@@ -1381,6 +1579,9 @@ export function WmsOperationWizardDialog({
                       {operationType === 'ISSUE_WRITE_OFF' && (
                         <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Назначение / Оборудование</TableCell>
                       )}
+                      {operationType === 'RECEIPT' && (
+                        <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Ячейка размещения</TableCell>
+                      )}
                       <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Остаток на складе</TableCell>
                       <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Количество к проведению</TableCell>
                     </TableRow>
@@ -1414,6 +1615,23 @@ export function WmsOperationWizardDialog({
                                   variant="outlined"
                                   sx={{ fontWeight: 500, fontSize: '0.75rem', height: 24, color: 'text.disabled' }}
                                 />
+                              )}
+                            </TableCell>
+                          )}
+                          {operationType === 'RECEIPT' && (
+                            <TableCell sx={{ py: 1 }}>
+                              {item.cellId ? (
+                                <Chip
+                                  size="small"
+                                  label={flatWarehouseCells.find((c) => c.id === item.cellId)?.code || 'Ячейка'}
+                                  color="primary"
+                                  variant="outlined"
+                                  sx={{ fontWeight: 600, fontSize: '0.75rem', height: 22 }}
+                                />
+                              ) : (
+                                <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+                                  Без адреса
+                                </Typography>
                               )}
                             </TableCell>
                           )}
@@ -1468,6 +1686,10 @@ export function WmsOperationWizardDialog({
         onCreated={handleNomenclatureCreated}
         initialName={nomDialogInitialName}
         categories={categories}
+        showReceiptFields={operationType === 'RECEIPT'}
+        warehouseName={warehouses.find((w) => w.id === warehouseId)?.name}
+        cells={flatWarehouseCells}
+        initialQuantity={parseFloat(itemQty) || 1}
       />
     </FormDialog>
   );

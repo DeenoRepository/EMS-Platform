@@ -247,12 +247,27 @@ export async function POST(req: NextRequest) {
         });
 
         if (type === 'RECEIPT') {
+          let verifiedCellId: string | null = null;
+          if (item.cellId) {
+            const cell = await tx.storageCell.findUnique({
+              where: { id: item.cellId },
+              include: { zone: true },
+            });
+            if (!cell) {
+              throw new Error('Выбранная ячейка хранения не найдена');
+            }
+            if (cell.zone.warehouseId !== warehouseId) {
+              throw new Error('Выбранная ячейка хранения принадлежит другому складу');
+            }
+            verifiedCellId = item.cellId;
+          }
+
           if (existingStock) {
             await tx.stockItem.update({
               where: { id: existingStock.id },
               data: {
                 quantity: Number(existingStock.quantity) + qtyNum,
-                ...(item.cellId ? { cellId: item.cellId } : {}),
+                ...(verifiedCellId ? { cellId: verifiedCellId } : {}),
               },
             });
           } else {
@@ -261,7 +276,7 @@ export async function POST(req: NextRequest) {
                 warehouseId,
                 nomenclatureId: item.nomenclatureId,
                 quantity: qtyNum,
-                cellId: item.cellId || null,
+                cellId: verifiedCellId,
               },
             });
           }

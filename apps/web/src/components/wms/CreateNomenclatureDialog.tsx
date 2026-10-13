@@ -28,13 +28,34 @@ interface CategoryOption {
   name: string;
 }
 
+export interface StorageCellOption {
+  id: string;
+  code: string;
+  name?: string | null;
+  zoneName?: string;
+}
+
+export interface CreatedNomenclatureResult {
+  id: string;
+  name: string;
+  article?: string | null;
+  unit: string;
+  category?: { name: string } | null;
+  initialQuantity?: number;
+  initialCellId?: string | null;
+}
+
 interface CreateNomenclatureDialogProps {
   open: boolean;
   onClose: () => void;
-  onCreated: (createdItem: { id: string; name: string; article?: string | null; unit: string; category?: { name: string } | null }) => void;
+  onCreated: (createdItem: CreatedNomenclatureResult) => void;
   categories?: CategoryOption[];
   initialName?: string;
   initialType?: string;
+  showReceiptFields?: boolean;
+  warehouseName?: string;
+  cells?: StorageCellOption[];
+  initialQuantity?: number;
 }
 
 const NOMENCLATURE_TYPES = [
@@ -52,6 +73,10 @@ export default function CreateNomenclatureDialog({
   categories: initialCategories,
   initialName = '',
   initialType = 'SPARE_PART',
+  showReceiptFields = false,
+  warehouseName,
+  cells = [],
+  initialQuantity = 1,
 }: CreateNomenclatureDialogProps) {
   const { enqueueSnackbar } = useSnackbar();
 
@@ -63,14 +88,18 @@ export default function CreateNomenclatureDialog({
   const [minStock, setMinStock] = useState('');
   const [description, setDescription] = useState('');
   const [categories, setCategories] = useState<CategoryOption[]>(initialCategories || []);
+  const [receiptQuantity, setReceiptQuantity] = useState<string>(String(initialQuantity || '1'));
+  const [receiptCellId, setReceiptCellId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (open) {
       if (initialName) setName(initialName);
       if (initialType) setSelectedType(initialType);
+      if (initialQuantity) setReceiptQuantity(String(initialQuantity));
+      setReceiptCellId('');
     }
-  }, [open, initialName, initialType]);
+  }, [open, initialName, initialType, initialQuantity]);
 
   useEffect(() => {
     if (initialCategories && initialCategories.length > 0) {
@@ -93,6 +122,8 @@ export default function CreateNomenclatureDialog({
     setCategoryId('');
     setMinStock('');
     setDescription('');
+    setReceiptQuantity('1');
+    setReceiptCellId('');
   };
 
   const handleGenerateSku = () => {
@@ -127,7 +158,11 @@ export default function CreateNomenclatureDialog({
       if (res.ok && json.success) {
         enqueueSnackbar('Номенклатура успешно создана', { variant: 'success' });
         handleReset();
-        onCreated(json.data);
+        onCreated({
+          ...json.data,
+          initialQuantity: showReceiptFields ? parseFloat(receiptQuantity) || 1 : undefined,
+          initialCellId: showReceiptFields ? receiptCellId || null : undefined,
+        });
         onClose();
       } else {
         enqueueSnackbar(json.error || 'Ошибка создания номенклатуры', { variant: 'error' });
@@ -244,7 +279,7 @@ export default function CreateNomenclatureDialog({
                 endAdornment: (
                   <InputAdornment position="end">
                     <Tooltip title="Сгенерировать артикул автоматически">
-                      <IconButton size="small" onClick={handleGenerateSku} sx={{ color: '#7c3aed' }}>
+                      <IconButton size="small" onClick={handleGenerateSku} color="secondary">
                         <AutoAwesomeIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
@@ -255,10 +290,10 @@ export default function CreateNomenclatureDialog({
                 '& .MuiOutlinedInput-root': {
                   borderRadius: '8px',
                   fontSize: '0.875rem',
-                  backgroundColor: '#ffffff',
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#94a3b8' },
-                  '&.Mui-focused fieldset': { borderColor: '#0284c7' },
+                  backgroundColor: 'background.paper',
+                  '& fieldset': { borderColor: 'divider' },
+                  '&:hover fieldset': { borderColor: 'grey.400' },
+                  '&.Mui-focused fieldset': { borderColor: 'primary.main' },
                 },
               }}
             />
@@ -277,15 +312,94 @@ export default function CreateNomenclatureDialog({
                 '& .MuiOutlinedInput-root': {
                   borderRadius: '8px',
                   fontSize: '0.875rem',
-                  backgroundColor: '#ffffff',
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#94a3b8' },
-                  '&.Mui-focused fieldset': { borderColor: '#0284c7' },
+                  backgroundColor: 'background.paper',
+                  '& fieldset': { borderColor: 'divider' },
+                  '&:hover fieldset': { borderColor: 'grey.400' },
+                  '&.Mui-focused fieldset': { borderColor: 'primary.main' },
                 },
               }}
             />
           </Grid>
         </Grid>
+
+        {/* Блок оприходования (отображается при вызове из мастера прихода) */}
+        {showReceiptFields && (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              borderRadius: '8px',
+              border: '1px solid',
+              borderColor: 'success.light',
+              bgcolor: 'rgba(22, 163, 74, 0.04)',
+            }}
+          >
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'success.dark', mb: 1.5 }}>
+              Параметры оприходования в текущую операцию {warehouseName ? `(Склад: ${warehouseName})` : ''}
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={cells && cells.length > 0 ? 6 : 12}>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.75, display: 'block' }}>
+                  Количество к оприходованию <Box component="span" sx={{ color: 'error.main' }}>*</Box>
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  type="number"
+                  value={receiptQuantity}
+                  onChange={(e) => setReceiptQuantity(e.target.value)}
+                  inputProps={{ min: 0.01, step: 'any' }}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary' }}>
+                          {unit || 'шт'}
+                        </Typography>
+                      </InputAdornment>
+                    ),
+                  }}
+                  helperText="Будет сразу добавлено в позиции операции с указанным количеством"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '8px',
+                      backgroundColor: 'background.paper',
+                    },
+                  }}
+                />
+              </Grid>
+              {cells && cells.length > 0 && (
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.75, display: 'block' }}>
+                    Целевая ячейка склада
+                  </Typography>
+                  <TextField
+                    select
+                    fullWidth
+                    size="small"
+                    value={receiptCellId}
+                    onChange={(e) => setReceiptCellId(e.target.value)}
+                    helperText="Закрепляет адрес хранения при приходе"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '8px',
+                        backgroundColor: 'background.paper',
+                      },
+                    }}
+                  >
+                    <MenuItem value="">
+                      <em>— Без ячейки —</em>
+                    </MenuItem>
+                    {cells.map((cell) => (
+                      <MenuItem key={cell.id} value={cell.id}>
+                        {cell.code} {cell.name ? `— ${cell.name}` : ''} {cell.zoneName ? `(${cell.zoneName})` : ''}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+              )}
+            </Grid>
+          </Paper>
+        )}
 
         {/* Category & Min Stock */}
         <Grid container spacing={2}>
