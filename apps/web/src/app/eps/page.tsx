@@ -411,7 +411,6 @@ function EquipmentListContent() {
   };
 
   const canCreate = hasPermission(PERMISSIONS.EPS_EQUIPMENT_CREATE);
-  const canImport = hasPermission(PERMISSIONS.EPS_IMPORT_EXECUTE);
   const canBatchEdit = hasPermission(PERMISSIONS.EPS_EQUIPMENT_BATCH_EDIT);
   const canPurge = hasPermission(PERMISSIONS.EPS_DATABASE_PURGE);
 

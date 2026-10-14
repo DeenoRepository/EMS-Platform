@@ -136,6 +136,7 @@ async function resolveJsonFilters(params: URLSearchParams): Promise<string[] | n
   const candidates = await prisma.equipment.findMany({
     where: baseWhere,
     select: { id: true, name: true, inventoryNumber: true, serialNumber: true, manufacturer: true, model: true, location: true, customFields: true },
+    take: 2000,
   });
   return candidates.filter(({ name, inventoryNumber, serialNumber, manufacturer, model, location, customFields }) => {
     const values = (customFields && typeof customFields === 'object' ? customFields : {}) as Record<string, unknown>;

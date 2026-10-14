@@ -4,6 +4,7 @@ import { prisma, DocumentType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { saveFile, ALLOWED_EXTENSIONS } from '@/lib/storage';
+import { getEquipmentDecimalNumber } from '@/lib/eps-helpers';
 import path from 'path';
 
 export const dynamic = 'force-dynamic';
@@ -59,7 +60,7 @@ export async function GET(req: NextRequest) {
       ];
     }
 
-    const [items, total, allDocs] = await Promise.all([
+    const [items, total, statsGroup, statsSum] = await Promise.all([
       prisma.document.findMany({
         where,
         include: {
@@ -88,16 +89,19 @@ export async function GET(req: NextRequest) {
         take: pageSize,
       }),
       prisma.document.count({ where }),
-      prisma.document.findMany({
-        select: {
-          docType: true,
-          fileSize: true,
-        },
+      prisma.document.groupBy({
+        by: ['docType'],
+        where: { deletedAt: null },
+        _count: { _all: true },
+      }),
+      prisma.document.aggregate({
+        where: { deletedAt: null },
+        _sum: { fileSize: true },
+        _count: { _all: true },
       }),
     ]);
 
     // Calculate aggregated stats across all documents in database
-    let totalSize = 0;
     const byTypeCounts: Record<string, number> = {
       SCHEMA: 0,
       MANUAL: 0,
@@ -107,14 +111,12 @@ export async function GET(req: NextRequest) {
       OTHER: 0,
     };
 
-    allDocs.forEach((d) => {
-      totalSize += d.fileSize || 0;
-      if (byTypeCounts[d.docType] !== undefined) {
-        byTypeCounts[d.docType]++;
-      } else {
-        byTypeCounts[d.docType] = 1;
-      }
+    statsGroup.forEach((g) => {
+      byTypeCounts[g.docType] = g._count._all;
     });
+
+    const totalDocuments = statsSum._count._all || 0;
+    const totalSizeBytes = statsSum._sum.fileSize || 0;
 
     return NextResponse.json({
       success: true,
@@ -125,8 +127,8 @@ export async function GET(req: NextRequest) {
         pageSize,
         totalPages: Math.ceil(total / pageSize) || 1,
         stats: {
-          totalDocuments: allDocs.length,
-          totalSizeBytes: totalSize,
+          totalDocuments,
+          totalSizeBytes,
           byTypeCounts,
         },
       },
@@ -139,17 +141,6 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-function getEquipmentDecimalNumber(customFields: any): string {
-  if (!customFields || typeof customFields !== 'object') return '';
-  return String(
-    customFields.decimal_number ||
-    customFields.detsimalnyy_nomer ||
-    customFields.decimalNumber ||
-    customFields['децимальный номер'] ||
-    ''
-  ).trim();
 }
 
 export async function POST(req: NextRequest) {

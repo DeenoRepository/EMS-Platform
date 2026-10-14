@@ -1,3 +1,31 @@
+function isDepartmentName(val?: unknown): boolean {
+  if (!val || typeof val !== 'string') return false;
+  const lower = val.toLowerCase();
+  return (
+    lower.includes('группа обслуживания') ||
+    lower.includes('ремонта') ||
+    lower.includes('цех') ||
+    lower.includes('подразделение') ||
+    lower.includes('участок') ||
+    lower.includes('служба')
+  );
+}
+
+/**
+ * Извлекает децимальный номер оборудования из customFields.
+ */
+export function getEquipmentDecimalNumber(customFields: unknown): string {
+  if (!customFields || typeof customFields !== 'object') return '';
+  const fields = customFields as Record<string, unknown>;
+  return String(
+    fields.decimal_number ||
+    fields.detsimalnyy_nomer ||
+    fields.decimalNumber ||
+    fields['децимальный номер'] ||
+    ''
+  ).trim();
+}
+
 /**
  * Определение вида оборудования из кастомных полей.
  * Защищает от ситуаций, когда в поле типа оборудования по ошибке попало название подразделения/группы обслуживания.
@@ -5,23 +33,10 @@
 export function getEquipmentKind(custom?: Record<string, any> | null): string {
   if (!custom) return '—';
 
-  const isDept = (val?: any) => {
-    if (!val || typeof val !== 'string') return false;
-    const lower = val.toLowerCase();
-    return (
-      lower.includes('группа обслуживания') ||
-      lower.includes('ремонта') ||
-      lower.includes('цех') ||
-      lower.includes('подразделение') ||
-      lower.includes('участок') ||
-      lower.includes('служба')
-    );
-  };
-
-  if (custom.equipment_kind && !isDept(custom.equipment_kind)) {
+  if (custom.equipment_kind && !isDepartmentName(custom.equipment_kind)) {
     return String(custom.equipment_kind).trim();
   }
-  if (custom.equipment_type && !isDept(custom.equipment_type)) {
+  if (custom.equipment_type && !isDepartmentName(custom.equipment_type)) {
     return String(custom.equipment_type).trim();
   }
   return '—';
@@ -33,23 +48,10 @@ export function getEquipmentKind(custom?: Record<string, any> | null): string {
 export function getEquipmentDepartment(custom?: Record<string, any> | null): string {
   if (!custom) return '—';
 
-  const isDept = (val?: any) => {
-    if (!val || typeof val !== 'string') return false;
-    const lower = val.toLowerCase();
-    return (
-      lower.includes('группа обслуживания') ||
-      lower.includes('ремонта') ||
-      lower.includes('цех') ||
-      lower.includes('подразделение') ||
-      lower.includes('участок') ||
-      lower.includes('служба')
-    );
-  };
-
   if (custom.department) return String(custom.department).trim();
   if (custom.service_group) return String(custom.service_group).trim();
-  if (isDept(custom.equipment_type)) return String(custom.equipment_type).trim();
-  if (isDept(custom.equipment_group)) return String(custom.equipment_group).trim();
+  if (isDepartmentName(custom.equipment_type)) return String(custom.equipment_type).trim();
+  if (isDepartmentName(custom.equipment_group)) return String(custom.equipment_group).trim();
   return custom.equipment_group ? String(custom.equipment_group).trim() : '—';
 }
 

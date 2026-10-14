@@ -43,12 +43,6 @@ import { StatusBadge, DatePickerField } from '@/components/ui';
 import { EQUIPMENT_STATUS_MAP } from '@ems/shared';
 import { ResponsibleUserSelect } from './ResponsibleUserSelect';
 
-export interface TagItem {
-  id: string;
-  name: string;
-  color: string | null;
-}
-
 export interface CustomFieldDef {
   id: string;
   sectionId: string | null;

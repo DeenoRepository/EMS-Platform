@@ -3,19 +3,9 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
+import { getEquipmentDecimalNumber } from '@/lib/eps-helpers';
 
 export const dynamic = 'force-dynamic';
-
-function getEquipmentDecimalNumber(customFields: any): string {
-  if (!customFields || typeof customFields !== 'object') return '';
-  return String(
-    customFields.decimal_number ||
-    customFields.detsimalnyy_nomer ||
-    customFields.decimalNumber ||
-    customFields['децимальный номер'] ||
-    ''
-  ).trim();
-}
 
 export async function GET(req: NextRequest) {
   try {
@@ -56,6 +46,7 @@ export async function GET(req: NextRequest) {
         }
       }
 
+      // Extract decimal_number from customFields
       const dec = getEquipmentDecimalNumber(eq.customFields);
       if (dec) {
         const existing = decimalsMap.get(dec);

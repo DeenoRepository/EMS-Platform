@@ -4,20 +4,10 @@ import { prisma, DocumentType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { saveFile, deleteFile, ALLOWED_EXTENSIONS } from '@/lib/storage';
+import { getEquipmentDecimalNumber } from '@/lib/eps-helpers';
 import path from 'path';
 
 export const dynamic = 'force-dynamic';
-
-function getEquipmentDecimalNumber(customFields: any): string {
-  if (!customFields || typeof customFields !== 'object') return '';
-  return String(
-    customFields.decimal_number ||
-    customFields.detsimalnyy_nomer ||
-    customFields.decimalNumber ||
-    customFields['децимальный номер'] ||
-    ''
-  ).trim();
-}
 
 export async function POST(
   req: NextRequest,
