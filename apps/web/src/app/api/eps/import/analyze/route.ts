@@ -3,6 +3,7 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
+import { enforceRateLimit } from '@/lib/rate-limit';
 import * as XLSX from 'xlsx';
 
 export const dynamic = 'force-dynamic';
@@ -357,6 +358,9 @@ function makeEnglishSlug(str: string): string {
 }
 
 export async function POST(req: NextRequest) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 10, windowMs: 60 * 1000, prefix: 'eps-import-analyze' });
+  if (rateLimitError) return rateLimitError;
+
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
@@ -664,8 +668,9 @@ export async function POST(req: NextRequest) {
         allRows: validatedRows,
       },
     });
-  } catch (error: any) {
-    console.error('Ошибка анализа файла импорта:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка анализа файла импорта' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка анализа файла импорта:', message);
+    return NextResponse.json({ success: false, error: 'Ошибка анализа файла импорта', details: message }, { status: 500 });
   }
 }

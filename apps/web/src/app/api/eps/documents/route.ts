@@ -131,10 +131,11 @@ export async function GET(req: NextRequest) {
         },
       },
     });
-  } catch (error: any) {
-    console.error('Ошибка получения списка документов EPS:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка получения списка документов EPS:', message);
     return NextResponse.json(
-      { success: false, error: 'Ошибка получения реестра документов' },
+      { success: false, error: 'Ошибка получения реестра документов', details: message },
       { status: 500 }
     );
   }
@@ -363,11 +364,12 @@ export async function POST(req: NextRequest) {
       equipmentCount: targetEquipments.length,
       bindingMode,
     });
-  } catch (error: any) {
-    console.error('Ошибка создания документа:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка создания документа:', message);
     return NextResponse.json(
-      { success: false, error: error.message || 'Ошибка сохранения документа' },
-      { status: error.message?.includes('Недопустимый') || error.message?.includes('превышает') ? 400 : 500 }
+      { success: false, error: message || 'Ошибка сохранения документа', details: message },
+      { status: message.includes('Недопустимый') || message.includes('превышает') ? 400 : 500 }
     );
   }
 }

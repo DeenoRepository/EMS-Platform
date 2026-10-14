@@ -49,8 +49,9 @@ export async function DELETE(
     });
 
     return NextResponse.json({ success: true, message: 'Документ успешно удален' });
-  } catch (error: any) {
-    console.error('Ошибка удаления документа:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка удаления документа' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка удаления документа:', message);
+    return NextResponse.json({ success: false, error: 'Ошибка удаления документа', details: message }, { status: 500 });
   }
 }

@@ -152,10 +152,11 @@ export async function GET(req: NextRequest) {
         stats,
       },
     });
-  } catch (error: any) {
-    console.error('Ошибка получения журнала истории изменений EPS:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка получения журнала истории изменений EPS:', message);
     return NextResponse.json(
-      { success: false, error: 'Ошибка получения истории изменений' },
+      { success: false, error: 'Ошибка получения истории изменений', details: message },
       { status: 500 }
     );
   }

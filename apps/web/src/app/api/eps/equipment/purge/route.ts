@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
 import { prisma } from '@ems/database';
-import { PERMISSIONS } from '@ems/shared';
+import { PERMISSIONS, JwtUserPayload } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { deleteFile } from '@/lib/storage';
 import { enforceRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
-function canPurgeDatabase(user: any): boolean {
+function canPurgeDatabase(user: JwtUserPayload | null): boolean {
   if (!user) return false;
   return hasPermission(user, PERMISSIONS.EPS_DATABASE_PURGE);
 }

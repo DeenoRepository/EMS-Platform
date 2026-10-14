@@ -110,8 +110,9 @@ export async function GET(req: NextRequest) {
         'Content-Disposition': 'attachment; filename="EPS_Equipment_Import_Template.xlsx"',
       },
     });
-  } catch (error: any) {
-    console.error('Ошибка формирования шаблона импорта:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка формирования шаблона' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка формирования шаблона импорта:', message);
+    return NextResponse.json({ success: false, error: 'Ошибка формирования шаблона', details: message }, { status: 500 });
   }
 }

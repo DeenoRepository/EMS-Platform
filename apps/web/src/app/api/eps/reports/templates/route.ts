@@ -35,9 +35,10 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: templates });
-  } catch (error: any) {
-    console.error('Ошибка получения шаблонов отчетов:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка получения шаблонов отчетов' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка получения шаблонов отчетов:', message);
+    return NextResponse.json({ success: false, error: 'Ошибка получения шаблонов отчетов', details: message }, { status: 500 });
   }
 }
 
@@ -77,8 +78,9 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: template });
-  } catch (error: any) {
-    console.error('Ошибка сохранения шаблона отчета:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка сохранения шаблона отчета' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка сохранения шаблона отчета:', message);
+    return NextResponse.json({ success: false, error: 'Ошибка сохранения шаблона отчета', details: message }, { status: 500 });
   }
 }

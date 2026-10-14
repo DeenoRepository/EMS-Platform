@@ -84,10 +84,11 @@ export async function GET(req: NextRequest) {
         totalEquipmentCount: equipment.length,
       },
     });
-  } catch (error: any) {
-    console.error('Ошибка получения параметров привязки документов:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка получения параметров привязки документов:', message);
     return NextResponse.json(
-      { success: false, error: 'Ошибка получения справочников привязки' },
+      { success: false, error: 'Ошибка получения справочников привязки', details: message },
       { status: 500 }
     );
   }

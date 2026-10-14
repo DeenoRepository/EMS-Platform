@@ -67,11 +67,12 @@ export async function POST(
     });
 
     return NextResponse.json({ success: true, data: photo });
-  } catch (error: any) {
-    console.error('Ошибка загрузки фото:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка загрузки фото:', message);
     return NextResponse.json(
-      { success: false, error: error.message || 'Ошибка загрузки фото' },
-      { status: error.message?.includes('Недопустимый') || error.message?.includes('превышает') ? 400 : 500 }
+      { success: false, error: message || 'Ошибка загрузки фото', details: message },
+      { status: message.includes('Недопустимый') || message.includes('превышает') ? 400 : 500 }
     );
   }
 }
@@ -102,7 +103,8 @@ export async function DELETE(
     if (otherPhotos === 0) deleteFile(photo.filePath);
 
     return NextResponse.json({ success: true, message: 'Фото удалено' });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: 'Ошибка удаления фото' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ success: false, error: 'Ошибка удаления фото', details: message }, { status: 500 });
   }
 }

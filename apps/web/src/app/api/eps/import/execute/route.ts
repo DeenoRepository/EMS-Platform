@@ -431,11 +431,12 @@ export async function POST(req: NextRequest) {
 
           createdCount++;
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         errorCount++;
-        errors.push({ row: i + 1, error: err.message || 'Ошибка обработки строки' });
+        const errMsg = err instanceof Error ? err.message : 'Ошибка обработки строки';
+        errors.push({ row: i + 1, error: errMsg });
         if (conflictStrategy === 'FULL_REPLACE') {
-          throw new Error(`Ошибка полной замены в строке ${i + 1}: ${err.message || 'Ошибка обработки строки'}`);
+          throw new Error(`Ошибка полной замены в строке ${i + 1}: ${errMsg}`);
         }
       }
       }
@@ -479,11 +480,13 @@ export async function POST(req: NextRequest) {
         errors,
       },
     });
-  } catch (error: any) {
-    console.error('Ошибка выполнения импорта оборудования:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Ошибка выполнения импорта';
+    console.error('Ошибка выполнения импорта оборудования:', message);
     return NextResponse.json({
       success: false,
-      error: error?.message || 'Ошибка выполнения импорта',
+      error: message,
+      details: message,
     }, { status: 500 });
   }
 }

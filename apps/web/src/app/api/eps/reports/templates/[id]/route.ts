@@ -26,8 +26,9 @@ export async function DELETE(
     await prisma.reportTemplate.delete({ where: { id } });
 
     return NextResponse.json({ success: true, message: 'Шаблон удален' });
-  } catch (error: any) {
-    console.error('Ошибка удаления шаблона отчета:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка удаления шаблона отчета' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка удаления шаблона отчета:', message);
+    return NextResponse.json({ success: false, error: 'Ошибка удаления шаблона отчета', details: message }, { status: 500 });
   }
 }

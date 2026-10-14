@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
 import { prisma } from '@ems/database';
-import { PERMISSIONS } from '@ems/shared';
+import { PERMISSIONS, JwtUserPayload } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { buildEquipmentWhereInput } from '@/lib/eps-query-builder';
@@ -16,7 +16,7 @@ import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
 
-function canPerformBatchEdit(user: any): boolean {
+function canPerformBatchEdit(user: JwtUserPayload | null): boolean {
   if (!user) return false;
   if (user.roles?.includes('admin') || user.roles?.includes('administrator')) return true;
   return hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_BATCH_EDIT);

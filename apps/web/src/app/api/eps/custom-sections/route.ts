@@ -267,9 +267,10 @@ export async function GET(req: NextRequest) {
         unassignedFields,
       },
     });
-  } catch (error: any) {
-    console.error('Ошибка GET /api/eps/custom-sections:', error);
-    return NextResponse.json({ success: false, error: 'Внутренняя ошибка сервера' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка GET /api/eps/custom-sections:', message);
+    return NextResponse.json({ success: false, error: 'Внутренняя ошибка сервера', details: message }, { status: 500 });
   }
 }
 
@@ -323,9 +324,10 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: section }, { status: 201 });
-  } catch (error: any) {
-    console.error('Ошибка POST /api/eps/custom-sections:', error);
-    return NextResponse.json({ success: false, error: error.message || 'Ошибка сервера' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка POST /api/eps/custom-sections:', message);
+    return NextResponse.json({ success: false, error: message || 'Ошибка сервера', details: message }, { status: 500 });
   }
 }
 
@@ -365,9 +367,10 @@ export async function PATCH(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: updated });
-  } catch (error: any) {
-    console.error('Ошибка PATCH /api/eps/custom-sections:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка обновления раздела' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка PATCH /api/eps/custom-sections:', message);
+    return NextResponse.json({ success: false, error: 'Ошибка обновления раздела', details: message }, { status: 500 });
   }
 }
 
@@ -414,8 +417,9 @@ export async function DELETE(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, message: 'Раздел удален' });
-  } catch (error: any) {
-    console.error('Ошибка DELETE /api/eps/custom-sections:', error);
-    return NextResponse.json({ success: false, error: error.message || 'Ошибка удаления раздела' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка DELETE /api/eps/custom-sections:', message);
+    return NextResponse.json({ success: false, error: message || 'Ошибка удаления раздела', details: message }, { status: 500 });
   }
 }

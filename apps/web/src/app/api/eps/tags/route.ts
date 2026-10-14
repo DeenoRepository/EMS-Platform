@@ -8,6 +8,9 @@ export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
+    if (!hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_VIEW) && !user.roles.includes('admin')) {
+      return forbiddenResponse();
+    }
 
     const tags = await prisma.tag.findMany({
       include: {
@@ -26,8 +29,9 @@ export async function GET(req: NextRequest) {
     }));
 
     return NextResponse.json({ success: true, data: formatted });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: 'Ошибка получения тегов' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ success: false, error: 'Ошибка получения тегов', details: message }, { status: 500 });
   }
 }
 
@@ -51,7 +55,8 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: tag });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: 'Ошибка создания тега' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ success: false, error: 'Ошибка создания тега', details: message }, { status: 500 });
   }
 }

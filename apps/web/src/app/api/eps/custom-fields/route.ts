@@ -22,9 +22,10 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: fields });
-  } catch (error: any) {
-    console.error('Ошибка GET /api/eps/custom-fields:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка получения кастомных полей' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка GET /api/eps/custom-fields:', message);
+    return NextResponse.json({ success: false, error: 'Ошибка получения кастомных полей', details: message }, { status: 500 });
   }
 }
 
@@ -101,9 +102,10 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: field });
-  } catch (error: any) {
-    console.error('Ошибка POST /api/eps/custom-fields:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка сохранения параметра' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка POST /api/eps/custom-fields:', message);
+    return NextResponse.json({ success: false, error: 'Ошибка сохранения параметра', details: message }, { status: 500 });
   }
 }
 
@@ -134,8 +136,9 @@ export async function DELETE(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, message: 'Параметр удален' });
-  } catch (error: any) {
-    console.error('Ошибка DELETE /api/eps/custom-fields:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка удаления параметра' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка DELETE /api/eps/custom-fields:', message);
+    return NextResponse.json({ success: false, error: 'Ошибка удаления параметра', details: message }, { status: 500 });
   }
 }

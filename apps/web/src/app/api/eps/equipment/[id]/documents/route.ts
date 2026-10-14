@@ -159,11 +159,12 @@ export async function POST(
       count: createdDocuments.length,
       equipmentCount: targetEquipments.length,
     });
-  } catch (error: any) {
-    console.error('Ошибка загрузки документа:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка загрузки документа:', message);
     return NextResponse.json(
-      { success: false, error: error.message || 'Ошибка загрузки документа' },
-      { status: error.message?.includes('Недопустимый') || error.message?.includes('превышает') ? 400 : 500 }
+      { success: false, error: message || 'Ошибка загрузки документа' },
+      { status: message.includes('Недопустимый') || message.includes('превышает') ? 400 : 500 }
     );
   }
 }
@@ -194,7 +195,8 @@ export async function DELETE(
     if (otherDocsCount === 0) deleteFile(document.filePath);
 
     return NextResponse.json({ success: true, message: 'Документ удален' });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: 'Ошибка удаления документа' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ success: false, error: 'Ошибка удаления документа', details: message }, { status: 500 });
   }
 }
