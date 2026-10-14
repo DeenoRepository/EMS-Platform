@@ -337,7 +337,7 @@ export function EquipmentFieldsCatalogView() {
 
         {/* Modal: Create/Edit Field */}
         <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
-          <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1, borderBottom: '1px solid #e2e8f0' }}>
+          <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <MenuBookIcon color="primary" />
               <Typography variant="h6" fontWeight={700}>
@@ -431,7 +431,7 @@ export function EquipmentFieldsCatalogView() {
             />
           </DialogContent>
 
-          <DialogActions sx={{ px: 3, py: 1.5, borderTop: '1px solid #e2e8f0' }}>
+          <DialogActions sx={{ px: 3, py: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
             <Button onClick={() => setDialogOpen(false)} color="inherit" size="small">
               Отмена
             </Button>

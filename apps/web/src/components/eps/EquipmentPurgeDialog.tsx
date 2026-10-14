@@ -213,7 +213,7 @@ export function EquipmentPurgeDialog({
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, py: 1.5, borderTop: '1px solid #e2e8f0' }}>
+      <DialogActions sx={{ px: 3, py: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
         <Button onClick={onClose} color="inherit" size="small" disabled={purging}>
           Отмена
         </Button>

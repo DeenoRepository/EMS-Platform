@@ -43,6 +43,7 @@ import {
   FileUploadDropzone,
   CriticalAlertBanner,
   ConfirmDialog,
+  StatCard,
 } from '@/components/ui';
 
 export interface MissingFieldItem {
@@ -534,7 +535,7 @@ export function SmartImportWizard() {
           </Box>
 
           {/* Primary Key & Equipment Name Selection Card */}
-          <Card sx={{ mb: 3, borderRadius: '12px', border: '1px solid #0284c7', bgcolor: 'rgba(2, 132, 199, 0.02)' }}>
+          <Card sx={{ mb: 3, borderRadius: '12px', border: '1px solid', borderColor: 'primary.main', bgcolor: 'action.hover' }}>
             <CardContent sx={{ p: 2.5 }}>
               <Typography variant="subtitle1" fontWeight={700} color="primary.main" gutterBottom>
                 Ключевые колонки идентификации оборудования
@@ -841,8 +842,9 @@ export function SmartImportWizard() {
                       p: 2.5,
                       cursor: 'pointer',
                       borderRadius: '8px',
-                      border: conflictStrategy === 'UPSERT' ? '2px solid #0284c7' : '1px solid #e2e8f0',
-                      backgroundColor: conflictStrategy === 'UPSERT' ? 'rgba(2, 132, 199, 0.04)' : 'background.paper',
+                      border: '2px solid',
+                      borderColor: conflictStrategy === 'UPSERT' ? 'primary.main' : 'divider',
+                      backgroundColor: conflictStrategy === 'UPSERT' ? 'action.hover' : 'background.paper',
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
@@ -865,8 +867,9 @@ export function SmartImportWizard() {
                       p: 2.5,
                       cursor: 'pointer',
                       borderRadius: '8px',
-                      border: conflictStrategy === 'SKIP' ? '2px solid #0284c7' : '1px solid #e2e8f0',
-                      backgroundColor: conflictStrategy === 'SKIP' ? 'rgba(2, 132, 199, 0.04)' : 'background.paper',
+                      border: '2px solid',
+                      borderColor: conflictStrategy === 'SKIP' ? 'primary.main' : 'divider',
+                      backgroundColor: conflictStrategy === 'SKIP' ? 'action.hover' : 'background.paper',
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
@@ -1024,49 +1027,41 @@ export function SmartImportWizard() {
               Данные обработаны и зафиксированы в едином реестре оборудования и журнале аудита платформы
             </Typography>
 
-            <Grid container spacing={3} sx={{ mt: 3, mb: 4, maxWidth: 900, mx: 'auto' }}>
+            <Grid container spacing={2} sx={{ mt: 3, mb: 4, maxWidth: 900, mx: 'auto' }}>
               <Grid item xs={12} sm={3}>
-                <Paper variant="outlined" sx={{ p: 2.5, backgroundColor: 'success.light', borderColor: '#86efac', borderRadius: '8px' }}>
-                  <Typography variant="caption" color="success.main" fontWeight={700} display="block">
-                    СОЗДАНО НОВЫХ
-                  </Typography>
-                  <Typography variant="h4" fontWeight={800} color="success.main" sx={{ mt: 0.5 }}>
-                    {importResults.createdCount}
-                  </Typography>
-                </Paper>
+                <StatCard
+                  title="СОЗДАНО НОВЫХ"
+                  value={importResults.createdCount}
+                  icon={<AddCircleOutlineIcon sx={{ fontSize: 20 }} />}
+                  accentColor="success.main"
+                />
               </Grid>
 
               <Grid item xs={12} sm={3}>
-                <Paper variant="outlined" sx={{ p: 2.5, backgroundColor: '#eff6ff', borderColor: '#93c5fd', borderRadius: '8px' }}>
-                  <Typography variant="caption" color="primary.main" fontWeight={700} display="block">
-                    ОБНОВЛЕНО
-                  </Typography>
-                  <Typography variant="h4" fontWeight={800} color="primary.main" sx={{ mt: 0.5 }}>
-                    {importResults.updatedCount}
-                  </Typography>
-                </Paper>
+                <StatCard
+                  title="ОБНОВЛЕНО"
+                  value={importResults.updatedCount}
+                  icon={<AutorenewIcon sx={{ fontSize: 20 }} />}
+                  accentColor="primary.main"
+                />
               </Grid>
 
               <Grid item xs={12} sm={3}>
-                <Paper variant="outlined" sx={{ p: 2.5, backgroundColor: 'background.default', borderColor: 'grey.400', borderRadius: '8px' }}>
-                  <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">
-                    ПРОПУЩЕНО
-                  </Typography>
-                  <Typography variant="h4" fontWeight={800} color="text.secondary" sx={{ mt: 0.5 }}>
-                    {importResults.skippedCount}
-                  </Typography>
-                </Paper>
+                <StatCard
+                  title="ПРОПУЩЕНО"
+                  value={importResults.skippedCount}
+                  icon={<CheckCircleIcon sx={{ fontSize: 20 }} />}
+                  accentColor="text.secondary"
+                />
               </Grid>
 
               <Grid item xs={12} sm={3}>
-                <Paper variant="outlined" sx={{ p: 2.5, backgroundColor: '#faf5ff', borderColor: '#d8b4fe', borderRadius: '8px' }}>
-                  <Typography variant="caption" color="secondary.main" fontWeight={700} display="block">
-                    НОВЫХ ПОЛЕЙ
-                  </Typography>
-                  <Typography variant="h4" fontWeight={800} color="secondary.main" sx={{ mt: 0.5 }}>
-                    {importResults.newCustomFieldsCreated}
-                  </Typography>
-                </Paper>
+                <StatCard
+                  title="НОВЫХ ПОЛЕЙ"
+                  value={importResults.newCustomFieldsCreated}
+                  icon={<FormatListBulletedIcon sx={{ fontSize: 20 }} />}
+                  accentColor="secondary.main"
+                />
               </Grid>
             </Grid>
 

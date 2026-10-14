@@ -195,6 +195,17 @@ interface EquipmentDetails {
   }[];
 }
 
+const TAB_KEY_MAP: Record<string, number> = {
+  overview: 0,
+  docs: 1,
+  approvals: 2,
+  'spare-parts': 3,
+  mro: 4,
+  srm: 5,
+  history: 6,
+};
+const TAB_INDEX_MAP = ['overview', 'docs', 'approvals', 'spare-parts', 'mro', 'srm', 'history'];
+
 function EquipmentPassportContent() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -203,17 +214,6 @@ function EquipmentPassportContent() {
 
   const searchParams = useSearchParams();
   const tabParam = searchParams?.get('tab');
-
-  const TAB_KEY_MAP: Record<string, number> = {
-    overview: 0,
-    docs: 1,
-    approvals: 2,
-    'spare-parts': 3,
-    mro: 4,
-    srm: 5,
-    history: 6,
-  };
-  const TAB_INDEX_MAP = ['overview', 'docs', 'approvals', 'spare-parts', 'mro', 'srm', 'history'];
 
   const [equipment, setEquipment] = useState<EquipmentDetails | null>(null);
   const [sections, setSections] = useState<CustomSectionDef[]>([]);
@@ -842,7 +842,8 @@ function EquipmentPassportContent() {
             display: 'block !important',
             mb: 2.5,
             pb: 1.5,
-            borderBottom: '2px solid #0f172a',
+            borderBottom: '2px solid',
+            borderColor: 'text.primary',
           },
         }}
       >
@@ -970,9 +971,9 @@ function EquipmentPassportContent() {
               value={statusInfo.label}
               subtitle={equipment.location ? `Локация: ${equipment.location}` : `Ввод: ${formatDate(equipment.commissionDate)}`}
               icon={<PrecisionManufacturingIcon sx={{ fontSize: 24 }} />}
-              accentColor="#0284c7"
-              iconColor="#0284c7"
-              iconBgColor="#e0f2fe"
+              accentColor="primary.main"
+              iconColor="primary.main"
+              iconBgColor="action.hover"
             />
           </Grid>
           {sections.some((s) => s.fields.some((f) => f.key === 'actual_wear_percentage' || f.key === 'actualWear')) && (
@@ -992,17 +993,17 @@ function EquipmentPassportContent() {
                 icon={<SpeedIcon sx={{ fontSize: 24 }} />}
                 accentColor={
                   actualWear !== null && actualWear > 70
-                    ? '#ef4444'
+                    ? 'error.main'
                     : actualWear !== null && actualWear > 30
-                    ? '#f59e0b'
-                    : '#10b981'
+                    ? 'warning.main'
+                    : 'success.main'
                 }
                 iconColor={
                   actualWear !== null && actualWear > 70
-                    ? '#ef4444'
+                    ? 'error.main'
                     : actualWear !== null && actualWear > 30
-                    ? '#f59e0b'
-                    : '#10b981'
+                    ? 'warning.main'
+                    : 'success.main'
                 }
                 iconBgColor={
                   actualWear !== null && actualWear > 70
@@ -1021,9 +1022,9 @@ function EquipmentPassportContent() {
                 value={maintPeriodicity || (equipment.maintenancePlans.length > 0 ? `${equipment.maintenancePlans.length} плана ТО` : 'По регламенту')}
                 subtitle={maintScheduleYear ? `График: ${maintScheduleYear}` : 'График ППР 2026'}
                 icon={<ShieldIcon sx={{ fontSize: 24 }} />}
-                accentColor="#10b981"
-                iconColor="#10b981"
-                iconBgColor="#dcfce7"
+                accentColor="success.main"
+                iconColor="success.main"
+                iconBgColor="action.hover"
               />
             </Grid>
           )}
@@ -1034,9 +1035,9 @@ function EquipmentPassportContent() {
                 value={`Класс ${criticality}`}
                 subtitle={equipment.spareParts.length > 0 ? `Запас ТМЦ: ${equipment.spareParts.length} поз.` : 'Категория надежности'}
                 icon={<CategoryIcon sx={{ fontSize: 24 }} />}
-                accentColor={criticality === 'A' ? '#ef4444' : criticality === 'B' ? '#f59e0b' : '#0ea5e9'}
-                iconColor={criticality === 'A' ? '#ef4444' : criticality === 'B' ? '#f59e0b' : '#0ea5e9'}
-                iconBgColor={criticality === 'A' ? 'error.light' : criticality === 'B' ? 'warning.light' : '#e0f2fe'}
+                accentColor={criticality === 'A' ? 'error.main' : criticality === 'B' ? 'warning.main' : 'primary.main'}
+                iconColor={criticality === 'A' ? 'error.main' : criticality === 'B' ? 'warning.main' : 'primary.main'}
+                iconBgColor={criticality === 'A' ? 'error.light' : criticality === 'B' ? 'warning.light' : 'action.hover'}
               />
             </Grid>
           )}
@@ -1081,7 +1082,7 @@ function EquipmentPassportContent() {
                   borderRadius: '10px',
                   border: '1px solid',
                   borderColor: 'warning.light',
-                  backgroundColor: '#fffbeb',
+                  backgroundColor: 'warning.light',
                 }}
               >
                 <Box>
@@ -1114,7 +1115,8 @@ function EquipmentPassportContent() {
                     <Card
                       sx={{
                         borderRadius: '12px',
-                        border: '1px solid #e2e8f0',
+                        border: '1px solid',
+                        borderColor: 'divider',
                         boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
                         height: '100%',
                         display: 'flex',
@@ -1160,30 +1162,31 @@ function EquipmentPassportContent() {
                                   const isLast = fIdx === sec.fields.length - 1;
                                   return (
                                     <TableRow key={f.key}>
-                                      <TableCell
-                                        sx={{
-                                          fontWeight: 500,
-                                          color: 'text.secondary',
-                                          width: '44%',
-                                          py: 1,
-                                          borderBottom: isLast ? 0 : '1px solid #f1f5f9',
-                                        }}
-                                      >
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                          <span>{f.name}</span>
-                                          {f.isRequired && (
-                                            <Tooltip title="Обязательное поле паспорта">
-                                              <Typography
-                                                component="span"
-                                                sx={{ color: 'error.main', fontWeight: 700, fontSize: '0.875rem' }}
-                                              >
-                                                *
-                                              </Typography>
-                                            </Tooltip>
-                                          )}
-                                        </Box>
-                                      </TableCell>
-                                      <TableCell sx={{ py: 1, borderBottom: isLast ? 0 : '1px solid #f1f5f9' }}>
+                                    <TableCell
+                                      sx={{
+                                        fontWeight: 500,
+                                        color: 'text.secondary',
+                                        width: '44%',
+                                        py: 1,
+                                        borderBottom: isLast ? 0 : '1px solid',
+                                        borderColor: 'divider',
+                                      }}
+                                    >
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                        <span>{f.name}</span>
+                                        {f.isRequired && (
+                                          <Tooltip title="Обязательное поле паспорта">
+                                            <Typography
+                                              component="span"
+                                              sx={{ color: 'error.main', fontWeight: 700, fontSize: '0.875rem' }}
+                                            >
+                                              *
+                                            </Typography>
+                                          </Tooltip>
+                                        )}
+                                      </Box>
+                                    </TableCell>
+                                    <TableCell sx={{ py: 1, borderBottom: isLast ? 0 : '1px solid', borderColor: 'divider' }}>
                                         {f.key === 'responsible_person_name' ? (
                                           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>

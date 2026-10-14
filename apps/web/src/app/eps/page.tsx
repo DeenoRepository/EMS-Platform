@@ -147,27 +147,10 @@ function renderDynamicTableCell(eq: EquipmentItem, colId: string) {
     const crit = String(val || '').trim().toUpperCase();
     if (!crit) return <Typography variant="caption" sx={{ color: 'text.disabled' }}>—</Typography>;
     return (
-      <Chip
+      <StatusBadge
+        status={`CLASS_${crit}`}
         label={`Класс ${crit}`}
         size="small"
-        sx={{
-          height: 22,
-          fontSize: '0.75rem',
-          fontWeight: 700,
-          backgroundColor:
-            crit === 'A'
-              ? 'rgba(239, 68, 68, 0.1)'
-              : crit === 'B'
-              ? 'rgba(245, 158, 11, 0.1)'
-              : 'rgba(14, 165, 233, 0.1)',
-          color:
-            crit === 'A'
-              ? '#dc2626'
-              : crit === 'B'
-              ? '#d97706'
-              : '#0284c7',
-          borderRadius: '4px',
-        }}
       />
     );
   }
@@ -306,7 +289,7 @@ function EquipmentListContent() {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, filters, sortField, sortDirection, viewMode, enqueueSnackbar]);
+  }, [page, pageSize, filters, sortField, sortDirection, enqueueSnackbar]);
 
   const canAccessEquipment =
     user?.roles?.includes('admin') ||
@@ -608,8 +591,9 @@ function EquipmentListContent() {
           sx={{
             mb: 2.5,
             borderRadius: '12px',
-            border: '1px solid #fed7aa',
-            backgroundColor: '#fffbeb',
+            border: '1px solid',
+            borderColor: 'warning.light',
+            backgroundColor: 'warning.light',
             fontWeight: 500,
           }}
         >
@@ -778,7 +762,7 @@ function EquipmentListContent() {
               value={statusCounts.total}
               subtitle="Единиц в реестре"
               icon={<InventoryIcon sx={{ fontSize: 20 }} />}
-              accentColor="#0284c7"
+              accentColor="primary.main"
               active={!filters.status}
               onClick={() => handleKpiFilter(null)}
               loading={loading && statusCounts.total === 0}
@@ -791,7 +775,7 @@ function EquipmentListContent() {
               value={statusCounts.active}
               subtitle="В штатной эксплуатации"
               icon={<CheckCircleOutlineIcon sx={{ fontSize: 20 }} />}
-              accentColor="#16a34a"
+              accentColor="success.main"
               active={filters.status === 'ACTIVE'}
               onClick={() => handleKpiFilter('ACTIVE')}
               loading={loading && statusCounts.total === 0}
@@ -804,7 +788,7 @@ function EquipmentListContent() {
               value={statusCounts.underRepair}
               subtitle="ТО или аварийные работы"
               icon={<BuildCircleOutlinedIcon sx={{ fontSize: 20 }} />}
-              accentColor="#d97706"
+              accentColor="warning.main"
               active={filters.status === 'UNDER_REPAIR'}
               onClick={() => handleKpiFilter('UNDER_REPAIR')}
               loading={loading && statusCounts.total === 0}
@@ -817,7 +801,7 @@ function EquipmentListContent() {
               value={statusCounts.inStorage}
               subtitle="Резерв и консервация"
               icon={<InventoryIcon sx={{ fontSize: 20 }} />}
-              accentColor="#64748b"
+              accentColor="text.secondary"
               active={filters.status === 'IN_STORAGE'}
               onClick={() => handleKpiFilter('IN_STORAGE')}
               loading={loading && statusCounts.total === 0}
@@ -830,7 +814,7 @@ function EquipmentListContent() {
               value={statusCounts.decommissioned}
               subtitle="Выведено из эксплуатации"
               icon={<CancelOutlinedIcon sx={{ fontSize: 20 }} />}
-              accentColor="#dc2626"
+              accentColor="error.main"
               active={filters.status === 'DECOMMISSIONED'}
               onClick={() => handleKpiFilter('DECOMMISSIONED')}
               loading={loading && statusCounts.total === 0}
@@ -889,13 +873,13 @@ function EquipmentListContent() {
                     fontWeight: 600,
                     py: 0.2,
                     px: 1,
-                    borderColor: '#15803d',
-                    color: '#15803d',
+                    borderColor: 'success.main',
+                    color: 'success.main',
                     textTransform: 'none',
-                    backgroundColor: '#ffffff',
+                    backgroundColor: 'background.paper',
                     '&:hover': {
-                      backgroundColor: '#f0fdf4',
-                      borderColor: '#15803d',
+                      backgroundColor: 'success.light',
+                      borderColor: 'success.main',
                     },
                   }}
                 >
@@ -1041,7 +1025,8 @@ function EquipmentListContent() {
                     flexDirection: 'column',
                     cursor: 'pointer',
                     borderRadius: '12px',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid',
+                    borderColor: 'divider',
                     transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                     '&:hover': {
                       transform: 'translateY(-3px)',
@@ -1064,7 +1049,8 @@ function EquipmentListContent() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      borderBottom: '1px solid #e2e8f0',
+                      borderBottom: '1px solid',
+                      borderColor: 'divider',
                       position: 'relative',
                       overflow: 'hidden',
                     }}
@@ -1157,7 +1143,8 @@ function EquipmentListContent() {
                     <Box
                       sx={{
                         pt: 1.25,
-                        borderTop: '1px solid #f1f5f9',
+                        borderTop: '1px solid',
+                        borderColor: 'divider',
                         display: 'flex',
                         justifyContent: 'space-between',
                         color: 'text.secondary',

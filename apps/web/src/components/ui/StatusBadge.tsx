@@ -80,6 +80,50 @@ const STATUS_CONFIG_MAP: Record<string, StatusTheme> = {
     icon: <CancelIcon sx={{ fontSize: 13 }} />,
   },
 
+  // EPS Criticality Classes
+  CRITICAL_A: {
+    label: 'Класс A (Критичное)',
+    color: '#dc2626',
+    bg: '#fef2f2',
+    border: '#fecaca',
+    icon: <PriorityHighIcon sx={{ fontSize: 13 }} />,
+  },
+  CRITICAL_B: {
+    label: 'Класс B (Основное)',
+    color: '#d97706',
+    bg: '#fffbeb',
+    border: '#fde68a',
+    icon: <WarningAmberIcon sx={{ fontSize: 13 }} />,
+  },
+  CRITICAL_C: {
+    label: 'Класс C (Вспомогательное)',
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+    icon: <HelpOutlineIcon sx={{ fontSize: 13 }} />,
+  },
+  CLASS_A: {
+    label: 'Класс A',
+    color: '#dc2626',
+    bg: '#fef2f2',
+    border: '#fecaca',
+    icon: <PriorityHighIcon sx={{ fontSize: 13 }} />,
+  },
+  CLASS_B: {
+    label: 'Класс B',
+    color: '#d97706',
+    bg: '#fffbeb',
+    border: '#fde68a',
+    icon: <WarningAmberIcon sx={{ fontSize: 13 }} />,
+  },
+  CLASS_C: {
+    label: 'Класс C',
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+    icon: <HelpOutlineIcon sx={{ fontSize: 13 }} />,
+  },
+
   // EPS Approvals Statuses
   PENDING: {
     label: 'На согласовании',

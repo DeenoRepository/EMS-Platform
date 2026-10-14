@@ -674,9 +674,9 @@ export default function ReportBuilderPage() {
             value={rows.length}
             subtitle={activeFilterCount > 0 ? `Фильтров активно: ${activeFilterCount}` : 'Полная выборка'}
             icon={<PrecisionManufacturingIcon sx={{ fontSize: 22 }} />}
-            accentColor="#0284c7"
-            iconColor="#0284c7"
-            iconBgColor="rgba(2, 132, 199, 0.08)"
+            accentColor="primary.main"
+            iconColor="primary.main"
+            iconBgColor="action.hover"
             loading={loadingData && rows.length === 0}
           />
         </Grid>
@@ -686,9 +686,9 @@ export default function ReportBuilderPage() {
             value={`${selectedColumnKeys.length} из ${availableColumns.length || 38}`}
             subtitle="Полей в формируемой таблице"
             icon={<LayersIcon sx={{ fontSize: 22 }} />}
-            accentColor="#7c3aed"
-            iconColor="#7c3aed"
-            iconBgColor="rgba(124, 58, 237, 0.08)"
+            accentColor="secondary.main"
+            iconColor="secondary.main"
+            iconBgColor="action.hover"
             onClick={() => setColumnBuilderOpen(true)}
             loading={loadingData && rows.length === 0}
           />
@@ -701,17 +701,17 @@ export default function ReportBuilderPage() {
             icon={<SpeedIcon sx={{ fontSize: 22 }} />}
             accentColor={
               averageWear !== null && averageWear > 70
-                ? '#ef4444'
+                ? 'error.main'
                 : averageWear !== null && averageWear > 30
-                ? '#f59e0b'
-                : '#10b981'
+                ? 'warning.main'
+                : 'success.main'
             }
             iconColor={
               averageWear !== null && averageWear > 70
-                ? '#ef4444'
+                ? 'error.main'
                 : averageWear !== null && averageWear > 30
-                ? '#f59e0b'
-                : '#10b981'
+                ? 'warning.main'
+                : 'success.main'
             }
             iconBgColor={
               averageWear !== null && averageWear > 70
@@ -729,9 +729,9 @@ export default function ReportBuilderPage() {
             value={templates.length + INDUSTRY_PRESETS.length}
             subtitle={`${INDUSTRY_PRESETS.length} системных, ${templates.length} пользовательских`}
             icon={<AssignmentTurnedInIcon sx={{ fontSize: 22 }} />}
-            accentColor="#059669"
-            iconColor="#059669"
-            iconBgColor="rgba(5, 150, 105, 0.08)"
+            accentColor="success.main"
+            iconColor="success.main"
+            iconBgColor="action.hover"
             loading={loadingData && rows.length === 0}
           />
         </Grid>
@@ -921,7 +921,7 @@ export default function ReportBuilderPage() {
                   <TableCell key={col.key} sx={{ fontSize: '0.8125rem', whiteSpace: 'nowrap' }}>
                     {col.key === 'status' ? (
                       <StatusBadge status={row.status || 'ACTIVE'} />
-                    ) : col.key === 'criticality' && row.criticality !== '—' ? (
+                    ) :                     col.key === 'criticality' && row.criticality !== '—' ? (
                       <Chip
                         label={row.criticality}
                         size="small"
@@ -934,7 +934,7 @@ export default function ReportBuilderPage() {
                               ? 'error.light'
                               : row.criticality.includes('B')
                               ? 'warning.light'
-                              : '#e0f2fe',
+                              : 'primary.light',
                           color:
                             row.criticality.includes('A')
                               ? 'error.main'
@@ -1019,7 +1019,7 @@ export default function ReportBuilderPage() {
           {/* Left Column: Categorized Available Fields */}
           <Grid item xs={12} md={7}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-              <Typography variant="subtitle2" fontWeight={700} color="#0f172a">
+              <Typography variant="subtitle2" fontWeight={700} color="text.primary">
                 Доступные характеристики ({availableColumns.length})
               </Typography>
               <Button size="small" onClick={handleSelectAllColumns} sx={{ fontSize: '0.75rem' }}>
@@ -1053,7 +1053,8 @@ export default function ReportBuilderPage() {
                     disableGutters
                     sx={{
                       mb: 1,
-                      border: '1px solid #e2e8f0',
+                      border: '1px solid',
+                      borderColor: 'divider',
                       borderRadius: '8px !important',
                       '&:before': { display: 'none' },
                     }}
@@ -1115,7 +1116,7 @@ export default function ReportBuilderPage() {
           {/* Right Column: Ordered Selected Columns */}
           <Grid item xs={12} md={5}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-              <Typography variant="subtitle2" fontWeight={700} color="#0f172a">
+              <Typography variant="subtitle2" fontWeight={700} color="text.primary">
                 Порядок колонок в отчете ({selectedColumnKeys.length})
               </Typography>
               <Button
@@ -1146,7 +1147,8 @@ export default function ReportBuilderPage() {
                       backgroundColor: 'background.paper',
                       mb: 0.75,
                       borderRadius: '6px',
-                      border: '1px solid #e2e8f0',
+                      border: '1px solid',
+                      borderColor: 'divider',
                       py: 0.5,
                     }}
                   >
@@ -1235,10 +1237,10 @@ export default function ReportBuilderPage() {
             <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
               В шаблон будут сохранены:
             </Typography>
-            <Typography variant="body2" fontWeight={600} color="#0f172a">
+            <Typography variant="body2" fontWeight={600} color="text.primary">
               • Выбранные колонки ({selectedColumnKeys.length} шт.) в текущем порядке
             </Typography>
-            <Typography variant="body2" fontWeight={600} color="#0f172a">
+            <Typography variant="body2" fontWeight={600} color="text.primary">
               • Текущие параметры фильтрации ({activeFilterCount > 0 ? `${activeFilterCount} акт.` : 'без фильтров'})
             </Typography>
           </Paper>
