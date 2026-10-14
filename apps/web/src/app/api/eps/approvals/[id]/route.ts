@@ -3,6 +3,7 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma, ApprovalStatus, EquipmentStatus } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { deleteFile } from '@/lib/storage';
 import { z } from 'zod';
 
 export async function GET(
@@ -220,6 +221,42 @@ export async function PATCH(
           { success: false, error: 'Заявка не содержит корректного целевого статуса' },
           { status: 400 }
         );
+      } else if (approval.type === 'DOCUMENT_DELETE') {
+        const documentId = proposed.documentId || proposed.id;
+        if (documentId) {
+          const doc = await prisma.document.findUnique({ where: { id: documentId } });
+          if (doc) {
+            await prisma.document.delete({ where: { id: documentId } });
+            const otherDocs = await prisma.document.count({ where: { filePath: doc.filePath } });
+            if (otherDocs === 0) {
+              deleteFile(doc.filePath);
+            }
+            await logAuditEvent({
+              userId: user.userId,
+              action: 'DELETE',
+              entityType: 'Document',
+              entityId: documentId,
+              changes: {
+                approvalId: approval.id,
+                reason: `Утверждено удаление документа: ${approval.title}`,
+                documentName: doc.originalName || doc.fileName,
+              },
+            });
+          }
+        }
+      } else if (approval.type === 'DOCUMENT_APPROVAL' || approval.type === 'DOCUMENT_CREATE') {
+        const documentId = proposed.documentId || proposed.id;
+        await logAuditEvent({
+          userId: user.userId,
+          action: 'UPDATE',
+          entityType: 'Document',
+          entityId: documentId || approval.id,
+          changes: {
+            approvalId: approval.id,
+            reason: `Утверждена проектная/техническая документация: ${approval.title}`,
+            proposedData: proposed,
+          },
+        });
       }
     }
 

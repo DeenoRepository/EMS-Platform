@@ -5,6 +5,7 @@ import { PERMISSIONS, EQUIPMENT_STATUS_MAP, formatDate, formatDateTime } from '@
 import { hasPermission } from '@ems/auth';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { getEquipmentKind, getEquipmentDepartment, isTruthyBoolean } from '@/lib/eps-helpers';
+import { buildEquipmentWhereInput } from '@/lib/eps-query-builder';
 
 export const dynamic = 'force-dynamic';
 
@@ -107,42 +108,16 @@ export async function POST(req: NextRequest) {
 
     const allAvailableColumns = [...baseColumns, ...customColumns];
 
-    // Build prisma query where filter
-    const where: any = { deletedAt: null };
-
-    if (filters.status && filters.status in EquipmentStatus) {
-      where.status = filters.status as EquipmentStatus;
+    // Build prisma query where filter via shared eps-query-builder
+    const filterParams = new URLSearchParams();
+    if (filters && typeof filters === 'object') {
+      Object.entries(filters).forEach(([key, val]) => {
+        if (val !== undefined && val !== null && val !== '') {
+          filterParams.set(key, String(val));
+        }
+      });
     }
-
-    if (filters.manufacturer) {
-      where.manufacturer = { contains: filters.manufacturer.trim(), mode: 'insensitive' };
-    }
-
-    if (filters.location) {
-      where.location = { contains: filters.location.trim(), mode: 'insensitive' };
-    }
-
-    if (filters.tagId) {
-      where.tags = { some: { tagId: filters.tagId } };
-    }
-
-    if (filters.commissionDateFrom || filters.commissionDateTo) {
-      where.commissionDate = {};
-      if (filters.commissionDateFrom) where.commissionDate.gte = new Date(filters.commissionDateFrom);
-      if (filters.commissionDateTo) where.commissionDate.lte = new Date(filters.commissionDateTo);
-    }
-
-    if (filters.search) {
-      const q = filters.search.trim();
-      where.OR = [
-        { name: { contains: q, mode: 'insensitive' } },
-        { inventoryNumber: { contains: q, mode: 'insensitive' } },
-        { serialNumber: { contains: q, mode: 'insensitive' } },
-        { manufacturer: { contains: q, mode: 'insensitive' } },
-        { model: { contains: q, mode: 'insensitive' } },
-        { location: { contains: q, mode: 'insensitive' } },
-      ];
-    }
+    const where = buildEquipmentWhereInput(filterParams);
 
     // Determine sort order
     let orderBy: any = { createdAt: 'desc' };
