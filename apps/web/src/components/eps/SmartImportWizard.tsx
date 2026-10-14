@@ -45,6 +45,8 @@ import {
   ConfirmDialog,
   StatCard,
 } from '@/components/ui';
+import { ImportStepUpload } from './import/ImportStepUpload';
+import { ImportStepResults } from './import/ImportStepResults';
 
 export interface MissingFieldItem {
   header: string;
@@ -434,86 +436,13 @@ export function SmartImportWizard() {
 
       {/* ─── STEP 0: Загрузка файла ─── */}
       {activeStep === 0 && (
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={8}>
-            <Card sx={{ height: '100%', borderRadius: '12px' }}>
-              <CardContent sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <Box sx={{ width: '100%' }}>
-                  <FileUploadDropzone
-                    accept=".xlsx,.xls,.csv"
-                    files={selectedFile ? [selectedFile] : []}
-                    onChange={(files) => setSelectedFile(files[0] || null)}
-                    title="Выберите или перетащите файл реестра оборудования"
-                    description="Поддерживаются книги Excel (.xlsx, .xls) и таблицы CSV (до 15 МБ)"
-                  />
-                </Box>
-
-                <Box sx={{ mt: 4, display: 'flex', gap: 2, width: '100%', justifyContent: 'flex-end' }}>
-                  <Button
-                    variant="contained"
-                    size="large"
-                    disabled={!selectedFile || analyzing}
-                    onClick={handleAnalyzeFile}
-                    endIcon={analyzing ? <CircularProgress size={20} /> : <ArrowForwardIcon />}
-                    sx={{ px: 4, py: 1.2, fontWeight: 700 }}
-                  >
-                    {analyzing ? 'Анализ структуры...' : 'Анализировать структуру файла'}
-                  </Button>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} md={4}>
-            <Card sx={{ height: '100%', borderRadius: '12px' }}>
-              <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" fontWeight={700} gutterBottom>
-                  Эталонный шаблон
-                </Typography>
-                <Typography variant="body2" color="text.secondary" paragraph>
-                  Скачайте подготовленный файл с актуальным перечнем колонок и пользовательских полей вашего предприятия:
-                </Typography>
-
-                <Button
-                  variant="outlined"
-                  color="primary"
-                  fullWidth
-                  startIcon={<FileDownloadIcon />}
-                  onClick={handleDownloadTemplate}
-                  sx={{ py: 1.5, mb: 3, fontWeight: 600, borderRadius: '8px' }}
-                >
-                  Скачать шаблон Excel (.xlsx)
-                </Button>
-
-                <Divider sx={{ mb: 2.5 }} />
-
-                <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                  Особенности умного импорта:
-                </Typography>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <CheckCircleIcon color="success" sx={{ fontSize: 18, mt: 0.2 }} />
-                    <Typography variant="caption">
-                      <strong>Авто-определение полей:</strong> распознаются русские и английские названия колонок.
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <CheckCircleIcon color="success" sx={{ fontSize: 18, mt: 0.2 }} />
-                    <Typography variant="caption">
-                      <strong>Новые характеристики:</strong> неизвестные колонки можно в 1 клик добавить в справочник.
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <CheckCircleIcon color="success" sx={{ fontSize: 18, mt: 0.2 }} />
-                    <Typography variant="caption">
-                      <strong>Защита от дублей:</strong> система сверит инвентарные номера с БД и предложит обновить или пропустить.
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+        <ImportStepUpload
+          selectedFile={selectedFile}
+          onFileChange={setSelectedFile}
+          analyzing={analyzing}
+          onAnalyze={handleAnalyzeFile}
+          onDownloadTemplate={handleDownloadTemplate}
+        />
       )}
 
       {/* ─── STEP 1: Сопоставление колонок и недостающие поля ─── */}
@@ -1017,96 +946,14 @@ export function SmartImportWizard() {
 
       {/* ─── STEP 3: Результаты и отчет об импорте ─── */}
       {activeStep === 3 && importResults && (
-        <Card sx={{ borderRadius: '12px' }}>
-          <CardContent sx={{ p: 5, textAlign: 'center' }}>
-            <CheckCircleIcon sx={{ fontSize: 72, color: 'success.main', mb: 2 }} />
-            <Typography variant="h4" fontWeight={800} gutterBottom>
-              Импорт успешно завершен!
-            </Typography>
-            <Typography variant="body1" color="text.secondary" paragraph>
-              Данные обработаны и зафиксированы в едином реестре оборудования и журнале аудита платформы
-            </Typography>
-
-            <Grid container spacing={2} sx={{ mt: 3, mb: 4, maxWidth: 900, mx: 'auto' }}>
-              <Grid item xs={12} sm={3}>
-                <StatCard
-                  title="СОЗДАНО НОВЫХ"
-                  value={importResults.createdCount}
-                  icon={<AddCircleOutlineIcon sx={{ fontSize: 20 }} />}
-                  accentColor="success.main"
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={3}>
-                <StatCard
-                  title="ОБНОВЛЕНО"
-                  value={importResults.updatedCount}
-                  icon={<AutorenewIcon sx={{ fontSize: 20 }} />}
-                  accentColor="primary.main"
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={3}>
-                <StatCard
-                  title="ПРОПУЩЕНО"
-                  value={importResults.skippedCount}
-                  icon={<CheckCircleIcon sx={{ fontSize: 20 }} />}
-                  accentColor="text.secondary"
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={3}>
-                <StatCard
-                  title="НОВЫХ ПОЛЕЙ"
-                  value={importResults.newCustomFieldsCreated}
-                  icon={<FormatListBulletedIcon sx={{ fontSize: 20 }} />}
-                  accentColor="secondary.main"
-                />
-              </Grid>
-            </Grid>
-
-            {importResults.errors && importResults.errors.length > 0 && (
-              <Box sx={{ mb: 4, maxWidth: 900, mx: 'auto' }}>
-                <CriticalAlertBanner
-                  alerts={[
-                    {
-                      id: 'import-errors-alert',
-                      severity: 'WARNING',
-                      title: `Предупреждения при импорте (${importResults.errors.length}):`,
-                      description: importResults.errors.slice(0, 5).map((e) => `Строка ${e.row}: ${e.error}`).join('; '),
-                      count: importResults.errors.length,
-                    },
-                  ]}
-                />
-              </Box>
-            )}
-
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-              <Button
-                variant="contained"
-                size="large"
-                startIcon={<FormatListBulletedIcon />}
-                onClick={() => router.push('/eps')}
-                sx={{ px: 4, py: 1.2, fontWeight: 700 }}
-              >
-                Перейти в реестр оборудования
-              </Button>
-              <Button
-                variant="outlined"
-                size="large"
-                startIcon={<AutorenewIcon />}
-                onClick={() => {
-                  setSelectedFile(null);
-                  setActiveStep(0);
-                  setImportResults(null);
-                }}
-                sx={{ px: 3, py: 1.2, fontWeight: 600 }}
-              >
-                Загрузить еще один файл
-              </Button>
-            </Box>
-          </CardContent>
-        </Card>
+        <ImportStepResults
+          importResults={importResults}
+          onReset={() => {
+            setSelectedFile(null);
+            setActiveStep(0);
+            setImportResults(null);
+          }}
+        />
       )}
       <ConfirmDialog
         open={fullReplaceDialogOpen}
