@@ -53,89 +53,123 @@ export async function GET(req: NextRequest) {
 
     let total = 0;
     let finalItems: any[] = [];
+    let lowStockTotalCount = 0;
 
-    if (lowStockOnly) {
-      // При фильтрации по дефициту выбираем номенклатуры с положительным неснижаемым остатком (minStock > 0)
-      const queryWhere = {
-        ...where,
+    // Подсчет общего количества дефицитных позиций с учетом текущего контекста фильтров (склад, категория, поиск)
+    const lowStockBaseWhere = {
+      ...where,
+      nomenclature: {
+        ...where.nomenclature,
+        minStock: { gt: 0 },
+      },
+    };
+
+    const allLowStockCandidates = await prisma.stockItem.findMany({
+      where: lowStockBaseWhere,
+      select: {
+        id: true,
+        quantity: true,
+        warehouseId: true,
         nomenclature: {
-          ...where.nomenclature,
-          minStock: { gt: 0 },
-        },
-      };
-
-      const allMatching = await prisma.stockItem.findMany({
-        where: queryWhere,
-        include: {
-          warehouse: true,
-          cell: {
-            include: {
-              zone: true,
+          select: {
+            id: true,
+            minStock: true,
+            stockItems: {
+              select: { warehouseId: true, quantity: true },
             },
           },
-          nomenclature: {
-            include: {
-              category: true,
-              stockItems: {
-                select: { quantity: true },
+        },
+      },
+    });
+
+    const lowStockItemIds = new Set<string>();
+    for (const item of allLowStockCandidates) {
+      const minStock = Number(item.nomenclature.minStock);
+      // Если выбран конкретный склад, проверяем также дефицит остатка на данном складе
+      const warehouseQty = Number(item.quantity);
+      const totalStock = item.nomenclature.stockItems.reduce((sum, s) => sum + Number(s.quantity), 0);
+      const isDeficit = minStock > 0 && (totalStock <= minStock || (warehouseId && warehouseQty <= minStock));
+      if (isDeficit) {
+        lowStockItemIds.add(item.id);
+      }
+    }
+    lowStockTotalCount = lowStockItemIds.size;
+
+    if (lowStockOnly) {
+      // При фильтрации по дефициту выбираем только позиции, попавшие в дефицит
+      const [allMatching] = await Promise.all([
+        prisma.stockItem.findMany({
+          where: {
+            ...where,
+            id: { in: Array.from(lowStockItemIds) },
+          },
+          include: {
+            warehouse: true,
+            cell: {
+              include: {
+                zone: true,
               },
-              equipmentLinks: {
-                include: {
-                  equipment: {
-                    select: { id: true, name: true, inventoryNumber: true, status: true },
+            },
+            nomenclature: {
+              include: {
+                category: true,
+                stockItems: {
+                  select: { quantity: true },
+                },
+                equipmentLinks: {
+                  include: {
+                    equipment: {
+                      select: { id: true, name: true, inventoryNumber: true, status: true },
+                    },
                   },
                 },
               },
             },
           },
-        },
-        orderBy: [
-          { warehouse: { name: 'asc' } },
-          { nomenclature: { name: 'asc' } },
-        ],
+          orderBy: [
+            { warehouse: { name: 'asc' } },
+            { nomenclature: { name: 'asc' } },
+          ],
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+        }),
+      ]);
+
+      total = lowStockTotalCount;
+      finalItems = allMatching.map((item) => {
+        const qty = Number(item.quantity);
+        const minStock = item.nomenclature.minStock !== null ? Number(item.nomenclature.minStock) : null;
+        const totalStock = item.nomenclature.stockItems
+          ? item.nomenclature.stockItems.reduce((sum: number, s: any) => sum + Number(s.quantity), 0)
+          : qty;
+
+        return {
+          id: item.id,
+          warehouseId: item.warehouseId,
+          warehouseName: item.warehouse.name,
+          warehouseCode: item.warehouse.code,
+          warehouseResponsibleUserId: item.warehouse.responsibleUserId || null,
+          nomenclatureId: item.nomenclatureId,
+          name: item.nomenclature.name,
+          article: item.nomenclature.article || '—',
+          description: item.nomenclature.description || null,
+          unit: item.nomenclature.unit,
+          category: item.nomenclature.category?.name || 'Без категории',
+          quantity: qty,
+          totalStock,
+          minStock: minStock !== null ? minStock : '—',
+          isLowStock: true,
+          cellId: item.cellId,
+          cellCode: item.cell?.code || null,
+          cellName: item.cell?.name || null,
+          zoneId: item.cell?.zone?.id || null,
+          zoneName: item.cell?.zone?.name || null,
+          zoneCode: item.cell?.zone?.code || null,
+          compatibleEquipmentCount: item.nomenclature.equipmentLinks.length,
+          compatibleEquipment: item.nomenclature.equipmentLinks.map((l) => l.equipment),
+          updatedAt: item.updatedAt,
+        };
       });
-
-      const formatted = allMatching
-        .map((item) => {
-          const qty = Number(item.quantity);
-          const minStock = item.nomenclature.minStock !== null ? Number(item.nomenclature.minStock) : null;
-          // Дефицит считается суммарно по номенклатуре со всех складов только при minStock > 0
-          const totalStock = item.nomenclature.stockItems
-            ? item.nomenclature.stockItems.reduce((sum: number, s: any) => sum + Number(s.quantity), 0)
-            : qty;
-          const isLowStock = minStock !== null && minStock > 0 && totalStock <= minStock;
-
-          return {
-            id: item.id,
-            warehouseId: item.warehouseId,
-            warehouseName: item.warehouse.name,
-            warehouseCode: item.warehouse.code,
-            warehouseResponsibleUserId: item.warehouse.responsibleUserId || null,
-            nomenclatureId: item.nomenclatureId,
-            name: item.nomenclature.name,
-            article: item.nomenclature.article || '—',
-            description: item.nomenclature.description || null,
-            unit: item.nomenclature.unit,
-            category: item.nomenclature.category?.name || 'Без категории',
-            quantity: qty,
-            totalStock,
-            minStock: minStock !== null ? minStock : '—',
-            isLowStock,
-            cellId: item.cellId,
-            cellCode: item.cell?.code || null,
-            cellName: item.cell?.name || null,
-            zoneId: item.cell?.zone?.id || null,
-            zoneName: item.cell?.zone?.name || null,
-            zoneCode: item.cell?.zone?.code || null,
-            compatibleEquipmentCount: item.nomenclature.equipmentLinks.length,
-            compatibleEquipment: item.nomenclature.equipmentLinks.map((l) => l.equipment),
-            updatedAt: item.updatedAt,
-          };
-        })
-        .filter((item) => item.isLowStock);
-
-      total = formatted.length;
-      finalItems = formatted.slice((page - 1) * pageSize, page * pageSize);
     } else {
       // Стандартный путь с пагинацией на уровне БД
       const [dbTotal, stockItems] = await Promise.all([
@@ -221,6 +255,7 @@ export async function GET(req: NextRequest) {
         page,
         pageSize,
         totalPages: Math.max(1, Math.ceil(total / pageSize)),
+        lowStockTotalCount,
       },
     });
   } catch (error: unknown) {

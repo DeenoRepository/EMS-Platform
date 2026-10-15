@@ -167,6 +167,7 @@ function WmsStockContent() {
   const [page, setPage] = useState<number>(0);
   const [rowsPerPage, setRowsPerPage] = useState<number>(25);
   const [totalCount, setTotalCount] = useState<number>(0);
+  const [globalLowStockCount, setGlobalLowStockCount] = useState<number>(0);
 
   // Modal: Create Nomenclature
   const [isNomenclatureModalOpen, setIsNomenclatureModalOpen] = useState(false);
@@ -263,6 +264,9 @@ function WmsStockContent() {
         if (json.success) {
           setItems(json.data.items || []);
           setTotalCount(json.data.total || 0);
+          if (typeof json.data.lowStockTotalCount === 'number') {
+            setGlobalLowStockCount(json.data.lowStockTotalCount);
+          }
         }
       }
     } catch {
@@ -475,26 +479,28 @@ function WmsStockContent() {
   };
 
 
-  const lowStockCount = items.filter((i) => i.isLowStock).length;
+  const effectiveLowStockCount = lowStockOnly ? totalCount : globalLowStockCount;
   const criticalAlerts = useMemo(() => {
-    if (lowStockCount > 0) {
+    if (effectiveLowStockCount > 0) {
       return [
         {
           id: 'low-stock-alert',
           severity: 'WARNING' as const,
           title: 'Обнаружен дефицит складских запасов ТМЦ',
-          description: `Текущий остаток ниже минимального неснижаемого порога по ${lowStockCount} позициям. Рекомендуется сформировать заказ поставщику.`,
-          count: lowStockCount,
-          actionLabel: 'Показать дефицит',
-          onAction: () => {
-            setLowStockOnly(true);
-            setPage(0);
-          },
+          description: `Текущий остаток ниже минимального неснижаемого порога по ${effectiveLowStockCount} позициям. Рекомендуется сформировать заказ поставщику.`,
+          count: effectiveLowStockCount,
+          actionLabel: lowStockOnly ? undefined : 'Показать дефицит',
+          onAction: lowStockOnly
+            ? undefined
+            : () => {
+                setLowStockOnly(true);
+                setPage(0);
+              },
         },
       ];
     }
     return [];
-  }, [lowStockCount]);
+  }, [effectiveLowStockCount, lowStockOnly]);
 
   const handleRequestSort = (property: string) => {
     const isAsc = sortField === property && sortDirection === 'asc';

@@ -47,10 +47,11 @@ export async function GET(req: NextRequest) {
     // Обогащаем суммарным остатком по всем складам
     const enriched = items.map((item) => {
       const totalStock = item.stockItems.reduce((sum, si) => sum + Number(si.quantity), 0);
+      const minStockNum = item.minStock !== null ? Number(item.minStock) : null;
       return {
         ...item,
         totalStock,
-        isLowStock: item.minStock !== null && totalStock <= Number(item.minStock),
+        isLowStock: minStockNum !== null && minStockNum > 0 && totalStock <= minStockNum,
       };
     });
 
