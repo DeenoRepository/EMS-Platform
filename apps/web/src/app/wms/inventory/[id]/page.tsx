@@ -233,15 +233,15 @@ export default function WmsInventoryDetailPage() {
             </Button>
             <Button
               variant="outlined"
-              startIcon={<FactCheckOutlinedIcon sx={{ color: '#0284c7' }} />}
+              startIcon={<FactCheckOutlinedIcon color="primary" />}
               onClick={() => setIsCountSheetOpen(true)}
               sx={{
                 fontWeight: 600,
-                borderColor: '#0284c7',
-                color: '#0284c7',
+                borderColor: 'primary.main',
+                color: 'primary.main',
                 '&:hover': {
-                  borderColor: '#0369a1',
-                  backgroundColor: 'rgba(2, 132, 199, 0.04)',
+                  borderColor: 'primary.dark',
+                  backgroundColor: 'action.hover',
                 },
               }}
             >

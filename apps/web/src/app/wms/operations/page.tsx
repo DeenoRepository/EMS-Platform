@@ -381,8 +381,8 @@ function WmsOperationsContent() {
     if (op.type === 'TRANSFER') {
       return (
         <Stack direction="row" spacing={0.75} alignItems="center">
-          <SwapHorizIcon sx={{ fontSize: 16, color: '#7c3aed' }} />
-          <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: '#6d28d9', fontWeight: 600 }}>
+          <SwapHorizIcon sx={{ fontSize: 16, color: 'secondary.main' }} />
+          <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'secondary.main', fontWeight: 600 }}>
             {op.counterparty ? `Целевой склад: ${op.counterparty}` : 'Перемещение между складами'}
           </Typography>
         </Stack>
@@ -673,7 +673,8 @@ function WmsOperationsContent() {
                               fontSize: '0.6875rem',
                               backgroundColor: 'background.paper',
                               color: 'text.secondary',
-                              border: '1px solid #e2e8f0',
+                              border: '1px solid',
+                              borderColor: 'divider',
                               height: 20,
                             }}
                           />
@@ -924,11 +925,11 @@ function WmsOperationsContent() {
                         </TableCell>
                         <TableCell sx={{ py: 1.25 }}>
                           {t.rejectionReason ? (
-                            <Box sx={{ p: 0.75, bgcolor: '#fef2f2', borderRadius: '6px', border: '1px solid #fecaca' }}>
+                            <Box sx={{ p: 0.75, bgcolor: 'error.light', borderRadius: '6px', border: '1px solid', borderColor: 'error.main' }}>
                               <Typography variant="caption" sx={{ color: 'error.main', fontWeight: 700, display: 'block' }}>
                                 Отказ:
                               </Typography>
-                              <Typography variant="caption" sx={{ color: '#991b1b' }}>
+                              <Typography variant="caption" sx={{ color: 'error.main' }}>
                                 {t.rejectionReason}
                               </Typography>
                             </Box>

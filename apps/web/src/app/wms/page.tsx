@@ -96,7 +96,8 @@ function DeficitItem({
       sx={{
         py: 1.25,
         px: 0,
-        borderBottom: '1px solid #f1f5f9',
+        borderBottom: '1px solid',
+        borderColor: 'divider',
         '&:last-child': { borderBottom: 'none' },
       }}
     >
@@ -143,7 +144,7 @@ function DeficitItem({
               width: `${fillPercent}%`,
               height: '100%',
               borderRadius: 2,
-              bgcolor: isCritical ? '#ef4444' : '#f59e0b',
+              bgcolor: isCritical ? 'error.main' : 'warning.main',
               transition: 'width 0.4s ease',
             }}
           />
@@ -233,8 +234,9 @@ export default function WmsDashboardPage() {
           sx={{
             mb: 2.5,
             borderRadius: '12px',
-            border: '1px solid #fed7aa',
-            backgroundColor: '#fffbeb',
+            border: '1px solid',
+            borderColor: 'warning.light',
+            backgroundColor: 'warning.light',
             fontWeight: 500,
           }}
         >
@@ -377,7 +379,8 @@ export default function WmsDashboardPage() {
             sx={{
               height: '100%',
               borderRadius: '12px',
-              border: '1px solid #e2e8f0',
+              border: '1px solid',
+              borderColor: 'divider',
               boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
               display: 'flex',
               flexDirection: 'column',
@@ -585,7 +588,8 @@ export default function WmsDashboardPage() {
             <Card
               sx={{
                 borderRadius: '12px',
-                border: '1px solid #e2e8f0',
+                border: '1px solid',
+                borderColor: 'divider',
                 boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
               }}
             >

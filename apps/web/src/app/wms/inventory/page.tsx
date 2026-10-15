@@ -581,19 +581,20 @@ export default function WmsInventoryListPage() {
                     <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem', color: 'text.primary' }}>
                       {inv.warehouse.name}
                     </Typography>
-                    <Chip
-                      label={inv.warehouse.code}
-                      size="small"
-                      sx={{
-                        mt: 0.2,
-                        borderRadius: '4px',
-                        fontSize: '0.6875rem',
-                        height: 20,
-                        backgroundColor: 'background.paper',
-                        border: '1px solid #e2e8f0',
-                        color: 'text.secondary',
-                      }}
-                    />
+                      <Chip
+                        label={inv.warehouse.code}
+                        size="small"
+                        sx={{
+                          mt: 0.2,
+                          borderRadius: '4px',
+                          fontSize: '0.6875rem',
+                          height: 20,
+                          backgroundColor: 'background.paper',
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          color: 'text.secondary',
+                        }}
+                      />
                   </TableCell>
                 )}
 
@@ -653,12 +654,12 @@ export default function WmsInventoryListPage() {
                           borderRadius: '6px',
                           py: 0.3,
                           px: 1,
-                          borderColor: '#bae6fd',
+                          borderColor: 'primary.light',
                           color: 'primary.main',
-                          backgroundColor: '#f0f9ff',
+                          backgroundColor: 'action.hover',
                           '&:hover': {
-                            backgroundColor: '#e0f2fe',
-                            borderColor: '#7dd3fc',
+                            backgroundColor: 'action.selected',
+                            borderColor: 'primary.main',
                           },
                         }}
                       >
