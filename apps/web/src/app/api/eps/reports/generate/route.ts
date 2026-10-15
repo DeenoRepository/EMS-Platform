@@ -31,9 +31,15 @@ export async function POST(req: NextRequest) {
       sort = { field: 'createdAt', order: 'desc' },
       limit,
     } = body;
-    const requestedLimit = Number(limit ?? 1000);
-    if (!Number.isInteger(requestedLimit) || requestedLimit < 1 || requestedLimit > 5000) {
-      return NextResponse.json({ success: false, error: 'Лимит отчета должен быть от 1 до 5000' }, { status: 400 });
+
+    // Лимит отчета: если не передан или null/0/undefined — выгружаем всю базу без искусственного ограничения (или с безопасным максимумом 100 000)
+    let takeLimit: number | undefined = undefined;
+    if (limit !== undefined && limit !== null && limit !== '' && Number(limit) > 0) {
+      const parsed = Number(limit);
+      if (!Number.isInteger(parsed) || parsed < 1 || parsed > 100000) {
+        return NextResponse.json({ success: false, error: 'Лимит отчета должен быть от 1 до 100000' }, { status: 400 });
+      }
+      takeLimit = parsed;
     }
 
     // Fetch custom sections and fields definition for dictionary
@@ -138,7 +144,7 @@ export async function POST(req: NextRequest) {
         createdBy: { select: { displayName: true } },
       },
       orderBy,
-      take: requestedLimit,
+      ...(takeLimit ? { take: takeLimit } : {}),
     });
 
     // Also get Jira issues count if needed
