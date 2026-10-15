@@ -24,7 +24,7 @@ export default function PageHeader({ title, subtitle, breadcrumbs, actions, tabs
       {breadcrumbs && breadcrumbs.length > 0 && (
         <Breadcrumbs
           className="no-print"
-          separator={<NavigateNextIcon sx={{ fontSize: 13, color: '#94a3b8' }} />}
+          separator={<NavigateNextIcon sx={{ fontSize: 13, color: 'text.disabled' }} />}
           aria-label="навигация"
           sx={{ mb: 1, '& .MuiBreadcrumbs-li': { fontSize: '0.75rem', lineHeight: 1 } }}
         >
@@ -35,7 +35,7 @@ export default function PageHeader({ title, subtitle, breadcrumbs, actions, tabs
                 <Typography
                   key={index}
                   sx={{
-                    color: '#64748b',
+                    color: 'text.secondary',
                     fontSize: '0.75rem',
                     fontWeight: 500,
                   }}
@@ -51,14 +51,14 @@ export default function PageHeader({ title, subtitle, breadcrumbs, actions, tabs
                 href={b.href}
                 underline="hover"
                 sx={{
-                  color: '#0284c7',
+                  color: 'primary.main',
                   fontSize: '0.75rem',
                   fontWeight: 500,
                   cursor: 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
                   transition: 'color 0.15s ease',
-                  '&:hover': { color: '#0369a1', textDecoration: 'underline' },
+                  '&:hover': { color: 'primary.dark', textDecoration: 'underline' },
                 }}
               >
                 {b.label}
@@ -84,7 +84,7 @@ export default function PageHeader({ title, subtitle, breadcrumbs, actions, tabs
             sx={{
               fontSize: { xs: '1.375rem', sm: '1.625rem' },
               fontWeight: 800,
-              color: '#0f172a',
+              color: 'text.primary',
               letterSpacing: '-0.025em',
               lineHeight: 1.2,
             }}
@@ -96,7 +96,7 @@ export default function PageHeader({ title, subtitle, breadcrumbs, actions, tabs
               variant="body2"
               sx={{
                 mt: 0.5,
-                color: '#64748b',
+                color: 'text.secondary',
                 fontSize: '0.875rem',
                 fontWeight: 400,
                 lineHeight: 1.4,
@@ -128,7 +128,8 @@ export default function PageHeader({ title, subtitle, breadcrumbs, actions, tabs
           className="no-print"
           sx={{
             mt: 2,
-            borderBottom: '1px solid #e2e8f0',
+            borderBottom: '1px solid',
+            borderColor: 'divider',
           }}
         >
           {tabs}

@@ -148,7 +148,8 @@ export function FormDialog({
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
-            border: isFullScreen ? 'none' : '1px solid #e2e8f0',
+            border: isFullScreen ? 'none' : '1px solid',
+            borderColor: isFullScreen ? 'transparent' : 'divider',
             boxShadow: isFullScreen
               ? 'none'
               : '0 20px 30px -10px rgba(15, 23, 42, 0.15), 0 10px 15px -3px rgba(15, 23, 42, 0.08)',
@@ -164,9 +165,9 @@ export function FormDialog({
               left: 0,
               right: 0,
               zIndex: 10,
-              backgroundColor: '#e0f2fe',
+              backgroundColor: 'divider',
               '& .MuiLinearProgress-bar': {
-                backgroundColor: '#0284c7',
+                backgroundColor: 'primary.main',
               },
             }}
           />
@@ -181,8 +182,9 @@ export function FormDialog({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderBottom: '1px solid #f1f5f9',
-            bgcolor: '#ffffff',
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            bgcolor: 'background.paper',
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pr: 2, minWidth: 0 }}>
@@ -195,9 +197,10 @@ export function FormDialog({
                   width: 38,
                   height: 38,
                   borderRadius: '10px',
-                  bgcolor: 'rgba(2, 132, 199, 0.08)',
-                  color: '#0284c7',
-                  border: '1px solid rgba(2, 132, 199, 0.15)',
+                  bgcolor: 'action.hover',
+                  color: 'primary.main',
+                  border: '1px solid',
+                  borderColor: 'divider',
                   flexShrink: 0,
                 }}
               >
@@ -213,7 +216,7 @@ export function FormDialog({
                     fontWeight: 700,
                     fontSize: { xs: '1rem', sm: '1.0625rem' },
                     lineHeight: 1.3,
-                    color: '#0f172a',
+                    color: 'text.primary',
                     letterSpacing: '-0.015em',
                   }}
                   noWrap
@@ -227,7 +230,7 @@ export function FormDialog({
                 <Typography
                   variant="caption"
                   sx={{
-                    color: '#64748b',
+                    color: 'text.secondary',
                     display: 'block',
                     lineHeight: 1.35,
                     mt: 0.35,
@@ -245,10 +248,10 @@ export function FormDialog({
             disabled={loading}
             size="small"
             sx={{
-              color: '#64748b',
+              color: 'text.secondary',
               borderRadius: '8px',
               p: 0.75,
-              '&:hover': { bgcolor: '#f1f5f9', color: '#0f172a' },
+              '&:hover': { bgcolor: 'action.hover', color: 'text.primary' },
             }}
           >
             <CloseIcon fontSize="small" />
@@ -257,7 +260,7 @@ export function FormDialog({
 
         {/* Stepper (Optional) */}
         {steps && steps.length > 0 && (
-          <Box sx={{ px: { xs: 2, sm: 3 }, py: 1.5, borderBottom: '1px solid #f1f5f9', bgcolor: '#f8fafc' }}>
+          <Box sx={{ px: { xs: 2, sm: 3 }, py: 1.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.default' }}>
             <Stepper activeStep={activeStep} alternativeLabel>
               {steps.map((label, index) => (
                 <Step
@@ -271,7 +274,7 @@ export function FormDialog({
                       '& .MuiStepLabel-label': {
                         fontSize: '0.75rem',
                         fontWeight: activeStep === index ? 700 : 500,
-                        color: activeStep === index ? '#0284c7' : '#64748b',
+                        color: activeStep === index ? 'primary.main' : 'text.secondary',
                       },
                     }}
                   >
@@ -293,7 +296,7 @@ export function FormDialog({
             overflowY: 'auto',
             '&::-webkit-scrollbar': { width: 6 },
             '&::-webkit-scrollbar-thumb': {
-              bgcolor: '#cbd5e1',
+              bgcolor: 'divider',
               borderRadius: 3,
             },
           }}
@@ -307,8 +310,9 @@ export function FormDialog({
             sx={{
               px: { xs: 2, sm: 3 },
               py: 1.75,
-              borderTop: '1px solid #f1f5f9',
-              bgcolor: '#ffffff',
+              borderTop: '1px solid',
+              borderColor: 'divider',
+              bgcolor: 'background.paper',
               display: 'flex',
               justifyContent: actions ? 'flex-end' : 'space-between',
               alignItems: 'center',
@@ -328,16 +332,16 @@ export function FormDialog({
                     size="medium"
                     sx={{
                       borderRadius: '8px',
-                      borderColor: '#e2e8f0',
-                      color: '#334155',
+                      borderColor: 'divider',
+                      color: 'text.primary',
                       fontWeight: 600,
                       px: 2,
                       py: 0.7,
                       fontSize: '0.8125rem',
                       minHeight: 36,
                       '&:hover': {
-                        borderColor: '#cbd5e1',
-                        backgroundColor: '#f8fafc',
+                        borderColor: 'grey.400',
+                        backgroundColor: 'action.hover',
                       },
                     }}
                   >
@@ -364,10 +368,6 @@ export function FormDialog({
                         py: 0.7,
                         fontSize: '0.8125rem',
                         minHeight: 36,
-                        backgroundColor: submitColor === 'primary' ? '#0284c7' : undefined,
-                        '&:hover': {
-                          backgroundColor: submitColor === 'primary' ? '#0369a1' : undefined,
-                        },
                       }}
                     >
                       {loading ? 'Сохранение...' : submitLabel}
@@ -398,7 +398,8 @@ export function FormDialog({
           sx: {
             borderRadius: '12px',
             p: 1,
-            border: '1px solid #fed7aa',
+            border: '1px solid',
+            borderColor: 'warning.light',
           },
         }}
       >
@@ -411,18 +412,18 @@ export function FormDialog({
               width: 36,
               height: 36,
               borderRadius: '8px',
-              bgcolor: '#fef3c7',
-              color: '#d97706',
+              bgcolor: 'warning.light',
+              color: 'warning.main',
             }}
           >
             <WarningAmberRoundedIcon sx={{ fontSize: 22 }} />
           </Box>
-          <Typography variant="subtitle1" fontWeight={700} color="#0f172a">
+          <Typography variant="subtitle1" fontWeight={700} color="text.primary">
             Несохраненные изменения
           </Typography>
         </DialogTitle>
         <DialogContent sx={{ py: 1 }}>
-          <Typography variant="body2" color="#475569">
+          <Typography variant="body2" color="text.secondary">
             {dirtyConfirmMessage}
           </Typography>
         </DialogContent>
@@ -431,7 +432,7 @@ export function FormDialog({
             size="small"
             variant="outlined"
             onClick={() => setShowDirtyWarning(false)}
-            sx={{ borderRadius: '8px', color: '#334155' }}
+            sx={{ borderRadius: '8px', color: 'text.primary', borderColor: 'divider' }}
           >
             Продолжить редактирование
           </Button>

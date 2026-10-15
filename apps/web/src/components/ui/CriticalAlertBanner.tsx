@@ -45,29 +45,29 @@ const SEVERITY_CONFIG: Record<
   { bg: string; border: string; color: string; textColor: string; btnBg: string; icon: React.ComponentType<any>; label: string }
 > = {
   CRITICAL: {
-    bg: '#fef2f2',
-    border: '#fecaca',
-    color: '#dc2626',
-    textColor: '#991b1b',
-    btnBg: '#dc2626',
+    bg: 'error.light',
+    border: 'error.main',
+    color: 'error.main',
+    textColor: 'error.dark',
+    btnBg: 'error.main',
     icon: ErrorOutlineIcon,
     label: 'Критично',
   },
   WARNING: {
-    bg: '#fffbeb',
-    border: '#fde68a',
-    color: '#d97706',
-    textColor: '#92400e',
-    btnBg: '#d97706',
+    bg: 'warning.light',
+    border: 'warning.main',
+    color: 'warning.main',
+    textColor: 'warning.dark',
+    btnBg: 'warning.main',
     icon: WarningAmberIcon,
     label: 'Внимание',
   },
   INFO: {
-    bg: '#f0f9ff',
-    border: '#bae6fd',
-    color: '#0284c7',
-    textColor: '#075985',
-    btnBg: '#0284c7',
+    bg: 'info.light',
+    border: 'info.main',
+    color: 'info.main',
+    textColor: 'info.dark',
+    btnBg: 'info.main',
     icon: InfoOutlinedIcon,
     label: 'Инфо',
   },
@@ -160,7 +160,7 @@ export function CriticalAlertBanner({
                     variant="contained"
                     sx={{
                       backgroundColor: cfg.btnBg,
-                      color: '#ffffff',
+                      color: 'primary.contrastText',
                       '&:hover': { backgroundColor: cfg.btnBg, opacity: 0.9 },
                       fontSize: '0.75rem',
                       fontWeight: 600,
@@ -180,7 +180,7 @@ export function CriticalAlertBanner({
                     onClick={alert.onAction}
                     sx={{
                       backgroundColor: cfg.btnBg,
-                      color: '#ffffff',
+                      color: 'primary.contrastText',
                       '&:hover': { backgroundColor: cfg.btnBg, opacity: 0.9 },
                       fontSize: '0.75rem',
                       fontWeight: 600,
