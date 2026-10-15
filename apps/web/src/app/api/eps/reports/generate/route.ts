@@ -4,7 +4,7 @@ import { prisma, EquipmentStatus } from '@ems/database';
 import { PERMISSIONS, EQUIPMENT_STATUS_MAP, formatDate, formatDateTime } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
 import { enforceRateLimit } from '@/lib/rate-limit';
-import { getEquipmentKind, getEquipmentDepartment, isTruthyBoolean } from '@/lib/eps-helpers';
+import { getEquipmentKind, getEquipmentDepartment, isTruthyBoolean, getEquipmentFieldValue } from '@/lib/eps-helpers';
 import { buildEquipmentWhereInput } from '@/lib/eps-query-builder';
 
 export const dynamic = 'force-dynamic';
@@ -65,20 +65,6 @@ export async function POST(req: NextRequest) {
       { key: 'model', name: 'Модель / Модификация', category: 'Основные реквизиты' },
       { key: 'location', name: 'Место установки (Локация)', category: 'Основные реквизиты' },
       { key: 'status', name: 'Текущий статус', category: 'Основные реквизиты' },
-      { key: 'criticality', name: 'Категория критичности (A/B/C)', category: 'Классификаторы' },
-      { key: 'actual_wear_percentage', name: 'Физический износ (%)', category: 'Классификаторы' },
-      { key: 'equipment_group', name: 'Подразделение / группа', category: 'Классификаторы' },
-      { key: 'equipment_type', name: 'Вид оборудования', category: 'Классификаторы' },
-      { key: 'responsible_person_name', name: 'Ответственное лицо (МОЛ)', category: 'Классификаторы' },
-      { key: 'okof_code', name: 'Код ОКОФ', category: 'Классификаторы' },
-      { key: 'okpd2_code', name: 'Код ОКПД2', category: 'Классификаторы' },
-      { key: 'process_classifier_code', name: 'Код техпроцесса', category: 'Классификаторы' },
-      { key: 'maintenance_periodicity', name: 'Периодичность ТО', category: 'Эксплуатация и ТО' },
-      { key: 'calibration_interval', name: 'Межповерочный интервал (мес.)', category: 'Эксплуатация и ТО' },
-      { key: 'clean_room_class', name: 'Класс чистого помещения', category: 'Эксплуатация и ТО' },
-      { key: 'is_critical_path', name: 'Критический путь', category: 'Эксплуатация и ТО' },
-      { key: 'is_unique', name: 'Уникальное оборудование', category: 'Эксплуатация и ТО' },
-      { key: 'is_imported', name: 'Импортное оборудование', category: 'Эксплуатация и ТО' },
       { key: 'commissionDate', name: 'Дата ввода в эксплуатацию', category: 'Основные реквизиты' },
       { key: 'tags', name: 'Теги / Метки', category: 'Основные реквизиты' },
       { key: 'createdAt', name: 'Дата регистрации', category: 'Аудит' },
@@ -90,26 +76,33 @@ export async function POST(req: NextRequest) {
       { key: 'jiraIssuesCount', name: 'Заявок в Jira (шт.)', category: 'Сводные данные' },
     ];
 
-    const customColumns: { key: string; name: string; category: string; unit?: string | null }[] = [];
+    const baseKeys = new Set(baseColumns.map((c) => c.key));
+    const customColumns: { key: string; name: string; category: string; unit?: string | null; fieldType?: string }[] = [];
 
     sections.forEach((sec) => {
       sec.fields.forEach((f) => {
-        customColumns.push({
-          key: `custom_${f.key}`,
-          name: f.unit ? `${f.name} (${f.unit})` : f.name,
-          category: sec.name,
-          unit: f.unit,
-        });
+        if (!baseKeys.has(f.key)) {
+          customColumns.push({
+            key: f.key,
+            name: f.unit ? `${f.name} (${f.unit})` : f.name,
+            category: sec.name,
+            unit: f.unit,
+            fieldType: f.fieldType,
+          });
+        }
       });
     });
 
     unassignedFields.forEach((f) => {
-      customColumns.push({
-        key: `custom_${f.key}`,
-        name: f.unit ? `${f.name} (${f.unit})` : f.name,
-        category: 'Дополнительные параметры',
-        unit: f.unit,
-      });
+      if (!baseKeys.has(f.key)) {
+        customColumns.push({
+          key: f.key,
+          name: f.unit ? `${f.name} (${f.unit})` : f.name,
+          category: 'Дополнительные параметры',
+          unit: f.unit,
+          fieldType: f.fieldType,
+        });
+      }
     });
 
     const allAvailableColumns = [...baseColumns, ...customColumns];
@@ -173,20 +166,6 @@ export async function POST(req: NextRequest) {
         model: item.model || '—',
         location: item.location || '—',
         status: statusInfo.label,
-        criticality: customFields.criticality ? `Класс ${customFields.criticality}` : '—',
-        actual_wear_percentage: customFields.actual_wear_percentage !== undefined && customFields.actual_wear_percentage !== '' ? `${customFields.actual_wear_percentage}%` : '—',
-        equipment_group: getEquipmentDepartment(customFields),
-        equipment_type: getEquipmentKind(customFields),
-        responsible_person_name: customFields.responsible_person_name || '—',
-        okof_code: customFields.okof_code || '—',
-        okpd2_code: customFields.okpd2_code || '—',
-        process_classifier_code: customFields.process_classifier_code || '—',
-        maintenance_periodicity: customFields.maintenance_periodicity || '—',
-        calibration_interval: customFields.calibration_interval ? `${customFields.calibration_interval} мес.` : '—',
-        clean_room_class: customFields.clean_room_class || '—',
-        is_critical_path: isTruthyBoolean(customFields.is_critical_path) ? 'Да' : 'Нет',
-        is_unique: isTruthyBoolean(customFields.is_unique) ? 'Да' : 'Нет',
-        is_imported: isTruthyBoolean(customFields.is_imported) ? 'Да' : 'Нет',
         commissionDate: formatDate(item.commissionDate),
         commissionDateRaw: item.commissionDate ? item.commissionDate.toISOString() : null,
         tags: item.tags.map((t) => t.tag.name).join(', ') || '—',
@@ -199,14 +178,18 @@ export async function POST(req: NextRequest) {
         jiraIssuesCount: jiraCountMap.get(item.id) || 0,
       };
 
-      // Add custom fields
+      // Add dynamic fields mapped according to passport values
       customColumns.forEach((c) => {
-        const rawKey = c.key.replace('custom_', '');
-        const val = customFields[rawKey];
-        if (val === undefined || val === null || val === '') {
+        const val = getEquipmentFieldValue(item, c.key);
+        if (val === undefined || val === null || val === '' || val === '—') {
           row[c.key] = '—';
-        } else if (typeof val === 'boolean') {
-          row[c.key] = val ? 'Да' : 'Нет';
+        } else if (c.key === 'criticality') {
+          const str = String(val).replace(/^Класс\s*/i, '').trim();
+          row[c.key] = str ? `Класс ${str}` : '—';
+        } else if (c.fieldType === 'BOOLEAN' || c.key === 'is_unique' || c.key === 'is_imported' || c.key === 'is_critical_path') {
+          row[c.key] = isTruthyBoolean(val) ? 'Да' : 'Нет';
+        } else if (c.fieldType === 'DATE') {
+          row[c.key] = formatDate(val);
         } else {
           row[c.key] = c.unit ? `${val} ${c.unit}` : String(val);
         }
