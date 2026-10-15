@@ -23,9 +23,10 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: categories });
-  } catch (error: any) {
-    console.error('Ошибка получения категорий:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка получения категорий' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка получения категорий:', message);
+    return NextResponse.json({ success: false, error: 'Ошибка получения категорий', details: message }, { status: 500 });
   }
 }
 
@@ -52,8 +53,9 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: category });
-  } catch (error: any) {
-    console.error('Ошибка создания категории:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка создания категории' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка создания категории:', message);
+    return NextResponse.json({ success: false, error: 'Ошибка создания категории', details: message }, { status: 500 });
   }
 }

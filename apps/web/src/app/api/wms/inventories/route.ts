@@ -37,9 +37,10 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: inventories });
-  } catch (error: any) {
-    console.error('Ошибка получения списка инвентаризаций:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка получения инвентаризаций' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка получения списка инвентаризаций:', message);
+    return NextResponse.json({ success: false, error: 'Ошибка получения инвентаризаций', details: message }, { status: 500 });
   }
 }
 
@@ -100,8 +101,9 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: inventory });
-  } catch (error: any) {
-    console.error('Ошибка создания инвентаризации:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка создания акта инвентаризации' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка создания инвентаризации:', message);
+    return NextResponse.json({ success: false, error: 'Ошибка создания акта инвентаризации', details: message }, { status: 500 });
   }
 }

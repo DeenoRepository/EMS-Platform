@@ -121,8 +121,9 @@ export async function GET(req: NextRequest) {
         userWarehouseIds,
       },
     });
-  } catch (error: any) {
-    console.error('Ошибка получения статистики WMS:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка получения статистики WMS' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка получения статистики WMS:', message);
+    return NextResponse.json({ success: false, error: 'Ошибка получения статистики WMS', details: message }, { status: 500 });
   }
 }

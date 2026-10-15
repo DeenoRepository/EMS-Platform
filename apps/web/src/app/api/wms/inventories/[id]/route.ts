@@ -56,9 +56,10 @@ export async function GET(
     }
 
     return NextResponse.json({ success: true, data: inventory });
-  } catch (error: any) {
-    console.error('Ошибка получения акта инвентаризации:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка получения данных инвентаризации' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка получения акта инвентаризации:', message);
+    return NextResponse.json({ success: false, error: 'Ошибка получения данных инвентаризации', details: message }, { status: 500 });
   }
 }
 
@@ -149,7 +150,8 @@ export async function PATCH(
               items: {
                 create: discrepancyItems.map((item) => ({
                   nomenclatureId: item.nomenclatureId,
-                  quantity: Math.abs(Number(item.diffQty)),
+                  // Сохраняем фактическое количество actualQty для корректного пересчета остатков
+                  quantity: Number(item.actualQty ?? 0),
                 })),
               },
             },
@@ -238,8 +240,9 @@ export async function PATCH(
     });
 
     return NextResponse.json({ success: true, data: updated });
-  } catch (error: any) {
-    console.error('Ошибка обновления инвентаризации:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка обновления инвентаризации' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка обновления инвентаризации:', message);
+    return NextResponse.json({ success: false, error: 'Ошибка обновления инвентаризации', details: message }, { status: 500 });
   }
 }

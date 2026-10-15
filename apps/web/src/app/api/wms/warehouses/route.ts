@@ -59,9 +59,10 @@ export async function GET(req: NextRequest) {
       success: true,
       data: warehouses,
     });
-  } catch (error: any) {
-    console.error('Ошибка получения складов:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка получения списка складов' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка получения складов:', message);
+    return NextResponse.json({ success: false, error: 'Ошибка получения списка складов', details: message }, { status: 500 });
   }
 }
 
@@ -117,8 +118,9 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: warehouse });
-  } catch (error: any) {
-    console.error('Ошибка создания склада:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка создания склада' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка создания склада:', message);
+    return NextResponse.json({ success: false, error: 'Ошибка создания склада', details: message }, { status: 500 });
   }
 }

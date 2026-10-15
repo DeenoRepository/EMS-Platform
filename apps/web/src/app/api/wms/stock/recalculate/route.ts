@@ -118,8 +118,9 @@ export async function POST(req: NextRequest) {
         updatedPositions: updatedCount,
       },
     });
-  } catch (error: any) {
-    console.error('Ошибка пересчета остатков:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка пересчета остатков' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка пересчета остатков:', message);
+    return NextResponse.json({ success: false, error: 'Ошибка пересчета остатков', details: message }, { status: 500 });
   }
 }

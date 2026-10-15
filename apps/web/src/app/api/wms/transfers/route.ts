@@ -3,6 +3,7 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma, StockTransferStatus, OperationType, Prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -228,10 +229,11 @@ export async function GET(req: NextRequest) {
         counts,
       },
     });
-  } catch (error: any) {
-    console.error('Ошибка получения списка перемещений:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка получения списка перемещений:', message);
     return NextResponse.json(
-      { success: false, error: 'Ошибка получения списка перемещений' },
+      { success: false, error: 'Ошибка получения списка перемещений', details: message },
       { status: 500 }
     );
   }
@@ -245,6 +247,9 @@ interface TransferItemInput {
 
 // POST /api/wms/transfers - Создание перемещения или запроса на перемещение
 export async function POST(req: NextRequest) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 30, windowMs: 60 * 1000, prefix: 'wms-transfers-post' });
+  if (rateLimitError) return rateLimitError;
+
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
@@ -497,10 +502,11 @@ export async function POST(req: NextRequest) {
         message: `Запрос на перемещение ${transferNumber} успешно создан и направлен МОЛ склада-отправителя "${sourceWh.name}".`,
       });
     }
-  } catch (error: any) {
-    console.error('Ошибка создания перемещения:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Ошибка создания перемещения';
+    console.error('Ошибка создания перемещения:', message);
     return NextResponse.json(
-      { success: false, error: error.message || 'Ошибка создания перемещения' },
+      { success: false, error: message },
       { status: 400 }
     );
   }

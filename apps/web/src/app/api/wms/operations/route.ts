@@ -3,6 +3,7 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma, OperationType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,9 +78,10 @@ export async function GET(req: NextRequest) {
         totalPages: Math.ceil(total / pageSize),
       },
     });
-  } catch (error: any) {
-    console.error('Ошибка получения операций:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка получения журнала операций' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка получения операций:', message);
+    return NextResponse.json({ success: false, error: 'Ошибка получения журнала операций', details: message }, { status: 500 });
   }
 }
 
@@ -93,6 +95,9 @@ interface OperationItemInput {
 }
 
 export async function POST(req: NextRequest) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 30, windowMs: 60 * 1000, prefix: 'wms-operations-post' });
+  if (rateLimitError) return rateLimitError;
+
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
@@ -434,11 +439,12 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: operation });
-  } catch (error: any) {
-    console.error('Ошибка проведения складской операции:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Ошибка проведения складской операции';
+    console.error('Ошибка проведения складской операции:', message);
     return NextResponse.json(
-      { success: false, error: error.message || 'Ошибка проведения складской операции' },
-      { status: error.message?.includes('Недостаточно') || error.message?.includes('больше нуля') ? 400 : 500 }
+      { success: false, error: message },
+      { status: message.includes('Недостаточно') || message.includes('больше нуля') ? 400 : 500 }
     );
   }
 }

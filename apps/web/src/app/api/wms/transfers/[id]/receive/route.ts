@@ -176,10 +176,11 @@ export async function POST(
       data: updatedTransfer,
       message: `Приемка перемещения ${transfer.transferNumber} успешно подтверждена. ТМЦ зачислены на склад "${transfer.targetWarehouse.name}".`,
     });
-  } catch (error: any) {
-    console.error('Ошибка подтверждения приемки:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Ошибка подтверждения приемки';
+    console.error('Ошибка подтверждения приемки:', message);
     return NextResponse.json(
-      { success: false, error: error.message || 'Ошибка подтверждения приемки' },
+      { success: false, error: message },
       { status: 400 }
     );
   }

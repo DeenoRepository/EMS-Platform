@@ -37,9 +37,10 @@ export async function GET(
     }
 
     return NextResponse.json({ success: true, data: nomenclature });
-  } catch (error: any) {
-    console.error('Ошибка получения номенклатуры:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка сервера' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка получения номенклатуры:', message);
+    return NextResponse.json({ success: false, error: 'Ошибка сервера', details: message }, { status: 500 });
   }
 }
 
@@ -112,8 +113,9 @@ export async function PUT(
     });
 
     return NextResponse.json({ success: true, data: updated });
-  } catch (error: any) {
-    console.error('Ошибка обновления номенклатуры:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка при сохранении изменений' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка обновления номенклатуры:', message);
+    return NextResponse.json({ success: false, error: 'Ошибка при сохранении изменений', details: message }, { status: 500 });
   }
 }

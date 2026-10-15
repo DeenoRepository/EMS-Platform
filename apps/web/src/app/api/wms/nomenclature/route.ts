@@ -55,9 +55,10 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: enriched });
-  } catch (error: any) {
-    console.error('Ошибка получения номенклатуры:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка получения номенклатуры' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка получения номенклатуры:', message);
+    return NextResponse.json({ success: false, error: 'Ошибка получения номенклатуры', details: message }, { status: 500 });
   }
 }
 
@@ -107,8 +108,9 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: nomenclature });
-  } catch (error: any) {
-    console.error('Ошибка создания номенклатуры:', error);
-    return NextResponse.json({ success: false, error: 'Ошибка создания номенклатуры' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка создания номенклатуры:', message);
+    return NextResponse.json({ success: false, error: 'Ошибка создания номенклатуры', details: message }, { status: 500 });
   }
 }

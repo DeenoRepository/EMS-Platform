@@ -160,10 +160,11 @@ export async function POST(
         ? `Приемка перемещения ${transfer.transferNumber} отклонена. ТМЦ возвращены на склад-отправитель "${transfer.sourceWarehouse.name}". Причина: ${reason}`
         : `Запрос на перемещение ${transfer.transferNumber} отклонен. Причина: ${reason}`,
     });
-  } catch (error: any) {
-    console.error('Ошибка отклонения перемещения:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Ошибка отклонения перемещения';
+    console.error('Ошибка отклонения перемещения:', message);
     return NextResponse.json(
-      { success: false, error: error.message || 'Ошибка отклонения перемещения' },
+      { success: false, error: message },
       { status: 400 }
     );
   }

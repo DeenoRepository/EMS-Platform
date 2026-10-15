@@ -131,10 +131,11 @@ export async function POST(
       data: updatedTransfer,
       message: `Запрос ${transfer.transferNumber} согласован и отгружен. ТМЦ в пути на склад "${transfer.targetWarehouse.name}".`,
     });
-  } catch (error: any) {
-    console.error('Ошибка отгрузки перемещения:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Ошибка отгрузки перемещения';
+    console.error('Ошибка отгрузки перемещения:', message);
     return NextResponse.json(
-      { success: false, error: error.message || 'Ошибка отгрузки перемещения' },
+      { success: false, error: message },
       { status: 400 }
     );
   }
