@@ -318,9 +318,9 @@ export default function WmsDashboardPage() {
             value={stats?.warehousesCount ?? 0}
             subtitle="Активных складских комплексов"
             icon={<WarehouseOutlinedIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(2, 132, 199, 0.08)"
-            iconColor="#0284c7"
-            accentColor="#0284c7"
+            iconBgColor="action.hover"
+            iconColor="primary.main"
+            accentColor="primary.main"
             loading={isLoading && !stats}
             onClick={() => router.push('/wms/warehouses')}
           />
@@ -332,9 +332,9 @@ export default function WmsDashboardPage() {
             value={stats?.nomenclatureCount ?? 0}
             subtitle="Уникальных позиций ТМЦ"
             icon={<Inventory2OutlinedIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(15, 118, 110, 0.08)"
-            iconColor="#0f766e"
-            accentColor="#0f766e"
+            iconBgColor="action.hover"
+            iconColor="secondary.main"
+            accentColor="secondary.main"
             loading={isLoading && !stats}
             onClick={() => router.push('/wms/stock')}
           />
@@ -346,9 +346,9 @@ export default function WmsDashboardPage() {
             value={stats?.lowStockCount ?? 0}
             subtitle="Позиций требуют пополнения"
             icon={<WarningAmberOutlinedIcon sx={{ fontSize: 20 }} />}
-            iconBgColor={stats && stats.lowStockCount > 0 ? 'rgba(220, 38, 38, 0.1)' : 'rgba(217, 119, 6, 0.08)'}
+            iconBgColor="action.hover"
             iconColor={stats && stats.lowStockCount > 0 ? 'error.main' : 'warning.main'}
-            accentColor={stats && stats.lowStockCount > 0 ? '#dc2626' : '#d97706'}
+            accentColor={stats && stats.lowStockCount > 0 ? 'error.main' : 'warning.main'}
             loading={isLoading && !stats}
             onClick={() => router.push('/wms/stock?lowStockOnly=true')}
           />
@@ -360,9 +360,9 @@ export default function WmsDashboardPage() {
             value={stats?.activeInventoriesCount ?? 0}
             subtitle="Актов в процессе сверки"
             icon={<FactCheckOutlinedIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(123, 31, 162, 0.08)"
-            iconColor="#7b1fa2"
-            accentColor="#7b1fa2"
+            iconBgColor="action.hover"
+            iconColor="info.main"
+            accentColor="info.main"
             loading={isLoading && !stats}
             onClick={() => router.push('/wms/inventory')}
           />

@@ -473,9 +473,9 @@ function WmsOperationsContent() {
                 value={opsTotalCount}
                 subtitle="В журнале движения ТМЦ"
                 icon={<SwapHorizIcon sx={{ fontSize: 20 }} />}
-                iconBgColor="rgba(2, 132, 199, 0.08)"
-                iconColor="#0284c7"
-                accentColor="#0284c7"
+                iconBgColor="action.hover"
+                iconColor="primary.main"
+                accentColor="primary.main"
                 active={selectedType === ''}
                 onClick={() => setSelectedType('')}
                 loading={isLoadingOps && opsTotalCount === 0}
@@ -487,9 +487,9 @@ function WmsOperationsContent() {
                 value={operations.filter((o) => o.type === 'RECEIPT').length}
                 subtitle="От поставщиков"
                 icon={<MoveToInboxIcon sx={{ fontSize: 20 }} />}
-                iconBgColor="rgba(22, 163, 74, 0.08)"
-                iconColor="#16a34a"
-                accentColor="#16a34a"
+                iconBgColor="action.hover"
+                iconColor="success.main"
+                accentColor="success.main"
                 active={selectedType === 'RECEIPT'}
                 onClick={() => setSelectedType((prev) => (prev === 'RECEIPT' ? '' : 'RECEIPT'))}
                 loading={isLoadingOps && opsTotalCount === 0}
@@ -501,9 +501,9 @@ function WmsOperationsContent() {
                 value={operations.filter((o) => o.type === 'ISSUE_EMPLOYEE' || o.type === 'ISSUE_WRITE_OFF').length}
                 subtitle="В подотчет и на оборудование ТОиР"
                 icon={<OutboxIcon sx={{ fontSize: 20 }} />}
-                iconBgColor="rgba(217, 119, 6, 0.08)"
-                iconColor="#d97706"
-                accentColor="#d97706"
+                iconBgColor="action.hover"
+                iconColor="warning.main"
+                accentColor="warning.main"
                 active={selectedType === 'ISSUE_EMPLOYEE' || selectedType === 'ISSUE_WRITE_OFF'}
                 onClick={() => setSelectedType((prev) => (prev === 'ISSUE_WRITE_OFF' ? '' : 'ISSUE_WRITE_OFF'))}
                 loading={isLoadingOps && opsTotalCount === 0}
@@ -515,9 +515,9 @@ function WmsOperationsContent() {
                 value={operations.filter((o) => o.type === 'TRANSFER').length}
                 subtitle="Перемещения ТМЦ"
                 icon={<SwapHorizIcon sx={{ fontSize: 20 }} />}
-                iconBgColor="rgba(124, 58, 237, 0.08)"
-                iconColor="#7c3aed"
-                accentColor="#7c3aed"
+                iconBgColor="action.hover"
+                iconColor="secondary.main"
+                accentColor="secondary.main"
                 active={selectedType === 'TRANSFER'}
                 onClick={() => setSelectedType((prev) => (prev === 'TRANSFER' ? '' : 'TRANSFER'))}
                 loading={isLoadingOps && opsTotalCount === 0}
@@ -732,9 +732,9 @@ function WmsOperationsContent() {
                 value={transferCounts.inbound}
                 subtitle="Входящие ТМЦ в пути"
                 icon={<MoveToInboxIcon sx={{ fontSize: 20 }} />}
-                iconBgColor="rgba(2, 132, 199, 0.08)"
-                iconColor="#0284c7"
-                accentColor="#0284c7"
+                iconBgColor="action.hover"
+                iconColor="primary.main"
+                accentColor="primary.main"
                 loading={isLoadingTransfers}
                 active={transferTab === 'inbound'}
                 onClick={() => setTransferTab('inbound')}
@@ -746,9 +746,9 @@ function WmsOperationsContent() {
                 value={transferCounts.requests}
                 subtitle="Ожидают согласования"
                 icon={<HourglassEmptyIcon sx={{ fontSize: 20 }} />}
-                iconBgColor="rgba(217, 119, 6, 0.08)"
-                iconColor="#d97706"
-                accentColor="#d97706"
+                iconBgColor="action.hover"
+                iconColor="warning.main"
+                accentColor="warning.main"
                 loading={isLoadingTransfers}
                 active={transferTab === 'requests'}
                 onClick={() => setTransferTab('requests')}
@@ -760,9 +760,9 @@ function WmsOperationsContent() {
                 value={transferCounts.outbound}
                 subtitle="Исходящие отгрузки"
                 icon={<LocalShippingOutlinedIcon sx={{ fontSize: 20 }} />}
-                iconBgColor="rgba(124, 58, 237, 0.08)"
-                iconColor="#7c3aed"
-                accentColor="#7c3aed"
+                iconBgColor="action.hover"
+                iconColor="secondary.main"
+                accentColor="secondary.main"
                 loading={isLoadingTransfers}
                 active={transferTab === 'outbound'}
                 onClick={() => setTransferTab('outbound')}
@@ -774,9 +774,9 @@ function WmsOperationsContent() {
                 value={transferCounts.total}
                 subtitle="Все записи реестра"
                 icon={<CheckCircleOutlineIcon sx={{ fontSize: 20 }} />}
-                iconBgColor="rgba(22, 163, 74, 0.08)"
-                iconColor="#16a34a"
-                accentColor="#16a34a"
+                iconBgColor="action.hover"
+                iconColor="success.main"
+                accentColor="success.main"
                 loading={isLoadingTransfers}
                 active={transferTab === 'all'}
                 onClick={() => setTransferTab('all')}

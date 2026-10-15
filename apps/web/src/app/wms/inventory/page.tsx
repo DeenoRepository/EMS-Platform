@@ -332,9 +332,9 @@ export default function WmsInventoryListPage() {
             value={totalInventories}
             subtitle="За все периоды учета"
             icon={<FactCheckOutlinedIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(2, 132, 199, 0.08)"
-            iconColor="#0284c7"
-            accentColor="#0284c7"
+            iconBgColor="action.hover"
+            iconColor="primary.main"
+            accentColor="primary.main"
             loading={isLoading}
           />
         </Grid>
@@ -344,9 +344,9 @@ export default function WmsInventoryListPage() {
             value={inProgressCount}
             subtitle="Открытые акты инвентаризации"
             icon={<FactCheckOutlinedIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(217, 119, 6, 0.08)"
-            iconColor="#d97706"
-            accentColor="#d97706"
+            iconBgColor="action.hover"
+            iconColor="warning.main"
+            accentColor="warning.main"
             loading={isLoading}
           />
         </Grid>
@@ -356,9 +356,9 @@ export default function WmsInventoryListPage() {
             value={completedCount}
             subtitle="Успешно сверенные и закрытые"
             icon={<FactCheckOutlinedIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(22, 163, 74, 0.08)"
-            iconColor="#16a34a"
-            accentColor="#16a34a"
+            iconBgColor="action.hover"
+            iconColor="success.main"
+            accentColor="success.main"
             loading={isLoading}
           />
         </Grid>

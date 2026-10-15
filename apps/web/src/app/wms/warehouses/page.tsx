@@ -282,9 +282,9 @@ export default function WmsWarehousesPage() {
             value={totalWarehouses}
             subtitle="Зарегистрировано комплексов"
             icon={<WarehouseOutlinedIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(2, 132, 199, 0.08)"
-            iconColor="#0284c7"
-            accentColor="#0284c7"
+            iconBgColor="action.hover"
+            iconColor="primary.main"
+            accentColor="primary.main"
             loading={isLoading}
           />
         </Grid>
@@ -294,9 +294,9 @@ export default function WmsWarehousesPage() {
             value={activeWarehouses}
             subtitle="Готовы к операциям"
             icon={<WarehouseOutlinedIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(22, 163, 74, 0.08)"
-            iconColor="#16a34a"
-            accentColor="#16a34a"
+            iconBgColor="action.hover"
+            iconColor="success.main"
+            accentColor="success.main"
             loading={isLoading}
           />
         </Grid>
@@ -306,9 +306,9 @@ export default function WmsWarehousesPage() {
             value={totalStockItems}
             subtitle="Позиций на складах"
             icon={<GridViewIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(217, 119, 6, 0.08)"
-            iconColor="#d97706"
-            accentColor="#d97706"
+            iconBgColor="action.hover"
+            iconColor="warning.main"
+            accentColor="warning.main"
             loading={isLoading}
           />
         </Grid>
@@ -318,9 +318,9 @@ export default function WmsWarehousesPage() {
             value={totalOperations}
             subtitle="Приход, расход, перемещения"
             icon={<MeetingRoomOutlinedIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(124, 58, 237, 0.08)"
-            iconColor="#7c3aed"
-            accentColor="#7c3aed"
+            iconBgColor="action.hover"
+            iconColor="secondary.main"
+            accentColor="secondary.main"
             loading={isLoading}
           />
         </Grid>

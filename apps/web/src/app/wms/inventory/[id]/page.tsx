@@ -280,9 +280,9 @@ export default function WmsInventoryDetailPage() {
             value={statusInfo.label}
             subtitle={`Ответственный: ${inventory.createdBy.displayName}`}
             icon={<CheckCircleIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(2, 132, 199, 0.08)"
-            iconColor="#0284c7"
-            accentColor="#0284c7"
+            iconBgColor="action.hover"
+            iconColor="primary.main"
+            accentColor="primary.main"
           />
         </Grid>
 
@@ -292,9 +292,9 @@ export default function WmsInventoryDetailPage() {
             value={totalItems}
             subtitle={`Совпадают: ${matchCount}`}
             icon={<CheckCircleIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(15, 23, 42, 0.06)"
-            iconColor="#475569"
-            accentColor="#0284c7"
+            iconBgColor="action.hover"
+            iconColor="text.secondary"
+            accentColor="primary.main"
           />
         </Grid>
 
@@ -304,9 +304,9 @@ export default function WmsInventoryDetailPage() {
             value={surplusCount}
             subtitle="Факт выше учетного"
             icon={<CheckCircleIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(22, 163, 74, 0.08)"
-            iconColor="#16a34a"
-            accentColor="#16a34a"
+            iconBgColor="action.hover"
+            iconColor="success.main"
+            accentColor="success.main"
           />
         </Grid>
 
@@ -316,9 +316,9 @@ export default function WmsInventoryDetailPage() {
             value={deficitCount}
             subtitle="Факт ниже учетного"
             icon={<WarningAmberIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(220, 38, 38, 0.08)"
-            iconColor="#dc2626"
-            accentColor="#dc2626"
+            iconBgColor="action.hover"
+            iconColor="error.main"
+            accentColor="error.main"
           />
         </Grid>
       </Grid>
