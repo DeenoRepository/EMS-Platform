@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
-import { prisma } from '@ems/database';
+import { prisma, StockTransferStatus } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
 
@@ -57,23 +57,50 @@ export async function GET(req: NextRequest) {
           ...(isAdmin || userWarehouseIds.length === 0 ? {} : { warehouseId: { in: userWarehouseIds } }),
         },
       }),
-      // Оптимизированный запрос дефицитных позиций (расчет по всей номенклатуре)
-      prisma.nomenclature.findMany({
-        where: {
-          minStock: { gt: 0 },
-          deletedAt: null,
-        },
-        include: {
-          stockItems: {
-            select: {
-              id: true,
-              quantity: true,
-              warehouseId: true,
-              warehouse: { select: { name: true, code: true } },
+      // Агрегация объемов ТМЦ в пути для точного учета реального дефицита
+      Promise.all([
+        prisma.nomenclature.findMany({
+          where: {
+            minStock: { gt: 0 },
+            deletedAt: null,
+          },
+          include: {
+            stockItems: {
+              select: {
+                id: true,
+                quantity: true,
+                warehouseId: true,
+                warehouse: { select: { name: true, code: true } },
+              },
             },
           },
-        },
-      }).then((noms) => {
+        }),
+        prisma.stockTransferItem.findMany({
+          where: {
+            transfer: {
+              status: StockTransferStatus.IN_TRANSIT,
+            },
+          },
+          select: {
+            nomenclatureId: true,
+            quantity: true,
+            transfer: {
+              select: {
+                sourceWarehouseId: true,
+                targetWarehouseId: true,
+              },
+            },
+          },
+        }),
+      ]).then(([noms, transitItems]) => {
+        // Карта транзита по номенклатуре:
+        // globalTransitMap: nomenclatureId -> общее кол-во в пути по предприятию
+        const globalTransitMap = new Map<string, number>();
+        for (const ti of transitItems) {
+          const prev = globalTransitMap.get(ti.nomenclatureId) || 0;
+          globalTransitMap.set(ti.nomenclatureId, prev + Number(ti.quantity));
+        }
+
         const deficitList: any[] = [];
         for (const nom of noms) {
           const minStock = Number(nom.minStock);
@@ -85,11 +112,15 @@ export async function GET(req: NextRequest) {
             continue;
           }
 
-          // Общий остаток номенклатуры по всем складам
+          // Общий физический остаток номенклатуры по всем складам
           const totalStock = nom.stockItems.reduce((sum, si) => sum + Number(si.quantity), 0);
+          // Количество в пути
+          const inTransitQty = globalTransitMap.get(nom.id) || 0;
+          // Эффективный остаток предприятия с учетом груза в пути
+          const totalEffectiveStock = totalStock + inTransitQty;
 
-          // Дефицит возникает только если установлен положительный неснижаемый остаток и текущий остаток <= minStock
-          if (minStock > 0 && totalStock <= minStock) {
+          // Дефицит возникает ТОЛЬКО если (физический остаток + груз в пути) <= minStock
+          if (minStock > 0 && totalEffectiveStock <= minStock) {
             const primaryItem = relevantItems[0] || nom.stockItems[0];
             deficitList.push({
               id: primaryItem?.id || nom.id,
@@ -97,6 +128,8 @@ export async function GET(req: NextRequest) {
               warehouseName: nom.stockItems.length > 1 ? 'Все склады' : (primaryItem?.warehouse?.name || '—'),
               warehouseCode: nom.stockItems.length > 1 ? 'ВСЕ' : (primaryItem?.warehouse?.code || '—'),
               quantity: totalStock,
+              inTransitQuantity: inTransitQty,
+              effectiveQuantity: totalEffectiveStock,
               minStock,
               unit: nom.unit,
             });

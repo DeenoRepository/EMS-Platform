@@ -159,12 +159,20 @@ export async function GET(req: NextRequest) {
     for (const nom of deficitNomenclatures) {
       const minStock = Number(nom.minStock);
       const totalStock = nom.stockItems.reduce((sum, si) => sum + Number(si.quantity), 0);
+      const globalTransit = globalInTransitMap.get(nom.id)?.quantity || 0;
+      // Суммарный баланс предприятия с учетом перемещений в пути
+      const totalEffectiveStock = totalStock + globalTransit;
 
       if (warehouseId) {
-        // Контекст конкретного склада
+        // Контекст конкретного склада: учитываем физический остаток + входящий груз в пути
         const whStockItem = nom.stockItems.find((si) => si.warehouseId === warehouseId);
         const whQty = whStockItem ? Number(whStockItem.quantity) : 0;
-        const isDeficitOnWarehouse = whQty <= minStock || totalStock <= minStock;
+        const inKey = `${warehouseId}__${nom.id}`;
+        const whTransitIn = inTransitInMap.get(inKey)?.quantity || 0;
+        const whEffectiveStock = whQty + whTransitIn;
+
+        // Позиция в дефиците на складе ТОЛЬКО если и локальный баланс с транзитом, и глобальный баланс предприятия <= minStock
+        const isDeficitOnWarehouse = whEffectiveStock <= minStock && totalEffectiveStock <= minStock;
 
         if (isDeficitOnWarehouse) {
           if (whStockItem) {
@@ -226,8 +234,8 @@ export async function GET(req: NextRequest) {
           }
         }
       } else {
-        // Контекст всей компании / всех складов
-        if (totalStock <= minStock) {
+        // Контекст всей компании / всех складов: ТМЦ в пути НЕ списываются из активов компании
+        if (totalEffectiveStock <= minStock) {
           if (nom.stockItems.length > 0) {
             for (const si of nom.stockItems) {
               deficitRows.push({
@@ -341,7 +349,21 @@ export async function GET(req: NextRequest) {
         const totalStock = item.nomenclature.stockItems
           ? item.nomenclature.stockItems.reduce((sum: number, s: any) => sum + Number(s.quantity), 0)
           : qty;
-        const isLowStock = minStock !== null && minStock > 0 && totalStock <= minStock;
+
+        const inKey = `${item.warehouseId}__${item.nomenclatureId}`;
+        const whTransitIn = inTransitInMap.get(inKey)?.quantity || 0;
+        const globalTransit = globalInTransitMap.get(item.nomenclatureId)?.quantity || 0;
+
+        // Позиция в реальном дефиците, только если баланс с учетом транзита <= minStock
+        const totalEffectiveStock = totalStock + globalTransit;
+        const whEffectiveStock = qty + whTransitIn;
+
+        const isLowStock = minStock !== null && minStock > 0 &&
+          (warehouseId ? (whEffectiveStock <= minStock && totalEffectiveStock <= minStock) : (totalEffectiveStock <= minStock));
+
+        // Позиция пополняется (едет в пути, хотя физический остаток мал)
+        const isReplenishing = minStock !== null && minStock > 0 &&
+          (warehouseId ? (qty <= minStock && whEffectiveStock > minStock) : (totalStock <= minStock && totalEffectiveStock > minStock));
 
         return {
           id: item.id,
@@ -357,8 +379,10 @@ export async function GET(req: NextRequest) {
           category: item.nomenclature.category?.name || 'Без категории',
           quantity: qty,
           totalStock,
+          totalEffectiveStock,
           minStock: minStock !== null ? minStock : '—',
           isLowStock,
+          isReplenishing,
           cellId: item.cellId,
           cellCode: item.cell?.code || null,
           cellName: item.cell?.name || null,

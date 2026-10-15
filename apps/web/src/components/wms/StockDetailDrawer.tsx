@@ -70,8 +70,10 @@ export interface StockDetailData {
     direction: 'INCOMING' | 'OUTGOING';
   }>;
   totalStock?: number;
+  totalEffectiveStock?: number;
   minStock: number | string;
   isLowStock: boolean;
+  isReplenishing?: boolean;
   cellId?: string | null;
   cellCode?: string | null;
   cellName?: string | null;
@@ -143,8 +145,12 @@ export default function StockDetailDrawer({
 
   const minStockNum = Number(stockItem.minStock) || 0;
   const currentTotalStock = stockItem.totalStock !== undefined ? stockItem.totalStock : stockItem.quantity;
+  const inTransitQty = stockItem.inTransitIn || 0;
+  const effectiveTotalStock = stockItem.totalEffectiveStock !== undefined ? stockItem.totalEffectiveStock : (currentTotalStock + inTransitQty);
   const fillPercent = minStockNum > 0 ? Math.min((currentTotalStock / minStockNum) * 100, 100) : 100;
+  const effectivePercent = minStockNum > 0 ? Math.min((effectiveTotalStock / minStockNum) * 100, 100) : 100;
   const isCritical = stockItem.isLowStock;
+  const isReplenishing = Boolean(stockItem.isReplenishing);
 
   return (
     <Drawer
@@ -316,22 +322,42 @@ export default function StockDetailDrawer({
               <Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
                   <Typography variant="caption" sx={{ color: 'text.disabled', fontWeight: 600 }}>
-                    Обеспеченность запасом
+                    {isReplenishing
+                      ? `Обеспеченность с учётом транзита (${effectivePercent.toFixed(0)}%)`
+                      : 'Обеспеченность запасом'}
                   </Typography>
                   <Typography
                     variant="caption"
-                    sx={{ fontWeight: 700, color: isCritical ? 'error.main' : 'success.main' }}
+                    sx={{
+                      fontWeight: 700,
+                      color: isReplenishing ? 'primary.main' : isCritical ? 'error.main' : 'success.main',
+                    }}
                   >
-                    {fillPercent.toFixed(0)}%
+                    {isReplenishing ? `${fillPercent.toFixed(0)}% факт + ${inTransitQty} в пути` : `${fillPercent.toFixed(0)}%`}
                   </Typography>
                 </Box>
-                <Box sx={{ height: 6, borderRadius: 3, bgcolor: 'divider', overflow: 'hidden' }}>
+                <Box sx={{ height: 6, borderRadius: 3, bgcolor: 'divider', overflow: 'hidden', position: 'relative' }}>
+                  {/* Фоновая полоса с учетом груза в пути */}
+                  {isReplenishing && (
+                    <Box
+                      sx={{
+                        width: `${effectivePercent}%`,
+                        height: '100%',
+                        bgcolor: 'primary.light',
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                      }}
+                    />
+                  )}
+                  {/* Основная полоса фактического остатка */}
                   <Box
                     sx={{
                       width: `${fillPercent}%`,
                       height: '100%',
-                      bgcolor: isCritical ? '#ef4444' : '#22c55e',
+                      bgcolor: isReplenishing ? 'primary.main' : isCritical ? 'error.main' : 'success.main',
                       transition: 'width 0.4s ease',
+                      position: 'relative',
                     }}
                   />
                 </Box>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse } from '@/lib/auth-guard';
-import { prisma } from '@ems/database';
+import { prisma, StockTransferStatus } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
 
@@ -130,25 +130,44 @@ export async function GET(req: NextRequest) {
         prisma.inventory.count({
           where: {
             status: 'IN_PROGRESS',
-            ...(userWarehouseIds.length > 0 ? { warehouseId: { in: userWarehouseIds } } : {}),
+            ...(userWarehouseIds.length === 0 ? {} : { warehouseId: { in: userWarehouseIds } }),
           },
         }),
-        prisma.nomenclature.findMany({
-          where: {
-            minStock: { gt: 0 },
-            deletedAt: null,
-          },
-          include: {
-            stockItems: {
-              select: {
-                id: true,
-                quantity: true,
-                warehouseId: true,
-                warehouse: { select: { code: true } },
+        Promise.all([
+          prisma.nomenclature.findMany({
+            where: {
+              minStock: { gt: 0 },
+              deletedAt: null,
+            },
+            include: {
+              stockItems: {
+                select: {
+                  id: true,
+                  quantity: true,
+                  warehouseId: true,
+                  warehouse: { select: { code: true } },
+                },
               },
             },
-          },
-        }).then((noms) => {
+          }),
+          prisma.stockTransferItem.findMany({
+            where: {
+              transfer: {
+                status: StockTransferStatus.IN_TRANSIT,
+              },
+            },
+            select: {
+              nomenclatureId: true,
+              quantity: true,
+            },
+          }),
+        ]).then(([noms, transitItems]) => {
+          const globalTransitMap = new Map<string, number>();
+          for (const ti of transitItems) {
+            const prev = globalTransitMap.get(ti.nomenclatureId) || 0;
+            globalTransitMap.set(ti.nomenclatureId, prev + Number(ti.quantity));
+          }
+
           const deficitList: any[] = [];
           for (const nom of noms) {
             const minStock = Number(nom.minStock);
@@ -160,17 +179,21 @@ export async function GET(req: NextRequest) {
               continue;
             }
 
-            // Общий остаток номенклатуры по всем складам
+            // Общий физический остаток номенклатуры по всем складам
             const totalStock = nom.stockItems.reduce((sum, si) => sum + Number(si.quantity), 0);
+            const inTransitQty = globalTransitMap.get(nom.id) || 0;
+            const totalEffectiveStock = totalStock + inTransitQty;
 
-            // Дефицит возникает только если установлен положительный неснижаемый остаток и текущий остаток <= minStock
-            if (minStock > 0 && totalStock <= minStock) {
+            // Дефицит возникает только если (физический остаток + груз в пути) <= minStock
+            if (minStock > 0 && totalEffectiveStock <= minStock) {
               const primaryItem = relevantItems[0] || nom.stockItems[0];
               deficitList.push({
                 id: primaryItem?.id || nom.id,
                 name: nom.name,
                 warehouseCode: nom.stockItems.length > 1 ? 'ВСЕ' : (primaryItem?.warehouse?.code || '—'),
                 quantity: totalStock,
+                inTransitQuantity: inTransitQty,
+                effectiveQuantity: totalEffectiveStock,
                 minStock,
                 unit: nom.unit,
               });

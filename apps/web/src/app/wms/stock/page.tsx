@@ -103,8 +103,10 @@ interface StockRow {
     direction: 'INCOMING' | 'OUTGOING';
   }>;
   totalStock?: number;
+  totalEffectiveStock?: number;
   minStock: number | string;
   isLowStock: boolean;
+  isReplenishing?: boolean;
   cellId?: string | null;
   cellCode?: string | null;
   cellName?: string | null;
@@ -1289,10 +1291,17 @@ function WmsStockContent() {
 
                   {visibleColumns.includes('status') && (
                     <TableCell align="center">
-                      <StatusBadge
-                        status={row.isLowStock ? 'LOW_STOCK' : 'NORMAL_STOCK'}
-                        label={row.isLowStock ? 'Дефицит' : 'В норме'}
-                      />
+                      {row.isReplenishing ? (
+                        <StatusBadge
+                          status="IN_TRANSIT"
+                          label="В пути (Пополняется)"
+                        />
+                      ) : (
+                        <StatusBadge
+                          status={row.isLowStock ? 'LOW_STOCK' : 'NORMAL_STOCK'}
+                          label={row.isLowStock ? 'Дефицит' : 'В норме'}
+                        />
+                      )}
                     </TableCell>
                   )}
 
