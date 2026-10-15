@@ -27,7 +27,11 @@ import {
   Tooltip,
   Divider,
   Stack,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
+import ViewListIcon from '@mui/icons-material/ViewList';
+import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import { useSearchParams, useRouter } from 'next/navigation';
 import PageHeader from '@/components/layout/PageHeader';
 import AddIcon from '@mui/icons-material/Add';
@@ -168,6 +172,7 @@ function WmsStockContent() {
   const [rowsPerPage, setRowsPerPage] = useState<number>(25);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [globalLowStockCount, setGlobalLowStockCount] = useState<number>(0);
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
 
   // Modal: Create Nomenclature
   const [isNomenclatureModalOpen, setIsNomenclatureModalOpen] = useState(false);
@@ -643,6 +648,74 @@ function WmsStockContent() {
         columns={STOCK_COLUMNS}
         visibleColumns={visibleColumns}
         onVisibleColumnsChange={setVisibleColumns}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        gridContent={
+          <Grid container spacing={2}>
+            {sortedItems.map((row) => (
+              <Grid item xs={12} sm={6} md={4} lg={3} key={row.id}>
+                <Card
+                  variant="outlined"
+                  onClick={() => handleOpenDrawer(row)}
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    borderColor: row.isLowStock ? 'warning.main' : 'divider',
+                    bgcolor: row.isLowStock ? 'action.hover' : 'background.paper',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 8px 16px -4px rgba(15, 23, 42, 0.08)',
+                      borderColor: 'primary.main',
+                    },
+                  }}
+                >
+                  <CardContent sx={{ p: 2, flex: '1 1 auto' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5 }}>
+                      <Box sx={{ minWidth: 0, pr: 1 }}>
+                        <Typography variant="subtitle2" fontWeight={700} noWrap>
+                          {row.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {row.article || 'Без артикула'}
+                        </Typography>
+                      </Box>
+                      {row.isLowStock ? (
+                        <StatusBadge status="WARNING" label="Дефицит" size="small" />
+                      ) : (
+                        <StatusBadge status="NORMAL_STOCK" label="В наличии" size="small" />
+                      )}
+                    </Box>
+
+                    <Divider sx={{ my: 1 }} />
+
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Склад: <strong>{row.warehouseName} ({row.warehouseCode})</strong>
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Категория: <strong>{row.category}</strong>
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Ячейка: <strong>{row.cellCode ? `${row.zoneCode || ''} • ${row.cellCode}` : 'Не назначена'}</strong>
+                    </Typography>
+
+                    <Box sx={{ mt: 1.5, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Остаток:
+                      </Typography>
+                      <Typography variant="subtitle1" fontWeight={800} color={row.isLowStock ? 'warning.main' : 'primary.main'}>
+                        {row.quantity} {row.unit}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        }
         selectedCount={selectedIds.length}
         onClearSelection={() => setSelectedIds([])}
         empty={items.length === 0 && !isLoading}
@@ -766,6 +839,25 @@ function WmsStockContent() {
                   formats={['xlsx', 'csv']}
                   disabled={items.length === 0}
                 />
+
+                <ToggleButtonGroup
+                  value={viewMode}
+                  exclusive
+                  onChange={(_, mode) => mode && setViewMode(mode)}
+                  size="small"
+                  sx={{ height: 36 }}
+                >
+                  <ToggleButton value="table" aria-label="табличный вид" sx={{ px: 1, py: 0.5, borderRadius: '8px' }}>
+                    <Tooltip title="Табличный вид">
+                      <ViewListIcon fontSize="small" />
+                    </Tooltip>
+                  </ToggleButton>
+                  <ToggleButton value="grid" aria-label="сетка карточек" sx={{ px: 1, py: 0.5, borderRadius: '8px' }}>
+                    <Tooltip title="Сетка карточек">
+                      <ViewModuleIcon fontSize="small" />
+                    </Tooltip>
+                  </ToggleButton>
+                </ToggleButtonGroup>
               </Box>
             }
           >

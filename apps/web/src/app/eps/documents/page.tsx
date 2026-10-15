@@ -28,6 +28,7 @@ import {
   FormControlLabel,
   Checkbox,
   Alert,
+  CardContent,
 } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import SearchIcon from '@mui/icons-material/Search';
@@ -59,6 +60,8 @@ import {
   type TableColumnOption,
   FileUploadDropzone,
 } from '@/components/ui';
+import ViewListIcon from '@mui/icons-material/ViewList';
+import ViewModuleIcon from '@mui/icons-material/ViewModule';
 
 interface DocumentItem {
   id: string;
@@ -151,6 +154,7 @@ function DocumentsListContent() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
 
   // Sorting
   const [sortField, setSortField] = useState<string>('date');
@@ -498,6 +502,7 @@ function DocumentsListContent() {
 
   const canUpload = hasPermission(PERMISSIONS.EPS_DOCUMENTS_UPLOAD);
   const canEdit = hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT);
+  const canDelete = hasPermission(PERMISSIONS.EPS_EQUIPMENT_EDIT) || user?.roles.includes('admin');
   interface DocumentColumnDef {
     id: string;
     label: string;
@@ -667,7 +672,92 @@ function DocumentsListContent() {
         columns={DOCUMENT_COLUMNS}
         visibleColumns={visibleColumns}
         onVisibleColumnsChange={setVisibleColumns}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
         stickyHeader
+        gridContent={
+          <Grid container spacing={2}>
+            {sortedItems.map((doc) => (
+              <Grid item xs={12} sm={6} md={4} lg={3} key={doc.id}>
+                <Card
+                  variant="outlined"
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    borderRadius: '10px',
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 8px 16px -4px rgba(15, 23, 42, 0.08)',
+                      borderColor: 'primary.main',
+                    },
+                  }}
+                >
+                  <CardContent sx={{ p: 2, flex: '1 1 auto' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <DescriptionOutlinedIcon color="primary" sx={{ fontSize: 22 }} />
+                        <Typography variant="subtitle2" fontWeight={700} noWrap sx={{ maxWidth: 170 }}>
+                          {doc.originalName}
+                        </Typography>
+                      </Box>
+                      <StatusBadge
+                        status={doc.docType}
+                        label={DOCUMENT_TYPE_MAP[doc.docType] || doc.docType}
+                        size="small"
+                        variant="outlined"
+                      />
+                    </Box>
+
+                    {doc.description && (
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, minHeight: 32 }}>
+                        {doc.description}
+                      </Typography>
+                    )}
+
+                    <Divider sx={{ my: 1 }} />
+
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Оборудование: <strong>{doc.equipment ? doc.equipment.name : 'Общий документ'}</strong>
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Размер: <strong>{formatBytes(doc.fileSize)}</strong> • Версия: <strong>v{doc.version}</strong>
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Загружен: {formatDate(doc.createdAt)} ({doc.uploadedBy?.displayName || 'Система'})
+                    </Typography>
+                  </CardContent>
+
+                  <Box sx={{ p: 1, px: 2, bgcolor: 'background.default', borderTop: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
+                    <IconButton
+                      size="small"
+                      color="primary"
+                      component="a"
+                      href={doc.filePath.startsWith('/') ? doc.filePath : `/${doc.filePath}`}
+                      download={doc.originalName}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Скачать ${doc.originalName}`}
+                    >
+                      <DownloadIcon fontSize="small" />
+                    </IconButton>
+                    {canDelete && (
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => setDeleteDialogDoc({ id: doc.id, name: doc.originalName })}
+                        aria-label={`Удалить ${doc.originalName}`}
+                      >
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
+                    )}
+                  </Box>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        }
         empty={items.length === 0 && !loading}
         emptyState={
           <EmptyState
@@ -750,6 +840,25 @@ function DocumentsListContent() {
                     </MenuItem>
                   ))}
                 </TextField>
+
+                <ToggleButtonGroup
+                  value={viewMode}
+                  exclusive
+                  onChange={(_, mode) => mode && setViewMode(mode)}
+                  size="small"
+                  sx={{ height: 36 }}
+                >
+                  <ToggleButton value="table" aria-label="табличный вид" sx={{ px: 1, py: 0.5, borderRadius: '8px' }}>
+                    <Tooltip title="Табличный вид">
+                      <ViewListIcon fontSize="small" />
+                    </Tooltip>
+                  </ToggleButton>
+                  <ToggleButton value="grid" aria-label="сетка карточек" sx={{ px: 1, py: 0.5, borderRadius: '8px' }}>
+                    <Tooltip title="Сетка карточек">
+                      <ViewModuleIcon fontSize="small" />
+                    </Tooltip>
+                  </ToggleButton>
+                </ToggleButtonGroup>
               </Box>
             }
           >

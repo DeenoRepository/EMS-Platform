@@ -540,6 +540,7 @@ function WmsOperationsContent() {
             columns={OPERATIONS_COLUMNS}
             visibleColumns={visibleOpsColumns}
             onVisibleColumnsChange={setVisibleOpsColumns}
+            stickyHeader
             toolbar={
               <FilterToolbar
                 variant="embedded"
@@ -838,6 +839,7 @@ function WmsOperationsContent() {
               setTransfersPage(0);
             }}
             loading={isLoadingTransfers}
+            stickyHeader
           >
             <Table size="small">
               <TableHead>

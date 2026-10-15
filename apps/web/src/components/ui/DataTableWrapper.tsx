@@ -321,15 +321,15 @@ export function DataTableWrapper({
       {/* Density Selector */}
       {showDensityToggle && (
         <Tooltip title="Плотность строк">
-          <Box sx={{ display: 'flex', border: '1px solid #e2e8f0', borderRadius: '8px', p: 0.25, bgcolor: '#ffffff' }}>
+          <Box sx={{ display: 'flex', border: '1px solid', borderColor: 'divider', borderRadius: '8px', p: 0.25, bgcolor: 'background.paper' }}>
             <IconButton
               size="small"
               onClick={() => handleDensityChange('compact')}
               sx={{
                 p: 0.5,
                 borderRadius: '6px',
-                color: currentDensity === 'compact' ? '#0284c7' : '#64748b',
-                backgroundColor: currentDensity === 'compact' ? 'rgba(2, 132, 199, 0.08)' : 'transparent',
+                color: currentDensity === 'compact' ? 'primary.main' : 'text.secondary',
+                backgroundColor: currentDensity === 'compact' ? 'action.hover' : 'transparent',
               }}
             >
               <ViewListIcon sx={{ fontSize: 16 }} />
@@ -340,8 +340,8 @@ export function DataTableWrapper({
               sx={{
                 p: 0.5,
                 borderRadius: '6px',
-                color: currentDensity === 'standard' ? '#0284c7' : '#64748b',
-                backgroundColor: currentDensity === 'standard' ? 'rgba(2, 132, 199, 0.08)' : 'transparent',
+                color: currentDensity === 'standard' ? 'primary.main' : 'text.secondary',
+                backgroundColor: currentDensity === 'standard' ? 'action.hover' : 'transparent',
               }}
             >
               <ViewModuleIcon sx={{ fontSize: 16 }} />
@@ -362,14 +362,15 @@ export function DataTableWrapper({
               sx={{
                 height: 36,
                 borderRadius: '8px',
-                borderColor: '#e2e8f0',
-                color: '#475569',
-                backgroundColor: '#ffffff',
+                borderColor: 'divider',
+                color: 'text.primary',
+                backgroundColor: 'background.paper',
                 fontSize: '0.75rem',
                 fontWeight: 600,
+                textTransform: 'none',
                 '&:hover': {
-                  borderColor: '#cbd5e1',
-                  backgroundColor: '#f8fafc',
+                  borderColor: 'grey.400',
+                  backgroundColor: 'action.hover',
                 },
               }}
             >
@@ -387,7 +388,8 @@ export function DataTableWrapper({
                 maxWidth: 360,
                 maxHeight: 440,
                 borderRadius: '10px',
-                border: '1px solid #e2e8f0',
+                border: '1px solid',
+                borderColor: 'divider',
                 boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.15)',
                 p: 0.5,
                 overflowX: 'hidden',
@@ -395,19 +397,19 @@ export function DataTableWrapper({
             }}
           >
             <Box sx={{ px: 1.5, py: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="subtitle2" fontWeight={700} sx={{ fontSize: '0.8125rem', color: '#0f172a' }}>
+              <Typography variant="subtitle2" fontWeight={700} sx={{ fontSize: '0.8125rem', color: 'text.primary' }}>
                 Колонки таблицы
               </Typography>
               <Button
                 size="small"
                 onClick={handleResetColumns}
                 startIcon={<RestartAltIcon sx={{ fontSize: 13 }} />}
-                sx={{ fontSize: '0.6875rem', p: 0, minWidth: 'auto', color: '#64748b' }}
+                sx={{ fontSize: '0.6875rem', p: 0, minWidth: 'auto', color: 'text.secondary' }}
               >
                 Сброс
               </Button>
             </Box>
-            <Divider sx={{ my: 0.5, borderColor: '#f1f5f9' }} />
+            <Divider sx={{ my: 0.5, borderColor: 'divider' }} />
             <Box sx={{ maxHeight: 290, overflowY: 'auto', overflowX: 'hidden' }}>
               {columns.map((col) => {
                 const isChecked = currentVisibleColumns.includes(col.id);
@@ -433,7 +435,7 @@ export function DataTableWrapper({
                       sx={{
                         fontSize: '0.8125rem',
                         fontWeight: isChecked ? 600 : 400,
-                        color: isChecked ? '#0f172a' : '#64748b',
+                        color: isChecked ? 'text.primary' : 'text.secondary',
                         lineHeight: 1.3,
                       }}
                     >
@@ -443,12 +445,12 @@ export function DataTableWrapper({
                 );
               })}
             </Box>
-            <Divider sx={{ my: 0.5, borderColor: '#f1f5f9' }} />
+            <Divider sx={{ my: 0.5, borderColor: 'divider' }} />
             <Box sx={{ px: 1, pt: 0.5, display: 'flex', justifyContent: 'space-between' }}>
               <Button
                 size="small"
                 onClick={handleSelectAllColumns}
-                sx={{ fontSize: '0.6875rem', fontWeight: 600, color: '#0284c7' }}
+                sx={{ fontSize: '0.6875rem', fontWeight: 600, color: 'primary.main' }}
               >
                 Показать все
               </Button>
@@ -462,7 +464,6 @@ export function DataTableWrapper({
                   borderRadius: '6px',
                   py: 0.35,
                   px: 1.75,
-                  backgroundColor: '#0284c7',
                 }}
               >
                 Готово
@@ -501,8 +502,9 @@ export function DataTableWrapper({
           sx={{
             flexShrink: 0,
             px: { xs: 1, sm: 1.5 },
-            backgroundColor: '#ffffff',
-            borderBottom: '1px solid #f1f5f9',
+            backgroundColor: 'background.paper',
+            borderBottom: '1px solid',
+            borderColor: 'divider',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -519,8 +521,9 @@ export function DataTableWrapper({
           sx={{
             flexShrink: 0,
             p: { xs: 1.5, sm: 2 },
-            backgroundColor: '#ffffff',
-            borderBottom: '1px solid #f1f5f9',
+            backgroundColor: 'background.paper',
+            borderBottom: '1px solid',
+            borderColor: 'divider',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -529,11 +532,11 @@ export function DataTableWrapper({
           }}
         >
           <Box>
-            <Typography variant="subtitle1" fontWeight={700} color="#0f172a" sx={{ letterSpacing: '-0.01em' }}>
+            <Typography variant="subtitle1" fontWeight={700} color="text.primary" sx={{ letterSpacing: '-0.01em' }}>
               {title}
             </Typography>
             {subtitle && (
-              <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.75rem', display: 'block', mt: 0.25 }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.75rem', display: 'block', mt: 0.25 }}>
                 {subtitle}
               </Typography>
             )}
@@ -549,8 +552,9 @@ export function DataTableWrapper({
           sx={{
             flexShrink: 0,
             p: { xs: 1.25, sm: 1.5 },
-            backgroundColor: '#ffffff',
-            borderBottom: '1px solid #f1f5f9',
+            backgroundColor: 'background.paper',
+            borderBottom: '1px solid',
+            borderColor: 'divider',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -570,8 +574,9 @@ export function DataTableWrapper({
         <Box
           sx={{
             p: 1.25,
-            backgroundColor: '#ffffff',
-            borderBottom: '1px solid #f1f5f9',
+            backgroundColor: 'background.paper',
+            borderBottom: '1px solid',
+            borderColor: 'divider',
             display: 'flex',
             justifyContent: 'flex-end',
           }}
@@ -587,8 +592,9 @@ export function DataTableWrapper({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            backgroundColor: '#ecfdf5',
-            borderBottom: '1px solid #a7f3d0',
+            backgroundColor: 'action.hover',
+            borderBottom: '1px solid',
+            borderColor: 'divider',
             px: 2,
             py: 0.75,
           }}
@@ -597,9 +603,9 @@ export function DataTableWrapper({
             <Chip
               label={`Выбрано: ${selectedCount}`}
               size="small"
-              sx={{ fontWeight: 700, height: 22, backgroundColor: '#15803d', color: '#ffffff' }}
+              sx={{ fontWeight: 700, height: 22, backgroundColor: 'primary.main', color: 'primary.contrastText' }}
             />
-            <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: '#15803d', fontWeight: 500 }}>
+            <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'text.primary', fontWeight: 500 }}>
               {total ? `из ${total} записей` : ''}
             </Typography>
           </Box>
@@ -613,7 +619,7 @@ export function DataTableWrapper({
                 color="inherit"
                 startIcon={<CloseIcon sx={{ fontSize: 14 }} />}
                 onClick={onClearSelection}
-                sx={{ fontSize: '0.75rem', fontWeight: 600, py: 0.2, color: '#15803d' }}
+                sx={{ fontSize: '0.75rem', fontWeight: 600, py: 0.2, color: 'text.secondary' }}
               >
                 Снять выделение
               </Button>
@@ -627,8 +633,8 @@ export function DataTableWrapper({
         <LinearProgress
           sx={{
             height: 2,
-            backgroundColor: '#e2e8f0',
-            '& .MuiLinearProgress-bar': { backgroundColor: '#0284c7' },
+            backgroundColor: 'divider',
+            '& .MuiLinearProgress-bar': { backgroundColor: 'primary.main' },
           }}
         />
       )}
@@ -639,7 +645,7 @@ export function DataTableWrapper({
           {emptyState}
         </Box>
       ) : viewMode === 'grid' && gridContent ? (
-        <Box sx={{ p: { xs: 1.5, sm: 2.5 }, flexGrow: 1, backgroundColor: '#f8fafc' }}>
+        <Box sx={{ p: { xs: 1.5, sm: 2.5 }, flexGrow: 1, backgroundColor: 'background.default' }}>
           {gridContent}
         </Box>
       ) : (
@@ -711,7 +717,7 @@ export function DataTableWrapper({
                 border: 'none',
                 '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
                   fontSize: '0.75rem',
-                  color: '#64748b',
+                  color: 'text.secondary',
                   fontWeight: 500,
                 },
                 '& .MuiTablePagination-select': {
