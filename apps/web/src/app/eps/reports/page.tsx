@@ -225,7 +225,7 @@ export default function ReportBuilderPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          selectedColumns: selectedColumnKeys,
+          selectedColumns: [],
           filters: {
             status: statusFilter || undefined,
             search: searchQuery || undefined,
@@ -246,6 +246,14 @@ export default function ReportBuilderPage() {
         setAvailableColumns(json.data.availableColumns);
         setRows(json.data.rows);
         setPage(1);
+
+        // При первой инициализации, если выбранные колонки еще не заданы, выставляем первые колонки разделов
+        setSelectedColumnKeys((prev) => {
+          if (prev.length > 0 && prev.some((k) => json.data.availableColumns.some((ac: ReportColumn) => ac.key === k))) {
+            return prev;
+          }
+          return json.data.availableColumns.slice(0, 10).map((c: ReportColumn) => c.key);
+        });
       } else {
         enqueueSnackbar(json.error || 'Ошибка загрузки данных отчета', { variant: 'error' });
       }
@@ -255,7 +263,6 @@ export default function ReportBuilderPage() {
       setLoadingData(false);
     }
   }, [
-    selectedColumnKeys,
     statusFilter,
     searchQuery,
     manufacturerFilter,

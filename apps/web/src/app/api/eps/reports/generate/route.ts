@@ -56,33 +56,15 @@ export async function POST(req: NextRequest) {
       }),
     ]);
 
-    // Build columns dictionary
-    const baseColumns = [
-      { key: 'name', name: 'Наименование оборудования', category: 'Основные реквизиты' },
-      { key: 'inventoryNumber', name: 'Инвентарный номер', category: 'Основные реквизиты' },
-      { key: 'serialNumber', name: 'Заводской (серийный) №', category: 'Основные реквизиты' },
-      { key: 'manufacturer', name: 'Производитель', category: 'Основные реквизиты' },
-      { key: 'model', name: 'Модель / Модификация', category: 'Основные реквизиты' },
-      { key: 'location', name: 'Место установки (Локация)', category: 'Основные реквизиты' },
-      { key: 'status', name: 'Текущий статус', category: 'Основные реквизиты' },
-      { key: 'commissionDate', name: 'Дата ввода в эксплуатацию', category: 'Основные реквизиты' },
-      { key: 'tags', name: 'Теги / Метки', category: 'Основные реквизиты' },
-      { key: 'createdAt', name: 'Дата регистрации', category: 'Аудит' },
-      { key: 'createdBy', name: 'Паспорт зарегистрировал', category: 'Аудит' },
-      { key: 'documentsCount', name: 'Документов (шт.)', category: 'Сводные данные' },
-      { key: 'photosCount', name: 'Фотографий (шт.)', category: 'Сводные данные' },
-      { key: 'maintenancePlansCount', name: 'Планов ТО и ППР (шт.)', category: 'Сводные данные' },
-      { key: 'sparePartsCount', name: 'Запасных частей WMS (шт.)', category: 'Сводные данные' },
-      { key: 'jiraIssuesCount', name: 'Заявок в Jira (шт.)', category: 'Сводные данные' },
-    ];
-
-    const baseKeys = new Set(baseColumns.map((c) => c.key));
-    const customColumns: { key: string; name: string; category: string; unit?: string | null; fieldType?: string }[] = [];
+    // Build columns dictionary strictly from custom sections and fields (matching Equipment Registry)
+    const reportColumns: { key: string; name: string; category: string; unit?: string | null; fieldType?: string }[] = [];
+    const seenKeys = new Set<string>();
 
     sections.forEach((sec) => {
       sec.fields.forEach((f) => {
-        if (!baseKeys.has(f.key)) {
-          customColumns.push({
+        if (!seenKeys.has(f.key)) {
+          seenKeys.add(f.key);
+          reportColumns.push({
             key: f.key,
             name: f.unit ? `${f.name} (${f.unit})` : f.name,
             category: sec.name,
@@ -94,8 +76,9 @@ export async function POST(req: NextRequest) {
     });
 
     unassignedFields.forEach((f) => {
-      if (!baseKeys.has(f.key)) {
-        customColumns.push({
+      if (!seenKeys.has(f.key)) {
+        seenKeys.add(f.key);
+        reportColumns.push({
           key: f.key,
           name: f.unit ? `${f.name} (${f.unit})` : f.name,
           category: 'Дополнительные параметры',
@@ -105,7 +88,27 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    const allAvailableColumns = [...baseColumns, ...customColumns];
+    // Дополнительные системные реквизиты (Аудит и Сводные связи)
+    const systemColumns = [
+      { key: 'status', name: 'Текущий статус', category: 'Системные реквизиты' },
+      { key: 'tags', name: 'Теги / Метки', category: 'Системные реквизиты' },
+      { key: 'createdAt', name: 'Дата регистрации', category: 'Системные реквизиты' },
+      { key: 'createdBy', name: 'Паспорт зарегистрировал', category: 'Системные реквизиты' },
+      { key: 'documentsCount', name: 'Документов (шт.)', category: 'Сводные данные' },
+      { key: 'photosCount', name: 'Фотографий (шт.)', category: 'Сводные данные' },
+      { key: 'maintenancePlansCount', name: 'Планов ТО и ППР (шт.)', category: 'Сводные данные' },
+      { key: 'sparePartsCount', name: 'Запасных частей WMS (шт.)', category: 'Сводные данные' },
+      { key: 'jiraIssuesCount', name: 'Заявок в Jira (шт.)', category: 'Сводные данные' },
+    ];
+
+    systemColumns.forEach((sc) => {
+      if (!seenKeys.has(sc.key)) {
+        seenKeys.add(sc.key);
+        reportColumns.push(sc);
+      }
+    });
+
+    const allAvailableColumns = reportColumns;
 
     // Build prisma query where filter via shared eps-query-builder
     const filterParams = new URLSearchParams();
@@ -154,20 +157,11 @@ export async function POST(req: NextRequest) {
 
     // Format rows
     const rows = items.map((item) => {
-      const customFields = (item.customFields as Record<string, any>) || {};
       const statusInfo = EQUIPMENT_STATUS_MAP[item.status] || { label: item.status };
 
       const row: Record<string, any> = {
         id: item.id,
-        name: item.name,
-        inventoryNumber: item.inventoryNumber || '—',
-        serialNumber: item.serialNumber || '—',
-        manufacturer: item.manufacturer || '—',
-        model: item.model || '—',
-        location: item.location || '—',
         status: statusInfo.label,
-        commissionDate: formatDate(item.commissionDate),
-        commissionDateRaw: item.commissionDate ? item.commissionDate.toISOString() : null,
         tags: item.tags.map((t) => t.tag.name).join(', ') || '—',
         createdAt: formatDateTime(item.createdAt),
         createdBy: item.createdBy?.displayName || 'Система',
@@ -178,8 +172,9 @@ export async function POST(req: NextRequest) {
         jiraIssuesCount: jiraCountMap.get(item.id) || 0,
       };
 
-      // Add dynamic fields mapped according to passport values
-      customColumns.forEach((c) => {
+      // Add fields mapped strictly according to passport specifications and values
+      allAvailableColumns.forEach((c) => {
+        if (row[c.key] !== undefined) return;
         const val = getEquipmentFieldValue(item, c.key);
         if (val === undefined || val === null || val === '' || val === '—') {
           row[c.key] = '—';
@@ -188,8 +183,8 @@ export async function POST(req: NextRequest) {
           row[c.key] = str ? `Класс ${str}` : '—';
         } else if (c.fieldType === 'BOOLEAN' || c.key === 'is_unique' || c.key === 'is_imported' || c.key === 'is_critical_path') {
           row[c.key] = isTruthyBoolean(val) ? 'Да' : 'Нет';
-        } else if (c.fieldType === 'DATE') {
-          row[c.key] = formatDate(val);
+        } else if (c.fieldType === 'DATE' || c.key === 'commissionDate' || c.key === 'commission_date') {
+          row[c.key] = formatDate(val || item.commissionDate);
         } else {
           row[c.key] = c.unit ? `${val} ${c.unit}` : String(val);
         }
@@ -203,7 +198,7 @@ export async function POST(req: NextRequest) {
       data: {
         total: rows.length,
         availableColumns: allAvailableColumns,
-        selectedColumns: selectedColumns.length > 0 ? selectedColumns : baseColumns.map((c) => c.key),
+        selectedColumns: selectedColumns.length > 0 ? selectedColumns : allAvailableColumns.slice(0, 10).map((c) => c.key),
         rows,
       },
     });
