@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
-import { prisma } from '@ems/database';
+import { prisma, StockTransferStatus } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
 
@@ -54,6 +54,65 @@ export async function GET(req: NextRequest) {
     let total = 0;
     let finalItems: any[] = [];
     let lowStockTotalCount = 0;
+
+    // 0. Загружаем активные перемещения со статусом IN_TRANSIT для расчета позиций в пути
+    const activeTransfersInTransit = await prisma.stockTransfer.findMany({
+      where: {
+        status: StockTransferStatus.IN_TRANSIT,
+      },
+      include: {
+        sourceWarehouse: { select: { id: true, name: true, code: true } },
+        targetWarehouse: { select: { id: true, name: true, code: true } },
+        items: true,
+      },
+      orderBy: { dispatchedAt: 'desc' },
+    });
+
+    // Карты транзита:
+    // inTransitInMap: targetWarehouseId__nomenclatureId -> { quantity, transfers: [] }
+    // inTransitOutMap: sourceWarehouseId__nomenclatureId -> { quantity, transfers: [] }
+    // globalInTransitMap: nomenclatureId -> { quantity, transfers: [] }
+    const inTransitInMap = new Map<string, { quantity: number; transfers: any[] }>();
+    const inTransitOutMap = new Map<string, { quantity: number; transfers: any[] }>();
+    const globalInTransitMap = new Map<string, { quantity: number; transfers: any[] }>();
+
+    for (const transfer of activeTransfersInTransit) {
+      for (const item of transfer.items) {
+        const qty = Number(item.quantity);
+        const inKey = `${transfer.targetWarehouseId}__${item.nomenclatureId}`;
+        const outKey = `${transfer.sourceWarehouseId}__${item.nomenclatureId}`;
+        const transferInfo = {
+          transferId: transfer.id,
+          transferNumber: transfer.transferNumber,
+          sourceWarehouseId: transfer.sourceWarehouseId,
+          sourceWarehouseName: transfer.sourceWarehouse.name,
+          sourceWarehouseCode: transfer.sourceWarehouse.code,
+          targetWarehouseId: transfer.targetWarehouseId,
+          targetWarehouseName: transfer.targetWarehouse.name,
+          targetWarehouseCode: transfer.targetWarehouse.code,
+          quantity: qty,
+          dispatchedAt: transfer.dispatchedAt,
+        };
+
+        // Входящие к целевому складу
+        const inEntry = inTransitInMap.get(inKey) || { quantity: 0, transfers: [] };
+        inEntry.quantity += qty;
+        inEntry.transfers.push(transferInfo);
+        inTransitInMap.set(inKey, inEntry);
+
+        // Исходящие со склада-отправителя
+        const outEntry = inTransitOutMap.get(outKey) || { quantity: 0, transfers: [] };
+        outEntry.quantity += qty;
+        outEntry.transfers.push(transferInfo);
+        inTransitOutMap.set(outKey, outEntry);
+
+        // Глобально по номенклатуре
+        const globEntry = globalInTransitMap.get(item.nomenclatureId) || { quantity: 0, transfers: [] };
+        globEntry.quantity += qty;
+        globEntry.transfers.push(transferInfo);
+        globalInTransitMap.set(item.nomenclatureId, globEntry);
+      }
+    }
 
     // 1. Поиск номенклатур с установленным неснижаемым порогом (minStock > 0)
     const nomenclatureWhere: any = {
@@ -313,10 +372,37 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // Обогащаем результаты данными о транзите (позициях в пути)
+    const enrichedFinalItems = finalItems.map((item) => {
+      const inKey = `${item.warehouseId}__${item.nomenclatureId}`;
+      const outKey = `${item.warehouseId}__${item.nomenclatureId}`;
+
+      const transitIn = inTransitInMap.get(inKey) || { quantity: 0, transfers: [] };
+      const transitOut = inTransitOutMap.get(outKey) || { quantity: 0, transfers: [] };
+      const globalTransit = globalInTransitMap.get(item.nomenclatureId) || { quantity: 0, transfers: [] };
+
+      const inTransitIn = transitIn.quantity;
+      const inTransitOut = transitOut.quantity;
+      const globalInTransit = globalTransit.quantity;
+      const expectedTotal = item.quantity + inTransitIn;
+
+      return {
+        ...item,
+        inTransitIn,
+        inTransitOut,
+        globalInTransit,
+        expectedTotal,
+        transfersInTransit: [
+          ...transitIn.transfers.map((t) => ({ ...t, direction: 'INCOMING' })),
+          ...transitOut.transfers.map((t) => ({ ...t, direction: 'OUTGOING' })),
+        ],
+      };
+    });
+
     return NextResponse.json({
       success: true,
       data: {
-        items: finalItems,
+        items: enrichedFinalItems,
         total,
         page,
         pageSize,

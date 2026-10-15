@@ -52,6 +52,23 @@ export interface StockDetailData {
   category: string;
   categoryId?: string | null;
   quantity: number;
+  inTransitIn?: number;
+  inTransitOut?: number;
+  globalInTransit?: number;
+  expectedTotal?: number;
+  transfersInTransit?: Array<{
+    transferId: string;
+    transferNumber: string;
+    sourceWarehouseId: string;
+    sourceWarehouseName: string;
+    sourceWarehouseCode: string;
+    targetWarehouseId: string;
+    targetWarehouseName: string;
+    targetWarehouseCode: string;
+    quantity: number;
+    dispatchedAt: string;
+    direction: 'INCOMING' | 'OUTGOING';
+  }>;
   totalStock?: number;
   minStock: number | string;
   isLowStock: boolean;
@@ -319,6 +336,52 @@ export default function StockDetailDrawer({
                   />
                 </Box>
               </Box>
+            )}
+
+            {/* In-Transit Alert Card (if any positions in transit) */}
+            {((stockItem.inTransitIn && stockItem.inTransitIn > 0) || (stockItem.inTransitOut && stockItem.inTransitOut > 0)) && (
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2,
+                  borderRadius: '10px',
+                  border: '1px solid',
+                  borderColor: 'primary.light',
+                  bgcolor: 'action.hover',
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <SwapHorizIcon color="primary" sx={{ fontSize: 20 }} />
+                  <Typography variant="subtitle2" fontWeight={700} color="primary.main">
+                    Позиции в пути (Межскладской транзит)
+                  </Typography>
+                </Box>
+                {Boolean(stockItem.inTransitIn && stockItem.inTransitIn > 0) && (
+                  <Box sx={{ mb: 1 }}>
+                    <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
+                      Ожидается поступление: <strong>+{stockItem.inTransitIn} {stockItem.unit}</strong>
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Ожидаемый баланс после приемки: <strong>{stockItem.expectedTotal} {stockItem.unit}</strong>
+                    </Typography>
+                  </Box>
+                )}
+                {Boolean(stockItem.inTransitOut && stockItem.inTransitOut > 0) && (
+                  <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
+                    Отгружено с этого склада (в пути): <strong>-{stockItem.inTransitOut} {stockItem.unit}</strong>
+                  </Typography>
+                )}
+
+                {stockItem.transfersInTransit && stockItem.transfersInTransit.length > 0 && (
+                  <Stack spacing={0.5} sx={{ mt: 1, pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
+                    {stockItem.transfersInTransit.map((t, idx) => (
+                      <Typography key={idx} variant="caption" sx={{ color: 'text.primary', display: 'block' }}>
+                        • <strong>{t.transferNumber}</strong>: {t.quantity} {stockItem.unit} ({t.direction === 'INCOMING' ? `из «${t.sourceWarehouseName}»` : `на склад «${t.targetWarehouseName}»`})
+                      </Typography>
+                    ))}
+                  </Stack>
+                )}
+              </Paper>
             )}
 
             {/* Location & Warehouse Info */}

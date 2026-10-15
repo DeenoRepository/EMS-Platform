@@ -85,6 +85,23 @@ interface StockRow {
   unit: string;
   category: string;
   quantity: number;
+  inTransitIn?: number;
+  inTransitOut?: number;
+  globalInTransit?: number;
+  expectedTotal?: number;
+  transfersInTransit?: Array<{
+    transferId: string;
+    transferNumber: string;
+    sourceWarehouseId: string;
+    sourceWarehouseName: string;
+    sourceWarehouseCode: string;
+    targetWarehouseId: string;
+    targetWarehouseName: string;
+    targetWarehouseCode: string;
+    quantity: number;
+    dispatchedAt: string;
+    direction: 'INCOMING' | 'OUTGOING';
+  }>;
   totalStock?: number;
   minStock: number | string;
   isLowStock: boolean;
@@ -124,6 +141,7 @@ const STOCK_COLUMNS: TableColumnOption[] = [
   { id: 'name', label: 'Наименование ТМЦ', defaultVisible: true, required: true },
   { id: 'category', label: 'Товарная группа / Категория', defaultVisible: true },
   { id: 'quantity', label: 'Фактический остаток', defaultVisible: true },
+  { id: 'inTransit', label: 'В пути (Транзит)', defaultVisible: true },
   { id: 'minQuantity', label: 'Неснижаемый нормативный остаток', defaultVisible: true },
   { id: 'status', label: 'Статус обеспеченности', defaultVisible: true },
   { id: 'equipment', label: 'Совместимое оборудование', defaultVisible: true },
@@ -548,6 +566,10 @@ function WmsStockContent() {
           aVal = Number(a.quantity) || 0;
           bVal = Number(b.quantity) || 0;
           break;
+        case 'inTransit':
+          aVal = Number(a.inTransitIn || 0);
+          bVal = Number(b.inTransitIn || 0);
+          break;
         case 'minQuantity':
           aVal = Number(a.minStock) || 0;
           bVal = Number(b.minStock) || 0;
@@ -703,9 +725,16 @@ function WmsStockContent() {
                     </Typography>
 
                     <Box sx={{ mt: 1.5, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-                      <Typography variant="caption" color="text.secondary">
-                        Остаток:
-                      </Typography>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          Остаток:
+                        </Typography>
+                        {Boolean(row.inTransitIn && row.inTransitIn > 0) && (
+                          <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 700 }}>
+                            + {row.inTransitIn} в пути 🚚
+                          </Typography>
+                        )}
+                      </Box>
                       <Typography variant="subtitle1" fontWeight={800} color={row.isLowStock ? 'warning.main' : 'primary.main'}>
                         {row.quantity} {row.unit}
                       </Typography>
@@ -964,6 +993,18 @@ function WmsStockContent() {
                 </TableCell>
               )}
 
+              {visibleColumns.includes('inTransit') && (
+                <TableCell align="center" sx={{ minWidth: 140 }}>
+                  <TableSortLabel
+                    active={sortField === 'inTransit'}
+                    direction={sortField === 'inTransit' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('inTransit')}
+                  >
+                    В пути (Транзит)
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
               {visibleColumns.includes('minQuantity') && (
                 <TableCell align="center" sx={{ minWidth: 120 }}>
                   <TableSortLabel
@@ -1178,6 +1219,63 @@ function WmsStockContent() {
                       >
                         {row.quantity} {row.unit}
                       </Typography>
+                      {Boolean(row.inTransitIn && row.inTransitIn > 0) && (
+                        <Typography variant="caption" sx={{ display: 'block', color: 'primary.main', fontSize: '0.6875rem', fontWeight: 600 }}>
+                          + {row.inTransitIn} {row.unit} в пути
+                        </Typography>
+                      )}
+                    </TableCell>
+                  )}
+
+                  {visibleColumns.includes('inTransit') && (
+                    <TableCell align="center">
+                      {row.inTransitIn && row.inTransitIn > 0 ? (
+                        <Tooltip
+                          title={
+                            <Box sx={{ p: 0.5 }}>
+                              <Typography variant="caption" fontWeight={700} display="block">
+                                Позиции в пути на этот склад:
+                              </Typography>
+                              {row.transfersInTransit
+                                ?.filter((t) => t.direction === 'INCOMING')
+                                .map((t, idx) => (
+                                  <Typography key={idx} variant="caption" display="block">
+                                    • {t.transferNumber}: {t.quantity} {row.unit} со склада «{t.sourceWarehouseName}»
+                                  </Typography>
+                                ))}
+                            </Box>
+                          }
+                          arrow
+                        >
+                          <Chip
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                            label={`+${row.inTransitIn} ${row.unit}`}
+                            sx={{ fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer' }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push('/wms/operations?tab=transfers');
+                            }}
+                          />
+                        </Tooltip>
+                      ) : row.inTransitOut && row.inTransitOut > 0 ? (
+                        <Tooltip
+                          title={`Отправлено с этого склада в пути: ${row.inTransitOut} ${row.unit}`}
+                          arrow
+                        >
+                          <Chip
+                            size="small"
+                            variant="outlined"
+                            label={`-${row.inTransitOut} ${row.unit} (отпр.)`}
+                            sx={{ fontWeight: 600, fontSize: '0.6875rem', color: 'text.secondary', borderColor: 'divider' }}
+                          />
+                        </Tooltip>
+                      ) : (
+                        <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+                          —
+                        </Typography>
+                      )}
                     </TableCell>
                   )}
 
