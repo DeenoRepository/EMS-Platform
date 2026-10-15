@@ -83,87 +83,75 @@ export function EquipmentColumnFiltersRow({
     <TableRow sx={{ bgcolor: 'action.hover' }}>
       <TableCell padding="checkbox" sx={{ pl: 2 }} />
 
-      {visibleColumns.includes('completeness') && (
-        <TableCell sx={{ p: 0.75, width: 44, minWidth: 44 }}>
-          <TextField
-            select
-            size="small"
-            value={filters.completeness || ''}
-            onChange={(e) => onChangeFilter('completeness', e.target.value)}
-            sx={inputSx}
-          >
-            <MenuItem value="" sx={{ fontSize: '0.75rem' }}>Все</MenuItem>
-            <MenuItem value="incomplete" sx={{ fontSize: '0.75rem' }}>Не все (!)</MenuItem>
-            <MenuItem value="complete" sx={{ fontSize: '0.75rem' }}>Все</MenuItem>
-          </TextField>
-        </TableCell>
-      )}
+      {columns.map((col) => {
+        if (!visibleColumns.includes(col.id)) return null;
 
-      {visibleColumns.includes('inventoryNumber') && (
-        <TableCell sx={{ p: 0.75 }}>
-          <DebouncedColumnInput placeholder="Инв. №" value={filters.inventoryNumber} onChange={(v) => onChangeFilter('inventoryNumber', v)} />
-        </TableCell>
-      )}
+        if (col.id === 'completeness' && visibleColumns.includes('completeness')) {
+          return (
+            <TableCell key={col.id} sx={{ p: 0.75, width: 44, minWidth: 44 }}>
+              <TextField
+                select
+                size="small"
+                value={filters.completeness || ''}
+                onChange={(e) => onChangeFilter('completeness', e.target.value)}
+                sx={inputSx}
+              >
+                <MenuItem value="" sx={{ fontSize: '0.75rem' }}>Все</MenuItem>
+                <MenuItem value="incomplete" sx={{ fontSize: '0.75rem' }}>Не все (!)</MenuItem>
+                <MenuItem value="complete" sx={{ fontSize: '0.75rem' }}>Все</MenuItem>
+              </TextField>
+            </TableCell>
+          );
+        }
 
-      {visibleColumns.includes('name') && (
-        <TableCell sx={{ p: 0.75 }}>
-          <DebouncedColumnInput placeholder="Поиск наименования..." value={filters.name} onChange={(v) => onChangeFilter('name', v)} />
-        </TableCell>
-      )}
+        if (col.id === 'status') {
+          return (
+            <TableCell key={col.id} sx={{ p: 0.75 }}>
+              <TextField
+                select
+                size="small"
+                value={filters.status || ''}
+                onChange={(e) => onChangeFilter('status', e.target.value)}
+                sx={inputSx}
+              >
+                <MenuItem value="" sx={{ fontSize: '0.75rem' }}>Все</MenuItem>
+                {Object.entries(EQUIPMENT_STATUS_MAP).map(([k, v]) => (
+                  <MenuItem key={k} value={k} sx={{ fontSize: '0.75rem' }}>{v.label}</MenuItem>
+                ))}
+              </TextField>
+            </TableCell>
+          );
+        }
 
-      {/* Динамические фильтры колонок, настроенных в разделах */}
-      {columns && columns.length > 0
-        ? columns
-            .filter((col) => col.id !== 'completeness' && col.id !== 'inventoryNumber' && col.id !== 'name')
-            .map((col) => {
-              if (!visibleColumns.includes(col.id)) return null;
-              if (col.id === 'status') {
-                return (
-                  <TableCell key={col.id} sx={{ p: 0.75 }}>
-                    <TextField
-                      select
-                      size="small"
-                      value={filters.status || ''}
-                      onChange={(e) => onChangeFilter('status', e.target.value)}
-                      sx={inputSx}
-                    >
-                      <MenuItem value="" sx={{ fontSize: '0.75rem' }}>Все</MenuItem>
-                      {Object.entries(EQUIPMENT_STATUS_MAP).map(([k, v]) => (
-                        <MenuItem key={k} value={k} sx={{ fontSize: '0.75rem' }}>{v.label}</MenuItem>
-                      ))}
-                    </TextField>
-                  </TableCell>
-                );
-              }
-              if (col.id === 'criticality') {
-                return (
-                  <TableCell key={col.id} sx={{ p: 0.75 }}>
-                    <TextField
-                      select
-                      size="small"
-                      value={filters.criticality || ''}
-                      onChange={(e) => onChangeFilter('criticality', e.target.value)}
-                      sx={inputSx}
-                    >
-                      <MenuItem value="" sx={{ fontSize: '0.75rem' }}>Все</MenuItem>
-                      <MenuItem value="A" sx={{ fontSize: '0.75rem' }}>A</MenuItem>
-                      <MenuItem value="B" sx={{ fontSize: '0.75rem' }}>B</MenuItem>
-                      <MenuItem value="C" sx={{ fontSize: '0.75rem' }}>C</MenuItem>
-                    </TextField>
-                  </TableCell>
-                );
-              }
-              return (
-                <TableCell key={col.id} sx={{ p: 0.75 }}>
-                  <DebouncedColumnInput
-                    placeholder={col.label}
-                    value={(filters as any)[col.id] || ''}
-                    onChange={(v) => onChangeFilter(col.id as any, v)}
-                  />
-                </TableCell>
-              );
-            })
-        : null}
+        if (col.id === 'criticality') {
+          return (
+            <TableCell key={col.id} sx={{ p: 0.75 }}>
+              <TextField
+                select
+                size="small"
+                value={filters.criticality || ''}
+                onChange={(e) => onChangeFilter('criticality', e.target.value)}
+                sx={inputSx}
+              >
+                <MenuItem value="" sx={{ fontSize: '0.75rem' }}>Все</MenuItem>
+                <MenuItem value="A" sx={{ fontSize: '0.75rem' }}>A</MenuItem>
+                <MenuItem value="B" sx={{ fontSize: '0.75rem' }}>B</MenuItem>
+                <MenuItem value="C" sx={{ fontSize: '0.75rem' }}>C</MenuItem>
+              </TextField>
+            </TableCell>
+          );
+        }
+
+        return (
+          <TableCell key={col.id} sx={{ p: 0.75 }}>
+            <DebouncedColumnInput
+              placeholder={col.label}
+              value={(filters as any)[col.id] || ''}
+              onChange={(v) => onChangeFilter(col.id as any, v)}
+            />
+          </TableCell>
+        );
+      })}
     </TableRow>
   );
 }

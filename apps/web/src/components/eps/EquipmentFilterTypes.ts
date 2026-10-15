@@ -33,6 +33,7 @@ export interface EquipmentFilters {
   createdAtTo?: string;
   updatedAtFrom?: string;
   updatedAtTo?: string;
+  [customFieldKey: string]: string | undefined;
 }
 
 export const DEFAULT_EQUIPMENT_FILTERS: EquipmentFilters = {

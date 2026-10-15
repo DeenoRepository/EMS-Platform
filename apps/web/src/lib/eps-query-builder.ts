@@ -253,6 +253,32 @@ function applyCustomFieldsFilters(and: Prisma.EquipmentWhereInput[], params: URL
     and.push({ customFields: { path: ['responsible_person_name'], string_contains: respPerson } });
   }
 
+  // Handle any arbitrary dynamic custom fields passed from table column filters
+  const handledKeys = new Set([
+    'page', 'pageSize', 'limit', 'sortBy', 'sortField', 'sortOrder', 'sortDirection',
+    'search', 'inventoryNumber', 'name', 'serialNumber', 'manufacturer', 'model', 'location',
+    'decimalNumber', 'decimal_number', 'completeness', 'status', 'tagId',
+    'documentsFilter', 'sparePartsFilter', 'commissionDateFrom', 'commissionDateTo',
+    'createdAtFrom', 'createdAtTo', 'updatedAtFrom', 'updatedAtTo', 'criticality',
+    'cleanRoom', 'clean_room_class', 'okofCode', 'okof_code', 'okpd2Code', 'okpd2_code',
+    'procCode', 'process_classifier_code', 'maintPeriodicity', 'maintenance_periodicity',
+    'respPerson', 'responsible_person_name', 'eqGroup', 'equipment_group', 'department',
+    'service_group', 'eqType', 'equipment_type', 'equipment_kind',
+    'isCriticalPath', 'is_critical_path', 'isUnique', 'is_unique', 'isImported', 'is_imported',
+    'wearMin', 'wearMax', 'actual_wear_percentage',
+    'calibrationIntervalMin', 'calibrationIntervalMax', 'calibration_interval',
+  ]);
+
+  for (const [key, val] of params.entries()) {
+    if (!handledKeys.has(key) && val?.trim()) {
+      and.push({
+        customFields: {
+          path: [key],
+          string_contains: val.trim(),
+        },
+      });
+    }
+  }
 }
 
 /**

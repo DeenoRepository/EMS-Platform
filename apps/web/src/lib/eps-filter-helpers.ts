@@ -209,7 +209,7 @@ export function buildEquipmentFilterSearchParams(
   if (sortBy) params.append('sortBy', sortBy);
   if (sortOrder) params.append('sortOrder', sortOrder);
 
-  const filterEntries = Object.entries(filters) as [keyof EquipmentFilters, string | undefined][];
+  const filterEntries = Object.entries(filters) as [string, string | undefined][];
   for (const [key, val] of filterEntries) {
     if (val !== undefined && val !== '' && val !== 'all') {
       params.append(key, val);
@@ -270,6 +270,27 @@ export function getActiveEquipmentFilterBadges(
   appendClassifierBadges(badges, f);
   appendOperationalBadges(badges, f);
   appendDateBadges(badges, f);
+
+  // Dynamic custom fields badges
+  const knownKeys = new Set([
+    'completeness', 'search', 'inventoryNumber', 'name', 'serialNumber', 'manufacturer',
+    'model', 'location', 'status', 'tagId', 'criticality', 'wearMin', 'wearMax',
+    'calibrationIntervalMin', 'calibrationIntervalMax', 'eqGroup', 'eqType', 'respPerson',
+    'okofCode', 'okpd2Code', 'procCode', 'maintPeriodicity', 'cleanRoom', 'isCriticalPath',
+    'isUnique', 'isImported', 'documentsFilter', 'sparePartsFilter', 'commissionDateFrom',
+    'commissionDateTo', 'createdAtFrom', 'createdAtTo', 'updatedAtFrom', 'updatedAtTo',
+  ]);
+
+  for (const [key, val] of Object.entries(f)) {
+    if (!knownKeys.has(key) && val !== undefined && val !== '' && val !== 'all') {
+      badges.push({
+        key: key as any,
+        keysToReset: [key as any],
+        label: key,
+        value: val,
+      });
+    }
+  }
 
   return badges;
 }

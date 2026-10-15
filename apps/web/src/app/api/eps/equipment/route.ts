@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     const broadFilterIds = await resolveJsonFilters(searchParams);
     const effectiveWhere = broadFilterIds
       ? { AND: [where, { id: { in: broadFilterIds } }] }
-      : (searchParams.get('search') ? buildEquipmentWhereInput(searchParams) : where);
+      : where;
     const orderBy = buildEquipmentOrderBy(searchParams);
 
     const [total, items, statusGroup] = await Promise.all([
