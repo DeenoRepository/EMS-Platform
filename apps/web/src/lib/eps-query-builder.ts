@@ -82,11 +82,26 @@ function applyTextSearchFilters(and: Prisma.EquipmentWhereInput[], params: URLSe
     });
   }
 
-  const textFields = ['inventoryNumber', 'name', 'serialNumber', 'manufacturer', 'model', 'location'] as const;
-  for (const field of textFields) {
-    const val = params.get(field)?.trim();
+  const textFields = [
+    { param: 'inventoryNumber', col: 'inventoryNumber', jsonAliases: ['inventory_number', 'inv_number'] },
+    { param: 'name', col: 'name', jsonAliases: ['equipment_name', 'naimenovanie'] },
+    { param: 'serialNumber', col: 'serialNumber', jsonAliases: ['serial_number', 'zavodskoy_nomer', 'zavodskoy_no'] },
+    { param: 'manufacturer', col: 'manufacturer', jsonAliases: ['proizvoditel', 'brand'] },
+    { param: 'model', col: 'model', jsonAliases: ['marka', 'modifikatsiya'] },
+    { param: 'location', col: 'location', jsonAliases: ['raspolozhenie', 'mesto_ustanovki'] },
+  ] as const;
+
+  for (const { param, col, jsonAliases } of textFields) {
+    const val = (params.get(param) || jsonAliases.map((a) => params.get(a)).find(Boolean))?.trim();
     if (val) {
-      and.push({ [field]: { contains: val, mode: 'insensitive' } });
+      and.push({
+        OR: [
+          { [col]: { contains: val, mode: 'insensitive' } },
+          ...jsonAliases.map((alias) => ({
+            customFields: { path: [alias], string_contains: val },
+          })),
+        ],
+      });
     }
   }
 
@@ -198,7 +213,7 @@ function applyCustomFieldsFilters(and: Prisma.EquipmentWhereInput[], params: URL
     });
   }
 
-  const cleanRoom = params.get('cleanRoom')?.trim();
+  const cleanRoom = (params.get('cleanRoom') || params.get('clean_room_class'))?.trim();
   if (cleanRoom) {
     and.push({
       customFields: {
@@ -208,7 +223,7 @@ function applyCustomFieldsFilters(and: Prisma.EquipmentWhereInput[], params: URL
     });
   }
 
-  const okofCode = params.get('okofCode')?.trim();
+  const okofCode = (params.get('okofCode') || params.get('okof_code'))?.trim();
   if (okofCode) {
     and.push({
       customFields: {
@@ -218,7 +233,7 @@ function applyCustomFieldsFilters(and: Prisma.EquipmentWhereInput[], params: URL
     });
   }
 
-  const okpd2Code = params.get('okpd2Code')?.trim();
+  const okpd2Code = (params.get('okpd2Code') || params.get('okpd2_code'))?.trim();
   if (okpd2Code) {
     and.push({
       customFields: {
@@ -228,7 +243,7 @@ function applyCustomFieldsFilters(and: Prisma.EquipmentWhereInput[], params: URL
     });
   }
 
-  const procCode = params.get('procCode')?.trim();
+  const procCode = (params.get('procCode') || params.get('process_classifier_code'))?.trim();
   if (procCode) {
     and.push({
       customFields: {
@@ -267,15 +282,20 @@ function applyCustomFieldsFilters(and: Prisma.EquipmentWhereInput[], params: URL
     'isCriticalPath', 'is_critical_path', 'isUnique', 'is_unique', 'isImported', 'is_imported',
     'wearMin', 'wearMax', 'actual_wear_percentage',
     'calibrationIntervalMin', 'calibrationIntervalMax', 'calibration_interval',
+    'inventory_number', 'inv_number', 'equipment_name', 'naimenovanie',
+    'serial_number', 'zavodskoy_nomer', 'zavodskoy_no', 'proizvoditel', 'brand',
+    'marka', 'modifikatsiya', 'raspolozhenie', 'mesto_ustanovki',
   ]);
 
   for (const [key, val] of params.entries()) {
     if (!handledKeys.has(key) && val?.trim()) {
+      const trimmed = val.trim();
       and.push({
-        customFields: {
-          path: [key],
-          string_contains: val.trim(),
-        },
+        OR: [
+          { customFields: { path: [key], string_contains: trimmed } },
+          { customFields: { path: [key], equals: trimmed } },
+          { customFields: { path: [key], equals: Number(trimmed) || undefined } },
+        ].filter((c) => Object.values(c.customFields).every((v) => v !== undefined)),
       });
     }
   }
@@ -306,9 +326,9 @@ function applyClassifierAndBooleanFilters(and: Prisma.EquipmentWhereInput[], par
     });
   }
 
-  applyBooleanField(and, 'is_critical_path', params.get('isCriticalPath'));
-  applyBooleanField(and, 'is_unique', params.get('isUnique'));
-  applyBooleanField(and, 'is_imported', params.get('isImported'));
+  applyBooleanField(and, 'is_critical_path', params.get('isCriticalPath') || params.get('is_critical_path'));
+  applyBooleanField(and, 'is_unique', params.get('isUnique') || params.get('is_unique'));
+  applyBooleanField(and, 'is_imported', params.get('isImported') || params.get('is_imported'));
 }
 
 function applyBooleanField(and: Prisma.EquipmentWhereInput[], fieldKey: string, val?: string | null): void {
