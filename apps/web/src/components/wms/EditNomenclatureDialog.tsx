@@ -11,7 +11,9 @@ import {
   Paper,
 } from '@mui/material';
 import { useSnackbar } from 'notistack';
-import { FormDialog } from '@/components/ui';
+import { FormDialog, ConfirmDialog } from '@/components/ui';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import { Button } from '@mui/material';
 
 interface CategoryOption {
   id: string;
@@ -28,12 +30,14 @@ export interface EditNomenclatureItem {
   categoryId?: string | null;
   minStock?: number | string | null;
   description?: string | null;
+  quantity?: number;
+  totalStock?: number;
 }
 
 interface EditNomenclatureDialogProps {
   open: boolean;
   onClose: () => void;
-  onSaved: (updatedItem: any) => void;
+  onSaved: (updatedItem?: any) => void;
   item: EditNomenclatureItem | null;
 }
 
@@ -64,6 +68,8 @@ export default function EditNomenclatureDialog({
   const [description, setDescription] = useState('');
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (open && item) {
@@ -129,17 +135,53 @@ export default function EditNomenclatureDialog({
     }
   };
 
+  const handleDelete = async () => {
+    const targetId = item?.nomenclatureId || item?.id;
+    if (!targetId) return;
+
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/wms/nomenclature/${targetId}`, {
+        method: 'DELETE',
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        enqueueSnackbar(json.message || 'Номенклатура успешно удалена', { variant: 'success' });
+        setIsDeleteDialogOpen(false);
+        onSaved();
+        onClose();
+      } else {
+        enqueueSnackbar(json.error || 'Ошибка при удалении номенклатуры', { variant: 'error' });
+      }
+    } catch {
+      enqueueSnackbar('Ошибка сети при удалении', { variant: 'error' });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
-    <FormDialog
-      open={open}
-      onClose={onClose}
-      title="Редактирование карточки ТМЦ"
-      subtitle="Изменение параметров номенклатурной позиции, модели и нормативов"
-      submitLabel="Сохранить изменения"
-      loading={isSubmitting}
-      onSubmit={handleSubmit}
-      maxWidth="sm"
-    >
+    <>
+      <FormDialog
+        open={open}
+        onClose={onClose}
+        title="Редактирование карточки ТМЦ"
+        subtitle="Изменение параметров номенклатурной позиции, модели и нормативов"
+        submitLabel="Сохранить изменения"
+        loading={isSubmitting}
+        onSubmit={handleSubmit}
+        maxWidth="sm"
+        actions={
+          <Button
+            color="error"
+            startIcon={<DeleteOutlineIcon />}
+            onClick={() => setIsDeleteDialogOpen(true)}
+            sx={{ mr: 'auto', fontWeight: 600 }}
+          >
+            Удалить позицию
+          </Button>
+        }
+      >
       <Stack spacing={2.25} sx={{ pt: 0.5 }}>
         {/* Наименование */}
         <Box>
@@ -246,5 +288,18 @@ export default function EditNomenclatureDialog({
         </Box>
       </Stack>
     </FormDialog>
+
+    <ConfirmDialog
+      open={isDeleteDialogOpen}
+      title="Удаление номенклатуры из справочника"
+      message={`Вы уверены, что хотите удалить позицию "${item?.name || ''}"? Позиция будет снята с учета и исключена из справочников ТМЦ.`}
+      confirmText="Удалить"
+      cancelText="Отмена"
+      variant="danger"
+      loading={isDeleting}
+      onConfirm={handleDelete}
+      onClose={() => setIsDeleteDialogOpen(false)}
+    />
+  </>
   );
 }

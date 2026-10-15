@@ -119,3 +119,72 @@ export async function PUT(
     return NextResponse.json({ success: false, error: 'Ошибка при сохранении изменений', details: message }, { status: 500 });
   }
 }
+
+// DELETE /api/wms/nomenclature/[id] - Удаление номенклатуры
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const user = await getCurrentUser(req);
+    if (!user) return unauthorizedResponse();
+    if (!hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE) && !user.roles.includes('admin')) {
+      return forbiddenResponse();
+    }
+
+    const nomenclature = await prisma.nomenclature.findUnique({
+      where: { id: params.id },
+      include: {
+        stockItems: true,
+      },
+    });
+
+    if (!nomenclature) {
+      return NextResponse.json({ success: false, error: 'Номенклатура не найдена' }, { status: 404 });
+    }
+
+    const currentTotalStock = nomenclature.stockItems.reduce((acc, si) => acc + Number(si.quantity), 0);
+    if (currentTotalStock > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Нельзя удалить номенклатуру с ненулевым фактическим остатком (${currentTotalStock} ${nomenclature.unit}). Сначала выполните списание или расход со склада.`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Мягкое удаление (Soft Delete)
+    await prisma.nomenclature.update({
+      where: { id: params.id },
+      data: {
+        deletedAt: new Date(),
+      },
+    });
+
+    // Удаляем пустые нулевые строки из StockItem, чтобы не засорять реестр
+    await prisma.stockItem.deleteMany({
+      where: { nomenclatureId: params.id, quantity: 0 },
+    });
+
+    await logAuditEvent({
+      userId: user.userId,
+      action: 'DELETE',
+      entityType: 'Nomenclature',
+      entityId: params.id,
+      changes: {
+        deletedName: nomenclature.name,
+        article: nomenclature.article,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `Номенклатура "${nomenclature.name}" успешно удалена из справочника`,
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Ошибка удаления номенклатуры:', message);
+    return NextResponse.json({ success: false, error: 'Ошибка при удалении номенклатуры', details: message }, { status: 500 });
+  }
+}
