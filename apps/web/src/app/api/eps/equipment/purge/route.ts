@@ -84,13 +84,6 @@ export async function DELETE(req: NextRequest) {
       prisma.equipment.count(),
     ]);
 
-    for (const doc of docs) {
-      if (doc.filePath) deleteFile(doc.filePath);
-    }
-    for (const photo of photos) {
-      if (photo.filePath) deleteFile(photo.filePath);
-    }
-
     // 2. Атомарное каскадное удаление всех данных оборудования в транзакции
     await prisma.$transaction(async (tx) => {
       await tx.equipmentTag.deleteMany();
@@ -114,7 +107,15 @@ export async function DELETE(req: NextRequest) {
       await tx.equipment.deleteMany();
     });
 
-    // 3. Запись в системный журнал аудита
+    // 3. Удаление физических файлов с диска только после успешной фиксации транзакции БД
+    for (const doc of docs) {
+      if (doc.filePath) deleteFile(doc.filePath);
+    }
+    for (const photo of photos) {
+      if (photo.filePath) deleteFile(photo.filePath);
+    }
+
+    // 4. Запись в системный журнал аудита
     await logAuditEvent({
       userId: user.userId,
       action: 'DELETE',

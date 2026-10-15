@@ -19,11 +19,16 @@ export async function GET(req: NextRequest) {
     const whereParams = new URLSearchParams(searchParams);
     whereParams.delete('respPerson');
     whereParams.delete('responsible_person_name');
+    whereParams.delete('search');
+    whereParams.delete('wearMin');
+    whereParams.delete('wearMax');
+    whereParams.delete('calibrationIntervalMin');
+    whereParams.delete('calibrationIntervalMax');
     const where = buildEquipmentWhereInput(whereParams);
     const broadFilterIds = await resolveJsonFilters(searchParams);
     const effectiveWhere = broadFilterIds
       ? { AND: [where, { id: { in: broadFilterIds } }] }
-      : where;
+      : (searchParams.get('search') ? buildEquipmentWhereInput(searchParams) : where);
     const orderBy = buildEquipmentOrderBy(searchParams);
 
     const [total, items, statusGroup] = await Promise.all([

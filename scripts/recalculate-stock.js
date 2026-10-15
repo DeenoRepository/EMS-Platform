@@ -37,8 +37,29 @@ async function main() {
       };
 
       const qty = Number(item.quantity);
-      if (op.type === 'RECEIPT' || op.type === 'TRANSFER') {
+      if (op.type === 'RECEIPT') {
         current.quantity += qty;
+      } else if (op.type === 'TRANSFER') {
+        const isIncomingTransfer = op.counterparty?.startsWith('Склад-отправитель:') || op.comment?.startsWith('Принято по межскладскому перемещению');
+        if (isIncomingTransfer) {
+          current.quantity += qty;
+        } else {
+          current.quantity = Math.max(0, current.quantity - qty);
+          const targetIdMatch = op.comment?.match(/Перемещение на склад ID ([a-zA-Z0-9_-]+)/);
+          if (targetIdMatch && targetIdMatch[1]) {
+            const targetWarehouseId = targetIdMatch[1];
+            const targetKey = `${targetWarehouseId}__${item.nomenclatureId}`;
+            const targetCurrent = balances.get(targetKey) || {
+              warehouseId: targetWarehouseId,
+              warehouseName: targetWarehouseId,
+              nomenclatureId: item.nomenclatureId,
+              nomenclatureName: item.nomenclature?.name || item.nomenclatureId,
+              quantity: 0,
+            };
+            targetCurrent.quantity += qty;
+            balances.set(targetKey, targetCurrent);
+          }
+        }
       } else if (op.type === 'ISSUE' || op.type === 'ISSUE_EMPLOYEE' || op.type === 'ISSUE_WRITE_OFF') {
         current.quantity = Math.max(0, current.quantity - qty);
       } else if (op.type === 'ADJUSTMENT') {

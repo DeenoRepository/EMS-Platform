@@ -3,14 +3,18 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission } from '@ems/auth';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 5, windowMs: 60 * 1000, prefix: 'wms-stock-recalculate' });
+  if (rateLimitError) return rateLimitError;
+
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.WMS_OPERATIONS_CREATE) && !user.roles.includes('admin')) {
+    if (!hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE) && !user.roles.includes('admin') && !user.roles.includes('administrator')) {
       return forbiddenResponse();
     }
 
@@ -35,8 +39,35 @@ export async function POST(req: NextRequest) {
         };
 
         const qty = Number(item.quantity);
-        if (op.type === 'RECEIPT' || op.type === 'TRANSFER') {
+        if (op.type === 'RECEIPT') {
           current.quantity += qty;
+        } else if (op.type === 'TRANSFER') {
+          // TRANSFER: если операция привязана к складу-отправителю, списываем со склада-отправителя
+          // Если операция была зафиксирована на целевом складе (receive), counterparty содержит "Склад-отправитель"
+          // В EMS-Platform при создании трансфера в операциях:
+          // 1) В /api/wms/operations: warehouseId - склад-отправитель, в комментарии "Перемещение на склад ID targetId"
+          // 2) В /api/wms/transfers/.../receive: warehouseId - целевой склад, counterparty "Склад-отправитель: ..."
+          const isIncomingTransfer = op.counterparty?.startsWith('Склад-отправитель:') || op.comment?.startsWith('Принято по межскладскому перемещению');
+          if (isIncomingTransfer) {
+            current.quantity += qty;
+          } else {
+            // Исходящее перемещение - списываем с отправителя
+            current.quantity = Math.max(0, current.quantity - qty);
+            
+            // Если в комментарии указан ID целевого склада, зачисляем получателю
+            const targetIdMatch = op.comment?.match(/Перемещение на склад ID ([a-zA-Z0-9_-]+)/);
+            if (targetIdMatch && targetIdMatch[1]) {
+              const targetWarehouseId = targetIdMatch[1];
+              const targetKey = `${targetWarehouseId}__${item.nomenclatureId}`;
+              const targetCurrent = balances.get(targetKey) || {
+                warehouseId: targetWarehouseId,
+                nomenclatureId: item.nomenclatureId,
+                quantity: 0,
+              };
+              targetCurrent.quantity += qty;
+              balances.set(targetKey, targetCurrent);
+            }
+          }
         } else if (op.type === 'ISSUE' || op.type === 'ISSUE_EMPLOYEE' || op.type === 'ISSUE_WRITE_OFF') {
           current.quantity = Math.max(0, current.quantity - qty);
         } else if (op.type === 'ADJUSTMENT') {

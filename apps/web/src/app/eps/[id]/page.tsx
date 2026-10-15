@@ -1491,6 +1491,72 @@ function EquipmentPassportContent() {
         }
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 1 }}>
+          {/* Блок основных базовых реквизитов оборудования */}
+          <Box>
+            <Typography variant="subtitle1" fontWeight={700} color="primary.main" sx={{ mb: 2 }}>
+              Основные реквизиты единицы оборудования
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Наименование оборудования *"
+                  size="small"
+                  fullWidth
+                  required
+                  value={editForm.name || ''}
+                  onChange={(e) => setEditForm((prev: any) => ({ ...prev, name: e.target.value }))}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Инвентарный номер"
+                  size="small"
+                  fullWidth
+                  value={editForm.inventoryNumber || ''}
+                  onChange={(e) => setEditForm((prev: any) => ({ ...prev, inventoryNumber: e.target.value }))}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Заводской (серийный) №"
+                  size="small"
+                  fullWidth
+                  value={editForm.serialNumber || ''}
+                  onChange={(e) => setEditForm((prev: any) => ({ ...prev, serialNumber: e.target.value }))}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Производитель (Бренд)"
+                  size="small"
+                  fullWidth
+                  value={editForm.manufacturer || ''}
+                  onChange={(e) => setEditForm((prev: any) => ({ ...prev, manufacturer: e.target.value }))}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Модель / Модификация"
+                  size="small"
+                  fullWidth
+                  value={editForm.model || ''}
+                  onChange={(e) => setEditForm((prev: any) => ({ ...prev, model: e.target.value }))}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Место установки (Локация)"
+                  size="small"
+                  fullWidth
+                  value={editForm.location || ''}
+                  onChange={(e) => setEditForm((prev: any) => ({ ...prev, location: e.target.value }))}
+                />
+              </Grid>
+            </Grid>
+          </Box>
+
+          <Divider />
+
           {sections.length === 0 ? (
             <EmptyState
               title="Технические разделы паспорта не настроены"
