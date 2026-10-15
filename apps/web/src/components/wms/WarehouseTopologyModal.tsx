@@ -20,7 +20,11 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
 } from '@mui/material';
 import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
 import GridViewIcon from '@mui/icons-material/GridView';
@@ -31,8 +35,10 @@ import SearchIcon from '@mui/icons-material/Search';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import LayersOutlinedIcon from '@mui/icons-material/LayersOutlined';
 import CloseIcon from '@mui/icons-material/Close';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import { useSnackbar } from 'notistack';
-import { FormDialog, EmptyState, useConfirm, SearchInput } from '@/components/ui';
+import { FormDialog, EmptyState, useConfirm, SearchInput, DataTableWrapper, StatusBadge } from '@/components/ui';
 import { PERMISSIONS } from '@ems/shared';
 import { useAuth } from '@/lib/auth-client';
 
@@ -104,6 +110,11 @@ export default function WarehouseTopologyModal({
   const [batchSlots, setBatchSlots] = useState('2'); // Мест на полке
   const [isGeneratingBatch, setIsGeneratingBatch] = useState(false);
 
+  // Cell content inspection modal
+  const [selectedCellForDetail, setSelectedCellForDetail] = useState<StorageCell | null>(null);
+  const [cellDetailData, setCellDetailData] = useState<any | null>(null);
+  const [isLoadingCellDetail, setIsLoadingCellDetail] = useState(false);
+
   const fetchZones = useCallback(async () => {
     if (!warehouse) return;
     setIsLoading(true);
@@ -131,6 +142,30 @@ export default function WarehouseTopologyModal({
       fetchZones();
     }
   }, [open, warehouse, fetchZones]);
+
+  const handleOpenCellDetail = useCallback(async (cell: StorageCell) => {
+    setSelectedCellForDetail(cell);
+    setIsLoadingCellDetail(true);
+    setCellDetailData(null);
+    try {
+      const res = await fetch(`/api/wms/cells/${cell.id}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success) {
+          setCellDetailData(json.data);
+        } else {
+          enqueueSnackbar(json.error || 'Ошибка загрузки содержимого ячейки', { variant: 'error' });
+        }
+      } else {
+        enqueueSnackbar('Не удалось получить данные о ТМЦ в ячейке', { variant: 'error' });
+      }
+    } catch (err) {
+      console.error('Ошибка загрузки содержимого ячейки:', err);
+      enqueueSnackbar('Ошибка сети при запросе данных ячейки', { variant: 'error' });
+    } finally {
+      setIsLoadingCellDetail(false);
+    }
+  }, [enqueueSnackbar]);
 
   const activeZone = zones[selectedZoneIndex] || null;
 
@@ -662,20 +697,22 @@ export default function WarehouseTopologyModal({
                             <Grid item xs={6} sm={4} md={3} lg={2.4} key={cell.id}>
                               <Paper
                                 elevation={0}
+                                onClick={() => handleOpenCellDetail(cell)}
                                 sx={{
                                   p: 1.5,
-                                  borderRadius: '10px',
+                                  borderRadius: '8px',
                                   border: '1px solid',
-                                  borderColor: isOccupied ? '#93c5fd' : '#e2e8f0',
-                                  bgcolor: isOccupied ? 'rgba(239, 246, 255, 0.6)' : '#ffffff',
+                                  borderColor: isOccupied ? 'primary.light' : 'divider',
+                                  bgcolor: isOccupied ? 'action.hover' : 'background.paper',
                                   transition: 'all 0.18s ease',
                                   display: 'flex',
                                   flexDirection: 'column',
                                   justifyContent: 'space-between',
                                   minHeight: 88,
                                   position: 'relative',
+                                  cursor: 'pointer',
                                   '&:hover': {
-                                    borderColor: '#0284c7',
+                                    borderColor: 'primary.main',
                                     transform: 'translateY(-2px)',
                                     boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08)',
                                     '& .cell-del-btn': { opacity: 1 },
@@ -689,35 +726,53 @@ export default function WarehouseTopologyModal({
                                       sx={{
                                         fontWeight: 700,
                                         fontSize: '0.875rem',
-                                        color: '#0f172a',
+                                        color: 'text.primary',
                                         fontFeatureSettings: '"tnum"',
                                       }}
                                     >
                                       {cell.code}
                                     </Typography>
                                     {cell.name && (
-                                      <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.6875rem' }} noWrap>
+                                      <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6875rem' }} noWrap>
                                         {cell.name}
                                       </Typography>
                                     )}
                                   </Box>
 
-                                  {canManageZones && (
-                                    <IconButton
-                                      className="cell-del-btn"
-                                      size="small"
-                                      onClick={() => handleDeleteCell(cell)}
-                                      aria-label={`Удалить ${cell.code}`}
-                                      sx={{
-                                        opacity: 0,
-                                        p: 0.25,
-                                        color: '#ef4444',
-                                        transition: 'opacity 0.15s ease',
-                                      }}
-                                    >
-                                      <CloseIcon sx={{ fontSize: 16 }} />
-                                    </IconButton>
-                                  )}
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+                                    <Tooltip title="Посмотреть содержимое ячейки">
+                                      <IconButton
+                                        size="small"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleOpenCellDetail(cell);
+                                        }}
+                                        sx={{ p: 0.25, color: 'primary.main' }}
+                                      >
+                                        <VisibilityOutlinedIcon sx={{ fontSize: 16 }} />
+                                      </IconButton>
+                                    </Tooltip>
+
+                                    {canManageZones && (
+                                      <IconButton
+                                        className="cell-del-btn"
+                                        size="small"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDeleteCell(cell);
+                                        }}
+                                        aria-label={`Удалить ${cell.code}`}
+                                        sx={{
+                                          opacity: 0,
+                                          p: 0.25,
+                                          color: 'error.main',
+                                          transition: 'opacity 0.15s ease',
+                                        }}
+                                      >
+                                        <CloseIcon sx={{ fontSize: 16 }} />
+                                      </IconButton>
+                                    )}
+                                  </Box>
                                 </Box>
 
                                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
@@ -729,8 +784,8 @@ export default function WarehouseTopologyModal({
                                       fontSize: '0.625rem',
                                       fontWeight: 600,
                                       borderRadius: '4px',
-                                      bgcolor: isOccupied ? '#dbeafe' : '#f1f5f9',
-                                      color: isOccupied ? '#1e40af' : '#64748b',
+                                      bgcolor: isOccupied ? 'primary.light' : 'action.hover',
+                                      color: isOccupied ? 'primary.main' : 'text.secondary',
                                     }}
                                   />
 
@@ -739,7 +794,7 @@ export default function WarehouseTopologyModal({
                                       width: 8,
                                       height: 8,
                                       borderRadius: '50%',
-                                      bgcolor: isOccupied ? '#3b82f6' : '#22c55e',
+                                      bgcolor: isOccupied ? 'primary.main' : 'success.main',
                                     }}
                                   />
                                 </Box>
@@ -909,7 +964,7 @@ export default function WarehouseTopologyModal({
             <Typography variant="body2" sx={{ color: '#4c1d95', fontFeatureSettings: '"tnum"', fontWeight: 500 }}>
               {`${batchPrefix || 'A'}-01-01-1, ${batchPrefix || 'A'}-01-01-2 ... ${batchPrefix || 'A'}-${(parseInt(batchRacks, 10) || 1).toString().padStart(2, '0')}-${(parseInt(batchTiers, 10) || 1).toString().padStart(2, '0')}-${batchSlots || 1}`}
             </Typography>
-            <Typography variant="caption" sx={{ color: '#7c3aed', mt: 0.75, display: 'block' }}>
+            <Typography variant="caption" sx={{ color: 'secondary.main', mt: 0.75, display: 'block' }}>
               Будет создано всего:{' '}
               <strong>
                 {(parseInt(batchRacks, 10) || 0) *
@@ -921,6 +976,169 @@ export default function WarehouseTopologyModal({
           </Paper>
         </Stack>
       </FormDialog>
+
+      {/* Modal: View Cell Stock Content */}
+      <Dialog
+        open={Boolean(selectedCellForDetail)}
+        onClose={() => setSelectedCellForDetail(null)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '12px',
+            border: '1px solid',
+            borderColor: 'divider',
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            p: 2,
+            px: 2.5,
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <GridViewIcon color="primary" />
+            <Box>
+              <Typography variant="subtitle1" fontWeight={700} color="text.primary">
+                Содержимое ячейки: {selectedCellForDetail?.code}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {activeZone?.name} ({activeZone?.code}) • Склад: {warehouse?.name}
+              </Typography>
+            </Box>
+          </Box>
+          <IconButton size="small" onClick={() => setSelectedCellForDetail(null)}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent sx={{ p: 2.5, bgcolor: 'background.default' }}>
+          {isLoadingCellDetail ? (
+            <Box sx={{ p: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
+              <CircularProgress size={32} />
+              <Typography variant="body2" color="text.secondary">
+                Загрузка остатков ТМЦ в ячейке...
+              </Typography>
+            </Box>
+          ) : !cellDetailData || cellDetailData.items.length === 0 ? (
+            <EmptyState
+              paper
+              icon={<Inventory2OutlinedIcon sx={{ fontSize: 40, color: 'text.secondary' }} />}
+              title="Ячейка свободна"
+              description={`В ячейке ${selectedCellForDetail?.code} на данный момент нет размещенных товарно-материальных ценностей.`}
+            />
+          ) : (
+            <Stack spacing={2}>
+              {/* Сводные показатели */}
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2,
+                  borderRadius: '8px',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  bgcolor: 'background.paper',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 2,
+                }}
+              >
+                <Box>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Всего наименований в ячейке:
+                  </Typography>
+                  <Typography variant="subtitle1" fontWeight={700}>
+                    {cellDetailData.totalItemsCount} поз.
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Суммарное количество:
+                  </Typography>
+                  <Typography variant="subtitle1" fontWeight={800} color="primary.main">
+                    {cellDetailData.totalQuantity} ед.
+                  </Typography>
+                </Box>
+              </Paper>
+
+              {/* Таблица остатков ячейки */}
+              <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '8px', overflow: 'hidden' }}>
+                <Table size="small">
+                  <TableHead sx={{ bgcolor: 'background.paper' }}>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 700 }}>Артикул</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Наименование номенклатуры</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Категория</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700 }}>Остаток</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Совместимое оборудование</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {cellDetailData.items.map((item: any) => (
+                      <TableRow key={item.stockItemId} hover>
+                        <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                          <Chip label={item.article || 'Б/А'} size="small" variant="outlined" sx={{ borderRadius: '4px', fontWeight: 600 }} />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" fontWeight={600} color="text.primary">
+                            {item.name}
+                          </Typography>
+                        </TableCell>
+                        <TableCell sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
+                          {item.category}
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2" fontWeight={700} color="primary.main" sx={{ fontFeatureSettings: '"tnum"' }}>
+                            {item.quantity} {item.unit}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          {item.compatibleEquipment && item.compatibleEquipment.length > 0 ? (
+                            <Stack direction="row" spacing={0.5} flexWrap="wrap" gap={0.5}>
+                              {item.compatibleEquipment.slice(0, 2).map((eq: any) => (
+                                <Chip
+                                  key={eq.id}
+                                  icon={<PrecisionManufacturingIcon sx={{ fontSize: '12px !important' }} />}
+                                  label={eq.name}
+                                  size="small"
+                                  sx={{ fontSize: '0.6875rem', height: 20, borderRadius: '4px' }}
+                                />
+                              ))}
+                              {item.compatibleEquipment.length > 2 && (
+                                <Typography variant="caption" sx={{ color: 'text.secondary', alignSelf: 'center' }}>
+                                  +{item.compatibleEquipment.length - 2}
+                                </Typography>
+                              )}
+                            </Stack>
+                          ) : (
+                            <Typography variant="caption" color="text.disabled">
+                              —
+                            </Typography>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Paper>
+            </Stack>
+          )}
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2, px: 2.5, borderTop: '1px solid', borderColor: 'divider' }}>
+          <Button onClick={() => setSelectedCellForDetail(null)} variant="outlined" sx={{ borderRadius: '8px', fontWeight: 600 }}>
+            Закрыть
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }
