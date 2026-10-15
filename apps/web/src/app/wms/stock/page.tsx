@@ -303,6 +303,11 @@ function WmsStockContent() {
 
   // Open location assignment dialog
   const handleOpenLocationModal = async (row: StockRow) => {
+    if (row.id.startsWith('virtual_') || row.warehouseId === 'unassigned') {
+      enqueueSnackbar('Позиция еще не оприходована на склад. Назначение ячейки возможно после оформления прихода.', { variant: 'info' });
+      return;
+    }
+
     if (!canEditStockLocation(row)) {
       enqueueSnackbar(
         `Вы не являетесь ответственным лицом за склад "${row.warehouseName}". Назначение ячеек чужого склада запрещено.`,
