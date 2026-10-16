@@ -25,6 +25,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TableContainer,
 } from '@mui/material';
 import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
 import GridViewIcon from '@mui/icons-material/GridView';
@@ -388,7 +389,6 @@ export default function WarehouseTopologyModal({
             border: '1px solid',
             borderColor: 'divider',
             boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
-            minHeight: '680px',
             maxHeight: 'calc(100vh - 64px)',
             m: { xs: 1.5, sm: 3 },
             display: 'flex',
@@ -995,7 +995,7 @@ export default function WarehouseTopologyModal({
             border: '1px solid',
             borderColor: 'divider',
             boxShadow: '0 20px 30px -10px rgba(15, 23, 42, 0.15), 0 10px 15px -3px rgba(15, 23, 42, 0.08)',
-            maxHeight: 'calc(100vh - 64px)',
+            maxHeight: 'calc(100vh - 80px)',
             m: { xs: 1.5, sm: 3 },
             display: 'flex',
             flexDirection: 'column',
@@ -1032,14 +1032,12 @@ export default function WarehouseTopologyModal({
 
         <DialogContent
           sx={{
-            p: 3,
+            p: { xs: 2, sm: 2.5 },
             bgcolor: 'background.default',
-            overflowY: 'auto',
-            '&::-webkit-scrollbar': { width: 6 },
-            '&::-webkit-scrollbar-thumb': {
-              bgcolor: 'divider',
-              borderRadius: 3,
-            },
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2,
+            overflow: 'hidden',
           }}
         >
           {isLoadingCellDetail ? (
@@ -1057,12 +1055,13 @@ export default function WarehouseTopologyModal({
               description={`В ячейке ${selectedCellForDetail?.code} на данный момент нет размещенных товарно-материальных ценностей.`}
             />
           ) : (
-            <Stack spacing={2.5}>
+            <>
               {/* Сводные показатели */}
               <Paper
                 elevation={0}
                 sx={{
-                  p: 2,
+                  flexShrink: 0,
+                  p: 1.75,
                   px: 2.5,
                   borderRadius: '10px',
                   border: '1px solid',
@@ -1093,16 +1092,32 @@ export default function WarehouseTopologyModal({
                 </Box>
               </Paper>
 
-              {/* Таблица остатков ячейки */}
-              <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '10px', overflow: 'hidden' }}>
-                <Table size="small">
-                  <TableHead sx={{ bgcolor: 'background.paper' }}>
+              {/* Таблица остатков ячейки с внутренним скроллом и stickyHeader */}
+              <TableContainer
+                component={Paper}
+                elevation={0}
+                sx={{
+                  flex: 1,
+                  maxHeight: 'calc(100vh - 300px)',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: '10px',
+                  overflowY: 'auto',
+                  '&::-webkit-scrollbar': { width: 6 },
+                  '&::-webkit-scrollbar-thumb': {
+                    bgcolor: 'divider',
+                    borderRadius: 3,
+                  },
+                }}
+              >
+                <Table size="small" stickyHeader>
+                  <TableHead>
                     <TableRow>
-                      <TableCell sx={{ fontWeight: 700, py: 1.25 }}>Артикул</TableCell>
-                      <TableCell sx={{ fontWeight: 700, py: 1.25 }}>Наименование номенклатуры</TableCell>
-                      <TableCell sx={{ fontWeight: 700, py: 1.25 }}>Категория</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 700, py: 1.25 }}>Остаток</TableCell>
-                      <TableCell sx={{ fontWeight: 700, py: 1.25 }}>Совместимое оборудование</TableCell>
+                      <TableCell sx={{ fontWeight: 700, py: 1.25, bgcolor: 'background.paper' }}>Артикул</TableCell>
+                      <TableCell sx={{ fontWeight: 700, py: 1.25, bgcolor: 'background.paper' }}>Наименование номенклатуры</TableCell>
+                      <TableCell sx={{ fontWeight: 700, py: 1.25, bgcolor: 'background.paper' }}>Категория</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, py: 1.25, bgcolor: 'background.paper' }}>Остаток</TableCell>
+                      <TableCell sx={{ fontWeight: 700, py: 1.25, bgcolor: 'background.paper' }}>Совместимое оборудование</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -1152,8 +1167,8 @@ export default function WarehouseTopologyModal({
                     ))}
                   </TableBody>
                 </Table>
-              </Paper>
-            </Stack>
+              </TableContainer>
+            </>
           )}
         </DialogContent>
 

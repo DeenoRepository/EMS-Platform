@@ -181,16 +181,16 @@ export default function CreateNomenclatureDialog({
       title="Создание позиции номенклатуры (ТМЦ)"
       subtitle="Регистрация новой позиции в справочнике запасных частей и материалов"
       icon={<Inventory2OutlinedIcon color="primary" />}
-      maxWidth="sm"
+      maxWidth="md"
       loading={isSubmitting}
       submitLabel={isSubmitting ? 'Сохранение...' : 'Создать номенклатуру'}
       onSubmit={handleSubmit}
       submitDisabled={isSubmitting || !name.trim()}
     >
-      <Stack spacing={2.5} sx={{ mt: 1 }}>
+      <Stack spacing={2}>
         {/* Type Selector Pills */}
         <Box>
-          <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, display: 'block', mb: 1 }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, display: 'block', mb: 1 }}>
             Тип товарно-материальной ценности:
           </Typography>
           <Grid container spacing={1}>
@@ -205,25 +205,25 @@ export default function CreateNomenclatureDialog({
                       p: 1,
                       borderRadius: '8px',
                       border: '1px solid',
-                      borderColor: isSelected ? '#0284c7' : '#e2e8f0',
-                      bgcolor: isSelected ? 'rgba(2, 132, 199, 0.08)' : '#ffffff',
+                      borderColor: isSelected ? 'primary.main' : 'divider',
+                      bgcolor: isSelected ? 'action.hover' : 'background.paper',
                       cursor: 'pointer',
                       textAlign: 'center',
                       transition: 'all 0.15s ease',
                       '&:hover': {
-                        borderColor: '#0284c7',
+                        borderColor: 'primary.main',
                         transform: 'translateY(-1px)',
                       },
                     }}
                   >
-                    <Box sx={{ color: isSelected ? '#0284c7' : '#64748b', display: 'flex', justifyContent: 'center', mb: 0.5 }}>
+                    <Box sx={{ color: isSelected ? 'primary.main' : 'text.secondary', display: 'flex', justifyContent: 'center', mb: 0.5 }}>
                       {t.icon}
                     </Box>
                     <Typography
                       variant="caption"
                       sx={{
                         fontWeight: isSelected ? 700 : 500,
-                        color: isSelected ? '#0284c7' : '#334155',
+                        color: isSelected ? 'primary.main' : 'text.primary',
                         display: 'block',
                         fontSize: '0.6875rem',
                       }}
@@ -254,10 +254,7 @@ export default function CreateNomenclatureDialog({
               '& .MuiOutlinedInput-root': {
                 borderRadius: '8px',
                 fontSize: '0.875rem',
-                backgroundColor: '#ffffff',
-                '& fieldset': { borderColor: '#e2e8f0' },
-                '&:hover fieldset': { borderColor: '#94a3b8' },
-                '&.Mui-focused fieldset': { borderColor: '#0284c7' },
+                backgroundColor: 'background.paper',
               },
             }}
           />
@@ -265,7 +262,7 @@ export default function CreateNomenclatureDialog({
 
         {/* SKU & Unit */}
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={7}>
+          <Grid item xs={12} sm={6}>
             <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.75, display: 'block' }}>
               Артикул / Заводской код
             </Typography>
@@ -291,14 +288,11 @@ export default function CreateNomenclatureDialog({
                   borderRadius: '8px',
                   fontSize: '0.875rem',
                   backgroundColor: 'background.paper',
-                  '& fieldset': { borderColor: 'divider' },
-                  '&:hover fieldset': { borderColor: 'grey.400' },
-                  '&.Mui-focused fieldset': { borderColor: 'primary.main' },
                 },
               }}
             />
           </Grid>
-          <Grid item xs={12} sm={5}>
+          <Grid item xs={12} sm={6}>
             <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.75, display: 'block' }}>
               Ед. измерения <Box component="span" sx={{ color: 'error.main' }}>*</Box>
             </Typography>
@@ -313,9 +307,6 @@ export default function CreateNomenclatureDialog({
                   borderRadius: '8px',
                   fontSize: '0.875rem',
                   backgroundColor: 'background.paper',
-                  '& fieldset': { borderColor: 'divider' },
-                  '&:hover fieldset': { borderColor: 'grey.400' },
-                  '&.Mui-focused fieldset': { borderColor: 'primary.main' },
                 },
               }}
             />
@@ -331,7 +322,7 @@ export default function CreateNomenclatureDialog({
               borderRadius: '8px',
               border: '1px solid',
               borderColor: 'success.light',
-              bgcolor: 'rgba(22, 163, 74, 0.04)',
+              bgcolor: 'action.hover',
             }}
           >
             <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'success.dark', mb: 1.5 }}>
@@ -403,7 +394,7 @@ export default function CreateNomenclatureDialog({
 
         {/* Category & Min Stock */}
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={7}>
+          <Grid item xs={12} sm={6}>
             <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.75, display: 'block' }}>
               Товарная группа / Категория
             </Typography>
@@ -418,10 +409,7 @@ export default function CreateNomenclatureDialog({
                 '& .MuiOutlinedInput-root': {
                   borderRadius: '8px',
                   fontSize: '0.8125rem',
-                  backgroundColor: '#ffffff',
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#94a3b8' },
-                  '&.Mui-focused fieldset': { borderColor: '#0284c7' },
+                  backgroundColor: 'background.paper',
                 },
               }}
             >
@@ -433,7 +421,7 @@ export default function CreateNomenclatureDialog({
               ))}
             </TextField>
           </Grid>
-          <Grid item xs={12} sm={5}>
+          <Grid item xs={12} sm={6}>
             <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.75, display: 'block' }}>
               Мин. остаток (норматив)
             </Typography>
@@ -450,15 +438,11 @@ export default function CreateNomenclatureDialog({
                 '& .MuiOutlinedInput-root': {
                   borderRadius: '8px',
                   fontSize: '0.875rem',
-                  backgroundColor: '#ffffff',
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#94a3b8' },
-                  '&.Mui-focused fieldset': { borderColor: '#0284c7' },
+                  backgroundColor: 'background.paper',
                 },
                 '& .MuiFormHelperText-root': {
                   fontSize: '0.75rem',
                   mt: 0.5,
-                  color: '#64748b',
                 },
               }}
             />
@@ -482,10 +466,7 @@ export default function CreateNomenclatureDialog({
               '& .MuiOutlinedInput-root': {
                 borderRadius: '8px',
                 fontSize: '0.875rem',
-                backgroundColor: '#ffffff',
-                '& fieldset': { borderColor: '#e2e8f0' },
-                '&:hover fieldset': { borderColor: '#94a3b8' },
-                '&.Mui-focused fieldset': { borderColor: '#0284c7' },
+                backgroundColor: 'background.paper',
               },
             }}
           />

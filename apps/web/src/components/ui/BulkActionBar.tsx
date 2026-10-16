@@ -50,12 +50,12 @@ export function BulkActionBar({
       <Box
         sx={{
           position: 'fixed',
-          bottom: 24,
+          bottom: { xs: 16, sm: 24 },
           left: '50%',
           transform: 'translateX(-50%) !important',
           zIndex: 1300,
-          width: 'calc(100% - 48px)',
-          maxWidth: 820,
+          width: 'auto',
+          maxWidth: { xs: 'calc(100% - 32px)', md: 'max-content' },
           pointerEvents: isOpen ? 'auto' : 'none',
         }}
         className={className}
@@ -63,22 +63,23 @@ export function BulkActionBar({
         <Paper
           elevation={8}
           sx={{
-            p: 1.25,
+            p: 1,
             px: 2,
-            borderRadius: '10px',
+            borderRadius: '12px',
             bgcolor: '#0f172a',
             color: '#f8fafc',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            boxShadow: '0 12px 32px rgba(15, 23, 42, 0.35)',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            boxShadow: '0 16px 36px rgba(15, 23, 42, 0.45)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: 2,
             flexWrap: { xs: 'wrap', sm: 'nowrap' },
+            overflowX: { xs: 'auto', sm: 'visible' },
           }}
         >
           {/* Selected count info */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexShrink: 0, whiteSpace: 'nowrap' }}>
             <Box
               sx={{
                 width: 26,
@@ -115,7 +116,16 @@ export function BulkActionBar({
           </Box>
 
           {/* Action buttons */}
-          <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{
+              flexWrap: 'nowrap',
+              alignItems: 'center',
+              overflowX: { xs: 'auto', sm: 'visible' },
+              py: 0.25,
+            }}
+          >
             {actions.map((act, idx) => (
               <Button
                 key={idx}
@@ -130,12 +140,19 @@ export function BulkActionBar({
                   fontSize: '0.8125rem',
                   textTransform: 'none',
                   borderRadius: '8px',
-                  px: 1.75,
+                  px: 1.5,
                   py: 0.5,
                   minHeight: 32,
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
                   ...(act.variant === 'contained' && act.color === 'primary' && {
-                    backgroundColor: '#0284c7',
-                    '&:hover': { backgroundColor: '#0369a1' },
+                    backgroundColor: 'primary.main',
+                    '&:hover': { backgroundColor: 'primary.dark' },
+                  }),
+                  ...(act.variant === 'contained' && act.color === 'warning' && {
+                    backgroundColor: 'warning.main',
+                    color: 'warning.contrastText',
+                    '&:hover': { backgroundColor: 'warning.dark' },
                   }),
                 }}
               >
