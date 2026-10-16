@@ -93,13 +93,29 @@ export function EquipmentPurgeDialog({
   };
 
   return (
-    <Dialog open={open} onClose={purging ? undefined : onClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={purging ? undefined : onClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: '14px',
+          border: '1px solid',
+          borderColor: 'divider',
+          boxShadow: '0 20px 30px -10px rgba(15, 23, 42, 0.15)',
+          maxHeight: 'calc(100vh - 64px)',
+          m: { xs: 1.5, sm: 3 },
+        },
+      }}
+    >
       <DialogTitle
         sx={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          pb: 1.5,
+          px: 3,
+          py: 2,
           borderBottom: '1px solid',
           borderColor: 'error.light',
           bgcolor: 'error.lighter',
@@ -118,7 +134,7 @@ export function EquipmentPurgeDialog({
         )}
       </DialogTitle>
 
-      <DialogContent sx={{ pt: 2.5, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+      <DialogContent sx={{ p: 3, pt: '24px !important', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
         <Alert
           severity="error"
           icon={<WarningAmberIcon fontSize="large" />}
@@ -213,7 +229,7 @@ export function EquipmentPurgeDialog({
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, py: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
+      <DialogActions sx={{ px: 3, py: 1.75, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
         <Button onClick={onClose} color="inherit" size="small" disabled={purging}>
           Отмена
         </Button>

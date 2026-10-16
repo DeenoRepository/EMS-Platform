@@ -234,15 +234,32 @@ export function EquipmentBatchEditDialog({
 
   return (
     <>
-      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <Dialog
+        open={open}
+        onClose={onClose}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '14px',
+            border: '1px solid',
+            borderColor: 'divider',
+            boxShadow: '0 20px 30px -10px rgba(15, 23, 42, 0.15)',
+            maxHeight: 'calc(100vh - 64px)',
+            m: { xs: 1.5, sm: 3 },
+          },
+        }}
+      >
         <DialogTitle
           sx={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            pb: 1,
+            px: 3,
+            py: 2,
             borderBottom: 1,
             borderColor: 'divider',
+            bgcolor: 'background.paper',
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -256,7 +273,7 @@ export function EquipmentBatchEditDialog({
           </IconButton>
         </DialogTitle>
 
-        <DialogContent sx={{ pt: 2.5, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+        <DialogContent sx={{ p: 3, pt: '24px !important', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
           {/* 1. Выбор колонки */}
           <FormControl fullWidth size="small">
             <InputLabel id="batch-field-select-label">Колонка для редактирования</InputLabel>
@@ -465,7 +482,7 @@ export function EquipmentBatchEditDialog({
           )}
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, py: 1.5, borderTop: 1, borderColor: 'divider' }}>
+        <DialogActions sx={{ px: 3, py: 1.75, borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
           <Button onClick={onClose} color="inherit" size="small">
             Отмена
           </Button>

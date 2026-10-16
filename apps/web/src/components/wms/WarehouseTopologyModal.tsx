@@ -385,9 +385,12 @@ export default function WarehouseTopologyModal({
         PaperProps={{
           sx: {
             borderRadius: '16px',
+            border: '1px solid',
+            borderColor: 'divider',
             boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
             minHeight: '680px',
-            maxHeight: '90vh',
+            maxHeight: 'calc(100vh - 64px)',
+            m: { xs: 1.5, sm: 3 },
             display: 'flex',
             flexDirection: 'column',
           },
@@ -988,18 +991,24 @@ export default function WarehouseTopologyModal({
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: '12px',
+            borderRadius: '14px',
             border: '1px solid',
             borderColor: 'divider',
+            boxShadow: '0 20px 30px -10px rgba(15, 23, 42, 0.15), 0 10px 15px -3px rgba(15, 23, 42, 0.08)',
+            maxHeight: 'calc(100vh - 64px)',
+            m: { xs: 1.5, sm: 3 },
+            display: 'flex',
+            flexDirection: 'column',
           },
         }}
       >
         <DialogTitle
           sx={{
             p: 2,
-            px: 2.5,
+            px: 3,
             borderBottom: '1px solid',
             borderColor: 'divider',
+            bgcolor: 'background.paper',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -1021,7 +1030,18 @@ export default function WarehouseTopologyModal({
           </IconButton>
         </DialogTitle>
 
-        <DialogContent sx={{ p: 2.5, bgcolor: 'background.default' }}>
+        <DialogContent
+          sx={{
+            p: 3,
+            bgcolor: 'background.default',
+            overflowY: 'auto',
+            '&::-webkit-scrollbar': { width: 6 },
+            '&::-webkit-scrollbar-thumb': {
+              bgcolor: 'divider',
+              borderRadius: 3,
+            },
+          }}
+        >
           {isLoadingCellDetail ? (
             <Box sx={{ p: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
               <CircularProgress size={32} />
@@ -1037,13 +1057,14 @@ export default function WarehouseTopologyModal({
               description={`В ячейке ${selectedCellForDetail?.code} на данный момент нет размещенных товарно-материальных ценностей.`}
             />
           ) : (
-            <Stack spacing={2}>
+            <Stack spacing={2.5}>
               {/* Сводные показатели */}
               <Paper
                 elevation={0}
                 sx={{
                   p: 2,
-                  borderRadius: '8px',
+                  px: 2.5,
+                  borderRadius: '10px',
                   border: '1px solid',
                   borderColor: 'divider',
                   bgcolor: 'background.paper',
@@ -1073,37 +1094,37 @@ export default function WarehouseTopologyModal({
               </Paper>
 
               {/* Таблица остатков ячейки */}
-              <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '8px', overflow: 'hidden' }}>
+              <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '10px', overflow: 'hidden' }}>
                 <Table size="small">
                   <TableHead sx={{ bgcolor: 'background.paper' }}>
                     <TableRow>
-                      <TableCell sx={{ fontWeight: 700 }}>Артикул</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Наименование номенклатуры</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Категория</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 700 }}>Остаток</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Совместимое оборудование</TableCell>
+                      <TableCell sx={{ fontWeight: 700, py: 1.25 }}>Артикул</TableCell>
+                      <TableCell sx={{ fontWeight: 700, py: 1.25 }}>Наименование номенклатуры</TableCell>
+                      <TableCell sx={{ fontWeight: 700, py: 1.25 }}>Категория</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, py: 1.25 }}>Остаток</TableCell>
+                      <TableCell sx={{ fontWeight: 700, py: 1.25 }}>Совместимое оборудование</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {cellDetailData.items.map((item: any) => (
                       <TableRow key={item.stockItemId} hover>
-                        <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                        <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem', py: 1 }}>
                           <Chip label={item.article || 'Б/А'} size="small" variant="outlined" sx={{ borderRadius: '4px', fontWeight: 600 }} />
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ py: 1 }}>
                           <Typography variant="body2" fontWeight={600} color="text.primary">
                             {item.name}
                           </Typography>
                         </TableCell>
-                        <TableCell sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
+                        <TableCell sx={{ fontSize: '0.75rem', color: 'text.secondary', py: 1 }}>
                           {item.category}
                         </TableCell>
-                        <TableCell align="right">
+                        <TableCell align="right" sx={{ py: 1 }}>
                           <Typography variant="body2" fontWeight={700} color="primary.main" sx={{ fontFeatureSettings: '"tnum"' }}>
                             {item.quantity} {item.unit}
                           </Typography>
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ py: 1 }}>
                           {item.compatibleEquipment && item.compatibleEquipment.length > 0 ? (
                             <Stack direction="row" spacing={0.5} flexWrap="wrap" gap={0.5}>
                               {item.compatibleEquipment.slice(0, 2).map((eq: any) => (
@@ -1136,7 +1157,7 @@ export default function WarehouseTopologyModal({
           )}
         </DialogContent>
 
-        <DialogActions sx={{ p: 2, px: 2.5, borderTop: '1px solid', borderColor: 'divider' }}>
+        <DialogActions sx={{ p: 2, px: 3, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
           <Button onClick={() => setSelectedCellForDetail(null)} variant="outlined" sx={{ borderRadius: '8px', fontWeight: 600 }}>
             Закрыть
           </Button>

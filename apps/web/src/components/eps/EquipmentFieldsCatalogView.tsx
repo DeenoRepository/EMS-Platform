@@ -336,8 +336,23 @@ export function EquipmentFieldsCatalogView() {
         )}
 
         {/* Modal: Create/Edit Field */}
-        <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
-          <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
+        <Dialog
+          open={dialogOpen}
+          onClose={() => setDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: '14px',
+              border: '1px solid',
+              borderColor: 'divider',
+              boxShadow: '0 20px 30px -10px rgba(15, 23, 42, 0.15)',
+              maxHeight: 'calc(100vh - 64px)',
+              m: { xs: 1.5, sm: 3 },
+            },
+          }}
+        >
+          <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <MenuBookIcon color="primary" />
               <Typography variant="h6" fontWeight={700}>
@@ -349,7 +364,7 @@ export function EquipmentFieldsCatalogView() {
             </IconButton>
           </DialogTitle>
 
-          <DialogContent sx={{ pt: 2.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <DialogContent sx={{ p: 3, pt: '24px !important', display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
               label="Системный ключ поля (slug) *"
               placeholder="например: power_kw, serialNumber, operating_pressure"
@@ -431,7 +446,7 @@ export function EquipmentFieldsCatalogView() {
             />
           </DialogContent>
 
-          <DialogActions sx={{ px: 3, py: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
+          <DialogActions sx={{ px: 3, py: 1.75, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
             <Button onClick={() => setDialogOpen(false)} color="inherit" size="small">
               Отмена
             </Button>

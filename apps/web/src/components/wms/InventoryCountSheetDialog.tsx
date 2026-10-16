@@ -358,16 +358,24 @@ export function InventoryCountSheetDialog({
       fullWidth
       PaperProps={{
         sx: {
-          borderRadius: '12px',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+          borderRadius: '14px',
+          border: '1px solid',
+          borderColor: 'divider',
+          boxShadow: '0 20px 30px -10px rgba(15, 23, 42, 0.15)',
+          maxHeight: 'calc(100vh - 64px)',
+          m: { xs: 1.5, sm: 3 },
+          display: 'flex',
+          flexDirection: 'column',
         },
       }}
     >
       <DialogTitle
         sx={{
           p: 2,
+          px: 3,
           borderBottom: '1px solid',
           borderColor: 'divider',
+          bgcolor: 'background.paper',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -503,14 +511,14 @@ export function InventoryCountSheetDialog({
         </Paper>
       </DialogContent>
 
-      <DialogActions sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider', justifyContent: 'space-between' }}>
+      <DialogActions sx={{ p: 2, px: 3, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', justifyContent: 'space-between' }}>
         <Button onClick={onClose} variant="outlined" color="inherit">
           Закрыть
         </Button>
         <Stack direction="row" spacing={1.5}>
           <Button
             variant="outlined"
-            startIcon={<TableChartOutlinedIcon sx={{ color: '#16a34a' }} />}
+            startIcon={<TableChartOutlinedIcon color="success" />}
             onClick={() => handleExportSpreadsheet('csv')}
           >
             Экспорт в Excel (CSV)
