@@ -75,6 +75,7 @@ import {
 import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
 import { isTruthyBoolean, checkEquipmentCardCompleteness, getEquipmentFieldValue } from '@/lib/eps-helpers';
+import { detectDocumentTypeFromFileName } from '@/lib/eps-document-matcher';
 import {
   StatCard,
   StatusBadge,
@@ -1823,7 +1824,15 @@ function EquipmentPassportContent() {
           <FileUploadDropzone
             multiple
             files={selectedFiles}
-            onChange={(files) => setSelectedFiles(files)}
+            onChange={(files) => {
+              setSelectedFiles(files);
+              if (files && files.length > 0) {
+                const detected = detectDocumentTypeFromFileName(files[0].name);
+                if (detected.type && detected.type !== 'OTHER') {
+                  setDocType(detected.type);
+                }
+              }
+            }}
             compact
             title="Перетащите файлы документов или выберите"
             description="PDF, DOCX, XLSX, чертежи (до 15 МБ на файл)"

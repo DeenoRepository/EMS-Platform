@@ -41,11 +41,13 @@ import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import VerifiedOutlinedIcon from '@mui/icons-material/VerifiedOutlined';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import PageHeader from '@/components/layout/PageHeader';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { DOCUMENT_TYPE_MAP, formatDate, formatBytes, PERMISSIONS } from '@ems/shared';
 import { useAuth } from '@/lib/auth-client';
 import { useSnackbar } from 'notistack';
+import { matchFileNameToTargets, type DocumentMatchResult } from '@/lib/eps-document-matcher';
 
 import {
   StatCard,
@@ -258,6 +260,73 @@ function DocumentsListContent() {
   const [uploadDescription, setUploadDescription] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [autoMatchResult, setAutoMatchResult] = useState<DocumentMatchResult | null>(null);
+
+  const handleFilesChange = useCallback((files: File[]) => {
+    setSelectedFiles(files);
+    if (!files || files.length === 0) {
+      setAutoMatchResult(null);
+      return;
+    }
+
+    const primaryFile = files[0];
+    // 1. Мгновенное сопоставление на клиенте по загруженным моделям и децимальным номерам
+    const localMatch = matchFileNameToTargets(primaryFile.name, {
+      models: availableBindingTargets.models,
+      decimalNumbers: availableBindingTargets.decimalNumbers,
+      equipmentList,
+    });
+    setAutoMatchResult(localMatch);
+
+    if (localMatch.detectedDocType && localMatch.detectedDocType !== 'OTHER') {
+      setUploadDocType(localMatch.detectedDocType);
+    }
+
+    if (localMatch.suggestedBindingMode === 'DECIMAL' && localMatch.matchedDecimalNumber) {
+      setBindingMode('DECIMAL');
+      setSelectedDecimalForUpload(localMatch.matchedDecimalNumber);
+      setDecimalSearchInput(localMatch.matchedDecimalNumber);
+    } else if (localMatch.suggestedBindingMode === 'MODEL' && localMatch.matchedModel) {
+      setBindingMode('MODEL');
+      setSelectedModelForUpload(localMatch.matchedModel);
+      setModelSearchInput(localMatch.matchedModel);
+    } else if (localMatch.suggestedBindingMode === 'EQUIPMENT' && localMatch.matchedEquipment) {
+      setBindingMode('EQUIPMENT');
+      setSelectedEquipmentForUpload(localMatch.matchedEquipment as EquipmentOption);
+    }
+
+    // 2. Дополнительная верификация на сервере через прямой поиск по БД
+    fetch('/api/eps/documents/match', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileName: primaryFile.name }),
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.success && json.data?.match) {
+          const sMatch: DocumentMatchResult = json.data.match;
+          if (sMatch.confidence !== 'none') {
+            setAutoMatchResult(sMatch);
+            if (sMatch.detectedDocType && sMatch.detectedDocType !== 'OTHER') {
+              setUploadDocType(sMatch.detectedDocType);
+            }
+            if (sMatch.suggestedBindingMode === 'DECIMAL' && sMatch.matchedDecimalNumber) {
+              setBindingMode('DECIMAL');
+              setSelectedDecimalForUpload(sMatch.matchedDecimalNumber);
+              setDecimalSearchInput(sMatch.matchedDecimalNumber);
+            } else if (sMatch.suggestedBindingMode === 'MODEL' && sMatch.matchedModel) {
+              setBindingMode('MODEL');
+              setSelectedModelForUpload(sMatch.matchedModel);
+              setModelSearchInput(sMatch.matchedModel);
+            } else if (sMatch.suggestedBindingMode === 'EQUIPMENT' && sMatch.matchedEquipment) {
+              setBindingMode('EQUIPMENT');
+              setSelectedEquipmentForUpload(sMatch.matchedEquipment as EquipmentOption);
+            }
+          }
+        }
+      })
+      .catch(() => {});
+  }, [availableBindingTargets, equipmentList]);
 
   // Confirm Delete Dialog State
   const [deleteDialogDoc, setDeleteDialogDoc] = useState<{ id: string; name: string } | null>(null);
@@ -1125,6 +1194,7 @@ function DocumentsListContent() {
         onClose={() => {
           setUploadModalOpen(false);
           setSelectedFiles([]);
+          setAutoMatchResult(null);
         }}
         title="Загрузка документов в архив EPS"
         icon={<UploadFileIcon color="primary" />}
@@ -1147,10 +1217,87 @@ function DocumentsListContent() {
         }
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.25, pt: 1 }}>
+          {/* File Picker at Top */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+            <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+              1. Выберите файлы для загрузки:
+            </Typography>
+            <FileUploadDropzone
+              multiple
+              files={selectedFiles}
+              onChange={(files) => handleFilesChange(files)}
+              compact
+              title="Перетащите файлы документов или выберите"
+              description="PDF, Word, Excel, чертежи и схемы (до 15 МБ на файл)"
+            />
+          </Box>
+
+          {/* Smart Auto-match Suggestion Banner */}
+          {autoMatchResult && autoMatchResult.confidence !== 'none' && (
+            <Paper
+              elevation={0}
+              sx={{
+                p: 1.75,
+                borderRadius: '10px',
+                border: '1px solid',
+                borderColor: 'primary.light',
+                bgcolor: 'action.hover',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <AutoAwesomeIcon color="primary" sx={{ fontSize: 18 }} />
+                <Typography variant="subtitle2" fontWeight={700} color="primary.main">
+                  Автоматическое сопоставление по имени файла
+                </Typography>
+              </Box>
+
+              <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'text.primary' }}>
+                {autoMatchResult.matchReason}
+              </Typography>
+
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+                <Chip
+                  label={`Тип: ${autoMatchResult.detectedDocTypeLabel}`}
+                  size="small"
+                  color="success"
+                  variant="outlined"
+                  sx={{ fontWeight: 600, height: 22, fontSize: '0.75rem' }}
+                />
+                {autoMatchResult.matchedModel && (
+                  <Chip
+                    label={`Модель: ${autoMatchResult.matchedModel}`}
+                    size="small"
+                    color="primary"
+                    sx={{ fontWeight: 600, height: 22, fontSize: '0.75rem' }}
+                  />
+                )}
+                {autoMatchResult.matchedDecimalNumber && (
+                  <Chip
+                    label={`Дец. №: ${autoMatchResult.matchedDecimalNumber}`}
+                    size="small"
+                    color="primary"
+                    sx={{ fontWeight: 600, height: 22, fontSize: '0.75rem' }}
+                  />
+                )}
+                {autoMatchResult.matchingEquipmentCount > 0 && (
+                  <Chip
+                    label={`В реестре: ${autoMatchResult.matchingEquipmentCount} ед.`}
+                    size="small"
+                    variant="outlined"
+                    sx={{ fontWeight: 600, height: 22, fontSize: '0.75rem' }}
+                  />
+                )}
+              </Box>
+            </Paper>
+          )}
+
           {/* Binding Mode Selector */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
             <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
-              Способ привязки документа:
+              2. Способ привязки документа к реестру:
             </Typography>
             <ToggleButtonGroup
               value={bindingMode}
@@ -1391,16 +1538,6 @@ function DocumentsListContent() {
               </MenuItem>
             ))}
           </TextField>
-
-          {/* File Picker */}
-          <FileUploadDropzone
-            multiple
-            files={selectedFiles}
-            onChange={(files) => setSelectedFiles(files)}
-            compact
-            title="Перетащите файлы документов или выберите"
-            description="PDF, Word, Excel, чертежи и схемы (до 15 МБ на файл)"
-          />
 
           {/* Description */}
           <TextField
