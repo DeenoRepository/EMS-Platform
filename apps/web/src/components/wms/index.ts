@@ -23,4 +23,8 @@ export * from './EditNomenclatureDialog';
 export { default as BulkLocationModal } from './BulkLocationModal';
 export * from './BulkLocationModal';
 export * from './dashboard';
+export * from './stock';
+export * from './operations';
+
+
 

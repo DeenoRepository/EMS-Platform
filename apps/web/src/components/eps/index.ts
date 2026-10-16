@@ -9,3 +9,5 @@ export * from './EquipmentBatchEditDialog';
 export * from './ResponsibleUserSelect';
 export * from './EquipmentFieldsCatalogView';
 export * from './EquipmentPurgeDialog';
+export * from './registry';
+

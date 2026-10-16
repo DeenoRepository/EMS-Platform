@@ -1,153 +1,399 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Grid,
-  TextField,
-  MenuItem,
-  FormControlLabel,
-  Switch,
-  Button,
-  Checkbox,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TableSortLabel,
-  Paper,
-  TablePagination,
-  Chip,
-  IconButton,
-  Tooltip,
-  Divider,
-  Stack,
-  ToggleButton,
-  ToggleButtonGroup,
-} from '@mui/material';
-import ViewListIcon from '@mui/icons-material/ViewList';
-import ViewModuleIcon from '@mui/icons-material/ViewModule';
-import { useSearchParams, useRouter } from 'next/navigation';
-import PageHeader from '@/components/layout/PageHeader';
-import AddIcon from '@mui/icons-material/Add';
-import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
-import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined';
-import SyncIcon from '@mui/icons-material/Sync';
-import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
-import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
-import CreateNomenclatureDialog from '@/components/wms/CreateNomenclatureDialog';
-import {
-  StockDetailDrawer,
-  PrintBarcodeModal,
-  WarehouseSelect,
-  WmsOperationWizardDialog,
-  EditNomenclatureDialog,
-  BulkLocationModal,
-  type PrintableLabelItem,
-  type OperationType,
-} from '@/components/wms';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import React, { useState, useCallback, Suspense } from 'react';
+import { Box } from '@mui/material';
+import { useRouter } from 'next/navigation';
 import PrintIcon from '@mui/icons-material/Print';
+import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined';
+import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS } from '@ems/shared';
 import {
-  StatusBadge,
-  SearchInput,
-  FilterToolbar,
-  EmptyState,
   DataTableWrapper,
   CriticalAlertBanner,
   BulkActionBar,
   PageLoading,
-  FormDialog,
-  ExportButton,
-  type ExportFormat,
-  type TableColumnOption,
+  EmptyState,
 } from '@/components/ui';
+import {
+  StockRow,
+  ZoneOption,
+  PrintableLabelItem,
+  OperationType,
+} from '@/components/wms';
+import {
+  useStockRegistry,
+  StockKpiSummary,
+  StockRegistryHeader,
+  StockRegistryToolbar,
+  StockRegistryCards,
+  StockRegistryTable,
+  StockRegistryDialogs,
+} from '@/components/wms/stock';
 
+function WmsStockContent() {
+  const { enqueueSnackbar } = useSnackbar();
+  const { user, hasPermission } = useAuth();
+  const router = useRouter();
 
-interface StockRow {
-  id: string;
-  warehouseId: string;
-  warehouseName: string;
-  warehouseCode: string;
-  warehouseResponsibleUserId?: string | null;
-  nomenclatureId: string;
-  name: string;
-  article: string;
-  description?: string | null;
-  unit: string;
-  category: string;
-  quantity: number;
-  inTransitIn?: number;
-  inTransitOut?: number;
-  globalInTransit?: number;
-  expectedTotal?: number;
-  transfersInTransit?: Array<{
-    transferId: string;
-    transferNumber: string;
-    sourceWarehouseId: string;
-    sourceWarehouseName: string;
-    sourceWarehouseCode: string;
-    targetWarehouseId: string;
-    targetWarehouseName: string;
-    targetWarehouseCode: string;
-    quantity: number;
-    dispatchedAt: string;
-    direction: 'INCOMING' | 'OUTGOING';
-  }>;
-  totalStock?: number;
-  totalEffectiveStock?: number;
-  minStock: number | string;
-  isLowStock: boolean;
-  isReplenishing?: boolean;
-  cellId?: string | null;
-  cellCode?: string | null;
-  cellName?: string | null;
-  zoneId?: string | null;
-  zoneName?: string | null;
-  zoneCode?: string | null;
-  compatibleEquipmentCount: number;
-  compatibleEquipment: Array<{ id: string; name: string; inventoryNumber: string }>;
-  updatedAt: string;
+  const {
+    items,
+    sortedItems,
+    warehouses,
+    zones,
+    categories,
+    selectedIds,
+    isLoading,
+    sortField,
+    sortDirection,
+    visibleColumns,
+    selectedWarehouse,
+    selectedZone,
+    selectedCategory,
+    search,
+    lowStockOnly,
+    page,
+    rowsPerPage,
+    totalCount,
+    globalLowStockCount,
+    viewMode,
+    activeFilterCount,
+    kpiStats,
+    setPage,
+    setRowsPerPage,
+    setSelectedIds,
+    setVisibleColumns,
+    setSelectedWarehouse,
+    setSelectedZone,
+    setSelectedCategory,
+    setSearch,
+    setLowStockOnly,
+    setViewMode,
+    fetchStock,
+    handleRequestSort,
+    handleResetFilters,
+  } = useStockRegistry();
+
+  // Dialogs States
+  const [isNomenclatureModalOpen, setIsNomenclatureModalOpen] = useState(false);
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [locStockItem, setLocStockItem] = useState<StockRow | null>(null);
+  const [warehouseZonesForLoc, setWarehouseZonesForLoc] = useState<ZoneOption[]>([]);
+  const [selectedCellId, setSelectedCellId] = useState<string>('');
+  const [isSavingLoc, setIsSavingLoc] = useState(false);
+  const [isBulkLocationOpen, setIsBulkLocationOpen] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [selectedDrawerItem, setSelectedDrawerItem] = useState<StockRow | null>(null);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [printItems, setPrintItems] = useState<PrintableLabelItem[]>([]);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [wizardType, setWizardType] = useState<OperationType>('RECEIPT');
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editItem, setEditItem] = useState<any>(null);
+  const [isRecalculating, setIsRecalculating] = useState(false);
+
+  const isAdmin = Boolean(
+    user?.roles?.includes('admin') ||
+    hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
+    hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE)
+  );
+
+  const canEditStockLocation = useCallback(
+    (row?: StockRow | null) => {
+      if (!row) return false;
+      if (isAdmin) return true;
+      return Boolean(user?.userId && row.warehouseResponsibleUserId === user.userId);
+    },
+    [isAdmin, user?.userId]
+  );
+
+  const handleOpenLocationModal = useCallback(
+    async (row: StockRow) => {
+      setLocStockItem(row);
+      setSelectedCellId(row.cellId || '');
+      setIsLocationModalOpen(true);
+      try {
+        const res = await fetch(`/api/wms/warehouses/${row.warehouseId}/zones`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success) setWarehouseZonesForLoc(json.data);
+        }
+      } catch {
+        setWarehouseZonesForLoc([]);
+      }
+    },
+    []
+  );
+
+  const handleSaveLocation = useCallback(async () => {
+    if (!locStockItem) return;
+    setIsSavingLoc(true);
+    try {
+      const res = await fetch(`/api/wms/stock/${locStockItem.id}/location`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cellId: selectedCellId || null }),
+      });
+      if (res.ok) {
+        enqueueSnackbar('Место хранения ТМЦ успешно обновлено', { variant: 'success' });
+        setIsLocationModalOpen(false);
+        fetchStock();
+      } else {
+        const json = await res.json();
+        enqueueSnackbar(json.error || 'Ошибка при сохранении ячейки', { variant: 'error' });
+      }
+    } catch {
+      enqueueSnackbar('Ошибка сервера при обновлении места хранения', { variant: 'error' });
+    } finally {
+      setIsSavingLoc(false);
+    }
+  }, [locStockItem, selectedCellId, enqueueSnackbar, fetchStock]);
+
+  const handleRecalculateStock = useCallback(async () => {
+    setIsRecalculating(true);
+    try {
+      const res = await fetch('/api/wms/stock/recalculate', { method: 'POST' });
+      if (res.ok) {
+        const json = await res.json();
+        enqueueSnackbar(json.message || 'Остатки успешно пересчитаны', { variant: 'success' });
+        fetchStock();
+      } else {
+        enqueueSnackbar('Ошибка пересчета складских остатков', { variant: 'error' });
+      }
+    } catch {
+      enqueueSnackbar('Ошибка сети при пересчете остатков', { variant: 'error' });
+    } finally {
+      setIsRecalculating(false);
+    }
+  }, [enqueueSnackbar, fetchStock]);
+
+  const handleBulkPrint = useCallback(() => {
+    const selectedRows = items.filter((i) => selectedIds.includes(i.id));
+    if (selectedRows.length === 0) return;
+    setPrintItems(
+      selectedRows.map((r) => ({
+        id: r.id,
+        nomenclatureId: r.nomenclatureId,
+        name: r.name,
+        article: r.article,
+        warehouseCode: r.warehouseCode,
+        cellCode: r.cellCode,
+        quantity: r.quantity,
+        unit: r.unit,
+      }))
+    );
+    setIsPrintModalOpen(true);
+  }, [items, selectedIds]);
+
+  return (
+    <Box sx={{ pb: 3 }}>
+      {/* 1. Шапка страницы */}
+      <StockRegistryHeader
+        canCreateOperation={hasPermission(PERMISSIONS.WMS_OPERATIONS_CREATE)}
+        canManageNomenclature={hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE)}
+        canRecalculate={hasPermission(PERMISSIONS.WMS_STOCK_VIEW)}
+        isRecalculating={isRecalculating}
+        onOpenOperationWizard={() => {
+          setWizardType('RECEIPT');
+          setIsWizardOpen(true);
+        }}
+        onOpenCreateNomenclature={() => setIsNomenclatureModalOpen(true)}
+        onRecalculate={handleRecalculateStock}
+      />
+
+      {/* 2. Предупреждение о дефиците ТМЦ */}
+      {globalLowStockCount > 0 && (
+        <Box sx={{ mb: 2.5 }}>
+          <CriticalAlertBanner
+            alerts={[
+              {
+                id: 'wms-stock-low-warning',
+                severity: 'WARNING',
+                title: `Обнаружен дефицит по ${globalLowStockCount} позициям ТМЦ`,
+                description: 'Фактический остаток некоторых позиций на складах упал ниже неснижаемого порога.',
+                actionLabel: lowStockOnly ? 'Показать все позиции' : 'Показать только дефицит',
+                onAction: () => setLowStockOnly((prev) => !prev),
+                count: globalLowStockCount,
+              },
+            ]}
+          />
+        </Box>
+      )}
+
+      {/* 3. KPI Карточки остатков ТМЦ */}
+      <StockKpiSummary
+        totalCount={kpiStats.totalCount}
+        totalPhysical={kpiStats.totalPhysical}
+        lowStockCount={kpiStats.globalLowStockCount}
+        totalInTransit={kpiStats.totalInTransit}
+        loading={isLoading}
+        lowStockOnly={lowStockOnly}
+        onToggleLowStock={() => setLowStockOnly((prev) => !prev)}
+        onNavigate={(path) => router.push(path)}
+      />
+
+      {/* 4. Таблица и панель фильтрации */}
+      <DataTableWrapper
+        total={totalCount}
+        page={page + 1}
+        pageSize={rowsPerPage}
+        onPageChange={(_, p) => setPage(p - 1)}
+        onPageSizeChange={(e) => setRowsPerPage(parseInt(e.target.value, 10))}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        columns={visibleColumns.map((colId) => ({ id: colId, label: colId }))}
+        visibleColumns={visibleColumns}
+        onVisibleColumnsChange={setVisibleColumns}
+        loading={isLoading}
+        toolbar={
+          <StockRegistryToolbar
+            search={search}
+            selectedWarehouse={selectedWarehouse}
+            selectedZone={selectedZone}
+            selectedCategory={selectedCategory}
+            lowStockOnly={lowStockOnly}
+            viewMode={viewMode}
+            activeFilterCount={activeFilterCount}
+            warehouses={warehouses}
+            zones={zones}
+            categories={categories}
+            isAdmin={isAdmin}
+            currentUserId={user?.userId}
+            onSearchChange={setSearch}
+            onWarehouseChange={setSelectedWarehouse}
+            onZoneChange={setSelectedZone}
+            onCategoryChange={setSelectedCategory}
+            onToggleLowStock={setLowStockOnly}
+            onViewModeChange={setViewMode}
+            onResetFilters={handleResetFilters}
+          />
+        }
+        gridContent={
+          <StockRegistryCards
+            items={sortedItems}
+            onOpenDrawer={(item) => {
+              setSelectedDrawerItem(item);
+              setIsDrawerOpen(true);
+            }}
+          />
+        }
+      >
+        {items.length === 0 && !isLoading ? (
+          <EmptyState
+            icon={<Inventory2OutlinedIcon sx={{ fontSize: 36, color: 'text.disabled' }} />}
+            title="Позиции ТМЦ не найдены"
+            description={
+              activeFilterCount > 0
+                ? 'По заданным критериям фильтрации позиции не найдены.'
+                : 'Номенклатурные позиции еще не оприходованы на склады.'
+            }
+            actionText={activeFilterCount > 0 ? 'Сбросить фильтры' : undefined}
+            onAction={activeFilterCount > 0 ? handleResetFilters : undefined}
+          />
+        ) : (
+          <StockRegistryTable
+            items={sortedItems}
+            selectedIds={selectedIds}
+            visibleColumns={visibleColumns}
+            sortField={sortField}
+            sortDirection={sortDirection}
+            canEditStockLocation={canEditStockLocation}
+            onToggleSelect={(id) =>
+              setSelectedIds((prev) =>
+                prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+              )
+            }
+            onSelectAll={(checked) =>
+              setSelectedIds(checked ? items.map((i) => i.id) : [])
+            }
+            onRequestSort={handleRequestSort}
+            onOpenDrawer={(item) => {
+              setSelectedDrawerItem(item);
+              setIsDrawerOpen(true);
+            }}
+            onOpenLocationModal={handleOpenLocationModal}
+            onNavigate={(path) => router.push(path)}
+          />
+        )}
+      </DataTableWrapper>
+
+      {/* 5. Плавающая панель массовых действий */}
+      <BulkActionBar
+        selectedCount={selectedIds.length}
+        totalCount={totalCount}
+        onClearSelection={() => setSelectedIds([])}
+        actions={[
+          {
+            label: 'Печать этикеток',
+            icon: <PrintIcon fontSize="small" />,
+            onClick: handleBulkPrint,
+            color: 'primary',
+          },
+          {
+            label: 'Назначить ячейки',
+            icon: <PlaceOutlinedIcon fontSize="small" />,
+            onClick: () => setIsBulkLocationOpen(true),
+            color: 'secondary',
+          },
+        ]}
+      />
+
+      {/* 6. Диалоговые окна */}
+      <StockRegistryDialogs
+        isLocationModalOpen={isLocationModalOpen}
+        locStockItem={locStockItem}
+        warehouseZonesForLoc={warehouseZonesForLoc}
+        selectedCellId={selectedCellId}
+        isSavingLoc={isSavingLoc}
+        canEditLocation={canEditStockLocation(locStockItem)}
+        onCloseLocationModal={() => setIsLocationModalOpen(false)}
+        onSaveLocation={handleSaveLocation}
+        onCellIdChange={setSelectedCellId}
+        onNavigateToWarehouses={() => {
+          setIsLocationModalOpen(false);
+          router.push('/wms/warehouses');
+        }}
+        isNomenclatureModalOpen={isNomenclatureModalOpen}
+        categories={categories}
+        onCloseNomenclatureModal={() => setIsNomenclatureModalOpen(false)}
+        onNomenclatureCreated={fetchStock}
+        isEditDialogOpen={isEditDialogOpen}
+        editItem={editItem}
+        onCloseEditDialog={() => setIsEditDialogOpen(false)}
+        onEditSaved={() => {
+          setIsEditDialogOpen(false);
+          fetchStock();
+        }}
+        isBulkLocationOpen={isBulkLocationOpen}
+        selectedIds={selectedIds}
+        items={items}
+        onCloseBulkLocation={() => setIsBulkLocationOpen(false)}
+        onBulkLocationSaved={() => {
+          setIsBulkLocationOpen(false);
+          fetchStock();
+        }}
+        isPrintModalOpen={isPrintModalOpen}
+        printItems={printItems}
+        onClosePrintModal={() => setIsPrintModalOpen(false)}
+        isWizardOpen={isWizardOpen}
+        wizardType={wizardType}
+        onCloseWizard={() => setIsWizardOpen(false)}
+        onWizardSuccess={() => {
+          setIsWizardOpen(false);
+          fetchStock();
+        }}
+        isDrawerOpen={isDrawerOpen}
+        selectedDrawerItem={selectedDrawerItem}
+        onCloseDrawer={() => setIsDrawerOpen(false)}
+        onOpenEditFromDrawer={(item) => {
+          setEditItem(item);
+          setIsEditDialogOpen(true);
+        }}
+      />
+    </Box>
+  );
 }
-
-interface WarehouseOption {
-  id: string;
-  name: string;
-  code: string;
-}
-
-interface CategoryOption {
-  id: string;
-  name: string;
-}
-
-interface ZoneOption {
-  id: string;
-  name: string;
-  code: string;
-  cells: Array<{ id: string; code: string; name?: string | null }>;
-}
-
-const STOCK_COLUMNS: TableColumnOption[] = [
-  { id: 'warehouse', label: 'Склад хранения', defaultVisible: true },
-  { id: 'zone', label: 'Адресная ячейка хранения', defaultVisible: true },
-  { id: 'sku', label: 'Артикул / Модель', defaultVisible: true },
-  { id: 'name', label: 'Наименование ТМЦ', defaultVisible: true, required: true },
-  { id: 'category', label: 'Товарная группа / Категория', defaultVisible: true },
-  { id: 'quantity', label: 'Фактический остаток', defaultVisible: true },
-  { id: 'inTransit', label: 'В пути (Транзит)', defaultVisible: true },
-  { id: 'minQuantity', label: 'Неснижаемый нормативный остаток', defaultVisible: true },
-  { id: 'status', label: 'Статус обеспеченности', defaultVisible: true },
-  { id: 'equipment', label: 'Совместимое оборудование', defaultVisible: true },
-];
 
 export default function WmsStockPage() {
   return (
@@ -156,1381 +402,3 @@ export default function WmsStockPage() {
     </Suspense>
   );
 }
-
-function WmsStockContent() {
-  const { enqueueSnackbar } = useSnackbar();
-  const { user, hasPermission } = useAuth();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  // Data States
-  const [items, setItems] = useState<StockRow[]>([]);
-  const [warehouses, setWarehouses] = useState<WarehouseOption[]>([]);
-  const [zones, setZones] = useState<ZoneOption[]>([]);
-  const [categories, setCategories] = useState<CategoryOption[]>([]);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Sorting
-  const [sortField, setSortField] = useState<string>('name');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-
-  // Columns visibility
-  const [visibleColumns, setVisibleColumns] = useState<string[]>(() =>
-    STOCK_COLUMNS.map((c) => c.id)
-  );
-
-  // Filters
-  const [selectedWarehouse, setSelectedWarehouse] = useState<string>('');
-  const [selectedZone, setSelectedZone] = useState<string>('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [search, setSearch] = useState<string>('');
-  const [lowStockOnly, setLowStockOnly] = useState<boolean>(searchParams.get('lowStockOnly') === 'true');
-
-  // Pagination
-  const [page, setPage] = useState<number>(0);
-  const [rowsPerPage, setRowsPerPage] = useState<number>(25);
-  const [totalCount, setTotalCount] = useState<number>(0);
-  const [globalLowStockCount, setGlobalLowStockCount] = useState<number>(0);
-  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
-
-  // Modal: Create Nomenclature
-  const [isNomenclatureModalOpen, setIsNomenclatureModalOpen] = useState(false);
-
-  // Modal: Assign Storage Location (Cell)
-  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
-  const [locStockItem, setLocStockItem] = useState<StockRow | null>(null);
-  const [warehouseZonesForLoc, setWarehouseZonesForLoc] = useState<ZoneOption[]>([]);
-  const [selectedCellId, setSelectedCellId] = useState<string>('');
-  const [isSavingLoc, setIsSavingLoc] = useState(false);
-
-  // Modal: Bulk Location Move
-  const [isBulkLocationOpen, setIsBulkLocationOpen] = useState(false);
-
-  // Slide-over Drawer: Stock Item Detail
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [selectedDrawerItem, setSelectedDrawerItem] = useState<StockRow | null>(null);
-
-  // Modal: Print Barcode / Label
-  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
-  const [printItems, setPrintItems] = useState<PrintableLabelItem[]>([]);
-
-  // Modal: Operation Wizard
-  const [isWizardOpen, setIsWizardOpen] = useState(false);
-  const [wizardType, setWizardType] = useState<OperationType>('RECEIPT');
-
-  // Modal: Edit Nomenclature (ТМЦ)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editItem, setEditItem] = useState<any>(null);
-  const [isRecalculating, setIsRecalculating] = useState(false);
-
-  // Load dictionaries once on mount
-  useEffect(() => {
-    async function loadDictionaries() {
-      try {
-        const [wRes, cRes] = await Promise.all([
-          fetch('/api/wms/warehouses'),
-          fetch('/api/wms/categories'),
-        ]);
-        if (wRes.ok) {
-          const wData = await wRes.json();
-          if (wData.success) setWarehouses(wData.data);
-        }
-        if (cRes.ok) {
-          const cData = await cRes.json();
-          if (cData.success) setCategories(cData.data);
-        }
-      } catch (err) {
-        console.error('Ошибка загрузки справочников WMS:', err);
-      }
-    }
-    loadDictionaries();
-  }, []);
-
-  // When warehouse changes, fetch its storage zones for detailed filtering
-  useEffect(() => {
-    if (!selectedWarehouse) {
-      setZones([]);
-      setSelectedZone('');
-      return;
-    }
-    async function loadZones() {
-      try {
-        const res = await fetch(`/api/wms/warehouses/${selectedWarehouse}/zones`);
-        if (res.ok) {
-          const json = await res.json();
-          if (json.success) setZones(json.data);
-        }
-      } catch (err) {
-        console.error('Ошибка загрузки зон склада:', err);
-      }
-    }
-    loadZones();
-  }, [selectedWarehouse]);
-
-  // Fetch Stock Items
-  const fetchStock = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const params = new URLSearchParams({
-        page: (page + 1).toString(),
-        pageSize: rowsPerPage.toString(),
-      });
-
-      if (selectedWarehouse) params.append('warehouseId', selectedWarehouse);
-      if (selectedZone) params.append('zoneId', selectedZone);
-      if (selectedCategory) params.append('categoryId', selectedCategory);
-      if (search) params.append('search', search);
-      if (lowStockOnly) params.append('lowStockOnly', 'true');
-
-      const res = await fetch(`/api/wms/stock?${params.toString()}`);
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success) {
-          setItems(json.data.items || []);
-          setTotalCount(json.data.total || 0);
-          if (typeof json.data.lowStockTotalCount === 'number') {
-            setGlobalLowStockCount(json.data.lowStockTotalCount);
-          }
-        }
-      }
-    } catch {
-      enqueueSnackbar('Ошибка загрузки остатков склада', { variant: 'error' });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedWarehouse, selectedZone, selectedCategory, search, lowStockOnly, page, rowsPerPage, enqueueSnackbar]);
-
-  useEffect(() => {
-    fetchStock();
-  }, [fetchStock]);
-
-  // Проверка права на редактирование ячеек ТМЦ конкретного склада
-  const canEditStockLocation = useCallback(
-    (row?: StockRow | null) => {
-      if (!row) return false;
-      const isAdmin =
-        user?.roles?.includes('admin') ||
-        hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-        hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
-
-      if (isAdmin) return true;
-
-      const isResponsible = Boolean(user?.userId && row.warehouseResponsibleUserId === user.userId);
-      const hasZonePermission =
-        hasPermission(PERMISSIONS.WMS_ZONES_MANAGE) ||
-        hasPermission(PERMISSIONS.WMS_NOMENCLATURE_MANAGE);
-
-      return isResponsible && hasZonePermission;
-    },
-    [user, hasPermission]
-  );
-
-  // Open location assignment dialog
-  const handleOpenLocationModal = async (row: StockRow) => {
-    if (row.id.startsWith('virtual_') || row.warehouseId === 'unassigned') {
-      enqueueSnackbar('Позиция еще не оприходована на склад. Назначение ячейки возможно после оформления прихода.', { variant: 'info' });
-      return;
-    }
-
-    if (!canEditStockLocation(row)) {
-      enqueueSnackbar(
-        `Вы не являетесь ответственным лицом за склад "${row.warehouseName}". Назначение ячеек чужого склада запрещено.`,
-        { variant: 'warning' }
-      );
-      return;
-    }
-
-    setLocStockItem(row);
-    setSelectedCellId(row.cellId || '');
-    setIsLocationModalOpen(true);
-
-    try {
-      const res = await fetch(`/api/wms/warehouses/${row.warehouseId}/zones`);
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success) {
-          setWarehouseZonesForLoc(json.data);
-        }
-      }
-    } catch (err) {
-      console.error('Ошибка загрузки ячеек для склада:', err);
-    }
-  };
-
-  const handleSaveLocation = async () => {
-    if (!locStockItem) return;
-    if (!canEditStockLocation(locStockItem)) {
-      enqueueSnackbar(
-        `Вы не являетесь ответственным лицом за склад "${locStockItem.warehouseName}". Назначение ячеек чужого склада запрещено.`,
-        { variant: 'error' }
-      );
-      return;
-    }
-
-    setIsSavingLoc(true);
-    try {
-      const res = await fetch(`/api/wms/stock/${locStockItem.id}/location`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cellId: selectedCellId || null,
-        }),
-      });
-
-      const json = await res.json();
-      if (res.ok && json.success) {
-        enqueueSnackbar(json.message || 'Место хранения обновлено', { variant: 'success' });
-        setIsLocationModalOpen(false);
-        fetchStock();
-      } else {
-        enqueueSnackbar(json.error || 'Ошибка назначения ячейки', { variant: 'error' });
-      }
-    } catch {
-      enqueueSnackbar('Ошибка сети при обновлении места хранения', { variant: 'error' });
-    } finally {
-      setIsSavingLoc(false);
-    }
-  };
-
-  const handleRecalculateStock = async () => {
-    setIsRecalculating(true);
-    try {
-      const res = await fetch('/api/wms/stock/recalculate', { method: 'POST' });
-      const json = await res.json();
-      if (res.ok && json.success) {
-        enqueueSnackbar(json.message || 'Остатки успешно пересчитаны', { variant: 'success' });
-        fetchStock();
-      } else {
-        enqueueSnackbar(json.error || 'Ошибка пересчета остатков', { variant: 'error' });
-      }
-    } catch {
-      enqueueSnackbar('Ошибка сети при пересчете остатков', { variant: 'error' });
-    } finally {
-      setIsRecalculating(false);
-    }
-  };
-
-  const handleResetFilters = () => {
-    setSelectedWarehouse('');
-    setSelectedZone('');
-    setSelectedCategory('');
-    setSearch('');
-    setLowStockOnly(false);
-    setPage(0);
-  };
-
-  const activeFilterCount =
-    (selectedWarehouse ? 1 : 0) +
-    (selectedZone ? 1 : 0) +
-    (selectedCategory ? 1 : 0) +
-    (search ? 1 : 0) +
-    (lowStockOnly ? 1 : 0);
-
-  const handleExport = (format: ExportFormat) => {
-    const targetItems = selectedIds.length > 0
-      ? items.filter((i) => selectedIds.includes(i.id))
-      : items;
-
-    if (targetItems.length === 0) {
-      enqueueSnackbar('Нет данных для экспорта', { variant: 'warning' });
-      return;
-    }
-
-    if (format === 'csv' || format === 'xlsx') {
-      const headers = ['Склад', 'Артикул', 'Номенклатура', 'Категория', 'Остаток', 'Ед.Изм.', 'Мин.Остаток', 'Адрес ячейки'];
-      const rows = targetItems.map((i) => [
-        `"${i.warehouseName}"`,
-        `"${i.article}"`,
-        `"${i.name}"`,
-        `"${i.category}"`,
-        i.quantity,
-        `"${i.unit}"`,
-        i.minStock,
-        `"${i.cellCode || 'Не назначена'}"`,
-      ]);
-
-      const csvContent =
-        'data:text/csv;charset=utf-8,\uFEFF' +
-        [headers.join(',')].concat(rows.map((r) => r.join(','))).join('\n');
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement('a');
-      link.setAttribute('href', encodedUri);
-      link.setAttribute('download', `wms_stock_${format}_${Date.now()}.${format === 'xlsx' ? 'csv' : 'csv'}`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      enqueueSnackbar(`Экспортировано позиций: ${targetItems.length}`, { variant: 'success' });
-    }
-  };
-
-  const handleOpenDrawer = (item: StockRow) => {
-    setSelectedDrawerItem(item);
-    setIsDrawerOpen(true);
-  };
-
-  const handleOpenPrintSingle = (item: StockRow) => {
-    setPrintItems([
-      {
-        id: item.id,
-        name: item.name,
-        article: item.article,
-        unit: item.unit,
-        warehouseCode: item.warehouseCode,
-        cellCode: item.cellCode,
-        quantity: item.quantity,
-      },
-    ]);
-    setIsPrintModalOpen(true);
-  };
-
-  const handleOpenPrintBulk = () => {
-    const targetItems = items.filter((i) => selectedIds.includes(i.id));
-    if (targetItems.length === 0) {
-      enqueueSnackbar('Выберите позиции для печати этикеток', { variant: 'warning' });
-      return;
-    }
-    setPrintItems(
-      targetItems.map((i) => ({
-        id: i.id,
-        name: i.name,
-        article: i.article,
-        unit: i.unit,
-        warehouseCode: i.warehouseCode,
-        cellCode: i.cellCode,
-        quantity: i.quantity,
-      }))
-    );
-    setIsPrintModalOpen(true);
-  };
-
-  const handleBulkIssue = () => {
-    enqueueSnackbar(`Сформирован черновик акта списания на ${selectedIds.length} позиций`, { variant: 'info' });
-  };
-
-
-  const effectiveLowStockCount = lowStockOnly ? totalCount : globalLowStockCount;
-  const criticalAlerts = useMemo(() => {
-    if (effectiveLowStockCount > 0) {
-      return [
-        {
-          id: 'low-stock-alert',
-          severity: 'WARNING' as const,
-          title: 'Обнаружен дефицит складских запасов ТМЦ',
-          description: `Текущий остаток ниже минимального неснижаемого порога по ${effectiveLowStockCount} позициям. Рекомендуется сформировать заказ поставщику.`,
-          count: effectiveLowStockCount,
-          actionLabel: lowStockOnly ? undefined : 'Показать дефицит',
-          onAction: lowStockOnly
-            ? undefined
-            : () => {
-                setLowStockOnly(true);
-                setPage(0);
-              },
-        },
-      ];
-    }
-    return [];
-  }, [effectiveLowStockCount, lowStockOnly]);
-
-  const handleRequestSort = (property: string) => {
-    const isAsc = sortField === property && sortDirection === 'asc';
-    setSortDirection(isAsc ? 'desc' : 'asc');
-    setSortField(property);
-  };
-
-  const sortedItems = useMemo(() => {
-    if (!sortField) return items;
-    return [...items].sort((a, b) => {
-      let aVal: any = '';
-      let bVal: any = '';
-      switch (sortField) {
-        case 'warehouse':
-          aVal = a.warehouseName || '';
-          bVal = b.warehouseName || '';
-          break;
-        case 'zone':
-          aVal = `${a.zoneCode || ''} ${a.cellCode || ''}`;
-          bVal = `${b.zoneCode || ''} ${b.cellCode || ''}`;
-          break;
-        case 'sku':
-          aVal = a.article || '';
-          bVal = b.article || '';
-          break;
-        case 'name':
-          aVal = a.name || '';
-          bVal = b.name || '';
-          break;
-        case 'category':
-          aVal = a.category || '';
-          bVal = b.category || '';
-          break;
-        case 'quantity':
-          aVal = Number(a.quantity) || 0;
-          bVal = Number(b.quantity) || 0;
-          break;
-        case 'inTransit':
-          aVal = Number(a.inTransitIn || 0);
-          bVal = Number(b.inTransitIn || 0);
-          break;
-        case 'minQuantity':
-          aVal = Number(a.minStock) || 0;
-          bVal = Number(b.minStock) || 0;
-          break;
-        case 'status':
-          aVal = a.isLowStock ? 0 : 1;
-          bVal = b.isLowStock ? 0 : 1;
-          break;
-        default:
-          aVal = (a as unknown as Record<string, unknown>)[sortField] ?? '';
-          bVal = (b as unknown as Record<string, unknown>)[sortField] ?? '';
-      }
-
-      if (typeof aVal === 'number' && typeof bVal === 'number') {
-        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
-      }
-      return sortDirection === 'asc'
-        ? String(aVal).localeCompare(String(bVal), 'ru')
-        : String(bVal).localeCompare(String(aVal), 'ru');
-    });
-  }, [items, sortField, sortDirection]);
-
-  return (
-    <Box sx={{ pb: selectedIds.length > 0 ? 8 : 4 }}>
-      <PageHeader
-        title="Номенклатурный справочник и остатки ТМЦ"
-        subtitle="Складские запасы запасных частей, инструмента, ГСМ и материалов с адресным хранением"
-        breadcrumbs={[
-          { label: 'Главная', href: '/' },
-          { label: 'Складской учёт ТМЦ', href: '/wms' },
-          { label: 'Номенклатура и остатки' },
-        ]}
-        actions={
-          <Stack direction="row" spacing={1.5} alignItems="center">
-
-            {hasPermission(PERMISSIONS.WMS_OPERATIONS_CREATE) && (
-              <Button
-                variant="contained"
-                startIcon={<AutoAwesomeIcon />}
-                onClick={() => {
-                  setWizardType('RECEIPT');
-                  setIsWizardOpen(true);
-                }}
-                sx={{
-                  height: 36,
-                  px: 2,
-                  fontSize: '0.8125rem',
-                  fontWeight: 600,
-                  borderRadius: '8px',
-                  textTransform: 'none',
-                  bgcolor: 'primary.main',
-                  '&:hover': { bgcolor: 'primary.dark' },
-                }}
-              >
-                Мастер операций
-              </Button>
-            )}
-
-            {hasPermission(PERMISSIONS.WMS_OPERATIONS_CREATE) && (
-              <Tooltip title="Синхронизировать и пересчитать фактические остатки из журнала операций">
-                <Button
-                  variant="outlined"
-                  startIcon={<SyncIcon className={isRecalculating ? 'spin-animation' : undefined} />}
-                  onClick={handleRecalculateStock}
-                  disabled={isRecalculating}
-                  sx={{
-                    height: 36,
-                    px: 1.5,
-                    fontSize: '0.8125rem',
-                    fontWeight: 600,
-                    borderRadius: '8px',
-                    textTransform: 'none',
-                  }}
-                >
-                  {isRecalculating ? 'Пересчет...' : 'Синхронизация'}
-                </Button>
-              </Tooltip>
-            )}
-          </Stack>
-        }
-      />
-
-      {/* Critical Stock Alerts */}
-      <CriticalAlertBanner alerts={criticalAlerts} />
-
-      <DataTableWrapper
-        loading={isLoading}
-        page={page}
-        pageSize={rowsPerPage}
-        total={totalCount}
-        onPageChange={(_, newPage) => setPage(newPage)}
-        onPageSizeChange={(e) => {
-          setRowsPerPage(parseInt(e.target.value, 10));
-          setPage(0);
-        }}
-        stickyHeader
-        storageKey="wms_stock_table"
-        columns={STOCK_COLUMNS}
-        visibleColumns={visibleColumns}
-        onVisibleColumnsChange={setVisibleColumns}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        gridContent={
-          <Grid container spacing={2}>
-            {sortedItems.map((row) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={row.id}>
-                <Card
-                  variant="outlined"
-                  onClick={() => handleOpenDrawer(row)}
-                  sx={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    borderRadius: '10px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    borderColor: row.isLowStock ? 'warning.main' : 'divider',
-                    bgcolor: row.isLowStock ? 'action.hover' : 'background.paper',
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 8px 16px -4px rgba(15, 23, 42, 0.08)',
-                      borderColor: 'primary.main',
-                    },
-                  }}
-                >
-                  <CardContent sx={{ p: 2, flex: '1 1 auto' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5 }}>
-                      <Box sx={{ minWidth: 0, pr: 1 }}>
-                        <Typography variant="subtitle2" fontWeight={700} noWrap>
-                          {row.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {row.article || 'Без артикула'}
-                        </Typography>
-                      </Box>
-                      {row.isLowStock ? (
-                        <StatusBadge status="WARNING" label="Дефицит" size="small" />
-                      ) : (
-                        <StatusBadge status="NORMAL_STOCK" label="В наличии" size="small" />
-                      )}
-                    </Box>
-
-                    <Divider sx={{ my: 1 }} />
-
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      Склад: <strong>{row.warehouseName} ({row.warehouseCode})</strong>
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      Категория: <strong>{row.category}</strong>
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      Ячейка: <strong>{row.cellCode ? `${row.zoneCode || ''} • ${row.cellCode}` : 'Не назначена'}</strong>
-                    </Typography>
-
-                    <Box sx={{ mt: 1.5, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-                      <Box>
-                        <Typography variant="caption" color="text.secondary" display="block">
-                          Остаток:
-                        </Typography>
-                        {Boolean(row.inTransitIn && row.inTransitIn > 0) && (
-                          <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 700 }}>
-                            + {row.inTransitIn} в пути 🚚
-                          </Typography>
-                        )}
-                      </Box>
-                      <Typography variant="subtitle1" fontWeight={800} color={row.isLowStock ? 'warning.main' : 'primary.main'}>
-                        {row.quantity} {row.unit}
-                      </Typography>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        }
-        selectedCount={selectedIds.length}
-        onClearSelection={() => setSelectedIds([])}
-        empty={items.length === 0 && !isLoading}
-        emptyState={
-          <EmptyState
-            icon={<Inventory2OutlinedIcon sx={{ fontSize: 36, color: 'text.disabled' }} />}
-            title="Позиции ТМЦ не найдены"
-            description={
-              activeFilterCount > 0
-                ? 'По заданным критериям фильтрации позиции не найдены. Попробуйте сбросить фильтры.'
-                : 'Номенклатурные позиции еще не оприходованы на склады.'
-            }
-            actionText={activeFilterCount > 0 ? 'Сбросить фильтры' : undefined}
-            onAction={activeFilterCount > 0 ? handleResetFilters : undefined}
-          />
-        }
-        toolbar={
-          <FilterToolbar
-            variant="embedded"
-            activeFilterCount={activeFilterCount}
-            onResetFilters={handleResetFilters}
-            actions={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: 'wrap' }}>
-                <WarehouseSelect
-                  value={selectedWarehouse}
-                  onChange={(val) => {
-                    setSelectedWarehouse(val);
-                    setSelectedZone('');
-                    setPage(0);
-                  }}
-                  warehouses={warehouses}
-                  isAdmin={hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) || user?.roles?.includes('admin')}
-                  currentUserId={user?.userId}
-                />
-
-                {selectedWarehouse && zones.length > 0 && (
-                  <TextField
-                    select
-                    size="small"
-                    value={selectedZone}
-                    onChange={(e) => {
-                      setSelectedZone(e.target.value);
-                      setPage(0);
-                    }}
-                    SelectProps={{
-                      displayEmpty: true,
-                    }}
-                    sx={{
-                      minWidth: 140,
-                      backgroundColor: 'background.paper',
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: '8px',
-                        fontSize: '0.8125rem',
-                        height: 36,
-                        '& fieldset': { borderColor: 'divider' },
-                        '&:hover fieldset': { borderColor: 'grey.400' },
-                      },
-                    }}
-                  >
-                    <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все зоны</MenuItem>
-                    {zones.map((z) => (
-                      <MenuItem key={z.id} value={z.id} sx={{ fontSize: '0.8125rem' }}>
-                        {z.name} ({z.code})
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                )}
-
-                <TextField
-                  select
-                  size="small"
-                  value={selectedCategory}
-                  onChange={(e) => {
-                    setSelectedCategory(e.target.value);
-                    setPage(0);
-                  }}
-                  SelectProps={{
-                    displayEmpty: true,
-                  }}
-                  sx={{
-                    minWidth: 160,
-                    backgroundColor: 'background.paper',
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '8px',
-                      fontSize: '0.8125rem',
-                      height: 36,
-                      '& fieldset': { borderColor: 'divider' },
-                      '&:hover fieldset': { borderColor: 'grey.400' },
-                    },
-                  }}
-                >
-                  <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все категории</MenuItem>
-                  {categories.map((c) => (
-                    <MenuItem key={c.id} value={c.id} sx={{ fontSize: '0.8125rem' }}>
-                      {c.name}
-                    </MenuItem>
-                  ))}
-                </TextField>
-
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={lowStockOnly}
-                      color="warning"
-                      size="small"
-                      onChange={(e) => {
-                        setLowStockOnly(e.target.checked);
-                        setPage(0);
-                      }}
-                    />
-                  }
-                  label={
-                    <Typography variant="body2" fontWeight={600} color={lowStockOnly ? 'warning.dark' : 'text.primary'} sx={{ fontSize: '0.8125rem' }}>
-                      Только дефицит
-                    </Typography>
-                  }
-                  sx={{ m: 0 }}
-                />
-                <ExportButton
-                  onExport={handleExport}
-                  formats={['xlsx', 'csv']}
-                  disabled={items.length === 0}
-                />
-
-                <ToggleButtonGroup
-                  value={viewMode}
-                  exclusive
-                  onChange={(_, mode) => mode && setViewMode(mode)}
-                  size="small"
-                  sx={{ height: 36 }}
-                >
-                  <ToggleButton value="table" aria-label="табличный вид" sx={{ px: 1, py: 0.5, borderRadius: '8px' }}>
-                    <Tooltip title="Табличный вид">
-                      <ViewListIcon fontSize="small" />
-                    </Tooltip>
-                  </ToggleButton>
-                  <ToggleButton value="grid" aria-label="сетка карточек" sx={{ px: 1, py: 0.5, borderRadius: '8px' }}>
-                    <Tooltip title="Сетка карточек">
-                      <ViewModuleIcon fontSize="small" />
-                    </Tooltip>
-                  </ToggleButton>
-                </ToggleButtonGroup>
-              </Box>
-            }
-          >
-            <Box sx={{ minWidth: { xs: '100%', sm: 260, md: 320 }, flexGrow: 1 }}>
-              <SearchInput
-                value={search}
-                placeholder="Поиск по названию или артикулу..."
-                onSearch={(val) => {
-                  setSearch(val);
-                  setPage(0);
-                }}
-              />
-            </Box>
-          </FilterToolbar>
-        }
-      >
-        <Table size="small" aria-label="Реестр остатков складов и ТМЦ">
-          <TableHead>
-            <TableRow sx={{ backgroundColor: 'background.paper' }}>
-              <TableCell padding="checkbox" sx={{ width: 44, pl: 2 }}>
-                <Checkbox
-                  size="small"
-                  indeterminate={selectedIds.length > 0 && selectedIds.length < items.length}
-                  checked={items.length > 0 && selectedIds.length === items.length}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedIds(items.map((i) => i.id));
-                    } else {
-                      setSelectedIds([]);
-                    }
-                  }}
-                />
-              </TableCell>
-
-              {visibleColumns.includes('warehouse') && (
-                <TableCell sx={{ minWidth: 140 }}>
-                  <TableSortLabel
-                    active={sortField === 'warehouse'}
-                    direction={sortField === 'warehouse' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('warehouse')}
-                  >
-                    Склад хранения
-                  </TableSortLabel>
-                </TableCell>
-              )}
-
-              {visibleColumns.includes('zone') && (
-                <TableCell sx={{ minWidth: 160 }}>
-                  <TableSortLabel
-                    active={sortField === 'zone'}
-                    direction={sortField === 'zone' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('zone')}
-                  >
-                    Место (ячейка)
-                  </TableSortLabel>
-                </TableCell>
-              )}
-
-              {visibleColumns.includes('sku') && (
-                <TableCell sx={{ minWidth: 140 }}>
-                  <TableSortLabel
-                    active={sortField === 'sku'}
-                    direction={sortField === 'sku' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('sku')}
-                  >
-                    Артикул / Модель
-                  </TableSortLabel>
-                </TableCell>
-              )}
-
-              {visibleColumns.includes('name') && (
-                <TableCell sx={{ minWidth: 220 }}>
-                  <TableSortLabel
-                    active={sortField === 'name'}
-                    direction={sortField === 'name' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('name')}
-                  >
-                    Номенклатура (ТМЦ)
-                  </TableSortLabel>
-                </TableCell>
-              )}
-
-              {visibleColumns.includes('category') && (
-                <TableCell sx={{ minWidth: 150 }}>
-                  <TableSortLabel
-                    active={sortField === 'category'}
-                    direction={sortField === 'category' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('category')}
-                  >
-                    Категория
-                  </TableSortLabel>
-                </TableCell>
-              )}
-
-              {visibleColumns.includes('quantity') && (
-                <TableCell align="right" sx={{ minWidth: 140 }}>
-                  <TableSortLabel
-                    active={sortField === 'quantity'}
-                    direction={sortField === 'quantity' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('quantity')}
-                  >
-                    Остаток на складе
-                  </TableSortLabel>
-                </TableCell>
-              )}
-
-              {visibleColumns.includes('inTransit') && (
-                <TableCell align="center" sx={{ minWidth: 140 }}>
-                  <TableSortLabel
-                    active={sortField === 'inTransit'}
-                    direction={sortField === 'inTransit' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('inTransit')}
-                  >
-                    В пути (Транзит)
-                  </TableSortLabel>
-                </TableCell>
-              )}
-
-              {visibleColumns.includes('minQuantity') && (
-                <TableCell align="center" sx={{ minWidth: 120 }}>
-                  <TableSortLabel
-                    active={sortField === 'minQuantity'}
-                    direction={sortField === 'minQuantity' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('minQuantity')}
-                  >
-                    Мин. остаток
-                  </TableSortLabel>
-                </TableCell>
-              )}
-
-              {visibleColumns.includes('status') && (
-                <TableCell align="center" sx={{ minWidth: 130 }}>
-                  <TableSortLabel
-                    active={sortField === 'status'}
-                    direction={sortField === 'status' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('status')}
-                  >
-                    Статус
-                  </TableSortLabel>
-                </TableCell>
-              )}
-
-              {visibleColumns.includes('equipment') && (
-                <TableCell sx={{ minWidth: 180 }}>
-                  Совместимое оборудование
-                </TableCell>
-              )}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {sortedItems.map((row) => {
-              const isChecked = selectedIds.includes(row.id);
-              return (
-                <TableRow
-                  key={row.id}
-                  hover
-                  selected={isChecked}
-                  sx={{
-                    cursor: 'pointer',
-                    bgcolor: row.isLowStock ? 'rgba(237, 108, 2, 0.04)' : undefined,
-                  }}
-                >
-                  <TableCell padding="checkbox" sx={{ pl: 2 }}>
-                    <Checkbox
-                      size="small"
-                      checked={isChecked}
-                      onChange={() => {
-                        setSelectedIds((prev) =>
-                          prev.includes(row.id) ? prev.filter((id) => id !== row.id) : [...prev, row.id]
-                        );
-                      }}
-                    />
-                  </TableCell>
-
-                  {visibleColumns.includes('warehouse') && (
-                    <TableCell>
-                      <Chip
-                        label={row.warehouseCode}
-                        size="small"
-                        sx={{
-                          fontWeight: 600,
-                          borderRadius: '4px',
-                          fontSize: '0.6875rem',
-                          backgroundColor: 'background.paper',
-                          color: 'text.secondary',
-                          border: '1px solid',
-                          borderColor: 'divider',
-                          height: 20,
-                        }}
-                      />
-                      <Typography variant="caption" sx={{ display: 'block', mt: 0.25, color: 'text.disabled', fontSize: '0.75rem' }}>
-                        {row.warehouseName}
-                      </Typography>
-                    </TableCell>
-                  )}
-
-                  {visibleColumns.includes('zone') && (
-                    <TableCell>
-                      {(() => {
-                        const canEdit = canEditStockLocation(row);
-                        if (row.cellCode) {
-                          return (
-                            <Tooltip
-                              title={
-                                canEdit
-                                  ? 'Нажмите, чтобы изменить ячейку хранения'
-                                  : 'Чужой склад: назначение ячейки разрешено только назначенному МОЛ склада или администратору'
-                              }
-                            >
-                              <span>
-                                <Chip
-                                  icon={<PlaceOutlinedIcon sx={{ fontSize: '13px !important' }} />}
-                                  label={`${row.zoneCode || row.zoneName} • ${row.cellCode}`}
-                                  size="small"
-                                  clickable={canEdit}
-                                  onClick={(e) => {
-                                    if (canEdit) {
-                                      e.stopPropagation();
-                                      handleOpenLocationModal(row);
-                                    }
-                                  }}
-                                  sx={{
-                                    fontWeight: 600,
-                                    borderRadius: '4px',
-                                    fontSize: '0.75rem',
-                                    backgroundColor: canEdit ? 'primary.light' : 'background.default',
-                                    color: canEdit ? 'primary.main' : 'text.disabled',
-                                    border: '1px solid',
-                                    borderColor: canEdit ? 'primary.light' : 'divider',
-                                    cursor: canEdit ? 'pointer' : 'default',
-                                    opacity: canEdit ? 1 : 0.85,
-                                  }}
-                                />
-                              </span>
-                            </Tooltip>
-                          );
-                        }
-
-                        if (canEdit) {
-                          return (
-                            <Button
-                              size="small"
-                              variant="text"
-                              startIcon={<PlaceOutlinedIcon sx={{ fontSize: 13, color: 'primary.main' }} />}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenLocationModal(row);
-                              }}
-                              sx={{ fontSize: '0.75rem', py: 0.2, fontWeight: 600, color: 'primary.main' }}
-                            >
-                              + Ячейка
-                            </Button>
-                          );
-                        }
-
-                        return (
-                          <Tooltip title="Чужой склад: назначение ячейки разрешено только назначенному МОЛ склада или администратору">
-                            <Typography variant="caption" sx={{ color: 'text.disabled', fontStyle: 'italic', cursor: 'default' }}>
-                              —
-                            </Typography>
-                          </Tooltip>
-                        );
-                      })()}
-                    </TableCell>
-                  )}
-
-                  {visibleColumns.includes('sku') && (
-                    <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600, fontSize: '0.8125rem', color: 'text.secondary' }}>
-                      {row.article && row.article !== '—' ? (
-                        <Chip
-                          label={row.article}
-                          size="small"
-                          sx={{
-                            borderRadius: '4px',
-                            fontWeight: 600,
-                            fontSize: '0.75rem',
-                            fontFamily: 'monospace',
-                            backgroundColor: 'action.hover',
-                            color: 'text.primary',
-                            border: '1px solid',
-                            borderColor: 'divider',
-                            height: 22,
-                          }}
-                        />
-                      ) : (
-                        '—'
-                      )}
-                    </TableCell>
-                  )}
-
-                  {visibleColumns.includes('name') && (
-                    <TableCell
-                      onClick={() => handleOpenDrawer(row)}
-                      sx={{
-                        fontWeight: 600,
-                        fontSize: '0.8125rem',
-                        color: 'primary.main',
-                        cursor: 'pointer',
-                        '&:hover': { textDecoration: 'underline' },
-                      }}
-                    >
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main', fontSize: '0.8125rem' }}>
-                        {row.name}
-                      </Typography>
-                      {row.description && !row.name.includes(row.description.replace('Модель: ', '')) && (
-                        <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', fontSize: '0.75rem', fontWeight: 500, mt: 0.25 }}>
-                          {row.description}
-                        </Typography>
-                      )}
-                    </TableCell>
-                  )}
-
-
-                  {visibleColumns.includes('category') && (
-                    <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
-                      {row.category}
-                    </TableCell>
-                  )}
-
-                  {visibleColumns.includes('quantity') && (
-                    <TableCell align="right">
-                      <Typography
-                        variant="body2"
-                        fontWeight={700}
-                        sx={{
-                          fontFeatureSettings: '"tnum"',
-                          fontSize: '0.8125rem',
-                          color: row.isLowStock ? 'error.main' : 'text.primary',
-                        }}
-                      >
-                        {row.quantity} {row.unit}
-                      </Typography>
-                      {Boolean(row.inTransitIn && row.inTransitIn > 0) && (
-                        <Typography variant="caption" sx={{ display: 'block', color: 'primary.main', fontSize: '0.6875rem', fontWeight: 600 }}>
-                          + {row.inTransitIn} {row.unit} в пути
-                        </Typography>
-                      )}
-                    </TableCell>
-                  )}
-
-                  {visibleColumns.includes('inTransit') && (
-                    <TableCell align="center">
-                      {row.inTransitIn && row.inTransitIn > 0 ? (
-                        <Tooltip
-                          title={
-                            <Box sx={{ p: 0.5 }}>
-                              <Typography variant="caption" fontWeight={700} display="block">
-                                Позиции в пути на этот склад:
-                              </Typography>
-                              {row.transfersInTransit
-                                ?.filter((t) => t.direction === 'INCOMING')
-                                .map((t, idx) => (
-                                  <Typography key={idx} variant="caption" display="block">
-                                    • {t.transferNumber}: {t.quantity} {row.unit} со склада «{t.sourceWarehouseName}»
-                                  </Typography>
-                                ))}
-                            </Box>
-                          }
-                          arrow
-                        >
-                          <Chip
-                            size="small"
-                            color="primary"
-                            variant="outlined"
-                            label={`+${row.inTransitIn} ${row.unit}`}
-                            sx={{ fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer' }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push('/wms/operations?tab=transfers');
-                            }}
-                          />
-                        </Tooltip>
-                      ) : row.inTransitOut && row.inTransitOut > 0 ? (
-                        <Tooltip
-                          title={`Отправлено с этого склада в пути: ${row.inTransitOut} ${row.unit}`}
-                          arrow
-                        >
-                          <Chip
-                            size="small"
-                            variant="outlined"
-                            label={`-${row.inTransitOut} ${row.unit} (отпр.)`}
-                            sx={{ fontWeight: 600, fontSize: '0.6875rem', color: 'text.secondary', borderColor: 'divider' }}
-                          />
-                        </Tooltip>
-                      ) : (
-                        <Typography variant="caption" sx={{ color: 'text.disabled' }}>
-                          —
-                        </Typography>
-                      )}
-                    </TableCell>
-                  )}
-
-                  {visibleColumns.includes('minQuantity') && (
-                    <TableCell align="center">
-                      <Typography variant="body2" sx={{ fontFeatureSettings: '"tnum"', fontSize: '0.8125rem', color: 'text.disabled' }}>
-                        {row.minStock} {row.minStock !== '—' ? row.unit : ''}
-                      </Typography>
-                    </TableCell>
-                  )}
-
-                  {visibleColumns.includes('status') && (
-                    <TableCell align="center">
-                      {row.isReplenishing ? (
-                        <StatusBadge
-                          status="IN_TRANSIT"
-                          label="В пути (Пополняется)"
-                        />
-                      ) : (
-                        <StatusBadge
-                          status={row.isLowStock ? 'LOW_STOCK' : 'NORMAL_STOCK'}
-                          label={row.isLowStock ? 'Дефицит' : 'В норме'}
-                        />
-                      )}
-                    </TableCell>
-                  )}
-
-                  {visibleColumns.includes('equipment') && (
-                    <TableCell>
-                      {row.compatibleEquipment && row.compatibleEquipment.length > 0 ? (
-                        <Stack direction="row" spacing={0.5} flexWrap="wrap" gap={0.5}>
-                          {row.compatibleEquipment.slice(0, 3).map((eq) => (
-                            <Tooltip key={eq.id} title={`Инв. № ${eq.inventoryNumber}`}>
-                              <Chip
-                                icon={<PrecisionManufacturingIcon sx={{ fontSize: '13px !important' }} />}
-                                label={eq.name}
-                                size="small"
-                                clickable
-                                onClick={() => router.push(`/eps/${eq.id}`)}
-                                sx={{
-                                  fontSize: '0.6875rem',
-                                  height: 22,
-                                  borderRadius: '4px',
-                                  backgroundColor: 'background.paper',
-                                  border: '1px solid',
-                                  borderColor: 'divider',
-                                  color: 'text.secondary',
-                                  fontWeight: 500,
-                                }}
-                              />
-                            </Tooltip>
-                          ))}
-                          {row.compatibleEquipment.length > 3 && (
-                            <Chip
-                              label={`+${row.compatibleEquipment.length - 3}`}
-                              size="small"
-                              sx={{
-                                fontSize: '0.6875rem',
-                                height: 22,
-                                borderRadius: '4px',
-                                backgroundColor: 'grey.100',
-                                color: 'text.disabled',
-                                fontWeight: 600,
-                              }}
-                            />
-                          )}
-                        </Stack>
-                      ) : (
-                        <Typography variant="caption" sx={{ color: 'text.disabled' }}>—</Typography>
-                      )}
-                    </TableCell>
-                  )}
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </DataTableWrapper>
-
-      {/* Диалог назначения места хранения (ячейки) */}
-      <FormDialog
-        open={isLocationModalOpen}
-        onClose={() => setIsLocationModalOpen(false)}
-        title="Место хранения ТМЦ"
-        subtitle={locStockItem ? `${locStockItem.name} (${locStockItem.warehouseName})` : undefined}
-        icon={<PlaceOutlinedIcon color="primary" />}
-        maxWidth="xs"
-        loading={isSavingLoc}
-        submitLabel={isSavingLoc ? 'Сохранение...' : 'Сохранить'}
-        onSubmit={handleSaveLocation}
-        submitDisabled={isSavingLoc || !canEditStockLocation(locStockItem) || warehouseZonesForLoc.length === 0}
-      >
-        <Stack spacing={2} sx={{ mt: 1 }}>
-          <Box>
-            <Typography variant="caption" color="text.secondary">
-              Номенклатура:
-            </Typography>
-            <Typography variant="subtitle2" fontWeight={700}>
-              {locStockItem?.name} ({locStockItem?.article || 'б/а'})
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Склад: {locStockItem?.warehouseName} ({locStockItem?.warehouseCode})
-            </Typography>
-          </Box>
-
-          <Divider />
-
-          {!canEditStockLocation(locStockItem) && (
-            <Box sx={{ p: 1.5, bgcolor: 'error.light', border: '1px solid', borderColor: 'error.main', borderRadius: 1.5 }}>
-              <Typography variant="body2" color="error.main" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
-                Изменение ячеек недоступно: требуется право «Конфигурация зон и ячеек» или назначение МОЛ склада.
-              </Typography>
-            </Box>
-          )}
-
-          {warehouseZonesForLoc.length === 0 ? (
-            <Box sx={{ p: 2, textAlign: 'center', bgcolor: 'grey.50', borderRadius: 1.5 }}>
-              <Typography variant="body2" color="text.secondary">
-                На складе <b>{locStockItem?.warehouseName}</b> еще не созданы зоны и ячейки.
-              </Typography>
-              {canEditStockLocation(locStockItem) && (
-                <Button
-                  size="small"
-                  variant="outlined"
-                  onClick={() => {
-                    setIsLocationModalOpen(false);
-                    router.push('/wms/warehouses');
-                  }}
-                  sx={{ mt: 1.5 }}
-                >
-                  Перейти к настройке зон
-                </Button>
-              )}
-            </Box>
-          ) : (
-            <TextField
-              select
-              fullWidth
-              label="Выберите ячейку хранения"
-              value={selectedCellId}
-              disabled={!canEditStockLocation(locStockItem)}
-              onChange={(e) => setSelectedCellId(e.target.value)}
-              helperText="Закрепляет основную ячейку размещения на складе"
-            >
-              <MenuItem value="">
-                <em>— Без адреса (очистить ячейку) —</em>
-              </MenuItem>
-              {warehouseZonesForLoc.map((zone) => [
-                <MenuItem key={`header-${zone.id}`} disabled sx={{ fontWeight: 700, bgcolor: 'grey.100' }}>
-                  {zone.name} ({zone.code})
-                </MenuItem>,
-                ...zone.cells.map((cell) => (
-                  <MenuItem key={cell.id} value={cell.id} sx={{ pl: 4 }}>
-                    {cell.code} {cell.name ? `— ${cell.name}` : ''}
-                  </MenuItem>
-                )),
-              ])}
-            </TextField>
-          )}
-        </Stack>
-      </FormDialog>
-
-      {/* Диалог создания новой номенклатуры */}
-      <CreateNomenclatureDialog
-        open={isNomenclatureModalOpen}
-        onClose={() => setIsNomenclatureModalOpen(false)}
-        onCreated={() => fetchStock()}
-        categories={categories}
-      />
-
-      {/* Floating Bulk Action Bar */}
-      <BulkActionBar
-        selectedCount={selectedIds.length}
-        totalCount={totalCount}
-        onClearSelection={() => setSelectedIds([])}
-        actions={[
-          {
-            label: 'Переместить в ячейку',
-            icon: <PlaceOutlinedIcon fontSize="small" />,
-            onClick: () => setIsBulkLocationOpen(true),
-            color: 'primary',
-          },
-          {
-            label: 'Печать этикеток',
-            icon: <PrintIcon fontSize="small" />,
-            onClick: handleOpenPrintBulk,
-            color: 'primary',
-          },
-          {
-            label: 'Экспорт в CSV',
-            icon: <FileDownloadOutlinedIcon fontSize="small" />,
-            onClick: () => handleExport('csv'),
-            color: 'primary',
-          },
-          {
-            label: 'Сформировать списание',
-            icon: <PrintIcon fontSize="small" />,
-            onClick: handleBulkIssue,
-            color: 'warning',
-          },
-        ]}
-      />
-
-      {/* Модальное окно пакетного перемещения по ячейкам */}
-      <BulkLocationModal
-        open={isBulkLocationOpen}
-        onClose={() => setIsBulkLocationOpen(false)}
-        onSuccess={() => {
-          fetchStock();
-          setSelectedIds([]);
-        }}
-        selectedItems={items.filter((i) => selectedIds.includes(i.id))}
-      />
-
-      {/* Slide-over Drawer для детального просмотра ТМЦ */}
-      <StockDetailDrawer
-        open={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        stockItem={selectedDrawerItem}
-        onChangeLocation={(item) => handleOpenLocationModal(item)}
-        onPrintLabel={(item) => handleOpenPrintSingle(item)}
-        onEdit={(item) => {
-          setEditItem(item);
-          setIsEditDialogOpen(true);
-        }}
-      />
-
-      {/* Модальное окно редактирования ТМЦ */}
-      <EditNomenclatureDialog
-        open={isEditDialogOpen}
-        onClose={() => setIsEditDialogOpen(false)}
-        onSaved={() => {
-          fetchStock();
-          setIsDrawerOpen(false);
-        }}
-        item={editItem}
-      />
-
-      {/* Модальное окно печати термоэтикеток и штрихкодов */}
-      <PrintBarcodeModal
-        open={isPrintModalOpen}
-        onClose={() => setIsPrintModalOpen(false)}
-        items={printItems}
-      />
-
-      {/* Мастер складских операций */}
-      <WmsOperationWizardDialog
-        open={isWizardOpen}
-        onClose={() => setIsWizardOpen(false)}
-        initialType={wizardType}
-        onSuccess={() => fetchStock()}
-      />
-    </Box>
-  );
-}
-

@@ -1,56 +1,27 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, Suspense, useMemo } from 'react';
+import React, { Suspense } from 'react';
 import {
   Box,
-  Typography,
-  Grid,
   TextField,
   MenuItem,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
-  Stack,
-  CircularProgress,
 } from '@mui/material';
-import { useSearchParams, useRouter } from 'next/navigation';
-import PageHeader from '@/components/layout/PageHeader';
 import MoveToInboxIcon from '@mui/icons-material/MoveToInbox';
-import OutboxIcon from '@mui/icons-material/Outbox';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import PersonIcon from '@mui/icons-material/Person';
-import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
-import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import SendIcon from '@mui/icons-material/Send';
-import CheckIcon from '@mui/icons-material/Check';
-import BlockIcon from '@mui/icons-material/Block';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import AssignmentOutlinedIcon from '@mui/icons-material/AssignmentOutlined';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
 import { useWarehouseAccess } from '@/hooks/useWarehouseAccess';
-
-import { PERMISSIONS, formatDateTime } from '@ems/shared';
+import { PERMISSIONS, OPERATION_TYPE_MAP } from '@ems/shared';
 import {
-  StatCard,
   FilterToolbar,
   DataTableWrapper,
-  EmptyState,
-  StatusBadge,
   PageLoading,
   SearchInput,
   NavTabsContainer,
-  type TableColumnOption,
-  type TabItem,
+  TabItem,
 } from '@/components/ui';
 import {
   WmsOperationWizardDialog,
@@ -58,232 +29,64 @@ import {
   TransferReceiveDialog,
   TransferRejectDialog,
   TransferRequestDialog,
-  type OperationType,
+  useWmsOperations,
+  OperationsKpiSummary,
+  OperationsRegistryHeader,
+  OperationsTable,
+  TransfersTable,
 } from '@/components/wms';
 
-const OPERATIONS_COLUMNS: TableColumnOption[] = [
-  { id: 'date', label: 'Дата / Время', defaultVisible: true },
-  { id: 'type', label: 'Тип операции', defaultVisible: true },
-  { id: 'warehouse', label: 'Склад', defaultVisible: true },
-  { id: 'items', label: 'Позиции и количество', defaultVisible: true, required: true },
-  { id: 'recipient', label: 'Получатель / Назначение / Причина', defaultVisible: true },
-  { id: 'comment', label: 'Примечание / Комментарий', defaultVisible: true },
-  { id: 'executor', label: 'Исполнитель', defaultVisible: true },
-];
-
-interface StockOperation {
-  id: string;
-  type: string;
-  date: string;
-  counterparty?: string | null;
-  document?: string | null;
-  comment?: string | null;
-  warehouse: { id: string; name: string; code: string };
-  createdBy: { displayName: string; ldapLogin: string };
-  items: Array<{
-    id: string;
-    quantity: number;
-    nomenclature: { id: string; name: string; article?: string | null; unit: string };
-    equipment?: { id: string; name: string; inventoryNumber: string } | null;
-  }>;
-}
-
-interface TransferItemRecord {
-  id: string;
-  nomenclatureId: string;
-  quantity: string | number;
-  targetCellId?: string | null;
-  targetCell?: { code: string; name?: string } | null;
-  nomenclature?: {
-    id: string;
-    name: string;
-    article?: string | null;
-    unit: string;
-  };
-}
-
-interface StockTransferRecord {
-  id: string;
-  transferNumber: string;
-  sourceWarehouseId: string;
-  targetWarehouseId: string;
-  status: 'REQUESTED' | 'IN_TRANSIT' | 'COMPLETED' | 'REJECTED' | 'CANCELLED';
-  requestReason?: string | null;
-  rejectionReason?: string | null;
-  dispatchedAt?: string | null;
-  receivedAt?: string | null;
-  rejectedAt?: string | null;
-  createdAt: string;
-  sourceWarehouse: {
-    id: string;
-    name: string;
-    code: string;
-    responsibleUser?: { id: string; displayName: string } | null;
-  };
-  targetWarehouse: {
-    id: string;
-    name: string;
-    code: string;
-    responsibleUser?: { id: string; displayName: string } | null;
-  };
-  createdBy?: { id: string; displayName: string } | null;
-  dispatchedBy?: { id: string; displayName: string } | null;
-  receivedBy?: { id: string; displayName: string } | null;
-  rejectedBy?: { id: string; displayName: string } | null;
-  items: TransferItemRecord[];
-}
-
 function WmsOperationsContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const { enqueueSnackbar } = useSnackbar();
   const { user, hasPermission } = useAuth();
-  const { warehouses, availableWarehouses, isAdmin, isLoading: isLoadingWarehouses } = useWarehouseAccess();
+  const { availableWarehouses, isAdmin } = useWarehouseAccess();
 
-  // Active Main Tab: 'operations' | 'transfers'
-  const [activeMainTab, setActiveMainTab] = useState<'operations' | 'transfers'>(
-    searchParams.get('tab') === 'transfers' ? 'transfers' : 'operations'
-  );
+  const {
+    activeMainTab,
+    operations,
+    isLoadingOps,
+    selectedWarehouse,
+    selectedType,
+    opsPage,
+    opsRowsPerPage,
+    opsTotalCount,
+    transfers,
+    transferTab,
+    transferCounts,
+    transferTotal,
+    transfersPage,
+    transfersRowsPerPage,
+    transfersSearch,
+    isLoadingTransfers,
+    visibleOpsColumns,
+    isWizardOpen,
+    wizardType,
+    isRequestDialogOpen,
+    selectedTransferForReceive,
+    selectedTransferForReject,
+    kpiStats,
+    setActiveMainTab,
+    setSelectedWarehouse,
+    setSelectedType,
+    setOpsPage,
+    setOpsRowsPerPage,
+    setTransferTab,
+    setTransfersPage,
+    setTransfersRowsPerPage,
+    setTransfersSearch,
+    setVisibleOpsColumns,
+    setIsWizardOpen,
+    setWizardType,
+    setIsRequestDialogOpen,
+    setSelectedTransferForReceive,
+    setSelectedTransferForReject,
+    fetchOperations,
+    fetchTransfers,
+    handleQuickDispatch,
+  } = useWmsOperations();
 
-  // Transfers sub-tab
-  const [transferTab, setTransferTab] = useState<'inbound' | 'requests' | 'outbound' | 'my_requests' | 'all'>('inbound');
-
-  // Operations Data State
-  const [operations, setOperations] = useState<StockOperation[]>([]);
-  const [isLoadingOps, setIsLoadingOps] = useState(true);
-  const [selectedWarehouse, setSelectedWarehouse] = useState<string>('');
-  const [selectedType, setSelectedType] = useState<string>(searchParams.get('action') || '');
-  const [opsPage, setOpsPage] = useState<number>(0);
-  const [opsRowsPerPage, setOpsRowsPerPage] = useState<number>(25);
-  const [opsTotalCount, setOpsTotalCount] = useState<number>(0);
-
-  // Transfers Data State
-  const [transfers, setTransfers] = useState<StockTransferRecord[]>([]);
-  const [transferCounts, setTransferCounts] = useState({ inbound: 0, requests: 0, outbound: 0, total: 0 });
-  const [transferTotal, setTransferTotal] = useState(0);
-  const [transfersPage, setTransfersPage] = useState(0);
-  const [transfersRowsPerPage, setTransfersRowsPerPage] = useState(25);
-  const [transfersSearch, setTransfersSearch] = useState('');
-  const [isLoadingTransfers, setIsLoadingTransfers] = useState(true);
-
-  // Dialog States
-  const [isWizardOpen, setIsWizardOpen] = useState(false);
-  const [wizardType, setWizardType] = useState<OperationType>('RECEIPT');
-  const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
-  const [selectedTransferForReceive, setSelectedTransferForReceive] = useState<StockTransferRecord | null>(null);
-  const [selectedTransferForReject, setSelectedTransferForReject] = useState<StockTransferRecord | null>(null);
-  const [isDispatchingId, setIsDispatchingId] = useState<string | null>(null);
-
-  // Columns visibility for Operations
-  const [visibleOpsColumns, setVisibleOpsColumns] = useState<string[]>(
-    OPERATIONS_COLUMNS.filter((c) => c.defaultVisible).map((c) => c.id)
-  );
-
-  // Handle URL actions
-  useEffect(() => {
-    const action = searchParams.get('action') || searchParams.get('create');
-    if (action) {
-      if (action === 'RECEIPT') {
-        setWizardType('RECEIPT');
-        setIsWizardOpen(true);
-      } else if (action === 'ISSUE' || action === 'ISSUE_EMPLOYEE') {
-        setWizardType('ISSUE_EMPLOYEE');
-        setIsWizardOpen(true);
-      } else if (action === 'ISSUE_WRITE_OFF' || action === 'WRITE_OFF') {
-        setWizardType('ISSUE_WRITE_OFF');
-        setIsWizardOpen(true);
-      } else if (action === 'TRANSFER') {
-        setWizardType('TRANSFER');
-        setIsWizardOpen(true);
-      }
-    }
-  }, [searchParams]);
-
-  // Fetch Operations
-  const fetchOperations = useCallback(async () => {
-    setIsLoadingOps(true);
-    try {
-      const params = new URLSearchParams();
-      if (selectedWarehouse) params.set('warehouseId', selectedWarehouse);
-      if (selectedType) params.set('type', selectedType);
-      params.set('page', String(opsPage + 1));
-      params.set('pageSize', String(opsRowsPerPage));
-
-      const res = await fetch(`/api/wms/operations?${params.toString()}`);
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success && json.data) {
-          setOperations(json.data.items || []);
-          setOpsTotalCount(json.data.total || 0);
-        }
-      }
-    } catch {
-      enqueueSnackbar('Ошибка загрузки журнала операций', { variant: 'error' });
-    } finally {
-      setIsLoadingOps(false);
-    }
-  }, [selectedWarehouse, selectedType, opsPage, opsRowsPerPage, enqueueSnackbar]);
-
-  // Fetch Transfers
-  const fetchTransfers = useCallback(async () => {
-    setIsLoadingTransfers(true);
-    try {
-      const params = new URLSearchParams({
-        mode: transferTab,
-        page: String(transfersPage + 1),
-        pageSize: String(transfersRowsPerPage),
-        search: transfersSearch,
-      });
-      if (selectedWarehouse) {
-        params.set('warehouseId', selectedWarehouse);
-      }
-
-      const res = await fetch(`/api/wms/transfers?${params.toString()}`);
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success && json.data) {
-          setTransfers(json.data.items || []);
-          setTransferTotal(json.data.total || 0);
-          if (json.data.counts) {
-            setTransferCounts(json.data.counts);
-          }
-        }
-      }
-    } catch {
-      enqueueSnackbar('Ошибка загрузки перемещений', { variant: 'error' });
-    } finally {
-      setIsLoadingTransfers(false);
-    }
-  }, [transferTab, transfersPage, transfersRowsPerPage, transfersSearch, selectedWarehouse, enqueueSnackbar]);
-
-  useEffect(() => {
-    if (activeMainTab === 'operations') {
-      fetchOperations();
-    } else {
-      fetchTransfers();
-    }
-  }, [activeMainTab, fetchOperations, fetchTransfers]);
-
-  // Quick Dispatch Handler for transfers
-  const handleQuickDispatch = async (t: StockTransferRecord) => {
-    setIsDispatchingId(t.id);
-    try {
-      const res = await fetch(`/api/wms/transfers/${t.id}/dispatch`, {
-        method: 'POST',
-      });
-      const json = await res.json();
-      if (res.ok && json.success) {
-        enqueueSnackbar(`Запрос ${t.transferNumber} успешно согласован и отгружен`, { variant: 'success' });
-        fetchTransfers();
-      } else {
-        enqueueSnackbar(json.error || 'Ошибка отгрузки', { variant: 'error' });
-      }
-    } catch {
-      enqueueSnackbar('Ошибка сети при отгрузке', { variant: 'error' });
-    } finally {
-      setIsDispatchingId(null);
-    }
-  };
+  const canCreateOperation = hasPermission(PERMISSIONS.WMS_OPERATIONS_CREATE);
+  const canCreateTransfer = hasPermission(PERMISSIONS.WMS_STOCK_VIEW);
 
   const mainTabs: TabItem[] = [
     {
@@ -295,7 +98,10 @@ function WmsOperationsContent() {
       value: 'transfers',
       label: 'Межскладские перемещения',
       icon: <SwapHorizIcon sx={{ fontSize: 18 }} />,
-      badge: (transferCounts.inbound + transferCounts.requests) > 0 ? (transferCounts.inbound + transferCounts.requests) : undefined,
+      badge:
+        transferCounts.inbound + transferCounts.requests > 0
+          ? transferCounts.inbound + transferCounts.requests
+          : undefined,
       badgeColor: 'warning',
     },
   ];
@@ -317,706 +123,192 @@ function WmsOperationsContent() {
     },
     {
       value: 'outbound',
-      label: 'Исходящие (В пути)',
+      label: 'Отправлено (В пути)',
       icon: <LocalShippingOutlinedIcon sx={{ fontSize: 16 }} />,
       badge: transferCounts.outbound || undefined,
-    },
-    {
-      value: 'my_requests',
-      label: 'Мои заявки',
-      icon: <AssignmentOutlinedIcon sx={{ fontSize: 16 }} />,
+      badgeColor: 'info',
     },
     {
       value: 'all',
       label: 'Все перемещения',
-      icon: <SwapHorizIcon sx={{ fontSize: 16 }} />,
+      icon: <CheckCircleOutlineIcon sx={{ fontSize: 16 }} />,
     },
   ];
 
-  const renderRecipientBadge = (op: StockOperation) => {
-    if (op.type === 'RECEIPT') {
-      return (
-        <Stack direction="row" spacing={0.75} alignItems="center">
-          <MoveToInboxIcon sx={{ fontSize: 16, color: 'success.main' }} />
-          <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'success.dark', fontWeight: 600 }}>
-            {op.counterparty ? `Поставщик: ${op.counterparty}` : 'Приход ТМЦ на склад'}
-          </Typography>
-        </Stack>
-      );
-    }
-
-    if (op.type === 'ISSUE_EMPLOYEE') {
-      return (
-        <Stack direction="row" spacing={0.75} alignItems="center">
-          <PersonIcon sx={{ fontSize: 16, color: 'info.dark' }} />
-          <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'info.dark', fontWeight: 600 }}>
-            {op.counterparty || 'Сотрудник в подотчет'}
-          </Typography>
-        </Stack>
-      );
-    }
-
-    if (op.type === 'ISSUE_WRITE_OFF') {
-      const firstItemWithEq = op.items.find((it) => it.equipment);
-      if (firstItemWithEq && firstItemWithEq.equipment) {
-        return (
-          <Stack direction="row" spacing={0.75} alignItems="center">
-            <PrecisionManufacturingIcon sx={{ fontSize: 16, color: 'warning.dark' }} />
-            <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'warning.dark', fontWeight: 600 }}>
-              Оборудование: {firstItemWithEq.equipment.name} ({firstItemWithEq.equipment.inventoryNumber})
-            </Typography>
-          </Stack>
-        );
-      }
-      return (
-        <Stack direction="row" spacing={0.75} alignItems="center">
-          <DeleteSweepIcon sx={{ fontSize: 16, color: 'error.main' }} />
-          <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'error.dark', fontWeight: 600 }}>
-            {op.counterparty || 'Списание в неликвид/брак'}
-          </Typography>
-        </Stack>
-      );
-    }
-
-    if (op.type === 'TRANSFER') {
-      return (
-        <Stack direction="row" spacing={0.75} alignItems="center">
-          <SwapHorizIcon sx={{ fontSize: 16, color: 'secondary.main' }} />
-          <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'secondary.main', fontWeight: 600 }}>
-            {op.counterparty ? `Целевой склад: ${op.counterparty}` : 'Перемещение между складами'}
-          </Typography>
-        </Stack>
-      );
-    }
-
-    return (
-      <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
-        {op.counterparty || '—'}
-      </Typography>
-    );
-  };
-
   return (
     <Box sx={{ pb: 4 }}>
-      <PageHeader
-        title="Движение ТМЦ и складские операции"
-        subtitle="Единый реестр приходов, списаний, выдач сотрудникам и межскладских перемещений ТМЦ"
-        breadcrumbs={[
-          { label: 'Главная', href: '/' },
-          { label: 'Складской учёт', href: '/wms' },
-          { label: activeMainTab === 'operations' ? 'Операции' : 'Перемещения' },
-        ]}
-        actions={
-          <Stack direction="row" spacing={1.5} alignItems="center">
-            <Button
-              variant="outlined"
-              startIcon={<SendIcon />}
-              onClick={() => setIsRequestDialogOpen(true)}
-              sx={{
-                height: 36,
-                px: 2,
-                fontSize: '0.8125rem',
-                fontWeight: 600,
-                borderRadius: '8px',
-                textTransform: 'none',
-                borderColor: 'grey.400',
-                color: 'text.secondary',
-                '&:hover': { borderColor: 'text.disabled', bgcolor: 'background.default' },
-              }}
-            >
-              Запросить перевод ТМЦ
-            </Button>
-            {hasPermission(PERMISSIONS.WMS_OPERATIONS_CREATE) && (
-              <Button
-                variant="contained"
-                startIcon={<AutoAwesomeIcon />}
-                onClick={() => {
-                  setWizardType('RECEIPT');
-                  setIsWizardOpen(true);
-                }}
-                sx={{
-                  height: 36,
-                  px: 2,
-                  fontSize: '0.8125rem',
-                  fontWeight: 600,
-                  borderRadius: '8px',
-                  textTransform: 'none',
-                  bgcolor: 'primary.main',
-                  '&:hover': { bgcolor: 'primary.dark' },
-                }}
-              >
-                Мастер операций
-              </Button>
-            )}
-          </Stack>
-        }
-        tabs={
-          <NavTabsContainer
-            tabs={mainTabs}
-            value={activeMainTab}
-            onChange={(val) => {
-              setActiveMainTab(val as 'operations' | 'transfers');
-              router.push(`/wms/operations?tab=${val}`, { scroll: false });
-            }}
-          />
-        }
+      {/* 1. Header with Role & Action Controls */}
+      <OperationsRegistryHeader
+        activeMainTab={activeMainTab}
+        canCreateOperation={canCreateOperation}
+        canCreateTransfer={canCreateTransfer}
+        onOpenOperationWizard={() => {
+          setWizardType('RECEIPT');
+          setIsWizardOpen(true);
+        }}
+        onOpenTransferRequest={() => setIsRequestDialogOpen(true)}
       />
 
-      {/* ─── TAB 1: ЖУРНАЛ ОПЕРАЦИЙ ─── */}
-      {activeMainTab === 'operations' && (
-        <>
-          {/* KPI Metrics */}
-          <Grid container spacing={1.75} sx={{ mb: 2.5 }}>
-            <Grid item xs={12} sm={6} md={3}>
-              <StatCard
-                title="Всего операций"
-                value={opsTotalCount}
-                subtitle="В журнале движения ТМЦ"
-                icon={<SwapHorizIcon sx={{ fontSize: 20 }} />}
-                iconBgColor="action.hover"
-                iconColor="primary.main"
-                accentColor="primary.main"
-                active={selectedType === ''}
-                onClick={() => setSelectedType('')}
-                loading={isLoadingOps && opsTotalCount === 0}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <StatCard
-                title="Поступления (Приход)"
-                value={operations.filter((o) => o.type === 'RECEIPT').length}
-                subtitle="От поставщиков"
-                icon={<MoveToInboxIcon sx={{ fontSize: 20 }} />}
-                iconBgColor="action.hover"
-                iconColor="success.main"
-                accentColor="success.main"
-                active={selectedType === 'RECEIPT'}
-                onClick={() => setSelectedType((prev) => (prev === 'RECEIPT' ? '' : 'RECEIPT'))}
-                loading={isLoadingOps && opsTotalCount === 0}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <StatCard
-                title="Выдачи и Списания"
-                value={operations.filter((o) => o.type === 'ISSUE_EMPLOYEE' || o.type === 'ISSUE_WRITE_OFF').length}
-                subtitle="В подотчет и на оборудование ТОиР"
-                icon={<OutboxIcon sx={{ fontSize: 20 }} />}
-                iconBgColor="action.hover"
-                iconColor="warning.main"
-                accentColor="warning.main"
-                active={selectedType === 'ISSUE_EMPLOYEE' || selectedType === 'ISSUE_WRITE_OFF'}
-                onClick={() => setSelectedType((prev) => (prev === 'ISSUE_WRITE_OFF' ? '' : 'ISSUE_WRITE_OFF'))}
-                loading={isLoadingOps && opsTotalCount === 0}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <StatCard
-                title="Межскладские трансферы"
-                value={operations.filter((o) => o.type === 'TRANSFER').length}
-                subtitle="Перемещения ТМЦ"
-                icon={<SwapHorizIcon sx={{ fontSize: 20 }} />}
-                iconBgColor="action.hover"
-                iconColor="secondary.main"
-                accentColor="secondary.main"
-                active={selectedType === 'TRANSFER'}
-                onClick={() => setSelectedType((prev) => (prev === 'TRANSFER' ? '' : 'TRANSFER'))}
-                loading={isLoadingOps && opsTotalCount === 0}
-              />
-            </Grid>
-          </Grid>
+      {/* 2. Top Interactive KPI Metric Cards */}
+      <OperationsKpiSummary
+        totalCount={kpiStats.totalOps}
+        receiptCount={kpiStats.receiptCount}
+        issueCount={kpiStats.issueCount}
+        transitCount={kpiStats.transitCount}
+        loading={isLoadingOps && isLoadingTransfers}
+        activeFilterType={selectedType}
+        onFilterTypeChange={setSelectedType}
+        onTabChange={setActiveMainTab}
+      />
 
-          {/* Operations Table */}
-          <DataTableWrapper
-            loading={isLoadingOps}
-            page={opsPage}
-            pageSize={opsRowsPerPage}
-            total={opsTotalCount}
-            onPageChange={(_, newPage) => setOpsPage(newPage)}
-            onPageSizeChange={(e) => {
-              setOpsRowsPerPage(parseInt(e.target.value, 10));
-              setOpsPage(0);
-            }}
-            storageKey="wms_operations_table"
-            columns={OPERATIONS_COLUMNS}
-            visibleColumns={visibleOpsColumns}
-            onVisibleColumnsChange={setVisibleOpsColumns}
-            stickyHeader
-            toolbar={
-              <FilterToolbar
-                variant="embedded"
-                activeFilterCount={(selectedWarehouse ? 1 : 0) + (selectedType ? 1 : 0)}
-                onResetFilters={() => {
-                  setSelectedWarehouse('');
-                  setSelectedType('');
+      {/* 3. Main Tabs (Операции vs Перемещения) */}
+      <Box sx={{ mb: 2 }}>
+        <NavTabsContainer
+          tabs={mainTabs}
+          value={activeMainTab}
+          onChange={(val) => setActiveMainTab(val as 'operations' | 'transfers')}
+        />
+      </Box>
+
+      {/* 4. Tab 1: Складские операции */}
+      {activeMainTab === 'operations' && (
+        <DataTableWrapper
+          toolbar={
+            <FilterToolbar
+              variant="embedded"
+              activeFilterCount={(selectedWarehouse ? 1 : 0) + (selectedType ? 1 : 0)}
+              onResetFilters={() => {
+                setSelectedWarehouse('');
+                setSelectedType('');
+                setOpsPage(0);
+              }}
+            >
+              <WarehouseSelect
+                value={selectedWarehouse}
+                onChange={(val) => {
+                  setSelectedWarehouse(val);
                   setOpsPage(0);
                 }}
-              >
-                <WarehouseSelect
-                  value={selectedWarehouse}
-                  onChange={(val) => {
-                    setSelectedWarehouse(val);
-                    setOpsPage(0);
-                  }}
-                  warehouses={availableWarehouses}
-                  isAdmin={isAdmin}
-                  currentUserId={user?.userId}
-                />
+                warehouses={availableWarehouses}
+                isAdmin={isAdmin}
+                currentUserId={user?.userId}
+              />
 
-                <TextField
-                  select
-                  size="small"
-                  value={selectedType}
-                  onChange={(e) => {
-                    setSelectedType(e.target.value);
-                    setOpsPage(0);
-                  }}
-                  SelectProps={{ displayEmpty: true }}
-                  sx={{
-                    minWidth: 200,
-                    backgroundColor: 'background.paper',
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '8px',
-                      fontSize: '0.8125rem',
-                      height: 36,
-                      '& fieldset': { borderColor: 'divider' },
-                      '&:hover fieldset': { borderColor: 'grey.400' },
-                    },
-                  }}
-                >
-                  <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все типы операций</MenuItem>
-                  <MenuItem value="RECEIPT" sx={{ fontSize: '0.8125rem' }}>Поступление (Приход)</MenuItem>
-                  <MenuItem value="ISSUE_EMPLOYEE" sx={{ fontSize: '0.8125rem' }}>Выдача сотруднику</MenuItem>
-                  <MenuItem value="ISSUE_WRITE_OFF" sx={{ fontSize: '0.8125rem' }}>Списание ТМЦ (ТОиР / брак / неликвид)</MenuItem>
-                  <MenuItem value="TRANSFER" sx={{ fontSize: '0.8125rem' }}>Перемещение (Трансфер)</MenuItem>
-                </TextField>
-              </FilterToolbar>
-            }
-          >
-            <Table size="small">
-              <TableHead>
-                <TableRow sx={{ backgroundColor: 'background.default' }}>
-                  {visibleOpsColumns.includes('date') && (
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'text.secondary' }}>
-                      Дата / Время
-                    </TableCell>
-                  )}
-                  {visibleOpsColumns.includes('type') && (
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'text.secondary' }}>
-                      Тип операции
-                    </TableCell>
-                  )}
-                  {visibleOpsColumns.includes('warehouse') && (
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'text.secondary' }}>
-                      Склад
-                    </TableCell>
-                  )}
-                  {visibleOpsColumns.includes('items') && (
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'text.secondary' }}>
-                      Позиции ТМЦ и количество
-                    </TableCell>
-                  )}
-                  {visibleOpsColumns.includes('recipient') && (
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'text.secondary' }}>
-                      Назначение / Получатель / Оборудование
-                    </TableCell>
-                  )}
-                  {visibleOpsColumns.includes('comment') && (
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'text.secondary' }}>
-                      Примечание
-                    </TableCell>
-                  )}
-                  {visibleOpsColumns.includes('executor') && (
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', color: 'text.secondary' }}>
-                      Исполнитель
-                    </TableCell>
-                  )}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {operations.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={visibleOpsColumns.length} sx={{ py: 6 }}>
-                      <EmptyState
-                        icon={<SwapHorizIcon sx={{ fontSize: 36, color: 'text.disabled' }} />}
-                        title="Операций не найдено"
-                        description="В журнале пока нет записей о движении ТМЦ, соответствующих выбранным фильтрам."
-                        actionText={hasPermission(PERMISSIONS.WMS_OPERATIONS_CREATE) ? "Оформить операцию через мастер" : undefined}
-                        actionIcon={<AutoAwesomeIcon />}
-                        onAction={hasPermission(PERMISSIONS.WMS_OPERATIONS_CREATE) ? () => {
-                          setWizardType('RECEIPT');
-                          setIsWizardOpen(true);
-                        } : undefined}
-                        minHeight={200}
-                      />
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  operations.map((op) => (
-                    <TableRow key={op.id} hover>
-                      {visibleOpsColumns.includes('date') && (
-                        <TableCell sx={{ whiteSpace: 'nowrap', fontFamily: 'monospace', fontSize: '0.8125rem', color: 'text.secondary' }}>
-                          {formatDateTime(op.date)}
-                        </TableCell>
-                      )}
-                      {visibleOpsColumns.includes('type') && (
-                        <TableCell>
-                          <StatusBadge status={op.type} />
-                        </TableCell>
-                      )}
-                      {visibleOpsColumns.includes('warehouse') && (
-                        <TableCell>
-                          <Chip
-                            label={op.warehouse.code}
-                            size="small"
-                            sx={{
-                              fontWeight: 600,
-                              borderRadius: '4px',
-                              fontSize: '0.6875rem',
-                              backgroundColor: 'background.paper',
-                              color: 'text.secondary',
-                              border: '1px solid',
-                              borderColor: 'divider',
-                              height: 20,
-                            }}
-                          />
-                          <Typography variant="caption" sx={{ display: 'block', mt: 0.25, color: 'text.disabled', fontSize: '0.75rem' }}>
-                            {op.warehouse.name}
-                          </Typography>
-                        </TableCell>
-                      )}
-                      {visibleOpsColumns.includes('items') && (
-                        <TableCell>
-                          <Stack spacing={0.5}>
-                            {op.items.map((it) => (
-                              <Typography key={it.id} variant="body2" sx={{ fontSize: '0.8125rem', color: 'text.primary' }}>
-                                <b>{it.nomenclature.name}</b>: {it.quantity} {it.nomenclature.unit}
-                              </Typography>
-                            ))}
-                          </Stack>
-                        </TableCell>
-                      )}
-                      {visibleOpsColumns.includes('recipient') && (
-                        <TableCell>
-                          {renderRecipientBadge(op)}
-                        </TableCell>
-                      )}
-                      {visibleOpsColumns.includes('comment') && (
-                        <TableCell>
-                          <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
-                            {op.comment || '—'}
-                          </Typography>
-                        </TableCell>
-                      )}
-                      {visibleOpsColumns.includes('executor') && (
-                        <TableCell sx={{ fontSize: '0.8125rem' }}>
-                          <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
-                            {op.createdBy?.displayName}
-                          </Typography>
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </DataTableWrapper>
-        </>
+              <TextField
+                select
+                size="small"
+                value={selectedType}
+                onChange={(e) => {
+                  setSelectedType(e.target.value);
+                  setOpsPage(0);
+                }}
+                SelectProps={{ displayEmpty: true }}
+                sx={{
+                  minWidth: 180,
+                  bgcolor: 'background.paper',
+                  '& .MuiOutlinedInput-root': { borderRadius: '8px', fontSize: '0.8125rem', height: 36 },
+                }}
+              >
+                <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все типы операций</MenuItem>
+                {Object.entries(OPERATION_TYPE_MAP).map(([key, info]) => (
+                  <MenuItem key={key} value={key} sx={{ fontSize: '0.8125rem' }}>
+                    {info.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </FilterToolbar>
+          }
+          total={opsTotalCount}
+          page={opsPage + 1}
+          pageSize={opsRowsPerPage}
+          onPageChange={(_, p) => setOpsPage(p - 1)}
+          onPageSizeChange={(e) => setOpsRowsPerPage(parseInt(e.target.value, 10))}
+          columns={visibleOpsColumns.map((colId) => ({ id: colId, label: colId }))}
+          visibleColumns={visibleOpsColumns}
+          onVisibleColumnsChange={setVisibleOpsColumns}
+          loading={isLoadingOps}
+          stickyHeader
+        >
+          <OperationsTable
+            operations={operations}
+            visibleColumns={visibleOpsColumns}
+            loading={isLoadingOps}
+            onOpenWizard={() => {
+              setWizardType('RECEIPT');
+              setIsWizardOpen(true);
+            }}
+          />
+        </DataTableWrapper>
       )}
 
-      {/* ─── TAB 2: МЕЖСКЛАДСКИЕ ПЕРЕМЕЩЕНИЯ ─── */}
+      {/* 5. Tab 2: Межскладские перемещения */}
       {activeMainTab === 'transfers' && (
-        <>
-          {/* Transfer KPI Cards */}
-          <Grid container spacing={1.75} sx={{ mb: 2.5 }}>
-            <Grid item xs={12} sm={6} md={3}>
-              <StatCard
-                title="Требуют приемки"
-                value={transferCounts.inbound}
-                subtitle="Входящие ТМЦ в пути"
-                icon={<MoveToInboxIcon sx={{ fontSize: 20 }} />}
-                iconBgColor="action.hover"
-                iconColor="primary.main"
-                accentColor="primary.main"
-                loading={isLoadingTransfers}
-                active={transferTab === 'inbound'}
-                onClick={() => setTransferTab('inbound')}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <StatCard
-                title="Запросы на отгрузку"
-                value={transferCounts.requests}
-                subtitle="Ожидают согласования"
-                icon={<HourglassEmptyIcon sx={{ fontSize: 20 }} />}
-                iconBgColor="action.hover"
-                iconColor="warning.main"
-                accentColor="warning.main"
-                loading={isLoadingTransfers}
-                active={transferTab === 'requests'}
-                onClick={() => setTransferTab('requests')}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <StatCard
-                title="Отправлено (В пути)"
-                value={transferCounts.outbound}
-                subtitle="Исходящие отгрузки"
-                icon={<LocalShippingOutlinedIcon sx={{ fontSize: 20 }} />}
-                iconBgColor="action.hover"
-                iconColor="secondary.main"
-                accentColor="secondary.main"
-                loading={isLoadingTransfers}
-                active={transferTab === 'outbound'}
-                onClick={() => setTransferTab('outbound')}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <StatCard
-                title="Всего перемещений"
-                value={transferCounts.total}
-                subtitle="Все записи реестра"
-                icon={<CheckCircleOutlineIcon sx={{ fontSize: 20 }} />}
-                iconBgColor="action.hover"
-                iconColor="success.main"
-                accentColor="success.main"
-                loading={isLoadingTransfers}
-                active={transferTab === 'all'}
-                onClick={() => setTransferTab('all')}
-              />
-            </Grid>
-          </Grid>
-
-          {/* Transfers Table with Sub-Tabs */}
-          <DataTableWrapper
-            tabs={
-              <NavTabsContainer
-                tabs={transferSubTabs}
-                value={transferTab}
-                onChange={(val) => {
-                  setTransferTab(val as any);
-                  setTransfersPage(0);
-                }}
-              />
-            }
-            toolbar={
-              <FilterToolbar
-                variant="embedded"
-                activeFilterCount={(transfersSearch ? 1 : 0) + (selectedWarehouse ? 1 : 0)}
-                onResetFilters={() => {
-                  setTransfersSearch('');
-                  setSelectedWarehouse('');
-                  setTransfersPage(0);
-                }}
-              >
-                <Box sx={{ minWidth: { xs: '100%', sm: 280 } }}>
-                  <SearchInput
-                    placeholder="Поиск по номеру, складу, ТМЦ..."
-                    value={transfersSearch}
-                    onSearch={(v: string) => {
-                      setTransfersSearch(v);
-                      setTransfersPage(0);
-                    }}
-                  />
-                </Box>
-                <WarehouseSelect
-                  value={selectedWarehouse}
-                  onChange={(val) => {
-                    setSelectedWarehouse(val);
+        <DataTableWrapper
+          tabs={
+            <NavTabsContainer
+              tabs={transferSubTabs}
+              value={transferTab}
+              onChange={(val) => {
+                setTransferTab(val as any);
+                setTransfersPage(0);
+              }}
+            />
+          }
+          toolbar={
+            <FilterToolbar
+              variant="embedded"
+              activeFilterCount={(transfersSearch ? 1 : 0) + (selectedWarehouse ? 1 : 0)}
+              onResetFilters={() => {
+                setTransfersSearch('');
+                setSelectedWarehouse('');
+                setTransfersPage(0);
+              }}
+            >
+              <Box sx={{ minWidth: { xs: '100%', sm: 280 } }}>
+                <SearchInput
+                  placeholder="Поиск по номеру, складу, ТМЦ..."
+                  value={transfersSearch}
+                  onSearch={(v: string) => {
+                    setTransfersSearch(v);
                     setTransfersPage(0);
                   }}
-                  warehouses={availableWarehouses}
-                  isAdmin={isAdmin}
-                  currentUserId={user?.userId}
                 />
-              </FilterToolbar>
-            }
-            total={transferTotal}
-            page={transfersPage}
-            pageSize={transfersRowsPerPage}
-            onPageChange={(_, newPage) => setTransfersPage(newPage)}
-            onPageSizeChange={(e) => {
-              setTransfersRowsPerPage(parseInt(e.target.value, 10));
-              setTransfersPage(0);
-            }}
+              </Box>
+              <WarehouseSelect
+                value={selectedWarehouse}
+                onChange={(val) => {
+                  setSelectedWarehouse(val);
+                  setTransfersPage(0);
+                }}
+                warehouses={availableWarehouses}
+                isAdmin={isAdmin}
+                currentUserId={user?.userId}
+              />
+            </FilterToolbar>
+          }
+          total={transferTotal}
+          page={transfersPage + 1}
+          pageSize={transfersRowsPerPage}
+          onPageChange={(_, p) => setTransfersPage(p - 1)}
+          onPageSizeChange={(e) => setTransfersRowsPerPage(parseInt(e.target.value, 10))}
+          loading={isLoadingTransfers}
+          stickyHeader
+        >
+          <TransfersTable
+            transfers={transfers}
             loading={isLoadingTransfers}
-            stickyHeader
-          >
-            <Table size="small">
-              <TableHead>
-                <TableRow sx={{ bgcolor: 'background.default' }}>
-                  <TableCell sx={{ fontWeight: 700, width: 140 }}>Номер</TableCell>
-                  <TableCell sx={{ fontWeight: 700, width: 180 }}>Статус</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Маршрут (Откуда → Куда)</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Позиции ТМЦ</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Обоснование / Отказ</TableCell>
-                  <TableCell sx={{ fontWeight: 700, width: 130 }}>Дата</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 700, width: 220 }}>
-                    Действия
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {transfers.length === 0 && !isLoadingTransfers ? (
-                  <TableRow>
-                    <TableCell colSpan={7} sx={{ py: 6, textAlign: 'center' }}>
-                      <EmptyState
-                        title="Перемещений не найдено"
-                        description={
-                          transferTab === 'inbound'
-                            ? 'На ваш склад сейчас нет входящих перемещений, ожидающих приемки.'
-                            : transferTab === 'requests'
-                            ? 'Нет активных запросов на перевод ТМЦ с вашего склада.'
-                            : 'В выбранной категории записей нет.'
-                        }
-                      />
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  transfers.map((t) => {
-                    const isTargetStorekeeper = t.targetWarehouse.responsibleUser?.id === user?.userId;
-                    const isSourceStorekeeper = t.sourceWarehouse.responsibleUser?.id === user?.userId;
-                    const canReceive = (isTargetStorekeeper || isAdmin) && t.status === 'IN_TRANSIT';
-                    const canDispatch = (isSourceStorekeeper || isAdmin) && t.status === 'REQUESTED';
-
-                    return (
-                      <TableRow key={t.id} hover>
-                        <TableCell sx={{ py: 1.25, fontWeight: 700, fontFeatureSettings: '"tnum"' }}>
-                          <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                            {t.transferNumber}
-                          </Typography>
-                        </TableCell>
-                        <TableCell sx={{ py: 1.25 }}>
-                          <StatusBadge status={t.status} />
-                        </TableCell>
-                        <TableCell sx={{ py: 1.25 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                            <Box>
-                              <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
-                                {t.sourceWarehouse.name}
-                              </Typography>
-                              <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block' }}>
-                                МОЛ: {t.sourceWarehouse.responsibleUser?.displayName || 'Не назначен'}
-                              </Typography>
-                            </Box>
-                            <ArrowForwardIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
-                            <Box>
-                              <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                                {t.targetWarehouse.name}
-                              </Typography>
-                              <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block' }}>
-                                МОЛ: {t.targetWarehouse.responsibleUser?.displayName || 'Не назначен'}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </TableCell>
-                        <TableCell sx={{ py: 1.25 }}>
-                          <Stack spacing={0.5}>
-                            {t.items.map((it) => (
-                              <Typography key={it.id} variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
-                                • <b>{it.nomenclature?.name}</b>: {it.quantity} {it.nomenclature?.unit || 'шт'}
-                                {it.targetCell && (
-                                  <Chip
-                                    size="small"
-                                    label={`Ячейка: ${it.targetCell.code}`}
-                                    sx={{ height: 18, fontSize: '0.65rem', ml: 0.75 }}
-                                  />
-                                )}
-                              </Typography>
-                            ))}
-                          </Stack>
-                        </TableCell>
-                        <TableCell sx={{ py: 1.25 }}>
-                          {t.rejectionReason ? (
-                            <Box sx={{ p: 0.75, bgcolor: 'error.light', borderRadius: '6px', border: '1px solid', borderColor: 'error.main' }}>
-                              <Typography variant="caption" sx={{ color: 'error.main', fontWeight: 700, display: 'block' }}>
-                                Отказ:
-                              </Typography>
-                              <Typography variant="caption" sx={{ color: 'error.main' }}>
-                                {t.rejectionReason}
-                              </Typography>
-                            </Box>
-                          ) : t.requestReason ? (
-                            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                              {t.requestReason}
-                            </Typography>
-                          ) : (
-                            <Typography variant="caption" color="text.secondary">
-                              —
-                            </Typography>
-                          )}
-                        </TableCell>
-                        <TableCell sx={{ py: 1.25, fontSize: '0.75rem', color: 'text.disabled' }}>
-                          {formatDateTime(t.createdAt)}
-                        </TableCell>
-                        <TableCell align="right" sx={{ py: 1.25 }}>
-                          <Stack direction="row" spacing={1} justifyContent="flex-end">
-                            {canReceive && (
-                              <>
-                                <Button
-                                  size="small"
-                                  variant="contained"
-                                  color="success"
-                                  startIcon={<CheckIcon />}
-                                  onClick={() => setSelectedTransferForReceive(t)}
-                                  sx={{ fontWeight: 700, fontSize: '0.75rem', borderRadius: '6px' }}
-                                >
-                                  Принять
-                                </Button>
-                                <Button
-                                  size="small"
-                                  variant="outlined"
-                                  color="error"
-                                  startIcon={<BlockIcon />}
-                                  onClick={() => setSelectedTransferForReject(t)}
-                                  sx={{ fontWeight: 700, fontSize: '0.75rem', borderRadius: '6px' }}
-                                >
-                                  Отклонить
-                                </Button>
-                              </>
-                            )}
-                            {canDispatch && (
-                              <>
-                                <Button
-                                  size="small"
-                                  variant="contained"
-                                  color="primary"
-                                  startIcon={isDispatchingId === t.id ? <CircularProgress size={14} color="inherit" /> : <SendIcon />}
-                                  onClick={() => handleQuickDispatch(t)}
-                                  disabled={isDispatchingId === t.id}
-                                  sx={{ fontWeight: 700, fontSize: '0.75rem', borderRadius: '6px' }}
-                                >
-                                  Отгрузить
-                                </Button>
-                                <Button
-                                  size="small"
-                                  variant="outlined"
-                                  color="error"
-                                  startIcon={<BlockIcon />}
-                                  onClick={() => setSelectedTransferForReject(t)}
-                                  sx={{ fontWeight: 700, fontSize: '0.75rem', borderRadius: '6px' }}
-                                >
-                                  Отказать
-                                </Button>
-                              </>
-                            )}
-                            {!canReceive && !canDispatch && (
-                              <Typography variant="caption" color="text.secondary">
-                                {t.status === 'COMPLETED' ? '✓ Проведено' : t.status === 'REJECTED' ? '✕ Закрыто' : 'Ожидание МОЛ'}
-                              </Typography>
-                            )}
-                          </Stack>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </DataTableWrapper>
-        </>
+            transferTab={transferTab}
+            currentUserId={user?.userId}
+            isAdmin={isAdmin}
+            onReceive={(t) => setSelectedTransferForReceive(t)}
+            onReject={(t) => setSelectedTransferForReject(t)}
+            onDispatch={handleQuickDispatch}
+            onOpenTransferRequest={() => setIsRequestDialogOpen(true)}
+          />
+        </DataTableWrapper>
       )}
 
-      {/* Modal: Мастер складских операций */}
+      {/* Dialogs */}
       <WmsOperationWizardDialog
         open={isWizardOpen}
         onClose={() => setIsWizardOpen(false)}
@@ -1030,7 +322,6 @@ function WmsOperationsContent() {
         }}
       />
 
-      {/* Modal: Запрос перевода ТМЦ */}
       <TransferRequestDialog
         open={isRequestDialogOpen}
         onClose={() => setIsRequestDialogOpen(false)}
@@ -1040,7 +331,6 @@ function WmsOperationsContent() {
         }}
       />
 
-      {/* Modal: Приемка ТМЦ */}
       <TransferReceiveDialog
         open={Boolean(selectedTransferForReceive)}
         transfer={selectedTransferForReceive}
@@ -1051,7 +341,6 @@ function WmsOperationsContent() {
         }}
       />
 
-      {/* Modal: Отклонение перемещения */}
       <TransferRejectDialog
         open={Boolean(selectedTransferForReject)}
         transfer={selectedTransferForReject}
