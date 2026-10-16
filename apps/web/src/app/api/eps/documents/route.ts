@@ -5,6 +5,7 @@ import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { saveFile, ALLOWED_EXTENSIONS } from '@/lib/storage';
 import { getEquipmentDecimalNumber } from '@/lib/eps-helpers';
+import { matchFileNameWithDatabase } from '@/lib/eps-document-matcher';
 import path from 'path';
 
 export const dynamic = 'force-dynamic';
@@ -143,6 +144,98 @@ export async function GET(req: NextRequest) {
   }
 }
 
+async function resolveTargetEquipments(options: {
+  bindingMode: string;
+  equipmentId?: string | null;
+  model?: string | null;
+  decimalNumber?: string | null;
+  applyToAllModel?: boolean;
+  applyToAllDecimal?: boolean;
+}): Promise<{ id: string; name: string; inventoryNumber: string | null; model: string | null }[]> {
+  const { bindingMode, equipmentId, model, decimalNumber, applyToAllModel, applyToAllDecimal } = options;
+
+  if (bindingMode === 'MODEL' || (model && !equipmentId)) {
+    if (!model) return [];
+    return prisma.equipment.findMany({
+      where: {
+        deletedAt: null,
+        model: { equals: model, mode: 'insensitive' },
+      },
+      select: { id: true, name: true, inventoryNumber: true, model: true },
+    });
+  }
+
+  if (bindingMode === 'DECIMAL' || bindingMode === 'DECIMAL_NUMBER' || (decimalNumber && !equipmentId)) {
+    if (!decimalNumber) return [];
+    const candidates = await prisma.equipment.findMany({
+      where: {
+        deletedAt: null,
+        OR: [
+          { customFields: { path: ['decimal_number'], string_contains: decimalNumber } },
+          { customFields: { path: ['detsimalnyy_nomer'], string_contains: decimalNumber } },
+          { customFields: { path: ['decimalNumber'], string_contains: decimalNumber } },
+          { customFields: { path: ['децимальный номер'], string_contains: decimalNumber } },
+        ],
+      },
+      select: { id: true, name: true, inventoryNumber: true, model: true, customFields: true },
+    });
+    return candidates.filter((eq) => {
+      const dec = getEquipmentDecimalNumber(eq.customFields);
+      return (
+        dec.toLowerCase() === decimalNumber.toLowerCase() ||
+        dec.replace(/[^a-zа-я0-9]/gi, '') === decimalNumber.replace(/[^a-zа-я0-9]/gi, '')
+      );
+    });
+  }
+
+  if (equipmentId) {
+    const initialEq = await prisma.equipment.findUnique({
+      where: { id: equipmentId },
+      select: { id: true, name: true, inventoryNumber: true, model: true, customFields: true },
+    });
+    if (!initialEq) return [];
+
+    const eqMap = new Map<string, typeof initialEq>();
+    eqMap.set(initialEq.id, initialEq);
+
+    if (applyToAllModel && initialEq.model && initialEq.model.trim()) {
+      const sameModel = await prisma.equipment.findMany({
+        where: {
+          deletedAt: null,
+          model: { equals: initialEq.model.trim(), mode: 'insensitive' },
+        },
+        select: { id: true, name: true, inventoryNumber: true, model: true, customFields: true },
+      });
+      sameModel.forEach((eq) => eqMap.set(eq.id, eq));
+    }
+
+    const initialDec = getEquipmentDecimalNumber(initialEq.customFields);
+    if (applyToAllDecimal && initialDec) {
+      const sameDec = await prisma.equipment.findMany({
+        where: {
+          deletedAt: null,
+          OR: [
+            { customFields: { path: ['decimal_number'], string_contains: initialDec } },
+            { customFields: { path: ['detsimalnyy_nomer'], string_contains: initialDec } },
+            { customFields: { path: ['decimalNumber'], string_contains: initialDec } },
+            { customFields: { path: ['децимальный номер'], string_contains: initialDec } },
+          ],
+        },
+        select: { id: true, name: true, inventoryNumber: true, model: true, customFields: true },
+      });
+      sameDec.forEach((eq) => {
+        if (getEquipmentDecimalNumber(eq.customFields).toLowerCase() === initialDec.toLowerCase()) {
+          eqMap.set(eq.id, eq);
+        }
+      });
+    }
+
+    return Array.from(eqMap.values());
+  }
+
+  return [];
+}
+
 export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);
@@ -163,6 +256,26 @@ export async function POST(req: NextRequest) {
     }
     const description = formData.get('description') as string | null;
 
+    const filesMetadataRaw = formData.get('filesMetadata') as string | null;
+    let filesMetadata: Array<{
+      fileName: string;
+      docType?: string;
+      bindingMode?: string;
+      equipmentId?: string | null;
+      model?: string | null;
+      decimalNumber?: string | null;
+      applyToAllModel?: boolean;
+      applyToAllDecimal?: boolean;
+      description?: string | null;
+    }> = [];
+    if (filesMetadataRaw) {
+      try {
+        filesMetadata = JSON.parse(filesMetadataRaw);
+      } catch {}
+    }
+
+    const isPerFileMode = filesMetadata.length > 0 || bindingMode === 'AUTO';
+
     const rawFiles = [...formData.getAll('files'), ...formData.getAll('file')];
     const files = rawFiles.filter((f): f is File => f instanceof File && f.size > 0);
 
@@ -172,104 +285,47 @@ export async function POST(req: NextRequest) {
 
     let targetEquipments: { id: string; name: string; inventoryNumber: string | null; model: string | null }[] = [];
 
-    if (bindingMode === 'MODEL' || (model && !equipmentId)) {
-      if (!model) {
-        return NextResponse.json({ success: false, error: 'Необходимо указать модель оборудования' }, { status: 400 });
-      }
-      targetEquipments = await prisma.equipment.findMany({
-        where: {
-          deletedAt: null,
-          model: { equals: model, mode: 'insensitive' },
-        },
-        select: { id: true, name: true, inventoryNumber: true, model: true },
-      });
-      if (targetEquipments.length === 0) {
-        return NextResponse.json(
-          { success: false, error: `В реестре не найдено оборудования с моделью «${model}»` },
-          { status: 404 }
-        );
-      }
-    } else if (bindingMode === 'DECIMAL' || bindingMode === 'DECIMAL_NUMBER' || (decimalNumber && !equipmentId)) {
-      if (!decimalNumber) {
-        return NextResponse.json({ success: false, error: 'Необходимо указать децимальный номер' }, { status: 400 });
-      }
-      const candidates = await prisma.equipment.findMany({
-        where: {
-          deletedAt: null,
-          OR: [
-            { customFields: { path: ['decimal_number'], string_contains: decimalNumber } },
-            { customFields: { path: ['detsimalnyy_nomer'], string_contains: decimalNumber } },
-            { customFields: { path: ['decimalNumber'], string_contains: decimalNumber } },
-            { customFields: { path: ['децимальный номер'], string_contains: decimalNumber } },
-          ],
-        },
-        select: { id: true, name: true, inventoryNumber: true, model: true, customFields: true },
-      });
-      targetEquipments = candidates.filter((eq) => {
-        const dec = getEquipmentDecimalNumber(eq.customFields);
-        return (
-          dec.toLowerCase() === decimalNumber.toLowerCase() ||
-          dec.replace(/[^a-zа-я0-9]/gi, '') === decimalNumber.replace(/[^a-zа-я0-9]/gi, '')
-        );
-      });
-      if (targetEquipments.length === 0) {
-        return NextResponse.json(
-          { success: false, error: `В реестре не найдено оборудования с децимальным номером «${decimalNumber}»` },
-          { status: 404 }
-        );
-      }
-    } else {
-      if (!equipmentId) {
-        return NextResponse.json(
-          { success: false, error: 'Необходимо указать единицу оборудования, модель или децимальный номер' },
-          { status: 400 }
-        );
-      }
+    if (!isPerFileMode) {
+      if (bindingMode === 'MODEL' || (model && !equipmentId)) {
+        if (!model) {
+          return NextResponse.json({ success: false, error: 'Необходимо указать модель оборудования' }, { status: 400 });
+        }
+        targetEquipments = await resolveTargetEquipments({ bindingMode: 'MODEL', model });
+        if (targetEquipments.length === 0) {
+          return NextResponse.json(
+            { success: false, error: `В реестре не найдено оборудования с моделью «${model}»` },
+            { status: 404 }
+          );
+        }
+      } else if (bindingMode === 'DECIMAL' || bindingMode === 'DECIMAL_NUMBER' || (decimalNumber && !equipmentId)) {
+        if (!decimalNumber) {
+          return NextResponse.json({ success: false, error: 'Необходимо указать децимальный номер' }, { status: 400 });
+        }
+        targetEquipments = await resolveTargetEquipments({ bindingMode: 'DECIMAL', decimalNumber });
+        if (targetEquipments.length === 0) {
+          return NextResponse.json(
+            { success: false, error: `В реестре не найдено оборудования с децимальным номером «${decimalNumber}»` },
+            { status: 404 }
+          );
+        }
+      } else {
+        if (!equipmentId) {
+          return NextResponse.json(
+            { success: false, error: 'Необходимо указать единицу оборудования, модель или децимальный номер' },
+            { status: 400 }
+          );
+        }
 
-      const initialEq = await prisma.equipment.findUnique({
-        where: { id: equipmentId },
-        select: { id: true, name: true, inventoryNumber: true, model: true, customFields: true },
-      });
-      if (!initialEq) {
-        return NextResponse.json({ success: false, error: 'Оборудование не найдено' }, { status: 404 });
-      }
-
-      const eqMap = new Map<string, typeof initialEq>();
-      eqMap.set(initialEq.id, initialEq);
-
-      if (applyToAllModel && initialEq.model && initialEq.model.trim()) {
-        const sameModel = await prisma.equipment.findMany({
-          where: {
-            deletedAt: null,
-            model: { equals: initialEq.model.trim(), mode: 'insensitive' },
-          },
-          select: { id: true, name: true, inventoryNumber: true, model: true, customFields: true },
+        targetEquipments = await resolveTargetEquipments({
+          bindingMode: 'EQUIPMENT',
+          equipmentId,
+          applyToAllModel,
+          applyToAllDecimal,
         });
-        sameModel.forEach((eq) => eqMap.set(eq.id, eq));
+        if (targetEquipments.length === 0) {
+          return NextResponse.json({ success: false, error: 'Оборудование не найдено' }, { status: 404 });
+        }
       }
-
-      const initialDec = getEquipmentDecimalNumber(initialEq.customFields);
-      if (applyToAllDecimal && initialDec) {
-        const sameDec = await prisma.equipment.findMany({
-          where: {
-            deletedAt: null,
-            OR: [
-              { customFields: { path: ['decimal_number'], string_contains: initialDec } },
-              { customFields: { path: ['detsimalnyy_nomer'], string_contains: initialDec } },
-              { customFields: { path: ['decimalNumber'], string_contains: initialDec } },
-              { customFields: { path: ['децимальный номер'], string_contains: initialDec } },
-            ],
-          },
-          select: { id: true, name: true, inventoryNumber: true, model: true, customFields: true },
-        });
-        sameDec.forEach((eq) => {
-          if (getEquipmentDecimalNumber(eq.customFields).toLowerCase() === initialDec.toLowerCase()) {
-            eqMap.set(eq.id, eq);
-          }
-        });
-      }
-
-      targetEquipments = Array.from(eqMap.values());
     }
 
     // Предварительная валидация расширений и размеров всех файлов перед сохранением
@@ -293,10 +349,69 @@ export async function POST(req: NextRequest) {
     }
 
     const createdDocuments = [];
+    const allBoundEquipmentIds = new Set<string>();
+
     for (const file of files) {
       const saved = await saveFile(file, 'documents');
 
-      for (const targetEq of targetEquipments) {
+      let fileTargets = targetEquipments;
+      let fileDocType = docType;
+      let fileDesc = description?.trim() || null;
+      let fileBindingMode = bindingMode;
+      let fileModel = model;
+      let fileDecimal = decimalNumber;
+
+      const fileMeta = filesMetadata.find((m) => m.fileName === file.name);
+      if (fileMeta) {
+        if (fileMeta.docType && Object.values(DocumentType).includes(fileMeta.docType as DocumentType)) {
+          fileDocType = fileMeta.docType as DocumentType;
+        }
+        if (fileMeta.description !== undefined) {
+          fileDesc = fileMeta.description?.trim() || null;
+        }
+        if (fileMeta.bindingMode) {
+          fileBindingMode = fileMeta.bindingMode;
+          fileModel = fileMeta.model?.trim() || null;
+          fileDecimal = fileMeta.decimalNumber?.trim() || null;
+          const resolved = await resolveTargetEquipments({
+            bindingMode: fileMeta.bindingMode,
+            equipmentId: fileMeta.equipmentId,
+            model: fileMeta.model,
+            decimalNumber: fileMeta.decimalNumber,
+            applyToAllModel: fileMeta.applyToAllModel,
+            applyToAllDecimal: fileMeta.applyToAllDecimal,
+          });
+          if (resolved.length > 0) {
+            fileTargets = resolved;
+          }
+        }
+      } else if (bindingMode === 'AUTO') {
+        const autoMatch = await matchFileNameWithDatabase(file.name, prisma);
+        if (autoMatch.detectedDocType && Object.values(DocumentType).includes(autoMatch.detectedDocType as DocumentType)) {
+          fileDocType = autoMatch.detectedDocType as DocumentType;
+        }
+        if (autoMatch.suggestedBindingMode) {
+          fileBindingMode = autoMatch.suggestedBindingMode;
+          fileModel = autoMatch.matchedModel;
+          fileDecimal = autoMatch.matchedDecimalNumber;
+          const resolved = await resolveTargetEquipments({
+            bindingMode: autoMatch.suggestedBindingMode,
+            equipmentId: autoMatch.matchedEquipment?.id,
+            model: autoMatch.matchedModel,
+            decimalNumber: autoMatch.matchedDecimalNumber,
+          });
+          if (resolved.length > 0) {
+            fileTargets = resolved;
+          }
+        }
+      }
+
+      if (fileTargets.length === 0 && targetEquipments.length > 0) {
+        fileTargets = targetEquipments;
+      }
+
+      for (const targetEq of fileTargets) {
+        allBoundEquipmentIds.add(targetEq.id);
         const document = await prisma.document.create({
           data: {
             equipmentId: targetEq.id,
@@ -305,8 +420,8 @@ export async function POST(req: NextRequest) {
             filePath: saved.filePath,
             fileType: saved.fileType,
             fileSize: saved.fileSize,
-            docType,
-            description: description?.trim() || null,
+            docType: fileDocType,
+            description: fileDesc,
             uploadedById: user.userId,
           },
           include: {
@@ -336,10 +451,10 @@ export async function POST(req: NextRequest) {
             equipmentId: targetEq.id,
             equipmentName: targetEq.name,
             fileName: saved.originalName,
-            docType,
-            bindingMode,
-            model: model || targetEq.model,
-            decimalNumber,
+            docType: fileDocType,
+            bindingMode: fileBindingMode,
+            model: fileModel || targetEq.model,
+            decimalNumber: fileDecimal,
           },
         });
 
@@ -352,7 +467,7 @@ export async function POST(req: NextRequest) {
       data: createdDocuments.length === 1 ? createdDocuments[0] : createdDocuments,
       items: createdDocuments,
       count: createdDocuments.length,
-      equipmentCount: targetEquipments.length,
+      equipmentCount: targetEquipments.length || allBoundEquipmentIds.size,
       bindingMode,
     });
   } catch (error: unknown) {

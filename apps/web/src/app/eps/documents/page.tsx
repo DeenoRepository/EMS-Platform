@@ -123,6 +123,17 @@ function normalizeEquipmentSearch(value: string | null | undefined): string {
   return `${tokens} ${compact}`.trim();
 }
 
+interface UploadBatchFileItem {
+  file: File;
+  match: DocumentMatchResult;
+  docType: string;
+  bindingMode: 'DECIMAL' | 'MODEL' | 'EQUIPMENT' | 'GLOBAL';
+  model?: string | null;
+  decimalNumber?: string | null;
+  equipmentId?: string | null;
+  equipmentName?: string | null;
+}
+
 function filterEquipmentOptions(options: EquipmentOption[], inputValue: string): EquipmentOption[] {
   const searchTokens = (inputValue || '')
     .toLocaleLowerCase('ru-RU')
@@ -261,66 +272,106 @@ function DocumentsListContent() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [autoMatchResult, setAutoMatchResult] = useState<DocumentMatchResult | null>(null);
+  const [batchFileItems, setBatchFileItems] = useState<UploadBatchFileItem[]>([]);
+  const [useUnifiedBinding, setUseUnifiedBinding] = useState(false);
 
   const handleFilesChange = useCallback((files: File[]) => {
     setSelectedFiles(files);
     if (!files || files.length === 0) {
       setAutoMatchResult(null);
+      setBatchFileItems([]);
       return;
     }
 
-    const primaryFile = files[0];
-    // 1. Мгновенное сопоставление на клиенте по загруженным моделям и децимальным номерам
-    const localMatch = matchFileNameToTargets(primaryFile.name, {
-      models: availableBindingTargets.models,
-      decimalNumbers: availableBindingTargets.decimalNumbers,
-      equipmentList,
+    const initialBatch: UploadBatchFileItem[] = files.map((file) => {
+      const match = matchFileNameToTargets(file.name, {
+        models: availableBindingTargets.models,
+        decimalNumbers: availableBindingTargets.decimalNumbers,
+        equipmentList,
+      });
+      return {
+        file,
+        match,
+        docType: match.detectedDocType && match.detectedDocType !== 'OTHER' ? match.detectedDocType : 'SCHEMA',
+        bindingMode: (match.suggestedBindingMode as any) || 'EQUIPMENT',
+        model: match.matchedModel || null,
+        decimalNumber: match.matchedDecimalNumber || null,
+        equipmentId: match.matchedEquipment?.id || null,
+        equipmentName: match.matchedEquipment
+          ? `${match.matchedEquipment.inventoryNumber ? `[${match.matchedEquipment.inventoryNumber}] ` : ''}${match.matchedEquipment.name}`
+          : null,
+      };
     });
-    setAutoMatchResult(localMatch);
+    setBatchFileItems(initialBatch);
 
-    if (localMatch.detectedDocType && localMatch.detectedDocType !== 'OTHER') {
-      setUploadDocType(localMatch.detectedDocType);
+    const primaryFile = files[0];
+    const primaryMatch = initialBatch[0]?.match || null;
+    setAutoMatchResult(primaryMatch);
+
+    if (primaryMatch) {
+      if (primaryMatch.detectedDocType && primaryMatch.detectedDocType !== 'OTHER') {
+        setUploadDocType(primaryMatch.detectedDocType);
+      }
+
+      if (primaryMatch.suggestedBindingMode === 'DECIMAL' && primaryMatch.matchedDecimalNumber) {
+        setBindingMode('DECIMAL');
+        setSelectedDecimalForUpload(primaryMatch.matchedDecimalNumber);
+        setDecimalSearchInput(primaryMatch.matchedDecimalNumber);
+      } else if (primaryMatch.suggestedBindingMode === 'MODEL' && primaryMatch.matchedModel) {
+        setBindingMode('MODEL');
+        setSelectedModelForUpload(primaryMatch.matchedModel);
+        setModelSearchInput(primaryMatch.matchedModel);
+      } else if (primaryMatch.suggestedBindingMode === 'EQUIPMENT' && primaryMatch.matchedEquipment) {
+        setBindingMode('EQUIPMENT');
+        setSelectedEquipmentForUpload(primaryMatch.matchedEquipment as EquipmentOption);
+      }
     }
 
-    if (localMatch.suggestedBindingMode === 'DECIMAL' && localMatch.matchedDecimalNumber) {
-      setBindingMode('DECIMAL');
-      setSelectedDecimalForUpload(localMatch.matchedDecimalNumber);
-      setDecimalSearchInput(localMatch.matchedDecimalNumber);
-    } else if (localMatch.suggestedBindingMode === 'MODEL' && localMatch.matchedModel) {
-      setBindingMode('MODEL');
-      setSelectedModelForUpload(localMatch.matchedModel);
-      setModelSearchInput(localMatch.matchedModel);
-    } else if (localMatch.suggestedBindingMode === 'EQUIPMENT' && localMatch.matchedEquipment) {
-      setBindingMode('EQUIPMENT');
-      setSelectedEquipmentForUpload(localMatch.matchedEquipment as EquipmentOption);
-    }
-
-    // 2. Дополнительная верификация на сервере через прямой поиск по БД
+    // 2. Серверная верификация всех файлов через прямой поиск по БД
     fetch('/api/eps/documents/match', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fileName: primaryFile.name }),
+      body: JSON.stringify({ fileNames: files.map((f) => f.name) }),
     })
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
-        if (json?.success && json.data?.match) {
-          const sMatch: DocumentMatchResult = json.data.match;
-          if (sMatch.confidence !== 'none') {
-            setAutoMatchResult(sMatch);
-            if (sMatch.detectedDocType && sMatch.detectedDocType !== 'OTHER') {
-              setUploadDocType(sMatch.detectedDocType);
+        if (json?.success && Array.isArray(json.data?.matches)) {
+          const sMatches: DocumentMatchResult[] = json.data.matches;
+          setBatchFileItems((prev) =>
+            prev.map((item) => {
+              const sMatch = sMatches.find((m) => m.fileName === item.file.name);
+              if (!sMatch || sMatch.confidence === 'none') return item;
+              return {
+                ...item,
+                match: sMatch,
+                docType: sMatch.detectedDocType && sMatch.detectedDocType !== 'OTHER' ? sMatch.detectedDocType : item.docType,
+                bindingMode: (sMatch.suggestedBindingMode as any) || item.bindingMode,
+                model: sMatch.matchedModel || item.model,
+                decimalNumber: sMatch.matchedDecimalNumber || item.decimalNumber,
+                equipmentId: sMatch.matchedEquipment?.id || item.equipmentId,
+                equipmentName: sMatch.matchedEquipment
+                  ? `${sMatch.matchedEquipment.inventoryNumber ? `[${sMatch.matchedEquipment.inventoryNumber}] ` : ''}${sMatch.matchedEquipment.name}`
+                  : item.equipmentName,
+              };
+            })
+          );
+
+          if (sMatches[0] && sMatches[0].confidence !== 'none') {
+            setAutoMatchResult(sMatches[0]);
+            if (sMatches[0].detectedDocType && sMatches[0].detectedDocType !== 'OTHER') {
+              setUploadDocType(sMatches[0].detectedDocType);
             }
-            if (sMatch.suggestedBindingMode === 'DECIMAL' && sMatch.matchedDecimalNumber) {
+            if (sMatches[0].suggestedBindingMode === 'DECIMAL' && sMatches[0].matchedDecimalNumber) {
               setBindingMode('DECIMAL');
-              setSelectedDecimalForUpload(sMatch.matchedDecimalNumber);
-              setDecimalSearchInput(sMatch.matchedDecimalNumber);
-            } else if (sMatch.suggestedBindingMode === 'MODEL' && sMatch.matchedModel) {
+              setSelectedDecimalForUpload(sMatches[0].matchedDecimalNumber);
+              setDecimalSearchInput(sMatches[0].matchedDecimalNumber);
+            } else if (sMatches[0].suggestedBindingMode === 'MODEL' && sMatches[0].matchedModel) {
               setBindingMode('MODEL');
-              setSelectedModelForUpload(sMatch.matchedModel);
-              setModelSearchInput(sMatch.matchedModel);
-            } else if (sMatch.suggestedBindingMode === 'EQUIPMENT' && sMatch.matchedEquipment) {
+              setSelectedModelForUpload(sMatches[0].matchedModel);
+              setModelSearchInput(sMatches[0].matchedModel);
+            } else if (sMatches[0].suggestedBindingMode === 'EQUIPMENT' && sMatches[0].matchedEquipment) {
               setBindingMode('EQUIPMENT');
-              setSelectedEquipmentForUpload(sMatch.matchedEquipment as EquipmentOption);
+              setSelectedEquipmentForUpload(sMatches[0].matchedEquipment as EquipmentOption);
             }
           }
         }
@@ -487,22 +538,40 @@ function DocumentsListContent() {
     }
   };
 
+  const isMultiAutoReady = useMemo(() => {
+    return (
+      selectedFiles.length > 1 &&
+      !useUnifiedBinding &&
+      batchFileItems.length > 0 &&
+      batchFileItems.every((item) =>
+        item.bindingMode === 'DECIMAL'
+          ? Boolean(item.decimalNumber)
+          : item.bindingMode === 'MODEL'
+          ? Boolean(item.model)
+          : Boolean(item.equipmentId)
+      )
+    );
+  }, [selectedFiles.length, useUnifiedBinding, batchFileItems]);
+
   const handleUploadSubmit = async () => {
     if (selectedFiles.length === 0) {
       enqueueSnackbar('Выберите хотя бы один файл для загрузки', { variant: 'warning' });
       return;
     }
-    if (bindingMode === 'EQUIPMENT' && !selectedEquipmentForUpload) {
-      enqueueSnackbar('Выберите оборудование, к которому относится документ', { variant: 'warning' });
-      return;
-    }
-    if (bindingMode === 'MODEL' && !selectedModelForUpload?.trim()) {
-      enqueueSnackbar('Выберите или укажите модель оборудования', { variant: 'warning' });
-      return;
-    }
-    if (bindingMode === 'DECIMAL' && !selectedDecimalForUpload?.trim()) {
-      enqueueSnackbar('Выберите или укажите децимальный номер', { variant: 'warning' });
-      return;
+
+    if (!isMultiAutoReady) {
+      if (bindingMode === 'EQUIPMENT' && !selectedEquipmentForUpload) {
+        enqueueSnackbar('Выберите оборудование, к которому относится документ', { variant: 'warning' });
+        return;
+      }
+      if (bindingMode === 'MODEL' && !selectedModelForUpload?.trim()) {
+        enqueueSnackbar('Выберите или укажите модель оборудования', { variant: 'warning' });
+        return;
+      }
+      if (bindingMode === 'DECIMAL' && !selectedDecimalForUpload?.trim()) {
+        enqueueSnackbar('Выберите или укажите децимальный номер', { variant: 'warning' });
+        return;
+      }
     }
 
     setUploading(true);
@@ -515,14 +584,27 @@ function DocumentsListContent() {
       fd.append('description', uploadDescription);
       fd.append('bindingMode', bindingMode);
 
-      if (bindingMode === 'EQUIPMENT' && selectedEquipmentForUpload) {
-        fd.append('equipmentId', selectedEquipmentForUpload.id);
-        if (applyToAllModel) fd.append('applyToAllModel', 'true');
-        if (applyToAllDecimal) fd.append('applyToAllDecimal', 'true');
-      } else if (bindingMode === 'MODEL' && selectedModelForUpload) {
-        fd.append('model', selectedModelForUpload.trim());
-      } else if (bindingMode === 'DECIMAL' && selectedDecimalForUpload) {
-        fd.append('decimalNumber', selectedDecimalForUpload.trim());
+      if (selectedFiles.length > 1 && !useUnifiedBinding && batchFileItems.length > 0) {
+        const metadata = batchFileItems.map((item) => ({
+          fileName: item.file.name,
+          docType: item.docType,
+          bindingMode: item.bindingMode,
+          model: item.model || (bindingMode === 'MODEL' ? selectedModelForUpload : undefined),
+          decimalNumber: item.decimalNumber || (bindingMode === 'DECIMAL' ? selectedDecimalForUpload : undefined),
+          equipmentId: item.equipmentId || (bindingMode === 'EQUIPMENT' ? selectedEquipmentForUpload?.id : undefined),
+          description: uploadDescription,
+        }));
+        fd.append('filesMetadata', JSON.stringify(metadata));
+      } else {
+        if (bindingMode === 'EQUIPMENT' && selectedEquipmentForUpload) {
+          fd.append('equipmentId', selectedEquipmentForUpload.id);
+          if (applyToAllModel) fd.append('applyToAllModel', 'true');
+          if (applyToAllDecimal) fd.append('applyToAllDecimal', 'true');
+        } else if (bindingMode === 'MODEL' && selectedModelForUpload) {
+          fd.append('model', selectedModelForUpload.trim());
+        } else if (bindingMode === 'DECIMAL' && selectedDecimalForUpload) {
+          fd.append('decimalNumber', selectedDecimalForUpload.trim());
+        }
       }
 
       const res = await fetch('/api/eps/documents', {
@@ -542,6 +624,9 @@ function DocumentsListContent() {
         enqueueSnackbar(msg, { variant: 'success' });
         setUploadModalOpen(false);
         setSelectedFiles([]);
+        setBatchFileItems([]);
+        setAutoMatchResult(null);
+        setUseUnifiedBinding(false);
         setSelectedEquipmentForUpload(null);
         setSelectedModelForUpload(null);
         setSelectedDecimalForUpload(null);
@@ -1211,9 +1296,11 @@ function DocumentsListContent() {
         submitDisabled={
           uploading ||
           selectedFiles.length === 0 ||
-          (bindingMode === 'EQUIPMENT' && !selectedEquipmentForUpload) ||
-          (bindingMode === 'MODEL' && !selectedModelForUpload?.trim()) ||
-          (bindingMode === 'DECIMAL' && !selectedDecimalForUpload?.trim())
+          (selectedFiles.length > 1 && !useUnifiedBinding
+            ? !isMultiAutoReady && (!selectedEquipmentForUpload && !selectedModelForUpload?.trim() && !selectedDecimalForUpload?.trim())
+            : (bindingMode === 'EQUIPMENT' && !selectedEquipmentForUpload) ||
+              (bindingMode === 'MODEL' && !selectedModelForUpload?.trim()) ||
+              (bindingMode === 'DECIMAL' && !selectedDecimalForUpload?.trim()))
         }
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.25, pt: 1 }}>
@@ -1232,8 +1319,123 @@ function DocumentsListContent() {
             />
           </Box>
 
-          {/* Smart Auto-match Suggestion Banner */}
-          {autoMatchResult && autoMatchResult.confidence !== 'none' && (
+          {/* Batch Auto-match List Section */}
+          {selectedFiles.length > 1 && batchFileItems.length > 0 && (
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2,
+                borderRadius: '10px',
+                border: '1px solid',
+                borderColor: 'primary.light',
+                bgcolor: 'action.hover',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1.5,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <AutoAwesomeIcon color="primary" sx={{ fontSize: 18 }} />
+                  <Typography variant="subtitle2" fontWeight={700} color="primary.main">
+                    Групповое автосопоставление ({batchFileItems.filter((b) => b.model || b.decimalNumber || b.equipmentId).length} из {selectedFiles.length})
+                  </Typography>
+                </Box>
+                <Chip
+                  label={`${selectedFiles.length} файлов`}
+                  size="small"
+                  variant="outlined"
+                  sx={{ fontWeight: 700, fontSize: '0.6875rem', height: 20 }}
+                />
+              </Box>
+
+              <Box sx={{ maxHeight: 220, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {batchFileItems.map((item, idx) => (
+                  <Paper
+                    key={idx}
+                    variant="outlined"
+                    sx={{
+                      p: 1.25,
+                      borderRadius: '8px',
+                      bgcolor: 'background.paper',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 0.5,
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                      <Typography variant="body2" fontWeight={600} noWrap sx={{ fontSize: '0.8125rem', maxWidth: 320 }}>
+                        {item.file.name}
+                      </Typography>
+                      <Chip
+                        label={DOCUMENT_TYPE_MAP[item.docType] || item.docType}
+                        size="small"
+                        color="success"
+                        variant="outlined"
+                        sx={{ height: 20, fontSize: '0.6875rem', fontWeight: 600 }}
+                      />
+                    </Box>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                      {item.decimalNumber ? (
+                        <Chip
+                          label={`Дец. №: ${item.decimalNumber}`}
+                          size="small"
+                          color="primary"
+                          sx={{ height: 20, fontSize: '0.6875rem', fontWeight: 600 }}
+                        />
+                      ) : item.model ? (
+                        <Chip
+                          label={`Модель: ${item.model}`}
+                          size="small"
+                          color="primary"
+                          sx={{ height: 20, fontSize: '0.6875rem', fontWeight: 600 }}
+                        />
+                      ) : item.equipmentName ? (
+                        <Chip
+                          label={`Обор: ${item.equipmentName}`}
+                          size="small"
+                          color="primary"
+                          sx={{ height: 20, fontSize: '0.6875rem', fontWeight: 600 }}
+                        />
+                      ) : (
+                        <Chip
+                          label="По общим параметрам ниже"
+                          size="small"
+                          variant="outlined"
+                          sx={{ height: 20, fontSize: '0.6875rem', color: 'text.secondary' }}
+                        />
+                      )}
+
+                      {item.match.matchingEquipmentCount > 0 && (
+                        <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6875rem' }}>
+                          → {item.match.matchingEquipmentCount} ед. в реестре
+                        </Typography>
+                      )}
+                    </Box>
+                  </Paper>
+                ))}
+              </Box>
+
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={useUnifiedBinding}
+                    onChange={(e) => setUseUnifiedBinding(e.target.checked)}
+                  />
+                }
+                label={
+                  <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                    Применить единую привязку ко всем файлам вместо индивидуального сопоставления
+                  </Typography>
+                }
+              />
+            </Paper>
+          )}
+
+          {/* Single File Smart Auto-match Suggestion Banner */}
+          {selectedFiles.length === 1 && autoMatchResult && autoMatchResult.confidence !== 'none' && (
             <Paper
               elevation={0}
               sx={{
@@ -1297,7 +1499,9 @@ function DocumentsListContent() {
           {/* Binding Mode Selector */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
             <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
-              2. Способ привязки документа к реестру:
+              {selectedFiles.length > 1 && !useUnifiedBinding
+                ? '2. Общие параметры привязки (для нераспознанных файлов):'
+                : '2. Способ привязки документа к реестру:'}
             </Typography>
             <ToggleButtonGroup
               value={bindingMode}
