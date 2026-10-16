@@ -32,13 +32,14 @@ export async function GET(req: NextRequest) {
       stockItemsCount,
       recentOperations,
       inventoriesCount,
+      inTransitTransfersCount,
       deficitStats,
     ] = await Promise.all([
       prisma.warehouse.count({ where: { isActive: true } }),
-      prisma.nomenclature.count(),
+      prisma.nomenclature.count({ where: { deletedAt: null } }),
       prisma.stockItem.count(),
       prisma.stockOperation.findMany({
-        take: 5,
+        take: 6,
         orderBy: { date: 'desc' },
         include: {
           warehouse: { select: { name: true, code: true } },
@@ -56,6 +57,9 @@ export async function GET(req: NextRequest) {
           status: 'IN_PROGRESS',
           ...(isAdmin || userWarehouseIds.length === 0 ? {} : { warehouseId: { in: userWarehouseIds } }),
         },
+      }),
+      prisma.stockTransfer.count({
+        where: { status: StockTransferStatus.IN_TRANSIT },
       }),
       // Агрегация объемов ТМЦ в пути для точного учета реального дефицита
       Promise.all([
@@ -150,6 +154,7 @@ export async function GET(req: NextRequest) {
         lowStockCount: lowStockItems.length,
         lowStockItems: lowStockItems.slice(0, 10),
         activeInventoriesCount: inventoriesCount,
+        inTransitTransfersCount,
         recentOperations,
         userWarehouseIds,
       },
