@@ -9,6 +9,7 @@ import { matchFileNameWithDatabase } from '@/lib/eps-document-matcher';
 import path from 'path';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 120;
 
 export async function GET(req: NextRequest) {
   try {

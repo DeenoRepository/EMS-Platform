@@ -56,6 +56,23 @@ if [[ -f "$BUNDLE_DIR/scripts/patch-permissions.sql" ]]; then
   fi
 fi
 
+# Ensure Nginx allows large file uploads up to 64M (required for 50MB files)
+if command -v nginx >/dev/null 2>&1; then
+  echo "Checking and configuring Nginx client_max_body_size (64M)..."
+  mkdir -p /etc/nginx/conf.d
+  echo "client_max_body_size 64M;" > /etc/nginx/conf.d/ems-upload-size.conf
+  if [[ -f /etc/nginx/sites-available/ems ]]; then
+    sed -i -E 's/client_max_body_size\s+[0-9]+[kKmMgG];/client_max_body_size 64M;/g' /etc/nginx/sites-available/ems 2>/dev/null || true
+  fi
+  if nginx -t >/dev/null 2>&1; then
+    systemctl reload nginx 2>/dev/null || true
+    echo "Nginx successfully configured and reloaded with client_max_body_size 64M"
+  else
+    rm -f /etc/nginx/conf.d/ems-upload-size.conf
+    echo "Warning: nginx -t failed, check /etc/nginx configuration manually" >&2
+  fi
+fi
+
 systemctl start "$SERVICE_NAME"
 for attempt in $(seq 1 30); do
   if curl --silent --fail http://127.0.0.1:3000/api/system/health >/dev/null; then

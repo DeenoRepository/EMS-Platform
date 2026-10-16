@@ -518,6 +518,24 @@ function EquipmentPassportContent() {
         method: 'POST',
         body: fd,
       });
+
+      if (!res.ok) {
+        if (res.status === 413) {
+          enqueueSnackbar(
+            'Размер файла превышает лимит сервера (HTTP 413). Проверьте client_max_body_size в Nginx (требуется 64M).',
+            { variant: 'error' }
+          );
+          return;
+        }
+        let errMsg = `Ошибка сервера (${res.status})`;
+        try {
+          const errData = await res.json();
+          if (errData?.error) errMsg = errData.error;
+        } catch {}
+        enqueueSnackbar(errMsg, { variant: 'error' });
+        return;
+      }
+
       const data = await res.json();
       if (data.success) {
         const docCount = data.count || selectedFiles.length;
@@ -538,8 +556,9 @@ function EquipmentPassportContent() {
       } else {
         enqueueSnackbar(data.error || 'Ошибка загрузки документа', { variant: 'error' });
       }
-    } catch {
-      enqueueSnackbar('Ошибка сети при загрузке документа', { variant: 'error' });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Ошибка сети при загрузке документа';
+      enqueueSnackbar(msg, { variant: 'error' });
     } finally {
       setUploading(false);
     }

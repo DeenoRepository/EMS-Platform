@@ -631,6 +631,24 @@ function DocumentsListContent() {
         method: 'POST',
         body: fd,
       });
+
+      if (!res.ok) {
+        if (res.status === 413) {
+          enqueueSnackbar(
+            'Размер файла превышает лимит сервера (HTTP 413). Проверьте client_max_body_size в Nginx (требуется 64M).',
+            { variant: 'error' }
+          );
+          return;
+        }
+        let errMsg = `Ошибка сервера (${res.status})`;
+        try {
+          const errData = await res.json();
+          if (errData?.error) errMsg = errData.error;
+        } catch {}
+        enqueueSnackbar(errMsg, { variant: 'error' });
+        return;
+      }
+
       const json = await res.json();
       if (json.success) {
         const docCount = json.count || selectedFiles.length;
@@ -662,8 +680,9 @@ function DocumentsListContent() {
       } else {
         enqueueSnackbar(json.error || 'Ошибка загрузки документов', { variant: 'error' });
       }
-    } catch {
-      enqueueSnackbar('Ошибка сети при загрузке документов', { variant: 'error' });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Ошибка сети при загрузке документов';
+      enqueueSnackbar(msg, { variant: 'error' });
     } finally {
       setUploading(false);
     }
