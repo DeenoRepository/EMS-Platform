@@ -162,7 +162,8 @@ export function ConfirmDialog({
           border: '1px solid',
           borderColor: 'divider',
           boxShadow: '0 20px 30px -10px rgba(15, 23, 42, 0.15), 0 10px 15px -3px rgba(15, 23, 42, 0.08)',
-          m: { xs: 1.5, sm: 3 },
+          maxHeight: 'calc(100vh - 96px)',
+          m: { xs: 2, sm: 3, md: 4 },
         },
       }}
     >

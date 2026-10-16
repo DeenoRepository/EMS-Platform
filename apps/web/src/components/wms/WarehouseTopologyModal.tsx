@@ -389,10 +389,8 @@ export default function WarehouseTopologyModal({
             border: '1px solid',
             borderColor: 'divider',
             boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
-            maxHeight: 'calc(100vh - 64px)',
-            m: { xs: 1.5, sm: 3 },
-            display: 'flex',
-            flexDirection: 'column',
+            maxHeight: 'calc(100vh - 96px)',
+            m: { xs: 2, sm: 3, md: 4 },
           },
         }}
       >
@@ -439,16 +437,16 @@ export default function WarehouseTopologyModal({
           </IconButton>
         </DialogTitle>
 
-        <DialogContent sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 2.5, bgcolor: 'background.default' }}>
+        <DialogContent sx={{ p: { xs: 2, sm: 2.5 }, display: 'flex', flexDirection: 'column', gap: 2, bgcolor: 'background.default', overflowY: 'auto' }}>
           {isLoading ? (
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexGrow: 1, py: 8 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 8 }}>
               <CircularProgress size={36} sx={{ color: 'primary.main', mb: 2 }} />
               <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
                 Загрузка топологии и ячеек...
               </Typography>
             </Box>
           ) : zones.length === 0 ? (
-            <Box sx={{ bgcolor: 'background.paper', p: 4, borderRadius: '12px', border: '1px solid', borderColor: 'divider', flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Box sx={{ bgcolor: 'background.paper', p: 4, borderRadius: '12px', border: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <EmptyState
                 icon={<GridViewIcon sx={{ fontSize: 44, color: 'text.secondary' }} />}
                 title="Зоны хранения не созданы"
@@ -557,9 +555,6 @@ export default function WarehouseTopologyModal({
                     border: '1px solid',
                     borderColor: 'divider',
                     bgcolor: 'background.paper',
-                    flexGrow: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
                   }}
                 >
                   {/* Zone Header Controls */}
@@ -995,8 +990,8 @@ export default function WarehouseTopologyModal({
             border: '1px solid',
             borderColor: 'divider',
             boxShadow: '0 20px 30px -10px rgba(15, 23, 42, 0.15), 0 10px 15px -3px rgba(15, 23, 42, 0.08)',
-            maxHeight: 'calc(100vh - 80px)',
-            m: { xs: 1.5, sm: 3 },
+            maxHeight: 'calc(100vh - 96px)',
+            m: { xs: 2, sm: 3, md: 4 },
             display: 'flex',
             flexDirection: 'column',
           },
@@ -1098,7 +1093,8 @@ export default function WarehouseTopologyModal({
                 elevation={0}
                 sx={{
                   flex: 1,
-                  maxHeight: 'calc(100vh - 300px)',
+                  maxHeight: 'calc(100vh - 360px)',
+                  minHeight: 200,
                   border: '1px solid',
                   borderColor: 'divider',
                   borderRadius: '10px',

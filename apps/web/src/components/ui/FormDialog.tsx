@@ -153,6 +153,8 @@ export function FormDialog({
             boxShadow: isFullScreen
               ? 'none'
               : '0 20px 30px -10px rgba(15, 23, 42, 0.15), 0 10px 15px -3px rgba(15, 23, 42, 0.08)',
+            maxHeight: isFullScreen ? '100%' : 'calc(100vh - 96px)',
+            m: isFullScreen ? 0 : { xs: 2, sm: 3, md: 4 },
           },
         }}
       >
