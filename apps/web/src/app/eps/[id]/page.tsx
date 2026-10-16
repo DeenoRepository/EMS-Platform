@@ -1834,8 +1834,9 @@ function EquipmentPassportContent() {
               }
             }}
             compact
+            maxSizeMb={50}
             title="Перетащите файлы документов или выберите"
-            description="PDF, DOCX, XLSX, чертежи (до 15 МБ на файл)"
+            description="PDF, DOCX, XLSX, чертежи (до 50 МБ на файл)"
           />
 
           {equipment.model && (

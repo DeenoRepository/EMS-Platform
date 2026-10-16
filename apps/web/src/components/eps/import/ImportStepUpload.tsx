@@ -39,10 +39,11 @@ export const ImportStepUpload: React.FC<ImportStepUploadProps> = ({
             <Box sx={{ width: '100%' }}>
               <FileUploadDropzone
                 accept=".xlsx,.xls,.csv"
+                maxSizeMb={50}
                 files={selectedFile ? [selectedFile] : []}
                 onChange={(files) => onFileChange(files[0] || null)}
                 title="Выберите или перетащите файл реестра оборудования"
-                description="Поддерживаются книги Excel (.xlsx, .xls) и таблицы CSV (до 15 МБ)"
+                description="Поддерживаются книги Excel (.xlsx, .xls) и таблицы CSV (до 50 МБ)"
               />
             </Box>
 

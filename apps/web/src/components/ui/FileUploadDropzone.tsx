@@ -38,7 +38,7 @@ export interface FileUploadDropzoneProps {
 
 export function FileUploadDropzone({
   accept = '.pdf,.png,.jpg,.jpeg,.xlsx,.xls,.doc,.docx',
-  maxSizeMb = 15,
+  maxSizeMb = 50,
   multiple = false,
   files = [],
   onChange,

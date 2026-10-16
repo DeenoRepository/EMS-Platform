@@ -1334,8 +1334,9 @@ function DocumentsListContent() {
               files={selectedFiles}
               onChange={(files) => handleFilesChange(files)}
               compact
+              maxSizeMb={50}
               title="Перетащите файлы документов или выберите"
-              description="PDF, Word, Excel, чертежи и схемы (до 15 МБ на файл)"
+              description="PDF, Word, Excel, чертежи и схемы (до 50 МБ на файл)"
             />
           </Box>
 
