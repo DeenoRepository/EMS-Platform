@@ -289,14 +289,24 @@ function DocumentsListContent() {
         decimalNumbers: availableBindingTargets.decimalNumbers,
         equipmentList,
       });
+
+      let mode: 'DECIMAL' | 'MODEL' | 'EQUIPMENT' = 'EQUIPMENT';
+      if (match.suggestedBindingMode === 'DECIMAL' && match.matchedDecimalNumber) {
+        mode = 'DECIMAL';
+      } else if (match.suggestedBindingMode === 'MODEL' && match.matchedModel) {
+        mode = 'MODEL';
+      } else if (match.suggestedBindingMode === 'EQUIPMENT' && match.matchedEquipment) {
+        mode = 'EQUIPMENT';
+      }
+
       return {
         file,
         match,
         docType: match.detectedDocType && match.detectedDocType !== 'OTHER' ? match.detectedDocType : 'SCHEMA',
-        bindingMode: (match.suggestedBindingMode as any) || 'EQUIPMENT',
-        model: match.matchedModel || null,
-        decimalNumber: match.matchedDecimalNumber || null,
-        equipmentId: match.matchedEquipment?.id || null,
+        bindingMode: mode,
+        model: mode === 'MODEL' ? match.matchedModel : null,
+        decimalNumber: mode === 'DECIMAL' ? match.matchedDecimalNumber : null,
+        equipmentId: mode === 'EQUIPMENT' ? match.matchedEquipment?.id || null : null,
         equipmentName: match.matchedEquipment
           ? `${match.matchedEquipment.inventoryNumber ? `[${match.matchedEquipment.inventoryNumber}] ` : ''}${match.matchedEquipment.name}`
           : null,
@@ -341,14 +351,24 @@ function DocumentsListContent() {
             prev.map((item) => {
               const sMatch = sMatches.find((m) => m.fileName === item.file.name);
               if (!sMatch || sMatch.confidence === 'none') return item;
+
+              let mode: 'DECIMAL' | 'MODEL' | 'EQUIPMENT' = 'EQUIPMENT';
+              if (sMatch.suggestedBindingMode === 'DECIMAL' && sMatch.matchedDecimalNumber) {
+                mode = 'DECIMAL';
+              } else if (sMatch.suggestedBindingMode === 'MODEL' && sMatch.matchedModel) {
+                mode = 'MODEL';
+              } else if (sMatch.suggestedBindingMode === 'EQUIPMENT' && sMatch.matchedEquipment) {
+                mode = 'EQUIPMENT';
+              }
+
               return {
                 ...item,
                 match: sMatch,
                 docType: sMatch.detectedDocType && sMatch.detectedDocType !== 'OTHER' ? sMatch.detectedDocType : item.docType,
-                bindingMode: (sMatch.suggestedBindingMode as any) || item.bindingMode,
-                model: sMatch.matchedModel || item.model,
-                decimalNumber: sMatch.matchedDecimalNumber || item.decimalNumber,
-                equipmentId: sMatch.matchedEquipment?.id || item.equipmentId,
+                bindingMode: mode,
+                model: mode === 'MODEL' ? sMatch.matchedModel : null,
+                decimalNumber: mode === 'DECIMAL' ? sMatch.matchedDecimalNumber : null,
+                equipmentId: mode === 'EQUIPMENT' ? sMatch.matchedEquipment?.id || null : null,
                 equipmentName: sMatch.matchedEquipment
                   ? `${sMatch.matchedEquipment.inventoryNumber ? `[${sMatch.matchedEquipment.inventoryNumber}] ` : ''}${sMatch.matchedEquipment.name}`
                   : item.equipmentName,
@@ -589,9 +609,9 @@ function DocumentsListContent() {
           fileName: item.file.name,
           docType: item.docType,
           bindingMode: item.bindingMode,
-          model: item.model || (bindingMode === 'MODEL' ? selectedModelForUpload : undefined),
-          decimalNumber: item.decimalNumber || (bindingMode === 'DECIMAL' ? selectedDecimalForUpload : undefined),
-          equipmentId: item.equipmentId || (bindingMode === 'EQUIPMENT' ? selectedEquipmentForUpload?.id : undefined),
+          model: item.bindingMode === 'MODEL' ? (item.model || selectedModelForUpload) : null,
+          decimalNumber: item.bindingMode === 'DECIMAL' ? (item.decimalNumber || selectedDecimalForUpload) : null,
+          equipmentId: item.bindingMode === 'EQUIPMENT' ? (item.equipmentId || selectedEquipmentForUpload?.id) : null,
           description: uploadDescription,
         }));
         fd.append('filesMetadata', JSON.stringify(metadata));

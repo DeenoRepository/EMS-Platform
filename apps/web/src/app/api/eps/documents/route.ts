@@ -154,7 +154,33 @@ async function resolveTargetEquipments(options: {
 }): Promise<{ id: string; name: string; inventoryNumber: string | null; model: string | null }[]> {
   const { bindingMode, equipmentId, model, decimalNumber, applyToAllModel, applyToAllDecimal } = options;
 
-  if (bindingMode === 'MODEL' || (model && !equipmentId)) {
+  // 1. Привязка по децимальному номеру
+  if (bindingMode === 'DECIMAL' || bindingMode === 'DECIMAL_NUMBER') {
+    const dec = decimalNumber?.trim();
+    if (!dec) return [];
+    const candidates = await prisma.equipment.findMany({
+      where: {
+        deletedAt: null,
+        OR: [
+          { customFields: { path: ['decimal_number'], string_contains: dec } },
+          { customFields: { path: ['detsimalnyy_nomer'], string_contains: dec } },
+          { customFields: { path: ['decimalNumber'], string_contains: dec } },
+          { customFields: { path: ['децимальный номер'], string_contains: dec } },
+        ],
+      },
+      select: { id: true, name: true, inventoryNumber: true, model: true, customFields: true },
+    });
+    return candidates.filter((eq) => {
+      const eqDec = getEquipmentDecimalNumber(eq.customFields);
+      return (
+        eqDec.toLowerCase() === dec.toLowerCase() ||
+        eqDec.replace(/[^a-zа-я0-9]/gi, '') === dec.replace(/[^a-zа-я0-9]/gi, '')
+      );
+    });
+  }
+
+  // 2. Привязка по модели
+  if (bindingMode === 'MODEL') {
     if (!model) return [];
     return prisma.equipment.findMany({
       where: {
@@ -165,30 +191,9 @@ async function resolveTargetEquipments(options: {
     });
   }
 
-  if (bindingMode === 'DECIMAL' || bindingMode === 'DECIMAL_NUMBER' || (decimalNumber && !equipmentId)) {
-    if (!decimalNumber) return [];
-    const candidates = await prisma.equipment.findMany({
-      where: {
-        deletedAt: null,
-        OR: [
-          { customFields: { path: ['decimal_number'], string_contains: decimalNumber } },
-          { customFields: { path: ['detsimalnyy_nomer'], string_contains: decimalNumber } },
-          { customFields: { path: ['decimalNumber'], string_contains: decimalNumber } },
-          { customFields: { path: ['децимальный номер'], string_contains: decimalNumber } },
-        ],
-      },
-      select: { id: true, name: true, inventoryNumber: true, model: true, customFields: true },
-    });
-    return candidates.filter((eq) => {
-      const dec = getEquipmentDecimalNumber(eq.customFields);
-      return (
-        dec.toLowerCase() === decimalNumber.toLowerCase() ||
-        dec.replace(/[^a-zа-я0-9]/gi, '') === decimalNumber.replace(/[^a-zа-я0-9]/gi, '')
-      );
-    });
-  }
-
-  if (equipmentId) {
+  // 3. Привязка по конкретной единице оборудования
+  if (bindingMode === 'EQUIPMENT' || equipmentId) {
+    if (!equipmentId) return [];
     const initialEq = await prisma.equipment.findUnique({
       where: { id: equipmentId },
       select: { id: true, name: true, inventoryNumber: true, model: true, customFields: true },
@@ -354,14 +359,17 @@ export async function POST(req: NextRequest) {
     for (const file of files) {
       const saved = await saveFile(file, 'documents');
 
-      let fileTargets = targetEquipments;
+      let fileTargets: { id: string; name: string; inventoryNumber: string | null; model: string | null }[] = [];
       let fileDocType = docType;
       let fileDesc = description?.trim() || null;
       let fileBindingMode = bindingMode;
-      let fileModel = model;
-      let fileDecimal = decimalNumber;
+      let fileModel: string | null = null;
+      let fileDecimal: string | null = null;
 
-      const fileMeta = filesMetadata.find((m) => m.fileName === file.name);
+      const fileMeta = filesMetadata.find(
+        (m) => m.fileName === file.name || m.fileName.toLowerCase() === file.name.toLowerCase()
+      );
+
       if (fileMeta) {
         if (fileMeta.docType && Object.values(DocumentType).includes(fileMeta.docType as DocumentType)) {
           fileDocType = fileMeta.docType as DocumentType;
@@ -373,7 +381,7 @@ export async function POST(req: NextRequest) {
           fileBindingMode = fileMeta.bindingMode;
           fileModel = fileMeta.model?.trim() || null;
           fileDecimal = fileMeta.decimalNumber?.trim() || null;
-          const resolved = await resolveTargetEquipments({
+          fileTargets = await resolveTargetEquipments({
             bindingMode: fileMeta.bindingMode,
             equipmentId: fileMeta.equipmentId,
             model: fileMeta.model,
@@ -381,9 +389,6 @@ export async function POST(req: NextRequest) {
             applyToAllModel: fileMeta.applyToAllModel,
             applyToAllDecimal: fileMeta.applyToAllDecimal,
           });
-          if (resolved.length > 0) {
-            fileTargets = resolved;
-          }
         }
       } else if (bindingMode === 'AUTO') {
         const autoMatch = await matchFileNameWithDatabase(file.name, prisma);
@@ -394,20 +399,20 @@ export async function POST(req: NextRequest) {
           fileBindingMode = autoMatch.suggestedBindingMode;
           fileModel = autoMatch.matchedModel;
           fileDecimal = autoMatch.matchedDecimalNumber;
-          const resolved = await resolveTargetEquipments({
+          fileTargets = await resolveTargetEquipments({
             bindingMode: autoMatch.suggestedBindingMode,
             equipmentId: autoMatch.matchedEquipment?.id,
             model: autoMatch.matchedModel,
             decimalNumber: autoMatch.matchedDecimalNumber,
           });
-          if (resolved.length > 0) {
-            fileTargets = resolved;
-          }
         }
       }
 
-      if (fileTargets.length === 0 && targetEquipments.length > 0) {
+      // Если файл загружается не в режиме индивидуального сопоставления, используем общие целевые единицы
+      if (fileTargets.length === 0 && !isPerFileMode && targetEquipments.length > 0) {
         fileTargets = targetEquipments;
+        fileModel = model;
+        fileDecimal = decimalNumber;
       }
 
       for (const targetEq of fileTargets) {
@@ -467,7 +472,8 @@ export async function POST(req: NextRequest) {
       data: createdDocuments.length === 1 ? createdDocuments[0] : createdDocuments,
       items: createdDocuments,
       count: createdDocuments.length,
-      equipmentCount: targetEquipments.length || allBoundEquipmentIds.size,
+      equipmentCount: targetEquipments.length,
+      allEquipmentCount: allBoundEquipmentIds.size,
       bindingMode,
     });
   } catch (error: unknown) {
