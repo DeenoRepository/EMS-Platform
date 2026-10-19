@@ -11,6 +11,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TableSortLabel,
   Typography,
   Chip,
   Switch,
@@ -19,11 +20,15 @@ import {
   FormGroup,
   FormControlLabel,
   Checkbox,
+  Tooltip,
+  Paper,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import SecurityIcon from '@mui/icons-material/Security';
 import PageHeader from '@/components/layout/PageHeader';
 import { formatDateTime } from '@ems/shared';
 import { useSnackbar } from 'notistack';
@@ -64,6 +69,16 @@ export default function AdminUsersPage() {
   const [selectedUser, setSelectedUser] = useState<UserItem | null>(null);
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+
+  // Filters & Sorting
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [sortField, setSortField] = useState<string>('displayName');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -157,32 +172,57 @@ export default function AdminUsersPage() {
     }
   };
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState('');
+  const handleCopy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    enqueueSnackbar(`${label} скопирован в буфер обмена`, { variant: 'info' });
+  };
+
+  const handleRequestSort = (property: string) => {
+    setSortDirection((prevDir) => (sortField === property && prevDir === 'asc' ? 'desc' : 'asc'));
+    setSortField(property);
+  };
 
   const totalUsers = users.length;
   const activeUsers = users.filter((u) => u.isActive).length;
   const adminUsers = users.filter((u) => u.roles.some((r) => r.name === 'admin')).length;
 
-  const filteredUsers = users.filter((u) => {
-    if (roleFilter && !u.roles.some((r) => r.id === roleFilter)) return false;
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const matchName = u.displayName.toLowerCase().includes(q);
-      const matchLogin = u.ldapLogin.toLowerCase().includes(q);
-      const matchEmail = u.email ? u.email.toLowerCase().includes(q) : false;
-      if (!matchName && !matchLogin && !matchEmail) return false;
-    }
-    return true;
-  });
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      if (roleFilter && !u.roles.some((r) => r.id === roleFilter)) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchName = u.displayName.toLowerCase().includes(q);
+        const matchLogin = u.ldapLogin.toLowerCase().includes(q);
+        const matchEmail = u.email ? u.email.toLowerCase().includes(q) : false;
+        if (!matchName && !matchLogin && !matchEmail) return false;
+      }
+      return true;
+    });
+  }, [users, roleFilter, searchQuery]);
 
-  // Pagination state
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const sortedUsers = useMemo(() => {
+    return [...filteredUsers].sort((a, b) => {
+      let aVal: any = a[sortField as keyof UserItem] ?? '';
+      let bVal: any = b[sortField as keyof UserItem] ?? '';
+
+      if (sortField === 'roles') {
+        aVal = a.roles.map((r) => r.displayName).join(', ');
+        bVal = b.roles.map((r) => r.displayName).join(', ');
+      }
+
+      if (typeof aVal === 'boolean' && typeof bVal === 'boolean') {
+        return sortDirection === 'asc' ? (aVal === bVal ? 0 : aVal ? -1 : 1) : aVal === bVal ? 0 : aVal ? 1 : -1;
+      }
+
+      return sortDirection === 'asc'
+        ? String(aVal).localeCompare(String(bVal), 'ru')
+        : String(bVal).localeCompare(String(aVal), 'ru');
+    });
+  }, [filteredUsers, sortField, sortDirection]);
 
   const paginatedUsers = useMemo(() => {
-    return filteredUsers.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
-  }, [filteredUsers, page, rowsPerPage]);
+    return sortedUsers.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
+  }, [sortedUsers, page, rowsPerPage]);
 
   return (
     <Box sx={{ width: '100%', pb: 2 }}>
@@ -204,9 +244,8 @@ export default function AdminUsersPage() {
             value={totalUsers}
             subtitle="Учетных записей LDAP"
             icon={<PersonOutlineIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(2, 132, 199, 0.08)"
-            iconColor="#0284c7"
-            accentColor="#0284c7"
+            iconColor="primary.main"
+            accentColor="primary.main"
             loading={loading}
           />
         </Grid>
@@ -216,9 +255,8 @@ export default function AdminUsersPage() {
             value={activeUsers}
             subtitle="С разрешенным входом"
             icon={<VerifiedUserIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(22, 163, 74, 0.08)"
-            iconColor="#16a34a"
-            accentColor="#16a34a"
+            iconColor="success.main"
+            accentColor="success.main"
             loading={loading}
           />
         </Grid>
@@ -228,63 +266,12 @@ export default function AdminUsersPage() {
             value={adminUsers}
             subtitle="С полным доступом к системе"
             icon={<AdminPanelSettingsIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(124, 58, 237, 0.08)"
-            iconColor="#7c3aed"
-            accentColor="#7c3aed"
+            iconColor="secondary.main"
+            accentColor="secondary.main"
             loading={loading}
           />
         </Grid>
       </Grid>
-
-      {/* Filter Toolbar */}
-      <FilterToolbar
-        activeFilterCount={(searchQuery ? 1 : 0) + (roleFilter ? 1 : 0)}
-        onResetFilters={() => {
-          setSearchQuery('');
-          setRoleFilter('');
-        }}
-        actions={
-          availableRoles.length > 0 ? (
-            <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center' }}>
-              <TextField
-                select
-                size="small"
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                SelectProps={{
-                  displayEmpty: true,
-                }}
-                sx={{
-                  minWidth: 200,
-                  backgroundColor: 'background.paper',
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '8px',
-                    fontSize: '0.8125rem',
-                    height: 36,
-                    '& fieldset': { borderColor: 'divider' },
-                    '&:hover fieldset': { borderColor: 'grey.400' },
-                  },
-                }}
-              >
-                <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все роли</MenuItem>
-                {availableRoles.map((r) => (
-                  <MenuItem key={r.id} value={r.id} sx={{ fontSize: '0.8125rem' }}>
-                    {r.displayName}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Box>
-          ) : undefined
-        }
-      >
-        <Box sx={{ minWidth: { xs: '100%', sm: 260, md: 320 }, flexGrow: 1 }}>
-          <SearchInput
-            placeholder="Поиск по ФИО, логину или email..."
-            value={searchQuery}
-            onSearch={setSearchQuery}
-          />
-        </Box>
-      </FilterToolbar>
 
       {/* Users Registry Table */}
       {filteredUsers.length === 0 && !loading ? (
@@ -320,31 +307,171 @@ export default function AdminUsersPage() {
           }}
           pageSizeOptions={[15, 25, 50, 100]}
           stickyHeader
+          toolbar={
+            <FilterToolbar
+              variant="embedded"
+              activeFilterCount={(searchQuery ? 1 : 0) + (roleFilter ? 1 : 0)}
+              onResetFilters={() => {
+                setSearchQuery('');
+                setRoleFilter('');
+              }}
+              actions={
+                availableRoles.length > 0 ? (
+                  <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center' }}>
+                    <TextField
+                      select
+                      size="small"
+                      value={roleFilter}
+                      onChange={(e) => setRoleFilter(e.target.value)}
+                      SelectProps={{
+                        displayEmpty: true,
+                      }}
+                      sx={{
+                        minWidth: 200,
+                        backgroundColor: 'background.paper',
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '8px',
+                          fontSize: '0.8125rem',
+                          height: 36,
+                          '& fieldset': { borderColor: 'divider' },
+                          '&:hover fieldset': { borderColor: 'grey.400' },
+                        },
+                      }}
+                    >
+                      <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все роли</MenuItem>
+                      {availableRoles.map((r) => (
+                        <MenuItem key={r.id} value={r.id} sx={{ fontSize: '0.8125rem' }}>
+                          {r.displayName}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </Box>
+                ) : undefined
+              }
+            >
+              <Box sx={{ minWidth: { xs: '100%', sm: 260, md: 320 }, flexGrow: 1 }}>
+                <SearchInput
+                  placeholder="Поиск по ФИО, логину или email..."
+                  value={searchQuery}
+                  onSearch={setSearchQuery}
+                />
+              </Box>
+            </FilterToolbar>
+          }
         >
           <Table size="small" aria-label="Таблица пользователей системы">
-            <TableHead>
+            <TableHead sx={{ bgcolor: 'background.default' }}>
               <TableRow>
-                <TableCell sx={{ minWidth: 180 }}>ФИО / Пользователь</TableCell>
-                <TableCell sx={{ minWidth: 160 }}>Учетная запись (Логин)</TableCell>
-                <TableCell sx={{ minWidth: 160 }}>Корпоративный Email</TableCell>
-                <TableCell sx={{ minWidth: 160 }}>Назначенные роли</TableCell>
-                <TableCell sx={{ minWidth: 170 }}>Дата последнего входа</TableCell>
-                <TableCell sx={{ minWidth: 120 }}>Статус доступа</TableCell>
-                <TableCell align="right" sx={{ minWidth: 100 }}>Операции</TableCell>
+                <TableCell sx={{ minWidth: 200, fontWeight: 700 }}>
+                  <TableSortLabel
+                    active={sortField === 'displayName'}
+                    direction={sortField === 'displayName' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('displayName')}
+                  >
+                    ФИО / Пользователь
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ minWidth: 160, fontWeight: 700 }}>
+                  <TableSortLabel
+                    active={sortField === 'ldapLogin'}
+                    direction={sortField === 'ldapLogin' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('ldapLogin')}
+                  >
+                    Учетная запись (Логин)
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ minWidth: 170, fontWeight: 700 }}>
+                  <TableSortLabel
+                    active={sortField === 'email'}
+                    direction={sortField === 'email' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('email')}
+                  >
+                    Корпоративный Email
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ minWidth: 170, fontWeight: 700 }}>
+                  <TableSortLabel
+                    active={sortField === 'roles'}
+                    direction={sortField === 'roles' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('roles')}
+                  >
+                    Назначенные роли
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ minWidth: 170, fontWeight: 700 }}>
+                  <TableSortLabel
+                    active={sortField === 'lastLoginAt'}
+                    direction={sortField === 'lastLoginAt' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('lastLoginAt')}
+                  >
+                    Дата последнего входа
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ minWidth: 140, fontWeight: 700 }}>
+                  <TableSortLabel
+                    active={sortField === 'isActive'}
+                    direction={sortField === 'isActive' ? sortDirection : 'asc'}
+                    onClick={() => handleRequestSort('isActive')}
+                  >
+                    Статус доступа
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell align="right" sx={{ minWidth: 100, fontWeight: 700 }}>Операции</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {paginatedUsers.map((u) => (
                 <TableRow key={u.id} hover>
                   <TableCell>
-                    <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>
+                    <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem', color: 'text.primary' }}>
                       {u.displayName}
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    <Chip label={u.ldapLogin} size="small" variant="outlined" sx={{ borderRadius: '4px', height: 22, fontFamily: 'monospace' }} />
+                    <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+                      <Chip
+                        label={u.ldapLogin}
+                        size="small"
+                        variant="outlined"
+                        sx={{
+                          borderRadius: '6px',
+                          height: 22,
+                          fontFamily: 'monospace',
+                          fontWeight: 600,
+                          bgcolor: 'action.hover',
+                        }}
+                      />
+                      <Tooltip title="Скопировать логин">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleCopy(u.ldapLogin, 'Логин')}
+                          sx={{ p: 0.25, color: 'text.secondary' }}
+                        >
+                          <ContentCopyIcon sx={{ fontSize: 13 }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
                   </TableCell>
-                  <TableCell sx={{ fontSize: '0.8125rem' }}>{u.email || '—'}</TableCell>
+                  <TableCell sx={{ fontSize: '0.8125rem' }}>
+                    {u.email ? (
+                      <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+                        <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
+                          {u.email}
+                        </Typography>
+                        <Tooltip title="Скопировать email">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleCopy(u.email!, 'Email')}
+                            sx={{ p: 0.25, color: 'text.secondary' }}
+                          >
+                            <ContentCopyIcon sx={{ fontSize: 13 }} />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    ) : (
+                      '—'
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                       {u.roles.length === 0 ? (
@@ -364,11 +491,14 @@ export default function AdminUsersPage() {
                       )}
                     </Box>
                   </TableCell>
-                  <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace' }}>{formatDateTime(u.lastLoginAt)}</TableCell>
+                  <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace' }}>
+                    {formatDateTime(u.lastLoginAt)}
+                  </TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <StatusBadge
-                        status={u.isActive ? 'USER_ACTIVE' : 'USER_INACTIVE'}
+                        status={u.isActive ? 'ACTIVE' : 'INACTIVE'}
+                        label={u.isActive ? 'Активен' : 'Отключен'}
                         variant="dot"
                         size="small"
                       />
@@ -381,14 +511,15 @@ export default function AdminUsersPage() {
                     </Box>
                   </TableCell>
                   <TableCell align="right">
-                    <IconButton
-                      size="small"
-                      color="primary"
-                      onClick={() => handleOpenEdit(u)}
-                      title="Настроить роли"
-                    >
-                      <EditIcon fontSize="small" />
-                    </IconButton>
+                    <Tooltip title="Настроить роли пользователя">
+                      <IconButton
+                        size="small"
+                        color="primary"
+                        onClick={() => handleOpenEdit(u)}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   </TableCell>
                 </TableRow>
               ))}
@@ -401,41 +532,51 @@ export default function AdminUsersPage() {
       <FormDialog
         open={Boolean(selectedUser)}
         onClose={handleCloseDialog}
-        title="Назначение ролей"
+        title="Назначение ролей пользователя"
         subtitle={selectedUser ? `${selectedUser.displayName} (@${selectedUser.ldapLogin})` : undefined}
         icon={<AdminPanelSettingsIcon color="primary" />}
         maxWidth="xs"
+        fullWidth
         loading={saving}
         submitLabel={saving ? 'Сохранение...' : 'Сохранить роли'}
         onSubmit={handleSaveRoles}
         submitDisabled={saving}
       >
         {selectedUser && (
-          <Box sx={{ pt: 1 }}>
-            <Typography variant="caption" color="text.secondary" paragraph>
-              Выберите роли, предоставляющие доступ к модулям EMS:
+          <Box sx={{ pt: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Typography variant="caption" color="text.secondary">
+              Выберите роли, предоставляющие доступ к функциональным модулям платформы:
             </Typography>
 
-            <FormGroup>
-              {availableRoles.map((role) => (
-                <FormControlLabel
-                  key={role.id}
-                  control={
-                    <Checkbox
-                      checked={selectedRoleIds.includes(role.id)}
-                      onChange={() => handleToggleRole(role.id)}
-                    />
-                  }
-                  label={
-                    <Box>
-                      <Typography variant="body2" fontWeight={600}>
-                        {role.displayName}
-                      </Typography>
-                    </Box>
-                  }
-                />
-              ))}
-            </FormGroup>
+            <Paper variant="outlined" sx={{ p: 1.5, borderRadius: '8px', bgcolor: 'background.default' }}>
+              <FormGroup>
+                {availableRoles.map((role) => (
+                  <FormControlLabel
+                    key={role.id}
+                    control={
+                      <Checkbox
+                        size="small"
+                        checked={selectedRoleIds.includes(role.id)}
+                        onChange={() => handleToggleRole(role.id)}
+                      />
+                    }
+                    label={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, my: 0.5 }}>
+                        <SecurityIcon sx={{ fontSize: 16, color: role.name === 'admin' ? 'secondary.main' : 'primary.main' }} />
+                        <Box>
+                          <Typography variant="body2" fontWeight={600}>
+                            {role.displayName}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+                            {role.name}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    }
+                  />
+                ))}
+              </FormGroup>
+            </Paper>
           </Box>
         )}
       </FormDialog>

@@ -37,6 +37,8 @@ import {
   ConfirmDialog,
   FormDialog,
   StatusBadge,
+  FilterToolbar,
+  SearchInput,
 } from '@/components/ui';
 
 interface PermissionItem {
@@ -218,20 +220,43 @@ export default function AdminRolesPage() {
     }
   };
 
+  // Filter & Search
+  const [searchRoleQuery, setSearchRoleQuery] = useState('');
+  const [permSearchQuery, setPermSearchQuery] = useState('');
+
   // Group permissions by module
-  const permsByModule = permissions.reduce((acc, perm) => {
-    if (!acc[perm.module]) acc[perm.module] = [];
-    acc[perm.module].push(perm);
-    return acc;
-  }, {} as Record<string, PermissionItem[]>);
+  const permsByModule = useMemo(() => {
+    return permissions.reduce((acc, perm) => {
+      if (permSearchQuery.trim()) {
+        const q = permSearchQuery.toLowerCase();
+        const matchesName = perm.displayName.toLowerCase().includes(q);
+        const matchesCode = perm.code.toLowerCase().includes(q);
+        const matchesDesc = perm.description ? perm.description.toLowerCase().includes(q) : false;
+        if (!matchesName && !matchesCode && !matchesDesc) return acc;
+      }
+      if (!acc[perm.module]) acc[perm.module] = [];
+      acc[perm.module].push(perm);
+      return acc;
+    }, {} as Record<string, PermissionItem[]>);
+  }, [permissions, permSearchQuery]);
 
   // Pagination state
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
 
+  const filteredRoles = useMemo(() => {
+    if (!searchRoleQuery.trim()) return roles;
+    const q = searchRoleQuery.toLowerCase();
+    return roles.filter((r) =>
+      r.displayName.toLowerCase().includes(q) ||
+      r.name.toLowerCase().includes(q) ||
+      (r.description && r.description.toLowerCase().includes(q))
+    );
+  }, [roles, searchRoleQuery]);
+
   const paginatedRoles = useMemo(() => {
-    return roles.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
-  }, [roles, page, rowsPerPage]);
+    return filteredRoles.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
+  }, [filteredRoles, page, rowsPerPage]);
 
   const totalRoles = roles.length;
   const systemRoles = roles.filter((r) => r.isSystem).length;
@@ -259,16 +284,15 @@ export default function AdminRolesPage() {
       />
 
       {/* KPI Metric Cards */}
-      <Grid container spacing={1.75} sx={{ mb: 3 }}>
+      <Grid container spacing={1.75} sx={{ mb: 2.5 }}>
         <Grid item xs={12} sm={4}>
           <StatCard
             title="Всего ролей"
             value={totalRoles}
             subtitle="Настроенных в системе"
             icon={<SecurityIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(2, 132, 199, 0.08)"
-            iconColor="#0284c7"
-            accentColor="#0284c7"
+            iconColor="primary.main"
+            accentColor="primary.main"
             loading={loading}
           />
         </Grid>
@@ -278,9 +302,8 @@ export default function AdminRolesPage() {
             value={systemRoles}
             subtitle="Встроенные базовые роли EMS"
             icon={<AdminPanelSettingsIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(124, 58, 237, 0.08)"
-            iconColor="#7c3aed"
-            accentColor="#7c3aed"
+            iconColor="secondary.main"
+            accentColor="secondary.main"
             loading={loading}
           />
         </Grid>
@@ -290,30 +313,33 @@ export default function AdminRolesPage() {
             value={customRoles}
             subtitle="Созданные администраторами"
             icon={<VpnKeyIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(22, 163, 74, 0.08)"
-            iconColor="#16a34a"
-            accentColor="#16a34a"
+            iconColor="success.main"
+            accentColor="success.main"
             loading={loading}
           />
         </Grid>
       </Grid>
 
       {/* Roles Registry Table */}
-      {roles.length === 0 && !loading ? (
+      {filteredRoles.length === 0 && !loading ? (
         <EmptyState
           paper
           icon={<SecurityIcon sx={{ fontSize: 36, color: 'text.disabled' }} />}
           title="Роли не найдены"
-          description="В системе пока нет зарегистрированных ролей доступа."
-          actionText="Создать роль"
-          onAction={handleOpenCreate}
+          description={
+            searchRoleQuery
+              ? 'По указанному запросу роли не найдены. Попробуйте сбросить строку поиска.'
+              : 'В системе пока нет зарегистрированных ролей доступа.'
+          }
+          actionText={searchRoleQuery ? 'Сбросить поиск' : 'Создать роль'}
+          onAction={searchRoleQuery ? () => setSearchRoleQuery('') : handleOpenCreate}
         />
       ) : (
         <DataTableWrapper
           loading={loading}
           page={page}
           pageSize={rowsPerPage}
-          total={roles.length}
+          total={filteredRoles.length}
           onPageChange={(_, newPage) => setPage(newPage)}
           onPageSizeChange={(e) => {
             setRowsPerPage(parseInt(e.target.value, 10));
@@ -321,6 +347,21 @@ export default function AdminRolesPage() {
           }}
           pageSizeOptions={[15, 25, 50, 100]}
           stickyHeader
+          toolbar={
+            <FilterToolbar
+              variant="embedded"
+              activeFilterCount={searchRoleQuery ? 1 : 0}
+              onResetFilters={() => setSearchRoleQuery('')}
+            >
+              <Box sx={{ minWidth: { xs: '100%', sm: 300, md: 380 }, flexGrow: 1 }}>
+                <SearchInput
+                  placeholder="Поиск по названию роли, системному коду или описанию..."
+                  value={searchRoleQuery}
+                  onSearch={setSearchRoleQuery}
+                />
+              </Box>
+            </FilterToolbar>
+          }
         >
           <Table size="small" aria-label="Таблица ролей и прав доступа">
             <TableHead>
@@ -452,19 +493,31 @@ export default function AdminRolesPage() {
           />
         </Box>
 
-        <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-          Матрица гранулярных прав доступа:
-        </Typography>
+        <Box sx={{ mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5, flexWrap: 'wrap', gap: 1 }}>
+            <Typography variant="subtitle2" fontWeight={700}>
+              Матрица гранулярных прав доступа ({selectedPermCodes.length} выбрано):
+            </Typography>
+            <Box sx={{ width: { xs: '100%', sm: 280 } }}>
+              <SearchInput
+                placeholder="Фильтр по коду или названию права..."
+                value={permSearchQuery}
+                onSearch={setPermSearchQuery}
+                shortcutHint=""
+              />
+            </Box>
+          </Box>
+        </Box>
 
         {Object.entries(permsByModule).map(([moduleKey, modulePerms]) => {
           const allSelected = modulePerms.every((p) => selectedPermCodes.includes(p.code));
 
           return (
-            <Accordion key={moduleKey} defaultExpanded sx={{ border: '1px solid #e2e8f0', mb: 1, boxShadow: 'none' }}>
+            <Accordion key={moduleKey} defaultExpanded sx={{ border: '1px solid', borderColor: 'divider', mb: 1, boxShadow: 'none', borderRadius: '8px !important' }}>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between', pr: 2 }}>
-                  <Typography variant="subtitle2" fontWeight={600}>
-                    {MODULE_LABELS[moduleKey] || moduleKey.toUpperCase()}
+                  <Typography variant="subtitle2" fontWeight={700}>
+                    {MODULE_LABELS[moduleKey] || moduleKey.toUpperCase()} ({modulePerms.length})
                   </Typography>
                   <Button
                     size="small"
@@ -473,9 +526,9 @@ export default function AdminRolesPage() {
                       handleToggleModulePerms(moduleKey);
                     }}
                     color={allSelected ? 'primary' : 'inherit'}
-                    sx={{ fontSize: '0.75rem' }}
+                    sx={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'none' }}
                   >
-                    {allSelected ? 'Снять все' : 'Выбрать все в модуле'}
+                    {allSelected ? 'Снять выбор' : 'Выбрать все в модуле'}
                   </Button>
                 </Box>
               </AccordionSummary>
@@ -498,15 +551,15 @@ export default function AdminRolesPage() {
                         p: 1.25,
                         borderRadius: '8px',
                         border: '1px solid',
-                        borderColor: selectedPermCodes.includes(perm.code) ? '#bae6fd' : '#f1f5f9',
-                        bgcolor: selectedPermCodes.includes(perm.code) ? 'rgba(2, 132, 199, 0.04)' : '#ffffff',
+                        borderColor: selectedPermCodes.includes(perm.code) ? 'primary.light' : 'divider',
+                        bgcolor: selectedPermCodes.includes(perm.code) ? 'action.hover' : 'background.paper',
                         transition: 'all 0.15s ease',
-                        '&:hover': { bgcolor: '#f8fafc', borderColor: '#cbd5e1' },
+                        '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' },
                       }}
                       label={
                         <Box sx={{ ml: 0.5 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap', mb: 0.25 }}>
-                            <Typography variant="body2" fontWeight={600} fontSize="0.8125rem" color="#0f172a">
+                            <Typography variant="body2" fontWeight={600} fontSize="0.8125rem" color="text.primary">
                               {perm.displayName}
                             </Typography>
                             <Typography
@@ -514,18 +567,20 @@ export default function AdminRolesPage() {
                               sx={{
                                 fontFamily: 'monospace',
                                 fontSize: '0.6875rem',
-                                color: '#64748b',
-                                bgcolor: '#f1f5f9',
+                                color: 'text.secondary',
+                                bgcolor: 'action.hover',
                                 px: 0.75,
                                 py: 0.1,
                                 borderRadius: '4px',
+                                border: '1px solid',
+                                borderColor: 'divider',
                               }}
                             >
                               {perm.code}
                             </Typography>
                           </Box>
                           {perm.description && (
-                            <Typography variant="caption" color="#64748b" display="block" sx={{ lineHeight: 1.35 }}>
+                            <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.35 }}>
                               {perm.description}
                             </Typography>
                           )}

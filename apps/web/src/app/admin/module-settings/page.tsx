@@ -28,9 +28,6 @@ import {
   Paper,
   Tooltip,
   Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
@@ -694,8 +691,8 @@ function ModuleSettingsContent() {
           justifyContent: 'space-between',
           flexWrap: 'wrap',
           gap: 2,
-          backgroundColor: currentModuleEnabled ? 'background.default' : '#fffbeb',
-          borderColor: currentModuleEnabled ? 'divider' : '#fde68a',
+          backgroundColor: currentModuleEnabled ? 'background.default' : 'warning.lighter',
+          borderColor: currentModuleEnabled ? 'divider' : 'warning.light',
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -809,7 +806,8 @@ function ModuleSettingsContent() {
                           expandIcon={<ExpandMoreIcon />}
                           sx={{
                             backgroundColor: 'background.default',
-                            borderBottom: '1px solid #e2e8f0',
+                            borderBottom: '1px solid',
+                            borderColor: 'divider',
                             px: 2.5,
                           }}
                         >
@@ -855,7 +853,7 @@ function ModuleSettingsContent() {
                         </AccordionSummary>
                         <AccordionDetails sx={{ p: 0 }}>
                           {renderFieldTable(sec.fields, sec.id)}
-                          <Box sx={{ p: 1.5, display: 'flex', justifyContent: 'flex-end', backgroundColor: '#fafafa', borderTop: '1px solid #f1f5f9' }}>
+                          <Box sx={{ p: 1.5, display: 'flex', justifyContent: 'flex-end', backgroundColor: 'background.default', borderTop: '1px solid', borderColor: 'divider' }}>
                             <Button
                               size="small"
                               startIcon={<AddIcon />}
@@ -875,40 +873,20 @@ function ModuleSettingsContent() {
         </Grid>
 
         {/* Modal Dialog: Мастер импорта оборудования */}
-        <Dialog
+        <FormDialog
           open={importDialogOpen}
           onClose={() => setImportDialogOpen(false)}
+          title="Мастер импорта оборудования"
+          subtitle="Загрузка и пакетная валидация структуры реестра из Excel/CSV"
+          icon={<FileUploadOutlinedIcon color="primary" />}
           maxWidth="lg"
           fullWidth
-          PaperProps={{
-            sx: { borderRadius: '12px', overflow: 'hidden' },
-          }}
+          hideActions
         >
-          <DialogTitle
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              py: 2,
-              px: 3,
-              borderBottom: '1px solid #e2e8f0',
-              backgroundColor: 'background.paper',
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-              <FileUploadOutlinedIcon color="primary" />
-              <Typography variant="h6" fontWeight={700}>
-                Мастер импорта оборудования
-              </Typography>
-            </Box>
-            <IconButton size="small" onClick={() => setImportDialogOpen(false)} aria-label="Закрыть модальное окно">
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </DialogTitle>
-          <DialogContent sx={{ p: 3, backgroundColor: 'background.default' }}>
+          <Box sx={{ pt: 1 }}>
             <SmartImportWizard />
-          </DialogContent>
-        </Dialog>
+          </Box>
+        </FormDialog>
       </Box>
       )}
 

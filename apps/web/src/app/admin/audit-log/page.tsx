@@ -33,6 +33,7 @@ import {
   EmptyState,
   StatusBadge,
   FormDialog,
+  ExportButton,
   type TableColumnOption,
 } from '@/components/ui';
 import { AuditChangeDto } from '@ems/shared';
@@ -125,6 +126,11 @@ export default function AdminAuditLogPage() {
   const [selectedChanges, setSelectedChanges] = useState<any | null>(null);
 
   const [pageSize, setPageSize] = useState(25);
+  const [counts, setCounts] = useState<{ create: number; update: number; delete: number }>({
+    create: 0,
+    update: 0,
+    delete: 0,
+  });
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
@@ -136,13 +142,21 @@ export default function AdminAuditLogPage() {
     if (entityTypeFilter) params.append('entityType', entityTypeFilter);
     if (search) params.append('search', search);
 
-    const json = await fetchApi<{ items: AuditItem[]; total: number; totalPages: number }>(
+    const json = await fetchApi<{
+      items: AuditItem[];
+      total: number;
+      totalPages: number;
+      counts?: { create: number; update: number; delete: number };
+    }>(
       `/api/admin/audit-log?${params.toString()}`
     );
     if (json.success && json.data) {
       setLogs(json.data.items || []);
       setTotal(json.data.total || 0);
       setTotalPages(json.data.totalPages || 1);
+      if (json.data.counts) {
+        setCounts(json.data.counts);
+      }
     } else {
       enqueueSnackbar(json.error || 'Ошибка загрузки журнала аудита', { variant: 'error' });
     }
@@ -152,6 +166,43 @@ export default function AdminAuditLogPage() {
   useEffect(() => {
     fetchLogs();
   }, [fetchLogs]);
+
+  const handleExport = (format: 'xlsx' | 'csv' | 'pdf' | 'json') => {
+    if (logs.length === 0) return;
+    if (format === 'json') {
+      const blob = new Blob([JSON.stringify(logs, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `audit_log_${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      enqueueSnackbar('Журнал аудита выгружен в JSON', { variant: 'success' });
+      return;
+    }
+
+    const headers = ['ID', 'Дата и время', 'Действие', 'Сущность', 'ID сущности', 'Пользователь', 'IP адрес'];
+    const csvRows = [headers.join(';')];
+    logs.forEach((l) => {
+      csvRows.push([
+        l.id,
+        formatDateTime(l.createdAt),
+        l.action,
+        l.entityType,
+        l.entityId,
+        `"${(l.user?.displayName || l.user?.ldapLogin || 'Система').replace(/"/g, '""')}"`,
+        l.ipAddress || '',
+      ].join(';'));
+    });
+    const blob = new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `audit_log_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    enqueueSnackbar('Журнал аудита выгружен', { variant: 'success' });
+  };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -192,19 +243,25 @@ export default function AdminAuditLogPage() {
           { label: 'Администрирование', href: '/admin/settings' },
           { label: 'Журнал аудита безопасности' },
         ]}
+        actions={
+          <ExportButton
+            onExport={handleExport}
+            formats={['csv', 'json']}
+            disabled={logs.length === 0}
+          />
+        }
       />
 
       {/* KPI Cards */}
-      <Grid container spacing={1.75} sx={{ mb: 3 }}>
+      <Grid container spacing={1.75} sx={{ mb: 2.5 }}>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Всего событий"
             value={total}
             subtitle="Зафиксировано в БД"
             icon={<HistoryIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(2, 132, 199, 0.08)"
-            iconColor="#0284c7"
-            accentColor="#0284c7"
+            iconColor="primary.main"
+            accentColor="primary.main"
             active={actionFilter === '' && entityTypeFilter === ''}
             onClick={() => {
               setActionFilter('');
@@ -217,12 +274,11 @@ export default function AdminAuditLogPage() {
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Создание (CREATE)"
-            value={logs.filter((l) => l.action === 'CREATE').length}
-            subtitle="Новые записи"
+            value={counts.create}
+            subtitle="Новые записи в БД"
             icon={<AddCircleOutlineIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(22, 163, 74, 0.08)"
-            iconColor="#16a34a"
-            accentColor="#16a34a"
+            iconColor="success.main"
+            accentColor="success.main"
             active={actionFilter === 'CREATE'}
             onClick={() => {
               setActionFilter(actionFilter === 'CREATE' ? '' : 'CREATE');
@@ -234,12 +290,11 @@ export default function AdminAuditLogPage() {
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Изменение (UPDATE)"
-            value={logs.filter((l) => l.action === 'UPDATE').length}
+            value={counts.update}
             subtitle="Корректировка данных"
             icon={<EditOutlinedIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(217, 119, 6, 0.08)"
-            iconColor="#d97706"
-            accentColor="#d97706"
+            iconColor="warning.main"
+            accentColor="warning.main"
             active={actionFilter === 'UPDATE'}
             onClick={() => {
               setActionFilter(actionFilter === 'UPDATE' ? '' : 'UPDATE');
@@ -251,12 +306,11 @@ export default function AdminAuditLogPage() {
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Удаление (DELETE)"
-            value={logs.filter((l) => l.action === 'DELETE').length}
+            value={counts.delete}
             subtitle="Удаленные записи"
             icon={<DeleteOutlineIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="rgba(220, 38, 38, 0.08)"
-            iconColor="#dc2626"
-            accentColor="#dc2626"
+            iconColor="error.main"
+            accentColor="error.main"
             active={actionFilter === 'DELETE'}
             onClick={() => {
               setActionFilter(actionFilter === 'DELETE' ? '' : 'DELETE');

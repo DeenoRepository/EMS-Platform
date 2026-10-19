@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
       ];
     }
 
-    const [total, items] = await Promise.all([
+    const [total, items, createCount, updateCount, deleteCount] = await Promise.all([
       prisma.auditLog.count({ where }),
       prisma.auditLog.findMany({
         where,
@@ -44,6 +44,9 @@ export async function GET(req: NextRequest) {
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
+      prisma.auditLog.count({ where: { ...where, action: 'CREATE' } }),
+      prisma.auditLog.count({ where: { ...where, action: 'UPDATE' } }),
+      prisma.auditLog.count({ where: { ...where, action: 'DELETE' } }),
     ]);
 
     return NextResponse.json({
@@ -54,6 +57,11 @@ export async function GET(req: NextRequest) {
         page,
         pageSize,
         totalPages: Math.ceil(total / pageSize),
+        counts: {
+          create: createCount,
+          update: updateCount,
+          delete: deleteCount,
+        },
       },
     });
   } catch (error: any) {
