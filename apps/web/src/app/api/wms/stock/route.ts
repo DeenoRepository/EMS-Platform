@@ -68,6 +68,17 @@ export async function GET(req: NextRequest) {
       orderBy: { dispatchedAt: 'desc' },
     });
 
+    // Релевантные перемещения в пути для выбранного контекста склада
+    const relevantTransfersInTransit = warehouseId
+      ? activeTransfersInTransit.filter((t) => t.targetWarehouseId === warehouseId)
+      : activeTransfersInTransit;
+
+    const totalInTransitTransfers = relevantTransfersInTransit.length;
+    const totalInTransitQuantity = relevantTransfersInTransit.reduce(
+      (sum, t) => sum + t.items.reduce((iSum, it) => iSum + Number(it.quantity || 0), 0),
+      0
+    );
+
     // Карты транзита:
     // inTransitInMap: targetWarehouseId__nomenclatureId -> { quantity, transfers: [] }
     // inTransitOutMap: sourceWarehouseId__nomenclatureId -> { quantity, transfers: [] }
@@ -423,6 +434,15 @@ export async function GET(req: NextRequest) {
       };
     });
 
+    // Физический суммарный остаток ТМЦ по текущей выборке
+    const physicalStockAgg = await prisma.stockItem.aggregate({
+      where,
+      _sum: {
+        quantity: true,
+      },
+    });
+    const totalPhysicalQuantity = Number(physicalStockAgg._sum.quantity || 0);
+
     return NextResponse.json({
       success: true,
       data: {
@@ -432,6 +452,9 @@ export async function GET(req: NextRequest) {
         pageSize,
         totalPages: Math.max(1, Math.ceil(total / pageSize)),
         lowStockTotalCount,
+        totalPhysicalQuantity,
+        totalInTransitQuantity,
+        totalInTransitTransfers,
       },
     });
   } catch (error: unknown) {

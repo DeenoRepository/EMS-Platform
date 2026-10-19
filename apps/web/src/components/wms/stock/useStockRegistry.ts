@@ -46,6 +46,8 @@ export function useStockRegistry() {
   const [rowsPerPage, setRowsPerPage] = useState<number>(25);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [globalLowStockCount, setGlobalLowStockCount] = useState<number>(0);
+  const [serverPhysicalTotal, setServerPhysicalTotal] = useState<number | null>(null);
+  const [serverInTransitTotal, setServerInTransitTotal] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
 
   // Dictionaries
@@ -116,6 +118,12 @@ export function useStockRegistry() {
           if (typeof json.data.lowStockTotalCount === 'number') {
             setGlobalLowStockCount(json.data.lowStockTotalCount);
           }
+          if (typeof json.data.totalPhysicalQuantity === 'number') {
+            setServerPhysicalTotal(json.data.totalPhysicalQuantity);
+          }
+          if (typeof json.data.totalInTransitQuantity === 'number') {
+            setServerInTransitTotal(json.data.totalInTransitQuantity);
+          }
         }
       }
     } catch {
@@ -181,15 +189,15 @@ export function useStockRegistry() {
 
   // Aggregate KPI stats
   const kpiStats = useMemo(() => {
-    const totalPhysical = items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
-    const totalInTransit = items.reduce((sum, item) => sum + (Number(item.inTransitIn) || 0), 0);
+    const fallbackPhysical = items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+    const fallbackInTransit = items.reduce((sum, item) => sum + (Number(item.inTransitIn) || 0), 0);
     return {
       totalCount,
-      totalPhysical,
+      totalPhysical: serverPhysicalTotal !== null ? serverPhysicalTotal : fallbackPhysical,
       globalLowStockCount,
-      totalInTransit,
+      totalInTransit: serverInTransitTotal !== null ? serverInTransitTotal : fallbackInTransit,
     };
-  }, [items, totalCount, globalLowStockCount]);
+  }, [items, totalCount, globalLowStockCount, serverPhysicalTotal, serverInTransitTotal]);
 
   return {
     items,

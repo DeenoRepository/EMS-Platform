@@ -127,6 +127,10 @@ export function useWmsOperations() {
   }, [transferTab, transfersPage, transfersRowsPerPage, transfersSearch, selectedWarehouse, enqueueSnackbar]);
 
   useEffect(() => {
+    fetchTransfers();
+  }, [selectedWarehouse, fetchTransfers]);
+
+  useEffect(() => {
     if (activeMainTab === 'operations') {
       fetchOperations();
     } else {
