@@ -45,10 +45,14 @@ describe('EPS Equipment Database Purge Feature', () => {
 
   it('EPS equipment registry page includes "Очистить базу" button controlled by EPS_DATABASE_PURGE permission', () => {
     const pageSource = readProjectFile('apps/web/src/app/eps/page.tsx');
-    assert.match(pageSource, /EquipmentPurgeDialog/);
     assert.match(pageSource, /setOpenPurgeDialog\(true\)/);
-    assert.match(pageSource, /Очистить базу/);
-    assert.match(pageSource, /canPurge &&/);
     assert.match(pageSource, /hasPermission\(PERMISSIONS\.EPS_DATABASE_PURGE\)/);
+
+    const headerSource = readProjectFile('apps/web/src/components/eps/registry/EquipmentRegistryHeader.tsx');
+    assert.match(headerSource, /Очистить базу/);
+    assert.match(headerSource, /canPurge &&/);
+
+    const dialogsSource = readProjectFile('apps/web/src/components/eps/registry/EquipmentRegistryDialogs.tsx');
+    assert.match(dialogsSource, /EquipmentPurgeDialog/);
   });
 });

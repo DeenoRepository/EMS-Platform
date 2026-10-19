@@ -331,7 +331,7 @@ function WmsStockContent() {
             color: 'primary',
           },
           {
-            label: 'Назначить ячейки',
+            label: 'Переместить в ячейку',
             icon: <PlaceOutlinedIcon fontSize="small" />,
             onClick: () => setIsBulkLocationOpen(true),
             color: 'secondary',
@@ -339,7 +339,7 @@ function WmsStockContent() {
         ]}
       />
 
-      {/* 6. Диалоговые окна */}
+      {/* 6. Диалоговые окна (включая BulkLocationModal) */}
       <StockRegistryDialogs
         isLocationModalOpen={isLocationModalOpen}
         locStockItem={locStockItem}

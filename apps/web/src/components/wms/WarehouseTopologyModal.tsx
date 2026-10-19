@@ -26,6 +26,8 @@ import {
   TableHead,
   TableRow,
   TableContainer,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
 import GridViewIcon from '@mui/icons-material/GridView';
@@ -78,6 +80,8 @@ export default function WarehouseTopologyModal({
   const { enqueueSnackbar } = useSnackbar();
   const { hasPermission, user } = useAuth();
   const confirm = useConfirm();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const canManageZones =
     hasPermission(PERMISSIONS.WMS_ZONES_MANAGE) ||
@@ -383,14 +387,15 @@ export default function WarehouseTopologyModal({
         onClose={onClose}
         maxWidth="lg"
         fullWidth
+        fullScreen={isMobile}
         PaperProps={{
           sx: {
-            borderRadius: '16px',
-            border: '1px solid',
+            borderRadius: isMobile ? 0 : '16px',
+            border: isMobile ? 'none' : '1px solid',
             borderColor: 'divider',
             boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
-            maxHeight: 'calc(100vh - 96px)',
-            m: { xs: 2, sm: 3, md: 4 },
+            maxHeight: isMobile ? '100vh' : 'calc(100vh - 96px)',
+            m: isMobile ? 0 : { xs: 2, sm: 3, md: 4 },
           },
         }}
       >
@@ -691,6 +696,7 @@ export default function WarehouseTopologyModal({
                       <Grid container spacing={1.5}>
                         {filteredCells.map((cell) => {
                           const stockCount = cell._count?.stockItems || 0;
+                          const isHighOccupied = stockCount >= 4;
                           const isOccupied = stockCount > 0;
 
                           return (
@@ -702,7 +708,7 @@ export default function WarehouseTopologyModal({
                                   p: 1.5,
                                   borderRadius: '8px',
                                   border: '1px solid',
-                                  borderColor: isOccupied ? 'primary.light' : 'divider',
+                                  borderColor: isHighOccupied ? 'warning.main' : isOccupied ? 'primary.light' : 'divider',
                                   bgcolor: isOccupied ? 'action.hover' : 'background.paper',
                                   transition: 'all 0.18s ease',
                                   display: 'flex',
@@ -777,15 +783,15 @@ export default function WarehouseTopologyModal({
 
                                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
                                   <Chip
-                                    label={isOccupied ? `${stockCount} поз. ТМЦ` : 'Свободна'}
+                                    label={isHighOccupied ? `${stockCount} поз. (Заполнена)` : isOccupied ? `${stockCount} поз. ТМЦ` : 'Свободна'}
                                     size="small"
                                     sx={{
                                       height: 18,
                                       fontSize: '0.625rem',
                                       fontWeight: 600,
                                       borderRadius: '4px',
-                                      bgcolor: isOccupied ? 'primary.light' : 'action.hover',
-                                      color: isOccupied ? 'primary.main' : 'text.secondary',
+                                      bgcolor: isHighOccupied ? 'warning.light' : isOccupied ? 'primary.light' : 'action.hover',
+                                      color: isHighOccupied ? 'warning.dark' : isOccupied ? 'primary.main' : 'text.secondary',
                                     }}
                                   />
 
@@ -794,7 +800,7 @@ export default function WarehouseTopologyModal({
                                       width: 8,
                                       height: 8,
                                       borderRadius: '50%',
-                                      bgcolor: isOccupied ? 'primary.main' : 'success.main',
+                                      bgcolor: isHighOccupied ? 'warning.main' : isOccupied ? 'primary.main' : 'success.main',
                                     }}
                                   />
                                 </Box>
@@ -984,14 +990,15 @@ export default function WarehouseTopologyModal({
         onClose={() => setSelectedCellForDetail(null)}
         maxWidth="md"
         fullWidth
+        fullScreen={isMobile}
         PaperProps={{
           sx: {
-            borderRadius: '14px',
-            border: '1px solid',
+            borderRadius: isMobile ? 0 : '14px',
+            border: isMobile ? 'none' : '1px solid',
             borderColor: 'divider',
             boxShadow: '0 20px 30px -10px rgba(15, 23, 42, 0.15), 0 10px 15px -3px rgba(15, 23, 42, 0.08)',
-            maxHeight: 'calc(100vh - 96px)',
-            m: { xs: 2, sm: 3, md: 4 },
+            maxHeight: isMobile ? '100vh' : 'calc(100vh - 96px)',
+            m: isMobile ? 0 : { xs: 2, sm: 3, md: 4 },
             display: 'flex',
             flexDirection: 'column',
           },

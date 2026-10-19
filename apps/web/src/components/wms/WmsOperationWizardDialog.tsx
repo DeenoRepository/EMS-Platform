@@ -153,7 +153,7 @@ const OPERATION_TYPES = [
     title: 'Межскладское перемещение',
     description: 'Трансфер с закрепленного склада на другой склад',
     icon: <SwapHorizIcon />,
-    color: '#7c3aed',
+    color: 'secondary.main',
     bgcolor: 'rgba(124, 58, 237, 0.08)',
   },
 ];
@@ -761,7 +761,8 @@ export function WmsOperationWizardDialog({
                     p: 2,
                     borderRadius: '10px',
                     bgcolor: 'background.default',
-                    border: '1.5px solid #cbd5e1',
+                    border: '1.5px solid',
+                    borderColor: 'divider',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
@@ -774,7 +775,7 @@ export function WmsOperationWizardDialog({
                         width: 42,
                         height: 42,
                         borderRadius: '8px',
-                        bgcolor: '#e0f2fe',
+                        bgcolor: 'primary.light',
                         color: 'primary.main',
                         display: 'flex',
                         alignItems: 'center',
@@ -784,7 +785,7 @@ export function WmsOperationWizardDialog({
                       <BusinessIcon />
                     </Box>
                     <Box>
-                      <Typography variant="subtitle1" fontWeight={700} color="#0f172a" sx={{ lineHeight: 1.2 }}>
+                      <Typography variant="subtitle1" fontWeight={700} color="text.primary" sx={{ lineHeight: 1.2 }}>
                         {currentWarehouse.name} ({currentWarehouse.code})
                       </Typography>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
@@ -923,7 +924,7 @@ export function WmsOperationWizardDialog({
                       {currentWarehouse ? `${currentWarehouse.name} (${currentWarehouse.code})` : '—'}
                     </Typography>
                     {operationType === 'TRANSFER' && targetWarehouseId && (
-                      <Typography variant="caption" sx={{ display: 'block', color: '#7c3aed', fontWeight: 700, mt: 0.25 }}>
+                      <Typography variant="caption" sx={{ display: 'block', color: 'secondary.main', fontWeight: 700, mt: 0.25 }}>
                         → Склад назначения: {warehouses.find((w) => w.id === targetWarehouseId)?.name}
                       </Typography>
                     )}
@@ -938,7 +939,7 @@ export function WmsOperationWizardDialog({
             </Paper>
 
             {/* Quick Item Add / Search Card */}
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: '10px', bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+            <Paper elevation={0} sx={{ p: 2.5, borderRadius: '10px', bgcolor: 'grey.50', border: '1px solid', borderColor: 'divider' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary' }}>
                   Поиск и добавление позиций ТМЦ:
@@ -958,7 +959,7 @@ export function WmsOperationWizardDialog({
               <Grid container spacing={1.5} alignItems="flex-start">
                 {operationType === 'ISSUE_WRITE_OFF' && (
                   <Grid item xs={12}>
-                    <Stack spacing={1.5} sx={{ mb: 1, p: 1.5, bgcolor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <Stack spacing={1.5} sx={{ mb: 1, p: 1.5, bgcolor: 'background.paper', borderRadius: '8px', border: '1px solid', borderColor: 'divider' }}>
                       <Box>
                         <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block', mb: 0.75 }}>
                           Причина / основание списания:
@@ -1329,7 +1330,7 @@ export function WmsOperationWizardDialog({
                   В операцию еще не добавлено ни одной позиции. Воспользуйтесь поиском выше.
                 </Alert>
               ) : (
-                <Paper elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '8px', overflow: 'hidden' }}>
                   <Table size="small">
                     <TableHead sx={{ bgcolor: 'background.default' }}>
                       <TableRow>
@@ -1510,7 +1511,7 @@ export function WmsOperationWizardDialog({
             </Alert>
 
             {/* Summary Review Card */}
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: '10px', bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+            <Paper elevation={0} sx={{ p: 2.5, borderRadius: '10px', bgcolor: 'grey.50', border: '1px solid', borderColor: 'divider' }}>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block' }}>
@@ -1570,7 +1571,7 @@ export function WmsOperationWizardDialog({
               <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary', mb: 1 }}>
                 Итоговый перечень позиций ({lineItems.length}):
               </Typography>
-              <Paper elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+              <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '8px', overflow: 'hidden' }}>
                 <Table size="small">
                   <TableHead sx={{ bgcolor: 'background.default' }}>
                     <TableRow>

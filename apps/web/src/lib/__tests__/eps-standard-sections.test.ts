@@ -33,10 +33,13 @@ describe('EPS Sections & Custom Fields Management & Passport Specifications', ()
     // Ensure tags column is removed
     assert.doesNotMatch(pageSource, /\{\s*id:\s*'tags'/);
 
-    // Dynamic columns from active sections
-    assert.match(pageSource, /const tableColumns = useMemo/);
-    assert.match(pageSource, /for \(const sec of sections\)/);
-    assert.match(pageSource, /renderDynamicTableCell/);
+    // Dynamic columns from active sections in hook and table
+    const hookSource = readProjectFile('apps/web/src/components/eps/registry/useEquipmentRegistry.ts');
+    assert.match(hookSource, /const tableColumns = useMemo/);
+    assert.match(hookSource, /for \(const sec of sections\)/);
+
+    const tableSource = readProjectFile('apps/web/src/components/eps/registry/EquipmentRegistryTable.tsx');
+    assert.match(tableSource, /renderDynamicTableCell/);
 
     // Database fields catalog defines canonical mappings
     const dbFieldsSource = readProjectFile('apps/web/src/lib/eps-database-fields.ts');

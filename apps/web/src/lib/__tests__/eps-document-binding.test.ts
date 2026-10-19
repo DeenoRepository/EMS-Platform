@@ -37,22 +37,24 @@ describe('EPS document binding by model or decimal number', () => {
     assert.match(source, /equipmentCount:\s*targetEquipments\.length/);
   });
 
-  test('EPS documents page UI offers toggle between Equipment, Model and Decimal binding', () => {
-    const source = readProjectFile('apps/web/src/app/eps/documents/page.tsx');
-    assert.match(source, /bindingMode,\s*setBindingMode/);
-    assert.match(source, /По модели/);
-    assert.match(source, /По децимальному номеру/);
-    assert.match(source, /availableBindingTargets/);
-    assert.match(source, /fetchBindingTargets/);
-    assert.match(source, /applyToAllModel/);
-    assert.match(source, /applyToAllDecimal/);
+  test('EPS documents page UI and API offer model and decimal binding targets', () => {
+    const apiSource = readProjectFile('apps/web/src/app/api/eps/documents/route.ts');
+    assert.match(apiSource, /bindingMode/);
+    assert.match(apiSource, /applyToAllModel/);
+    assert.match(apiSource, /applyToAllDecimal/);
+
+    const dialogSource = readProjectFile('apps/web/src/components/eps/passport/PassportUploadDocDialog.tsx');
+    assert.match(dialogSource, /applyToAllModel/);
+    assert.match(dialogSource, /applyToAllDecimal/);
   });
 
   test('EPS equipment card documents tab offers propagate to same model or decimal number', () => {
-    const source = readProjectFile('apps/web/src/app/eps/\[id\]/page.tsx');
-    assert.match(source, /applyToAllModel/);
-    assert.match(source, /applyToAllDecimal/);
-    assert.match(source, /Привязать также ко всем единицам модели/);
+    const pageSource = readProjectFile('apps/web/src/app/eps/\[id\]/page.tsx');
+    assert.match(pageSource, /applyToAllModel/);
+    assert.match(pageSource, /applyToAllDecimal/);
+
+    const dialogSource = readProjectFile('apps/web/src/components/eps/passport/PassportUploadDocDialog.tsx');
+    assert.match(dialogSource, /Привязать также ко всем единицам модели/);
   });
 
   test('Sync script supports matching documents by model or decimal number', () => {

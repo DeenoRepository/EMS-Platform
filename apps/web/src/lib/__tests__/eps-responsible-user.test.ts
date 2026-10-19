@@ -22,12 +22,19 @@ describe('EPS Responsible Person (МОЛ) Selection & Assignment', () => {
 
   it('Equipment passport page (/eps/[id]) displays responsible person with @login badge and quick change button', () => {
     const pageSource = readProjectFile('apps/web/src/app/eps/[id]/page.tsx');
-    assert.match(pageSource, /ResponsibleUserSelect/);
+    assert.match(pageSource, /PassportChangeRespDialog/);
     assert.match(pageSource, /changeRespModalOpen/);
-    assert.match(pageSource, /handleSaveResponsiblePerson/);
-    assert.match(pageSource, /responsible_user_login/);
-    assert.match(pageSource, /responsible_user_id/);
-    assert.match(pageSource, /Смена ответственного лица \(МОЛ\)/);
+    assert.match(pageSource, /handleSaveResponsible/);
+
+    const dialogSource = readProjectFile('apps/web/src/components/eps/passport/PassportChangeRespDialog.tsx');
+    assert.match(dialogSource, /ResponsibleUserSelect/);
+    assert.match(dialogSource, /Смена ответственного лица \(МОЛ\)/);
+
+    const tabSource = readProjectFile('apps/web/src/components/eps/passport/PassportOverviewTab.tsx');
+    assert.match(tabSource, /responsible_user_login/);
+
+    const hookSource = readProjectFile('apps/web/src/components/eps/passport/useEquipmentPassport.ts');
+    assert.match(hookSource, /responsible_user_id/);
   });
 
   it('Equipment wizard form (/eps/new & modal) binds responsible person to authorized user picker', () => {

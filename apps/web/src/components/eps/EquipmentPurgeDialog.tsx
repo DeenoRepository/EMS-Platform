@@ -2,23 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
   Box,
   Typography,
   TextField,
   Alert,
   CircularProgress,
-  IconButton,
   Divider,
 } from '@mui/material';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import CloseIcon from '@mui/icons-material/Close';
 import { useSnackbar } from 'notistack';
+import { FormDialog } from '@/components/ui';
 
 export interface EquipmentPurgeDialogProps {
   open: boolean;
@@ -93,48 +87,21 @@ export function EquipmentPurgeDialog({
   };
 
   return (
-    <Dialog
+    <FormDialog
       open={open}
-      onClose={purging ? undefined : onClose}
+      onClose={onClose}
+      title="Удаление всех позиций оборудования (EPS)"
+      subtitle="Безвозвратное удаление реестра оборудования и связанных документов"
+      icon={<DeleteForeverIcon color="error" />}
       maxWidth="sm"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: '14px',
-          border: '1px solid',
-          borderColor: 'divider',
-          boxShadow: '0 20px 30px -10px rgba(15, 23, 42, 0.15)',
-          maxHeight: 'calc(100vh - 96px)',
-          m: { xs: 2, sm: 3, md: 4 },
-        },
-      }}
+      loading={purging}
+      submitLabel={purging ? 'Удаление данных...' : 'Удалить все позиции безвозвратно'}
+      submitColor="error"
+      submitIcon={<DeleteForeverIcon />}
+      onSubmit={handlePurge}
+      submitDisabled={!isConfirmed || purging}
     >
-      <DialogTitle
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          px: 3,
-          py: 2,
-          borderBottom: '1px solid',
-          borderColor: 'error.light',
-          bgcolor: 'error.lighter',
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-          <DeleteForeverIcon color="error" />
-          <Typography variant="h6" sx={{ fontWeight: 700, color: 'error.main' }}>
-            Удаление всех позиций оборудования (EPS)
-          </Typography>
-        </Box>
-        {!purging && (
-          <IconButton size="small" onClick={onClose} aria-label="Закрыть диалог удаления">
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        )}
-      </DialogTitle>
-
-      <DialogContent sx={{ p: 3, pt: '24px !important', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
         <Alert
           severity="error"
           icon={<WarningAmberIcon fontSize="large" />}
@@ -227,25 +194,8 @@ export function EquipmentPurgeDialog({
             FormHelperTextProps={{ id: 'purge-confirmation-help' }}
           />
         </Box>
-      </DialogContent>
-
-      <DialogActions sx={{ px: 3, py: 1.75, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
-        <Button onClick={onClose} color="inherit" size="small" disabled={purging}>
-          Отмена
-        </Button>
-        <Button
-          variant="contained"
-          color="error"
-          size="small"
-          startIcon={purging ? <CircularProgress size={16} color="inherit" /> : <DeleteForeverIcon />}
-          disabled={!isConfirmed || purging}
-          onClick={handlePurge}
-          sx={{ fontWeight: 700 }}
-        >
-          {purging ? 'Удаление данных...' : 'Удалить все позиции безвозвратно'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+      </Box>
+    </FormDialog>
   );
 }
 

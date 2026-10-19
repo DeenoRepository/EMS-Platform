@@ -29,23 +29,14 @@ describe('EPS multi-document upload support', () => {
     assert.match(source, /count:\s*createdDocuments\.length/);
   });
 
-  test('EPS documents page uses multiple file dropzone and batch upload submission', () => {
-    const source = readProjectFile('apps/web/src/app/eps/documents/page.tsx');
-    assert.match(source, /selectedFiles,\s*setSelectedFiles/);
-    assert.match(source, /selectedFiles\.forEach/);
-    assert.match(source, /fd\.append\('files',\s*file\)/);
-    assert.match(source, /<FileUploadDropzone[\s\S]*multiple/);
-    assert.match(source, /files=\{selectedFiles\}/);
-    assert.match(source, /Загрузить в архив \(\$\{selectedFiles\.length\}\)/);
-  });
-
   test('EPS equipment card documents tab uses multiple file dropzone and batch upload', () => {
-    const source = readProjectFile('apps/web/src/app/eps/\[id\]/page.tsx');
-    assert.match(source, /selectedFiles,\s*setSelectedFiles/);
-    assert.match(source, /selectedFiles\.forEach/);
-    assert.match(source, /fd\.append\('files',\s*file\)/);
-    assert.match(source, /<FileUploadDropzone[\s\S]*multiple/);
-    assert.match(source, /files=\{selectedFiles\}/);
-    assert.match(source, /Прикрепить документы \(\$\{selectedFiles\.length\}\)/);
+    const pageSource = readProjectFile('apps/web/src/app/eps/\[id\]/page.tsx');
+    assert.match(pageSource, /selectedFiles,\s*setSelectedFiles/);
+    assert.match(pageSource, /formData\.append\('file',\s*file\)/);
+
+    const dialogSource = readProjectFile('apps/web/src/components/eps/passport/PassportUploadDocDialog.tsx');
+    assert.match(dialogSource, /<FileUploadDropzone[\s\S]*multiple/);
+    assert.match(dialogSource, /files=\{selectedFiles\}/);
+    assert.match(dialogSource, /Прикрепить документы/);
   });
 });

@@ -342,7 +342,7 @@ export default function TransferRequestDialog({
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
                         <Box>
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>{option.name}</Typography>
-                          <Typography variant="caption" sx={{ color: '#64748b' }}>
+                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                             {option.article ? `Арт: ${option.article} • ` : ''}{option.unit}
                           </Typography>
                         </Box>

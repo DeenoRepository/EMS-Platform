@@ -2,10 +2,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
   Box,
   Typography,
@@ -30,14 +26,12 @@ import {
   TableRow,
   Paper,
   Divider,
-  IconButton,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
 import FindReplaceIcon from '@mui/icons-material/FindReplace';
 import PreviewIcon from '@mui/icons-material/Visibility';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import { useSnackbar } from 'notistack';
-import { ConfirmDialog } from '@/components/ui';
+import { ConfirmDialog, FormDialog } from '@/components/ui';
 import { BATCH_EDIT_COLUMNS, BatchColumnConfig } from '@/lib/eps-batch-edit';
 import { ResponsibleUserSelect } from './ResponsibleUserSelect';
 
@@ -234,46 +228,32 @@ export function EquipmentBatchEditDialog({
 
   return (
     <>
-      <Dialog
+      <FormDialog
         open={open}
         onClose={onClose}
+        title="Массовое редактирование позиций оборудования"
+        subtitle="Пакетный поиск и замена атрибутов оборудования по фильтру или выделенным строкам"
+        icon={<FindReplaceIcon color="primary" />}
         maxWidth="md"
         fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: '14px',
-            border: '1px solid',
-            borderColor: 'divider',
-            boxShadow: '0 20px 30px -10px rgba(15, 23, 42, 0.15)',
-            maxHeight: 'calc(100vh - 96px)',
-            m: { xs: 2, sm: 3, md: 4 },
-          },
-        }}
+        loading={applying}
+        submitLabel="Применить замену"
+        submitIcon={<DoneAllIcon />}
+        submitDisabled={matchedCount === 0 || previewKey !== currentPreviewKey || !findValue.trim() || applying}
+        onSubmit={() => setConfirmOpen(true)}
+        extraActions={
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={loadingPreview ? <CircularProgress size={16} /> : <PreviewIcon />}
+            onClick={handleFetchPreview}
+            disabled={loadingPreview || !findValue.trim()}
+          >
+            Предпросмотр совпадений
+          </Button>
+        }
       >
-        <DialogTitle
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            px: 3,
-            py: 2,
-            borderBottom: 1,
-            borderColor: 'divider',
-            bgcolor: 'background.paper',
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <FindReplaceIcon color="primary" />
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Массовое редактирование позиций оборудования
-            </Typography>
-          </Box>
-          <IconButton size="small" onClick={onClose}>
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </DialogTitle>
-
-        <DialogContent sx={{ p: 3, pt: '24px !important', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
           {/* 1. Выбор колонки */}
           <FormControl fullWidth size="small">
             <InputLabel id="batch-field-select-label">Колонка для редактирования</InputLabel>
@@ -480,35 +460,8 @@ export function EquipmentBatchEditDialog({
               )}
             </Box>
           )}
-        </DialogContent>
-
-        <DialogActions sx={{ px: 3, py: 1.75, borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
-          <Button onClick={onClose} color="inherit" size="small">
-            Отмена
-          </Button>
-
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={loadingPreview ? <CircularProgress size={16} /> : <PreviewIcon />}
-            onClick={handleFetchPreview}
-            disabled={loadingPreview || !findValue.trim()}
-          >
-            Предпросмотр совпадений
-          </Button>
-
-          <Button
-            variant="contained"
-            size="small"
-            color="primary"
-            startIcon={<DoneAllIcon />}
-            disabled={matchedCount === 0 || previewKey !== currentPreviewKey || !findValue.trim() || applying}
-            onClick={() => setConfirmOpen(true)}
-          >
-            Применить замену
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </Box>
+      </FormDialog>
 
       <ConfirmDialog
         open={confirmOpen}

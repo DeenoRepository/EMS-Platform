@@ -126,13 +126,18 @@ describe('EPS Equipment Card Completeness & Warning Column', () => {
 
   it('equipment registry page defines completeness column and warning icon in table', () => {
     const pageSource = readProjectFile('apps/web/src/app/eps/page.tsx');
-    assert.match(pageSource, /id:\s*'completeness'/);
-    assert.match(pageSource, /label:\s*'Полнота заполнения карточки'/);
-    assert.match(pageSource, /checkEquipmentCardCompleteness/);
-    assert.match(pageSource, /visibleColumns\.includes\('completeness'\)/);
-    assert.match(pageSource, /WarningAmberIcon/);
-    assert.match(pageSource, /В карточке заполнены не все поля/);
-    assert.match(pageSource, /comp\.missingFields/);
+    assert.match(pageSource, /EquipmentRegistryTable/);
+
+    const hookSource = readProjectFile('apps/web/src/components/eps/registry/useEquipmentRegistry.ts');
+    assert.match(hookSource, /id:\s*'completeness'/);
+    assert.match(hookSource, /label:\s*'Полнота заполнения карточки'/);
+
+    const tableSource = readProjectFile('apps/web/src/components/eps/registry/EquipmentRegistryTable.tsx');
+    assert.match(tableSource, /checkEquipmentCardCompleteness/);
+    assert.match(tableSource, /visibleColumns\.includes\('completeness'\)/);
+    assert.match(tableSource, /WarningAmberIcon/);
+    assert.match(tableSource, /В карточке заполнены не все поля/);
+    assert.match(tableSource, /comp\.missingFields/);
   });
 
   it('column filters row includes completeness selector', () => {

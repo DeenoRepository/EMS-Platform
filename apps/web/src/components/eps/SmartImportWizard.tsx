@@ -854,38 +854,89 @@ export function SmartImportWizard() {
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Chip
-                    label={`Все (${totalRowsCount})`}
-                    color={previewFilter === 'ALL' ? 'primary' : 'default'}
+                  <Button
+                    size="small"
+                    variant={previewFilter === 'ALL' ? 'contained' : 'outlined'}
                     onClick={() => setPreviewFilter('ALL')}
-                    clickable
+                    sx={{ textTransform: 'none', borderRadius: '20px', height: 28, fontSize: '0.75rem' }}
+                  >
+                    Все ({totalRowsCount})
+                  </Button>
+                  <Button
                     size="small"
-                  />
-                  <Chip
-                    label={`Новые (${newCount})`}
-                    color={previewFilter === 'NEW' ? 'success' : 'default'}
+                    variant={previewFilter === 'NEW' ? 'contained' : 'outlined'}
+                    color="success"
                     onClick={() => setPreviewFilter('NEW')}
-                    clickable
+                    sx={{ textTransform: 'none', borderRadius: '20px', height: 28, fontSize: '0.75rem' }}
+                  >
+                    Новые ({newCount})
+                  </Button>
+                  <Button
                     size="small"
-                  />
-                  <Chip
-                    label={`Коллизии (${collisionCount})`}
-                    color={previewFilter === 'COLLISION' ? 'warning' : 'default'}
+                    variant={previewFilter === 'COLLISION' ? 'contained' : 'outlined'}
+                    color="warning"
                     onClick={() => setPreviewFilter('COLLISION')}
-                    clickable
-                    size="small"
-                  />
+                    sx={{ textTransform: 'none', borderRadius: '20px', height: 28, fontSize: '0.75rem' }}
+                  >
+                    Коллизии ({collisionCount})
+                  </Button>
                   {errorCount > 0 && (
-                    <Chip
-                      label={`Ошибки (${errorCount})`}
-                      color={previewFilter === 'ERROR' ? 'error' : 'default'}
-                      onClick={() => setPreviewFilter('ERROR')}
-                      clickable
+                    <Button
                       size="small"
-                    />
+                      variant={previewFilter === 'ERROR' ? 'contained' : 'outlined'}
+                      color="error"
+                      onClick={() => setPreviewFilter('ERROR')}
+                      sx={{ textTransform: 'none', borderRadius: '20px', height: 28, fontSize: '0.75rem' }}
+                    >
+                      Ошибки ({errorCount})
+                    </Button>
                   )}
                 </Box>
               </Box>
+
+              {collisionCount > 0 && (
+                <Box
+                  sx={{
+                    mb: 2,
+                    p: 1.5,
+                    bgcolor: 'action.hover',
+                    borderRadius: '8px',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: 1.5,
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    Обнаружено совпадений номеров: <strong>{collisionCount} поз.</strong> Текущее действие:{' '}
+                    <Box component="span" sx={{ color: conflictStrategy === 'UPSERT' ? 'primary.main' : conflictStrategy === 'SKIP' ? 'text.secondary' : 'error.main' }}>
+                      {conflictStrategy === 'UPSERT' ? 'Обновить паспорта (UPSERT)' : conflictStrategy === 'SKIP' ? 'Пропустить дубликаты (SKIP)' : 'Полная замена реестра'}
+                    </Box>
+                  </Typography>
+
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                      size="small"
+                      variant={conflictStrategy === 'UPSERT' ? 'contained' : 'outlined'}
+                      onClick={() => setConflictStrategy('UPSERT')}
+                      sx={{ textTransform: 'none', fontSize: '0.75rem', height: 28 }}
+                    >
+                      Обновлять дубликаты
+                    </Button>
+                    <Button
+                      size="small"
+                      variant={conflictStrategy === 'SKIP' ? 'contained' : 'outlined'}
+                      onClick={() => setConflictStrategy('SKIP')}
+                      sx={{ textTransform: 'none', fontSize: '0.75rem', height: 28 }}
+                    >
+                      Пропускать дубликаты
+                    </Button>
+                  </Box>
+                </Box>
+              )}
 
               <DataTableWrapper total={filteredPreviewRows.length} stickyHeader maxHeight={420}>
                 <Table size="small">

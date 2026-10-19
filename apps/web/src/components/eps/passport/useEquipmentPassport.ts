@@ -169,6 +169,7 @@ export function useEquipmentPassport(id: string, initialTabParam?: string | null
         ...(equipment.customFields || {}),
         responsible_person_name: newRespName || null,
         responsible_user_login: newRespUser?.ldapLogin || null,
+        responsible_user_id: newRespUser?.id || null,
       };
 
       const res = await fetch(`/api/eps/equipment/${id}`, {

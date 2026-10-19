@@ -64,12 +64,14 @@ export default function TransferReceiveDialog({
 }: TransferReceiveDialogProps) {
   const [cellAllocations, setCellAllocations] = useState<Record<string, string>>({});
   const [cells, setCells] = useState<StorageCellOption[]>([]);
+  const [batchCellId, setBatchCellId] = useState('');
   const [isLoadingCells, setIsLoadingCells] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open && transfer) {
+      setBatchCellId('');
       // Инициализируем распределение по ячейкам
       const initial: Record<string, string> = {};
       transfer.items.forEach((it) => {
@@ -105,6 +107,16 @@ export default function TransferReceiveDialog({
   }, [open, transfer]);
 
   if (!transfer) return null;
+
+  const handleApplyBatchCell = (cellId: string) => {
+    setBatchCellId(cellId);
+    if (!transfer) return;
+    const updated: Record<string, string> = {};
+    transfer.items.forEach((it) => {
+      updated[it.id] = cellId;
+    });
+    setCellAllocations(updated);
+  };
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
@@ -166,13 +178,51 @@ export default function TransferReceiveDialog({
           </Alert>
         )}
 
+        {/* Пакетное назначение ячейки */}
+        {cells.length > 0 && transfer.items.length > 1 && (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 2,
+              p: 1.5,
+              bgcolor: 'background.default',
+              borderRadius: '8px',
+              border: '1px solid',
+              borderColor: 'divider',
+              flexWrap: 'wrap',
+            }}
+          >
+            <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+              Пакетное размещение в ячейку (для всех {transfer.items.length} позиций):
+            </Typography>
+            <TextField
+              select
+              size="small"
+              value={batchCellId}
+              onChange={(e) => handleApplyBatchCell(e.target.value)}
+              sx={{ minWidth: 260 }}
+              SelectProps={{ displayEmpty: true }}
+            >
+              <MenuItem value="">— Назначить ячейку всем строкам —</MenuItem>
+              {cells.map((c) => (
+                <MenuItem key={c.id} value={c.id}>
+                  {c.zone?.code ? `[${c.zone.code}] ` : ''}
+                  {c.code} {c.name ? `(${c.name})` : ''}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Box>
+        )}
+
         {/* Таблица принимаемых позиций */}
         <Paper variant="outlined" sx={{ borderRadius: '8px', overflow: 'hidden' }}>
           <Table size="small">
             <TableHead sx={{ bgcolor: 'background.default' }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 700 }}>Номенклатура / ТМЦ</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, width: 120 }}>
+                <TableCell align="right" sx={{ fontWeight: 700, width: 140 }}>
                   Количество
                 </TableCell>
                 <TableCell sx={{ fontWeight: 700, width: 260 }}>
@@ -192,14 +242,17 @@ export default function TransferReceiveDialog({
                       {item.nomenclature?.unit || 'шт'}
                     </Typography>
                   </TableCell>
-                  <TableCell align="right" sx={{ py: 1, fontWeight: 700, fontFeatureSettings: '"tnum"' }}>
-                    <Chip
-                      size="small"
-                      color="primary"
-                      variant="outlined"
-                      label={`${item.quantity} ${item.nomenclature?.unit || 'шт'}`}
-                      sx={{ fontWeight: 700 }}
-                    />
+                  <TableCell align="right" sx={{ py: 1 }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: 700,
+                        color: 'primary.main',
+                        fontFeatureSettings: '"tnum"',
+                      }}
+                    >
+                      {item.quantity} {item.nomenclature?.unit || 'шт'}
+                    </Typography>
                   </TableCell>
                   <TableCell sx={{ py: 1 }}>
                     {isLoadingCells ? (

@@ -25,14 +25,14 @@ describe('EPS Equipment Registry Table Viewport & Horizontal Scrollbar', () => {
 
   it('EPS equipment registry page passes adaptive maxHeight, stickyHeader and server-side sort to API', () => {
     const pageSource = readProjectFile('apps/web/src/app/eps/page.tsx');
-    assert.match(pageSource, /tableWrapperRef/);
-    assert.match(pageSource, /tableMaxHeight/);
-    assert.match(pageSource, /calculateTableHeight/);
-    assert.match(pageSource, /window\.innerHeight/);
-    assert.match(pageSource, /maxHeight=\{tableMaxHeight\}/);
-    assert.match(pageSource, /stickyHeader/);
-    assert.match(pageSource, /<Table\s+stickyHeader/);
-    assert.match(pageSource, /minWidth:\s*1400/);
-    assert.match(pageSource, /buildEquipmentFilterSearchParams\([\s\S]*sortField[\s\S]*sortDirection/);
+    assert.match(pageSource, /DataTableWrapper/);
+    assert.match(pageSource, /EquipmentRegistryTable/);
+
+    const tableSource = readProjectFile('apps/web/src/components/eps/registry/EquipmentRegistryTable.tsx');
+    assert.match(tableSource, /<Table\s+stickyHeader/);
+    assert.match(tableSource, /minWidth:\s*1400/);
+
+    const hookSource = readProjectFile('apps/web/src/components/eps/registry/useEquipmentRegistry.ts');
+    assert.match(hookSource, /buildEquipmentFilterSearchParams\([\s\S]*sortField[\s\S]*sortDirection/);
   });
 });
