@@ -49,8 +49,9 @@ export function EquipmentRegistryToolbar({
   onViewModeChange,
 }: EquipmentRegistryToolbarProps) {
   return (
-    <Box sx={{ mb: 1.5 }}>
+    <Box sx={{ width: '100%' }}>
       <FilterToolbar
+        variant="embedded"
         activeFilterCount={activeFilterCount}
         onResetFilters={onResetFilters}
         actions={

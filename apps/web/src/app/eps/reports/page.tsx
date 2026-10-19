@@ -171,6 +171,7 @@ function ReportBuilderContent() {
         stickyHeader
         toolbar={
           <FilterToolbar
+            variant="embedded"
             activeFilterCount={activeFilterCount}
             onResetFilters={() => {
               setStatusFilter('');

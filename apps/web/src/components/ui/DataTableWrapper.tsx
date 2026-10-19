@@ -551,7 +551,8 @@ export function DataTableWrapper({
         <Box
           sx={{
             flexShrink: 0,
-            p: { xs: 1.25, sm: 1.5 },
+            px: { xs: 1.5, sm: 2 },
+            py: 1.25,
             backgroundColor: 'background.paper',
             borderBottom: '1px solid',
             borderColor: 'divider',
@@ -559,13 +560,24 @@ export function DataTableWrapper({
             alignItems: 'center',
             justifyContent: 'space-between',
             flexWrap: 'wrap',
-            gap: 1.5,
+            gap: 1.25,
+            '& .filter-toolbar-paper': {
+              border: 'none !important',
+              boxShadow: 'none !important',
+              p: '0 !important',
+              mb: '0 !important',
+              bgcolor: 'transparent !important',
+            },
           }}
         >
-          <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Box sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center' }}>
             {toolbar}
           </Box>
-          {!hasHeader && utilityTools}
+          {!hasHeader && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0, ml: 1 }}>
+              {utilityTools}
+            </Box>
+          )}
         </Box>
       )}
 

@@ -285,6 +285,7 @@ export default function MroHistoryPage() {
         onVisibleColumnsChange={setVisibleColumns}
         toolbar={
           <FilterToolbar
+            variant="embedded"
             activeFilterCount={search ? 1 : 0}
             onResetFilters={() => {
               setSearch('');

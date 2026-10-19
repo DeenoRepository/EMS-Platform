@@ -189,6 +189,7 @@ function EquipmentApprovalsContent() {
         stickyHeader
         toolbar={
           <FilterToolbar
+            variant="embedded"
             activeFilterCount={activeFilterCount}
             onResetFilters={handleResetFilters}
             actions={

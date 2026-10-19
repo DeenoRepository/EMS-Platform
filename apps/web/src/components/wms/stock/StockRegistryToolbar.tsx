@@ -62,6 +62,7 @@ export function StockRegistryToolbar({
 }: StockRegistryToolbarProps) {
   return (
     <FilterToolbar
+      variant="embedded"
       activeFilterCount={activeFilterCount}
       onResetFilters={onResetFilters}
       actions={

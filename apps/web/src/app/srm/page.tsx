@@ -454,7 +454,11 @@ function SrmPageContent() {
         visibleColumns={visibleColumns}
         onVisibleColumnsChange={setVisibleColumns}
         toolbar={
-          <FilterToolbar activeFilterCount={activeFilterCount} onResetFilters={handleResetFilters}>
+          <FilterToolbar
+            variant="embedded"
+            activeFilterCount={activeFilterCount}
+            onResetFilters={handleResetFilters}
+          >
             <Box sx={{ width: { xs: '100%', sm: 260 } }}>
               <SearchInput
                 value={search}

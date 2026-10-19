@@ -52,7 +52,7 @@ export function FilterToolbar({
             startIcon={<RestartAltIcon sx={{ fontSize: 16 }} />}
             onClick={onResetFilters}
             sx={{
-              color: '#64748b',
+              color: 'text.secondary',
               fontWeight: 600,
               fontSize: '0.75rem',
               borderRadius: '6px',
@@ -60,8 +60,8 @@ export function FilterToolbar({
               py: 0.5,
               height: 36,
               '&:hover': {
-                color: '#dc2626',
-                backgroundColor: '#fee2e2',
+                color: 'error.main',
+                backgroundColor: 'error.lighter',
               },
             }}
           >
@@ -89,7 +89,7 @@ export function FilterToolbar({
 
   if (variant === 'embedded') {
     return (
-      <Box className={className} sx={{ width: '100%' }}>
+      <Box className={`filter-toolbar-container ${className || ''}`} sx={{ width: '100%' }}>
         {content}
       </Box>
     );
@@ -98,13 +98,14 @@ export function FilterToolbar({
   return (
     <Paper
       elevation={0}
-      className={className}
+      className={`filter-toolbar-paper ${className || ''}`}
       sx={{
         p: 1.75,
-        mb: 2.5,
+        mb: 2,
         borderRadius: '10px',
-        backgroundColor: '#ffffff',
-        border: '1px solid #e2e8f0',
+        backgroundColor: 'background.paper',
+        border: '1px solid',
+        borderColor: 'divider',
         boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
       }}
     >

@@ -136,6 +136,7 @@ function AuditHistoryContent() {
         stickyHeader
         toolbar={
           <FilterToolbar
+            variant="embedded"
             activeFilterCount={activeFilterCount}
             onResetFilters={handleResetFilters}
             actions={
