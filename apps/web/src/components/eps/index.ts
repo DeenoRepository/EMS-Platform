@@ -10,4 +10,6 @@ export * from './ResponsibleUserSelect';
 export * from './EquipmentFieldsCatalogView';
 export * from './EquipmentPurgeDialog';
 export * from './registry';
+export * from './reports';
+export * from './history';
 
