@@ -224,7 +224,8 @@ function DocumentArchiveContent() {
         gridContent={
           <Grid container spacing={2}>
             {items.map((doc) => {
-              const fileUrl = `/api/files/${doc.fileName}`;
+              const targetPath = doc.filePath ? (doc.filePath.startsWith('/') ? doc.filePath.slice(1) : doc.filePath) : doc.fileName;
+              const fileUrl = `/api/files/${targetPath.split('/').map(encodeURIComponent).join('/')}`;
               return (
                 <Grid item xs={12} sm={6} md={4} lg={3} key={doc.id}>
                   <Card
@@ -333,17 +334,27 @@ function DocumentArchiveContent() {
         open={Boolean(previewDocUrl)}
         onClose={() => setPreviewDocUrl(null)}
         title="Просмотр документа"
-        maxWidth="md"
+        maxWidth="lg"
+        fullWidth
         hideActions
       >
-        <Box sx={{ display: 'flex', justifyContent: 'center', bgcolor: 'black', borderRadius: 1, overflow: 'hidden' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', bgcolor: 'black', borderRadius: 1, overflow: 'hidden', minHeight: 480 }}>
           {previewDocUrl && (
-            <Box
-              component="img"
-              src={previewDocUrl}
-              alt="Preview"
-              sx={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain' }}
-            />
+            previewDocUrl.toLowerCase().includes('.pdf') ? (
+              <Box
+                component="iframe"
+                src={previewDocUrl}
+                title="Просмотр документа"
+                sx={{ width: '100%', height: '80vh', border: 'none' }}
+              />
+            ) : (
+              <Box
+                component="img"
+                src={previewDocUrl}
+                alt="Preview"
+                sx={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain' }}
+              />
+            )
           )}
         </Box>
       </FormDialog>

@@ -94,7 +94,8 @@ export function PassportDocumentsTab({
             <TableBody>
               {documents.map((doc) => {
                 const isPdfOrImg = doc.fileType?.includes('pdf') || doc.fileType?.includes('image');
-                const fileUrl = `/api/files/${doc.fileName}`;
+                const targetPath = doc.filePath ? (doc.filePath.startsWith('/') ? doc.filePath.slice(1) : doc.filePath) : doc.fileName;
+                const fileUrl = `/api/files/${targetPath.split('/').map(encodeURIComponent).join('/')}`;
 
                 return (
                   <TableRow key={doc.id} hover>

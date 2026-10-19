@@ -477,17 +477,27 @@ function EquipmentPassportContent() {
         open={Boolean(previewDocUrl)}
         onClose={() => setPreviewDocUrl(null)}
         title="Просмотр документа"
-        maxWidth="md"
+        maxWidth="lg"
+        fullWidth
         hideActions
       >
-        <Box sx={{ display: 'flex', justifyContent: 'center', bgcolor: 'black', borderRadius: 1, overflow: 'hidden' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', bgcolor: 'black', borderRadius: 1, overflow: 'hidden', minHeight: 480 }}>
           {previewDocUrl && (
-            <Box
-              component="img"
-              src={previewDocUrl}
-              alt="Preview"
-              sx={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain' }}
-            />
+            previewDocUrl.toLowerCase().includes('.pdf') ? (
+              <Box
+                component="iframe"
+                src={previewDocUrl}
+                title="Просмотр документа"
+                sx={{ width: '100%', height: '80vh', border: 'none' }}
+              />
+            ) : (
+              <Box
+                component="img"
+                src={previewDocUrl}
+                alt="Preview"
+                sx={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain' }}
+              />
+            )
           )}
         </Box>
       </FormDialog>
