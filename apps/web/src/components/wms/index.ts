@@ -25,6 +25,8 @@ export * from './BulkLocationModal';
 export * from './dashboard';
 export * from './stock';
 export * from './operations';
+export * from './warehouses';
+export * from './inventory';
 
 
 

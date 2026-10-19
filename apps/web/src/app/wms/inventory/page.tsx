@@ -1,154 +1,89 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useState, Suspense, useCallback } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
-  Typography,
-  Grid,
-  Button,
-  Chip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   MenuItem,
-  Stack,
-  IconButton,
+  Button,
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
-import PageHeader from '@/components/layout/PageHeader';
 import AddIcon from '@mui/icons-material/Add';
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
-import { PERMISSIONS, INVENTORY_STATUS_MAP, formatDateTime } from '@ems/shared';
+import { PERMISSIONS, INVENTORY_STATUS_MAP } from '@ems/shared';
+import PageHeader from '@/components/layout/PageHeader';
 import {
-  StatCard,
   DataTableWrapper,
   EmptyState,
-  StatusBadge,
-  FormDialog,
   FilterToolbar,
   SearchInput,
-  type TableColumnOption,
+  PageLoading,
 } from '@/components/ui';
-import { InventoryCountSheetDialog } from '@/components/wms';
-import { TableSortLabel } from '@mui/material';
+import {
+  INVENTORY_COLUMNS,
+  useInventoryRegistry,
+  InventoryKpiBar,
+  InventoryRegistryTable,
+  CreateInventoryDialog,
+} from '@/components/wms';
 
-const INVENTORY_COLUMNS: TableColumnOption[] = [
-  { id: 'code', label: 'Номер / Акт', defaultVisible: true, required: true },
-  { id: 'warehouse', label: 'Склад', defaultVisible: true },
-  { id: 'status', label: 'Статус', defaultVisible: true },
-  { id: 'count', label: 'Позиций в акте', defaultVisible: true },
-  { id: 'date', label: 'Дата создания', defaultVisible: true },
-  { id: 'author', label: 'Ответственный', defaultVisible: true },
-  { id: 'actions', label: 'Действия', defaultVisible: true, required: true },
-];
+const FONT_SEMI_BOLD = 600;
 
-interface InventoryItemSummary {
-  id: string;
-  warehouseId: string;
-  status: string;
-  date: string;
-  comment?: string | null;
-  closedAt?: string | null;
-  createdAt: string;
-  warehouse: { name: string; code: string };
-  createdBy: { displayName: string };
-  _count: { items: number };
-}
-
-interface WarehouseOption {
-  id: string;
-  name: string;
-  code: string;
-  responsibleUserId?: string | null;
-  responsibleUser?: { id: string; displayName: string } | null;
-}
-
-export default function WmsInventoryListPage() {
+function WmsInventoryListContent() {
   const router = useRouter();
   const { enqueueSnackbar } = useSnackbar();
   const { user, hasPermission } = useAuth();
 
-  const [inventories, setInventories] = useState<InventoryItemSummary[]>([]);
-  const [warehouses, setWarehouses] = useState<WarehouseOption[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const canAccessInventory =
+    Boolean(user?.roles?.includes('admin')) ||
+    hasPermission(PERMISSIONS.WMS_INVENTORY_MANAGE) ||
+    hasPermission(PERMISSIONS.WMS_STOCK_VIEW);
+  const canManage = Boolean(user?.roles?.includes('admin')) || hasPermission(PERMISSIONS.WMS_INVENTORY_MANAGE);
 
-  // Filters & Sorting
-  const [search, setSearch] = useState('');
-  const [selectedWarehouse, setSelectedWarehouse] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('');
+  const {
+    filteredInventories,
+    paginatedInventories,
+    warehouses,
+    isLoading,
+    search,
+    selectedWarehouse,
+    selectedStatus,
+    sortField,
+    sortDirection,
+    page,
+    rowsPerPage,
+    activeFilterCount,
+    kpiStats,
+    setSearch,
+    setSelectedWarehouse,
+    setSelectedStatus,
+    setPage,
+    setRowsPerPage,
+    fetchInventories,
+    handleRequestSort,
+    handleResetFilters,
+  } = useInventoryRegistry(canAccessInventory, user?.userId);
+
   const [visibleColumns, setVisibleColumns] = useState<string[]>(() =>
     INVENTORY_COLUMNS.map((c) => c.id)
   );
-  const [sortField, setSortField] = useState<string>('date');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
-  // Create Inventory Modal
+  // Create Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedWarehouseId, setSelectedWarehouseId] = useState('');
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Count Sheet Modal
-  const [isCountSheetOpen, setIsCountSheetOpen] = useState(false);
-  const [selectedSheetInventory, setSelectedSheetInventory] = useState<any | null>(null);
-
-  const fetchInventories = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const res = await fetch('/api/wms/inventories');
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success) {
-          setInventories(json.data);
-        }
-      }
-    } catch (err) {
-      console.error('Ошибка загрузки инвентаризаций:', err);
-      enqueueSnackbar('Ошибка загрузки актов инвентаризации', { variant: 'error' });
-    } finally {
-      setIsLoading(false);
+  const handleOpenCreateModal = useCallback(() => {
+    if (warehouses.length > 0 && !selectedWarehouseId) {
+      setSelectedWarehouseId(warehouses[0].id);
     }
-  }, [enqueueSnackbar]);
+    setIsModalOpen(true);
+  }, [warehouses, selectedWarehouseId]);
 
-  const canAccessInventory =
-    user?.roles?.includes('admin') ||
-    hasPermission(PERMISSIONS.WMS_INVENTORY_MANAGE) ||
-    hasPermission(PERMISSIONS.WMS_STOCK_VIEW);
-
-  useEffect(() => {
-    if (canAccessInventory) {
-      fetchInventories();
-      async function loadWarehouses() {
-        try {
-          const res = await fetch('/api/wms/warehouses');
-          if (res.ok) {
-            const json = await res.json();
-            if (json.success && Array.isArray(json.data)) {
-              setWarehouses(json.data);
-              const myWh = json.data.find((w: any) => w.responsibleUserId === user?.userId) || json.data[0];
-              if (myWh) {
-                setSelectedWarehouseId(myWh.id);
-              }
-            }
-          }
-        } catch (err) {
-          console.error('Ошибка загрузки складов:', err);
-        }
-      }
-      loadWarehouses();
-    }
-  }, [canAccessInventory, fetchInventories, user?.userId]);
-
-  const handleCreateInventory = async () => {
+  const handleCreateSubmit = useCallback(async () => {
     if (!selectedWarehouseId) {
       enqueueSnackbar('Выберите склад для проведения инвентаризации', { variant: 'warning' });
       return;
@@ -173,98 +108,12 @@ export default function WmsInventoryListPage() {
       } else {
         enqueueSnackbar(json.error || 'Ошибка создания акта', { variant: 'error' });
       }
-    } catch (err) {
+    } catch {
       enqueueSnackbar('Ошибка сети при создании инвентаризации', { variant: 'error' });
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleRequestSort = (property: string) => {
-    const isAsc = sortField === property && sortDirection === 'asc';
-    setSortDirection(isAsc ? 'desc' : 'asc');
-    setSortField(property);
-  };
-
-  const handleResetFilters = () => {
-    setSearch('');
-    setSelectedWarehouse('');
-    setSelectedStatus('');
-  };
-
-  const activeFilterCount =
-    (search ? 1 : 0) + (selectedWarehouse ? 1 : 0) + (selectedStatus ? 1 : 0);
-
-  const filteredInventories = useMemo(() => {
-    return inventories.filter((inv) => {
-      if (selectedWarehouse && inv.warehouseId !== selectedWarehouse) return false;
-      if (selectedStatus && inv.status !== selectedStatus) return false;
-      if (search) {
-        const query = search.toLowerCase();
-        const codeMatch = `INV-${inv.id.slice(-6)}`.toLowerCase().includes(query);
-        const warehouseMatch = inv.warehouse.name.toLowerCase().includes(query) || inv.warehouse.code.toLowerCase().includes(query);
-        const authorMatch = inv.createdBy.displayName.toLowerCase().includes(query);
-        if (!codeMatch && !warehouseMatch && !authorMatch) return false;
-      }
-      return true;
-    });
-  }, [inventories, selectedWarehouse, selectedStatus, search]);
-
-  const sortedInventories = useMemo(() => {
-    if (!sortField) return filteredInventories;
-    return [...filteredInventories].sort((a, b) => {
-      let aVal: any = '';
-      let bVal: any = '';
-      switch (sortField) {
-        case 'code':
-          aVal = a.id;
-          bVal = b.id;
-          break;
-        case 'warehouse':
-          aVal = a.warehouse.name;
-          bVal = b.warehouse.name;
-          break;
-        case 'status':
-          aVal = a.status;
-          bVal = b.status;
-          break;
-        case 'count':
-          aVal = a._count.items;
-          bVal = b._count.items;
-          break;
-        case 'date':
-          aVal = new Date(a.createdAt).getTime();
-          bVal = new Date(b.createdAt).getTime();
-          break;
-        case 'author':
-          aVal = a.createdBy.displayName;
-          bVal = b.createdBy.displayName;
-          break;
-        default:
-          aVal = (a as unknown as Record<string, unknown>)[sortField] ?? '';
-          bVal = (b as unknown as Record<string, unknown>)[sortField] ?? '';
-      }
-
-      if (typeof aVal === 'number' && typeof bVal === 'number') {
-        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
-      }
-      return sortDirection === 'asc'
-        ? String(aVal).localeCompare(String(bVal), 'ru')
-        : String(bVal).localeCompare(String(aVal), 'ru');
-    });
-  }, [filteredInventories, sortField, sortDirection]);
-
-  // Pagination state
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(25);
-
-  const paginatedInventories = useMemo(() => {
-    return sortedInventories.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
-  }, [sortedInventories, page, rowsPerPage]);
-
-  const totalInventories = inventories.length;
-  const inProgressCount = inventories.filter((i) => i.status === 'IN_PROGRESS' || i.status === 'DRAFT').length;
-  const completedCount = inventories.filter((i) => i.status === 'COMPLETED').length;
+  }, [selectedWarehouseId, comment, enqueueSnackbar, router]);
 
   if (!canAccessInventory) {
     return (
@@ -280,7 +129,7 @@ export default function WmsInventoryListPage() {
         />
         <EmptyState
           title="Доступ ограничен"
-          description="У вашей учетной записи нет полномочий для доступа к разделу инвентаризации (требуется право wms.inventory.manage или wms.stock.view)."
+          description="У вашей учетной записи нет полномочий для доступа к разделу инвентаризации."
           icon={<FactCheckOutlinedIcon sx={{ fontSize: 48, color: 'text.secondary' }} />}
         />
       </Box>
@@ -289,6 +138,7 @@ export default function WmsInventoryListPage() {
 
   return (
     <Box sx={{ pb: 4 }}>
+      {/* 1. Header */}
       <PageHeader
         title="Инвентаризация складов"
         subtitle="Сверка фактического наличия ТМЦ с учетными остатками и автоматическая корректировка"
@@ -298,24 +148,19 @@ export default function WmsInventoryListPage() {
           { label: 'Инвентаризация' },
         ]}
         actions={
-          hasPermission(PERMISSIONS.WMS_INVENTORY_MANAGE) && (
+          canManage && (
             <Button
               variant="contained"
+              size="small"
               startIcon={<AddIcon />}
-              onClick={() => {
-                setSelectedWarehouseId(warehouses[0]?.id || '');
-                setComment('');
-                setIsModalOpen(true);
-              }}
+              onClick={handleOpenCreateModal}
               sx={{
-                height: 36,
-                px: 2,
-                fontSize: '0.8125rem',
-                fontWeight: 600,
+                height: 38,
                 borderRadius: '8px',
+                fontSize: '0.8125rem',
+                fontWeight: FONT_SEMI_BOLD,
                 textTransform: 'none',
-                bgcolor: 'primary.main',
-                '&:hover': { bgcolor: 'primary.dark' },
+                px: 2,
               }}
             >
               Новая инвентаризация
@@ -324,445 +169,135 @@ export default function WmsInventoryListPage() {
         }
       />
 
-      {/* KPI Metric Cards */}
-      <Grid container spacing={1.75} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={4}>
-          <StatCard
-            title="Всего актов"
-            value={totalInventories}
-            subtitle="За все периоды учета"
-            icon={<FactCheckOutlinedIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="action.hover"
-            iconColor="primary.main"
-            accentColor="primary.main"
-            loading={isLoading}
-          />
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <StatCard
-            title="В процессе сверки"
-            value={inProgressCount}
-            subtitle="Открытые акты инвентаризации"
-            icon={<FactCheckOutlinedIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="action.hover"
-            iconColor="warning.main"
-            accentColor="warning.main"
-            loading={isLoading}
-          />
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <StatCard
-            title="Завершенные акты"
-            value={completedCount}
-            subtitle="Успешно сверенные и закрытые"
-            icon={<FactCheckOutlinedIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="action.hover"
-            iconColor="success.main"
-            accentColor="success.main"
-            loading={isLoading}
-          />
-        </Grid>
-      </Grid>
-
-      {/* Main Inventory Acts Registry Table */}
-      <DataTableWrapper
+      {/* 2. Top KPI Cards */}
+      <InventoryKpiBar
+        stats={kpiStats}
+        selectedStatus={selectedStatus}
         loading={isLoading}
-        page={page}
+        onKpiFilter={(st) => {
+          setSelectedStatus(st);
+          setPage(0);
+        }}
+      />
+
+      {/* 3. Table with Toolbar */}
+      <DataTableWrapper
+        total={filteredInventories.length}
+        page={page + 1}
         pageSize={rowsPerPage}
-        total={sortedInventories.length}
-        onPageChange={(_, newPage) => setPage(newPage)}
+        onPageChange={(_, newPage) => setPage(newPage - 1)}
         onPageSizeChange={(e) => {
           setRowsPerPage(parseInt(e.target.value, 10));
           setPage(0);
         }}
-        pageSizeOptions={[15, 25, 50, 100]}
-        storageKey="wms_inventory_table"
         columns={INVENTORY_COLUMNS}
         visibleColumns={visibleColumns}
         onVisibleColumnsChange={setVisibleColumns}
+        loading={isLoading}
         stickyHeader
-        empty={sortedInventories.length === 0 && !isLoading}
-        emptyState={
-          <EmptyState
-            icon={<FactCheckOutlinedIcon sx={{ fontSize: 36, color: 'text.disabled' }} />}
-            title="Акты инвентаризации не найдены"
-            description={
-              activeFilterCount > 0
-                ? 'По выбранным критериям акты не найдены. Попробуйте сбросить фильтры.'
-                : 'Вы можете инициировать сверку фактических складских остатков по выбранному складу с автоматическим расчетом расхождений.'
-            }
-            actionText={
-              activeFilterCount > 0
-                ? 'Сбросить фильтры'
-                : hasPermission(PERMISSIONS.WMS_INVENTORY_MANAGE)
-                ? 'Создать акт инвентаризации'
-                : undefined
-            }
-            onAction={
-              activeFilterCount > 0
-                ? handleResetFilters
-                : hasPermission(PERMISSIONS.WMS_INVENTORY_MANAGE)
-                ? () => {
-                    setSelectedWarehouseId(warehouses[0]?.id || '');
-                    setComment('');
-                    setIsModalOpen(true);
-                  }
-                : undefined
-            }
-          />
-        }
         toolbar={
           <FilterToolbar
-            variant="embedded"
             activeFilterCount={activeFilterCount}
             onResetFilters={handleResetFilters}
+            actions={
+              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
+                <TextField
+                  select
+                  size="small"
+                  value={selectedWarehouse}
+                  onChange={(e) => {
+                    setSelectedWarehouse(e.target.value);
+                    setPage(0);
+                  }}
+                  SelectProps={{ displayEmpty: true }}
+                  sx={{
+                    minWidth: 160,
+                    bgcolor: 'background.paper',
+                    '& .MuiOutlinedInput-root': { borderRadius: '8px', fontSize: '0.8125rem', height: 36 },
+                  }}
+                >
+                  <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все склады</MenuItem>
+                  {warehouses.map((w) => (
+                    <MenuItem key={w.id} value={w.id} sx={{ fontSize: '0.8125rem' }}>
+                      {w.name} ({w.code})
+                    </MenuItem>
+                  ))}
+                </TextField>
+
+                <TextField
+                  select
+                  size="small"
+                  value={selectedStatus}
+                  onChange={(e) => {
+                    setSelectedStatus(e.target.value);
+                    setPage(0);
+                  }}
+                  SelectProps={{ displayEmpty: true }}
+                  sx={{
+                    minWidth: 160,
+                    bgcolor: 'background.paper',
+                    '& .MuiOutlinedInput-root': { borderRadius: '8px', fontSize: '0.8125rem', height: 36 },
+                  }}
+                >
+                  <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все статусы</MenuItem>
+                  {Object.entries(INVENTORY_STATUS_MAP).map(([key, info]) => (
+                    <MenuItem key={key} value={key} sx={{ fontSize: '0.8125rem' }}>
+                      {info.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Box>
+            }
           >
-            <Box sx={{ minWidth: { xs: '100%', sm: 240 } }}>
+            <Box sx={{ minWidth: { xs: '100%', sm: 260, md: 320 }, flexGrow: 1 }}>
               <SearchInput
                 value={search}
-                placeholder="Поиск по номеру, складу, автору..."
-                onSearch={setSearch}
+                placeholder="Поиск по номеру акта, складу, автору..."
+                onSearch={(val) => {
+                  setSearch(val);
+                  setPage(0);
+                }}
               />
             </Box>
-
-            <TextField
-              select
-              size="small"
-              value={selectedWarehouse}
-              onChange={(e) => setSelectedWarehouse(e.target.value)}
-              SelectProps={{
-                displayEmpty: true,
-              }}
-              sx={{
-                minWidth: 160,
-                backgroundColor: 'background.paper',
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '8px',
-                  fontSize: '0.8125rem',
-                  height: 36,
-                  '& fieldset': { borderColor: 'divider' },
-                  '&:hover fieldset': { borderColor: 'grey.400' },
-                },
-              }}
-            >
-              <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все склады</MenuItem>
-              {warehouses.map((w) => (
-                <MenuItem key={w.id} value={w.id} sx={{ fontSize: '0.8125rem' }}>
-                  {w.name} ({w.code})
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <TextField
-              select
-              size="small"
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              SelectProps={{
-                displayEmpty: true,
-              }}
-              sx={{
-                minWidth: 160,
-                backgroundColor: 'background.paper',
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '8px',
-                  fontSize: '0.8125rem',
-                  height: 36,
-                  '& fieldset': { borderColor: 'divider' },
-                  '&:hover fieldset': { borderColor: 'grey.400' },
-                },
-              }}
-            >
-              <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все статусы</MenuItem>
-              <MenuItem value="IN_PROGRESS" sx={{ fontSize: '0.8125rem' }}>В процессе</MenuItem>
-              <MenuItem value="COMPLETED" sx={{ fontSize: '0.8125rem' }}>Завершена</MenuItem>
-            </TextField>
           </FilterToolbar>
         }
       >
-        <Table size="small" aria-label="Реестр актов инвентаризации">
-          <TableHead>
-            <TableRow sx={{ backgroundColor: 'background.paper' }}>
-              {visibleColumns.includes('code') && (
-                <TableCell sx={{ minWidth: 140 }}>
-                  <TableSortLabel
-                    active={sortField === 'code'}
-                    direction={sortField === 'code' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('code')}
-                  >
-                    Номер / Акт
-                  </TableSortLabel>
-                </TableCell>
-              )}
-
-              {visibleColumns.includes('warehouse') && (
-                <TableCell sx={{ minWidth: 160 }}>
-                  <TableSortLabel
-                    active={sortField === 'warehouse'}
-                    direction={sortField === 'warehouse' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('warehouse')}
-                  >
-                    Склад проведения
-                  </TableSortLabel>
-                </TableCell>
-              )}
-
-              {visibleColumns.includes('status') && (
-                <TableCell sx={{ minWidth: 140 }}>
-                  <TableSortLabel
-                    active={sortField === 'status'}
-                    direction={sortField === 'status' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('status')}
-                  >
-                    Статус
-                  </TableSortLabel>
-                </TableCell>
-              )}
-
-              {visibleColumns.includes('count') && (
-                <TableCell sx={{ minWidth: 130 }}>
-                  <TableSortLabel
-                    active={sortField === 'count'}
-                    direction={sortField === 'count' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('count')}
-                  >
-                    Позиций в акте
-                  </TableSortLabel>
-                </TableCell>
-              )}
-
-              {visibleColumns.includes('date') && (
-                <TableCell sx={{ minWidth: 150 }}>
-                  <TableSortLabel
-                    active={sortField === 'date'}
-                    direction={sortField === 'date' ? sortDirection : 'desc'}
-                    onClick={() => handleRequestSort('date')}
-                  >
-                    Дата создания
-                  </TableSortLabel>
-                </TableCell>
-              )}
-
-              {visibleColumns.includes('author') && (
-                <TableCell sx={{ minWidth: 160 }}>
-                  <TableSortLabel
-                    active={sortField === 'author'}
-                    direction={sortField === 'author' ? sortDirection : 'asc'}
-                    onClick={() => handleRequestSort('author')}
-                  >
-                    Ответственный
-                  </TableSortLabel>
-                </TableCell>
-              )}
-
-              {visibleColumns.includes('actions') && (
-                <TableCell align="right" sx={{ minWidth: 120 }}>
-                  Действия
-                </TableCell>
-              )}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {paginatedInventories.map((inv) => (
-              <TableRow
-                key={inv.id}
-                hover
-                sx={{ cursor: 'pointer' }}
-                onClick={() => router.push(`/wms/inventory/${inv.id}`)}
-              >
-                {visibleColumns.includes('code') && (
-                  <TableCell sx={{ fontWeight: 700, fontFamily: 'monospace', fontSize: '0.8125rem', color: 'primary.main' }}>
-                    INV-{inv.id.slice(-6).toUpperCase()}
-                  </TableCell>
-                )}
-
-                {visibleColumns.includes('warehouse') && (
-                  <TableCell>
-                    <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem', color: 'text.primary' }}>
-                      {inv.warehouse.name}
-                    </Typography>
-                      <Chip
-                        label={inv.warehouse.code}
-                        size="small"
-                        sx={{
-                          mt: 0.2,
-                          borderRadius: '4px',
-                          fontSize: '0.6875rem',
-                          height: 20,
-                          backgroundColor: 'background.paper',
-                          border: '1px solid',
-                          borderColor: 'divider',
-                          color: 'text.secondary',
-                        }}
-                      />
-                  </TableCell>
-                )}
-
-                {visibleColumns.includes('status') && (
-                  <TableCell>
-                    <StatusBadge status={inv.status} />
-                  </TableCell>
-                )}
-
-                {visibleColumns.includes('count') && (
-                  <TableCell>
-                    <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
-                      {inv._count.items} поз.
-                    </Typography>
-                  </TableCell>
-                )}
-
-                {visibleColumns.includes('date') && (
-                  <TableCell sx={{ fontSize: '0.8125rem', fontFamily: 'monospace', color: 'text.disabled' }}>
-                    {formatDateTime(inv.createdAt)}
-                  </TableCell>
-                )}
-
-                {visibleColumns.includes('author') && (
-                  <TableCell sx={{ fontSize: '0.8125rem', fontWeight: 500, color: 'text.secondary' }}>
-                    {inv.createdBy.displayName}
-                  </TableCell>
-                )}
-
-                {visibleColumns.includes('actions') && (
-                  <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-                    <Stack direction="row" spacing={1} justifyContent="flex-end">
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        startIcon={<FactCheckOutlinedIcon sx={{ fontSize: '14px !important', color: 'primary.main' }} />}
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          try {
-                            const res = await fetch(`/api/wms/inventories/${inv.id}`);
-                            if (res.ok) {
-                              const json = await res.json();
-                              if (json.success && json.data) {
-                                setSelectedSheetInventory(json.data);
-                                setIsCountSheetOpen(true);
-                              }
-                            } else {
-                              enqueueSnackbar('Не удалось загрузить данные бланка', { variant: 'error' });
-                            }
-                          } catch {
-                            enqueueSnackbar('Ошибка сети при открытии бланка', { variant: 'error' });
-                          }
-                        }}
-                        sx={{
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
-                          borderRadius: '6px',
-                          py: 0.3,
-                          px: 1,
-                          borderColor: 'primary.light',
-                          color: 'primary.main',
-                          backgroundColor: 'action.hover',
-                          '&:hover': {
-                            backgroundColor: 'action.selected',
-                            borderColor: 'primary.main',
-                          },
-                        }}
-                      >
-                        Бланк
-                      </Button>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        endIcon={<ArrowForwardIcon sx={{ fontSize: '14px !important' }} />}
-                        onClick={() => router.push(`/wms/inventory/${inv.id}`)}
-                        sx={{
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
-                          borderRadius: '6px',
-                          py: 0.3,
-                          px: 1.25,
-                          borderColor: 'divider',
-                          color: 'text.secondary',
-                        }}
-                      >
-                        {inv.status === 'COMPLETED' ? 'Просмотр' : 'Сверка'}
-                      </Button>
-                    </Stack>
-                  </TableCell>
-                )}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <InventoryRegistryTable
+          items={paginatedInventories}
+          visibleColumns={visibleColumns}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          loading={isLoading}
+          onRequestSort={handleRequestSort}
+          onOpenDetails={(id) => router.push(`/wms/inventory/${id}`)}
+          onOpenCountSheet={() => {}}
+          onResetFilters={handleResetFilters}
+          hasFilters={Boolean(search || selectedWarehouse || selectedStatus)}
+          canManage={canManage}
+          onOpenCreate={handleOpenCreateModal}
+        />
       </DataTableWrapper>
 
-      {/* Модальное окно запуска инвентаризации */}
-      <FormDialog
+      {/* Create Dialog */}
+      <CreateInventoryDialog
         open={isModalOpen}
-        onClose={() => !isSubmitting && setIsModalOpen(false)}
-        title="Создание акта инвентаризации"
-        icon={<FactCheckOutlinedIcon color="primary" />}
-        maxWidth="sm"
-        loading={isSubmitting}
-        submitLabel={isSubmitting ? 'Создание...' : 'Начать инвентаризацию'}
-        onSubmit={handleCreateInventory}
-        submitDisabled={!selectedWarehouseId || isSubmitting}
-      >
-        <Stack spacing={2.5} sx={{ mt: 1 }}>
-          <Typography variant="body2" color="text.secondary">
-            При создании акта система зафиксирует текущие учетные остатки по всем позициям выбранного склада.
-          </Typography>
-
-          <TextField
-            select
-            fullWidth
-            required
-            label="Склад для инвентаризации"
-            value={selectedWarehouseId}
-            onChange={(e) => setSelectedWarehouseId(e.target.value)}
-            SelectProps={{ displayEmpty: true }}
-          >
-            <MenuItem value="">
-              <em>— Выберите склад для инвентаризации —</em>
-            </MenuItem>
-            {warehouses.map((w) => {
-              const isMine = w.responsibleUserId === user?.userId;
-
-              return (
-                <MenuItem key={w.id} value={w.id}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                    <span>{w.name} ({w.code})</span>
-                    {isMine ? (
-                      <StatusBadge status="WAREHOUSE" label="Мой склад" size="small" />
-                    ) : w.responsibleUser ? (
-                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                        МОЛ: {w.responsibleUser.displayName}
-                      </Typography>
-                    ) : null}
-                  </Box>
-                </MenuItem>
-              );
-            })}
-          </TextField>
-
-          <TextField
-            fullWidth
-            multiline
-            rows={3}
-            label="Основание / Примечание"
-            placeholder="Плановая квартальная инвентаризация, приказ №..."
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-          />
-        </Stack>
-      </FormDialog>
-
-      {/* Бланк инвентаризационной описи ТМЦ */}
-      {selectedSheetInventory && (
-        <InventoryCountSheetDialog
-          open={isCountSheetOpen}
-          onClose={() => {
-            setIsCountSheetOpen(false);
-            setSelectedSheetInventory(null);
-          }}
-          inventory={selectedSheetInventory}
-        />
-      )}
+        warehouses={warehouses}
+        selectedWarehouseId={selectedWarehouseId}
+        comment={comment}
+        isSubmitting={isSubmitting}
+        onClose={() => setIsModalOpen(false)}
+        onWarehouseChange={setSelectedWarehouseId}
+        onCommentChange={setComment}
+        onSubmit={handleCreateSubmit}
+      />
     </Box>
+  );
+}
+
+export default function WmsInventoryListPage() {
+  return (
+    <Suspense fallback={<PageLoading text="Загрузка журнала инвентаризаций..." />}>
+      <WmsInventoryListContent />
+    </Suspense>
   );
 }

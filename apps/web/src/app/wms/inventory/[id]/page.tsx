@@ -1,87 +1,53 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
-  Typography,
-  Grid,
   Button,
-  Chip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  TextField,
   Stack,
   Alert,
-  AlertTitle,
-  Divider,
+  FormControlLabel,
+  Switch,
+  Paper,
 } from '@mui/material';
 import { useParams, useRouter } from 'next/navigation';
 import PageHeader from '@/components/layout/PageHeader';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
 import { PERMISSIONS, INVENTORY_STATUS_MAP, formatDateTime } from '@ems/shared';
 import {
-  StatCard,
-  StatusBadge,
   DataTableWrapper,
-  ConfirmDialog,
   PageLoading,
   CriticalAlertBanner,
 } from '@/components/ui';
-import { InventoryCompleteModal, InventoryCountSheetDialog } from '@/components/wms';
+import {
+  InventoryCompleteModal,
+  InventoryCountSheetDialog,
+  InventoryDetail,
+  InventoryItemState,
+  InventoryDetailKpiBar,
+  InventoryComparisonTable,
+} from '@/components/wms';
 
+const FONT_SEMI_BOLD = 600;
 
-interface InventoryDetail {
-  id: string;
-  warehouseId: string;
-  status: string;
-  comment?: string | null;
-  closedAt?: string | null;
-  createdAt: string;
-  warehouse: { id: string; name: string; code: string };
-  createdBy: { displayName: string; ldapLogin: string };
-  items: Array<{
-    id: string;
-    expectedQty: number;
-    actualQty: number | null;
-    diffQty: number | null;
-    comment?: string | null;
-    nomenclature: {
-      id: string;
-      name: string;
-      article?: string | null;
-      unit: string;
-      category?: { name: string } | null;
-    };
-  }>;
-}
-
-export default function WmsInventoryDetailPage() {
+function WmsInventoryDetailContent() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { enqueueSnackbar } = useSnackbar();
   const { hasPermission } = useAuth();
 
   const [inventory, setInventory] = useState<InventoryDetail | null>(null);
-  const [itemsState, setItemsState] = useState<
-    Array<{ id: string; actualQty: number; comment: string; expectedQty: number }>
-  >([]);
+  const [itemsState, setItemsState] = useState<InventoryItemState[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isConfirmCompleteOpen, setIsConfirmCompleteOpen] = useState(false);
   const [isCountSheetOpen, setIsCountSheetOpen] = useState(false);
+  const [diffOnly, setDiffOnly] = useState(false);
 
   const fetchInventory = useCallback(async () => {
     setIsLoading(true);
@@ -103,9 +69,8 @@ export default function WmsInventoryDetailPage() {
       } else {
         enqueueSnackbar('Акт инвентаризации не найден', { variant: 'error' });
       }
-    } catch (err) {
-      console.error('Ошибка загрузки данных инвентаризации:', err);
-      enqueueSnackbar('Ошибка сети', { variant: 'error' });
+    } catch {
+      enqueueSnackbar('Ошибка сети при загрузке акта', { variant: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -115,18 +80,18 @@ export default function WmsInventoryDetailPage() {
     fetchInventory();
   }, [fetchInventory]);
 
-  const handleActualQtyChange = (itemId: string, val: string) => {
+  const handleActualQtyChange = useCallback((itemId: string, val: string) => {
     const num = parseFloat(val);
     setItemsState((prev) =>
       prev.map((i) => (i.id === itemId ? { ...i, actualQty: isNaN(num) ? 0 : num } : i))
     );
-  };
+  }, []);
 
-  const handleCommentChange = (itemId: string, val: string) => {
+  const handleCommentChange = useCallback((itemId: string, val: string) => {
     setItemsState((prev) => prev.map((i) => (i.id === itemId ? { ...i, comment: val } : i)));
-  };
+  }, []);
 
-  const handleSaveDraft = async () => {
+  const handleSaveDraft = useCallback(async () => {
     setIsSaving(true);
     try {
       const res = await fetch(`/api/wms/inventories/${id}`, {
@@ -148,51 +113,71 @@ export default function WmsInventoryDetailPage() {
       } else {
         enqueueSnackbar(json.error || 'Ошибка сохранения данных', { variant: 'error' });
       }
-    } catch (err) {
+    } catch {
       enqueueSnackbar('Ошибка сети при сохранении', { variant: 'error' });
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [id, itemsState, enqueueSnackbar, fetchInventory]);
 
-  const handleCompleteInventory = async (finalComment?: string) => {
-    setIsSaving(true);
-    try {
-      const res = await fetch(`/api/wms/inventories/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          status: 'COMPLETED',
-          comment: finalComment || inventory?.comment || undefined,
-          items: itemsState.map((i) => ({
-            id: i.id,
-            actualQty: i.actualQty,
-            comment: i.comment,
-          })),
-        }),
-      });
+  const handleCompleteInventory = useCallback(
+    async (finalComment?: string) => {
+      setIsSaving(true);
+      try {
+        const res = await fetch(`/api/wms/inventories/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: 'COMPLETED',
+            comment: finalComment || inventory?.comment || undefined,
+            items: itemsState.map((i) => ({
+              id: i.id,
+              actualQty: i.actualQty,
+              comment: i.comment,
+            })),
+          }),
+        });
 
-      const json = await res.json();
-      if (res.ok && json.success) {
-        enqueueSnackbar(json.message || 'Инвентаризация успешно завершена', { variant: 'success' });
-        setIsConfirmCompleteOpen(false);
-        fetchInventory();
-      } else {
-        enqueueSnackbar(json.error || 'Ошибка завершения инвентаризации', { variant: 'error' });
+        const json = await res.json();
+        if (res.ok && json.success) {
+          enqueueSnackbar(json.message || 'Инвентаризация успешно завершена', { variant: 'success' });
+          setIsConfirmCompleteOpen(false);
+          fetchInventory();
+        } else {
+          enqueueSnackbar(json.error || 'Ошибка завершения инвентаризации', { variant: 'error' });
+        }
+      } catch {
+        enqueueSnackbar('Ошибка сети при завершении инвентаризации', { variant: 'error' });
+      } finally {
+        setIsSaving(false);
       }
-    } catch {
-      enqueueSnackbar('Ошибка сети при завершении инвентаризации', { variant: 'error' });
-    } finally {
-      setIsSaving(false);
-    }
-  };
+    },
+    [id, inventory?.comment, itemsState, enqueueSnackbar, fetchInventory]
+  );
 
+  const kpiStats = useMemo(() => {
+    if (!inventory) return null;
+    const statusInfo = INVENTORY_STATUS_MAP[inventory.status] || { label: inventory.status, color: 'default' };
+    const totalItems = itemsState.length;
+    const matchCount = itemsState.filter((i) => i.actualQty === i.expectedQty).length;
+    const surplusCount = itemsState.filter((i) => i.actualQty > i.expectedQty).length;
+    const deficitCount = itemsState.filter((i) => i.actualQty < i.expectedQty).length;
+
+    return {
+      statusLabel: statusInfo.label,
+      createdByDisplayName: inventory.createdBy.displayName,
+      totalItems,
+      matchCount,
+      surplusCount,
+      deficitCount,
+    };
+  }, [inventory, itemsState]);
 
   if (isLoading && !inventory) {
     return <PageLoading text="Загрузка акта инвентаризации..." />;
   }
 
-  if (!inventory) {
+  if (!inventory || !kpiStats) {
     return (
       <Box sx={{ p: 4 }}>
         <Alert severity="error">Акт инвентаризации не найден</Alert>
@@ -201,16 +186,10 @@ export default function WmsInventoryDetailPage() {
   }
 
   const isCompleted = inventory.status === 'COMPLETED';
-  const statusInfo = INVENTORY_STATUS_MAP[inventory.status] || { label: inventory.status, color: 'default' };
-
-  // Calculate live stats
-  const totalItems = itemsState.length;
-  const matchCount = itemsState.filter((i) => i.actualQty === i.expectedQty).length;
-  const surplusCount = itemsState.filter((i) => i.actualQty > i.expectedQty).length;
-  const deficitCount = itemsState.filter((i) => i.actualQty < i.expectedQty).length;
 
   return (
-    <Box sx={{ pb: 6 }}>
+    <Box sx={{ pb: 6, width: '100%' }}>
+      {/* 1. Header */}
       <PageHeader
         title={`Акт инвентаризации № INV-${inventory.id.slice(-6).toUpperCase()}`}
         subtitle={`Склад: ${inventory.warehouse.name} (${inventory.warehouse.code}) • Дата: ${formatDateTime(
@@ -226,43 +205,46 @@ export default function WmsInventoryDetailPage() {
           <Stack direction="row" spacing={1.5}>
             <Button
               variant="outlined"
+              size="small"
               startIcon={<ArrowBackIcon />}
               onClick={() => router.push('/wms/inventory')}
+              sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: FONT_SEMI_BOLD }}
             >
               К списку
             </Button>
             <Button
               variant="outlined"
+              size="small"
               startIcon={<FactCheckOutlinedIcon color="primary" />}
               onClick={() => setIsCountSheetOpen(true)}
               sx={{
-                fontWeight: 600,
-                borderColor: 'primary.main',
-                color: 'primary.main',
-                '&:hover': {
-                  borderColor: 'primary.dark',
-                  backgroundColor: 'action.hover',
-                },
+                fontWeight: FONT_SEMI_BOLD,
+                borderRadius: '8px',
+                textTransform: 'none',
               }}
             >
-              Бланк пересчета ТМЦ
+              Бланк пересчета
             </Button>
             {!isCompleted && hasPermission(PERMISSIONS.WMS_INVENTORY_MANAGE) && (
               <>
                 <Button
                   variant="outlined"
+                  size="small"
                   startIcon={<SaveOutlinedIcon />}
                   onClick={handleSaveDraft}
                   disabled={isSaving}
+                  sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: FONT_SEMI_BOLD }}
                 >
                   {isSaving ? 'Сохранение...' : 'Сохранить факт'}
                 </Button>
                 <Button
                   variant="contained"
+                  size="small"
                   color="success"
                   startIcon={<CheckCircleIcon />}
                   onClick={() => setIsConfirmCompleteOpen(true)}
                   disabled={isSaving}
+                  sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: FONT_SEMI_BOLD }}
                 >
                   Завершить инвентаризацию
                 </Button>
@@ -272,56 +254,12 @@ export default function WmsInventoryDetailPage() {
         }
       />
 
-      {/* Статус и сводные карточки */}
-      <Grid container spacing={1.75} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Статус акта"
-            value={statusInfo.label}
-            subtitle={`Ответственный: ${inventory.createdBy.displayName}`}
-            icon={<CheckCircleIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="action.hover"
-            iconColor="primary.main"
-            accentColor="primary.main"
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Всего позиций"
-            value={totalItems}
-            subtitle={`Совпадают: ${matchCount}`}
-            icon={<CheckCircleIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="action.hover"
-            iconColor="text.secondary"
-            accentColor="primary.main"
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Выявлено излишков (+)"
-            value={surplusCount}
-            subtitle="Факт выше учетного"
-            icon={<CheckCircleIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="action.hover"
-            iconColor="success.main"
-            accentColor="success.main"
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Выявлено недостач (-)"
-            value={deficitCount}
-            subtitle="Факт ниже учетного"
-            icon={<WarningAmberIcon sx={{ fontSize: 20 }} />}
-            iconBgColor="action.hover"
-            iconColor="error.main"
-            accentColor="error.main"
-          />
-        </Grid>
-      </Grid>
+      {/* 2. Top Summary KPI Cards */}
+      <InventoryDetailKpiBar
+        stats={kpiStats}
+        diffOnly={diffOnly}
+        onToggleDiffOnly={() => setDiffOnly((prev) => !prev)}
+      />
 
       {isCompleted && (
         <Box sx={{ mb: 3 }}>
@@ -338,149 +276,87 @@ export default function WmsInventoryDetailPage() {
         </Box>
       )}
 
-      {/* Таблица инвентаризации */}
+      {/* 3. Toolbar: Diff Only Toggle */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: 1.5,
+          mb: 2,
+          borderRadius: '10px',
+          border: '1px solid',
+          borderColor: 'divider',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <FormControlLabel
+          control={
+            <Switch
+              size="small"
+              checked={diffOnly}
+              onChange={(e) => setDiffOnly(e.target.checked)}
+              color="warning"
+            />
+          }
+          label="Показывать только позиции с расхождениями"
+          sx={{
+            m: 0,
+            '& .MuiFormControlLabel-label': {
+              fontSize: '0.8125rem',
+              fontWeight: FONT_SEMI_BOLD,
+              color: 'text.primary',
+            },
+          }}
+        />
+      </Paper>
+
+      {/* 4. Table */}
       <DataTableWrapper total={inventory.items.length} stickyHeader>
-        <Table size="small" aria-label="Ведомость инвентаризации остатков">
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 700, width: 120 }}>Артикул</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Наименование номенклатуры</TableCell>
-              <TableCell sx={{ fontWeight: 700, width: 160 }}>Категория</TableCell>
-              <TableCell align="center" sx={{ fontWeight: 700, width: 140 }}>
-                Учетный остаток
-              </TableCell>
-              <TableCell align="center" sx={{ fontWeight: 700, width: 180 }}>
-                Фактический остаток
-              </TableCell>
-              <TableCell align="center" sx={{ fontWeight: 700, width: 160 }}>
-                Расхождение (Дифф)
-              </TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Примечание / Причина</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {inventory.items.map((item) => {
-              const state = itemsState.find((s) => s.id === item.id) || {
-                actualQty: Number(item.expectedQty),
-                expectedQty: Number(item.expectedQty),
-                comment: '',
-              };
-
-              const diff = state.actualQty - state.expectedQty;
-
-              return (
-                <TableRow
-                  key={item.id}
-                  hover
-                  sx={{
-                    bgcolor:
-                      diff > 0
-                        ? 'rgba(46, 125, 50, 0.04)'
-                        : diff < 0
-                        ? 'rgba(211, 47, 47, 0.04)'
-                        : undefined,
-                  }}
-                >
-                  <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                    {item.nomenclature.article || '—'}
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>{item.nomenclature.name}</TableCell>
-                  <TableCell>{item.nomenclature.category?.name || '—'}</TableCell>
-                  <TableCell align="center">
-                    <Typography variant="body2" fontWeight={700}>
-                      {item.expectedQty} {item.nomenclature.unit}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="center">
-                    {isCompleted ? (
-                      <Typography variant="body2" fontWeight={700}>
-                        {item.actualQty} {item.nomenclature.unit}
-                      </Typography>
-                    ) : (
-                      <TextField
-                        type="number"
-                        size="small"
-                        value={state.actualQty}
-                        onChange={(e) => handleActualQtyChange(item.id, e.target.value)}
-                        InputProps={{
-                          endAdornment: (
-                            <Typography variant="caption" color="text.secondary">
-                              {item.nomenclature.unit}
-                            </Typography>
-                          ),
-                        }}
-                        sx={{ width: 130 }}
-                      />
-                    )}
-                  </TableCell>
-                  <TableCell align="center">
-                    {diff === 0 ? (
-                      <Typography variant="body2" color="text.secondary">
-                        0
-                      </Typography>
-                    ) : diff > 0 ? (
-                      <StatusBadge
-                        status="SURPLUS"
-                        label={`+${diff} ${item.nomenclature.unit}`}
-                        size="small"
-                      />
-                    ) : (
-                      <StatusBadge
-                        status="DEFICIT"
-                        label={`${diff} ${item.nomenclature.unit}`}
-                        size="small"
-                      />
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {isCompleted ? (
-                      <Typography variant="body2" color="text.secondary">
-                        {item.comment || '—'}
-                      </Typography>
-                    ) : (
-                      <TextField
-                        size="small"
-                        fullWidth
-                        placeholder="Причина расхождения..."
-                        value={state.comment}
-                        onChange={(e) => handleCommentChange(item.id, e.target.value)}
-                      />
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+        <InventoryComparisonTable
+          items={inventory.items}
+          itemsState={itemsState}
+          isCompleted={isCompleted}
+          diffOnly={diffOnly}
+          onActualQtyChange={handleActualQtyChange}
+          onCommentChange={handleCommentChange}
+        />
       </DataTableWrapper>
 
-      {/* Модальное окно подтверждения и аналитики завершения инвентаризации */}
+      {/* 5. Modals */}
       <InventoryCompleteModal
         open={isConfirmCompleteOpen}
         onClose={() => setIsConfirmCompleteOpen(false)}
         onConfirm={handleCompleteInventory}
         warehouseName={inventory.warehouse.name}
         inventoryNumber={`INV-${inventory.id.slice(-6).toUpperCase()}`}
-        items={inventory.items.map((item) => {
-          const stateItem = itemsState.find((s) => s.id === item.id);
+        isSubmitting={isSaving}
+        items={inventory.items.map((it) => {
+          const st = itemsState.find((s) => s.id === it.id);
+          const act = st ? st.actualQty : Number(it.expectedQty);
           return {
-            id: item.id,
-            expectedQty: item.expectedQty,
-            actualQty: stateItem ? stateItem.actualQty : Number(item.expectedQty),
-            comment: stateItem?.comment,
-            nomenclature: item.nomenclature,
+            id: it.id,
+            expectedQty: Number(it.expectedQty),
+            actualQty: act,
+            comment: st?.comment,
+            nomenclature: it.nomenclature,
           };
         })}
-        isSubmitting={isSaving}
       />
 
-      {/* Бланк инвентаризационной описи и ведомость пересчета ТМЦ */}
       <InventoryCountSheetDialog
         open={isCountSheetOpen}
         onClose={() => setIsCountSheetOpen(false)}
-        inventory={inventory as any}
+        inventory={inventory}
       />
     </Box>
   );
 }
 
+export default function WmsInventoryDetailPage() {
+  return (
+    <Suspense fallback={<PageLoading text="Загрузка ведомости инвентаризации..." />}>
+      <WmsInventoryDetailContent />
+    </Suspense>
+  );
+}
