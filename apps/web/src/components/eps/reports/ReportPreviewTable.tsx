@@ -90,10 +90,10 @@ export function ReportPreviewTable({
                 );
               }
 
-              if (col.key === 'commissionDate' && val) {
+              if (col.key === 'commissionDate') {
                 return (
                   <TableCell key={col.key} sx={{ fontSize: '0.8125rem', fontFeatureSettings: '"tnum"' }}>
-                    {formatDate(val)}
+                    {val && val !== '—' ? (typeof val === 'string' && val.includes('.') ? val : formatDate(val)) : '—'}
                   </TableCell>
                 );
               }

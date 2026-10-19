@@ -455,7 +455,11 @@ export interface PaginatedResult<T> {
 // ==========================================
 
 export function formatDate(date: Date | string | number | null | undefined): string {
-  if (!date) return '—';
+  if (!date || date === '—') return '—';
+  if (typeof date === 'string') {
+    const trimmed = date.trim();
+    if (/^\d{2}\.\d{2}\.\d{4}$/.test(trimmed)) return trimmed;
+  }
   const d = new Date(date);
   if (isNaN(d.getTime())) return '—';
   return new Intl.DateTimeFormat('ru-RU', {

@@ -45,9 +45,25 @@ async function executeGenerateReport(options: {
     }),
   ]);
 
-  // Build columns dictionary strictly from custom sections and fields (matching Equipment Registry)
+  // Base equipment passport identity & location fields
+  const baseColumns: { key: string; name: string; category: string; unit?: string | null; fieldType?: string }[] = [
+    { key: 'inventoryNumber', name: 'Инвентарный номер', category: 'Идентификация и учет', fieldType: 'TEXT' },
+    { key: 'name', name: 'Наименование оборудования', category: 'Идентификация и учет', fieldType: 'TEXT' },
+    { key: 'serialNumber', name: 'Заводской / Серийный номер', category: 'Идентификация и учет', fieldType: 'TEXT' },
+    { key: 'manufacturer', name: 'Завод-изготовитель (Вендор)', category: 'Идентификация и учет', fieldType: 'TEXT' },
+    { key: 'model', name: 'Модель / Марка', category: 'Идентификация и учет', fieldType: 'TEXT' },
+    { key: 'location', name: 'Место установки (Цех / Участок)', category: 'Размещение и статус', fieldType: 'TEXT' },
+    { key: 'status', name: 'Эксплуатационный статус', category: 'Размещение и статус', fieldType: 'TEXT' },
+    { key: 'commissionDate', name: 'Дата ввода в эксплуатацию', category: 'Размещение и статус', fieldType: 'DATE' },
+  ];
+
   const reportColumns: { key: string; name: string; category: string; unit?: string | null; fieldType?: string }[] = [];
   const seenKeys = new Set<string>();
+
+  baseColumns.forEach((bc) => {
+    seenKeys.add(bc.key);
+    reportColumns.push(bc);
+  });
 
   sections.forEach((sec) => {
     sec.fields.forEach((f) => {
@@ -79,15 +95,14 @@ async function executeGenerateReport(options: {
 
   // Дополнительные системные реквизиты (Аудит и Сводные связи)
   const systemColumns = [
-    { key: 'status', name: 'Текущий статус', category: 'Системные реквизиты' },
-    { key: 'tags', name: 'Теги / Метки', category: 'Системные реквизиты' },
-    { key: 'createdAt', name: 'Дата регистрации', category: 'Системные реквизиты' },
-    { key: 'createdBy', name: 'Паспорт зарегистрировал', category: 'Системные реквизиты' },
-    { key: 'documentsCount', name: 'Документов (шт.)', category: 'Сводные данные' },
-    { key: 'photosCount', name: 'Фотографий (шт.)', category: 'Сводные данные' },
-    { key: 'maintenancePlansCount', name: 'Планов ТО и ППР (шт.)', category: 'Сводные данные' },
-    { key: 'sparePartsCount', name: 'Запасных частей WMS (шт.)', category: 'Сводные данные' },
-    { key: 'jiraIssuesCount', name: 'Заявок в Jira (шт.)', category: 'Сводные данные' },
+    { key: 'tags', name: 'Теги / Метки', category: 'Системные реквизиты', fieldType: 'TEXT' },
+    { key: 'createdAt', name: 'Дата регистрации', category: 'Системные реквизиты', fieldType: 'DATE' },
+    { key: 'createdBy', name: 'Паспорт зарегистрировал', category: 'Системные реквизиты', fieldType: 'TEXT' },
+    { key: 'documentsCount', name: 'Документов (шт.)', category: 'Сводные данные', fieldType: 'NUMBER' },
+    { key: 'photosCount', name: 'Фотографий (шт.)', category: 'Сводные данные', fieldType: 'NUMBER' },
+    { key: 'maintenancePlansCount', name: 'Планов ТО и ППР (шт.)', category: 'Сводные данные', fieldType: 'NUMBER' },
+    { key: 'sparePartsCount', name: 'Запасных частей WMS (шт.)', category: 'Сводные данные', fieldType: 'NUMBER' },
+    { key: 'jiraIssuesCount', name: 'Заявок в Jira (шт.)', category: 'Сводные данные', fieldType: 'NUMBER' },
   ];
 
   systemColumns.forEach((sc) => {
@@ -150,7 +165,16 @@ async function executeGenerateReport(options: {
 
     const row: Record<string, any> = {
       id: item.id,
-      status: statusInfo.label,
+      inventoryNumber: item.inventoryNumber || getEquipmentFieldValue(item, 'inventoryNumber') || '—',
+      name: item.name || getEquipmentFieldValue(item, 'name') || '—',
+      serialNumber: item.serialNumber || getEquipmentFieldValue(item, 'serialNumber') || '—',
+      manufacturer: item.manufacturer || getEquipmentFieldValue(item, 'manufacturer') || '—',
+      model: item.model || getEquipmentFieldValue(item, 'model') || '—',
+      location: item.location || getEquipmentFieldValue(item, 'location') || '—',
+      status: item.status,
+      commissionDate: item.commissionDate
+        ? formatDate(item.commissionDate)
+        : (getEquipmentFieldValue(item, 'commissionDate') ? formatDate(getEquipmentFieldValue(item, 'commissionDate')) : '—'),
       tags: item.tags.map((t) => t.tag.name).join(', ') || '—',
       createdAt: formatDateTime(item.createdAt),
       createdBy: item.createdBy?.displayName || 'Система',
@@ -163,17 +187,17 @@ async function executeGenerateReport(options: {
 
     // Add fields mapped strictly according to passport specifications and values
     allAvailableColumns.forEach((c) => {
-      if (row[c.key] !== undefined) return;
+      if (row[c.key] !== undefined && row[c.key] !== '—') return;
       const val = getEquipmentFieldValue(item, c.key);
       if (val === undefined || val === null || val === '' || val === '—') {
-        row[c.key] = '—';
+        if (row[c.key] === undefined) row[c.key] = '—';
       } else if (c.key === 'criticality') {
         const str = String(val).replace(/^Класс\s*/i, '').trim();
         row[c.key] = str ? `Класс ${str}` : '—';
       } else if (c.fieldType === 'BOOLEAN' || c.key === 'is_unique' || c.key === 'is_imported' || c.key === 'is_critical_path') {
         row[c.key] = isTruthyBoolean(val) ? 'Да' : 'Нет';
       } else if (c.fieldType === 'DATE' || c.key === 'commissionDate' || c.key === 'commission_date') {
-        row[c.key] = formatDate(val || item.commissionDate);
+        row[c.key] = typeof val === 'string' && val.includes('.') ? val : formatDate(val);
       } else {
         row[c.key] = c.unit ? `${val} ${c.unit}` : String(val);
       }
