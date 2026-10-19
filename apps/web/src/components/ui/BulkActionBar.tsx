@@ -65,11 +65,12 @@ export function BulkActionBar({
           sx={{
             p: 1,
             px: 2,
-            borderRadius: '12px',
-            bgcolor: '#0f172a',
-            color: '#f8fafc',
+            borderRadius: '14px',
+            bgcolor: 'grey.900',
+            color: 'common.white',
             border: '1px solid rgba(255, 255, 255, 0.15)',
-            boxShadow: '0 16px 36px rgba(15, 23, 42, 0.45)',
+            boxShadow: '0 16px 36px rgba(15, 23, 42, 0.35)',
+            backdropFilter: 'blur(12px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -85,8 +86,8 @@ export function BulkActionBar({
                 width: 26,
                 height: 26,
                 borderRadius: '50%',
-                bgcolor: 'rgba(2, 132, 199, 0.2)',
-                color: '#38bdf8',
+                bgcolor: 'rgba(2, 132, 199, 0.25)',
+                color: 'primary.light',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -95,10 +96,10 @@ export function BulkActionBar({
               <CheckBoxOutlinedIcon sx={{ fontSize: 16 }} />
             </Box>
 
-            <Typography variant="body2" fontWeight={600} sx={{ color: '#f8fafc', fontSize: '0.8125rem' }}>
+            <Typography variant="body2" fontWeight={600} sx={{ color: 'common.white', fontSize: '0.8125rem' }}>
               Выбрано: <b>{selectedCount}</b>
               {totalCount !== undefined && (
-                <Typography component="span" sx={{ color: '#94a3b8', ml: 0.5, fontSize: '0.75rem' }}>
+                <Typography component="span" sx={{ color: 'grey.400', ml: 0.5, fontSize: '0.75rem' }}>
                   из {totalCount}
                 </Typography>
               )}
@@ -107,7 +108,7 @@ export function BulkActionBar({
             <IconButton
               size="small"
               onClick={onClearSelection}
-              sx={{ color: '#94a3b8', '&:hover': { color: '#ffffff' }, ml: 0.5, p: 0.25 }}
+              sx={{ color: 'grey.400', '&:hover': { color: 'common.white' }, ml: 0.5, p: 0.25 }}
               title="Снять выделение"
               aria-label="Снять выделение со всех строк"
             >

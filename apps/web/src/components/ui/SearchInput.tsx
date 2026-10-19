@@ -1,7 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { TextField, InputAdornment, IconButton, Box, Chip } from '@mui/material';
+import {
+  TextField,
+  InputAdornment,
+  IconButton,
+  Chip,
+  CircularProgress,
+  useTheme,
+} from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -15,6 +22,7 @@ export interface SearchInputProps {
   fullWidth?: boolean;
   size?: 'small' | 'medium';
   shortcutHint?: string;
+  enableGlobalShortcut?: boolean;
   className?: string;
 }
 
@@ -26,12 +34,15 @@ export function SearchInput({
   onSearch,
   fullWidth = true,
   size = 'small',
-  shortcutHint,
+  shortcutHint = 'Ctrl+K',
+  enableGlobalShortcut = true,
   className,
 }: SearchInputProps) {
+  const theme = useTheme();
   const [internalValue, setInternalValue] = useState(controlledValue !== undefined ? controlledValue : defaultValue);
   const debouncedValue = useDebounce(internalValue, delay);
   const inputRef = useRef<HTMLInputElement>(null);
+  const isDebouncing = internalValue !== debouncedValue;
 
   const onSearchRef = useRef(onSearch);
   useEffect(() => {
@@ -59,11 +70,39 @@ export function SearchInput({
     }
   }, [debouncedValue]);
 
+  // Global shortcut (Ctrl+K or Cmd+K) to focus input
+  useEffect(() => {
+    if (!enableGlobalShortcut) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        const activeElement = document.activeElement;
+        const isInputField = activeElement?.tagName === 'INPUT' || activeElement?.tagName === 'TEXTAREA';
+        if (!isInputField || activeElement === inputRef.current) {
+          e.preventDefault();
+          inputRef.current?.focus();
+          inputRef.current?.select();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [enableGlobalShortcut]);
+
   const handleClear = () => {
     setInternalValue('');
     prevDebouncedValue.current = '';
     onSearchRef.current('');
     inputRef.current?.focus();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      if (internalValue) {
+        handleClear();
+      } else {
+        inputRef.current?.blur();
+      }
+    }
   };
 
   return (
@@ -72,49 +111,61 @@ export function SearchInput({
       className={className}
       value={internalValue}
       onChange={(e) => setInternalValue(e.target.value)}
+      onKeyDown={handleKeyDown}
       placeholder={placeholder}
       size={size}
       fullWidth={fullWidth}
       InputProps={{
         startAdornment: (
           <InputAdornment position="start">
-            <SearchIcon sx={{ color: '#0284c7', fontSize: 19 }} />
+            {isDebouncing ? (
+              <CircularProgress size={16} color="primary" sx={{ mr: 0.5 }} />
+            ) : (
+              <SearchIcon sx={{ color: 'primary.main', fontSize: 19 }} />
+            )}
           </InputAdornment>
         ),
         endAdornment: (
           <InputAdornment position="end">
             {internalValue ? (
               <IconButton size="small" onClick={handleClear} aria-label="Очистить поиск" sx={{ p: 0.25 }}>
-                <CloseIcon sx={{ fontSize: 16, color: '#94a3b8' }} />
+                <CloseIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
               </IconButton>
             ) : shortcutHint ? (
               <Chip
                 label={shortcutHint}
                 size="small"
+                onClick={() => inputRef.current?.focus()}
                 sx={{
                   height: 18,
                   fontSize: '0.625rem',
                   fontWeight: 700,
-                  backgroundColor: '#f1f5f9',
-                  color: '#64748b',
+                  backgroundColor: 'action.hover',
+                  color: 'text.secondary',
                   borderRadius: '4px',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    backgroundColor: 'action.selected',
+                  },
                 }}
               />
             ) : null}
           </InputAdornment>
         ),
         sx: {
-          backgroundColor: '#ffffff',
+          backgroundColor: 'background.paper',
           borderRadius: '8px',
           fontSize: '0.8125rem',
           '& .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#e2e8f0',
+            borderColor: 'divider',
           },
           '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#cbd5e1',
+            borderColor: 'grey.400',
           },
           '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#0284c7',
+            borderColor: 'primary.main',
             borderWidth: '1.5px',
           },
         },

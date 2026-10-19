@@ -197,7 +197,7 @@ export function DataTableWrapper({
     } catch (e) {
       console.error('Failed to load table settings from localStorage:', e);
     }
-  }, [computedStorageKey]);
+  }, [computedStorageKey, columns]);
 
   const persistColumns = (cols: string[]) => {
     if (!computedStorageKey || typeof window === 'undefined') return;

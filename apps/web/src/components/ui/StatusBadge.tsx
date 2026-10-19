@@ -1122,6 +1122,19 @@ const STATUS_CONFIG_MAP: Record<string, StatusTheme> = {
   },
 };
 
+const PULSING_STATUS_KEYS = new Set([
+  'IN_TRANSIT',
+  'UNDER_REPAIR',
+  'IN_PROGRESS',
+  'PENDING',
+  'SYNCING',
+  'COMMISSIONING',
+  'IN_COUNT',
+  'DISPATCHED',
+  'REQUESTED',
+  'REVIEW',
+]);
+
 export function StatusBadge({
   status,
   label,
@@ -1139,6 +1152,8 @@ export function StatusBadge({
   const rawKey = status || '';
   const camelSplitKey = rawKey.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toUpperCase().trim().replace(/[\s-]+/g, '_');
   const upperKey = rawKey.toUpperCase().trim().replace(/[\s-]+/g, '_');
+  const isPulsing = PULSING_STATUS_KEYS.has(camelSplitKey) || PULSING_STATUS_KEYS.has(upperKey);
+
   const baseConfig = STATUS_CONFIG_MAP[camelSplitKey] || STATUS_CONFIG_MAP[upperKey] || {
     label: label || status || '—',
     color: '#64748b',
@@ -1207,6 +1222,25 @@ export function StatusBadge({
           borderRadius: '50%',
           backgroundColor: variant === 'solid' ? '#ffffff' : config.color,
           flexShrink: 0,
+          position: 'relative',
+          ...(isPulsing && {
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              borderRadius: '50%',
+              backgroundColor: 'inherit',
+              animation: 'statusPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            },
+            '@keyframes statusPulse': {
+              '0%': { transform: 'scale(1)', opacity: 0.8 },
+              '70%': { transform: 'scale(2.5)', opacity: 0 },
+              '100%': { transform: 'scale(1)', opacity: 0 },
+            },
+          }),
         }}
       />
 

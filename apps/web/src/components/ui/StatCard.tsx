@@ -1,10 +1,26 @@
 'use client';
 
 import React from 'react';
-import { Card, CardContent, Box, Typography, Skeleton, Chip } from '@mui/material';
+import { Card, CardContent, Box, Typography, Skeleton, Chip, useTheme, alpha, Theme } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
+
+function resolvePaletteColor(theme: Theme, color?: string): string {
+  if (!color) return theme.palette.primary.main;
+  if (color.startsWith('#') || color.startsWith('rgb') || color.startsWith('hsl')) {
+    return color;
+  }
+  const parts = color.split('.');
+  if (parts.length === 2) {
+    const [paletteKey, shade] = parts;
+    const paletteObj = (theme.palette as any)[paletteKey];
+    if (paletteObj && paletteObj[shade]) {
+      return paletteObj[shade];
+    }
+  }
+  return (theme.palette as any)[color]?.main || (theme.palette as any)[color] || theme.palette.primary.main;
+}
 
 export interface StatCardProps {
   title: string;
@@ -31,7 +47,7 @@ export function StatCard({
   subtitle,
   icon,
   iconBgColor = 'transparent',
-  iconColor = '#0284c7',
+  iconColor,
   accentColor,
   active = false,
   loading = false,
@@ -39,7 +55,11 @@ export function StatCard({
   trend,
   className,
 }: StatCardProps) {
+  const theme = useTheme();
   const isClickable = Boolean(onClick);
+  const resolvedAccent = accentColor ? resolvePaletteColor(theme, accentColor) : undefined;
+  const resolvedIconColor = iconColor ? resolvePaletteColor(theme, iconColor) : undefined;
+  const primaryColor = resolvedAccent || resolvedIconColor || theme.palette.primary.main;
 
   return (
     <Card
@@ -51,20 +71,25 @@ export function StatCard({
         overflow: 'hidden',
         border: '1px solid',
         borderColor: active
-          ? (accentColor || '#0284c7')
-          : (accentColor ? `${accentColor}40` : '#e2e8f0'),
+          ? primaryColor
+          : resolvedAccent
+          ? alpha(resolvedAccent, 0.35)
+          : 'divider',
         borderRadius: '12px',
-        backgroundColor: '#ffffff',
+        backgroundColor: 'background.paper',
         boxShadow: active
-          ? `0 4px 12px 0 ${accentColor ? `${accentColor}20` : 'rgba(2, 132, 199, 0.12)'}`
+          ? `0 4px 14px 0 ${alpha(primaryColor, 0.18)}`
           : '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
+        outline: active ? '2px solid' : 'none',
+        outlineColor: active ? primaryColor : 'transparent',
+        outlineOffset: '-2px',
         transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         cursor: isClickable ? 'pointer' : 'default',
         ...(isClickable && {
           '&:hover': {
             transform: 'translateY(-2px)',
             boxShadow: '0 6px 16px -2px rgba(15, 23, 42, 0.08)',
-            borderColor: accentColor || '#0284c7',
+            borderColor: primaryColor,
           },
           '&:active': {
             transform: 'translateY(0)',
@@ -79,7 +104,7 @@ export function StatCard({
             variant="body2"
             sx={{
               fontWeight: 600,
-              color: '#475569',
+              color: 'text.secondary',
               fontSize: '0.8125rem',
               lineHeight: 1.3,
             }}
@@ -92,7 +117,7 @@ export function StatCard({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: accentColor || iconColor,
+              color: primaryColor,
               flexShrink: 0,
               fontSize: 20,
               '& svg': {
@@ -116,7 +141,7 @@ export function StatCard({
                 fontSize: '1.875rem', // 30px
                 lineHeight: 1.1,
                 letterSpacing: '-0.03em',
-                color: '#0f172a',
+                color: 'text.primary',
                 fontFeatureSettings: '"tnum"',
               }}
             >
@@ -143,23 +168,23 @@ export function StatCard({
                 fontWeight: 700,
                 backgroundColor:
                   trend.direction === 'up'
-                    ? '#f0fdf4'
+                    ? alpha(theme.palette.success.main, 0.1)
                     : trend.direction === 'down'
-                    ? '#fef2f2'
-                    : '#f8fafc',
+                    ? alpha(theme.palette.error.main, 0.1)
+                    : alpha(theme.palette.text.secondary, 0.08),
                 color:
                   trend.direction === 'up'
-                    ? '#16a34a'
+                    ? theme.palette.success.dark
                     : trend.direction === 'down'
-                    ? '#dc2626'
-                    : '#64748b',
+                    ? theme.palette.error.dark
+                    : theme.palette.text.secondary,
                 border: '1px solid',
                 borderColor:
                   trend.direction === 'up'
-                    ? '#bbf7d0'
+                    ? alpha(theme.palette.success.main, 0.25)
                     : trend.direction === 'down'
-                    ? '#fecaca'
-                    : '#e2e8f0',
+                    ? alpha(theme.palette.error.main, 0.25)
+                    : 'divider',
                 '& .MuiChip-icon': {
                   color: 'inherit',
                   ml: 0.5,
@@ -177,7 +202,7 @@ export function StatCard({
             sx={{
               display: 'block',
               mt: 0.5,
-              color: '#94a3b8',
+              color: 'text.disabled',
               fontSize: '0.75rem',
               fontWeight: 400,
               lineHeight: 1.3,

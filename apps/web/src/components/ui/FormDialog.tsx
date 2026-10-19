@@ -318,6 +318,10 @@ export function FormDialog({
               display: 'flex',
               justifyContent: actions ? 'flex-end' : 'space-between',
               alignItems: 'center',
+              position: 'sticky',
+              bottom: 0,
+              zIndex: 2,
+              boxShadow: '0 -2px 8px rgba(0, 0, 0, 0.04)',
             }}
           >
             {actions ? (
