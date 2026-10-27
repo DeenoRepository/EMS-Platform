@@ -16,10 +16,12 @@ import {
   TableCell,
   MenuItem,
   TextField,
-  Chip,
+  Tooltip,
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarehouseIcon from '@mui/icons-material/Warehouse';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import LayersOutlinedIcon from '@mui/icons-material/LayersOutlined';
 import { FormDialog } from '@/components/ui';
 
 interface TransferItem {
@@ -64,6 +66,7 @@ export default function TransferReceiveDialog({
 }: TransferReceiveDialogProps) {
   const [cellAllocations, setCellAllocations] = useState<Record<string, string>>({});
   const [cells, setCells] = useState<StorageCellOption[]>([]);
+  const [preferredCellsByNomId, setPreferredCellsByNomId] = useState<Record<string, string>>({});
   const [batchCellId, setBatchCellId] = useState('');
   const [isLoadingCells, setIsLoadingCells] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -72,23 +75,22 @@ export default function TransferReceiveDialog({
   useEffect(() => {
     if (open && transfer) {
       setBatchCellId('');
-      // Инициализируем распределение по ячейкам
       const initial: Record<string, string> = {};
       transfer.items.forEach((it) => {
         if (it.targetCellId) {
           initial[it.id] = it.targetCellId;
         }
       });
-      setCellAllocations(initial);
 
-      // Загружаем ячейки целевого склада
       setIsLoadingCells(true);
-      fetch(`/api/wms/warehouses/${transfer.targetWarehouse.id}/zones`)
-        .then((r) => r.json())
-        .then((json) => {
-          if (json.success && Array.isArray(json.data)) {
-            const allCells: StorageCellOption[] = [];
-            json.data.forEach((zone: any) => {
+      Promise.all([
+        fetch(`/api/wms/warehouses/${transfer.targetWarehouse.id}/zones`).then((r) => r.json()),
+        fetch(`/api/wms/stock?warehouseId=${transfer.targetWarehouse.id}&pageSize=1000`).then((r) => r.json()).catch(() => ({ success: false })),
+      ])
+        .then(([zonesJson, stockJson]) => {
+          const allCells: StorageCellOption[] = [];
+          if (zonesJson.success && Array.isArray(zonesJson.data)) {
+            zonesJson.data.forEach((zone: any) => {
               (zone.cells || []).forEach((c: any) => {
                 allCells.push({
                   id: c.id,
@@ -100,6 +102,24 @@ export default function TransferReceiveDialog({
             });
             setCells(allCells);
           }
+
+          const prefMap: Record<string, string> = {};
+          if (stockJson.success && stockJson.data?.items) {
+            stockJson.data.items.forEach((s: any) => {
+              if (s.cell?.id && s.nomenclatureId) {
+                prefMap[s.nomenclatureId] = s.cell.id;
+              }
+            });
+            setPreferredCellsByNomId(prefMap);
+
+            transfer.items.forEach((it) => {
+              if (!initial[it.id] && prefMap[it.nomenclatureId]) {
+                initial[it.id] = prefMap[it.nomenclatureId];
+              }
+            });
+          }
+
+          setCellAllocations(initial);
         })
         .catch(console.error)
         .finally(() => setIsLoadingCells(false));
@@ -117,6 +137,28 @@ export default function TransferReceiveDialog({
     });
     setCellAllocations(updated);
   };
+
+  const handleAutoAllocateCells = () => {
+    if (!transfer || cells.length === 0) return;
+    const updated = { ...cellAllocations };
+    transfer.items.forEach((it, index) => {
+      if (!updated[it.id] || updated[it.id] === '') {
+        if (preferredCellsByNomId[it.nomenclatureId]) {
+          updated[it.id] = preferredCellsByNomId[it.nomenclatureId];
+        } else {
+          const fallbackCell = cells[index % cells.length];
+          if (fallbackCell) {
+            updated[it.id] = fallbackCell.id;
+          }
+        }
+      }
+    });
+    setCellAllocations(updated);
+  };
+
+  const allocatedCount = transfer.items.filter((it) => Boolean(cellAllocations[it.id])).length;
+  const totalCount = transfer.items.length;
+  const isFullyAllocated = allocatedCount === totalCount;
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
@@ -178,8 +220,8 @@ export default function TransferReceiveDialog({
           </Alert>
         )}
 
-        {/* Пакетное назначение ячейки */}
-        {cells.length > 0 && transfer.items.length > 1 && (
+        {/* Панель управления адресным размещением */}
+        {cells.length > 0 && (
           <Box
             sx={{
               display: 'flex',
@@ -194,25 +236,58 @@ export default function TransferReceiveDialog({
               flexWrap: 'wrap',
             }}
           >
-            <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary' }}>
-              Пакетное размещение в ячейку (для всех {transfer.items.length} позиций):
-            </Typography>
-            <TextField
-              select
-              size="small"
-              value={batchCellId}
-              onChange={(e) => handleApplyBatchCell(e.target.value)}
-              sx={{ minWidth: 260 }}
-              SelectProps={{ displayEmpty: true }}
-            >
-              <MenuItem value="">— Назначить ячейку всем строкам —</MenuItem>
-              {cells.map((c) => (
-                <MenuItem key={c.id} value={c.id}>
-                  {c.zone?.code ? `[${c.zone.code}] ` : ''}
-                  {c.code} {c.name ? `(${c.name})` : ''}
-                </MenuItem>
-              ))}
-            </TextField>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <LayersOutlinedIcon fontSize="small" color="primary" />
+              <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                Размещение в ячейки ({allocatedCount}/{totalCount})
+              </Typography>
+              <Box
+                sx={{
+                  px: 1,
+                  py: 0.25,
+                  borderRadius: '4px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  bgcolor: isFullyAllocated ? 'rgba(22, 163, 74, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                  color: isFullyAllocated ? 'success.dark' : 'warning.dark',
+                }}
+              >
+                {isFullyAllocated ? 'Все ячейки назначены' : 'Есть неразмещенные ТМЦ'}
+              </Box>
+            </Box>
+
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Tooltip title="Автоматически распределить ячейки на основе текущих остатков или свободных мест">
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<AutoAwesomeIcon />}
+                  onClick={handleAutoAllocateCells}
+                  sx={{ textTransform: 'none', fontWeight: 600 }}
+                >
+                  Авто-подбор ячеек
+                </Button>
+              </Tooltip>
+
+              {transfer.items.length > 1 && (
+                <TextField
+                  select
+                  size="small"
+                  value={batchCellId}
+                  onChange={(e) => handleApplyBatchCell(e.target.value)}
+                  sx={{ minWidth: 230 }}
+                  SelectProps={{ displayEmpty: true }}
+                >
+                  <MenuItem value="">— Назначить всем строкам —</MenuItem>
+                  {cells.map((c) => (
+                    <MenuItem key={c.id} value={c.id}>
+                      {c.zone?.code ? `[${c.zone.code}] ` : ''}
+                      {c.code} {c.name ? `(${c.name})` : ''}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+            </Stack>
           </Box>
         )}
 
