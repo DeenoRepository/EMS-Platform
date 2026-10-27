@@ -3,6 +3,7 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma, StockTransferStatus, OperationType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +17,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 30, windowMs: 60 * 1000, prefix: 'wms-transfers-receive' });
+  if (rateLimitError) return rateLimitError;
+
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
@@ -65,6 +69,35 @@ export async function POST(
       // тело может быть пустым
     }
 
+    // Валидация ячеек: все указанные ячейки должны принадлежать складу-получателю
+    const specifiedCellIds = Array.from(
+      new Set(
+        [
+          ...cellAllocations.map((c) => c.targetCellId),
+          ...transfer.items.map((i) => i.targetCellId),
+        ].filter(Boolean) as string[]
+      )
+    );
+
+    if (specifiedCellIds.length > 0) {
+      const validCells = await prisma.storageCell.findMany({
+        where: {
+          id: { in: specifiedCellIds },
+          zone: { warehouseId: transfer.targetWarehouseId },
+        },
+        select: { id: true },
+      });
+      const validSet = new Set(validCells.map((c) => c.id));
+      for (const cId of specifiedCellIds) {
+        if (!validSet.has(cId)) {
+          return NextResponse.json(
+            { success: false, error: 'Одна или несколько выбранных ячеек не принадлежат складу-получателю' },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
     // Транзакционно зачисляем ТМЦ на склад-получатель и обновляем статус
     const updatedTransfer = await prisma.$transaction(async (tx) => {
       for (const item of transfer.items) {
@@ -80,34 +113,25 @@ export async function POST(
           });
         }
 
-        // Зачисляем остаток на склад-получатель
-        const existingStock = await tx.stockItem.findUnique({
+        // Атомарно зачисляем остаток на склад-получатель через upsert с increment
+        await tx.stockItem.upsert({
           where: {
             warehouseId_nomenclatureId: {
               warehouseId: transfer.targetWarehouseId,
               nomenclatureId: item.nomenclatureId,
             },
           },
+          update: {
+            quantity: { increment: qtyToReceive },
+            ...(targetCellId ? { cellId: targetCellId } : {}),
+          },
+          create: {
+            warehouseId: transfer.targetWarehouseId,
+            nomenclatureId: item.nomenclatureId,
+            quantity: qtyToReceive,
+            cellId: targetCellId,
+          },
         });
-
-        if (existingStock) {
-          await tx.stockItem.update({
-            where: { id: existingStock.id },
-            data: {
-              quantity: Number(existingStock.quantity) + qtyToReceive,
-              cellId: targetCellId || existingStock.cellId,
-            },
-          });
-        } else {
-          await tx.stockItem.create({
-            data: {
-              warehouseId: transfer.targetWarehouseId,
-              nomenclatureId: item.nomenclatureId,
-              quantity: qtyToReceive,
-              cellId: targetCellId,
-            },
-          });
-        }
       }
 
       // Создаем запись в журнале складских операций StockOperation (для аудита и отчетов)

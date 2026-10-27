@@ -3,6 +3,7 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma, StockTransferStatus } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 30, windowMs: 60 * 1000, prefix: 'wms-transfers-reject' });
+  if (rateLimitError) return rateLimitError;
+
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
@@ -73,33 +77,26 @@ export async function POST(
 
     // Транзакционно выполняем возврат остатков (если было списано в IN_TRANSIT) и обновляем статус
     const updatedTransfer = await prisma.$transaction(async (tx) => {
-      // Если было IN_TRANSIT, возвращаем остатки на склад-отправитель
+      // Если было IN_TRANSIT, возвращаем остатки на склад-отправитель атомарно
       if (transfer.status === StockTransferStatus.IN_TRANSIT) {
         for (const item of transfer.items) {
           const qtyToRestore = Number(item.quantity);
-          const stock = await tx.stockItem.findUnique({
+          await tx.stockItem.upsert({
             where: {
               warehouseId_nomenclatureId: {
                 warehouseId: transfer.sourceWarehouseId,
                 nomenclatureId: item.nomenclatureId,
               },
             },
+            update: {
+              quantity: { increment: qtyToRestore },
+            },
+            create: {
+              warehouseId: transfer.sourceWarehouseId,
+              nomenclatureId: item.nomenclatureId,
+              quantity: qtyToRestore,
+            },
           });
-
-          if (stock) {
-            await tx.stockItem.update({
-              where: { id: stock.id },
-              data: { quantity: Number(stock.quantity) + qtyToRestore },
-            });
-          } else {
-            await tx.stockItem.create({
-              data: {
-                warehouseId: transfer.sourceWarehouseId,
-                nomenclatureId: item.nomenclatureId,
-                quantity: qtyToRestore,
-              },
-            });
-          }
         }
       }
 

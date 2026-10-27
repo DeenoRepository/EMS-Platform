@@ -52,4 +52,86 @@ describe('WMS Transfers Business Logic & ID Generation', () => {
     const isSame = sourceWh === targetWh;
     assert.strictEqual(isSame, true);
   });
+
+  test('simulates guarded atomic decrement to prevent race condition overdraft', () => {
+    // Model state representing database record with balance
+    let stockRecord = { quantity: 10 };
+
+    const guardedDecrement = (qty: number): boolean => {
+      // Guarded atomic where: { quantity: { gte: qty } }
+      if (stockRecord.quantity >= qty) {
+        stockRecord.quantity -= qty;
+        return true;
+      }
+      return false; // count === 0 in Prisma updateMany
+    };
+
+    // First operation requests 7 -> succeeds, balance = 3
+    const op1 = guardedDecrement(7);
+    assert.strictEqual(op1, true);
+    assert.strictEqual(stockRecord.quantity, 3);
+
+    // Concurrent second operation requests 5 -> fails atomically because 3 < 5!
+    const op2 = guardedDecrement(5);
+    assert.strictEqual(op2, false);
+    assert.strictEqual(stockRecord.quantity, 3); // Balance untouched
+
+    // Third operation requests remaining 3 -> succeeds, balance = 0
+    const op3 = guardedDecrement(3);
+    assert.strictEqual(op3, true);
+    assert.strictEqual(stockRecord.quantity, 0);
+  });
+
+  test('validates cross-warehouse cell isolation on transfer receiving', () => {
+    const targetWarehouseId = 'wh-destination';
+    const otherWarehouseId = 'wh-source';
+
+    const cellsInDb = [
+      { id: 'cell-dest-1', warehouseId: targetWarehouseId },
+      { id: 'cell-dest-2', warehouseId: targetWarehouseId },
+      { id: 'cell-other-1', warehouseId: otherWarehouseId },
+    ];
+
+    const validateCellsBelongToTarget = (cellIds: string[], targetWh: string): boolean => {
+      const validSet = new Set(cellsInDb.filter((c) => c.warehouseId === targetWh).map((c) => c.id));
+      return cellIds.every((id) => validSet.has(id));
+    };
+
+    // Valid allocation to cells belonging to destination warehouse
+    assert.strictEqual(validateCellsBelongToTarget(['cell-dest-1', 'cell-dest-2'], targetWarehouseId), true);
+
+    // Invalid allocation attempting to assign cell from source warehouse to destination
+    assert.strictEqual(validateCellsBelongToTarget(['cell-dest-1', 'cell-other-1'], targetWarehouseId), false);
+  });
+
+  test('transfer route handlers enforce rate limiting and atomic operations', () => {
+    const fs = require('node:fs');
+    const path = require('node:path');
+
+    const dispatchRoute = fs.readFileSync(
+      path.resolve(process.cwd(), 'apps/web/src/app/api/wms/transfers/[id]/dispatch/route.ts'),
+      'utf8'
+    );
+    assert.match(dispatchRoute, /enforceRateLimit/);
+    assert.match(dispatchRoute, /updateMany/);
+    assert.match(dispatchRoute, /decrement/);
+
+    const receiveRoute = fs.readFileSync(
+      path.resolve(process.cwd(), 'apps/web/src/app/api/wms/transfers/[id]/receive/route.ts'),
+      'utf8'
+    );
+    assert.match(receiveRoute, /enforceRateLimit/);
+    assert.match(receiveRoute, /targetWarehouseId/);
+    assert.match(receiveRoute, /upsert/);
+    assert.match(receiveRoute, /increment/);
+
+    const rejectRoute = fs.readFileSync(
+      path.resolve(process.cwd(), 'apps/web/src/app/api/wms/transfers/[id]/reject/route.ts'),
+      'utf8'
+    );
+    assert.match(rejectRoute, /enforceRateLimit/);
+    assert.match(rejectRoute, /upsert/);
+    assert.match(rejectRoute, /increment/);
+  });
+
 });

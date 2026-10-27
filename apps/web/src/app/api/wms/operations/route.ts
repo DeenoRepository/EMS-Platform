@@ -267,24 +267,24 @@ export async function POST(req: NextRequest) {
             verifiedCellId = item.cellId;
           }
 
-          if (existingStock) {
-            await tx.stockItem.update({
-              where: { id: existingStock.id },
-              data: {
-                quantity: Number(existingStock.quantity) + qtyNum,
-                ...(verifiedCellId ? { cellId: verifiedCellId } : {}),
-              },
-            });
-          } else {
-            await tx.stockItem.create({
-              data: {
+          await tx.stockItem.upsert({
+            where: {
+              warehouseId_nomenclatureId: {
                 warehouseId,
                 nomenclatureId: item.nomenclatureId,
-                quantity: qtyNum,
-                cellId: verifiedCellId,
               },
-            });
-          }
+            },
+            update: {
+              quantity: { increment: qtyNum },
+              ...(verifiedCellId ? { cellId: verifiedCellId } : {}),
+            },
+            create: {
+              warehouseId,
+              nomenclatureId: item.nomenclatureId,
+              quantity: qtyNum,
+              cellId: verifiedCellId,
+            },
+          });
 
           // Связь запчасти с оборудованием (EPS) при указании
           if (item.equipmentId) {
@@ -303,27 +303,46 @@ export async function POST(req: NextRequest) {
             });
           }
         } else if (isIssue) {
-          if (!existingStock) {
-            throw new Error('Позиция номенклатуры отсутствует на складе');
-          }
-
-          const currentQty = Number(existingStock.quantity);
-          const remainingQty = currentQty - qtyNum;
-          if (remainingQty < 0) {
-            throw new Error(`Недостаточно остатка для "${existingStock.nomenclature.name}". Доступный остаток исчерпан.`);
-          }
-
-          const updatedStock = await tx.stockItem.update({
-            where: { id: existingStock.id },
+          // Guarded atomic decrement: guarantees no overdraft under concurrent execution
+          const decrementResult = await tx.stockItem.updateMany({
+            where: {
+              warehouseId,
+              nomenclatureId: item.nomenclatureId,
+              quantity: { gte: qtyNum },
+            },
             data: {
-              quantity: remainingQty,
+              quantity: { decrement: qtyNum },
+            },
+          });
+
+          if (decrementResult.count === 0) {
+            const currentItem = await tx.stockItem.findUnique({
+              where: {
+                warehouseId_nomenclatureId: {
+                  warehouseId,
+                  nomenclatureId: item.nomenclatureId,
+                },
+              },
+              include: { nomenclature: true },
+            });
+            const nomName = currentItem?.nomenclature?.name || 'ТМЦ';
+            const available = currentItem ? Number(currentItem.quantity) : 0;
+            throw new Error(`Недостаточно остатка для "${nomName}". Доступно на складе: ${available}, требуется: ${qtyNum}`);
+          }
+
+          const updatedStock = await tx.stockItem.findUnique({
+            where: {
+              warehouseId_nomenclatureId: {
+                warehouseId,
+                nomenclatureId: item.nomenclatureId,
+              },
             },
             include: { nomenclature: true },
           });
 
           // Проверка на минимальный остаток суммарно по всей номенклатуре
-          const minStock = updatedStock.nomenclature.minStock !== null ? Number(updatedStock.nomenclature.minStock) : null;
-          if (minStock !== null) {
+          if (updatedStock && updatedStock.nomenclature.minStock !== null) {
+            const minStock = Number(updatedStock.nomenclature.minStock);
             const allItems = await tx.stockItem.findMany({
               where: { nomenclatureId: item.nomenclatureId },
               select: { quantity: true },
@@ -338,55 +357,64 @@ export async function POST(req: NextRequest) {
             }
           }
         } else if (type === 'TRANSFER' && targetWarehouseId) {
-          if (!existingStock) {
-            throw new Error('Позиция номенклатуры отсутствует на складе-отправителе');
-          }
-
-          const currentQty = Number(existingStock.quantity);
-          const remainingQty = currentQty - qtyNum;
-          if (remainingQty < 0) {
-            throw new Error(`Недостаточно остатка для перемещения "${existingStock.nomenclature.name}". Доступный остаток исчерпан.`);
-          }
-
-          // Списание с исходного склада
-          const updatedStock = await tx.stockItem.update({
-            where: { id: existingStock.id },
-            data: {
-              quantity: remainingQty,
+          // Guarded atomic decrement from source warehouse
+          const decrementResult = await tx.stockItem.updateMany({
+            where: {
+              warehouseId,
+              nomenclatureId: item.nomenclatureId,
+              quantity: { gte: qtyNum },
             },
-            include: { nomenclature: true },
+            data: {
+              quantity: { decrement: qtyNum },
+            },
           });
 
-          // Зачисление на целевой склад
-          const targetStock = await tx.stockItem.findUnique({
+          if (decrementResult.count === 0) {
+            const currentItem = await tx.stockItem.findUnique({
+              where: {
+                warehouseId_nomenclatureId: {
+                  warehouseId,
+                  nomenclatureId: item.nomenclatureId,
+                },
+              },
+              include: { nomenclature: true },
+            });
+            const nomName = currentItem?.nomenclature?.name || 'ТМЦ';
+            const available = currentItem ? Number(currentItem.quantity) : 0;
+            throw new Error(`Недостаточно остатка для перемещения "${nomName}". Доступно на складе: ${available}, требуется: ${qtyNum}`);
+          }
+
+          // Atomic upsert with increment on target warehouse
+          await tx.stockItem.upsert({
             where: {
               warehouseId_nomenclatureId: {
                 warehouseId: targetWarehouseId,
                 nomenclatureId: item.nomenclatureId,
               },
             },
+            update: {
+              quantity: { increment: qtyNum },
+            },
+            create: {
+              warehouseId: targetWarehouseId,
+              nomenclatureId: item.nomenclatureId,
+              quantity: qtyNum,
+            },
           });
 
-          if (targetStock) {
-            await tx.stockItem.update({
-              where: { id: targetStock.id },
-              data: {
-                quantity: Number(targetStock.quantity) + qtyNum,
-              },
-            });
-          } else {
-            await tx.stockItem.create({
-              data: {
-                warehouseId: targetWarehouseId,
+          const updatedStock = await tx.stockItem.findUnique({
+            where: {
+              warehouseId_nomenclatureId: {
+                warehouseId,
                 nomenclatureId: item.nomenclatureId,
-                quantity: qtyNum,
               },
-            });
-          }
+            },
+            include: { nomenclature: true },
+          });
 
           // При перемещении между складами общий остаток ТМЦ на предприятии не уменьшается
-          const minStock = updatedStock.nomenclature.minStock !== null ? Number(updatedStock.nomenclature.minStock) : null;
-          if (minStock !== null) {
+          if (updatedStock && updatedStock.nomenclature.minStock !== null) {
+            const minStock = Number(updatedStock.nomenclature.minStock);
             const allItems = await tx.stockItem.findMany({
               where: { nomenclatureId: item.nomenclatureId },
               select: { quantity: true },

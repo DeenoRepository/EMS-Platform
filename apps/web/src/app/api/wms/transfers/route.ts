@@ -356,31 +356,35 @@ export async function POST(req: NextRequest) {
         // Проверяем наличие всех позиций на складе-отправителе
         for (const item of items) {
           const qtyToTransfer = Number(item.quantity);
-          const stock = await tx.stockItem.findUnique({
+          // Guarded atomic decrement from source warehouse
+          const decrementResult = await tx.stockItem.updateMany({
             where: {
-              warehouseId_nomenclatureId: {
-                warehouseId: sourceWarehouseId,
-                nomenclatureId: item.nomenclatureId,
-              },
+              warehouseId: sourceWarehouseId,
+              nomenclatureId: item.nomenclatureId,
+              quantity: { gte: qtyToTransfer },
             },
-            include: { nomenclature: { select: { name: true, unit: true } } },
+            data: {
+              quantity: { decrement: qtyToTransfer },
+            },
           });
 
-          const availableQty = stock ? Number(stock.quantity) : 0;
-          if (availableQty < qtyToTransfer) {
+          if (decrementResult.count === 0) {
+            const stock = await tx.stockItem.findUnique({
+              where: {
+                warehouseId_nomenclatureId: {
+                  warehouseId: sourceWarehouseId,
+                  nomenclatureId: item.nomenclatureId,
+                },
+              },
+              include: { nomenclature: { select: { name: true, unit: true } } },
+            });
             const nomName = stock?.nomenclature?.name || 'ТМЦ';
             const nomUnit = stock?.nomenclature?.unit || 'шт';
+            const availableQty = stock ? Number(stock.quantity) : 0;
             throw new Error(
               `Недостаточно остатка для позиции "${nomName}". Доступно: ${availableQty} ${nomUnit}, требуется: ${qtyToTransfer} ${nomUnit}`
             );
           }
-
-          // Списываем ТМЦ со склада-отправителя
-          const newQty = availableQty - qtyToTransfer;
-          await tx.stockItem.update({
-            where: { id: stock!.id },
-            data: { quantity: newQty },
-          });
         }
 
         // Создаем запись перемещения со статусом IN_TRANSIT

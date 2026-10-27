@@ -3,6 +3,7 @@ import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/a
 import { prisma, StockTransferStatus } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const rateLimitError = await enforceRateLimit(req, { limit: 30, windowMs: 60 * 1000, prefix: 'wms-transfers-dispatch' });
+  if (rateLimitError) return rateLimitError;
+
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
@@ -48,38 +52,36 @@ export async function POST(
       );
     }
 
-    // Транзакционно проверяем и списываем ТМЦ со склада-отправителя
+    // Guarded atomic decrement from source warehouse
     const updatedTransfer = await prisma.$transaction(async (tx) => {
       for (const item of transfer.items) {
         const qtyToTransfer = Number(item.quantity);
-        const stock = await tx.stockItem.findUnique({
+        const decrementResult = await tx.stockItem.updateMany({
           where: {
-            warehouseId_nomenclatureId: {
-              warehouseId: transfer.sourceWarehouseId,
-              nomenclatureId: item.nomenclatureId,
-            },
+            warehouseId: transfer.sourceWarehouseId,
+            nomenclatureId: item.nomenclatureId,
+            quantity: { gte: qtyToTransfer },
           },
-          include: { nomenclature: { select: { name: true, unit: true } } },
+          data: {
+            quantity: { decrement: qtyToTransfer },
+          },
         });
 
-        const availableQty = stock ? Number(stock.quantity) : 0;
-        if (availableQty < qtyToTransfer) {
+        if (decrementResult.count === 0) {
+          const stock = await tx.stockItem.findUnique({
+            where: {
+              warehouseId_nomenclatureId: {
+                warehouseId: transfer.sourceWarehouseId,
+                nomenclatureId: item.nomenclatureId,
+              },
+            },
+            include: { nomenclature: { select: { name: true, unit: true } } },
+          });
           const nomName = item.nomenclature?.name || stock?.nomenclature?.name || 'ТМЦ';
           const nomUnit = item.nomenclature?.unit || stock?.nomenclature?.unit || 'шт';
+          const availableQty = stock ? Number(stock.quantity) : 0;
           throw new Error(
             `Недостаточно остатка на складе "${transfer.sourceWarehouse.name}" для позиции "${nomName}". Доступно: ${availableQty} ${nomUnit}, требуется: ${qtyToTransfer} ${nomUnit}`
-          );
-        }
-
-        // Списываем со склада-отправителя
-        const updated = await tx.stockItem.update({
-          where: { id: stock!.id },
-          data: { quantity: availableQty - qtyToTransfer },
-        });
-
-        if (Number(updated.quantity) < 0) {
-          throw new Error(
-            `Остаток для "${item.nomenclature?.name || 'ТМЦ'}" на складе "${transfer.sourceWarehouse.name}" не может быть отрицательным.`
           );
         }
       }
