@@ -61,6 +61,49 @@
 
 * Файлы с оценкой **F (0-49/100)** по `code_quality_checker.py` подлежат обязательному рефакторингу перед слиянием в main.
 
+### 5. Поставка кумулятивных патчей на продакшн-станцию (Production Patch Delivery)
+* **При подготовке любых изменений для развертывания на работающий продакшн-сервер агент ОБЯЗАН собрать кумулятивный архив патча и предоставить финальный ответ СТРОГО в каноническом формате.**
+* **Недопустимость потери данных (Zero Data Loss)**:
+  * Патч накладывается поверх работающей системы через `scripts/baremetal-overlay-patch.sh`.
+  * База данных PostgreSQL, пользовательские файлы/чертежи (`uploads/`), переменные окружения (`.env.production`), сертификаты и конфигурации Nginx **сохраняются в полном объеме**.
+  * Скрипт автоматически создает резервную копию предыдущего билда в `/var/backups/ems-platform/app-before-patch-<timestamp>.tar.gz` перед заменой файлов.
+* **Сборка архива и SHA-256**:
+  * Выполняется через `./scripts/baremetal-patch-pack.sh ems-eps-document-model-patch`.
+  * Архив автоматически копируется в `/mnt/hgfs/Shared/ems-eps-document-model-patch.tar.gz`, а его контрольная сумма вычисляется в `/mnt/hgfs/Shared/ems-eps-document-model-patch.tar.gz.sha256`.
+* **Обязательный формат финального ответа агента (выводится строго по шаблону)**:
+```text
+Финальный кумулятивный архив патча:
+Файл: /mnt/hgfs/Shared/ems-eps-document-model-patch.tar.gz
+Контрольная сумма SHA-256:
+<актуальный_sha256_архива>
+Инструкция по обновлению на рабочей станции:
+Скопировать архив и проверить контрольную сумму:
+cp /mnt/hgfs/Shared/ems-eps-document-model-patch.tar.gz /home/deps/
+cd /home/deps
+sha256sum ems-eps-document-model-patch.tar.gz
+Ожидается:
+
+<актуальный_sha256_архива>  ems-eps-document-model-patch.tar.gz
+Распаковать:
+sudo rm -rf /opt/ems-eps-document-model-patch
+sudo mkdir -p /opt/ems-eps-document-model-patch
+
+sudo tar -xzf /home/deps/ems-eps-document-model-patch.tar.gz \
+  -C /opt/ems-eps-document-model-patch \
+  --strip-components=1
+Применить патч:
+sudo env \
+  EMS_PATCH_APPROVED=1 \
+  EMS_INSTALL_DIR=/opt/ems-platform \
+  EMS_SERVICE_NAME=ems-platform \
+  /opt/ems-eps-document-model-patch/scripts/baremetal-overlay-patch.sh
+Проверить статус:
+sudo systemctl status ems-platform --no-pager
+curl --fail http://127.0.0.1:3000/api/system/health
+Обновить страницу браузера: Ctrl + Shift + R. Будет накатываться на продакшн сервер. Данные не должны быть потеряны
+```
+* Подробный регламент: [`.agents/rules/production_patch.md`](.agents/rules/production_patch.md).
+
 ---
 
 ## Расположение скиллов
@@ -103,3 +146,4 @@
 | Безопасность и авторизация | [`.agents/rules/security.md`](.agents/rules/security.md) |
 | Дизайн-система и UI-компоненты | [`.agents/rules/ui_design_code.md`](.agents/rules/ui_design_code.md) |
 | Стандарты качества кода | [`.agents/rules/code_quality.md`](.agents/rules/code_quality.md) |
+| Поставка патчей на продакшн | [`.agents/rules/production_patch.md`](.agents/rules/production_patch.md) |
