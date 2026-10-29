@@ -115,7 +115,7 @@ export default function ApprovalWizardDialog({
     try {
       const proposedData: Record<string, any> = {};
       if (approvalType === 'STATUS_CHANGE') {
-        proposedData.status = targetStatus;
+        proposedData.targetStatus = targetStatus;
       }
 
       const res = await fetch('/api/eps/approvals', {

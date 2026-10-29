@@ -106,7 +106,7 @@ export default function WmsWarehousesPage() {
     setIsLoading(true);
     try {
       const [whRes, usersRes] = await Promise.all([
-        fetch('/api/wms/warehouses'),
+        fetch('/api/wms/warehouses?forManage=true'),
         fetch('/api/users'),
       ]);
 
@@ -202,22 +202,43 @@ export default function WmsWarehousesPage() {
     }
   };
 
+  const isAdmin = useMemo(() => {
+    return Boolean(
+      user?.roles?.includes('admin') ||
+      hasPermission(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
+      hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE)
+    );
+  }, [user, hasPermission]);
+
+  const visibleWarehouses = useMemo(() => {
+    if (isAdmin) return warehouses;
+    return warehouses.filter((w) => w.responsibleUserId === user?.userId);
+  }, [warehouses, isAdmin, user?.userId]);
+
   const filteredWarehouses = useMemo(() => {
-    if (!search.trim()) return warehouses;
+    if (!search.trim()) return visibleWarehouses;
     const q = search.toLowerCase();
-    return warehouses.filter(
+    return visibleWarehouses.filter(
       (w) =>
         w.name.toLowerCase().includes(q) ||
         w.code.toLowerCase().includes(q) ||
         (w.location && w.location.toLowerCase().includes(q)) ||
         (w.responsibleUser && w.responsibleUser.displayName.toLowerCase().includes(q))
     );
-  }, [warehouses, search]);
+  }, [visibleWarehouses, search]);
 
-  const totalWarehouses = warehouses.length;
-  const activeWarehouses = warehouses.filter((w) => w.isActive).length;
-  const totalStockItems = warehouses.reduce((acc, w) => acc + (w._count?.stockItems || 0), 0);
-  const totalOperations = warehouses.reduce((acc, w) => acc + (w._count?.operations || 0), 0);
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+
+  const paginatedWarehouses = useMemo(() => {
+    return filteredWarehouses.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
+  }, [filteredWarehouses, page, rowsPerPage]);
+
+  const totalWarehouses = visibleWarehouses.length;
+  const activeWarehouses = visibleWarehouses.filter((w) => w.isActive).length;
+  const totalStockItems = visibleWarehouses.reduce((acc, w) => acc + (w._count?.stockItems || 0), 0);
+  const totalOperations = visibleWarehouses.reduce((acc, w) => acc + (w._count?.operations || 0), 0);
 
   return (
     <Box sx={{ width: '100%', pb: 2 }}>
@@ -534,21 +555,32 @@ export default function WmsWarehousesPage() {
           ))}
         </Grid>
       ) : (
-        <DataTableWrapper total={filteredWarehouses.length}>
+        <DataTableWrapper
+          page={page}
+          pageSize={rowsPerPage}
+          total={filteredWarehouses.length}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          onPageSizeChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
+            setPage(0);
+          }}
+          pageSizeOptions={[15, 25, 50, 100]}
+          stickyHeader
+        >
           <Table size="small">
             <TableHead sx={{ bgcolor: '#f8fafc' }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Наименование</TableCell>
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Код</TableCell>
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Статус</TableCell>
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Ответственный</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Позиций ТМЦ</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Операций</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Действия</TableCell>
+                <TableCell sx={{ minWidth: 160 }}>Наименование</TableCell>
+                <TableCell sx={{ minWidth: 100 }}>Код</TableCell>
+                <TableCell sx={{ minWidth: 120 }}>Статус</TableCell>
+                <TableCell sx={{ minWidth: 160 }}>Ответственный</TableCell>
+                <TableCell align="right" sx={{ minWidth: 120 }}>Позиций ТМЦ</TableCell>
+                <TableCell align="right" sx={{ minWidth: 100 }}>Операций</TableCell>
+                <TableCell align="center" sx={{ minWidth: 100 }}>Действия</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredWarehouses.map((w) => (
+              {paginatedWarehouses.map((w) => (
                 <TableRow key={w.id} hover>
                   <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>{w.name}</TableCell>
                   <TableCell>

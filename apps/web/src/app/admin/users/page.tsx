@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   Box,
   Grid,
@@ -176,6 +176,14 @@ export default function AdminUsersPage() {
     return true;
   });
 
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+
+  const paginatedUsers = useMemo(() => {
+    return filteredUsers.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
+  }, [filteredUsers, page, rowsPerPage]);
+
   return (
     <Box sx={{ width: '100%', pb: 2 }}>
       <PageHeader
@@ -302,23 +310,31 @@ export default function AdminUsersPage() {
       ) : (
         <DataTableWrapper
           loading={loading}
+          page={page}
+          pageSize={rowsPerPage}
           total={filteredUsers.length}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          onPageSizeChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
+            setPage(0);
+          }}
+          pageSizeOptions={[15, 25, 50, 100]}
           stickyHeader
         >
           <Table size="small" aria-label="Таблица пользователей системы">
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 700 }}>ФИО / Пользователь</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 160 }}>Учетная запись (Логин)</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Корпоративный Email</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Назначенные роли</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 170 }}>Дата последнего входа</TableCell>
-                <TableCell sx={{ fontWeight: 700, width: 110 }}>Статус доступа</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, width: 100 }}>Операции</TableCell>
+                <TableCell sx={{ minWidth: 180 }}>ФИО / Пользователь</TableCell>
+                <TableCell sx={{ minWidth: 160 }}>Учетная запись (Логин)</TableCell>
+                <TableCell sx={{ minWidth: 160 }}>Корпоративный Email</TableCell>
+                <TableCell sx={{ minWidth: 160 }}>Назначенные роли</TableCell>
+                <TableCell sx={{ minWidth: 170 }}>Дата последнего входа</TableCell>
+                <TableCell sx={{ minWidth: 120 }}>Статус доступа</TableCell>
+                <TableCell align="right" sx={{ minWidth: 100 }}>Операции</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredUsers.map((u) => (
+              {paginatedUsers.map((u) => (
                 <TableRow key={u.id} hover>
                   <TableCell>
                     <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8125rem' }}>

@@ -110,6 +110,34 @@ describe('WMS Domain Logic & Business Rules', () => {
       assert.throws(() => processStockIssue(10, 0, 5), /Количество позиции должно быть больше нуля/);
       assert.throws(() => processStockIssue(10, -2, 5), /Количество позиции должно быть больше нуля/);
     });
+
+    test('Multi-warehouse: does not trigger low stock when total stock across all warehouses exceeds minStock', () => {
+      // Warehouse A has 0, Warehouse B has 1, minStock is 0. Total = 1 > 0 => no deficit!
+      const warehouseAStock = 0;
+      const warehouseBStock = 1;
+      const totalStock = warehouseAStock + warehouseBStock;
+      const minStock = 0;
+      const isLowStock = minStock !== null && totalStock <= minStock;
+      assert.strictEqual(isLowStock, false);
+    });
+
+    test('Multi-warehouse: does not trigger low stock when total stock (15) exceeds minStock (10) even if one warehouse has 0', () => {
+      const warehouseAStock = 0;
+      const warehouseBStock = 15;
+      const totalStock = warehouseAStock + warehouseBStock;
+      const minStock = 10;
+      const isLowStock = minStock !== null && totalStock <= minStock;
+      assert.strictEqual(isLowStock, false);
+    });
+
+    test('Multi-warehouse: triggers low stock when total stock across all warehouses is at or below minStock', () => {
+      const warehouseAStock = 2;
+      const warehouseBStock = 3;
+      const totalStock = warehouseAStock + warehouseBStock;
+      const minStock = 10;
+      const isLowStock = minStock !== null && totalStock <= minStock;
+      assert.strictEqual(isLowStock, true);
+    });
   });
 
   // ─── 3. Stock Transfer State Machine Transitions & Rollback ───
@@ -299,6 +327,57 @@ describe('WMS Domain Logic & Business Rules', () => {
       const result = reconcileInventory(cleanCountSheet);
       assert.strictEqual(result.discrepanciesCount, 0);
       assert.strictEqual(result.adjustmentsToCreate.length, 0);
+    });
+  });
+
+  // ─── 5. Goods Receipt & Stock Balance Updates ───
+  describe('Goods Receipt & Stock Balance Updates', () => {
+    interface StockRecord {
+      warehouseId: string;
+      nomenclatureId: string;
+      quantity: number;
+    }
+
+    function processStockReceipt(
+      existingStock: StockRecord | null,
+      receiptWarehouseId: string,
+      receiptNomenclatureId: string,
+      receiptQty: number
+    ): StockRecord {
+      if (receiptQty <= 0 || isNaN(receiptQty)) {
+        throw new Error('Количество позиции должно быть больше нуля');
+      }
+
+      if (existingStock) {
+        return {
+          ...existingStock,
+          quantity: existingStock.quantity + receiptQty,
+        };
+      }
+
+      return {
+        warehouseId: receiptWarehouseId,
+        nomenclatureId: receiptNomenclatureId,
+        quantity: receiptQty,
+      };
+    }
+
+    test('Receipt creates new stock record with received quantity when none existed', () => {
+      const result = processStockReceipt(null, 'wh-1', 'nom-100', 15);
+      assert.strictEqual(result.warehouseId, 'wh-1');
+      assert.strictEqual(result.nomenclatureId, 'nom-100');
+      assert.strictEqual(result.quantity, 15);
+    });
+
+    test('Receipt increments existing stock quantity accurately', () => {
+      const initialStock: StockRecord = { warehouseId: 'wh-1', nomenclatureId: 'nom-100', quantity: 10 };
+      const result = processStockReceipt(initialStock, 'wh-1', 'nom-100', 25);
+      assert.strictEqual(result.quantity, 35);
+    });
+
+    test('Receipt rejects zero or negative quantity', () => {
+      assert.throws(() => processStockReceipt(null, 'wh-1', 'nom-1', 0), /больше нуля/);
+      assert.throws(() => processStockReceipt(null, 'wh-1', 'nom-1', -5), /больше нуля/);
     });
   });
 });

@@ -27,6 +27,7 @@ import {
   AccordionDetails,
   Paper,
   Tooltip,
+  Alert,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -52,8 +53,11 @@ import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import BugReportOutlinedIcon from '@mui/icons-material/BugReportOutlined';
 import LayersOutlinedIcon from '@mui/icons-material/LayersOutlined';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
 import PageHeader from '@/components/layout/PageHeader';
 import { SmartImportWizard } from '@/components/eps/SmartImportWizard';
+import { EquipmentFieldsCatalogView } from '@/components/eps/EquipmentFieldsCatalogView';
 import { useSnackbar } from 'notistack';
 import {
   StatCard,
@@ -313,13 +317,13 @@ function ModuleSettingsContent() {
     setDeleteConfirm({
       open: true,
       title: 'Удаление технического раздела',
-      message: `Удалить технический раздел «${s.name}»? Привязанные характеристики будут сохранены как общие параметры.`,
+      message: `Удалить технический раздел «${s.name}»? Все привязанные характеристики раздела (${s.fields.length} шт.) будут также удалены из структуры паспорта оборудования.`,
       onConfirm: async () => {
         try {
-          const res = await fetch(`/api/eps/custom-sections?id=${s.id}`, { method: 'DELETE' });
+          const res = await fetch(`/api/eps/custom-sections?id=${s.id}&deleteFields=true`, { method: 'DELETE' });
           const data = await res.json();
           if (data.success) {
-            enqueueSnackbar('Технический раздел удален', { variant: 'info' });
+            enqueueSnackbar('Технический раздел и его характеристики удалены', { variant: 'info' });
             setDeleteConfirm((prev) => ({ ...prev, open: false }));
             fetchEpsData();
           } else {
@@ -327,6 +331,33 @@ function ModuleSettingsContent() {
           }
         } catch {
           enqueueSnackbar('Ошибка сети', { variant: 'error' });
+        }
+      },
+    });
+  };
+
+  // Reset / Bootstrap Standard Sections
+  const handleResetStandardSections = () => {
+    setDeleteConfirm({
+      open: true,
+      title: 'Восстановление типовых разделов',
+      message:
+        'Восстановить 6 стандартных технических разделов и типовые характеристики паспорта оборудования? Существующая структура будет дополнена стандартными разделами.',
+      onConfirm: async () => {
+        try {
+          const res = await fetch('/api/eps/custom-sections?resetDefaults=true');
+          const data = await res.json();
+          if (data.success) {
+            enqueueSnackbar('Стандартные разделы и характеристики успешно восстановлены', {
+              variant: 'success',
+            });
+            setDeleteConfirm((prev) => ({ ...prev, open: false }));
+            fetchEpsData();
+          } else {
+            enqueueSnackbar(data.error || 'Ошибка восстановления разделов', { variant: 'error' });
+          }
+        } catch {
+          enqueueSnackbar('Ошибка сети при восстановлении разделов', { variant: 'error' });
         }
       },
     });
@@ -342,12 +373,30 @@ function ModuleSettingsContent() {
     setIsRequired(false);
     setDefaultValue('');
     setOptionsStr('');
-    setSortOrder(1);
+    setSortOrder((sections.find((s) => s.id === (sectionId || sections[0]?.id))?.fields.length || 0) + 1);
+    setFieldDialogOpen(true);
+  };
+
+  // Open Edit Field Modal
+  const handleOpenEditField = (f: CustomFieldItem, sectionId?: string) => {
+    setFieldTargetSectionId(sectionId || f.sectionId || (sections[0]?.id || ''));
+    setFieldKey(f.key);
+    setFieldName(f.name);
+    setFieldType(f.fieldType);
+    setFieldUnit(f.unit || '');
+    setIsRequired(Boolean(f.isRequired));
+    setDefaultValue(f.defaultValue || '');
+    setOptionsStr(f.options ? f.options.join(', ') : '');
+    setSortOrder(f.sortOrder || 1);
     setFieldDialogOpen(true);
   };
 
   // Save Field
   const handleSaveField = async () => {
+    if (!fieldTargetSectionId) {
+      enqueueSnackbar('Выберите целевой раздел паспорта для параметра', { variant: 'warning' });
+      return;
+    }
     if (!fieldKey.trim() || !fieldName.trim()) {
       enqueueSnackbar('Укажите системный ключ и наименование параметра', { variant: 'warning' });
       return;
@@ -438,14 +487,14 @@ function ModuleSettingsContent() {
     }
   };
 
-  const renderFieldTable = (fieldList: CustomFieldItem[]) => {
+  const renderFieldTable = (fieldList: CustomFieldItem[], sectionId?: string) => {
     if (fieldList.length === 0) {
       return (
         <EmptyState
           title="В этом разделе пока нет добавленных полей"
-          description="Вы можете добавить кастомное поле с заданным типом данных и единицей измерения."
-          actionText="Добавить поле"
-          onAction={() => handleOpenCreateField()}
+          description="Вы можете добавить технический параметр с заданным типом данных и единицей измерения."
+          actionText="Добавить параметр"
+          onAction={() => handleOpenCreateField(sectionId)}
         />
       );
     }
@@ -456,18 +505,29 @@ function ModuleSettingsContent() {
           <TableHead>
             <TableRow>
               <TableCell sx={{ fontWeight: 700 }}>Название поля</TableCell>
-              <TableCell sx={{ fontWeight: 700, width: 140 }}>Системный ключ</TableCell>
+              <TableCell sx={{ fontWeight: 700, width: 180 }}>Системный ключ</TableCell>
               <TableCell sx={{ fontWeight: 700, width: 140 }}>Тип данных</TableCell>
               <TableCell sx={{ fontWeight: 700, width: 90 }}>Ед. изм.</TableCell>
               <TableCell sx={{ fontWeight: 700, width: 110 }}>Обязательное</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Значение / Опции</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 700, width: 80 }}>Действия</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 700, width: 90 }}>Действия</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {fieldList.map((f) => (
-              <TableRow key={f.id} hover>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>{f.name}</TableCell>
+              <TableRow key={f.id} hover sx={f.isRequired ? { backgroundColor: 'rgba(239, 68, 68, 0.02)' } : undefined}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <span>{f.name}</span>
+                    {f.isRequired && (
+                      <Tooltip title="Обязательно для заполнения в паспорте оборудования">
+                        <Typography component="span" sx={{ color: 'error.main', fontWeight: 700, fontSize: '0.9rem' }}>
+                          *
+                        </Typography>
+                      </Tooltip>
+                    )}
+                  </Box>
+                </TableCell>
                 <TableCell>
                   <Chip label={f.key} size="small" variant="outlined" sx={{ fontFamily: 'monospace', borderRadius: '4px', height: 20 }} />
                 </TableCell>
@@ -477,7 +537,21 @@ function ModuleSettingsContent() {
                 <TableCell>
                   {f.unit ? <Chip label={f.unit} size="small" variant="outlined" sx={{ fontWeight: 700, borderRadius: '4px', height: 20 }} /> : '—'}
                 </TableCell>
-                <TableCell sx={{ fontSize: '0.8125rem' }}>{f.isRequired ? 'Да' : 'Нет'}</TableCell>
+                <TableCell sx={{ fontSize: '0.8125rem' }}>
+                  {f.isRequired ? (
+                    <Chip
+                      label="Обязательное *"
+                      size="small"
+                      color="error"
+                      variant="filled"
+                      sx={{ height: 22, fontSize: '0.7rem', fontWeight: 700 }}
+                    />
+                  ) : (
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      Опционально
+                    </Typography>
+                  )}
+                </TableCell>
                 <TableCell>
                   {f.fieldType === 'SELECT' && f.options ? (
                     <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
@@ -490,9 +564,23 @@ function ModuleSettingsContent() {
                   )}
                 </TableCell>
                 <TableCell align="right">
-                  <IconButton size="small" color="error" onClick={() => handleDeleteField(f)}>
-                    <DeleteOutlineIcon fontSize="small" />
-                  </IconButton>
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleOpenEditField(f, sectionId)}
+                      title="Редактировать параметр"
+                    >
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={() => handleDeleteField(f)}
+                      title="Удалить параметр"
+                    >
+                      <DeleteOutlineIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
                 </TableCell>
               </TableRow>
             ))}
@@ -641,10 +729,13 @@ function ModuleSettingsContent() {
 
       {/* TAB 0: EPS — Разделы, Поля, Теги */}
       {activeTab === 0 && (
-        <Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {/* Справочник полей паспорта оборудования */}
+          <EquipmentFieldsCatalogView />
+
           <Grid container spacing={3}>
             {/* Main Column: Custom Sections with their Fields */}
-            <Grid item xs={12} lg={8}>
+            <Grid item xs={12}>
               <Card sx={{ mb: 3 }}>
                 <CardContent sx={{ p: 3 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1.5 }}>
@@ -653,10 +744,20 @@ function ModuleSettingsContent() {
                         Технические разделы и характеристики паспорта
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Группировка технических параметров по разделам паспорта с единицами измерения
+                        Нормативная структура разделов и технических характеристик паспорта оборудования
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        color="inherit"
+                        startIcon={<RestartAltIcon />}
+                        onClick={handleResetStandardSections}
+                        sx={{ borderRadius: '8px' }}
+                      >
+                        Восстановить типовые
+                      </Button>
                       <Button
                         variant="outlined"
                         size="small"
@@ -680,6 +781,7 @@ function ModuleSettingsContent() {
                         variant="contained"
                         size="small"
                         startIcon={<AddIcon />}
+                        disabled={sections.length === 0}
                         onClick={() => handleOpenCreateField()}
                         sx={{ borderRadius: '8px' }}
                       >
@@ -694,7 +796,9 @@ function ModuleSettingsContent() {
                 ) : sections.length === 0 ? (
                   <EmptyState
                     title="Разделы не созданы"
-                    description="Технические разделы еще не созданы. Нажмите «Добавить раздел» для группировки параметров."
+                    description="Технические разделы еще не созданы. Нажмите «Добавить раздел» для создания структуры паспорта."
+                    actionText="Добавить раздел"
+                    onAction={handleOpenCreateSection}
                     minHeight={160}
                   />
                 ) : (
@@ -750,7 +854,7 @@ function ModuleSettingsContent() {
                           </Box>
                         </AccordionSummary>
                         <AccordionDetails sx={{ p: 0 }}>
-                          {renderFieldTable(sec.fields)}
+                          {renderFieldTable(sec.fields, sec.id)}
                           <Box sx={{ p: 1.5, display: 'flex', justifyContent: 'flex-end', backgroundColor: '#fafafa', borderTop: '1px solid #f1f5f9' }}>
                             <Button
                               size="small"
@@ -763,92 +867,7 @@ function ModuleSettingsContent() {
                         </AccordionDetails>
                       </Accordion>
                     ))}
-
-                    {/* Unassigned Fields Section if any */}
-                    {unassignedFields.length > 0 && (
-                      <Accordion defaultExpanded variant="outlined" sx={{ borderRadius: '8px !important', overflow: 'hidden' }}>
-                        <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ backgroundColor: '#fffbeb' }}>
-                          <Typography variant="subtitle1" fontWeight={700} color="warning.dark">
-                            Общие параметры (базовые характеристики)
-                          </Typography>
-                        </AccordionSummary>
-                        <AccordionDetails sx={{ p: 0 }}>
-                          {renderFieldTable(unassignedFields)}
-                        </AccordionDetails>
-                      </Accordion>
-                    )}
                   </Box>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Side Column: Tags & Colors */}
-          <Grid item xs={12} lg={4}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Box>
-                    <Typography variant="h6" fontWeight={700}>
-                      Метки и классификаторы
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Категории и цветовая маркировка
-                    </Typography>
-                  </Box>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={<AddIcon />}
-                    onClick={() => {
-                      setTagName('');
-                      setTagColor('#0284c7');
-                      setTagDialogOpen(true);
-                    }}
-                  >
-                    Добавить метку
-                  </Button>
-                </Box>
-                <Divider sx={{ mb: 2.5 }} />
-
-                {loadingEps ? (
-                  <PageLoading text="Загрузка списка тегов..." minHeight={140} size={24} />
-                ) : (
-                  <DataTableWrapper total={tags.length} stickyHeader>
-                    <Table size="small" aria-label="Таблица тегов оборудования">
-                      <TableHead sx={{ backgroundColor: 'action.hover' }}>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 700 }}>Тег</TableCell>
-                          <TableCell sx={{ fontWeight: 700 }}>Цвет</TableCell>
-                          <TableCell sx={{ fontWeight: 700 }}>Оборудование</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {tags.map((t) => (
-                          <TableRow key={t.id} hover>
-                            <TableCell>
-                              <StatusBadge
-                                status={t.name}
-                                label={t.name}
-                                customColor={t.color}
-                                size="small"
-                                variant="outlined"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Box sx={{ width: 16, height: 16, borderRadius: '50%', backgroundColor: t.color }} />
-                                <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>
-                                  {t.color}
-                                </Typography>
-                              </Box>
-                            </TableCell>
-                            <TableCell>{t.equipmentCount} ед.</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </DataTableWrapper>
                 )}
               </CardContent>
             </Card>
@@ -1067,9 +1086,10 @@ function ModuleSettingsContent() {
             onChange={(e) => setFieldTargetSectionId(e.target.value)}
             fullWidth
             size="small"
-            SelectProps={{ displayEmpty: true }}
+            required
+            error={!fieldTargetSectionId}
+            helperText={!fieldTargetSectionId ? 'Выберите раздел, в котором будет отображаться параметр' : undefined}
           >
-            <MenuItem value="">— Общий (без раздела) —</MenuItem>
             {sections.map((s) => (
               <MenuItem key={s.id} value={s.id}>
                 {s.name}
@@ -1165,53 +1185,6 @@ function ModuleSettingsContent() {
             }
             label="Обязательно для заполнения в паспорте"
           />
-        </Box>
-      </FormDialog>
-
-      {/* Create Tag Modal */}
-      <FormDialog
-        open={tagDialogOpen}
-        onClose={() => setTagDialogOpen(false)}
-        title="Создание классификатора / метки"
-        maxWidth="xs"
-        loading={savingTag}
-        submitLabel={savingTag ? 'Создание...' : 'Создать метку'}
-        onSubmit={handleSaveTag}
-        submitDisabled={savingTag || !tagName}
-      >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-          <TextField
-            label="Наименование метки"
-            placeholder="например: Взрывозащищенное"
-            value={tagName}
-            onChange={(e) => setTagName(e.target.value)}
-            fullWidth
-            size="small"
-            required
-          />
-          <Box>
-            <Typography variant="caption" color="text.secondary" gutterBottom display="block">
-              Цвет метки:
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              {PRESET_COLORS.map((color) => (
-                <Box
-                  key={color}
-                  onClick={() => setTagColor(color)}
-                  sx={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: '50%',
-                    backgroundColor: color,
-                    cursor: 'pointer',
-                    border: tagColor === color ? '3px solid #0f172a' : '2px solid transparent',
-                    transition: 'transform 0.1s ease',
-                    '&:hover': { transform: 'scale(1.15)' },
-                  }}
-                />
-              ))}
-            </Box>
-          </Box>
         </Box>
       </FormDialog>
 

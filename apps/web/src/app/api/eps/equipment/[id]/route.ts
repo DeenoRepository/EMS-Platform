@@ -152,6 +152,10 @@ export async function PATCH(
     const isOwner = currentEquipment.createdById === user.userId;
     const isDraft = currentEquipment.status === 'DRAFT';
 
+    if (isDraft && status && status !== 'DRAFT' && !canManageDirectly && !submitForApproval) {
+      return forbiddenResponse('Публикация черновика требует согласования');
+    }
+
     // Случай 1: Отправка на согласование или сохранение черновика изменений для утвержденного оборудования
     if (!isDraft && (!canManageDirectly || submitForApproval)) {
       const proposedData: Record<string, any> = {

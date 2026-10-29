@@ -7,6 +7,7 @@ export const PERMISSIONS = {
   EPS_EQUIPMENT_VIEW: 'eps.equipment.view',
   EPS_EQUIPMENT_CREATE: 'eps.equipment.create',
   EPS_EQUIPMENT_EDIT: 'eps.equipment.edit',
+  EPS_EQUIPMENT_BATCH_EDIT: 'eps.equipment.batch_edit',
   EPS_EQUIPMENT_DELETE: 'eps.equipment.delete',
   EPS_DOCUMENTS_VIEW: 'eps.documents.view',
   EPS_DOCUMENTS_UPLOAD: 'eps.documents.upload',
@@ -18,6 +19,7 @@ export const PERMISSIONS = {
   EPS_REPORTS_VIEW: 'eps.reports.view',
   EPS_REPORTS_MANAGE: 'eps.reports.manage',
   EPS_IMPORT_EXECUTE: 'eps.import.execute',
+  EPS_DATABASE_PURGE: 'eps.database.purge',
 
   // WMS
   WMS_STOCK_VIEW: 'wms.stock.view',
@@ -46,6 +48,7 @@ export const PERMISSIONS = {
   ADMIN_ROLES_MANAGE: 'admin.roles.manage',
   ADMIN_AUDIT_VIEW: 'admin.audit.view',
   ADMIN_SETTINGS_MANAGE: 'admin.settings.manage',
+  ADMIN_FEEDBACK_MANAGE: 'admin.feedback.manage',
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -83,6 +86,12 @@ export const PERMISSION_DEFINITIONS: Record<PermissionCode, PermissionDefinition
     module: 'admin',
     description: 'Настройка параметров платформы, LDAP/Active Directory, Jira и системных политик',
   },
+  'admin.feedback.manage': {
+    code: 'admin.feedback.manage',
+    displayName: 'Центр обратной связи и техподдержки',
+    module: 'admin',
+    description: 'Просмотр всех обращений, модерация, смена статусов, назначение ответственных и переписка',
+  },
 
   // EPS
   'eps.equipment.view': {
@@ -102,6 +111,12 @@ export const PERMISSION_DEFINITIONS: Record<PermissionCode, PermissionDefinition
     displayName: 'Редактирование характеристик',
     module: 'eps',
     description: 'Внесение изменений в технические параметры, реквизиты и привязку оборудования',
+  },
+  'eps.equipment.batch_edit': {
+    code: 'eps.equipment.batch_edit',
+    displayName: 'Массовое редактирование оборудования',
+    module: 'eps',
+    description: 'Пакетное изменение параметров, поиск одинаковых значений и массовая замена в колонках реестра оборудования',
   },
   'eps.equipment.delete': {
     code: 'eps.equipment.delete',
@@ -168,6 +183,12 @@ export const PERMISSION_DEFINITIONS: Record<PermissionCode, PermissionDefinition
     displayName: 'Пакетный импорт данных',
     module: 'eps',
     description: 'Загрузка и валидация реестров оборудования из внешних файлов Excel через мастер импорта',
+  },
+  'eps.database.purge': {
+    code: 'eps.database.purge',
+    displayName: 'Очистка базы данных оборудования',
+    module: 'eps',
+    description: 'Полное безвозвратное удаление всех позиций оборудования, связанных документов и паспортов из модуля EPS',
   },
 
   // WMS
@@ -493,3 +514,225 @@ export interface PlatformMaintenanceStatus {
   };
 }
 
+// ==========================================
+// 7. СИСТЕМА ОБРАТНОЙ СВЯЗИ (FEEDBACK HUB)
+// ==========================================
+
+export type FeedbackType = 'BUG' | 'FEATURE_REQUEST' | 'QUESTION' | 'OTHER';
+export type FeedbackModule = 'EPS' | 'WMS' | 'SRM' | 'MRO' | 'ADMIN' | 'GENERAL';
+export type FeedbackPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export type FeedbackStatus = 'NEW' | 'IN_REVIEW' | 'IN_PROGRESS' | 'RESOLVED' | 'REJECTED' | 'DUPLICATE';
+
+export const FEEDBACK_TYPE_LABELS: Record<FeedbackType, { label: string; color: string }> = {
+  BUG: { label: 'Неисправность / Ошибка', color: '#ef4444' },
+  FEATURE_REQUEST: { label: 'Предложение по улучшению', color: '#3b82f6' },
+  QUESTION: { label: 'Вопрос / Консультация', color: '#8b5cf6' },
+  OTHER: { label: 'Другое', color: '#64748b' },
+};
+
+export const FEEDBACK_MODULE_LABELS: Record<FeedbackModule, string> = {
+  EPS: 'EPS — Оборудование',
+  WMS: 'WMS — Складской учет',
+  SRM: 'SRM — Сервис-деск',
+  MRO: 'MRO — ТОиР',
+  ADMIN: 'Администрирование',
+  GENERAL: 'Общая функциональность',
+};
+
+export const FEEDBACK_PRIORITY_LABELS: Record<FeedbackPriority, { label: string; color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' }> = {
+  LOW: { label: 'Низкий', color: 'info' },
+  MEDIUM: { label: 'Средний', color: 'primary' },
+  HIGH: { label: 'Высокий', color: 'warning' },
+  CRITICAL: { label: 'Критический', color: 'error' },
+};
+
+export const FEEDBACK_STATUS_LABELS: Record<FeedbackStatus, { label: string; color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' }> = {
+  NEW: { label: 'Новое', color: 'info' },
+  IN_REVIEW: { label: 'На рассмотрении', color: 'warning' },
+  IN_PROGRESS: { label: 'В работе', color: 'primary' },
+  RESOLVED: { label: 'Решено / Реализовано', color: 'success' },
+  REJECTED: { label: 'Отклонено', color: 'error' },
+  DUPLICATE: { label: 'Дубликат', color: 'default' },
+};
+
+export interface FeedbackTicketDto {
+  id: string;
+  ticketNumber: string;
+  type: FeedbackType;
+  module: FeedbackModule;
+  priority: FeedbackPriority;
+  status: FeedbackStatus;
+  title: string;
+  description: string;
+  pageUrl?: string | null;
+  browserInfo?: {
+    userAgent?: string;
+    screenResolution?: string;
+    os?: string;
+    browser?: string;
+    language?: string;
+  } | null;
+  resolution?: string | null;
+  resolvedAt?: string | null;
+  createdById: string;
+  assignedToId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: {
+    id: string;
+    displayName: string;
+    ldapLogin: string;
+    email?: string | null;
+  };
+  assignedTo?: {
+    id: string;
+    displayName: string;
+    ldapLogin: string;
+  } | null;
+  commentsCount?: number;
+  attachmentsCount?: number;
+  comments?: FeedbackCommentDto[];
+  attachments?: FeedbackAttachmentDto[];
+}
+
+export interface FeedbackCommentDto {
+  id: string;
+  ticketId: string;
+  userId: string;
+  message: string;
+  isInternal: boolean;
+  createdAt: string;
+  user: {
+    id: string;
+    displayName: string;
+    ldapLogin: string;
+  };
+}
+
+export interface FeedbackAttachmentDto {
+  id: string;
+  ticketId: string;
+  fileName: string;
+  originalName: string;
+  filePath: string;
+  fileType: string;
+  fileSize: number;
+  uploadedById: string;
+  createdAt: string;
+}
+
+// ==========================================
+// ДОМЕННЫЕ ТИПЫ: SRM (Service Request Mgmt)
+// ==========================================
+
+export interface SrmIssueDto {
+  id: string;
+  issueKey?: string;
+  key?: string;
+  summary?: string;
+  title?: string;
+  description?: string | null;
+  status: string;
+  priority?: string | null;
+  failureCategory?: string | null;
+  source?: string | null;
+  externalKey?: string | null;
+  externalUrl?: string | null;
+  equipmentId?: string | null;
+  equipment?: {
+    id: string;
+    name: string;
+    inventoryNumber?: string | null;
+    model?: string | null;
+    manufacturer?: string | null;
+    location?: string | null;
+    status?: string | null;
+  } | null;
+  reportedBy?: {
+    displayName: string;
+    ldapLogin: string;
+  } | null;
+  assignedTo?: {
+    displayName: string;
+    ldapLogin: string;
+  } | null;
+  assignee?: string | null;
+  reporterName?: string | null;
+  contractorName?: string | null;
+  resolutionNotes?: string | null;
+  downtimeMinutes?: number | null;
+  slaDeadline?: string | null;
+  slaBreached?: boolean;
+  warrantyClaim?: boolean;
+  mroScheduleId?: string | null;
+  integration?: {
+    id: string;
+    name: string;
+    providerType: string;
+  } | null;
+  rawData?: Record<string, unknown> | null;
+  createdAt?: string;
+  updatedAt?: string;
+  resolvedAt?: string | null;
+  jiraIssues?: Array<{ status: string; key?: string; [key: string]: unknown }>;
+  maintenancePlans?: Array<{ id: string; status: string; [key: string]: unknown }>;
+  repairDescription?: string | null;
+}
+
+export interface SrmReliabilityAnalyticsDto {
+  totalIncidents?: number;
+  resolvedCount?: number;
+  totalDowntimeHours?: number;
+  mttrHours?: number | null;
+  mtbfDays?: number | null;
+  availabilityPercent?: number | null;
+  slaComplianceRate?: number | null;
+  mttr?: number | null;
+  mtbf?: number | null;
+  slaCompliance?: number | null;
+  totalIssues?: number;
+  openIssues?: number;
+  resolvedIssues?: number;
+  failureCategoryCounts?: Record<string, number>;
+  statusCounts?: Record<string, number>;
+  priorityCounts?: Record<string, number>;
+  sourceCounts?: Record<string, number>;
+  warrantyIncidentsCount?: number;
+  paretoAnalysis?: Array<{
+    category: string;
+    count: number;
+    cumulativePercent: number;
+    equipmentId?: string;
+    equipmentName?: string;
+    failureCount?: number;
+    totalDowntime?: number;
+  }>;
+  topEquipment?: Array<{
+    id?: string;
+    name: string;
+    count: number;
+    downtimeHours: number;
+    failureCount?: number;
+    mttr?: number | null;
+    mtbf?: number | null;
+  }>;
+}
+
+// ==========================================
+// ДОМЕННЫЕ ТИПЫ: EPS (Equipment Park System)
+// ==========================================
+
+export interface EpsProposedChangeDto {
+  fieldKey: string;
+  oldValue: unknown;
+  newValue: unknown;
+  label?: string;
+}
+
+// ==========================================
+// ДОМЕННЫЕ ТИПЫ: Admin / Audit
+// ==========================================
+
+export interface AuditChangeDto {
+  [key: string]: unknown;
+}

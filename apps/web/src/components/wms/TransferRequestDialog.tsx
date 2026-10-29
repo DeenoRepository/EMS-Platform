@@ -133,10 +133,25 @@ export default function TransferRequestDialog({
         .then((json) => {
           if (json.success && json.data) {
             const map: Record<string, number> = {};
+            const stockNoms: NomenclatureOption[] = [];
             (json.data.items || []).forEach((s: any) => {
               map[s.nomenclatureId] = Number(s.quantity);
+              stockNoms.push({
+                id: s.nomenclatureId,
+                name: s.name,
+                article: s.article && s.article !== '—' ? s.article : undefined,
+                unit: s.unit || 'шт',
+                category: s.category ? { name: s.category } : null,
+              });
             });
             setStockMap(map);
+            if (stockNoms.length > 0) {
+              setNomenclatures((prev) => {
+                const existingIds = new Set(prev.map((p) => p.id));
+                const missing = stockNoms.filter((sn) => !existingIds.has(sn.id));
+                return missing.length > 0 ? [...prev, ...missing] : prev;
+              });
+            }
           }
         })
         .catch(console.error)

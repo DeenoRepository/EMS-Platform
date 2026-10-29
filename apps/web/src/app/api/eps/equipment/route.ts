@@ -4,6 +4,7 @@ import { prisma, EquipmentStatus, Prisma } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { z } from 'zod';
+import { buildEquipmentWhereInput, buildEquipmentOrderBy } from '@/lib/eps-query-builder';
 
 export async function GET(req: NextRequest) {
   try {
@@ -12,63 +13,23 @@ export async function GET(req: NextRequest) {
     if (!hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_VIEW)) return forbiddenResponse();
 
     const { searchParams } = new URL(req.url);
-    const search = searchParams.get('search');
-    const status = searchParams.get('status') as EquipmentStatus | null;
-    const tagId = searchParams.get('tagId');
-    const manufacturer = searchParams.get('manufacturer');
     const page = parseInt(searchParams.get('page') || '1', 10);
-    const pageSize = Math.min(200, Math.max(1, parseInt(searchParams.get('pageSize') || '20', 10)));
+    const pageSize = Math.min(1000, Math.max(1, parseInt(searchParams.get('pageSize') || searchParams.get('limit') || '20', 10)));
 
-    const where: Prisma.EquipmentWhereInput = {};
-
-    if (status) {
-      where.status = status;
-    }
-
-    if (manufacturer) {
-      where.manufacturer = { contains: manufacturer, mode: 'insensitive' };
-    }
-
-    if (tagId) {
-      where.tags = {
-        some: { tagId },
-      };
-    }
-
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { inventoryNumber: { contains: search, mode: 'insensitive' } },
-        { serialNumber: { contains: search, mode: 'insensitive' } },
-        { manufacturer: { contains: search, mode: 'insensitive' } },
-        { model: { contains: search, mode: 'insensitive' } },
-        { location: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    const canManageApprovals = hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) || user.roles.includes('admin');
-
-    if (!canManageApprovals) {
-      if (!status) {
-        const existingAnd = Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : [];
-        where.AND = [
-          ...existingAnd,
-          {
-            OR: [
-              { status: { not: 'DRAFT' } },
-              { status: 'DRAFT', createdById: user.userId },
-            ],
-          },
-        ];
-      } else if (status === 'DRAFT') {
-        where.createdById = user.userId;
-      }
-    }
+    const whereParams = new URLSearchParams(searchParams);
+    whereParams.delete('respPerson');
+    whereParams.delete('responsible_person_name');
+    const where = buildEquipmentWhereInput(whereParams);
+    const broadFilterIds = await resolveJsonFilters(searchParams);
+    const effectiveWhere = broadFilterIds
+      ? { AND: [where, { id: { in: broadFilterIds } }] }
+      : where;
+    const orderBy = buildEquipmentOrderBy(searchParams);
 
     const [total, items, statusGroup] = await Promise.all([
-      prisma.equipment.count({ where }),
+      prisma.equipment.count({ where: effectiveWhere }),
       prisma.equipment.findMany({
-        where,
+        where: effectiveWhere,
         include: {
           tags: {
             include: { tag: true },
@@ -86,21 +47,14 @@ export async function GET(req: NextRequest) {
             },
           },
         },
-        orderBy: { updatedAt: 'desc' },
+        orderBy,
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
       prisma.equipment.groupBy({
         by: ['status'],
+        where: effectiveWhere,
         _count: { status: true },
-        where: !canManageApprovals
-          ? {
-              OR: [
-                { status: { not: 'DRAFT' } },
-                { status: 'DRAFT', createdById: user.userId },
-              ],
-            }
-          : undefined,
       }),
     ]);
 
@@ -133,6 +87,7 @@ export async function GET(req: NextRequest) {
       location: item.location,
       status: item.status,
       commissionDate: item.commissionDate,
+      customFields: item.customFields || {},
       primaryPhoto: item.photos[0]?.filePath || null,
       tags: item.tags.map((t) => t.tag),
       counts: item._count,
@@ -156,6 +111,54 @@ export async function GET(req: NextRequest) {
     console.error('Ошибка /api/eps/equipment:', error);
     return NextResponse.json({ success: false, error: 'Ошибка получения реестра оборудования' }, { status: 500 });
   }
+}
+
+/** JSON fields are schemaless, so Prisma cannot search arbitrary custom keys.
+ * Resolve broad search/range predicates against all records before pagination. */
+async function resolveJsonFilters(params: URLSearchParams): Promise<string[] | null> {
+  const search = params.get('search')?.trim().toLocaleLowerCase();
+  const responsible = (params.get('respPerson') || params.get('responsible_person_name'))?.trim().toLocaleLowerCase();
+  const ranges = [
+    ['actual_wear_percentage', params.get('wearMin'), params.get('wearMax')],
+    ['calibration_interval', params.get('calibrationIntervalMin'), params.get('calibrationIntervalMax')],
+  ] as const;
+  if (!search && !responsible && !ranges.some(([, min, max]) => min || max)) return null;
+
+  const baseParams = new URLSearchParams(params);
+  baseParams.delete('search');
+  baseParams.delete('respPerson');
+  baseParams.delete('responsible_person_name');
+  baseParams.delete('wearMin');
+  baseParams.delete('wearMax');
+  baseParams.delete('calibrationIntervalMin');
+  baseParams.delete('calibrationIntervalMax');
+  const baseWhere = buildEquipmentWhereInput(baseParams);
+  const candidates = await prisma.equipment.findMany({
+    where: baseWhere,
+    select: { id: true, name: true, inventoryNumber: true, serialNumber: true, manufacturer: true, model: true, location: true, customFields: true },
+  });
+  return candidates.filter(({ name, inventoryNumber, serialNumber, manufacturer, model, location, customFields }) => {
+    const values = (customFields && typeof customFields === 'object' ? customFields : {}) as Record<string, unknown>;
+    const searchableText = [name, inventoryNumber, serialNumber, manufacturer, model, location, JSON.stringify(values)]
+      .filter(Boolean)
+      .join(' ')
+      .toLocaleLowerCase();
+    const textMatch = !search || searchableText.includes(search);
+    const responsibleMatch = !responsible || [
+      values.responsible_person_name,
+      values.responsible_user_login,
+      values.responsible_user_id,
+      values.otvetstvennoe_litso_fio_dolzhnost,
+      values.otvetstvennyy,
+    ].some((value) => String(value ?? '').toLocaleLowerCase().includes(responsible));
+    const rangesMatch = ranges.every(([key, min, max]) => {
+      if (!min && !max) return true;
+      const value = Number(values[key]);
+      if (!Number.isFinite(value)) return false;
+      return (!min || value >= Number(min)) && (!max || value <= Number(max));
+    });
+    return textMatch && responsibleMatch && rangesMatch;
+  }).map(({ id }) => id);
 }
 
 const createSchema = z.object({

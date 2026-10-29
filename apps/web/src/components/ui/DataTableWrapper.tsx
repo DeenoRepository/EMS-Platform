@@ -56,6 +56,8 @@ export interface DataTableWrapperProps {
   onDensityChange?: (density: TableDensity) => void;
   /** Показывать переключатель плотности */
   showDensityToggle?: boolean;
+  /** Ключ для автоматического сохранения выбранных колонок и плотности в localStorage */
+  storageKey?: string;
   /** Список доступных колонок для настройки видимости */
   columns?: TableColumnOption[];
   /** Массив ID видимых колонок */
@@ -70,6 +72,8 @@ export interface DataTableWrapperProps {
   selectedCount?: number;
   /** Сброс выбора */
   onClearSelection?: () => void;
+  /** Действия с выбранными строками (в баннере выбора) */
+  selectionActions?: React.ReactNode;
   /** Дополнительные контролы в подвале (слева от пагинации) */
   footerActions?: React.ReactNode;
   /** Пагинация */
@@ -113,6 +117,7 @@ export function DataTableWrapper({
   density: controlledDensity,
   onDensityChange,
   showDensityToggle = false,
+  storageKey,
   columns,
   visibleColumns: controlledVisibleColumns,
   onVisibleColumnsChange,
@@ -120,6 +125,7 @@ export function DataTableWrapper({
   refreshing = false,
   selectedCount = 0,
   onClearSelection,
+  selectionActions,
   footerActions,
   page,
   pageSize,
@@ -148,6 +154,60 @@ export function DataTableWrapper({
 
   const currentVisibleColumns = controlledVisibleColumns !== undefined ? controlledVisibleColumns : internalVisibleColumns;
 
+  // Compute a fallback storage key based on column signatures if explicit storageKey is not passed
+  const computedStorageKey = storageKey || (
+    columns && columns.length > 0
+      ? `auto_${columns.map((c) => c.id).slice(0, 3).join('_')}_len${columns.length}`
+      : undefined
+  );
+
+  const onVisibleColumnsChangeRef = React.useRef(onVisibleColumnsChange);
+  React.useEffect(() => {
+    onVisibleColumnsChangeRef.current = onVisibleColumnsChange;
+  });
+
+  const onDensityChangeRef = React.useRef(onDensityChange);
+  React.useEffect(() => {
+    onDensityChangeRef.current = onDensityChange;
+  });
+
+  // Restore saved column choices and density from localStorage on mount
+  React.useEffect(() => {
+    if (!computedStorageKey || typeof window === 'undefined') return;
+    try {
+      const savedColsRaw = localStorage.getItem(`ems_cols_${computedStorageKey}`);
+      if (savedColsRaw) {
+        const savedCols: string[] = JSON.parse(savedColsRaw);
+        if (Array.isArray(savedCols) && savedCols.length > 0) {
+          const validCols = columns
+            ? savedCols.filter((id) => columns.some((c) => c.id === id))
+            : savedCols;
+          if (validCols.length > 0) {
+            setInternalVisibleColumns(validCols);
+            onVisibleColumnsChangeRef.current?.(validCols);
+          }
+        }
+      }
+
+      const savedDensity = localStorage.getItem(`ems_density_${computedStorageKey}`) as TableDensity | null;
+      if (savedDensity && ['compact', 'standard', 'comfortable'].includes(savedDensity)) {
+        setInternalDensity(savedDensity);
+        onDensityChangeRef.current?.(savedDensity);
+      }
+    } catch (e) {
+      console.error('Failed to load table settings from localStorage:', e);
+    }
+  }, [computedStorageKey]);
+
+  const persistColumns = (cols: string[]) => {
+    if (!computedStorageKey || typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(`ems_cols_${computedStorageKey}`, JSON.stringify(cols));
+    } catch (e) {
+      console.error('Failed to save visible columns to localStorage:', e);
+    }
+  };
+
   const handleToggleColumn = (colId: string) => {
     const isCurrentlyVisible = currentVisibleColumns.includes(colId);
     if (isCurrentlyVisible && currentVisibleColumns.length === 1) return;
@@ -156,6 +216,7 @@ export function DataTableWrapper({
       ? currentVisibleColumns.filter((id) => id !== colId)
       : [...currentVisibleColumns, colId];
 
+    persistColumns(updated);
     if (onVisibleColumnsChange) {
       onVisibleColumnsChange(updated);
     } else {
@@ -166,6 +227,7 @@ export function DataTableWrapper({
   const handleSelectAllColumns = () => {
     if (!columns) return;
     const all = columns.map((c) => c.id);
+    persistColumns(all);
     if (onVisibleColumnsChange) {
       onVisibleColumnsChange(all);
     } else {
@@ -176,6 +238,11 @@ export function DataTableWrapper({
   const handleResetColumns = () => {
     if (!columns) return;
     const defaultCols = columns.filter((c) => c.defaultVisible !== false).map((c) => c.id);
+    if (computedStorageKey && typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem(`ems_cols_${computedStorageKey}`);
+      } catch (e) {}
+    }
     if (onVisibleColumnsChange) {
       onVisibleColumnsChange(defaultCols);
     } else {
@@ -184,6 +251,11 @@ export function DataTableWrapper({
   };
 
   const handleDensityChange = (newDensity: TableDensity) => {
+    if (computedStorageKey && typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`ems_density_${computedStorageKey}`, newDensity);
+      } catch (e) {}
+    }
     if (onDensityChange) {
       onDensityChange(newDensity);
     } else {
@@ -413,18 +485,21 @@ export function DataTableWrapper({
       sx={{
         width: '100%',
         borderRadius: '12px',
-        border: '1px solid #e2e8f0',
-        backgroundColor: '#ffffff',
+        border: '1px solid',
+        borderColor: 'divider',
+        backgroundColor: 'background.paper',
         overflow: 'hidden',
         boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.02)',
         display: 'flex',
         flexDirection: 'column',
+        maxHeight: maxHeight || 'calc(100vh - 240px)',
       }}
     >
       {/* 0. Integrated Navigation Tabs Header */}
       {tabs && (
         <Box
           sx={{
+            flexShrink: 0,
             px: { xs: 1, sm: 1.5 },
             backgroundColor: '#ffffff',
             borderBottom: '1px solid #f1f5f9',
@@ -442,6 +517,7 @@ export function DataTableWrapper({
       {hasHeader && (
         <Box
           sx={{
+            flexShrink: 0,
             p: { xs: 1.5, sm: 2 },
             backgroundColor: '#ffffff',
             borderBottom: '1px solid #f1f5f9',
@@ -471,6 +547,7 @@ export function DataTableWrapper({
       {toolbar && (
         <Box
           sx={{
+            flexShrink: 0,
             p: { xs: 1.25, sm: 1.5 },
             backgroundColor: '#ffffff',
             borderBottom: '1px solid #f1f5f9',
@@ -527,18 +604,21 @@ export function DataTableWrapper({
             </Typography>
           </Box>
 
-          {onClearSelection && (
-            <Button
-              size="small"
-              variant="text"
-              color="inherit"
-              startIcon={<CloseIcon sx={{ fontSize: 14 }} />}
-              onClick={onClearSelection}
-              sx={{ fontSize: '0.75rem', fontWeight: 600, py: 0.2, color: '#15803d' }}
-            >
-              Снять выделение
-            </Button>
-          )}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {selectionActions}
+            {onClearSelection && (
+              <Button
+                size="small"
+                variant="text"
+                color="inherit"
+                startIcon={<CloseIcon sx={{ fontSize: 14 }} />}
+                onClick={onClearSelection}
+                sx={{ fontSize: '0.75rem', fontWeight: 600, py: 0.2, color: '#15803d' }}
+              >
+                Снять выделение
+              </Button>
+            )}
+          </Box>
         </Box>
       )}
 
@@ -565,10 +645,19 @@ export function DataTableWrapper({
       ) : (
         <TableContainer
           sx={{
-            maxHeight: maxHeight || (stickyHeader ? 600 : 'none'),
-            '&::-webkit-scrollbar': { height: 6, width: 6 },
-            '&::-webkit-scrollbar-track': { backgroundColor: '#f8fafc' },
-            '&::-webkit-scrollbar-thumb': { backgroundColor: '#cbd5e1', borderRadius: 3 },
+            flex: '1 1 auto',
+            minHeight: 180,
+            overflowX: 'auto',
+            overflowY: 'auto',
+            '&::-webkit-scrollbar': { height: 9, width: 8 },
+            '&::-webkit-scrollbar-track': { backgroundColor: 'action.hover', borderRadius: 4 },
+            '&::-webkit-scrollbar-thumb': {
+              backgroundColor: 'grey.400',
+              borderRadius: 4,
+              border: '2px solid transparent',
+              backgroundClip: 'content-box',
+              '&:hover': { backgroundColor: 'grey.600' },
+            },
             ...densityStyles,
           }}
         >
@@ -580,15 +669,22 @@ export function DataTableWrapper({
       {(showPagination || footerActions) && (
         <Box
           sx={{
+            flexShrink: 0,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderTop: '1px solid #f1f5f9',
-            backgroundColor: '#ffffff',
+            borderTop: '1px solid',
+            borderColor: 'divider',
+            backgroundColor: 'background.paper',
             px: 1.5,
             py: 0.5,
-            flexWrap: 'wrap',
+            flexWrap: 'nowrap',
+            overflowX: 'auto',
             gap: 1,
+            position: 'sticky',
+            bottom: 0,
+            zIndex: 3,
+            boxShadow: '0 -2px 6px rgba(0, 0, 0, 0.03)',
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -610,6 +706,7 @@ export function DataTableWrapper({
               }
               sx={{
                 ml: 'auto',
+                flexShrink: 0,
                 fontSize: '0.75rem',
                 border: 'none',
                 '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
@@ -622,7 +719,8 @@ export function DataTableWrapper({
                   fontWeight: 600,
                 },
                 '& .MuiTablePagination-toolbar': {
-                  minHeight: 48,
+                  minHeight: 44,
+                  height: 44,
                   p: 0,
                 },
               }}

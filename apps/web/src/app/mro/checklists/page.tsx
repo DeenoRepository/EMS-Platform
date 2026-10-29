@@ -28,6 +28,8 @@ import {
   PageLoading,
 } from '@/components/ui';
 import { useSnackbar } from 'notistack';
+import { useAuth } from '@/lib/auth-client';
+import { PERMISSIONS } from '@ems/shared';
 
 interface ChecklistTemplateItem {
   id: string;
@@ -48,6 +50,11 @@ interface ChecklistTemplateItem {
 
 export default function MroChecklistsPage() {
   const { enqueueSnackbar } = useSnackbar();
+  const { user, hasPermission } = useAuth();
+  const canAccessChecklists =
+    user?.roles?.includes('admin') ||
+    hasPermission(PERMISSIONS.MRO_SCHEDULE_VIEW) ||
+    hasPermission(PERMISSIONS.MRO_SCHEDULE_MANAGE);
 
   const [checklists, setChecklists] = useState<ChecklistTemplateItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,8 +83,10 @@ export default function MroChecklistsPage() {
   }, [enqueueSnackbar]);
 
   useEffect(() => {
-    fetchChecklists();
-  }, [fetchChecklists]);
+    if (canAccessChecklists) {
+      fetchChecklists();
+    }
+  }, [canAccessChecklists, fetchChecklists]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -93,6 +102,27 @@ export default function MroChecklistsPage() {
   const totalChecklists = checklists.length;
   const totalItemsCount = checklists.reduce((acc, cl) => acc + (cl.items?.length || 0), 0);
   const linkedPlansCount = checklists.reduce((acc, cl) => acc + (cl._count?.plans || 0), 0);
+
+  if (!canAccessChecklists) {
+    return (
+      <Box sx={{ width: '100%', pb: 4 }}>
+        <PageHeader
+          title="Технологические карты и чек-листы"
+          subtitle="Библиотека стандартных технологических регламентов, инструкций и опросных листов ППР"
+          breadcrumbs={[
+            { label: 'Главная', href: '/' },
+            { label: 'ТО и Ремонт', href: '/mro' },
+            { label: 'Чек-листы' },
+          ]}
+        />
+        <EmptyState
+          title="Доступ ограничен"
+          description="У вашей учетной записи нет прав на просмотр технологических карт (требуется право mro.schedule.view)."
+          icon={<ChecklistIcon sx={{ fontSize: 48, color: 'text.secondary' }} />}
+        />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ width: '100%', pb: 4 }}>

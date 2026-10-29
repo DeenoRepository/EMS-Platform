@@ -26,7 +26,24 @@ export async function getCurrentUser(req?: NextRequest): Promise<JwtUserPayload 
     return null;
   }
 
-  return await verifySessionToken(token);
+  const session = await verifySessionToken(token);
+  if (!session) return null;
+
+  try {
+    const { getUserRolesAndPermissions } = await import('@ems/auth');
+    const { roles, permissions } = await getUserRolesAndPermissions(session.userId);
+    return {
+      ...session,
+      // The database is authoritative. Never restore revoked permissions from a JWT.
+      roles: roles || [],
+      permissions: permissions || [],
+    };
+  } catch {
+    // Keep token authentication available when the optional RBAC refresh backend is
+    // unavailable. Successful refreshes still remain authoritative and never fall
+    // back to claims when they return an empty set.
+    return session;
+  }
 }
 
 export function unauthorizedResponse(message = 'Требуется авторизация') {
@@ -100,4 +117,3 @@ export async function requireAuth(
 
   return { user };
 }
-

@@ -58,7 +58,7 @@ export interface StorageZone {
 interface WarehouseTopologyModalProps {
   open: boolean;
   onClose: () => void;
-  warehouse: { id: string; name: string; code: string } | null;
+  warehouse: { id: string; name: string; code: string; responsibleUserId?: string | null } | null;
   onRefreshParent?: () => void;
 }
 
@@ -75,7 +75,8 @@ export default function WarehouseTopologyModal({
   const canManageZones =
     hasPermission(PERMISSIONS.WMS_ZONES_MANAGE) ||
     hasPermission(PERMISSIONS.WMS_WAREHOUSES_MANAGE) ||
-    Boolean(user?.roles?.includes('admin'));
+    Boolean(user?.roles?.includes('admin')) ||
+    Boolean(user?.userId && warehouse?.responsibleUserId === user.userId);
 
   const [zones, setZones] = useState<StorageZone[]>([]);
   const [selectedZoneIndex, setSelectedZoneIndex] = useState(0);

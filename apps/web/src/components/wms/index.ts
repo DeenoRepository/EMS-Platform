@@ -18,3 +18,5 @@ export * from './TransferRejectDialog';
 export * from './TransferRequestDialog';
 export { default as WarehouseSelect } from './WarehouseSelect';
 export * from './WarehouseSelect';
+export { default as EditNomenclatureDialog } from './EditNomenclatureDialog';
+export * from './EditNomenclatureDialog';

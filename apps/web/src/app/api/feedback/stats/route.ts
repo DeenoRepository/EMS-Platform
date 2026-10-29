@@ -1,0 +1,68 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
+import { prisma } from '@ems/database';
+import { PERMISSIONS } from '@ems/shared';
+import { hasPermission } from '@ems/auth';
+
+export const dynamic = 'force-dynamic';
+
+// GET /api/feedback/stats - Статистика и KPI для панели обратной связи
+export async function GET(req: NextRequest) {
+  try {
+    const user = await getCurrentUser(req);
+    if (!user) return unauthorizedResponse();
+
+    const isAdmin =
+      user.roles?.includes('admin') ||
+      user.roles?.includes('administrator') ||
+      hasPermission(user, PERMISSIONS.ADMIN_FEEDBACK_MANAGE);
+
+    if (!isAdmin) {
+      return forbiddenResponse();
+    }
+
+    const [
+      totalCount,
+      newCount,
+      inReviewCount,
+      inProgressCount,
+      resolvedCount,
+      rejectedCount,
+      bugsCount,
+      featuresCount,
+      questionsCount,
+      criticalCount,
+    ] = await Promise.all([
+      prisma.feedbackTicket.count({ where: { deletedAt: null } }),
+      prisma.feedbackTicket.count({ where: { deletedAt: null, status: 'NEW' } }),
+      prisma.feedbackTicket.count({ where: { deletedAt: null, status: 'IN_REVIEW' } }),
+      prisma.feedbackTicket.count({ where: { deletedAt: null, status: 'IN_PROGRESS' } }),
+      prisma.feedbackTicket.count({ where: { deletedAt: null, status: 'RESOLVED' } }),
+      prisma.feedbackTicket.count({ where: { deletedAt: null, status: 'REJECTED' } }),
+      prisma.feedbackTicket.count({ where: { deletedAt: null, type: 'BUG' } }),
+      prisma.feedbackTicket.count({ where: { deletedAt: null, type: 'FEATURE_REQUEST' } }),
+      prisma.feedbackTicket.count({ where: { deletedAt: null, type: 'QUESTION' } }),
+      prisma.feedbackTicket.count({ where: { deletedAt: null, priority: 'CRITICAL', status: { notIn: ['RESOLVED', 'REJECTED'] } } }),
+    ]);
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        total: totalCount,
+        new: newCount,
+        inReview: inReviewCount,
+        inProgress: inProgressCount,
+        active: newCount + inReviewCount + inProgressCount,
+        resolved: resolvedCount,
+        rejected: rejectedCount,
+        bugs: bugsCount,
+        features: featuresCount,
+        questions: questionsCount,
+        critical: criticalCount,
+      },
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ success: false, error: 'Ошибка получения статистики', details: message }, { status: 500 });
+  }
+}

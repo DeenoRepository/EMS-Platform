@@ -43,7 +43,10 @@ export async function getUserRolesAndPermissions(userId: string): Promise<{ role
 
 export function hasPermission(user: JwtUserPayload | null | undefined, permissionCode: string): boolean {
   if (!user) return false;
-  if (user.roles?.includes('admin') || user.roles?.includes('administrator')) return true; // Суперпользователь имеет полный доступ
+  // Суперпользователь (системный администратор) имеет полный доступ ко всем функциям
+  if (user.roles?.includes('admin') || user.roles?.includes('administrator')) return true;
+
+  // Строго по выданным правам (чекбоксам роли в матрице прав)
   return user.permissions?.includes(permissionCode) || false;
 }
 

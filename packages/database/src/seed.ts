@@ -18,6 +18,7 @@ async function main() {
     { code: 'eps.equipment.view', displayName: 'Просмотр оборудования', module: 'eps', description: 'Доступ к реестру и карточкам оборудования' },
     { code: 'eps.equipment.create', displayName: 'Создание оборудования', module: 'eps', description: 'Возможность создавать новые единицы оборудования' },
     { code: 'eps.equipment.edit', displayName: 'Редактирование оборудования', module: 'eps', description: 'Изменение данных паспорта оборудования' },
+    { code: 'eps.equipment.batch_edit', displayName: 'Массовое редактирование оборудования', module: 'eps', description: 'Пакетное изменение параметров, поиск одинаковых значений и массовая замена в реестре оборудования' },
     { code: 'eps.equipment.delete', displayName: 'Удаление оборудования', module: 'eps', description: 'Удаление единиц оборудования' },
     { code: 'eps.documents.view', displayName: 'Просмотр документов', module: 'eps', description: 'Просмотр чертежей, схем и документов оборудования' },
     { code: 'eps.documents.upload', displayName: 'Загрузка документов', module: 'eps', description: 'Прикрепление файлов и схем к оборудованию' },
@@ -29,6 +30,7 @@ async function main() {
     { code: 'eps.reports.view', displayName: 'Просмотр отчетов EPS', module: 'eps', description: 'Формирование и выгрузка отчетов по оборудованию' },
     { code: 'eps.reports.manage', displayName: 'Управление шаблонами отчетов', module: 'eps', description: 'Создание и редактирование шаблонов отчетов' },
     { code: 'eps.import.execute', displayName: 'Импорт оборудования', module: 'eps', description: 'Пакетный импорт оборудования из файлов Excel' },
+    { code: 'eps.database.purge', displayName: 'Очистка базы данных оборудования', module: 'eps', description: 'Полное безвозвратное удаление всех позиций оборудования из базы данных EPS' },
 
     // WMS
     { code: 'wms.stock.view', displayName: 'Просмотр остатков и складов', module: 'wms', description: 'Просмотр наличия ТМЦ и складов' },
@@ -57,6 +59,7 @@ async function main() {
     { code: 'admin.roles.manage', displayName: 'Управление ролями', module: 'admin', description: 'Создание ролей и распределение прав' },
     { code: 'admin.audit.view', displayName: 'Просмотр журнала аудита', module: 'admin', description: 'Просмотр истории действий всех пользователей' },
     { code: 'admin.settings.manage', displayName: 'Управление настройками', module: 'admin', description: 'Конфигурация LDAP, Jira и системы' },
+    { code: 'admin.feedback.manage', displayName: 'Управление обратной связью', module: 'admin', description: 'Просмотр всех обращений, модерация, смена статусов и ответы' },
   ];
 
   for (const perm of permissionsList) {
@@ -372,11 +375,19 @@ async function main() {
     // 1. Классификаторы
     {
       sectionId: sectionClassifiers.id,
+      key: 'decimal_number',
+      name: 'Децимальный номер',
+      fieldType: FieldType.TEXT,
+      defaultValue: '',
+      sortOrder: 1,
+    },
+    {
+      sectionId: sectionClassifiers.id,
       key: 'okof_code',
       name: 'Код по ОКОФ (ОК 013-2014)',
       fieldType: FieldType.TEXT,
       defaultValue: '330.28.99.39',
-      sortOrder: 1,
+      sortOrder: 2,
     },
     {
       sectionId: sectionClassifiers.id,
@@ -384,7 +395,7 @@ async function main() {
       name: 'Код по ОКПД2 (ОК 034-2014)',
       fieldType: FieldType.TEXT,
       defaultValue: '28.99.39.190',
-      sortOrder: 2,
+      sortOrder: 3,
     },
     {
       sectionId: sectionClassifiers.id,

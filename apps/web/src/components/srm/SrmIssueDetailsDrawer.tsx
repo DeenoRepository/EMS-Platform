@@ -31,12 +31,12 @@ import SaveIcon from '@mui/icons-material/Save';
 import { StatusBadge, ConfirmDialog } from '@/components/ui';
 import { useSnackbar } from 'notistack';
 import { useRouter } from 'next/navigation';
-import { SRM_FAILURE_CATEGORY_MAP, SRM_SOURCE_MAP, SRM_STATUS_MAP, SRM_PRIORITY_MAP } from '@ems/shared';
+import { SRM_FAILURE_CATEGORY_MAP, SRM_SOURCE_MAP, SRM_STATUS_MAP, SRM_PRIORITY_MAP, SrmIssueDto } from '@ems/shared';
 
 export interface SrmIssueDetailsDrawerProps {
   open: boolean;
   onClose: () => void;
-  issue: any | null;
+  issue: SrmIssueDto | null;
   onIssueUpdated: () => void;
 }
 
@@ -139,10 +139,10 @@ export default function SrmIssueDetailsDrawer({
       <Box sx={{ p: 2.5, borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: '#f8fafc' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Typography variant="h6" fontWeight={800} sx={{ fontFamily: 'monospace', color: 'primary.main' }}>
-            {issue.issueKey}
+            {issue.issueKey || issue.key}
           </Typography>
           <StatusBadge status={issue.status} />
-          <StatusBadge status={issue.priority} variant="outlined" />
+          {issue.priority && <StatusBadge status={issue.priority} variant="outlined" />}
         </Box>
         <IconButton onClick={onClose} size="small">
           <CloseIcon />
@@ -154,12 +154,12 @@ export default function SrmIssueDetailsDrawer({
         {/* Title and Metadata */}
         <div>
           <Typography variant="h6" fontWeight={700} sx={{ mb: 1, color: '#0f172a' }}>
-            {issue.summary}
+            {issue.summary || issue.title}
           </Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
             <StatusBadge
               status={issue.source || 'INTERNAL'}
-              label={SRM_SOURCE_MAP[issue.source]?.label || issue.integration?.name || 'Внутренний инцидент'}
+              label={(issue.source && SRM_SOURCE_MAP[issue.source]?.label) || issue.integration?.name || 'Внутренний инцидент'}
               size="small"
               variant="outlined"
             />
@@ -193,7 +193,7 @@ export default function SrmIssueDetailsDrawer({
               <Button
                 size="small"
                 endIcon={<LaunchIcon sx={{ fontSize: 14 }} />}
-                onClick={() => router.push(`/eps/${issue.equipment.id}`)}
+                onClick={() => issue.equipment?.id && router.push(`/eps/${issue.equipment.id}`)}
                 sx={{ fontSize: '0.75rem', p: 0 }}
               >
                 Открыть паспорт
@@ -250,7 +250,7 @@ export default function SrmIssueDetailsDrawer({
           </Typography>
           <Paper variant="outlined" sx={{ p: 2, borderRadius: '8px', minHeight: 70, bgcolor: '#ffffff' }}>
             <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: '#334155' }}>
-              {issue.description || issue.rawData?.description || 'Подробное текстовое описание отсутствует.'}
+              {issue.description || (issue.rawData?.description ? String(issue.rawData.description) : null) || 'Подробное текстовое описание отсутствует.'}
             </Typography>
           </Paper>
         </div>

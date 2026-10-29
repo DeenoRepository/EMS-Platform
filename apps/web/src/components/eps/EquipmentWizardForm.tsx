@@ -41,6 +41,7 @@ import SendIcon from '@mui/icons-material/Send';
 import { useSnackbar } from 'notistack';
 import { StatusBadge, DatePickerField } from '@/components/ui';
 import { EQUIPMENT_STATUS_MAP } from '@ems/shared';
+import { ResponsibleUserSelect } from './ResponsibleUserSelect';
 
 export interface TagItem {
   id: string;
@@ -119,7 +120,6 @@ export function EquipmentWizardForm({
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
 
   // Dictionaries
-  const [tags, setTags] = useState<TagItem[]>([]);
   const [sections, setSections] = useState<CustomSectionDef[]>([]);
   const [unassignedFields, setUnassignedFields] = useState<CustomFieldDef[]>([]);
   const [isLoadingMeta, setIsLoadingMeta] = useState(true);
@@ -127,13 +127,10 @@ export function EquipmentWizardForm({
 
   useEffect(() => {
     setIsLoadingMeta(true);
-    // Single consolidated metadata fetch
-    Promise.all([
-      fetch('/api/eps/tags').then((r) => r.json()),
-      fetch('/api/eps/custom-sections').then((r) => r.json()),
-    ])
-      .then(([tagsJson, sectionsJson]) => {
-        if (tagsJson.success) setTags(tagsJson.data || []);
+    // Consolidated metadata fetch
+    fetch('/api/eps/custom-sections')
+      .then((r) => r.json())
+      .then((sectionsJson) => {
         if (sectionsJson.success && sectionsJson.data) {
           setSections(sectionsJson.data.sections || []);
           setUnassignedFields(sectionsJson.data.unassignedFields || []);
@@ -192,10 +189,13 @@ export function EquipmentWizardForm({
     if (def.fieldType === 'SELECT' && def.options && Array.isArray(def.options)) {
       return (
         <Box key={def.key} sx={{ gridColumn: { xs: 'span 1', sm: 'span 1' } }}>
-          <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+          <Typography variant="body2" fontWeight={600} color="text.primary" sx={{ mb: 0.5 }}>
             {def.name} {def.isRequired && <Box component="span" sx={{ color: 'error.main' }}>*</Box>}
           </Typography>
           <TextField
+            id={`custom-field-${def.key}`}
+            label={def.name}
+            aria-label={def.name}
             select
             fullWidth
             size="small"
@@ -217,10 +217,13 @@ export function EquipmentWizardForm({
     if (def.fieldType === 'TEXTAREA') {
       return (
         <Box key={def.key} sx={{ gridColumn: { xs: 'span 1', sm: 'span 2' } }}>
-          <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+          <Typography variant="body2" fontWeight={600} color="text.primary" sx={{ mb: 0.5 }}>
             {def.name} {def.isRequired && <Box component="span" sx={{ color: 'error.main' }}>*</Box>}
           </Typography>
           <TextField
+            id={`custom-field-${def.key}`}
+            label={def.name}
+            aria-label={def.name}
             multiline
             rows={2}
             fullWidth
@@ -233,12 +236,44 @@ export function EquipmentWizardForm({
       );
     }
 
+    if (
+      def.key === 'responsible_person_name' ||
+      def.key.toLowerCase().includes('responsible') ||
+      def.key.toLowerCase().includes('otvetstvenn')
+    ) {
+      return (
+        <Box key={def.key} sx={{ gridColumn: { xs: 'span 1', sm: 'span 1' } }}>
+          <Typography variant="body2" fontWeight={600} color="text.primary" sx={{ mb: 0.5 }}>
+            {def.name} {def.isRequired && <Box component="span" sx={{ color: 'error.main' }}>*</Box>}
+          </Typography>
+          <ResponsibleUserSelect
+            label={def.name}
+            required={def.isRequired}
+            value={customFieldValues[def.key] || ''}
+            onChange={(val, u) => {
+              handleCustomFieldChange(def.key, val);
+              if (u) {
+                handleCustomFieldChange('responsible_user_id', u.id);
+                handleCustomFieldChange('responsible_user_login', u.ldapLogin);
+              } else {
+                handleCustomFieldChange('responsible_user_id', null);
+                handleCustomFieldChange('responsible_user_login', null);
+              }
+            }}
+          />
+        </Box>
+      );
+    }
+
     return (
       <Box key={def.key} sx={{ gridColumn: { xs: 'span 1', sm: 'span 1' } }}>
-        <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
+        <Typography variant="body2" fontWeight={600} color="text.primary" sx={{ mb: 0.5 }}>
           {def.name} {def.isRequired && <Box component="span" sx={{ color: 'error.main' }}>*</Box>}
         </Typography>
         <TextField
+          id={`custom-field-${def.key}`}
+          label={def.name}
+          aria-label={def.name}
           type={def.fieldType === 'NUMBER' ? 'number' : def.fieldType === 'DATE' ? 'date' : 'text'}
           InputProps={
             def.unit
@@ -400,8 +435,11 @@ export function EquipmentWizardForm({
                 <Typography variant="body2" fontWeight={600} color="#334155" sx={{ mb: 0.5 }}>
                   Наименование оборудования <Box component="span" sx={{ color: 'error.main' }}>*</Box>
                 </Typography>
-                <TextField
-                  placeholder="например: Центробежный насос подачи охлаждающей воды"
+                  <TextField
+                    id="equipment-name"
+                    label="Наименование оборудования"
+                    aria-label="Наименование оборудования"
+                    placeholder="например: Центробежный насос подачи охлаждающей воды"
                   required
                   fullWidth
                   size="small"
@@ -415,6 +453,9 @@ export function EquipmentWizardForm({
                   Инвентарный номер
                 </Typography>
                 <TextField
+                  id="equipment-inventory-number"
+                  label="Инвентарный номер"
+                  aria-label="Инвентарный номер"
                   placeholder="например: EQ-2024-001"
                   fullWidth
                   size="small"
@@ -428,6 +469,9 @@ export function EquipmentWizardForm({
                   Заводской / Серийный номер
                 </Typography>
                 <TextField
+                  id="equipment-serial-number"
+                  label="Заводской / Серийный номер"
+                  aria-label="Заводской / Серийный номер"
                   placeholder="например: SN-998234-A"
                   fullWidth
                   size="small"
@@ -441,6 +485,9 @@ export function EquipmentWizardForm({
                   Производитель (Бренд)
                 </Typography>
                 <TextField
+                  id="equipment-manufacturer"
+                  label="Производитель (Бренд)"
+                  aria-label="Производитель (Бренд)"
                   placeholder="например: Siemens / Atlas Copco"
                   fullWidth
                   size="small"
@@ -454,6 +501,9 @@ export function EquipmentWizardForm({
                   Модель / Модификация
                 </Typography>
                 <TextField
+                  id="equipment-model"
+                  label="Модель / Модификация"
+                  aria-label="Модель / Модификация"
                   placeholder="например: GA 45 VSD+ / 11 кВт"
                   fullWidth
                   size="small"
@@ -467,6 +517,9 @@ export function EquipmentWizardForm({
                   Место установки (Цех, участок, позиция)
                 </Typography>
                 <TextField
+                  id="equipment-location"
+                  label="Место установки (Цех, участок, позиция)"
+                  aria-label="Место установки (Цех, участок, позиция)"
                   placeholder="например: Компрессорный цех, поз. К-2"
                   fullWidth
                   size="small"
@@ -574,7 +627,10 @@ export function EquipmentWizardForm({
                   Статус оборудования
                 </Typography>
                 <FormControl fullWidth size="small">
+                  <InputLabel id="equipment-status-label">Статус оборудования</InputLabel>
                   <Select
+                    labelId="equipment-status-label"
+                    label="Статус оборудования"
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
                   >
@@ -599,41 +655,6 @@ export function EquipmentWizardForm({
                   size="small"
                   fullWidth
                 />
-              </Box>
-
-              <Box sx={{ gridColumn: { xs: 'span 1', sm: 'span 2' } }}>
-                <Typography variant="subtitle2" fontWeight={700} color="#334155" sx={{ mb: 1.25 }}>
-                  Метки и теги оборудования
-                </Typography>
-                <Paper variant="outlined" sx={{ p: 2, borderRadius: '8px', minHeight: 80, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                  {tags.length === 0 ? (
-                    <Typography variant="body2" color="text.secondary">
-                      Теги пока не созданы в справочнике
-                    </Typography>
-                  ) : (
-                    tags.map((tag) => {
-                      const isSelected = selectedTagIds.includes(tag.id);
-                      return (
-                        <Chip
-                          key={tag.id}
-                          label={tag.name}
-                          onClick={() => {
-                            setSelectedTagIds((prev) =>
-                              isSelected ? prev.filter((id) => id !== tag.id) : [...prev, tag.id]
-                            );
-                          }}
-                          color={isSelected ? 'primary' : 'default'}
-                          variant={isSelected ? 'filled' : 'outlined'}
-                          sx={{
-                            fontWeight: 600,
-                            borderRadius: '6px',
-                            borderColor: tag.color || undefined,
-                          }}
-                        />
-                      );
-                    })
-                  )}
-                </Paper>
               </Box>
             </Box>
           </Stack>

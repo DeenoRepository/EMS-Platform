@@ -34,8 +34,9 @@ import {
   type TableColumnOption,
 } from '@/components/ui';
 import { MroExecutionWizardDialog } from '@/components/mro';
-import { formatDateTime, formatDate } from '@ems/shared';
+import { formatDateTime, formatDate, PERMISSIONS } from '@ems/shared';
 import { useSnackbar } from 'notistack';
+import { useAuth } from '@/lib/auth-client';
 
 interface MaintenanceHistoryItem {
   id: string;
@@ -83,6 +84,11 @@ const HISTORY_COLUMNS: TableColumnOption[] = [
 
 export default function MroHistoryPage() {
   const { enqueueSnackbar } = useSnackbar();
+  const { user, hasPermission } = useAuth();
+  const canAccessHistory =
+    user?.roles?.includes('admin') ||
+    hasPermission(PERMISSIONS.MRO_SCHEDULE_VIEW) ||
+    hasPermission(PERMISSIONS.MRO_EXECUTION_COMPLETE);
 
   const [schedules, setSchedules] = useState<MaintenanceHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -120,8 +126,10 @@ export default function MroHistoryPage() {
   }, [enqueueSnackbar]);
 
   useEffect(() => {
-    fetchHistory();
-  }, [fetchHistory]);
+    if (canAccessHistory) {
+      fetchHistory();
+    }
+  }, [canAccessHistory, fetchHistory]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -158,6 +166,35 @@ export default function MroHistoryPage() {
 
     return list;
   }, [schedules, search, sortField, sortDirection]);
+
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+
+  const paginatedHistory = useMemo(() => {
+    return filteredHistory.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
+  }, [filteredHistory, page, rowsPerPage]);
+
+  if (!canAccessHistory) {
+    return (
+      <Box sx={{ width: '100%', pb: 4 }}>
+        <PageHeader
+          title="Журнал выполненных ТО"
+          subtitle="Архив и протоколы проведенных регламентных работ, списания ТМЦ и фиксации исполнителей"
+          breadcrumbs={[
+            { label: 'Главная', href: '/' },
+            { label: 'ТО и Ремонт', href: '/mro' },
+            { label: 'Журнал выполненных ТО' },
+          ]}
+        />
+        <EmptyState
+          title="Доступ ограничен"
+          description="У вашей учетной записи нет прав на просмотр журнала выполненных работ (требуется право mro.schedule.view)."
+          icon={<FactCheckOutlinedIcon sx={{ fontSize: 48, color: 'text.secondary' }} />}
+        />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ width: '100%', pb: 4 }}>
@@ -225,6 +262,16 @@ export default function MroHistoryPage() {
         title="Архив протоколов и актов выполненного ТО"
         subtitle={`Всего выполненных записей: ${filteredHistory.length}`}
         loading={loading}
+        page={page}
+        pageSize={rowsPerPage}
+        total={filteredHistory.length}
+        onPageChange={(_, newPage) => setPage(newPage)}
+        onPageSizeChange={(e) => {
+          setRowsPerPage(parseInt(e.target.value, 10));
+          setPage(0);
+        }}
+        pageSizeOptions={[15, 25, 50, 100]}
+        stickyHeader
         emptyState={
           <EmptyState
             icon={<FactCheckOutlinedIcon sx={{ fontSize: 44, color: '#94a3b8' }} />}
@@ -232,15 +279,25 @@ export default function MroHistoryPage() {
             description="В системе пока нет завершенных регламентных работ."
           />
         }
+        storageKey="mro_history_table"
         columns={HISTORY_COLUMNS}
         visibleColumns={visibleColumns}
         onVisibleColumnsChange={setVisibleColumns}
         toolbar={
-          <FilterToolbar activeFilterCount={search ? 1 : 0} onResetFilters={() => setSearch('')}>
+          <FilterToolbar
+            activeFilterCount={search ? 1 : 0}
+            onResetFilters={() => {
+              setSearch('');
+              setPage(0);
+            }}
+          >
             <Box sx={{ width: { xs: '100%', sm: 300 } }}>
               <SearchInput
                 value={search}
-                onSearch={setSearch}
+                onSearch={(val) => {
+                  setSearch(val);
+                  setPage(0);
+                }}
                 placeholder="Поиск по оборудованию, регламенту, исполнителю..."
               />
             </Box>
@@ -288,7 +345,7 @@ export default function MroHistoryPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredHistory.map((sch) => (
+            {paginatedHistory.map((sch) => (
               <TableRow key={sch.id} hover>
                 {visibleColumns.includes('actualDate') && (
                   <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600 }}>

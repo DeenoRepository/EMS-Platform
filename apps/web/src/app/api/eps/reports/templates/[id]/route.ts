@@ -13,7 +13,7 @@ export async function DELETE(
     if (!user) return unauthorizedResponse();
 
     const { id } = params;
-    const template = await prisma.reportTemplate.findUnique({ where: { id } });
+    const template = await prisma.reportTemplate.findFirst({ where: { id, module: 'eps' } });
 
     if (!template) {
       return NextResponse.json({ success: false, error: 'Шаблон не найден' }, { status: 404 });

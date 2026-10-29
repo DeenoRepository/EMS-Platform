@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef, Suspense } from 'react';
 import {
   Box,
   Card,
@@ -23,6 +23,11 @@ import {
   Autocomplete,
   Paper,
   Divider,
+  ToggleButton,
+  ToggleButtonGroup,
+  FormControlLabel,
+  Checkbox,
+  Alert,
 } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import SearchIcon from '@mui/icons-material/Search';
@@ -87,12 +92,58 @@ interface EquipmentOption {
   id: string;
   name: string;
   inventoryNumber: string | null;
+  model: string | null;
+  decimalNumber?: string | null;
+  customFields?: Record<string, any> | null;
+}
+
+function getEquipmentDecimalNumber(item: any): string {
+  if (!item) return '';
+  if (item.decimalNumber) return String(item.decimalNumber).trim();
+  const custom = item.customFields;
+  if (!custom) return '';
+  return String(
+    custom.decimal_number ||
+    custom.detsimalnyy_nomer ||
+    custom.decimalNumber ||
+    custom['децимальный номер'] ||
+    ''
+  ).trim();
+}
+
+function normalizeEquipmentSearch(value: string | null | undefined): string {
+  const raw = (value || '').toLocaleLowerCase('ru-RU').replace(/ё/g, 'е');
+  const tokens = raw.replace(/[^a-zа-я0-9]+/gi, ' ').trim();
+  const compact = raw.replace(/[^a-zа-я0-9]+/gi, '');
+  return `${tokens} ${compact}`.trim();
+}
+
+function filterEquipmentOptions(options: EquipmentOption[], inputValue: string): EquipmentOption[] {
+  const searchTokens = (inputValue || '')
+    .toLocaleLowerCase('ru-RU')
+    .replace(/ё/g, 'е')
+    .replace(/[^a-zа-я0-9]+/gi, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (searchTokens.length === 0) return options;
+
+  return options.filter((option) => {
+    const decimalNumber = getEquipmentDecimalNumber(option);
+    const searchable = normalizeEquipmentSearch([
+      option.inventoryNumber,
+      option.name,
+      option.model,
+      decimalNumber,
+    ].filter(Boolean).join(' '));
+    return searchTokens.every((token) => searchable.includes(token));
+  });
 }
 
 function DocumentsListContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { hasPermission } = useAuth();
+  const { user, hasPermission } = useAuth();
   const { enqueueSnackbar } = useSnackbar();
 
   const [items, setItems] = useState<DocumentItem[]>([]);
@@ -176,15 +227,52 @@ function DocumentsListContent() {
 
   // Upload Modal State
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [bindingMode, setBindingMode] = useState<'EQUIPMENT' | 'MODEL' | 'DECIMAL'>('EQUIPMENT');
   const [selectedEquipmentForUpload, setSelectedEquipmentForUpload] = useState<EquipmentOption | null>(null);
+  const [selectedModelForUpload, setSelectedModelForUpload] = useState<string | null>(null);
+  const [modelSearchInput, setModelSearchInput] = useState('');
+  const [selectedDecimalForUpload, setSelectedDecimalForUpload] = useState<string | null>(null);
+  const [decimalSearchInput, setDecimalSearchInput] = useState('');
+  const [applyToAllModel, setApplyToAllModel] = useState(false);
+  const [applyToAllDecimal, setApplyToAllDecimal] = useState(false);
+  const [availableBindingTargets, setAvailableBindingTargets] = useState<{
+    models: { model: string; count: number; sampleEquipment: string[] }[];
+    decimalNumbers: { decimalNumber: string; count: number; sampleEquipment: string[] }[];
+  }>({ models: [], decimalNumbers: [] });
+  const [equipmentSearchInput, setEquipmentSearchInput] = useState('');
+  const [uploadEquipmentOptions, setUploadEquipmentOptions] = useState<EquipmentOption[]>([]);
+  const [uploadEquipmentLoading, setUploadEquipmentLoading] = useState(false);
+  const uploadSearchRequestRef = useRef(0);
+  const uploadEquipmentOptionsWithSelected = useMemo(() => {
+    const selectedMatchesSearch = !equipmentSearchInput.trim() || filterEquipmentOptions([selectedEquipmentForUpload].filter(Boolean) as EquipmentOption[], equipmentSearchInput).length > 0;
+    if (!selectedEquipmentForUpload || !selectedMatchesSearch || uploadEquipmentOptions.some((option) => option.id === selectedEquipmentForUpload.id)) {
+      return uploadEquipmentOptions;
+    }
+    return [selectedEquipmentForUpload, ...uploadEquipmentOptions];
+  }, [selectedEquipmentForUpload, uploadEquipmentOptions]);
   const [uploadDocType, setUploadDocType] = useState('SCHEMA');
   const [uploadDescription, setUploadDescription] = useState('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
 
   // Confirm Delete Dialog State
   const [deleteDialogDoc, setDeleteDialogDoc] = useState<{ id: string; name: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Fetch binding targets (distinct models and decimal numbers with counts)
+  const fetchBindingTargets = useCallback(async () => {
+    try {
+      const res = await fetch('/api/eps/documents/binding-targets');
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          setAvailableBindingTargets(json.data);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   // Load equipment list for picker
   useEffect(() => {
@@ -199,6 +287,7 @@ function DocumentsListContent() {
                 id: eq.id,
                 name: eq.name,
                 inventoryNumber: eq.inventoryNumber,
+                model: eq.model,
               }))
             );
           }
@@ -208,7 +297,46 @@ function DocumentsListContent() {
       }
     }
     loadEquipment();
-  }, []);
+    fetchBindingTargets();
+  }, [fetchBindingTargets]);
+
+  useEffect(() => {
+    const query = equipmentSearchInput.trim();
+    const requestId = ++uploadSearchRequestRef.current;
+    const controller = new AbortController();
+    setUploadEquipmentOptions([]);
+    setUploadEquipmentLoading(true);
+    const timer = window.setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({ page: '1', pageSize: '50' });
+        if (query) params.set('search', query);
+        const response = await fetch(`/api/eps/equipment?${params.toString()}`, { signal: controller.signal });
+        if (!response.ok || requestId !== uploadSearchRequestRef.current) return;
+        const json = await response.json();
+        if (json.success && Array.isArray(json.data?.items) && requestId === uploadSearchRequestRef.current) {
+          setUploadEquipmentOptions(json.data.items.map((equipment: any) => ({
+            id: equipment.id,
+            name: equipment.name,
+            inventoryNumber: equipment.inventoryNumber,
+            model: equipment.model,
+            decimalNumber: getEquipmentDecimalNumber(equipment),
+            customFields: equipment.customFields,
+          })));
+        }
+      } catch (error) {
+        if (!(error instanceof DOMException && error.name === 'AbortError')) {
+          console.error('Ошибка поиска оборудования для документа:', error);
+        }
+      } finally {
+        if (requestId === uploadSearchRequestRef.current) setUploadEquipmentLoading(false);
+      }
+    }, 300);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [equipmentSearchInput]);
 
   const fetchDocuments = useCallback(async () => {
     setLoading(true);
@@ -239,9 +367,16 @@ function DocumentsListContent() {
     }
   }, [page, pageSize, search, docTypeFilter, equipmentFilter, enqueueSnackbar]);
 
+  const canAccessDocs =
+    user?.roles?.includes('admin') ||
+    hasPermission(PERMISSIONS.EPS_DOCUMENTS_VIEW) ||
+    hasPermission(PERMISSIONS.EPS_DOCUMENTS_UPLOAD);
+
   useEffect(() => {
-    fetchDocuments();
-  }, [fetchDocuments]);
+    if (canAccessDocs) {
+      fetchDocuments();
+    }
+  }, [canAccessDocs, fetchDocuments]);
 
   const handleKpiFilter = (docType: string) => {
     if (docTypeFilter === docType) {
@@ -280,22 +415,42 @@ function DocumentsListContent() {
   };
 
   const handleUploadSubmit = async () => {
-    if (!selectedFile) {
-      enqueueSnackbar('Выберите файл для загрузки', { variant: 'warning' });
+    if (selectedFiles.length === 0) {
+      enqueueSnackbar('Выберите хотя бы один файл для загрузки', { variant: 'warning' });
       return;
     }
-    if (!selectedEquipmentForUpload) {
+    if (bindingMode === 'EQUIPMENT' && !selectedEquipmentForUpload) {
       enqueueSnackbar('Выберите оборудование, к которому относится документ', { variant: 'warning' });
+      return;
+    }
+    if (bindingMode === 'MODEL' && !selectedModelForUpload?.trim()) {
+      enqueueSnackbar('Выберите или укажите модель оборудования', { variant: 'warning' });
+      return;
+    }
+    if (bindingMode === 'DECIMAL' && !selectedDecimalForUpload?.trim()) {
+      enqueueSnackbar('Выберите или укажите децимальный номер', { variant: 'warning' });
       return;
     }
 
     setUploading(true);
     try {
       const fd = new FormData();
-      fd.append('file', selectedFile);
-      fd.append('equipmentId', selectedEquipmentForUpload.id);
+      selectedFiles.forEach((file) => {
+        fd.append('files', file);
+      });
       fd.append('docType', uploadDocType);
       fd.append('description', uploadDescription);
+      fd.append('bindingMode', bindingMode);
+
+      if (bindingMode === 'EQUIPMENT' && selectedEquipmentForUpload) {
+        fd.append('equipmentId', selectedEquipmentForUpload.id);
+        if (applyToAllModel) fd.append('applyToAllModel', 'true');
+        if (applyToAllDecimal) fd.append('applyToAllDecimal', 'true');
+      } else if (bindingMode === 'MODEL' && selectedModelForUpload) {
+        fd.append('model', selectedModelForUpload.trim());
+      } else if (bindingMode === 'DECIMAL' && selectedDecimalForUpload) {
+        fd.append('decimalNumber', selectedDecimalForUpload.trim());
+      }
 
       const res = await fetch('/api/eps/documents', {
         method: 'POST',
@@ -303,18 +458,34 @@ function DocumentsListContent() {
       });
       const json = await res.json();
       if (json.success) {
-        enqueueSnackbar('Документ успешно загружен и прикреплен', { variant: 'success' });
+        const docCount = json.count || selectedFiles.length;
+        const eqCount = json.equipmentCount || 1;
+        const msg =
+          eqCount > 1
+            ? `Успешно привязано документов: ${docCount} (к ${eqCount} ед. оборудования)`
+            : docCount > 1
+            ? `Успешно загружено и прикреплено документов: ${docCount}`
+            : 'Документ успешно загружен и прикреплен';
+        enqueueSnackbar(msg, { variant: 'success' });
         setUploadModalOpen(false);
-        setSelectedFile(null);
+        setSelectedFiles([]);
         setSelectedEquipmentForUpload(null);
+        setSelectedModelForUpload(null);
+        setSelectedDecimalForUpload(null);
+        setModelSearchInput('');
+        setDecimalSearchInput('');
+        setApplyToAllModel(false);
+        setApplyToAllDecimal(false);
+        setEquipmentSearchInput('');
         setUploadDescription('');
         setUploadDocType('SCHEMA');
         fetchDocuments();
+        fetchBindingTargets();
       } else {
-        enqueueSnackbar(json.error || 'Ошибка загрузки документа', { variant: 'error' });
+        enqueueSnackbar(json.error || 'Ошибка загрузки документов', { variant: 'error' });
       }
     } catch {
-      enqueueSnackbar('Ошибка сети при загрузке документа', { variant: 'error' });
+      enqueueSnackbar('Ошибка сети при загрузке документов', { variant: 'error' });
     } finally {
       setUploading(false);
     }
@@ -347,6 +518,27 @@ function DocumentsListContent() {
   const [visibleColumns, setVisibleColumns] = useState<string[]>(() =>
     DOCUMENT_COLUMNS.map((c) => c.id)
   );
+
+  if (!canAccessDocs) {
+    return (
+      <Box sx={{ pb: 4 }}>
+        <PageHeader
+          title="Электронный архив технической документации"
+          subtitle="Конструкторская и эксплуатационная документация (ЕСКД): паспорта, чертежи, схемы, руководства по эксплуатации (РЭ) и акты"
+          breadcrumbs={[
+            { label: 'Главная', href: '/' },
+            { label: 'Реестр оборудования', href: '/eps' },
+            { label: 'Электронный архив документации' },
+          ]}
+        />
+        <EmptyState
+          title="Доступ ограничен"
+          description="У вашей учетной записи нет полномочий для доступа к технической документации (требуется право eps.documents.view или eps.documents.upload)."
+          icon={<DescriptionOutlinedIcon sx={{ fontSize: 48, color: 'text.secondary' }} />}
+        />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ pb: 4 }}>
@@ -471,6 +663,7 @@ function DocumentsListContent() {
           setPageSize(parseInt(e.target.value, 10));
           setPage(1);
         }}
+        storageKey="eps_documents_table"
         columns={DOCUMENT_COLUMNS}
         visibleColumns={visibleColumns}
         onVisibleColumnsChange={setVisibleColumns}
@@ -553,7 +746,7 @@ function DocumentsListContent() {
                   <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>Все оборудование</MenuItem>
                   {equipmentList.map((eq) => (
                     <MenuItem key={eq.id} value={eq.id} sx={{ fontSize: '0.8125rem' }}>
-                      {eq.inventoryNumber ? `[${eq.inventoryNumber}] ` : ''}{eq.name}
+                      {eq.inventoryNumber ? `[${eq.inventoryNumber}] ` : ''}{eq.name}{eq.model ? ` — ${eq.model}` : ''}
                     </MenuItem>
                   ))}
                 </TextField>
@@ -718,6 +911,14 @@ function DocumentsListContent() {
                         >
                           {doc.equipment.inventoryNumber || 'Б/Н'}
                         </Paper>
+                        <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.3 }}>
+                          Модель: {doc.equipment.model || '—'}
+                        </Typography>
+                        {getEquipmentDecimalNumber(doc.equipment) ? (
+                          <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.3 }}>
+                            Дец. №: {getEquipmentDecimalNumber(doc.equipment)}
+                          </Typography>
+                        ) : null}
                       </Box>
                     ) : (
                       <Typography variant="caption" color="text.secondary">
@@ -812,33 +1013,258 @@ function DocumentsListContent() {
       {/* Upload Document Modal Dialog */}
       <FormDialog
         open={uploadModalOpen}
-        onClose={() => setUploadModalOpen(false)}
-        title="Загрузка документа в архив EPS"
+        onClose={() => {
+          setUploadModalOpen(false);
+          setSelectedFiles([]);
+        }}
+        title="Загрузка документов в архив EPS"
         icon={<UploadFileIcon color="primary" />}
         maxWidth="sm"
         loading={uploading}
-        submitLabel={uploading ? 'Загрузка...' : 'Загрузить в архив'}
+        submitLabel={
+          uploading
+            ? 'Загрузка...'
+            : selectedFiles.length > 1
+            ? `Загрузить в архив (${selectedFiles.length})`
+            : 'Загрузить в архив'
+        }
         onSubmit={handleUploadSubmit}
-        submitDisabled={!selectedFile || !selectedEquipmentForUpload || uploading}
+        submitDisabled={
+          uploading ||
+          selectedFiles.length === 0 ||
+          (bindingMode === 'EQUIPMENT' && !selectedEquipmentForUpload) ||
+          (bindingMode === 'MODEL' && !selectedModelForUpload?.trim()) ||
+          (bindingMode === 'DECIMAL' && !selectedDecimalForUpload?.trim())
+        }
       >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-          {/* Equipment Picker */}
-          <Autocomplete
-            options={equipmentList}
-            getOptionLabel={(option) => `${option.inventoryNumber ? `[${option.inventoryNumber}] ` : ''}${option.name}`}
-            value={selectedEquipmentForUpload}
-            onChange={(_, val) => setSelectedEquipmentForUpload(val)}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Оборудование"
-                placeholder="Выберите единицу оборудования"
-                size="small"
-                fullWidth
-                required
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.25, pt: 1 }}>
+          {/* Binding Mode Selector */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+            <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+              Способ привязки документа:
+            </Typography>
+            <ToggleButtonGroup
+              value={bindingMode}
+              exclusive
+              onChange={(_, val) => val && setBindingMode(val)}
+              size="small"
+              fullWidth
+              sx={{
+                '& .MuiToggleButton-root': {
+                  textTransform: 'none',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  py: 0.6,
+                },
+              }}
+            >
+              <ToggleButton value="EQUIPMENT">По единице оборудования</ToggleButton>
+              <ToggleButton value="MODEL">По модели</ToggleButton>
+              <ToggleButton value="DECIMAL">По децимальному номеру</ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+
+          {/* Mode 1: EQUIPMENT */}
+          {bindingMode === 'EQUIPMENT' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Autocomplete
+                options={uploadEquipmentOptionsWithSelected}
+                getOptionLabel={(option) => `${option.inventoryNumber ? `[${option.inventoryNumber}] ` : ''}${option.name}${option.model ? ` — ${option.model}` : ''}${option.decimalNumber ? ` (дец. № ${option.decimalNumber})` : ''}`}
+                filterOptions={(options, state) => filterEquipmentOptions(options, state.inputValue || equipmentSearchInput)}
+                value={selectedEquipmentForUpload}
+                onChange={(_, val) => {
+                  setSelectedEquipmentForUpload(val);
+                  setApplyToAllModel(false);
+                  setApplyToAllDecimal(false);
+                }}
+                inputValue={equipmentSearchInput}
+                onInputChange={(_, value, reason) => {
+                  if (reason === 'input' || reason === 'clear') {
+                    setUploadEquipmentOptions([]);
+                  }
+                  setEquipmentSearchInput(value);
+                }}
+                loading={uploadEquipmentLoading}
+                noOptionsText="Оборудование не найдено"
+                renderOption={(props, option) => (
+                  <Box component="li" {...props} key={option.id}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                        {option.inventoryNumber ? `[${option.inventoryNumber}] ` : ''}{option.name}
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mt: 0.25 }}>
+                        {option.model && (
+                          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                            Модель: <strong>{option.model}</strong>
+                          </Typography>
+                        )}
+                        {option.decimalNumber && (
+                          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                            Дец. №: <strong>{option.decimalNumber}</strong>
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
+                  </Box>
+                )}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Оборудование"
+                    placeholder="Поиск по инв. номеру, наименованию или модели, децимальному номеру"
+                    size="small"
+                    fullWidth
+                    required
+                  />
+                )}
               />
-            )}
-          />
+
+              {selectedEquipmentForUpload?.model && (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={applyToAllModel}
+                      onChange={(e) => setApplyToAllModel(e.target.checked)}
+                    />
+                  }
+                  label={
+                    <Typography variant="caption" sx={{ color: 'text.primary', fontWeight: 500 }}>
+                      Привязать также ко всем единицам модели «<strong>{selectedEquipmentForUpload.model}</strong>»
+                    </Typography>
+                  }
+                />
+              )}
+              {selectedEquipmentForUpload?.decimalNumber && (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={applyToAllDecimal}
+                      onChange={(e) => setApplyToAllDecimal(e.target.checked)}
+                    />
+                  }
+                  label={
+                    <Typography variant="caption" sx={{ color: 'text.primary', fontWeight: 500 }}>
+                      Привязать также ко всем единицам с децимальным номером «<strong>{selectedEquipmentForUpload.decimalNumber}</strong>»
+                    </Typography>
+                  }
+                />
+              )}
+            </Box>
+          )}
+
+          {/* Mode 2: MODEL */}
+          {bindingMode === 'MODEL' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Autocomplete
+                freeSolo
+                options={availableBindingTargets.models.map((m) => m.model)}
+                value={selectedModelForUpload}
+                onChange={(_, val) => setSelectedModelForUpload(val)}
+                inputValue={modelSearchInput}
+                onInputChange={(_, val) => {
+                  setModelSearchInput(val);
+                  setSelectedModelForUpload(val);
+                }}
+                renderOption={(props, option) => {
+                  const info = availableBindingTargets.models.find((m) => m.model === option);
+                  return (
+                    <Box component="li" {...props} key={option}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{option}</Typography>
+                        {info && (
+                          <Chip
+                            label={`${info.count} ед.`}
+                            size="small"
+                            sx={{ height: 20, fontSize: '0.6875rem', fontWeight: 600 }}
+                          />
+                        )}
+                      </Box>
+                    </Box>
+                  );
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Модель / Типоразмер оборудования"
+                    placeholder="Выберите модель из списка или введите название"
+                    size="small"
+                    fullWidth
+                    required
+                  />
+                )}
+              />
+
+              {selectedModelForUpload && (
+                <Alert severity="info" sx={{ py: 0.5, fontSize: '0.75rem' }}>
+                  Документ будет автоматически привязан ко всему оборудованию модели «<strong>{selectedModelForUpload}</strong>»
+                  {(() => {
+                    const info = availableBindingTargets.models.find(
+                      (m) => m.model.toLowerCase() === selectedModelForUpload.toLowerCase()
+                    );
+                    return info ? ` (${info.count} ед. оборудования в реестре)` : '';
+                  })()}
+                </Alert>
+              )}
+            </Box>
+          )}
+
+          {/* Mode 3: DECIMAL */}
+          {bindingMode === 'DECIMAL' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Autocomplete
+                freeSolo
+                options={availableBindingTargets.decimalNumbers.map((d) => d.decimalNumber)}
+                value={selectedDecimalForUpload}
+                onChange={(_, val) => setSelectedDecimalForUpload(val)}
+                inputValue={decimalSearchInput}
+                onInputChange={(_, val) => {
+                  setDecimalSearchInput(val);
+                  setSelectedDecimalForUpload(val);
+                }}
+                renderOption={(props, option) => {
+                  const info = availableBindingTargets.decimalNumbers.find((d) => d.decimalNumber === option);
+                  return (
+                    <Box component="li" {...props} key={option}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{option}</Typography>
+                        {info && (
+                          <Chip
+                            label={`${info.count} ед.`}
+                            size="small"
+                            sx={{ height: 20, fontSize: '0.6875rem', fontWeight: 600 }}
+                          />
+                        )}
+                      </Box>
+                    </Box>
+                  );
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Децимальный номер"
+                    placeholder="Выберите децимальный номер из списка или введите"
+                    size="small"
+                    fullWidth
+                    required
+                  />
+                )}
+              />
+
+              {selectedDecimalForUpload && (
+                <Alert severity="info" sx={{ py: 0.5, fontSize: '0.75rem' }}>
+                  Документ будет автоматически привязан ко всему оборудованию с децимальным номером «<strong>{selectedDecimalForUpload}</strong>»
+                  {(() => {
+                    const info = availableBindingTargets.decimalNumbers.find(
+                      (d) => d.decimalNumber.toLowerCase() === selectedDecimalForUpload.toLowerCase()
+                    );
+                    return info ? ` (${info.count} ед. оборудования в реестре)` : '';
+                  })()}
+                </Alert>
+              )}
+            </Box>
+          )}
 
           {/* Document Type */}
           <TextField
@@ -859,16 +1285,17 @@ function DocumentsListContent() {
 
           {/* File Picker */}
           <FileUploadDropzone
-            files={selectedFile ? [selectedFile] : []}
-            onChange={(files) => setSelectedFile(files[0] || null)}
+            multiple
+            files={selectedFiles}
+            onChange={(files) => setSelectedFiles(files)}
             compact
-            title="Перетащите файл документа или выберите"
-            description="PDF, Word, Excel, чертежи и схемы (до 15 МБ)"
+            title="Перетащите файлы документов или выберите"
+            description="PDF, Word, Excel, чертежи и схемы (до 15 МБ на файл)"
           />
 
           {/* Description */}
           <TextField
-            label="Описание / Примечание к документу"
+            label="Описание / Примечание к документам"
             value={uploadDescription}
             onChange={(e) => setUploadDescription(e.target.value)}
             multiline

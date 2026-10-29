@@ -12,7 +12,12 @@ export async function GET(
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_VIEW) && !hasPermission(user, PERMISSIONS.EPS_APPROVALS_VIEW)) {
+    if (
+      !hasPermission(user, PERMISSIONS.EPS_APPROVALS_VIEW) &&
+      !hasPermission(user, PERMISSIONS.EPS_APPROVALS_CREATE) &&
+      !hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) &&
+      !user.roles.includes('admin')
+    ) {
       return forbiddenResponse();
     }
 
@@ -79,20 +84,20 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: 'Заявка не найдена' }, { status: 404 });
     }
 
-    if (approval.status !== 'PENDING' && status !== 'CANCELLED') {
+    if (approval.status !== 'PENDING') {
       return NextResponse.json(
         { success: false, error: 'Решение по этой заявке уже было принято' },
         { status: 400 }
       );
     }
 
-    // Checking permissions: Requester can CANCEL their own request, review requires management permissions
+    // A request can only be cancelled while pending. Decisions require the dedicated approval permission.
     if (status === 'CANCELLED') {
       if (approval.requesterId !== user.userId && !hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE)) {
         return forbiddenResponse();
       }
     } else {
-      if (!hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE) && !hasPermission(user, PERMISSIONS.EPS_EQUIPMENT_EDIT)) {
+      if (!hasPermission(user, PERMISSIONS.EPS_APPROVALS_MANAGE)) {
         return forbiddenResponse();
       }
     }
@@ -210,6 +215,11 @@ export async function PATCH(
             reason: `Утверждена смена рабочего статуса: ${approval.title}`,
           },
         });
+      } else if (approval.type === 'STATUS_CHANGE') {
+        return NextResponse.json(
+          { success: false, error: 'Заявка не содержит корректного целевого статуса' },
+          { status: 400 }
+        );
       }
     }
 

@@ -27,6 +27,45 @@ export function escapeLdapFilter(input: string): string {
   });
 }
 
+export function constructUserPrincipalName(username: string, searchBase?: string, ldapUrl?: string): string {
+  const cleanUser = username.trim();
+  if (!cleanUser) return '';
+
+  // 1. If already in UPN format (user@domain) or NetBIOS format (DOMAIN\user), use as-is
+  if (cleanUser.includes('@') || cleanUser.includes('\\')) {
+    return cleanUser;
+  }
+
+  // 2. Extract domain from searchBase (dc=nzpp,dc=ru -> nzpp.ru)
+  if (searchBase) {
+    const dcParts = searchBase
+      .split(',')
+      .map((p) => p.trim())
+      .filter((p) => p.toLowerCase().startsWith('dc='))
+      .map((p) => p.substring(3));
+
+    if (dcParts.length > 0) {
+      return `${cleanUser}@${dcParts.join('.')}`;
+    }
+  }
+
+  // 3. Extract domain from ldapUrl (ldap://ad-dc-nzpp-02.nzpp.ru:389)
+  if (ldapUrl) {
+    try {
+      const parsed = new URL(ldapUrl);
+      const host = parsed.hostname;
+      if (host) {
+        const parts = host.split('.');
+        if (parts.length >= 2) {
+          return `${cleanUser}@${parts.slice(-2).join('.')}`;
+        }
+      }
+    } catch {}
+  }
+
+  return cleanUser;
+}
+
 export async function authenticateLdap(
   username: string,
   password: string,
@@ -39,122 +78,93 @@ export async function authenticateLdap(
   const searchBase = configOverride?.searchBase || process.env.LDAP_SEARCH_BASE || '';
   const filterTemplate = process.env.LDAP_SEARCH_FILTER || '(|(sAMAccountName={{username}})(uid={{username}})(userPrincipalName={{username}}))';
 
-  if (!ldapEnabled || !ldapUrl) {
+  if (!ldapEnabled || !ldapUrl || !username || !password) {
     return null;
   }
 
-  if (!username || !password) {
-    return null;
-  }
+  const client = new Client({ url: ldapUrl, timeout: 5000, connectTimeout: 5000 });
 
-  let client: Client;
-  try {
-    client = new Client({ url: ldapUrl, timeout: 5000, connectTimeout: 5000 });
-  } catch {
-    return null;
-  }
+  const hasServiceAccount = Boolean(bindDn && bindDn.trim() && bindPassword && bindPassword.trim());
 
   try {
-    // Mode 1: Search & Bind with Service Account
-    if (bindDn && bindPassword && searchBase) {
-      await client.bind(bindDn, bindPassword);
-
-      const sanitizedUsername = escapeLdapFilter(username);
-      const filter = filterTemplate.replace(/\{\{username\}\}/g, sanitizedUsername);
-      const searchOptions = {
-        filter,
-        scope: 'sub' as const,
-        attributes: ['dn', 'displayName', 'cn', 'mail', 'sAMAccountName', 'userPrincipalName'],
-      };
-
-      const { searchEntries } = await client.search(searchBase, searchOptions);
-
-      if (searchEntries.length > 0 && searchEntries[0]?.dn) {
-        const userEntry = searchEntries[0];
-        const userClient = new Client({ url: ldapUrl, timeout: 5000 });
-        try {
-          await userClient.bind(userEntry.dn, password);
-          await userClient.unbind();
-          await client.unbind();
-
-          const displayName =
-            userEntry.displayName ||
-            userEntry.cn ||
-            userEntry.sAMAccountName ||
-            username;
-          const email = userEntry.mail || undefined;
-
-          return {
-            ldapLogin: username,
-            displayName: String(displayName),
-            email: email ? String(email) : undefined,
-          };
-        } catch {
-          try { await userClient.unbind(); } catch {}
-          try { await client.unbind(); } catch {}
-          return null;
-        }
-      }
-
-    }
-
-    // Mode 2: Direct User Binding (No service account or direct DN)
-    const dnCandidates: string[] = [];
-    if (searchBase) {
-      dnCandidates.push(`uid=${username},${searchBase}`);
-      dnCandidates.push(`cn=${username},${searchBase}`);
-      // DC to domain name (e.g. dc=company,dc=local -> company.local)
-      const domain = searchBase
-        .split(',')
-        .map((p) => p.trim())
-        .filter((p) => p.toLowerCase().startsWith('dc='))
-        .map((p) => p.substring(3))
-        .join('.');
-      if (domain) {
-        dnCandidates.push(`${username}@${domain}`);
-      }
-    }
-    dnCandidates.push(username);
-
-    for (const candidateDn of dnCandidates) {
-      const userClient = new Client({ url: ldapUrl, timeout: 5000 });
+    // Mode 1: Search & Bind with Service Account (only if valid service credentials configured)
+    if (hasServiceAccount && searchBase) {
       try {
-        await userClient.bind(candidateDn, password);
+        await client.bind(bindDn!, bindPassword!);
 
-        let displayName = username;
-        let email: string | undefined;
+        const sanitizedUsername = escapeLdapFilter(username);
+        const filter = filterTemplate.replace(/\{\{username\}\}/g, sanitizedUsername);
+        const { searchEntries } = await client.search(searchBase, {
+          filter,
+          scope: 'sub' as const,
+          attributes: ['dn', 'displayName', 'cn', 'mail', 'sAMAccountName', 'userPrincipalName'],
+        });
 
-        if (searchBase) {
+        if (searchEntries.length > 0 && searchEntries[0]?.dn) {
+          const userEntry = searchEntries[0];
+          const userClient = new Client({ url: ldapUrl, timeout: 5000 });
           try {
-            const { searchEntries } = await userClient.search(searchBase, {
-              filter: `(|(sAMAccountName=${escapeLdapFilter(username)})(uid=${escapeLdapFilter(username)})(cn=${escapeLdapFilter(username)}))`,
-              scope: 'sub',
-              attributes: ['displayName', 'cn', 'mail'],
-            });
-            if (searchEntries.length > 0) {
-              const entry = searchEntries[0];
-              if (entry.displayName || entry.cn) displayName = String(entry.displayName || entry.cn);
-              if (entry.mail) email = String(entry.mail);
-            }
-          } catch {}
+            await userClient.bind(userEntry.dn, password);
+            await userClient.unbind();
+            await client.unbind();
+
+            const displayName = userEntry.displayName || userEntry.cn || userEntry.sAMAccountName || username;
+            const email = userEntry.mail || undefined;
+
+            return {
+              ldapLogin: username,
+              displayName: String(displayName),
+              email: email ? String(email) : undefined,
+            };
+          } catch (bindErr: any) {
+            console.warn('[LDAP USER BIND ERROR]:', bindErr?.message);
+            try { await userClient.unbind(); } catch {}
+            try { await client.unbind(); } catch {}
+            return null;
+          }
         }
-
-        await userClient.unbind();
         await client.unbind();
-
-        return {
-          ldapLogin: username,
-          displayName,
-          email,
-        };
-      } catch {
-        try { await userClient.unbind(); } catch {}
+        return null;
+      } catch (svcErr: any) {
+        console.warn('[LDAP SERVICE BIND FAILED, FALLING BACK TO DIRECT BIND]:', svcErr?.message);
+        try { await client.unbind(); } catch {}
       }
     }
 
-    await client.unbind();
-    return null;
-  } catch (error) {
+    // Mode 2: Direct Single Bind with Constructed UPN (Safe: Exactly 1 single attempt, no lockout risk)
+    const exactAccount = constructUserPrincipalName(username, searchBase, ldapUrl);
+    console.log('[LDAP DIRECT BIND ATTEMPT]:', { username, exactAccount, ldapUrl });
+    const directClient = new Client({ url: ldapUrl, timeout: 5000, connectTimeout: 5000 });
+    await directClient.bind(exactAccount, password);
+
+    let displayName = username;
+    let email: string | undefined;
+
+    if (searchBase) {
+      try {
+        const rawUser = username.includes('\\') ? username.split('\\')[1] : (username.includes('@') ? username.split('@')[0] : username);
+        const { searchEntries } = await directClient.search(searchBase, {
+          filter: `(|(sAMAccountName=${escapeLdapFilter(rawUser)})(uid=${escapeLdapFilter(rawUser)})(cn=${escapeLdapFilter(rawUser)})(userPrincipalName=${escapeLdapFilter(exactAccount)}))`,
+          scope: 'sub',
+          attributes: ['displayName', 'cn', 'mail'],
+        });
+        if (searchEntries.length > 0) {
+          const entry = searchEntries[0];
+          if (entry.displayName || entry.cn) displayName = String(entry.displayName || entry.cn);
+          if (entry.mail) email = String(entry.mail);
+        }
+      } catch {}
+    }
+
+    await directClient.unbind();
+
+    return {
+      ldapLogin: username,
+      displayName,
+      email,
+    };
+  } catch (error: any) {
+    console.error('[LDAP AUTH ERROR]:', error?.message || error);
     try { await client.unbind(); } catch {}
     return null;
   }
@@ -291,70 +301,57 @@ export async function testLdapConnection(config: {
         };
       }
 
-      // 2. Direct user binding test (without service account)
-      const dnCandidates: string[] = [];
-      if (config.searchBase) {
-        dnCandidates.push(`uid=${config.testLogin},${config.searchBase}`);
-        dnCandidates.push(`cn=${config.testLogin},${config.searchBase}`);
-        const domain = config.searchBase
-          .split(',')
-          .map((p) => p.trim())
-          .filter((p) => p.toLowerCase().startsWith('dc='))
-          .map((p) => p.substring(3))
-          .join('.');
-        if (domain) {
-          dnCandidates.push(`${config.testLogin}@${domain}`);
+      // 2. Direct user binding test (Single attempt with constructUserPrincipalName, strictly NO loops)
+      const exactAccount = constructUserPrincipalName(config.testLogin, config.searchBase, config.url);
+      const userClient = new Client({ url: config.url, timeout: 5000 });
+      try {
+        await userClient.bind(exactAccount, config.testPassword);
+
+        let displayName = config.testLogin;
+        let email: string | undefined;
+
+        if (config.searchBase) {
+          try {
+            const rawUser = config.testLogin.includes('\\')
+              ? config.testLogin.split('\\')[1]
+              : config.testLogin.includes('@')
+              ? config.testLogin.split('@')[0]
+              : config.testLogin;
+
+            const { searchEntries } = await userClient.search(config.searchBase, {
+              filter: `(|(sAMAccountName=${escapeLdapFilter(rawUser)})(uid=${escapeLdapFilter(rawUser)})(cn=${escapeLdapFilter(rawUser)})(userPrincipalName=${escapeLdapFilter(exactAccount)}))`,
+              scope: 'sub',
+              attributes: ['displayName', 'cn', 'mail'],
+            });
+            if (searchEntries.length > 0) {
+              const entry = searchEntries[0];
+              if (entry.displayName || entry.cn) displayName = String(entry.displayName || entry.cn);
+              if (entry.mail) email = String(entry.mail);
+            }
+          } catch {}
         }
+
+        try { await userClient.unbind(); } catch {}
+        try { await client.unbind(); } catch {}
+
+        return {
+          success: true,
+          message: `Аутентификация в Active Directory успешна (${exactAccount})! Пользователь: «${displayName}»`,
+          user: {
+            ldapLogin: config.testLogin,
+            displayName,
+            email,
+          },
+        };
+      } catch (err: unknown) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        try { await userClient.unbind(); } catch {}
+        try { await client.unbind(); } catch {}
+        return {
+          success: false,
+          error: `Ошибка авторизации в Active Directory (${exactAccount}): ${errorMsg}`,
+        };
       }
-      dnCandidates.push(config.testLogin);
-
-      let lastBindError = '';
-      for (const candidateDn of dnCandidates) {
-        const userClient = new Client({ url: config.url, timeout: 5000 });
-        try {
-          await userClient.bind(candidateDn, config.testPassword);
-
-          let displayName = config.testLogin;
-          let email: string | undefined;
-
-          if (config.searchBase) {
-            try {
-              const { searchEntries } = await userClient.search(config.searchBase, {
-                filter: `(|(sAMAccountName=${escapeLdapFilter(config.testLogin)})(uid=${escapeLdapFilter(config.testLogin)})(cn=${escapeLdapFilter(config.testLogin)}))`,
-                scope: 'sub',
-                attributes: ['displayName', 'cn', 'mail'],
-              });
-              if (searchEntries.length > 0) {
-                const entry = searchEntries[0];
-                if (entry.displayName || entry.cn) displayName = String(entry.displayName || entry.cn);
-                if (entry.mail) email = String(entry.mail);
-              }
-            } catch {}
-          }
-
-          try { await userClient.unbind(); } catch {}
-          try { await client.unbind(); } catch {}
-
-          return {
-            success: true,
-            message: `Прямой LDAP bind успешен! Пользователь «${displayName}» авторизован.`,
-            user: {
-              ldapLogin: config.testLogin,
-              displayName,
-              email,
-            },
-          };
-        } catch (err: unknown) {
-          lastBindError = err instanceof Error ? err.message : String(err);
-          try { await userClient.unbind(); } catch {}
-        }
-      }
-
-      try { await client.unbind(); } catch {}
-      return {
-        success: false,
-        error: `Не удалось авторизовать пользователя в LDAP: неверный пароль или недоступный DN (${lastBindError || 'Invalid credentials'})`,
-      };
     }
 
     // Default Connection Ping / Bind DN check

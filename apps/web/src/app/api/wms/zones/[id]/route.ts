@@ -29,11 +29,23 @@ export async function PATCH(
 
     const isAdmin =
       user.roles.includes('admin') ||
-      user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-      user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+      hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
+      hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE);
 
-    if (!isAdmin && zone.warehouse.responsibleUserId && zone.warehouse.responsibleUserId !== user.userId) {
-      return forbiddenResponse(`Вы не являетесь ответственным лицом за склад "${zone.warehouse.name}". Управление зоной запрещено.`);
+    const isResponsible = Boolean(
+      zone.warehouse.responsibleUserId && zone.warehouse.responsibleUserId === user.userId
+    );
+
+    const hasZonePermission =
+      hasPermission(user, PERMISSIONS.WMS_ZONES_MANAGE) ||
+      hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE);
+
+    const canManage = isAdmin || (isResponsible && hasZonePermission);
+
+    if (!canManage) {
+      return forbiddenResponse(
+        `Вы не являетесь ответственным лицом за склад "${zone.warehouse.name}". Управление зонами чужого склада запрещено.`
+      );
     }
 
     const body = await req.json();
@@ -68,9 +80,6 @@ export async function DELETE(
   try {
     const user = await getCurrentUser(req);
     if (!user) return unauthorizedResponse();
-    if (!hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE) && !hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE)) {
-      return forbiddenResponse();
-    }
 
     const zone = await prisma.storageZone.findUnique({
       where: { id: params.id },
@@ -83,11 +92,23 @@ export async function DELETE(
 
     const isAdmin =
       user.roles.includes('admin') ||
-      user.permissions.includes(PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
-      user.permissions.includes(PERMISSIONS.WMS_WAREHOUSES_MANAGE);
+      hasPermission(user, PERMISSIONS.ADMIN_SETTINGS_MANAGE) ||
+      hasPermission(user, PERMISSIONS.WMS_WAREHOUSES_MANAGE);
 
-    if (!isAdmin && zone.warehouse.responsibleUserId && zone.warehouse.responsibleUserId !== user.userId) {
-      return forbiddenResponse(`Вы не являетесь ответственным лицом за склад "${zone.warehouse.name}". Удаление зоны запрещено.`);
+    const isResponsible = Boolean(
+      zone.warehouse.responsibleUserId && zone.warehouse.responsibleUserId === user.userId
+    );
+
+    const hasZonePermission =
+      hasPermission(user, PERMISSIONS.WMS_ZONES_MANAGE) ||
+      hasPermission(user, PERMISSIONS.WMS_NOMENCLATURE_MANAGE);
+
+    const canManage = isAdmin || (isResponsible && hasZonePermission);
+
+    if (!canManage) {
+      return forbiddenResponse(
+        `Вы не являетесь ответственным лицом за склад "${zone.warehouse.name}". Удаление зон чужого склада запрещено.`
+      );
     }
 
     await prisma.storageZone.delete({

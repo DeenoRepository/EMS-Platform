@@ -204,21 +204,39 @@ export default function CreateNomenclatureDialog({
         </Box>
 
         {/* Nomenclature Name */}
-        <TextField
-          fullWidth
-          required
-          label="Наименование номенклатуры"
-          placeholder="например, Подшипник радиальный шариковый 6204 2RS"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
+        <Box>
+          <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.75, display: 'block' }}>
+            Наименование номенклатуры <Box component="span" sx={{ color: 'error.main' }}>*</Box>
+          </Typography>
+          <TextField
+            fullWidth
+            required
+            size="small"
+            placeholder="например, Подшипник радиальный шариковый 6204 2RS"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '8px',
+                fontSize: '0.875rem',
+                backgroundColor: '#ffffff',
+                '& fieldset': { borderColor: '#e2e8f0' },
+                '&:hover fieldset': { borderColor: '#94a3b8' },
+                '&.Mui-focused fieldset': { borderColor: '#0284c7' },
+              },
+            }}
+          />
+        </Box>
 
         {/* SKU & Unit */}
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={7}>
+            <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.75, display: 'block' }}>
+              Артикул / Заводской код
+            </Typography>
             <TextField
               fullWidth
-              label="Артикул / Заводской код"
+              size="small"
               placeholder="BRG-6204-2RS"
               value={article}
               onChange={(e) => setArticle(e.target.value)}
@@ -233,32 +251,67 @@ export default function CreateNomenclatureDialog({
                   </InputAdornment>
                 ),
               }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  fontSize: '0.875rem',
+                  backgroundColor: '#ffffff',
+                  '& fieldset': { borderColor: '#e2e8f0' },
+                  '&:hover fieldset': { borderColor: '#94a3b8' },
+                  '&.Mui-focused fieldset': { borderColor: '#0284c7' },
+                },
+              }}
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={5}>
+            <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.75, display: 'block' }}>
+              Ед. измерения <Box component="span" sx={{ color: 'error.main' }}>*</Box>
+            </Typography>
             <TextField
               fullWidth
-              label="Ед. измерения"
+              size="small"
               value={unit}
               onChange={(e) => setUnit(e.target.value)}
-              placeholder="шт, м, л, кг"
+              placeholder="шт, м, л, кг, компл"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  fontSize: '0.875rem',
+                  backgroundColor: '#ffffff',
+                  '& fieldset': { borderColor: '#e2e8f0' },
+                  '&:hover fieldset': { borderColor: '#94a3b8' },
+                  '&.Mui-focused fieldset': { borderColor: '#0284c7' },
+                },
+              }}
             />
           </Grid>
         </Grid>
 
         {/* Category & Min Stock */}
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={7}>
+            <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.75, display: 'block' }}>
+              Товарная группа / Категория
+            </Typography>
             <TextField
               select
               fullWidth
-              label="Категория"
+              size="small"
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
+              SelectProps={{ displayEmpty: true }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  fontSize: '0.8125rem',
+                  backgroundColor: '#ffffff',
+                  '& fieldset': { borderColor: '#e2e8f0' },
+                  '&:hover fieldset': { borderColor: '#94a3b8' },
+                  '&.Mui-focused fieldset': { borderColor: '#0284c7' },
+                },
+              }}
             >
-              <MenuItem value="">
-                <em>— Без категории —</em>
-              </MenuItem>
+              <MenuItem value="">Без категории</MenuItem>
               {categories.map((c) => (
                 <MenuItem key={c.id} value={c.id}>
                   {c.name}
@@ -266,29 +319,63 @@ export default function CreateNomenclatureDialog({
               ))}
             </TextField>
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={5}>
+            <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.75, display: 'block' }}>
+              Мин. остаток (норматив)
+            </Typography>
             <TextField
               fullWidth
+              size="small"
               type="number"
-              label="Неснижаемый остаток"
-              placeholder="Контроль дефицита"
+              placeholder="0"
               value={minStock}
               onChange={(e) => setMinStock(e.target.value)}
               inputProps={{ min: 0 }}
+              helperText="Порог контроля дефицита"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  fontSize: '0.875rem',
+                  backgroundColor: '#ffffff',
+                  '& fieldset': { borderColor: '#e2e8f0' },
+                  '&:hover fieldset': { borderColor: '#94a3b8' },
+                  '&.Mui-focused fieldset': { borderColor: '#0284c7' },
+                },
+                '& .MuiFormHelperText-root': {
+                  fontSize: '0.75rem',
+                  mt: 0.5,
+                  color: '#64748b',
+                },
+              }}
             />
           </Grid>
         </Grid>
 
         {/* Description */}
-        <TextField
-          fullWidth
-          multiline
-          rows={2.5}
-          label="Описание / Область применения"
-          placeholder="Технические характеристики, совместимые узлы оборудования..."
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
+        <Box>
+          <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.75, display: 'block' }}>
+            Описание / Спецификация
+          </Typography>
+          <TextField
+            fullWidth
+            multiline
+            rows={2.5}
+            size="small"
+            placeholder="Технические характеристики, совместимые узлы оборудования..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '8px',
+                fontSize: '0.875rem',
+                backgroundColor: '#ffffff',
+                '& fieldset': { borderColor: '#e2e8f0' },
+                '&:hover fieldset': { borderColor: '#94a3b8' },
+                '&.Mui-focused fieldset': { borderColor: '#0284c7' },
+              },
+            }}
+          />
+        </Box>
       </Stack>
     </FormDialog>
   );

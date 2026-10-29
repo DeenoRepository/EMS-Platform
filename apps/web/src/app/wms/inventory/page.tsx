@@ -119,27 +119,34 @@ export default function WmsInventoryListPage() {
     }
   }, [enqueueSnackbar]);
 
+  const canAccessInventory =
+    user?.roles?.includes('admin') ||
+    hasPermission(PERMISSIONS.WMS_INVENTORY_MANAGE) ||
+    hasPermission(PERMISSIONS.WMS_STOCK_VIEW);
+
   useEffect(() => {
-    fetchInventories();
-    async function loadWarehouses() {
-      try {
-        const res = await fetch('/api/wms/warehouses');
-        if (res.ok) {
-          const json = await res.json();
-          if (json.success && Array.isArray(json.data)) {
-            setWarehouses(json.data);
-            const myWh = json.data.find((w: any) => w.responsibleUserId === user?.userId) || json.data[0];
-            if (myWh) {
-              setSelectedWarehouseId(myWh.id);
+    if (canAccessInventory) {
+      fetchInventories();
+      async function loadWarehouses() {
+        try {
+          const res = await fetch('/api/wms/warehouses');
+          if (res.ok) {
+            const json = await res.json();
+            if (json.success && Array.isArray(json.data)) {
+              setWarehouses(json.data);
+              const myWh = json.data.find((w: any) => w.responsibleUserId === user?.userId) || json.data[0];
+              if (myWh) {
+                setSelectedWarehouseId(myWh.id);
+              }
             }
           }
+        } catch (err) {
+          console.error('Ошибка загрузки складов:', err);
         }
-      } catch (err) {
-        console.error('Ошибка загрузки складов:', err);
       }
+      loadWarehouses();
     }
-    loadWarehouses();
-  }, [fetchInventories, user?.userId]);
+  }, [canAccessInventory, fetchInventories, user?.userId]);
 
   const handleCreateInventory = async () => {
     if (!selectedWarehouseId) {
@@ -247,9 +254,38 @@ export default function WmsInventoryListPage() {
     });
   }, [filteredInventories, sortField, sortDirection]);
 
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+
+  const paginatedInventories = useMemo(() => {
+    return sortedInventories.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
+  }, [sortedInventories, page, rowsPerPage]);
+
   const totalInventories = inventories.length;
   const inProgressCount = inventories.filter((i) => i.status === 'IN_PROGRESS' || i.status === 'DRAFT').length;
   const completedCount = inventories.filter((i) => i.status === 'COMPLETED').length;
+
+  if (!canAccessInventory) {
+    return (
+      <Box sx={{ pb: 4 }}>
+        <PageHeader
+          title="Инвентаризация складов"
+          subtitle="Сверка фактического наличия ТМЦ с учетными остатками и автоматическая корректировка"
+          breadcrumbs={[
+            { label: 'Главная', href: '/' },
+            { label: 'Складской учёт', href: '/wms' },
+            { label: 'Инвентаризация' },
+          ]}
+        />
+        <EmptyState
+          title="Доступ ограничен"
+          description="У вашей учетной записи нет полномочий для доступа к разделу инвентаризации (требуется право wms.inventory.manage или wms.stock.view)."
+          icon={<FactCheckOutlinedIcon sx={{ fontSize: 48, color: 'text.secondary' }} />}
+        />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ pb: 4 }}>
@@ -331,7 +367,16 @@ export default function WmsInventoryListPage() {
       {/* Main Inventory Acts Registry Table */}
       <DataTableWrapper
         loading={isLoading}
+        page={page}
+        pageSize={rowsPerPage}
         total={sortedInventories.length}
+        onPageChange={(_, newPage) => setPage(newPage)}
+        onPageSizeChange={(e) => {
+          setRowsPerPage(parseInt(e.target.value, 10));
+          setPage(0);
+        }}
+        pageSizeOptions={[15, 25, 50, 100]}
+        storageKey="wms_inventory_table"
         columns={INVENTORY_COLUMNS}
         visibleColumns={visibleColumns}
         onVisibleColumnsChange={setVisibleColumns}
@@ -439,86 +484,86 @@ export default function WmsInventoryListPage() {
           <TableHead>
             <TableRow sx={{ backgroundColor: 'background.paper' }}>
               {visibleColumns.includes('code') && (
-                <TableCell sx={{ fontWeight: 700, width: 140, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 140 }}>
                   <TableSortLabel
                     active={sortField === 'code'}
                     direction={sortField === 'code' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('code')}
                   >
-                    НОМЕР / АКТ
+                    Номер / Акт
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('warehouse') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 160 }}>
                   <TableSortLabel
                     active={sortField === 'warehouse'}
                     direction={sortField === 'warehouse' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('warehouse')}
                   >
-                    СКЛАД
+                    Склад проведения
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('status') && (
-                <TableCell sx={{ fontWeight: 700, width: 130, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 140 }}>
                   <TableSortLabel
                     active={sortField === 'status'}
                     direction={sortField === 'status' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('status')}
                   >
-                    СТАТУС
+                    Статус
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('count') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 130 }}>
                   <TableSortLabel
                     active={sortField === 'count'}
                     direction={sortField === 'count' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('count')}
                   >
-                    ПОЗИЦИЙ В АКТЕ
+                    Позиций в акте
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('date') && (
-                <TableCell sx={{ fontWeight: 700, width: 160, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 150 }}>
                   <TableSortLabel
                     active={sortField === 'date'}
                     direction={sortField === 'date' ? sortDirection : 'desc'}
                     onClick={() => handleRequestSort('date')}
                   >
-                    ДАТА СОЗДАНИЯ
+                    Дата создания
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('author') && (
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
+                <TableCell sx={{ minWidth: 160 }}>
                   <TableSortLabel
                     active={sortField === 'author'}
                     direction={sortField === 'author' ? sortDirection : 'asc'}
                     onClick={() => handleRequestSort('author')}
                   >
-                    ОТВЕТСТВЕННЫЙ
+                    Ответственный
                   </TableSortLabel>
                 </TableCell>
               )}
 
               {visibleColumns.includes('actions') && (
-                <TableCell align="right" sx={{ fontWeight: 700, width: 140, fontSize: '0.6875rem', color: 'text.disabled', letterSpacing: '0.05em' }}>
-                  ДЕЙСТВИЯ
+                <TableCell align="right" sx={{ minWidth: 120 }}>
+                  Действия
                 </TableCell>
               )}
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedInventories.map((inv) => (
+            {paginatedInventories.map((inv) => (
               <TableRow
                 key={inv.id}
                 hover

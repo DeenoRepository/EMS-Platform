@@ -4,6 +4,7 @@ export type SrmProviderChoice = 'JIRA' | 'REDMINE' | 'GITLAB' | 'GENERIC_REST' |
 
 export interface SystemSettingsConfig {
   APP_NAME: string;
+  LDAP_ENABLED: boolean;
   LDAP_URL: string;
   LDAP_SEARCH_BASE: string;
   // Polymorphic External ServiceDesk / SRM fields
@@ -44,6 +45,7 @@ export async function getSystemSettings(): Promise<SystemSettingsConfig> {
 
     const config: SystemSettingsConfig = {
       APP_NAME: map['APP_NAME'] || process.env.NEXT_PUBLIC_APP_NAME || 'EMS — Equipment Management System',
+      LDAP_ENABLED: map['LDAP_ENABLED'] === 'true' || process.env.LDAP_ENABLED === 'true',
       LDAP_URL: map['LDAP_URL'] || process.env.LDAP_URL || '',
       LDAP_SEARCH_BASE: map['LDAP_SEARCH_BASE'] || process.env.LDAP_SEARCH_BASE || 'dc=company,dc=local',
       SRM_PROVIDER_TYPE: providerType,
@@ -67,6 +69,7 @@ export async function getSystemSettings(): Promise<SystemSettingsConfig> {
     const fallbackUrl = process.env.JIRA_BASE_URL || process.env.JIRA_HOST || '';
     return {
       APP_NAME: process.env.NEXT_PUBLIC_APP_NAME || 'EMS — Equipment Management System',
+      LDAP_ENABLED: process.env.LDAP_ENABLED === 'true',
       LDAP_URL: process.env.LDAP_URL || '',
       LDAP_SEARCH_BASE: process.env.LDAP_SEARCH_BASE || 'dc=company,dc=local',
       SRM_PROVIDER_TYPE: fallbackUrl ? 'JIRA' : 'JIRA',

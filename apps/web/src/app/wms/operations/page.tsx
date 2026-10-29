@@ -536,6 +536,7 @@ function WmsOperationsContent() {
               setOpsRowsPerPage(parseInt(e.target.value, 10));
               setOpsPage(0);
             }}
+            storageKey="wms_operations_table"
             columns={OPERATIONS_COLUMNS}
             visibleColumns={visibleOpsColumns}
             onVisibleColumnsChange={setVisibleOpsColumns}

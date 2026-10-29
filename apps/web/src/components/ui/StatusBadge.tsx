@@ -436,6 +436,50 @@ const STATUS_CONFIG_MAP: Record<string, StatusTheme> = {
     icon: <HelpOutlineIcon sx={{ fontSize: 13 }} />,
   },
 
+  // Feedback & Bug Hub Statuses
+  NEW: {
+    label: 'Новое',
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+    icon: <AddCircleOutlineIcon sx={{ fontSize: 13 }} />,
+  },
+  IN_REVIEW: {
+    label: 'На рассмотрении',
+    color: '#d97706',
+    bg: '#fffbeb',
+    border: '#fde68a',
+    icon: <HourglassEmptyIcon sx={{ fontSize: 13 }} />,
+  },
+  DUPLICATE: {
+    label: 'Дубликат',
+    color: '#64748b',
+    bg: '#f1f5f9',
+    border: '#cbd5e1',
+    icon: <HelpOutlineIcon sx={{ fontSize: 13 }} />,
+  },
+  BUG: {
+    label: 'Ошибка / Баг',
+    color: '#dc2626',
+    bg: '#fef2f2',
+    border: '#fecaca',
+    icon: <ErrorOutlineIcon sx={{ fontSize: 13 }} />,
+  },
+  FEATURE_REQUEST: {
+    label: 'Улучшение',
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+    icon: <BuildCircleIcon sx={{ fontSize: 13 }} />,
+  },
+  QUESTION: {
+    label: 'Вопрос',
+    color: '#7c3aed',
+    bg: '#f5f3ff',
+    border: '#ddd6fe',
+    icon: <HelpOutlineIcon sx={{ fontSize: 13 }} />,
+  },
+
   // Russian equipment statuses & aliases
   IN_SERVICE: {
     label: 'В работе',

@@ -48,12 +48,17 @@ build
 uploads/*
 !uploads/.gitkeep
 temp/
+Temp/
 backups/
 *.dump
 *.sql
 *.sql.gz
+!scripts/patch-permissions.sql
 *.tar.gz
 .system_generated/
 coverage/
 playwright-report/
 test-results/
+ems-baremetal-release/
+ems-airgap-bundle/
+*.zip

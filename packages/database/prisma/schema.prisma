@@ -41,6 +41,10 @@ model User {
   receivedTransfers      StockTransfer[]       @relation("TransferReceivedBy")
   rejectedTransfers      StockTransfer[]       @relation("TransferRejectedBy")
   checklistResults       ChecklistResult[]
+  createdFeedbackTickets FeedbackTicket[]      @relation("FeedbackCreator")
+  assignedFeedbackTickets FeedbackTicket[]     @relation("FeedbackAssignee")
+  feedbackComments       FeedbackComment[]     @relation("FeedbackAuthor")
+  uploadedFeedbackAttachments FeedbackAttachment[] @relation("FeedbackAttachmentUploader")
 
   @@index([deletedAt])
 }
@@ -143,6 +147,9 @@ enum NotificationType {
   SLA_BREACH
   EQUIPMENT_CHANGED
   SYSTEM
+  FEEDBACK_CREATED
+  FEEDBACK_STATUS_CHANGED
+  FEEDBACK_REPLY
 }
 
 model SystemSetting {
@@ -860,3 +867,110 @@ model MaintenanceUsedPart {
   @@index([nomenclatureId])
   @@index([warehouseId])
 }
+
+// ==========================================
+// 7. СИСТЕМА ОБРАТНОЙ СВЯЗИ И ТРЕКИНГА ОШИБОК (FEEDBACK HUB)
+// ==========================================
+
+model FeedbackTicket {
+  id           String           @id @default(uuid())
+  ticketNumber String           @unique // FB-2026-0001
+  type         FeedbackType     @default(BUG)
+  module       FeedbackModule   @default(GENERAL)
+  priority     FeedbackPriority @default(MEDIUM)
+  status       FeedbackStatus   @default(NEW)
+  title        String
+  description  String           @db.Text
+  pageUrl      String?
+  browserInfo  Json?            // { userAgent, screenResolution, os, browser, language }
+  resolution   String?          @db.Text
+  resolvedAt   DateTime?
+  
+  createdById  String
+  assignedToId String?
+
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  deletedAt    DateTime?
+
+  createdBy    User             @relation("FeedbackCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  assignedTo   User?            @relation("FeedbackAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  comments     FeedbackComment[]
+  attachments  FeedbackAttachment[]
+
+  @@index([type])
+  @@index([module])
+  @@index([status])
+  @@index([priority])
+  @@index([createdById])
+  @@index([assignedToId])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+enum FeedbackType {
+  BUG
+  FEATURE_REQUEST
+  QUESTION
+  OTHER
+}
+
+enum FeedbackModule {
+  EPS
+  WMS
+  SRM
+  MRO
+  ADMIN
+  GENERAL
+}
+
+enum FeedbackPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum FeedbackStatus {
+  NEW
+  IN_REVIEW
+  IN_PROGRESS
+  RESOLVED
+  REJECTED
+  DUPLICATE
+}
+
+model FeedbackComment {
+  id         String         @id @default(uuid())
+  ticketId   String
+  userId     String
+  message    String         @db.Text
+  isInternal Boolean        @default(false)
+  createdAt  DateTime       @default(now())
+
+  ticket     FeedbackTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user       User           @relation("FeedbackAuthor", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model FeedbackAttachment {
+  id           String         @id @default(uuid())
+  ticketId     String
+  fileName     String
+  originalName String
+  filePath     String
+  fileType     String
+  fileSize     Int
+  uploadedById String
+  createdAt    DateTime       @default(now())
+
+  ticket       FeedbackTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  uploadedBy   User           @relation("FeedbackAttachmentUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@index([uploadedById])
+}
+

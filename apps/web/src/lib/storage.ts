@@ -2,7 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 
-const UPLOAD_ROOT = path.resolve(process.cwd(), process.env.UPLOAD_DIR || process.env.STORAGE_LOCAL_DIR || './uploads');
+export const UPLOAD_ROOT = path.resolve(
+  process.cwd(),
+  process.env.STORAGE_LOCAL_DIR || process.env.UPLOAD_DIR || './uploads'
+);
 
 // Обеспечиваем существование базовых папок
 export function ensureUploadDirs() {
@@ -10,6 +13,7 @@ export function ensureUploadDirs() {
     UPLOAD_ROOT,
     path.join(UPLOAD_ROOT, 'documents'),
     path.join(UPLOAD_ROOT, 'photos'),
+    path.join(UPLOAD_ROOT, 'feedback'),
   ];
   for (const dir of dirs) {
     if (!fs.existsSync(dir)) {
@@ -20,6 +24,7 @@ export function ensureUploadDirs() {
 
 export const ALLOWED_EXTENSIONS = {
   photos: new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif']),
+  feedback: new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.pdf', '.log', '.txt', '.zip']),
   documents: new Set([
     '.pdf',
     '.doc',
@@ -42,12 +47,13 @@ export const ALLOWED_EXTENSIONS = {
 
 const MAX_FILE_SIZES = {
   photos: 20 * 1024 * 1024, // 20 MB
+  feedback: 25 * 1024 * 1024, // 25 MB
   documents: 50 * 1024 * 1024, // 50 MB
 };
 
 export async function saveFile(
   file: File,
-  subFolder: 'documents' | 'photos'
+  subFolder: 'documents' | 'photos' | 'feedback'
 ): Promise<{ fileName: string; originalName: string; filePath: string; fileSize: number; fileType: string }> {
   ensureUploadDirs();
 
@@ -88,7 +94,18 @@ export async function saveFile(
 }
 
 export function getAbsoluteFilePath(relativeFilePath: string): string {
-  return path.join(UPLOAD_ROOT, relativeFilePath);
+  const resolved = resolveUploadPath(relativeFilePath);
+  if (!resolved) throw new Error('Недопустимый путь к файлу');
+  return resolved;
+}
+
+/** Resolve only paths strictly inside the configured upload root. */
+export function resolveUploadPath(relativeFilePath: string): string | null {
+  const resolved = path.resolve(UPLOAD_ROOT, relativeFilePath);
+  const relative = path.relative(UPLOAD_ROOT, resolved);
+  return relative && !relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative)
+    ? resolved
+    : null;
 }
 
 export function deleteFile(relativeFilePath: string): boolean {

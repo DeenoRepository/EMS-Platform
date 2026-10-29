@@ -103,17 +103,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const hasPermission = (permissionCode: string) => {
+  const hasPermission = useCallback((permissionCode: string) => {
     if (!user) return false;
-    if (user.roles?.includes('admin')) return true;
+    if (user.roles?.includes('admin') || user.roles?.includes('administrator')) return true;
     return user.permissions?.includes(permissionCode) || false;
-  };
+  }, [user]);
 
-  const hasAnyPermission = (permissionCodes: string[]) => {
+  const hasAnyPermission = useCallback((permissionCodes: string[]) => {
     if (!user) return false;
-    if (user.roles?.includes('admin')) return true;
+    if (user.roles?.includes('admin') || user.roles?.includes('administrator')) return true;
     return permissionCodes.some((p) => user.permissions?.includes(p)) || false;
-  };
+  }, [user]);
 
   return (
     <AuthContext.Provider
