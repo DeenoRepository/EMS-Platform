@@ -25,6 +25,7 @@ import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
+import { QrCodeView } from './QrCodeView';
 
 export interface DocumentPreviewDialogProps {
   open: boolean;
@@ -269,7 +270,7 @@ export function DocumentPreviewDialog({
                 mx: 'auto',
               }}
             >
-              <QrCode2Icon sx={{ fontSize: 160, color: '#0f172a' }} />
+              <QrCodeView value={qrValue || title || 'EMS-PREVIEW'} size={180} />
             </Box>
             <Typography variant="h6" fontWeight={700} sx={{ fontSize: '1rem', mb: 0.5 }}>
               {title}

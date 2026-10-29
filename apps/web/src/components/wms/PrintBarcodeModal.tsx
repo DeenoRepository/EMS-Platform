@@ -4,11 +4,10 @@ import React, { useState } from 'react';
 import {
   Box,
   Typography,
-  Grid,
-  Button,
   RadioGroup,
   FormControlLabel,
   Radio,
+  Checkbox,
   FormControl,
   FormLabel,
   Stack,
@@ -16,9 +15,9 @@ import {
   Divider,
 } from '@mui/material';
 import PrintIcon from '@mui/icons-material/Print';
-import QrCode2Icon from '@mui/icons-material/QrCode2';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import { FormDialog } from '@/components/ui';
+import { executeLabelPrintWindow, LabelFormat } from './printLabelsHelper';
+import { BarcodeLivePreview, FONT_WEIGHT_BOLD, FONT_WEIGHT_SEMI } from './printLabelsComponents';
 
 export interface PrintableLabelItem {
   id: string;
@@ -41,13 +40,23 @@ export default function PrintBarcodeModal({
   onClose,
   items,
 }: PrintBarcodeModalProps) {
-  const [labelFormat, setLabelFormat] = useState<'58mm' | '80mm' | 'a4'>('58mm');
+  const [labelFormat, setLabelFormat] = useState<LabelFormat>('58mm');
   const [includeQr, setIncludeQr] = useState(true);
   const [includeLocation, setIncludeLocation] = useState(true);
+  const [isPrinting, setIsPrinting] = useState(false);
 
-  const handlePrint = () => {
-    window.print();
-    onClose();
+  const handlePrint = async () => {
+    setIsPrinting(true);
+    try {
+      await executeLabelPrintWindow(items, labelFormat, includeQr, includeLocation);
+      onClose();
+    } catch (err) {
+      console.error('Print generation failed:', err);
+      window.print();
+      onClose();
+    } finally {
+      setIsPrinting(false);
+    }
   };
 
   const previewItem = items[0] || null;
@@ -60,92 +69,77 @@ export default function PrintBarcodeModal({
       subtitle={`Выбрано позиций для печати: ${items.length}`}
       icon={<PrintIcon color="primary" />}
       maxWidth="sm"
-      submitLabel="Печать"
+      submitLabel={isPrinting ? 'Формирование...' : 'Печать'}
       submitIcon={<PrintIcon />}
       onSubmit={handlePrint}
+      loading={isPrinting}
     >
       <Stack spacing={3} sx={{ mt: 1 }}>
         {/* Format Selector */}
         <FormControl>
-          <FormLabel sx={{ fontSize: '0.8125rem', fontWeight: 700, color: 'text.primary', mb: 1 }}>
+          <FormLabel sx={{ fontSize: '0.8125rem', fontWeight: FONT_WEIGHT_BOLD, color: 'text.primary', mb: 1 }}>
             Формат этикетки / принтера:
           </FormLabel>
           <RadioGroup
             row
             value={labelFormat}
-            onChange={(e) => setLabelFormat(e.target.value as any)}
+            onChange={(e) => setLabelFormat(e.target.value as LabelFormat)}
           >
             <FormControlLabel
               value="58mm"
               control={<Radio size="small" />}
-              label={<Typography variant="body2" fontWeight={600}>Термопринтер 58×40 мм</Typography>}
+              label={<Typography variant="body2" fontWeight={FONT_WEIGHT_SEMI}>Термопринтер 58×40 мм</Typography>}
             />
             <FormControlLabel
               value="80mm"
               control={<Radio size="small" />}
-              label={<Typography variant="body2" fontWeight={600}>Термопринтер 80×60 мм</Typography>}
+              label={<Typography variant="body2" fontWeight={FONT_WEIGHT_SEMI}>Термопринтер 80×60 мм</Typography>}
             />
             <FormControlLabel
               value="a4"
               control={<Radio size="small" />}
-              label={<Typography variant="body2" fontWeight={600}>Лист А4 (Сетка 3×8)</Typography>}
+              label={<Typography variant="body2" fontWeight={FONT_WEIGHT_SEMI}>Лист А4 (Сетка 3×8)</Typography>}
             />
           </RadioGroup>
         </FormControl>
+
+        <Stack direction="row" spacing={3}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                size="small"
+                checked={includeQr}
+                onChange={(e) => setIncludeQr(e.target.checked)}
+              />
+            }
+            label={<Typography variant="body2">Печатать QR-код</Typography>}
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                size="small"
+                checked={includeLocation}
+                onChange={(e) => setIncludeLocation(e.target.checked)}
+              />
+            }
+            label={<Typography variant="body2">Указывать склад/ячейку</Typography>}
+          />
+        </Stack>
 
         <Divider />
 
         {/* Live Preview Box */}
         <Box>
-          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, display: 'block', mb: 1 }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: FONT_WEIGHT_SEMI, display: 'block', mb: 1 }}>
             Предпросмотр этикетки (Масштаб 1:1):
           </Typography>
 
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 2, bgcolor: 'grey.100', borderRadius: '10px' }}>
-            <Paper
-              elevation={2}
-              sx={{
-                p: 2,
-                width: labelFormat === '80mm' ? 260 : 200,
-                borderRadius: '6px',
-                border: '1px solid',
-                borderColor: 'divider',
-                bgcolor: 'background.paper',
-                textAlign: 'center',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
-              }}
-            >
-              <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.primary', letterSpacing: 1, fontSize: '0.625rem' }}>
-                EMS ENTERPRISE WMS
-              </Typography>
-
-              <Box sx={{ display: 'flex', justifyContent: 'center', my: 1 }}>
-                <QrCode2Icon sx={{ fontSize: labelFormat === '80mm' ? 84 : 64, color: 'text.primary' }} />
-              </Box>
-
-              <Typography
-                variant="body2"
-                sx={{
-                  fontWeight: 700,
-                  fontSize: '0.75rem',
-                  lineHeight: 1.2,
-                  color: 'text.primary',
-                  mb: 0.5,
-                }}
-                noWrap
-              >
-                {previewItem ? previewItem.name : 'Наименование позиции ТМЦ'}
-              </Typography>
-
-              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, display: 'block', fontSize: '0.6875rem' }}>
-                SKU: {previewItem?.article || 'BRG-6204-2RS'}
-              </Typography>
-
-              <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 700, display: 'block', mt: 0.5, fontSize: '0.6875rem' }}>
-                {previewItem?.cellCode ? `Ячейка: ${previewItem.cellCode}` : previewItem?.warehouseCode ? `Склад: ${previewItem.warehouseCode}` : 'Склад: WH-MAIN'}
-              </Typography>
-            </Paper>
-          </Box>
+          <BarcodeLivePreview
+            previewItem={previewItem}
+            labelFormat={labelFormat}
+            includeQr={includeQr}
+            includeLocation={includeLocation}
+          />
         </Box>
 
         {items.length > 1 && (
