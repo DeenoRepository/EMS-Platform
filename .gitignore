@@ -62,3 +62,6 @@ test-results/
 ems-baremetal-release/
 ems-airgap-bundle/
 *.zip
+*-patch/
+*.sha256
+

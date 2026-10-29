@@ -2,6 +2,7 @@
 
 import React from 'react';
 import {
+  Box,
   Table,
   TableHead,
   TableBody,
@@ -9,7 +10,6 @@ import {
   TableCell,
   TableSortLabel,
   Typography,
-  Chip,
   Button,
 } from '@mui/material';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
@@ -170,17 +170,22 @@ export function InventoryRegistryTable({
 
             {visibleColumns.includes('warehouse') && (
               <TableCell>
-                <Chip
-                  label={inv.warehouse.code}
-                  size="small"
-                  variant="outlined"
+                <Box
                   sx={{
+                    display: 'inline-block',
                     borderRadius: '4px',
                     fontWeight: FONT_SEMI_BOLD,
                     fontSize: '0.6875rem',
-                    height: 20,
+                    bgcolor: 'action.hover',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    color: 'text.secondary',
+                    px: 0.75,
+                    py: 0.25,
                   }}
-                />
+                >
+                  {inv.warehouse.code}
+                </Box>
                 <Typography variant="caption" sx={{ display: 'block', mt: 0.25, color: 'text.secondary', fontSize: '0.75rem' }}>
                   {inv.warehouse.name}
                 </Typography>

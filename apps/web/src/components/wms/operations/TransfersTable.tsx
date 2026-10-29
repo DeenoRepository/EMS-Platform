@@ -8,7 +8,6 @@ import {
   TableRow,
   TableCell,
   Typography,
-  Chip,
   Stack,
   Box,
   Button,
@@ -126,11 +125,24 @@ export function TransfersTable({
                     <Typography key={it.id} variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
                       • <b>{it.nomenclature?.name}</b>: {it.quantity} {it.nomenclature?.unit || 'шт'}
                       {it.targetCell && (
-                        <Chip
-                          size="small"
-                          label={`Ячейка: ${it.targetCell.code}`}
-                          sx={{ height: 18, fontSize: '0.65rem', ml: 0.75 }}
-                        />
+                        <Box
+                          component="span"
+                          sx={{
+                            display: 'inline-block',
+                            px: 0.75,
+                            py: 0.1,
+                            borderRadius: '4px',
+                            bgcolor: 'action.hover',
+                            color: 'text.secondary',
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            fontSize: '0.65rem',
+                            fontWeight: 600,
+                            ml: 0.75,
+                          }}
+                        >
+                          Ячейка: {it.targetCell.code}
+                        </Box>
                       )}
                     </Typography>
                   ))}
@@ -139,7 +151,7 @@ export function TransfersTable({
 
               <TableCell sx={{ py: 1.25 }}>
                 {t.rejectionReason ? (
-                  <Box sx={{ p: 0.75, bgcolor: 'error.light', borderRadius: '6px', border: '1px solid', borderColor: 'error.main' }}>
+                  <Box sx={{ p: 0.75, bgcolor: 'rgba(239, 68, 68, 0.08)', borderRadius: '6px', border: '1px solid', borderColor: 'error.main' }}>
                     <Typography variant="caption" sx={{ color: 'error.main', fontWeight: 700, display: 'block' }}>
                       Отказ:
                     </Typography>

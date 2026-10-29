@@ -2,13 +2,13 @@
 
 import React from 'react';
 import {
+  Box,
   Table,
   TableHead,
   TableBody,
   TableRow,
   TableCell,
   Typography,
-  Chip,
   Stack,
 } from '@mui/material';
 import { StatusBadge, EmptyState } from '@/components/ui';
@@ -87,17 +87,22 @@ export function OperationsTable({
 
             {visibleColumns.includes('warehouse') && (
               <TableCell>
-                <Chip
-                  label={op.warehouse.code}
-                  size="small"
-                  variant="outlined"
+                <Box
                   sx={{
-                    fontWeight: FONT_SEMI_BOLD,
+                    display: 'inline-block',
+                    px: 0.75,
+                    py: 0.25,
                     borderRadius: '4px',
+                    bgcolor: 'action.hover',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    fontWeight: FONT_SEMI_BOLD,
                     fontSize: '0.6875rem',
-                    height: 20,
+                    color: 'text.secondary',
                   }}
-                />
+                >
+                  {op.warehouse.code}
+                </Box>
                 <Typography variant="caption" sx={{ display: 'block', mt: 0.25, color: 'text.secondary', fontSize: '0.75rem' }}>
                   {op.warehouse.name}
                 </Typography>
