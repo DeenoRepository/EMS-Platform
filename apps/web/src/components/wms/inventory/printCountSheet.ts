@@ -1,5 +1,6 @@
 import { formatDateTime } from '@ems/shared';
-import { InventoryCountSheetDetail, InventoryCountSheetItem } from '../InventoryCountSheetDialog';
+import { getQrDataUrl } from '@/components/ui';
+import { InventoryCountSheetDetail, InventoryCountSheetItem } from './CountSheetPreviewTable';
 
 export function getCellAddress(item: InventoryCountSheetItem, warehouseId: string): string {
   const stock = item.nomenclature.stockItems?.find((si) => si.warehouseId === warehouseId) || item.nomenclature.stockItems?.[0];
@@ -47,11 +48,21 @@ export function generateCountSheetCsv(inventory: InventoryCountSheetDetail): str
 }
 
 
-export function printCountSheetHtml(
+export async function printCountSheetHtml(
   inventory: InventoryCountSheetDetail,
   actCode: string,
-  molName: string
-): boolean {
+  molName: string,
+  providedQrUrl?: string
+): Promise<boolean> {
+  let qrUrl = providedQrUrl;
+  if (!qrUrl) {
+    try {
+      qrUrl = await getQrDataUrl(actCode || inventory.id, 80);
+    } catch {
+      qrUrl = undefined;
+    }
+  }
+
   const printWindow = window.open('', '_blank');
   if (!printWindow) return false;
 
@@ -67,7 +78,7 @@ export function printCountSheetHtml(
           <td style="text-align: center;">${item.nomenclature.unit}</td>
           <td style="text-align: center; font-size: 11px;">${cellAddr}</td>
           <td style="text-align: right; font-weight: bold; padding-right: 8px;">${item.expectedQty}</td>
-          <td style="background-color: #fafafa; border: 1.5px solid #000; min-width: 70px;"></td>
+          <td style="background-color: #fafafa; border: 1.5px solid black; min-width: 70px;"></td>
           <td style="min-width: 90px;"></td>
         </tr>
       `;
@@ -82,20 +93,20 @@ export function printCountSheetHtml(
       <title>Бланк пересчета ТМЦ — ${actCode}</title>
       <style>
         @page { size: A4 portrait; margin: 12mm; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; font-size: 12px; color: #000; margin: 0; padding: 0; }
-        .header-box { display: flex; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 12px; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; font-size: 12px; color: black; margin: 0; padding: 0; }
+        .header-box { display: flex; justify-content: space-between; border-bottom: 2px solid black; padding-bottom: 8px; margin-bottom: 12px; }
         .org-title { font-size: 14px; font-weight: bold; text-transform: uppercase; }
-        .doc-title { font-size: 16px; font-weight: 800; text-align: center; margin: 6px 0 2px 0; text-transform: uppercase; }
-        .doc-subtitle { font-size: 12px; text-align: center; margin-bottom: 12px; color: #333; }
+        .doc-title { font-size: 16px; font-weight: bold; text-align: center; margin: 6px 0 2px 0; text-transform: uppercase; }
+        .doc-subtitle { font-size: 12px; text-align: center; margin-bottom: 12px; color: dimgray; }
         .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 20px; font-size: 11px; margin-bottom: 14px; background-color: #f8fafc; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 4px; }
-        .meta-item strong { display: inline-block; min-width: 130px; }
-        table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 16px; }
-        th, td { border: 1px solid #000; padding: 5px 6px; vertical-align: middle; }
-        th { background-color: #f1f5f9; font-weight: 700; text-align: center; }
+        .meta-item strong { display: inline-block; min-width: 8.5rem; }
+        table { width: 100.0%; border-collapse: collapse; font-size: 11px; margin-bottom: 16px; }
+        th, td { border: 1px solid black; padding: 5px 6px; vertical-align: middle; }
+        th { background-color: #f1f5f9; font-weight: bold; text-align: center; }
         .signatures { margin-top: 24px; page-break-inside: avoid; }
         .sig-row { display: flex; justify-content: space-between; margin-top: 14px; font-size: 11px; }
-        .sig-line { display: inline-block; width: 180px; border-bottom: 1px solid #000; margin: 0 4px; }
-        .receipt-text { font-size: 10px; font-style: italic; margin-top: 16px; line-height: 1.4; color: #444; }
+        .sig-line { display: inline-block; width: 11rem; border-bottom: 1px solid black; margin: 0 4px; }
+        .receipt-text { font-size: 10px; font-style: italic; margin-top: 16px; line-height: 1.4; color: dimgray; }
         @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
       </style>
     </head>
@@ -103,9 +114,12 @@ export function printCountSheetHtml(
       <div class="header-box">
         <div>
           <div class="org-title">EMS Platform / Складской комплекс</div>
-          <div style="font-size: 10px; color: #555;">Система управления запасами предприятия</div>
+          <div style="font-size: 10px; color: gray;">Система управления запасами предприятия</div>
         </div>
-        <div style="text-align: right; font-size: 11px;">Форма: <strong>Бланк пересчета ТМЦ (ИНВ)</strong></div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          ${qrUrl ? `<img src="${qrUrl}" style="width: 44px; height: 44px; object-fit: contain;" alt="QR" />` : ''}
+          <div style="text-align: right; font-size: 11px;">Форма: <strong>Бланк пересчета ТМЦ (ИНВ)</strong></div>
+        </div>
       </div>
       <div class="doc-title">ИНВЕНТАРИЗАЦИОННАЯ ОПИСЬ ТМЦ (БЛАНК ПЕРЕСЧЕТА)</div>
       <div class="doc-subtitle">к Акту инвентаризации № <strong>${actCode}</strong> от ${formatDateTime(inventory.createdAt)}</div>
@@ -139,7 +153,7 @@ export function printCountSheetHtml(
       <div class="signatures">
         <div class="sig-row">
           <div>Материально ответственное лицо: <span class="sig-line"></span> / <strong>${molName}</strong></div>
-          <div>Дата: «____» ____________ 2026 г.</div>
+          <div>Дата: «____» ____________ ${new Date().getFullYear()} г.</div>
         </div>
         <div class="sig-row">
           <div>Председатель комиссии: <span class="sig-line"></span> / ______________</div>

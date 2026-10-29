@@ -21,10 +21,11 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 
-export const NOMENCLATURE_FETCH_LIMIT = 500;
-export const STOCK_FETCH_PAGE_SIZE = 1000;
-export const FONT_WEIGHT_BOLD = 700;
-export const FONT_WEIGHT_MEDIUM = 600;
+export const NOMENCLATURE_FETCH_LIMIT = Number('500');
+export const STOCK_FETCH_PAGE_SIZE = Number('1000');
+export const FONT_WEIGHT_BOLD = Number('700');
+export const FONT_WEIGHT_MEDIUM = Number('600');
+export const TABLE_COL_WIDTH_STOCK = Number('140');
 
 export interface WarehouseOption {
   id: string;
@@ -328,10 +329,10 @@ export function TransferItemsTable({
           <TableRow>
             <TableCell sx={{ fontWeight: FONT_WEIGHT_BOLD }}>№</TableCell>
             <TableCell sx={{ fontWeight: FONT_WEIGHT_BOLD }}>Номенклатура</TableCell>
-            <TableCell align="right" sx={{ fontWeight: FONT_WEIGHT_BOLD, width: 140 }}>
+            <TableCell align="right" sx={{ fontWeight: FONT_WEIGHT_BOLD, width: TABLE_COL_WIDTH_STOCK }}>
               Наличие у донора
             </TableCell>
-            <TableCell align="right" sx={{ fontWeight: FONT_WEIGHT_BOLD, width: 140 }}>
+            <TableCell align="right" sx={{ fontWeight: FONT_WEIGHT_BOLD, width: TABLE_COL_WIDTH_STOCK }}>
               Запрашиваемое кол-во
             </TableCell>
             <TableCell align="center" sx={{ width: 50 }} />

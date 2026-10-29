@@ -1,21 +1,16 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Stack, Alert, Paper, Typography } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import MoveToInboxIcon from '@mui/icons-material/MoveToInbox';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '@/lib/auth-client';
 import { FormDialog } from '@/components/ui';
 import {
-  TransferWarehouseFields,
-  TransferItemPicker,
-  TransferItemsTable,
-  WarehouseOption,
   NomenclatureOption,
   RequestLineItem,
-  FONT_WEIGHT_BOLD,
 } from './transfers/TransferRequestSubcomponents';
+import { TransferDialogBody } from './transfers/TransferDialogBody';
 import { useTransferRequestData } from './transfers/useTransferRequestData';
 import { submitTransferRequest } from './transfers/transferRequestService';
 
@@ -137,10 +132,14 @@ export default function TransferRequestDialog({
     }
   };
 
+  const handleClose = () => {
+    if (!isSubmitting) onClose();
+  };
+
   return (
     <FormDialog
       open={open}
-      onClose={() => !isSubmitting && onClose()}
+      onClose={handleClose}
       title="Запрос на перемещение ТМЦ"
       subtitle="Заявка на перевод позиций с другого склада предприятия на ваш склад"
       icon={<MoveToInboxIcon color="primary" />}
@@ -151,44 +150,25 @@ export default function TransferRequestDialog({
       onSubmit={executeSubmit}
       submitDisabled={isSubmitting || !sourceWarehouseId || lineItems.length === 0}
     >
-      <Stack spacing={2.5}>
-        <Alert severity="info" icon={<MoveToInboxIcon />} sx={{ borderRadius: '8px' }}>
-          Заявка поступит материально ответственному лицу склада-донора. После его согласования ТМЦ будут отгружены в ваш адрес.
-        </Alert>
-
-        <TransferWarehouseFields
-          targetWh={targetWh}
-          sourceWarehouseId={sourceWarehouseId}
-          onSourceChange={setSourceWarehouseId}
-          warehouses={warehouses}
-          displayName={user?.displayName}
-          requestReason={requestReason}
-          onReasonChange={setRequestReason}
-        />
-
-        <Paper elevation={0} sx={{ p: 2, borderRadius: '8px', bgcolor: 'background.default', border: '1px solid', borderColor: 'divider' }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: FONT_WEIGHT_BOLD, color: 'text.primary', mb: 1.5 }}>
-            Подбор запрашиваемых позиций ТМЦ:
-          </Typography>
-
-          <TransferItemPicker
-            nomenclatures={nomenclatures}
-            selectedNomenclature={selectedNomenclature}
-            onNomenclatureChange={setSelectedNomenclature}
-            itemQty={itemQty}
-            onQtyChange={setItemQty}
-            onAddItem={handleAddItem}
-            stockMap={stockMap}
-            isLoadingStock={isLoadingStock}
-          />
-
-          <TransferItemsTable
-            items={lineItems}
-            stockMap={stockMap}
-            onRemove={handleRemoveItem}
-          />
-        </Paper>
-      </Stack>
+      <TransferDialogBody
+        targetWh={targetWh}
+        sourceWarehouseId={sourceWarehouseId}
+        onSourceChange={setSourceWarehouseId}
+        warehouses={warehouses}
+        displayName={user?.displayName}
+        requestReason={requestReason}
+        onReasonChange={setRequestReason}
+        nomenclatures={nomenclatures}
+        selectedNomenclature={selectedNomenclature}
+        onNomenclatureChange={setSelectedNomenclature}
+        itemQty={itemQty}
+        onQtyChange={setItemQty}
+        onAddItem={handleAddItem}
+        stockMap={stockMap}
+        isLoadingStock={isLoadingStock}
+        lineItems={lineItems}
+        onRemoveItem={handleRemoveItem}
+      />
     </FormDialog>
   );
 }
