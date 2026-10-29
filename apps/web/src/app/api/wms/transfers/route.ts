@@ -4,6 +4,7 @@ import { prisma, StockTransferStatus, OperationType, Prisma } from '@ems/databas
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { enforceRateLimit } from '@/lib/rate-limit';
+import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
 
@@ -239,11 +240,22 @@ export async function GET(req: NextRequest) {
   }
 }
 
-interface TransferItemInput {
-  nomenclatureId: string;
-  quantity: number;
-  targetCellId?: string | null;
-}
+const TransferItemSchema = z.object({
+  nomenclatureId: z.string().min(1, 'Укажите номенклатуру'),
+  quantity: z.number().positive('Количество каждой позиции должно быть больше нуля'),
+  targetCellId: z.string().nullable().optional(),
+});
+
+const StockTransferCreateSchema = z.object({
+  sourceWarehouseId: z.string().min(1, 'Укажите склад-отправитель'),
+  targetWarehouseId: z.string().min(1, 'Укажите склад-получатель'),
+  isRequest: z.boolean().optional().default(false),
+  requestReason: z.string().optional(),
+  items: z.array(TransferItemSchema).min(1, 'Добавьте хотя бы одну позицию ТМЦ для перемещения'),
+}).refine((data) => data.sourceWarehouseId !== data.targetWarehouseId, {
+  message: 'Склад-отправитель и склад-получатель не могут совпадать',
+  path: ['targetWarehouseId'],
+});
 
 // POST /api/wms/transfers - Создание перемещения или запроса на перемещение
 export async function POST(req: NextRequest) {
@@ -255,51 +267,22 @@ export async function POST(req: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!hasPermission(user, PERMISSIONS.WMS_OPERATIONS_CREATE)) return forbiddenResponse();
 
-    const body = await req.json();
+    const rawBody = await req.json();
+    const parseResult = StockTransferCreateSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      return NextResponse.json(
+        { success: false, error: parseResult.error.issues[0]?.message || 'Некорректные параметры запроса' },
+        { status: 400 }
+      );
+    }
+
     const {
       sourceWarehouseId,
       targetWarehouseId,
-      isRequest = false,
+      isRequest,
       requestReason,
       items,
-    }: {
-      sourceWarehouseId: string;
-      targetWarehouseId: string;
-      isRequest?: boolean;
-      requestReason?: string;
-      items: TransferItemInput[];
-    } = body;
-
-    if (!sourceWarehouseId || !targetWarehouseId) {
-      return NextResponse.json(
-        { success: false, error: 'Укажите склад-отправитель и склад-получатель' },
-        { status: 400 }
-      );
-    }
-
-    if (sourceWarehouseId === targetWarehouseId) {
-      return NextResponse.json(
-        { success: false, error: 'Склад-отправитель и склад-получатель не могут совпадать' },
-        { status: 400 }
-      );
-    }
-
-    if (!Array.isArray(items) || items.length === 0) {
-      return NextResponse.json(
-        { success: false, error: 'Добавьте хотя бы одну позицию ТМЦ для перемещения' },
-        { status: 400 }
-      );
-    }
-
-    for (const it of items) {
-      const q = Number(it.quantity);
-      if (isNaN(q) || q <= 0) {
-        return NextResponse.json(
-          { success: false, error: 'Количество каждой позиции должно быть больше нуля' },
-          { status: 400 }
-        );
-      }
-    }
+    } = parseResult.data;
 
     const isAdmin =
       user.roles.includes('admin') ||
@@ -310,11 +293,11 @@ export async function POST(req: NextRequest) {
     const [sourceWh, targetWh] = await Promise.all([
       prisma.warehouse.findUnique({
         where: { id: sourceWarehouseId },
-        select: { id: true, name: true, responsibleUserId: true, isActive: true },
+        select: { id: true, name: true, code: true, responsibleUserId: true, isActive: true },
       }),
       prisma.warehouse.findUnique({
         where: { id: targetWarehouseId },
-        select: { id: true, name: true, responsibleUserId: true, isActive: true },
+        select: { id: true, name: true, code: true, responsibleUserId: true, isActive: true },
       }),
     ]);
 
@@ -410,6 +393,25 @@ export async function POST(req: NextRequest) {
             sourceWarehouse: true,
             targetWarehouse: true,
             items: { include: { nomenclature: true } },
+          },
+        });
+
+        // Создаем запись операции списания (отгрузки) в журнале StockOperation для склада-отправителя
+        await tx.stockOperation.create({
+          data: {
+            warehouseId: sourceWarehouseId,
+            type: OperationType.TRANSFER,
+            date: new Date(),
+            counterparty: `Склад-получатель: ${targetWh.name} (${targetWh.code})`,
+            document: `Перемещение № ${transferNumber}`,
+            comment: `Отгрузка по прямому перемещению № ${transferNumber}${requestReason?.trim() ? `. Основание: ${requestReason.trim()}` : ''}`,
+            createdById: user.userId,
+            items: {
+              create: items.map((it) => ({
+                nomenclatureId: it.nomenclatureId,
+                quantity: it.quantity,
+              })),
+            },
           },
         });
 

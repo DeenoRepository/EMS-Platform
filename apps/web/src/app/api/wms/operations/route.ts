@@ -4,6 +4,7 @@ import { prisma, OperationType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { enforceRateLimit } from '@/lib/rate-limit';
+import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
 
@@ -85,14 +86,26 @@ export async function GET(req: NextRequest) {
   }
 }
 
-interface OperationItemInput {
-  nomenclatureId: string;
-  quantity: number;
-  equipmentId?: string | null;
-  cellId?: string | null;
-  price?: number | null;
-  batchNumber?: string | null;
-}
+const OperationItemSchema = z.object({
+  nomenclatureId: z.string().min(1, 'Укажите номенклатуру'),
+  quantity: z.number().positive('Количество позиции должно быть больше нуля'),
+  equipmentId: z.string().nullable().optional(),
+  cellId: z.string().nullable().optional(),
+  price: z.number().nullable().optional(),
+  batchNumber: z.string().nullable().optional(),
+});
+
+const StockOperationSchema = z.object({
+  warehouseId: z.string().min(1, 'Укажите склад операции'),
+  targetWarehouseId: z.string().optional(),
+  type: z.nativeEnum(OperationType, { message: 'Укажите корректный тип операции' }),
+  counterparty: z.string().optional(),
+  recipientName: z.string().optional(),
+  equipmentId: z.string().optional(),
+  document: z.string().optional(),
+  comment: z.string().optional(),
+  items: z.array(OperationItemSchema).min(1, 'Добавьте хотя бы одну позицию ТМЦ'),
+});
 
 export async function POST(req: NextRequest) {
   const rateLimitError = await enforceRateLimit(req, { limit: 30, windowMs: 60 * 1000, prefix: 'wms-operations-post' });
@@ -103,7 +116,15 @@ export async function POST(req: NextRequest) {
     if (!user) return unauthorizedResponse();
     if (!hasPermission(user, PERMISSIONS.WMS_OPERATIONS_CREATE)) return forbiddenResponse();
 
-    const body = await req.json();
+    const rawBody = await req.json();
+    const parseResult = StockOperationSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      return NextResponse.json(
+        { success: false, error: parseResult.error.issues[0]?.message || 'Некорректные входные данные' },
+        { status: 400 }
+      );
+    }
+
     const {
       warehouseId,
       targetWarehouseId,
@@ -114,33 +135,12 @@ export async function POST(req: NextRequest) {
       document,
       comment,
       items,
-    }: {
-      warehouseId: string;
-      targetWarehouseId?: string;
-      type: OperationType;
-      counterparty?: string;
-      recipientName?: string;
-      equipmentId?: string;
-      document?: string;
-      comment?: string;
-      items: OperationItemInput[];
-    } = body;
-
-    if (!warehouseId) {
-      return NextResponse.json({ success: false, error: 'Укажите склад операции' }, { status: 400 });
-    }
-
-    if (!type || !(type in OperationType)) {
-      return NextResponse.json({ success: false, error: 'Укажите корректный тип операции' }, { status: 400 });
-    }
-
-    if (!Array.isArray(items) || items.length === 0) {
-      return NextResponse.json({ success: false, error: 'Добавьте хотя бы одну позицию ТМЦ' }, { status: 400 });
-    }
+    } = parseResult.data;
 
     const isIssue = type === 'ISSUE' || type === 'ISSUE_EMPLOYEE' || type === 'ISSUE_WRITE_OFF';
 
     let targetWarehouseName = '';
+    let targetWarehouseCode = '';
     if (type === 'TRANSFER') {
       if (!targetWarehouseId) {
         return NextResponse.json({ success: false, error: 'Для перемещения необходимо указать склад-получатель' }, { status: 400 });
@@ -150,18 +150,19 @@ export async function POST(req: NextRequest) {
       }
       const targetWarehouse = await prisma.warehouse.findUnique({
         where: { id: targetWarehouseId },
-        select: { id: true, name: true, isActive: true },
+        select: { id: true, name: true, code: true, isActive: true },
       });
       if (!targetWarehouse || !targetWarehouse.isActive) {
         return NextResponse.json({ success: false, error: 'Склад-получатель не найден или неактивен' }, { status: 400 });
       }
       targetWarehouseName = targetWarehouse.name;
+      targetWarehouseCode = targetWarehouse.code;
     }
 
     // Проверка прав на склад (ответственное лицо или администратор)
     const warehouse = await prisma.warehouse.findUnique({
       where: { id: warehouseId },
-      select: { id: true, name: true, responsibleUserId: true },
+      select: { id: true, name: true, code: true, responsibleUserId: true },
     });
 
     if (!warehouse) {
@@ -182,6 +183,9 @@ export async function POST(req: NextRequest) {
 
     const finalCounterparty =
       counterparty?.trim() ||
+      (type === 'TRANSFER' && targetWarehouseName
+        ? `Склад-получатель: ${targetWarehouseName}${targetWarehouseCode ? ` (${targetWarehouseCode})` : ''}`
+        : null) ||
       (type === 'ISSUE_EMPLOYEE' && recipientName?.trim() ? `Сотрудник: ${recipientName.trim()}` : null);
 
     const operation = await prisma.$transaction(async (tx) => {
@@ -429,6 +433,26 @@ export async function POST(req: NextRequest) {
             }
           }
         }
+      }
+
+      // 4. Для прямого перемещения создаем симметричную входящую запись на складе-получателе
+      if (type === 'TRANSFER' && targetWarehouseId) {
+        await tx.stockOperation.create({
+          data: {
+            warehouseId: targetWarehouseId,
+            type: 'TRANSFER',
+            counterparty: `Склад-отправитель: ${warehouse.name} (${warehouse.code})`,
+            document: document?.trim() || null,
+            comment: comment?.trim() || `Принято по прямому перемещению со склада "${warehouse.name}"`,
+            createdById: user.userId,
+            items: {
+              create: items.map((i) => ({
+                nomenclatureId: i.nomenclatureId,
+                quantity: Number(i.quantity),
+              })),
+            },
+          },
+        });
       }
 
       return op;

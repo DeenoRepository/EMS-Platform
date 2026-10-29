@@ -211,6 +211,29 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'cellId is required' }, { status: 400 });
     }
 
+    // Проверяем наличие ТМЦ с ненулевым остатком в удаляемой ячейке
+    const occupiedItems = await prisma.stockItem.findMany({
+      where: {
+        cellId,
+        quantity: { gt: 0 },
+      },
+      include: {
+        nomenclature: { select: { name: true } },
+      },
+      take: 5,
+    });
+
+    if (occupiedItems.length > 0) {
+      const itemNames = occupiedItems.map((i) => `"${i.nomenclature.name}"`).join(', ');
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Невозможно удалить ячейку: в ней числятся ТМЦ (${itemNames}). Сначала переместите остатки в другую ячейку.`,
+        },
+        { status: 400 }
+      );
+    }
+
     await prisma.storageCell.delete({
       where: { id: cellId, zoneId: params.id },
     });

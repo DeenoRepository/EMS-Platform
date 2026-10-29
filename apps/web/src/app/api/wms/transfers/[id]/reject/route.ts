@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
-import { prisma, StockTransferStatus } from '@ems/database';
+import { prisma, StockTransferStatus, OperationType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { enforceRateLimit } from '@/lib/rate-limit';
@@ -98,6 +98,25 @@ export async function POST(
             },
           });
         }
+
+        // Создаем запись возврата ТМЦ в журнале StockOperation для склада-отправителя
+        await tx.stockOperation.create({
+          data: {
+            warehouseId: transfer.sourceWarehouseId,
+            type: OperationType.RECEIPT,
+            date: new Date(),
+            counterparty: `Склад-получатель: ${transfer.targetWarehouse.name} (${transfer.targetWarehouse.code})`,
+            document: `Возврат по перемещению № ${transfer.transferNumber}`,
+            comment: `Возврат отклоненного перемещения № ${transfer.transferNumber}. Причина отказа: ${reason}`,
+            createdById: user.userId,
+            items: {
+              create: transfer.items.map((it) => ({
+                nomenclatureId: it.nomenclatureId,
+                quantity: it.quantity,
+              })),
+            },
+          },
+        });
       }
 
       // Переводим перемещение в статус REJECTED

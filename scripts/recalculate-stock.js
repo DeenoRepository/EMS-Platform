@@ -11,17 +11,23 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🔄 Запуск пересчета остатков ТМЦ на основе журнала операций...');
 
-  const operations = await prisma.stockOperation.findMany({
-    include: {
-      items: {
-        include: { nomenclature: true },
+  const [allWarehouses, operations] = await Promise.all([
+    prisma.warehouse.findMany({ select: { id: true, name: true, code: true } }),
+    prisma.stockOperation.findMany({
+      include: {
+        items: {
+          include: { nomenclature: true },
+        },
+        warehouse: true,
       },
-      warehouse: true,
-    },
-    orderBy: { date: 'asc' },
-  });
+      orderBy: { date: 'asc' },
+    }),
+  ]);
 
-  console.log(`📋 Найдено операций в истории: ${operations.length}`);
+  const warehouseNameMap = new Map(allWarehouses.map((w) => [w.name.trim().toLowerCase(), w.id]));
+  const warehouseMapById = new Map(allWarehouses.map((w) => [w.id, w.name]));
+
+  console.log(`📋 Найдено складов: ${allWarehouses.length}, операций в истории: ${operations.length}`);
 
   const balances = new Map();
 
@@ -40,24 +46,52 @@ async function main() {
       if (op.type === 'RECEIPT') {
         current.quantity += qty;
       } else if (op.type === 'TRANSFER') {
-        const isIncomingTransfer = op.counterparty?.startsWith('Склад-отправитель:') || op.comment?.startsWith('Принято по межскладскому перемещению');
+        const isIncomingTransfer =
+          op.counterparty?.startsWith('Склад-отправитель:') ||
+          op.comment?.startsWith('Принято по межскладскому перемещению') ||
+          op.comment?.startsWith('Принято по прямому перемещению');
+
         if (isIncomingTransfer) {
           current.quantity += qty;
         } else {
           current.quantity = Math.max(0, current.quantity - qty);
-          const targetIdMatch = op.comment?.match(/Перемещение на склад ID ([a-zA-Z0-9_-]+)/);
-          if (targetIdMatch && targetIdMatch[1]) {
-            const targetWarehouseId = targetIdMatch[1];
-            const targetKey = `${targetWarehouseId}__${item.nomenclatureId}`;
-            const targetCurrent = balances.get(targetKey) || {
-              warehouseId: targetWarehouseId,
-              warehouseName: targetWarehouseId,
-              nomenclatureId: item.nomenclatureId,
-              nomenclatureName: item.nomenclature?.name || item.nomenclatureId,
-              quantity: 0,
-            };
-            targetCurrent.quantity += qty;
-            balances.set(targetKey, targetCurrent);
+
+          // Проверяем наличие отдельной парной операции
+          const hasDualIncomingRecord = operations.some(
+            (otherOp) =>
+              otherOp.id !== op.id &&
+              otherOp.type === 'TRANSFER' &&
+              otherOp.counterparty?.startsWith('Склад-отправитель:') &&
+              ((op.document && otherOp.document === op.document) ||
+                (Math.abs(new Date(otherOp.date).getTime() - new Date(op.date).getTime()) < 10000 &&
+                  otherOp.items.some((oit) => oit.nomenclatureId === item.nomenclatureId)))
+          );
+
+          if (!hasDualIncomingRecord) {
+            let legacyTargetWhId = null;
+            const targetIdMatch = op.comment?.match(/Перемещение на склад ID ([a-zA-Z0-9_-]+)/);
+            if (targetIdMatch && targetIdMatch[1]) {
+              legacyTargetWhId = targetIdMatch[1];
+            } else {
+              const targetNameMatch = op.comment?.match(/Перемещение на склад "([^"]+)"/);
+              if (targetNameMatch && targetNameMatch[1]) {
+                const targetName = targetNameMatch[1].trim().toLowerCase();
+                legacyTargetWhId = warehouseNameMap.get(targetName) || null;
+              }
+            }
+
+            if (legacyTargetWhId && legacyTargetWhId !== op.warehouseId) {
+              const targetKey = `${legacyTargetWhId}__${item.nomenclatureId}`;
+              const targetCurrent = balances.get(targetKey) || {
+                warehouseId: legacyTargetWhId,
+                warehouseName: warehouseMapById.get(legacyTargetWhId) || legacyTargetWhId,
+                nomenclatureId: item.nomenclatureId,
+                nomenclatureName: item.nomenclature?.name || item.nomenclatureId,
+                quantity: 0,
+              };
+              targetCurrent.quantity += qty;
+              balances.set(targetKey, targetCurrent);
+            }
           }
         }
       } else if (op.type === 'ISSUE' || op.type === 'ISSUE_EMPLOYEE' || op.type === 'ISSUE_WRITE_OFF') {

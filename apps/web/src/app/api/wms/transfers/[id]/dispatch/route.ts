@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard';
-import { prisma, StockTransferStatus } from '@ems/database';
+import { prisma, StockTransferStatus, OperationType } from '@ems/database';
 import { PERMISSIONS } from '@ems/shared';
 import { hasPermission, logAuditEvent } from '@ems/auth';
 import { enforceRateLimit } from '@/lib/rate-limit';
@@ -85,6 +85,25 @@ export async function POST(
           );
         }
       }
+
+      // Создаем запись операции списания (отгрузки) в журнале StockOperation для склада-отправителя
+      await tx.stockOperation.create({
+        data: {
+          warehouseId: transfer.sourceWarehouseId,
+          type: OperationType.TRANSFER,
+          date: new Date(),
+          counterparty: `Склад-получатель: ${transfer.targetWarehouse.name} (${transfer.targetWarehouse.code})`,
+          document: `Перемещение № ${transfer.transferNumber}`,
+          comment: `Отгрузка по согласованию перемещения № ${transfer.transferNumber}${transfer.requestReason ? `. Основание: ${transfer.requestReason}` : ''}`,
+          createdById: user.userId,
+          items: {
+            create: transfer.items.map((it) => ({
+              nomenclatureId: it.nomenclatureId,
+              quantity: it.quantity,
+            })),
+          },
+        },
+      });
 
       // Переводим статус в IN_TRANSIT
       return tx.stockTransfer.update({

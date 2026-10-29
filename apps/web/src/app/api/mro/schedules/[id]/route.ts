@@ -125,25 +125,33 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
             },
           });
 
-          // Списываем количество из ячеек/остатков на складе
-          const stockItem = await tx.stockItem.findFirst({
+          // Списываем количество из остатков на складе с защитой от состояния гонки
+          const decrementResult = await tx.stockItem.updateMany({
             where: {
-              nomenclatureId,
               warehouseId,
+              nomenclatureId,
+              quantity: { gte: numQty },
             },
-          });
-
-          if (!stockItem || Number(stockItem.quantity) < numQty) {
-            const availableQty = stockItem ? Number(stockItem.quantity) : 0;
-            throw new Error(`Недостаточно остатка номенклатуры на складе для списания. Требуется: ${numQty}, доступно: ${availableQty}`);
-          }
-
-          await tx.stockItem.update({
-            where: { id: stockItem.id },
             data: {
               quantity: { decrement: numQty },
             },
           });
+
+          if (decrementResult.count === 0) {
+            const stock = await tx.stockItem.findUnique({
+              where: {
+                warehouseId_nomenclatureId: {
+                  warehouseId,
+                  nomenclatureId,
+                },
+              },
+              include: { nomenclature: { select: { name: true, unit: true } } },
+            });
+            const nomName = stock?.nomenclature?.name || 'ТМЦ';
+            const nomUnit = stock?.nomenclature?.unit || 'шт';
+            const availableQty = stock ? Number(stock.quantity) : 0;
+            throw new Error(`Недостаточно остатка номенклатуры "${nomName}" на складе для списания. Требуется: ${numQty} ${nomUnit}, доступно: ${availableQty} ${nomUnit}`);
+          }
         }
       }
 

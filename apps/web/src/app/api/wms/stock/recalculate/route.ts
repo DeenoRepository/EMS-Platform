@@ -18,13 +18,18 @@ export async function POST(req: NextRequest) {
       return forbiddenResponse();
     }
 
-    // 1. Получаем все складские операции с элементами
-    const operations = await prisma.stockOperation.findMany({
-      include: {
-        items: true,
-      },
-      orderBy: { date: 'asc' },
-    });
+    // 1. Получаем все склады и все складские операции с элементами
+    const [allWarehouses, operations] = await Promise.all([
+      prisma.warehouse.findMany({ select: { id: true, name: true, code: true } }),
+      prisma.stockOperation.findMany({
+        include: {
+          items: true,
+        },
+        orderBy: { date: 'asc' },
+      }),
+    ]);
+
+    const warehouseNameMap = new Map(allWarehouses.map((w) => [w.name.trim().toLowerCase(), w.id]));
 
     // 2. Рассчитываем баланс для каждой пары (warehouseId, nomenclatureId)
     const balances = new Map<string, { warehouseId: string; nomenclatureId: string; quantity: number }>();
@@ -42,30 +47,56 @@ export async function POST(req: NextRequest) {
         if (op.type === 'RECEIPT') {
           current.quantity += qty;
         } else if (op.type === 'TRANSFER') {
-          // TRANSFER: если операция привязана к складу-отправителю, списываем со склада-отправителя
-          // Если операция была зафиксирована на целевом складе (receive), counterparty содержит "Склад-отправитель"
-          // В EMS-Platform при создании трансфера в операциях:
-          // 1) В /api/wms/operations: warehouseId - склад-отправитель, в комментарии "Перемещение на склад ID targetId"
-          // 2) В /api/wms/transfers/.../receive: warehouseId - целевой склад, counterparty "Склад-отправитель: ..."
-          const isIncomingTransfer = op.counterparty?.startsWith('Склад-отправитель:') || op.comment?.startsWith('Принято по межскладскому перемещению');
+          // TRANSFER:
+          // Входящие перемещения увеличивают остаток на op.warehouseId:
+          // - counterparty начинается с "Склад-отправитель:"
+          // - comment начинается с "Принято по межскладскому перемещению" или "Принято по прямому перемещению"
+          const isIncomingTransfer =
+            op.counterparty?.startsWith('Склад-отправитель:') ||
+            op.comment?.startsWith('Принято по межскладскому перемещению') ||
+            op.comment?.startsWith('Принято по прямому перемещению');
+
           if (isIncomingTransfer) {
             current.quantity += qty;
           } else {
-            // Исходящее перемещение - списываем с отправителя
+            // Исходящее перемещение - списываем с отправителя op.warehouseId
             current.quantity = Math.max(0, current.quantity - qty);
-            
-            // Если в комментарии указан ID целевого склада, зачисляем получателю
-            const targetIdMatch = op.comment?.match(/Перемещение на склад ID ([a-zA-Z0-9_-]+)/);
-            if (targetIdMatch && targetIdMatch[1]) {
-              const targetWarehouseId = targetIdMatch[1];
-              const targetKey = `${targetWarehouseId}__${item.nomenclatureId}`;
-              const targetCurrent = balances.get(targetKey) || {
-                warehouseId: targetWarehouseId,
-                nomenclatureId: item.nomenclatureId,
-                quantity: 0,
-              };
-              targetCurrent.quantity += qty;
-              balances.set(targetKey, targetCurrent);
+
+            // Проверяем, существует ли отдельная входящая операция для этого перемещения
+            const hasDualIncomingRecord = operations.some(
+              (otherOp) =>
+                otherOp.id !== op.id &&
+                otherOp.type === 'TRANSFER' &&
+                otherOp.counterparty?.startsWith('Склад-отправитель:') &&
+                ((op.document && otherOp.document === op.document) ||
+                  (Math.abs(new Date(otherOp.date).getTime() - new Date(op.date).getTime()) < 10000 &&
+                    otherOp.items.some((oit) => oit.nomenclatureId === item.nomenclatureId)))
+            );
+
+            // Зачисляем на целевой склад только если парная операция отсутствует (легаси)
+            if (!hasDualIncomingRecord) {
+              let legacyTargetWhId: string | null = null;
+              const targetIdMatch = op.comment?.match(/Перемещение на склад ID ([a-zA-Z0-9_-]+)/);
+              if (targetIdMatch && targetIdMatch[1]) {
+                legacyTargetWhId = targetIdMatch[1];
+              } else {
+                const targetNameMatch = op.comment?.match(/Перемещение на склад "([^"]+)"/);
+                if (targetNameMatch && targetNameMatch[1]) {
+                  const targetName = targetNameMatch[1].trim().toLowerCase();
+                  legacyTargetWhId = warehouseNameMap.get(targetName) || null;
+                }
+              }
+
+              if (legacyTargetWhId && legacyTargetWhId !== op.warehouseId) {
+                const targetKey = `${legacyTargetWhId}__${item.nomenclatureId}`;
+                const targetCurrent = balances.get(targetKey) || {
+                  warehouseId: legacyTargetWhId,
+                  nomenclatureId: item.nomenclatureId,
+                  quantity: 0,
+                };
+                targetCurrent.quantity += qty;
+                balances.set(targetKey, targetCurrent);
+              }
             }
           }
         } else if (op.type === 'ISSUE' || op.type === 'ISSUE_EMPLOYEE' || op.type === 'ISSUE_WRITE_OFF') {

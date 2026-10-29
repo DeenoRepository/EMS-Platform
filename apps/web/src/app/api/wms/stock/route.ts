@@ -164,6 +164,14 @@ export async function GET(req: NextRequest) {
       orderBy: { name: 'asc' },
     });
 
+    // Предварительно получаем информацию о складе (если указан фильтр), чтобы избежать N+1 запросов в цикле
+    const targetWarehouse = warehouseId
+      ? await prisma.warehouse.findUnique({
+          where: { id: warehouseId },
+          select: { id: true, name: true, code: true, responsibleUserId: true },
+        })
+      : null;
+
     // Формируем плоский список дефицитных позиций
     const deficitRows: any[] = [];
 
@@ -215,7 +223,6 @@ export async function GET(req: NextRequest) {
             });
           } else {
             // Позиция на складе полностью отсутствует (остаток 0)
-            const targetWarehouse = await prisma.warehouse.findUnique({ where: { id: warehouseId } });
             deficitRows.push({
               id: `virtual_${nom.id}_${warehouseId}`,
               warehouseId,

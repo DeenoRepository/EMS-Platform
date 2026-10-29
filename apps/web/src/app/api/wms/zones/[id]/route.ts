@@ -111,6 +111,30 @@ export async function DELETE(
       );
     }
 
+    // Проверяем наличие ТМЦ с ненулевым остатком в ячейках удаляемой зоны
+    const occupiedItems = await prisma.stockItem.findMany({
+      where: {
+        cell: { zoneId: params.id },
+        quantity: { gt: 0 },
+      },
+      include: {
+        nomenclature: { select: { name: true } },
+        cell: { select: { code: true } },
+      },
+      take: 5,
+    });
+
+    if (occupiedItems.length > 0) {
+      const itemNames = occupiedItems.map((i) => `"${i.nomenclature.name}" (ячейка ${i.cell?.code || '—'})`).join(', ');
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Невозможно удалить зону хранения: в ней находятся ТМЦ с ненулевым остатком (${itemNames}). Сначала переместите или спишите остатки.`,
+        },
+        { status: 400 }
+      );
+    }
+
     await prisma.storageZone.delete({
       where: { id: params.id },
     });
